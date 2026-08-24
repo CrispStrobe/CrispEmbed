@@ -42,6 +42,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <limits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -60,12 +61,12 @@ namespace {
 
 using steady_clock = std::chrono::steady_clock;
 
-static bool dbg() { return core_env::on("LFM2_VL_DBG"); }
+static bool dbg() {
+    return core_env::on("LFM2_VL_DBG");
+}
 
 static long long ms_since(steady_clock::time_point t0) {
-    return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
-               steady_clock::now() - t0)
-        .count();
+    return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(steady_clock::now() - t0).count();
 }
 
 // ============================================================================
@@ -73,49 +74,56 @@ static long long ms_since(steady_clock::time_point t0) {
 // ============================================================================
 
 struct vision_hparams {
-    uint32_t depth         = 27;
-    uint32_t hidden_size   = 1152;
-    uint32_t ff_size       = 4304;
-    uint32_t num_heads     = 16;
-    uint32_t head_dim      = 72;   // 1152 / 16
-    uint32_t patch_size    = 16;
-    uint32_t image_size    = 256;  // SigLIP2 base grid (16×16 patches)
-    uint32_t tile_size     = 512;  // VL tile target for NaFlex resize
+    uint32_t depth = 27;
+    uint32_t hidden_size = 1152;
+    uint32_t ff_size = 4304;
+    uint32_t num_heads = 16;
+    uint32_t head_dim = 72; // 1152 / 16
+    uint32_t patch_size = 16;
+    uint32_t image_size = 256; // SigLIP2 base grid (16×16 patches)
+    uint32_t tile_size = 512;  // VL tile target for NaFlex resize
     // NaFlex token band and projector downsample, from the HF processor_config
     // ("Lfm2VlImageProcessorFast"). The resize targets a RANGE of image tokens,
     // not one number, and the downsample factor is what makes the grid have to
     // be divisible by patch_size * downsample_factor.
-    uint32_t min_image_tokens  = 64;
-    uint32_t max_image_tokens  = 256;
+    uint32_t min_image_tokens = 64;
+    uint32_t max_image_tokens = 256;
     uint32_t downsample_factor = 2;
-    float    norm_eps      = 1e-6f;
-    float    image_mean[3] = { 0.5f, 0.5f, 0.5f };
-    float    image_std[3]  = { 0.5f, 0.5f, 0.5f };
+    // Multi-tile NaFlex (processor_config.json: do_image_splitting=true,
+    // min_tiles=1, max_tiles=10, use_thumbnail=true, max_pixels_tolerance=2.0).
+    bool do_image_splitting = true;
+    bool use_thumbnail = true;
+    uint32_t min_tiles = 1;
+    uint32_t max_tiles = 10;
+    float max_pixels_tolerance = 2.0f;
+    float norm_eps = 1e-6f;
+    float image_mean[3] = { 0.5f, 0.5f, 0.5f };
+    float image_std[3] = { 0.5f, 0.5f, 0.5f };
 };
 
 struct projector_hparams {
     uint32_t unshuffle_factor = 2;
-    uint32_t in_dim  = 4608;  // hidden * factor^2
+    uint32_t in_dim = 4608; // hidden * factor^2
     uint32_t mid_dim = 2048;
     uint32_t out_dim = 2048;
 };
 
 struct llm_hparams {
-    uint32_t vocab_size     = 128000;
-    uint32_t hidden_size    = 2048;
-    uint32_t ff_size        = 10752;
-    uint32_t n_layers       = 30;
-    uint32_t n_heads        = 32;
-    uint32_t n_kv_heads     = 8;
-    uint32_t head_dim       = 64;   // 2048 / 32
-    uint32_t conv_kernel    = 3;
-    float    rope_theta     = 1e6f;
-    float    norm_eps       = 1e-5f;
-    uint32_t bos_id         = 124894;
-    uint32_t eos_id         = 124900;
-    uint32_t pad_id         = 124893;
+    uint32_t vocab_size = 128000;
+    uint32_t hidden_size = 2048;
+    uint32_t ff_size = 10752;
+    uint32_t n_layers = 30;
+    uint32_t n_heads = 32;
+    uint32_t n_kv_heads = 8;
+    uint32_t head_dim = 64; // 2048 / 32
+    uint32_t conv_kernel = 3;
+    float rope_theta = 1e6f;
+    float norm_eps = 1e-5f;
+    uint32_t bos_id = 124894;
+    uint32_t eos_id = 124900;
+    uint32_t pad_id = 124893;
     uint32_t image_token_id = 124907;
-    bool     tie_embeddings = true;
+    bool tie_embeddings = true;
     // Layer type string: 'c' = conv, 'a' = attention. 30 chars for 30 layers,
     // 22 conv + 8 attention; the 8 'a' positions are 2,5,9,13,17,21,24,27.
     //
@@ -144,9 +152,12 @@ struct vision_layer_w {
     // Attention: fused QKV or separate
     ggml_tensor * qkv_w = nullptr;
     ggml_tensor * qkv_b = nullptr;
-    ggml_tensor * q_w = nullptr; ggml_tensor * q_b = nullptr;
-    ggml_tensor * k_w = nullptr; ggml_tensor * k_b = nullptr;
-    ggml_tensor * v_w = nullptr; ggml_tensor * v_b = nullptr;
+    ggml_tensor * q_w = nullptr;
+    ggml_tensor * q_b = nullptr;
+    ggml_tensor * k_w = nullptr;
+    ggml_tensor * k_b = nullptr;
+    ggml_tensor * v_w = nullptr;
+    ggml_tensor * v_b = nullptr;
     ggml_tensor * proj_w = nullptr;
     ggml_tensor * proj_b = nullptr;
     // MLP: GELU fc1/fc2
@@ -158,23 +169,23 @@ struct vision_layer_w {
 
 struct llm_layer_w {
     ggml_tensor * operator_norm_w = nullptr;
-    ggml_tensor * ffn_norm_w      = nullptr;
+    ggml_tensor * ffn_norm_w = nullptr;
     // SwiGLU FFN (all layers)
-    ggml_tensor * ff_w1 = nullptr;  // gate
-    ggml_tensor * ff_w2 = nullptr;  // down
-    ggml_tensor * ff_w3 = nullptr;  // up
+    ggml_tensor * ff_w1 = nullptr; // gate
+    ggml_tensor * ff_w2 = nullptr; // down
+    ggml_tensor * ff_w3 = nullptr; // up
     bool is_attention = false;
     // Conv layers
-    ggml_tensor * conv_in_proj_w  = nullptr;
-    ggml_tensor * conv_conv_w     = nullptr;
+    ggml_tensor * conv_in_proj_w = nullptr;
+    ggml_tensor * conv_conv_w = nullptr;
     ggml_tensor * conv_out_proj_w = nullptr;
     // Attention layers
-    ggml_tensor * attn_q_proj_w   = nullptr;
-    ggml_tensor * attn_k_proj_w   = nullptr;
-    ggml_tensor * attn_v_proj_w   = nullptr;
+    ggml_tensor * attn_q_proj_w = nullptr;
+    ggml_tensor * attn_k_proj_w = nullptr;
+    ggml_tensor * attn_v_proj_w = nullptr;
     ggml_tensor * attn_out_proj_w = nullptr;
-    ggml_tensor * attn_q_ln_w     = nullptr;
-    ggml_tensor * attn_k_ln_w     = nullptr;
+    ggml_tensor * attn_q_ln_w = nullptr;
+    ggml_tensor * attn_k_ln_w = nullptr;
 };
 
 // ============================================================================
@@ -182,16 +193,16 @@ struct llm_layer_w {
 // ============================================================================
 
 struct model_weights {
-    vision_hparams    vhp;
+    vision_hparams vhp;
     projector_hparams php;
-    llm_hparams       lhp;
+    llm_hparams lhp;
 
     // Vision encoder
     ggml_tensor * v_patch_embed_w = nullptr;
     ggml_tensor * v_patch_embed_b = nullptr;
-    ggml_tensor * v_pos_embed     = nullptr;  // learned position embeddings
-    ggml_tensor * v_post_ln_w     = nullptr;
-    ggml_tensor * v_post_ln_b     = nullptr;
+    ggml_tensor * v_pos_embed = nullptr; // learned position embeddings
+    ggml_tensor * v_post_ln_w = nullptr;
+    ggml_tensor * v_post_ln_b = nullptr;
     std::vector<vision_layer_w> v_layers;
 
     // Projector
@@ -201,9 +212,9 @@ struct model_weights {
     ggml_tensor * proj_fc2_b = nullptr;
 
     // LLM
-    ggml_tensor * embed_tokens_w    = nullptr;
-    ggml_tensor * embedding_norm_w  = nullptr;
-    ggml_tensor * lm_head_w         = nullptr;
+    ggml_tensor * embed_tokens_w = nullptr;
+    ggml_tensor * embedding_norm_w = nullptr;
+    ggml_tensor * lm_head_w = nullptr;
     std::vector<llm_layer_w> llm_layers;
 };
 
@@ -215,26 +226,26 @@ struct ctx {
     model_weights m;
 
     // Weight storage
-    ggml_context *          model_ctx  = nullptr;
-    ggml_backend_buffer_t   model_buf  = nullptr;
-    ggml_context *          mmproj_ctx = nullptr;
-    ggml_backend_buffer_t   mmproj_buf = nullptr;
+    ggml_context * model_ctx = nullptr;
+    ggml_backend_buffer_t model_buf = nullptr;
+    ggml_context * mmproj_ctx = nullptr;
+    ggml_backend_buffer_t mmproj_buf = nullptr;
 
     // Backend
-    ggml_backend_t       backend     = nullptr;
-    ggml_backend_t       backend_cpu = nullptr;
-    ggml_backend_sched_t sched       = nullptr;
+    ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr;
+    ggml_backend_sched_t sched = nullptr;
     std::vector<uint8_t> compute_meta;
 
     // KV cache for attention layers only
     struct {
-        ggml_context *        ctx = nullptr;
+        ggml_context * ctx = nullptr;
         ggml_backend_buffer_t buf = nullptr;
-        ggml_tensor *         k   = nullptr;  // [kv_dim, max_seq, n_attn_layers]
-        ggml_tensor *         v   = nullptr;
-        int max_seq       = 0;
+        ggml_tensor * k = nullptr; // [kv_dim, max_seq, n_attn_layers]
+        ggml_tensor * v = nullptr;
+        int max_seq = 0;
         int n_attn_layers = 0;
-        bool allocated    = false;
+        bool allocated = false;
     } kvc;
 
     // Conv state cache: last (kernel_size - 1) = 2 columns per conv layer.
@@ -244,7 +255,7 @@ struct ctx {
 
     // Tokenizer
     std::unordered_map<std::string, int32_t> token_to_id;
-    std::vector<std::string>                 id_to_piece;
+    std::vector<std::string> id_to_piece;
     std::unordered_map<std::string, int32_t> merge_rank;
 
     int n_threads = 4;
@@ -253,6 +264,10 @@ struct ctx {
     // Diff harness: loaded when LFM2_VL_DIFF_REF is set
     crispembed_diff::Ref diff_ref;
     bool has_diff_ref = false;
+    // Which encoded image the vision/projector stages belong to. The multi-tile
+    // reference names them vis_post_ln_img0.., projector_out_img0..; a single
+    // image keeps the unsuffixed names. -1 = single.
+    int diff_img_index = -1;
 
     // Names of the graph inputs the most recent build_* call declared, so
     // audit_graph_inputs() can catch one that nobody wrote. An unset ggml
@@ -264,14 +279,21 @@ struct ctx {
 // Compare a tensor against the diff reference and print the result.
 static void diff_stage(ctx & c, const char * name, const float * data, size_t n_elem) {
     if (!c.has_diff_ref) return;
+    char buf[96];
+    if (c.diff_img_index >= 0) {
+        snprintf(buf, sizeof(buf), "%s_img%d", name, c.diff_img_index);
+        name = buf;
+    }
     auto r = c.diff_ref.compare(name, data, n_elem);
     if (!r.found) {
         fprintf(stderr, "  DIFF %-25s (not in ref)\n", name);
         return;
     }
-    fprintf(stderr, "  DIFF %-25s cos_min=%.6f max_abs=%.2e |mine|=%.4f |ref|=%.4f  %s\n",
-            name, r.cos_min, r.max_abs, r.mine_norm, r.ref_norm,
-            r.is_pass() ? "PASS" : "FAIL");
+    // cos_min is a per-row minimum; at Q4_K it is dominated by numerically
+    // fragile (near-blank) rows, so cos_global is the figure that actually
+    // says whether the artifact is right (crispembed_diff.h, Report docs).
+    fprintf(stderr, "  DIFF %-25s cos_min=%.6f cos_glob=%.6f max_abs=%.2e |mine|=%.4f |ref|=%.4f  %s\n", name,
+            r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass_global() ? "PASS" : "FAIL");
 }
 
 // ============================================================================
@@ -279,8 +301,14 @@ static void diff_stage(ctx & c, const char * name, const float * data, size_t n_
 // ============================================================================
 
 static void free_kv_cache(ctx & c) {
-    if (c.kvc.buf) { ggml_backend_buffer_free(c.kvc.buf); c.kvc.buf = nullptr; }
-    if (c.kvc.ctx) { ggml_free(c.kvc.ctx); c.kvc.ctx = nullptr; }
+    if (c.kvc.buf) {
+        ggml_backend_buffer_free(c.kvc.buf);
+        c.kvc.buf = nullptr;
+    }
+    if (c.kvc.ctx) {
+        ggml_free(c.kvc.ctx);
+        c.kvc.ctx = nullptr;
+    }
     c.kvc.k = nullptr;
     c.kvc.v = nullptr;
     c.kvc.max_seq = 0;
@@ -292,8 +320,8 @@ static bool alloc_kv_cache(ctx & c, int max_seq) {
 
     const auto & lhp = c.m.lhp;
     const int n_kv_heads = (int)lhp.n_kv_heads;
-    const int head_dim   = (int)lhp.head_dim;
-    const int kv_dim     = head_dim * n_kv_heads;
+    const int head_dim = (int)lhp.head_dim;
+    const int kv_dim = head_dim * n_kv_heads;
 
     // Count attention layers
     int n_attn = 0;
@@ -324,8 +352,8 @@ static bool alloc_kv_cache(ctx & c, int max_seq) {
 
     if (c.verbosity >= 1) {
         size_t bytes = ggml_backend_buffer_get_size(c.kvc.buf);
-        fprintf(stderr, "  KV cache: %d attn layers, max_seq=%d, %.1f MB\n",
-                n_attn, max_seq, (float)bytes / (1024.0f * 1024.0f));
+        fprintf(stderr, "  KV cache: %d attn layers, max_seq=%d, %.1f MB\n", n_attn, max_seq,
+                (float)bytes / (1024.0f * 1024.0f));
     }
     return true;
 }
@@ -333,11 +361,10 @@ static bool alloc_kv_cache(ctx & c, int max_seq) {
 // Conv state management
 static void init_conv_state(ctx & c) {
     const int D = (int)c.m.lhp.hidden_size;
-    const int pad = (int)c.m.lhp.conv_kernel - 1;  // 2
+    const int pad = (int)c.m.lhp.conv_kernel - 1; // 2
     c.n_conv_layers = 0;
     for (uint32_t i = 0; i < c.m.lhp.n_layers; i++) {
-        if (i < c.m.lhp.layer_types.size() && c.m.lhp.layer_types[i] == 'c')
-            c.n_conv_layers++;
+        if (i < c.m.lhp.layer_types.size() && c.m.lhp.layer_types[i] == 'c') c.n_conv_layers++;
     }
     c.conv_state.resize(c.n_conv_layers);
     for (int i = 0; i < c.n_conv_layers; i++) {
@@ -346,8 +373,7 @@ static void init_conv_state(ctx & c) {
 }
 
 static void reset_conv_state(ctx & c) {
-    for (auto & s : c.conv_state)
-        std::fill(s.begin(), s.end(), 0.0f);
+    for (auto & s : c.conv_state) std::fill(s.begin(), s.end(), 0.0f);
 }
 
 // ============================================================================
@@ -394,14 +420,14 @@ static bool load_hparams(ctx & c, const char * path) {
     auto f32 = [&](const char * k, float d) { return core_gguf::kv_f32(g, k, d); };
 
     auto & lhp = c.m.lhp;
-    lhp.vocab_size     = u32("lfm2.vocab_size", u32("lfm2vl.vocab_size", lhp.vocab_size));
-    lhp.hidden_size    = u32("lfm2.hidden_size", u32("lfm2.embedding_length", lhp.hidden_size));
-    lhp.ff_size        = u32("lfm2.ff_dim", u32("lfm2.feed_forward_length", lhp.ff_size));
-    lhp.n_layers       = u32("lfm2.n_layers", u32("lfm2.block_count", lhp.n_layers));
-    lhp.n_heads        = u32("lfm2.n_heads", u32("lfm2.attention.head_count", lhp.n_heads));
-    lhp.conv_kernel    = u32("lfm2.conv_kernel", u32("lfm2.shortconv.l_cache", lhp.conv_kernel));
-    lhp.rope_theta     = f32("lfm2.rope_theta", f32("lfm2.rope.freq_base", lhp.rope_theta));
-    lhp.norm_eps       = f32("lfm2.norm_eps", f32("lfm2.attention.layer_norm_rms_epsilon", lhp.norm_eps));
+    lhp.vocab_size = u32("lfm2.vocab_size", u32("lfm2vl.vocab_size", lhp.vocab_size));
+    lhp.hidden_size = u32("lfm2.hidden_size", u32("lfm2.embedding_length", lhp.hidden_size));
+    lhp.ff_size = u32("lfm2.ff_dim", u32("lfm2.feed_forward_length", lhp.ff_size));
+    lhp.n_layers = u32("lfm2.n_layers", u32("lfm2.block_count", lhp.n_layers));
+    lhp.n_heads = u32("lfm2.n_heads", u32("lfm2.attention.head_count", lhp.n_heads));
+    lhp.conv_kernel = u32("lfm2.conv_kernel", u32("lfm2.shortconv.l_cache", lhp.conv_kernel));
+    lhp.rope_theta = f32("lfm2.rope_theta", f32("lfm2.rope.freq_base", lhp.rope_theta));
+    lhp.norm_eps = f32("lfm2.norm_eps", f32("lfm2.attention.layer_norm_rms_epsilon", lhp.norm_eps));
 
     // Read n_kv_heads (may be scalar or per-layer array)
     {
@@ -454,13 +480,18 @@ static bool load_vision_hparams(ctx & c, const char * path) {
 
     auto & vhp = c.m.vhp;
     // Try siglip2 prefix, then clip.vision prefix, then lfm2vl.vision prefix
-    vhp.depth       = u32("siglip2.vision.depth", u32("clip.vision.block_count", u32("lfm2vl.vision.depth", vhp.depth)));
-    vhp.hidden_size = u32("siglip2.vision.hidden_size", u32("clip.vision.embedding_length", u32("lfm2vl.vision.hidden_size", vhp.hidden_size)));
-    vhp.ff_size     = u32("siglip2.vision.ff_size", u32("clip.vision.feed_forward_length", u32("lfm2vl.vision.ff_size", vhp.ff_size)));
-    vhp.num_heads   = u32("siglip2.vision.num_heads", u32("clip.vision.attention.head_count", u32("lfm2vl.vision.num_heads", vhp.num_heads)));
-    vhp.patch_size  = u32("siglip2.vision.patch_size", u32("clip.vision.patch_size", u32("lfm2vl.vision.patch_size", vhp.patch_size)));
-    vhp.image_size  = u32("siglip2.vision.image_size", u32("clip.vision.image_size", u32("lfm2vl.vision.image_size", vhp.image_size)));
-    vhp.norm_eps    = f32v("siglip2.vision.norm_eps", f32v("lfm2vl.vision.norm_eps", vhp.norm_eps));
+    vhp.depth = u32("siglip2.vision.depth", u32("clip.vision.block_count", u32("lfm2vl.vision.depth", vhp.depth)));
+    vhp.hidden_size = u32("siglip2.vision.hidden_size",
+                          u32("clip.vision.embedding_length", u32("lfm2vl.vision.hidden_size", vhp.hidden_size)));
+    vhp.ff_size = u32("siglip2.vision.ff_size",
+                      u32("clip.vision.feed_forward_length", u32("lfm2vl.vision.ff_size", vhp.ff_size)));
+    vhp.num_heads = u32("siglip2.vision.num_heads",
+                        u32("clip.vision.attention.head_count", u32("lfm2vl.vision.num_heads", vhp.num_heads)));
+    vhp.patch_size = u32("siglip2.vision.patch_size",
+                         u32("clip.vision.patch_size", u32("lfm2vl.vision.patch_size", vhp.patch_size)));
+    vhp.image_size = u32("siglip2.vision.image_size",
+                         u32("clip.vision.image_size", u32("lfm2vl.vision.image_size", vhp.image_size)));
+    vhp.norm_eps = f32v("siglip2.vision.norm_eps", f32v("lfm2vl.vision.norm_eps", vhp.norm_eps));
 
     if (vhp.num_heads > 0) vhp.head_dim = vhp.hidden_size / vhp.num_heads;
 
@@ -481,7 +512,7 @@ static bool load_vision_hparams(ctx & c, const char * path) {
     // Projector
     auto & php = c.m.php;
     php.unshuffle_factor = u32("lfm2vl.projector.unshuffle_factor", php.unshuffle_factor);
-    php.in_dim  = vhp.hidden_size * php.unshuffle_factor * php.unshuffle_factor;
+    php.in_dim = vhp.hidden_size * php.unshuffle_factor * php.unshuffle_factor;
     php.mid_dim = u32("lfm2vl.projector.mid_dim", php.mid_dim);
     php.out_dim = u32("lfm2vl.projector.out_dim", php.out_dim);
 
@@ -511,9 +542,9 @@ static bool load_llm_tensors(ctx & c, const char * path) {
     };
 
     auto & m = c.m;
-    m.embed_tokens_w   = get2("lfm.embed_tokens.weight", "token_embd.weight");
+    m.embed_tokens_w = get2("lfm.embed_tokens.weight", "token_embd.weight");
     m.embedding_norm_w = get2("lfm.embedding_norm.weight", "token_embd_norm.weight");
-    m.lm_head_w        = get2("lfm.lm_head.weight", "output.weight");
+    m.lm_head_w = get2("lfm.lm_head.weight", "output.weight");
     if (!m.lm_head_w && m.lhp.tie_embeddings) m.lm_head_w = m.embed_tokens_w;
 
     // Derive layer types from tensor presence if not in GGUF metadata
@@ -538,21 +569,21 @@ static bool load_llm_tensors(ctx & c, const char * path) {
             return get2(a, b);
         };
         l.operator_norm_w = ln("operator_norm.weight", "attn_norm.weight");
-        l.ffn_norm_w      = ln("ffn_norm.weight", "ffn_norm.weight");
-        l.ff_w1           = ln("ff.w1.weight", "ffn_gate.weight");
-        l.ff_w2           = ln("ff.w2.weight", "ffn_down.weight");
-        l.ff_w3           = ln("ff.w3.weight", "ffn_up.weight");
+        l.ffn_norm_w = ln("ffn_norm.weight", "ffn_norm.weight");
+        l.ff_w1 = ln("ff.w1.weight", "ffn_gate.weight");
+        l.ff_w2 = ln("ff.w2.weight", "ffn_down.weight");
+        l.ff_w3 = ln("ff.w3.weight", "ffn_up.weight");
         l.is_attention = (i < m.lhp.layer_types.size() && m.lhp.layer_types[i] == 'a');
         if (l.is_attention) {
-            l.attn_q_proj_w   = ln("attn.q_proj.weight", "attn_q.weight");
-            l.attn_k_proj_w   = ln("attn.k_proj.weight", "attn_k.weight");
-            l.attn_v_proj_w   = ln("attn.v_proj.weight", "attn_v.weight");
+            l.attn_q_proj_w = ln("attn.q_proj.weight", "attn_q.weight");
+            l.attn_k_proj_w = ln("attn.k_proj.weight", "attn_k.weight");
+            l.attn_v_proj_w = ln("attn.v_proj.weight", "attn_v.weight");
             l.attn_out_proj_w = ln("attn.out_proj.weight", "attn_output.weight");
-            l.attn_q_ln_w     = ln("attn.q_layernorm.weight", "attn_q_norm.weight");
-            l.attn_k_ln_w     = ln("attn.k_layernorm.weight", "attn_k_norm.weight");
+            l.attn_q_ln_w = ln("attn.q_layernorm.weight", "attn_q_norm.weight");
+            l.attn_k_ln_w = ln("attn.k_layernorm.weight", "attn_k_norm.weight");
         } else {
-            l.conv_in_proj_w  = ln("conv.in_proj.weight", "shortconv.in_proj.weight");
-            l.conv_conv_w     = ln("conv.conv.weight", "shortconv.conv.weight");
+            l.conv_in_proj_w = ln("conv.in_proj.weight", "shortconv.in_proj.weight");
+            l.conv_conv_w = ln("conv.conv.weight", "shortconv.conv.weight");
             l.conv_out_proj_w = ln("conv.out_proj.weight", "shortconv.out_proj.weight");
         }
     }
@@ -595,30 +626,30 @@ static bool load_vision_tensors(ctx & c, const char * path) {
     for (uint32_t i = 0; i < m.vhp.depth; i++) {
         auto & bl = m.v_layers[i];
         std::string p = "v.blk." + std::to_string(i) + ".";
-        bl.ln1_w  = get2(p + "norm1.weight", p + "ln1.weight");
-        bl.ln1_b  = get2(p + "norm1.bias", p + "ln1.bias");
-        bl.ln2_w  = get2(p + "norm2.weight", p + "ln2.weight");
-        bl.ln2_b  = get2(p + "norm2.bias", p + "ln2.bias");
+        bl.ln1_w = get2(p + "norm1.weight", p + "ln1.weight");
+        bl.ln1_b = get2(p + "norm1.bias", p + "ln1.bias");
+        bl.ln2_w = get2(p + "norm2.weight", p + "ln2.weight");
+        bl.ln2_b = get2(p + "norm2.bias", p + "ln2.bias");
         // Fused QKV
-        bl.qkv_w  = get2(p + "attn_qkv.weight", p + "attn.qkv.weight");
-        bl.qkv_b  = get2(p + "attn_qkv.bias", p + "attn.qkv.bias");
+        bl.qkv_w = get2(p + "attn_qkv.weight", p + "attn.qkv.weight");
+        bl.qkv_b = get2(p + "attn_qkv.bias", p + "attn.qkv.bias");
         // Separate Q/K/V
-        bl.q_w    = get2(p + "attn_q.weight", p + "attn.q.weight");
-        bl.q_b    = get2(p + "attn_q.bias", p + "attn.q.bias");
-        bl.k_w    = get2(p + "attn_k.weight", p + "attn.k.weight");
-        bl.k_b    = get2(p + "attn_k.bias", p + "attn.k.bias");
-        bl.v_w    = get2(p + "attn_v.weight", p + "attn.v.weight");
-        bl.v_b    = get2(p + "attn_v.bias", p + "attn.v.bias");
+        bl.q_w = get2(p + "attn_q.weight", p + "attn.q.weight");
+        bl.q_b = get2(p + "attn_q.bias", p + "attn.q.bias");
+        bl.k_w = get2(p + "attn_k.weight", p + "attn.k.weight");
+        bl.k_b = get2(p + "attn_k.bias", p + "attn.k.bias");
+        bl.v_w = get2(p + "attn_v.weight", p + "attn.v.weight");
+        bl.v_b = get2(p + "attn_v.bias", p + "attn.v.bias");
         bl.proj_w = get2(p + "attn_out.weight", p + "attn_proj.weight");
         bl.proj_b = get2(p + "attn_out.bias", p + "attn_proj.bias");
         // MLP
-        bl.fc1_w  = get2(p + "ffn_fc1.weight", p + "ffn.fc1.weight");
+        bl.fc1_w = get2(p + "ffn_fc1.weight", p + "ffn.fc1.weight");
         if (!bl.fc1_w) bl.fc1_w = get2(p + "ffn_up.weight", p + "ffn.up.weight");
-        bl.fc1_b  = get2(p + "ffn_fc1.bias", p + "ffn.fc1.bias");
+        bl.fc1_b = get2(p + "ffn_fc1.bias", p + "ffn.fc1.bias");
         if (!bl.fc1_b) bl.fc1_b = get2(p + "ffn_up.bias", p + "ffn.up.bias");
-        bl.fc2_w  = get2(p + "ffn_fc2.weight", p + "ffn.fc2.weight");
+        bl.fc2_w = get2(p + "ffn_fc2.weight", p + "ffn.fc2.weight");
         if (!bl.fc2_w) bl.fc2_w = get2(p + "ffn_down.weight", p + "ffn.down.weight");
-        bl.fc2_b  = get2(p + "ffn_fc2.bias", p + "ffn.fc2.bias");
+        bl.fc2_b = get2(p + "ffn_fc2.bias", p + "ffn.fc2.bias");
         if (!bl.fc2_b) bl.fc2_b = get2(p + "ffn_down.bias", p + "ffn.down.bias");
     }
 
@@ -664,14 +695,12 @@ static bool load_tokenizer(ctx & c, const char * path) {
     core_gguf::free_metadata(g);
 
     if (c.verbosity >= 1) {
-        fprintf(stderr, "[lfm2_vl] tokenizer: %zu vocab, %zu merges\n",
-                c.id_to_piece.size(), c.merge_rank.size());
+        fprintf(stderr, "[lfm2_vl] tokenizer: %zu vocab, %zu merges\n", c.id_to_piece.size(), c.merge_rank.size());
         // Check if expected tokens exist
         auto chk = [&](const char * s, int expected) {
             auto it = c.token_to_id.find(s);
             if (it != c.token_to_id.end()) {
-                fprintf(stderr, "  '%s' → %d %s\n", s, it->second,
-                        (it->second == expected) ? "✓" : "✗ (WRONG)");
+                fprintf(stderr, "  '%s' → %d %s\n", s, it->second, (it->second == expected) ? "✓" : "✗ (WRONG)");
             } else {
                 fprintf(stderr, "  '%s' → NOT FOUND (expected %d)\n", s, expected);
             }
@@ -730,66 +759,46 @@ static std::string decode_tokens(const ctx & c, const std::vector<int32_t> & ids
 // ============================================================================
 
 struct image_patches {
-    std::vector<float> data;  // [n_patches, patch_dim] row-major
+    std::vector<float> data; // [n_patches, patch_dim] row-major
     int n_patches = 0;
-    int patch_dim = 0;        // 3 * patch_size^2 = 768
-    int h_patches = 0;        // patches per height
-    int w_patches = 0;        // patches per width
+    int patch_dim = 0; // 3 * patch_size^2 = 768
+    int h_patches = 0; // patches per height
+    int w_patches = 0; // patches per width
 };
 
-static bool preprocess_image(const uint8_t * rgb, int height, int width, int channels,
-                             const vision_hparams & vhp, image_patches & out) {
-    const int P      = (int)vhp.patch_size;   // 16
-    const int target = (int)vhp.tile_size;   // 512 (VL tile target)
-    const int patch_dim = 3 * P * P;         // 768
-
-    // HF Lfm2VlImageProcessor.smart_resize, matched on two parameters this
-    // previously got wrong:
-    //
-    // (a) The rounding factor is encoder_patch_size * downsample_factor (32),
-    //     not the patch size alone — its own docstring says this "ensures no
-    //     padding is needed in the downsampling step". With P alone the patch
-    //     grid can come out ODD in a dimension, and the projector's 2x
-    //     pixel_unshuffle integer-divides that away, silently discarding the
-    //     last row or column of patches. Three of four common page shapes hit
-    //     it: a 4000x3000 scan gave a 36x27 grid, a 300x1000 strip 58x17.
-    //
-    // (b) The pixel bound is a token BAND (min_image_tokens..max_image_tokens),
-    //     not one target. Pinning min = max upscaled small images to the full
-    //     budget — a 150x200 thumbnail became 259 image tokens instead of 70.
-    //
-    // Both agree exactly on the validated fixture (500x650 -> 576x448, 36x28
-    // grid, 252 tokens), so this is a no-op there and a fix everywhere else.
-    // LFM2_VL_LEGACY_RESIZE=1 restores the old parameters.
-    const bool legacy_resize = core_env::on("LFM2_VL_LEGACY_RESIZE");
-    const int  ds     = (int)vhp.downsample_factor;
-    const int  factor = legacy_resize ? P : P * ds;
-    const int  min_px = legacy_resize ? target * target
-                                      : (int)vhp.min_image_tokens * P * P * ds * ds;
-    const int  max_px = legacy_resize ? target * target
-                                      : (int)vhp.max_image_tokens * P * P * ds * ds;
-
-    int rH, rW;
-    image_preproc::smart_resize(height, width, factor, min_px, max_px, &rH, &rW);
-
-    const int gH = rH / P;
-    const int gW = rW / P;
-    const int n_patches = gH * gW;
-
-    // The projector's pixel_unshuffle integer-divides the grid by ds, so an odd
-    // dimension drops a whole row or column of patches — a strip of the page,
-    // lost without a word. Must not happen with the blueprint factor; say so
-    // loudly if it ever does.
-    if (gH % ds || gW % ds) {
-        fprintf(stderr,
-                "[lfm2_vl] WARNING: patch grid %dx%d is not divisible by the "
-                "projector downsample %d — the last row/column of patches will "
-                "be dropped by pixel_unshuffle\n",
-                gW, gH, ds);
+// Resize an RGB(A) uint8 image to rH x rW, HWC float32 in [0, 255].
+//
+// HF's Lfm2VlImageProcessor resizes with `resample: 3` = BICUBIC, and the fast
+// processor's torchvision path runs it with antialias=True. Measured against
+// the golden `pixel_values_img6` in the multi-tile reference
+// (commons_test_ocr_document, 1920x2485 -> 448x576):
+//
+//   ours, bilinear align_corners   cos_min 0.815898  |mine| 542.22
+//   PIL BICUBIC                    cos_min 0.999999  |mine| 508.23  <- ref 508.23
+//   PIL BILINEAR                   cos_min 0.994601  |mine| 501.94
+//   torchvision BICUBIC aa=True    cos_min 0.999936  |mine| 508.30
+//   torchvision BICUBIC aa=False   cos_min 0.811639  |mine| 553.40
+//
+// The un-antialiased point sampling put ~6.7% of extra energy into the patches
+// and was the whole of the projector_out cos 0.9575 gap — an INPUT bug, not a
+// model bug. image_preproc::resize_bicubic_u8_hwc is the repo's PIL-matching
+// separable Catmull-Rom with antialiasing (already used by the Qwen2VL lane).
+// LFM2_VL_BILINEAR_RESIZE=1 restores the old sampler for A/B.
+static void resize_rgb_hwc(const uint8_t * rgb, int height, int width, int channels, int rH, int rW,
+                           std::vector<float> & hwc) {
+    hwc.assign((size_t)rH * rW * 3, 0.0f);
+    if (!core_env::on("LFM2_VL_BILINEAR_RESIZE")) {
+        const uint8_t * src3 = rgb;
+        std::vector<uint8_t> packed;
+        if (channels != 3) {
+            packed.resize((size_t)height * width * 3);
+            for (size_t i = 0; i < (size_t)height * width; i++)
+                for (int c = 0; c < 3; c++) packed[i * 3 + c] = rgb[i * channels + ((channels >= 3) ? c : 0)];
+            src3 = packed.data();
+        }
+        image_preproc::resize_bicubic_u8_hwc(src3, height, width, hwc.data(), rH, rW, 3);
+        return;
     }
-
-    // Step 1: bilinear resize to rW × rH
-    std::vector<float> resized((size_t)rH * rW * 3);
     for (int y = 0; y < rH; y++) {
         float sy = (float)y * (height - 1) / std::max(rH - 1, 1);
         int y0 = (int)sy, y1 = std::min(y0 + 1, height - 1);
@@ -804,51 +813,225 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
                 float v01 = rgb[((size_t)y0 * width + x1) * channels + ch];
                 float v10 = rgb[((size_t)y1 * width + x0) * channels + ch];
                 float v11 = rgb[((size_t)y1 * width + x1) * channels + ch];
-                float v = (1 - fy) * ((1 - fx) * v00 + fx * v01) +
-                          fy       * ((1 - fx) * v10 + fx * v11);
-                // Normalize: (v / 255 - mean) / std → [-1, 1]
-                resized[((size_t)c * rH + y) * rW + x] =
-                    (v / 255.0f - vhp.image_mean[c]) / vhp.image_std[c];
+                hwc[((size_t)y * rW + x) * 3 + c] =
+                    (1 - fy) * ((1 - fx) * v00 + fx * v01) + fy * ((1 - fx) * v10 + fx * v11);
             }
         }
     }
+}
 
-    // Step 2: patchify to match the Conv2d patch embedding weight layout.
-    //
-    // The GGUF stores the Conv2d weight as [kW, kH, in_C, out_C] (ggml
-    // column-major ne[0..3]). After reshape to 2D [patch_dim, hidden],
-    // ne[0] = patch_dim with elements in (kW, kH, in_C) order — that is,
-    // pixel-x varies fastest, then pixel-y, then channel.
-    //
-    // We must patchify into the SAME order so that ggml_mul_mat(weight, patches)
-    // computes the correct dot product.
+// Normalize + patchify the [x0, x0+cropW) x [y0, y0+cropH) window of an HWC
+// float image into the patch layout the GGUF patch-embedding weight expects.
+//
+// The GGUF stores the weight as ne = [kW, kH, in_C, out_C], so after the 2-D
+// reinterpretation ne[0] runs (pixel-x fastest, then pixel-y, then channel).
+// HF's own `pixel_values` are ordered (py, px, c) instead — the llama.cpp
+// converter permutes the Linear weight into conv layout, so the two cancel.
+// Verified against the reference: feeding `pixel_values_img6` through the GGUF
+// weight in the (c, py, px) order this function writes reproduces
+// `vis_patch_embed_img6` at cos 1.000000 / max_abs 0.0, and the un-permuted
+// order gives cos_min 0.612666. Do not "simplify" this ordering.
+static void patchify_hwc(const std::vector<float> & hwc, int srcH, int srcW, int x0, int y0, int cropW, int cropH,
+                         const vision_hparams & vhp, image_patches & out) {
+    const int P = (int)vhp.patch_size;
+    const int patch_dim = 3 * P * P;
+    const int gH = cropH / P;
+    const int gW = cropW / P;
+    const int n_patches = gH * gW;
+
     out.data.resize((size_t)n_patches * patch_dim);
     for (int gy = 0; gy < gH; gy++) {
         for (int gx = 0; gx < gW; gx++) {
             float * dst = &out.data[(size_t)(gy * gW + gx) * patch_dim];
-            // Fill in (px, py, c) order = x varies fastest
             for (int c = 0; c < 3; c++) {
                 for (int py = 0; py < P; py++) {
+                    const int iy = y0 + gy * P + py;
                     for (int px = 0; px < P; px++) {
-                        int iy = gy * P + py;
-                        int ix = gx * P + px;
-                        // Flat index in (kW, kH, in_C) order:
-                        int flat = px + py * P + c * P * P;
-                        dst[flat] = resized[((size_t)c * rH + iy) * rW + ix];
+                        const int ix = x0 + gx * P + px;
+                        const float v = hwc[((size_t)iy * srcW + ix) * 3 + c];
+                        dst[px + py * P + c * P * P] = (v / 255.0f - vhp.image_mean[c]) / vhp.image_std[c];
                     }
                 }
             }
         }
     }
-
+    (void)srcH;
     out.n_patches = n_patches;
     out.patch_dim = patch_dim;
     out.h_patches = gH;
     out.w_patches = gW;
+}
+
+// HF smart_resize parameters, shared by the single-tile path and the thumbnail.
+static void lfm2_smart_resize(int height, int width, const vision_hparams & vhp, int * out_h, int * out_w) {
+    const int P = (int)vhp.patch_size;
+    const int ds = (int)vhp.downsample_factor;
+    // HF rounds to encoder_patch_size * downsample_factor (32), not patch_size
+    // alone — its own docstring says this "ensures no padding is needed in the
+    // downsampling step". With P alone the patch grid can come out ODD in a
+    // dimension and the projector's 2x pixel_unshuffle integer-divides it away,
+    // silently discarding the last row or column of patches. The pixel bound is
+    // a token BAND (min_image_tokens..max_image_tokens), not one target;
+    // pinning min = max upscaled small images to the full budget.
+    // LFM2_VL_LEGACY_RESIZE=1 restores the old parameters.
+    const bool legacy = core_env::on("LFM2_VL_LEGACY_RESIZE");
+    const int target = (int)vhp.tile_size;
+    const int factor = legacy ? P : P * ds;
+    const int min_px = legacy ? target * target : (int)vhp.min_image_tokens * P * P * ds * ds;
+    const int max_px = legacy ? target * target : (int)vhp.max_image_tokens * P * P * ds * ds;
+    image_preproc::smart_resize(height, width, factor, min_px, max_px, out_h, out_w);
+}
+
+static bool preprocess_image(const uint8_t * rgb, int height, int width, int channels, const vision_hparams & vhp,
+                             image_patches & out) {
+    const int P = (int)vhp.patch_size;
+    const int ds = (int)vhp.downsample_factor;
+
+    int rH, rW;
+    lfm2_smart_resize(height, width, vhp, &rH, &rW);
+
+    if ((rH / P) % ds || (rW / P) % ds) {
+        fprintf(stderr,
+                "[lfm2_vl] WARNING: patch grid %dx%d is not divisible by the "
+                "projector downsample %d — the last row/column of patches will "
+                "be dropped by pixel_unshuffle\n",
+                rW / P, rH / P, ds);
+    }
+
+    std::vector<float> hwc;
+    resize_rgb_hwc(rgb, height, width, channels, rH, rW, hwc);
+    patchify_hwc(hwc, rH, rW, 0, 0, rW, rH, vhp, out);
 
     if (dbg())
-        fprintf(stderr, "[lfm2_vl] preproc: %dx%d → %dx%d, %d patches (%dx%d grid)\n",
-                width, height, rW, rH, n_patches, gW, gH);
+        fprintf(stderr, "[lfm2_vl] preproc: %dx%d → %dx%d, %d patches (%dx%d grid)\n", width, height, rW, rH,
+                out.n_patches, out.w_patches, out.h_patches);
+    return true;
+}
+
+// ── Multi-tile NaFlex ───────────────────────────────────────────────────────
+//
+// Blueprint: Lfm2VlImageProcessor.resize_and_split / crop_image_to_patches.
+// A page above the tolerance is resized to a grid of `tile_size` tiles chosen
+// by aspect ratio, split row-major, and (use_thumbnail) followed by the whole
+// page smart_resized as one extra "thumbnail" image. Each tile contributes
+// tokens_per_tile = (tile_size / P / ds)^2 = 256 tokens; the thumbnail
+// contributes whatever its own grid gives.
+struct image_tiles {
+    std::vector<image_patches> tiles; // grid tiles row-major, thumbnail last
+    int grid_rows = 1;
+    int grid_cols = 1;
+    bool has_thumbnail = false;
+};
+
+// Python's round() is banker's rounding (half to EVEN); std::round is not.
+// round_by_factor is applied to raw pixel counts, so a .5 lands often enough
+// to matter — this is the single most likely silent divergence in the tiling
+// math (dev-guide note on tools/lfm2_vl_tiling_oracle.py).
+static int round_by_factor(int n, int factor) {
+    return (int)std::nearbyint((double)n / (double)factor) * factor;
+}
+
+static bool lfm2_is_image_too_large(int height, int width, const vision_hparams & vhp) {
+    const int P = (int)vhp.patch_size;
+    const int ds = (int)vhp.downsample_factor;
+    const int tf = P * ds;
+    const double h_bar = std::max(P, round_by_factor(height, tf));
+    const double w_bar = std::max(P, round_by_factor(width, tf));
+    return h_bar * w_bar > (double)vhp.max_image_tokens * P * P * ds * ds * vhp.max_pixels_tolerance;
+}
+
+// find_closest_aspect_ratio over target_ratios(min_tiles, max_tiles), verbatim
+// from the blueprint: strict `<` keeps the FIRST best in area order, and an
+// exact tie only moves when the image covers more than half the target area.
+static void lfm2_grid_layout(int height, int width, const vision_hparams & vhp, int * out_gw, int * out_gh) {
+    const int min_tiles = (int)vhp.min_tiles;
+    const int max_tiles = (int)vhp.max_tiles;
+    const int tile = (int)vhp.tile_size;
+    const double ar = (double)width / (double)height;
+    const double area = (double)width * (double)height;
+
+    std::vector<std::pair<int, int>> ratios;
+    for (int n = min_tiles; n <= max_tiles; n++)
+        for (int w = 1; w <= n; w++)
+            for (int h = 1; h <= n; h++)
+                if (w * h >= min_tiles && w * h <= max_tiles) ratios.push_back({ w, h });
+    std::sort(ratios.begin(), ratios.end(), [](const std::pair<int, int> & a, const std::pair<int, int> & b) {
+        if (a.first * a.second != b.first * b.second) return a.first * a.second < b.first * b.second;
+        if (a.first != b.first) return a.first < b.first;
+        return a.second < b.second;
+    });
+    ratios.erase(std::unique(ratios.begin(), ratios.end()), ratios.end());
+
+    double best_diff = std::numeric_limits<double>::infinity();
+    int bw = 1, bh = 1;
+    for (const auto & r : ratios) {
+        const double tar = (double)r.first / (double)r.second;
+        const double diff = std::fabs(ar - tar);
+        if (diff < best_diff) {
+            best_diff = diff;
+            bw = r.first;
+            bh = r.second;
+        } else if (diff == best_diff) {
+            const double target_area = (double)tile * tile * r.first * r.second;
+            if (area > 0.5 * target_area) {
+                bw = r.first;
+                bh = r.second;
+            }
+        }
+    }
+    *out_gw = bw;
+    *out_gh = bh;
+}
+
+static bool preprocess_image_tiles(const uint8_t * rgb, int height, int width, int channels, const vision_hparams & vhp,
+                                   image_tiles & out) {
+    out.tiles.clear();
+    out.grid_rows = out.grid_cols = 1;
+    out.has_thumbnail = false;
+
+    // Default OFF pending the A/B (dev-guide rule 3: a new path stays opt-in
+    // until it is proven equal-or-better on decoded output). LFM2_VL_MULTI_TILE=1
+    // enables it.
+    const bool split_enabled = vhp.do_image_splitting && vhp.max_tiles > 1 && core_env::on("LFM2_VL_MULTI_TILE");
+    if (!split_enabled || !lfm2_is_image_too_large(height, width, vhp)) {
+        out.tiles.emplace_back();
+        return preprocess_image(rgb, height, width, channels, vhp, out.tiles.back());
+    }
+
+    int gw = 1, gh = 1;
+    lfm2_grid_layout(height, width, vhp, &gw, &gh);
+    const int tile = (int)vhp.tile_size;
+    const int tW = tile * gw;
+    const int tH = tile * gh;
+
+    // One resize of the ORIGINAL page to the tile grid, then row-major crops —
+    // the blueprint resizes once and splits, it does not resize per tile.
+    std::vector<float> hwc;
+    resize_rgb_hwc(rgb, height, width, channels, tH, tW, hwc);
+    for (int r = 0; r < gh; r++) {
+        for (int cix = 0; cix < gw; cix++) {
+            out.tiles.emplace_back();
+            patchify_hwc(hwc, tH, tW, cix * tile, r * tile, tile, tile, vhp, out.tiles.back());
+        }
+    }
+    out.grid_rows = gh;
+    out.grid_cols = gw;
+
+    // Thumbnail: the whole page again, at smart_resize dimensions — resized
+    // from the ORIGINAL, not from the tile-grid image.
+    if (vhp.use_thumbnail && gw * gh != 1) {
+        int rH, rW;
+        lfm2_smart_resize(height, width, vhp, &rH, &rW);
+        std::vector<float> thumb;
+        resize_rgb_hwc(rgb, height, width, channels, rH, rW, thumb);
+        out.tiles.emplace_back();
+        patchify_hwc(thumb, rH, rW, 0, 0, rW, rH, vhp, out.tiles.back());
+        out.has_thumbnail = true;
+    }
+
+    if (dbg())
+        fprintf(stderr, "[lfm2_vl] tiling: %dx%d → grid %dx%d (%zu images, thumb=%d)\n", width, height, gw, gh,
+                out.tiles.size(), (int)out.has_thumbnail);
     return true;
 }
 
@@ -858,15 +1041,14 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
 
 // Build the vision encoder graph as a ggml computation graph.
 // Returns the output tensor pointer; the graph is built in the provided context.
-static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph * gf,
-                                        int n_patches) {
+static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph * gf, int n_patches) {
     const auto & vhp = c.m.vhp;
-    const int H        = (int)vhp.hidden_size;    // 1152
-    const int n_heads  = (int)vhp.num_heads;       // 16
-    const int head_dim = (int)vhp.head_dim;        // 72
-    const int ff       = (int)vhp.ff_size;         // 4304
-    const float eps    = vhp.norm_eps;
-    const int patch_dim = 3 * (int)vhp.patch_size * (int)vhp.patch_size;  // 768
+    const int H = (int)vhp.hidden_size;     // 1152
+    const int n_heads = (int)vhp.num_heads; // 16
+    const int head_dim = (int)vhp.head_dim; // 72
+    const int ff = (int)vhp.ff_size;        // 4304
+    const float eps = vhp.norm_eps;
+    const int patch_dim = 3 * (int)vhp.patch_size * (int)vhp.patch_size; // 768
 
     // Input: flattened patches [patch_dim, n_patches]
     ggml_tensor * pixel_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, patch_dim, n_patches);
@@ -881,17 +1063,16 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         return nullptr;
     }
     if (dbg()) {
-        fprintf(stderr, "[lfm2_vl] patch_embed_w: ndims=%d, ne=[%lld,%lld,%lld,%lld]\n",
-                ggml_n_dims(pe_w), (long long)pe_w->ne[0], (long long)pe_w->ne[1],
-                (long long)pe_w->ne[2], (long long)pe_w->ne[3]);
+        fprintf(stderr, "[lfm2_vl] patch_embed_w: ndims=%d, ne=[%lld,%lld,%lld,%lld]\n", ggml_n_dims(pe_w),
+                (long long)pe_w->ne[0], (long long)pe_w->ne[1], (long long)pe_w->ne[2], (long long)pe_w->ne[3]);
     }
     // Conv2d weight [16,16,3,1152] stored as 4D in GGUF. For mul_mat we need
     // it as 2D [768, 1152]. The weight tensor lives on the backend buffer so
     // we can't reshape it in-graph; instead we just override the shape in
     // place — the flat memory is identical (16*16*3 = 768, contiguous).
     if (ggml_n_dims(pe_w) > 2) {
-        pe_w->ne[0] = patch_dim;  // 768
-        pe_w->ne[1] = H;          // 1152
+        pe_w->ne[0] = patch_dim; // 768
+        pe_w->ne[1] = H;         // 1152
         pe_w->ne[2] = 1;
         pe_w->ne[3] = 1;
         pe_w->nb[1] = pe_w->nb[0] * pe_w->ne[0];
@@ -899,14 +1080,11 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         pe_w->nb[3] = pe_w->nb[2];
         if (dbg()) {
             fprintf(stderr, "[lfm2_vl] after reshape: ne=[%lld,%lld,%lld,%lld], nb=[%lld,%lld,%lld,%lld], type=%d\n",
-                    (long long)pe_w->ne[0], (long long)pe_w->ne[1],
-                    (long long)pe_w->ne[2], (long long)pe_w->ne[3],
-                    (long long)pe_w->nb[0], (long long)pe_w->nb[1],
-                    (long long)pe_w->nb[2], (long long)pe_w->nb[3],
+                    (long long)pe_w->ne[0], (long long)pe_w->ne[1], (long long)pe_w->ne[2], (long long)pe_w->ne[3],
+                    (long long)pe_w->nb[0], (long long)pe_w->nb[1], (long long)pe_w->nb[2], (long long)pe_w->nb[3],
                     (int)pe_w->type);
-            fprintf(stderr, "[lfm2_vl] pixel_in: ne=[%lld,%lld], type=%d\n",
-                    (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
-                    (int)pixel_in->type);
+            fprintf(stderr, "[lfm2_vl] pixel_in: ne=[%lld,%lld], type=%d\n", (long long)pixel_in->ne[0],
+                    (long long)pixel_in->ne[1], (int)pixel_in->type);
         }
     }
     ggml_tensor * x = ggml_mul_mat(g, pe_w, pixel_in);
@@ -944,8 +1122,8 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         }
         if (il == 0 && dbg()) {
             ggml_tensor * qw = bl.q_w ? bl.q_w : bl.qkv_w;
-            fprintf(stderr, "[lfm2_vl] v_layer[0] q_w: ne=[%lld,%lld], type=%d\n",
-                    (long long)qw->ne[0], (long long)qw->ne[1], (int)qw->type);
+            fprintf(stderr, "[lfm2_vl] v_layer[0] q_w: ne=[%lld,%lld], type=%d\n", (long long)qw->ne[0],
+                    (long long)qw->ne[1], (int)qw->type);
         }
         ggml_tensor * residual = x;
 
@@ -953,18 +1131,15 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         ggml_tensor * y = layernorm(x, bl.ln1_w, bl.ln1_b);
 
         // QKV
-        ggml_tensor * Q, * K, * V;
+        ggml_tensor *Q, *K, *V;
         if (bl.qkv_w) {
             ggml_tensor * qkv = ggml_mul_mat(g, bl.qkv_w, y);
             if (bl.qkv_b) qkv = ggml_add(g, qkv, bl.qkv_b);
             // [3*H, n_patches] → [head_dim, n_heads, 3, n_patches]
             qkv = ggml_reshape_4d(g, qkv, head_dim, n_heads, 3, n_patches);
-            Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
-                             qkv->nb[1], qkv->nb[3], 0);
-            K = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
-                             qkv->nb[1], qkv->nb[3], qkv->nb[2]);
-            V = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
-                             qkv->nb[1], qkv->nb[3], 2 * qkv->nb[2]);
+            Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches, qkv->nb[1], qkv->nb[3], 0);
+            K = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches, qkv->nb[1], qkv->nb[3], qkv->nb[2]);
+            V = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches, qkv->nb[1], qkv->nb[3], 2 * qkv->nb[2]);
         } else {
             Q = ggml_mul_mat(g, bl.q_w, y);
             if (bl.q_b) Q = ggml_add(g, Q, bl.q_b);
@@ -1044,8 +1219,8 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
 
 // Run vision encoder on preprocessed patches.
 // Returns float vector of shape [n_projected, proj_dim].
-static bool encode_vision(ctx & c, const image_patches & patches,
-                          std::vector<float> & out_embeds, int & out_n_tokens, int & out_dim) {
+static bool encode_vision(ctx & c, const image_patches & patches, std::vector<float> & out_embeds, int & out_n_tokens,
+                          int & out_dim) {
     auto t0 = steady_clock::now();
     const auto & vhp = c.m.vhp;
     const int H = (int)vhp.hidden_size;
@@ -1053,8 +1228,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
 
     // Build graph
     const int max_nodes = 4096;
-    size_t meta_size = ggml_tensor_overhead() * max_nodes +
-                       ggml_graph_overhead_custom(max_nodes, false);
+    size_t meta_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ggml_init_params ip{ meta_size, nullptr, true };
     ggml_context * g = ggml_init(ip);
     if (!g) return false;
@@ -1074,16 +1248,17 @@ static bool encode_vision(ctx & c, const image_patches & patches,
 
     // Set input: pixel patches
     ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_in");
-    if (!pixel_in) { fprintf(stderr, "[lfm2_vl] pixel_in tensor not found!\n"); ggml_free(g); return false; }
-    ggml_backend_tensor_set(pixel_in, patches.data.data(), 0,
-                            patches.data.size() * sizeof(float));
+    if (!pixel_in) {
+        fprintf(stderr, "[lfm2_vl] pixel_in tensor not found!\n");
+        ggml_free(g);
+        return false;
+    }
+    ggml_backend_tensor_set(pixel_in, patches.data.data(), 0, patches.data.size() * sizeof(float));
     if (dbg()) {
-        fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n",
-                (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
-                patches.data.size() * sizeof(float));
+        fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n", (long long)pixel_in->ne[0],
+                (long long)pixel_in->ne[1], patches.data.size() * sizeof(float));
         fprintf(stderr, "[lfm2_vl] input patch 0 first 5: ");
-        for (int i = 0; i < std::min(5, (int)patches.patch_dim); i++)
-            fprintf(stderr, "%.6f ", patches.data[i]);
+        for (int i = 0; i < std::min(5, (int)patches.patch_dim); i++) fprintf(stderr, "%.6f ", patches.data[i]);
         fprintf(stderr, "\n");
     }
 
@@ -1097,8 +1272,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
         const int grid = 16;
         std::vector<float> pos_table((size_t)grid * grid * H);
         if (c.m.v_pos_embed) {
-            ggml_backend_tensor_get(c.m.v_pos_embed, pos_table.data(), 0,
-                                    pos_table.size() * sizeof(float));
+            ggml_backend_tensor_get(c.m.v_pos_embed, pos_table.data(), 0, pos_table.size() * sizeof(float));
         }
         // Bilinear interpolation: map (hp, wp) grid → (grid, grid) source
         std::vector<float> interp_pos((size_t)n_patches * H, 0.0f);
@@ -1111,9 +1285,12 @@ static bool encode_vision(ctx & c, const image_patches & patches,
                 float sx = ((float)col + 0.5f) * grid / wp - 0.5f;
                 sy = std::max(0.0f, std::min(sy, (float)(grid - 1)));
                 sx = std::max(0.0f, std::min(sx, (float)(grid - 1)));
-                int y0 = (int)sy; int y1 = std::min(y0 + 1, grid - 1);
-                int x0 = (int)sx; int x1 = std::min(x0 + 1, grid - 1);
-                float fy = sy - y0; float fx = sx - x0;
+                int y0 = (int)sy;
+                int y1 = std::min(y0 + 1, grid - 1);
+                int x0 = (int)sx;
+                int x1 = std::min(x0 + 1, grid - 1);
+                float fy = sy - y0;
+                float fx = sx - x0;
                 float w00 = (1 - fy) * (1 - fx);
                 float w01 = (1 - fy) * fx;
                 float w10 = fy * (1 - fx);
@@ -1129,8 +1306,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
                 }
             }
         }
-        ggml_backend_tensor_set(pos_tensor, interp_pos.data(), 0,
-                                interp_pos.size() * sizeof(float));
+        ggml_backend_tensor_set(pos_tensor, interp_pos.data(), 0, interp_pos.size() * sizeof(float));
     }
 
     // Compute
@@ -1147,8 +1323,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     // Debug: print first few values and norm for parity checking
     if (dbg()) {
         fprintf(stderr, "[lfm2_vl] vision output first 5 (patch 0): ");
-        for (int i = 0; i < std::min(5, H); i++)
-            fprintf(stderr, "%.6f ", vis_data[i]);  // vis_data[dim + patch*H]
+        for (int i = 0; i < std::min(5, H); i++) fprintf(stderr, "%.6f ", vis_data[i]); // vis_data[dim + patch*H]
         fprintf(stderr, "\n");
         double norm = 0;
         for (size_t i = 0; i < vis_data.size(); i++) norm += vis_data[i] * vis_data[i];
@@ -1167,13 +1342,13 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     // ── Projector: pixel_unshuffle → Linear → GELU → Linear ──
     auto t1 = steady_clock::now();
 
-    const int factor = (int)c.m.php.unshuffle_factor;  // 2
+    const int factor = (int)c.m.php.unshuffle_factor; // 2
     // Python output layout: [W//f, H//f] where W=h_patches, H=w_patches
-    const int w_out  = patches.h_patches / factor;   // W//f = 36/2 = 18
-    const int h_out  = patches.w_patches / factor;   // H//f = 28/2 = 14
+    const int w_out = patches.h_patches / factor; // W//f = 36/2 = 18
+    const int h_out = patches.w_patches / factor; // H//f = 28/2 = 14
     const int n_proj = w_out * h_out;
-    const int C_in   = H;                              // 1152
-    const int C_us   = C_in * factor * factor;         // 4608
+    const int C_in = H;                      // 1152
+    const int C_us = C_in * factor * factor; // 4608
 
     // pixel_unshuffle on CPU — matches HF Lfm2VlMultiModalProjector exactly.
     //
@@ -1191,19 +1366,23 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     //
     // The key: Python's W dim = h_patches, H dim = w_patches (it reshapes
     // the flat sequence as [h_patches, w_patches] but calls them W, H).
-    const int pW = patches.h_patches;  // 36 = h_patches (Python's W dim)
-    const int pH = patches.w_patches;  // 28 = w_patches (Python's H dim)
-    const int f = factor;              // 2
+    const int pW = patches.h_patches; // 36 = h_patches (Python's W dim)
+    const int pH = patches.w_patches; // 28 = w_patches (Python's H dim)
+    const int f = factor;             // 2
 
+    // Layout: ggml-native [C_us, n_proj], i.e. flat = token * C_us + channel.
+    // That is also Python's own layout for pixel_unshuffle's result
+    // ([B, W//f, H//f, C*f**2] — channels fastest), so it feeds ggml_mul_mat
+    // directly and a future reference dump of this stage compares element-wise.
     std::vector<float> us_data((size_t)C_us * n_proj, 0.0f);
     // Iterate over the output layout [W//f, H//f] = [w_out=18, h_out=14]
-    for (int ow = 0; ow < pW / f; ow++) {        // W//f = 18
-        for (int oh = 0; oh < pH / f; oh++) {     // H//f = 14
-            int out_idx = ow * (pH / f) + oh;     // row-major [W//f, H//f]
+    for (int ow = 0; ow < pW / f; ow++) {     // W//f = 18
+        for (int oh = 0; oh < pH / f; oh++) { // H//f = 14
+            int out_idx = ow * (pH / f) + oh; // row-major [W//f, H//f]
             for (int dw = 0; dw < f; dw++) {
                 for (int dh = 0; dh < f; dh++) {
-                    int src_w = ow * f + dw;  // index in W = h_patches
-                    int src_h = oh * f + dh;  // index in H = w_patches
+                    int src_w = ow * f + dw; // index in W = h_patches
+                    int src_h = oh * f + dh; // index in H = w_patches
                     int src_patch = src_w * patches.w_patches + src_h;
                     // Channel offset: dh comes from step1's C*f split,
                     // dw comes from step3's C*f*f split.
@@ -1211,8 +1390,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
                     for (int ch = 0; ch < C_in; ch++) {
                         // vis_data is ggml col-major [H, n_patches]:
                         // element (ch, patch) at flat offset patch * H + ch
-                        us_data[(size_t)(c_off + ch) * n_proj + out_idx] =
-                            vis_data[(size_t)src_patch * H + ch];
+                        us_data[(size_t)out_idx * C_us + (c_off + ch)] = vis_data[(size_t)src_patch * H + ch];
                     }
                 }
             }
@@ -1222,8 +1400,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     // Debug: pixel_unshuffle token 0 first 5 values
     if (dbg()) {
         fprintf(stderr, "[lfm2_vl] unshuffle token 0 first 5: ");
-        for (int i = 0; i < std::min(5, C_us); i++)
-            fprintf(stderr, "%.6f ", us_data[(size_t)i * n_proj + 0]);  // column 0
+        for (int i = 0; i < std::min(5, C_us); i++) fprintf(stderr, "%.6f ", us_data[(size_t)i]); // token 0
         fprintf(stderr, "\n");
     }
 
@@ -1232,65 +1409,106 @@ static bool encode_vision(ctx & c, const image_patches & patches,
 
     // Project through MLP: Linear(4608→2048) → GELU → Linear(2048→2048)
     const int mid_dim = (int)c.m.php.mid_dim;
-    const int out_d   = (int)c.m.php.out_dim;
+    const int out_d = (int)c.m.php.out_dim;
 
-    // fc1
-    auto fc1_w = to_f32(c.m.proj_fc1_w);
-    auto fc1_b = to_f32(c.m.proj_fc1_b);
-    auto fc2_w = to_f32(c.m.proj_fc2_w);
-    auto fc2_b = to_f32(c.m.proj_fc2_b);
+    // Which GELU. config.json says "projector_hidden_act": "gelu", and
+    // transformers' ACT2FN["gelu"] is GELUActivation -> torch.nn.functional.gelu
+    // with the DEFAULT approximate='none', i.e. the exact erf form. The vision
+    // tower is the other one ("hidden_act": "gelu_pytorch_tanh"), which is what
+    // made the tanh approximation look right here. LFM2_VL_PROJ_GELU_TANH=1
+    // restores the tanh form for A/B.
+    const bool gelu_tanh = core_env::on("LFM2_VL_PROJ_GELU_TANH");
 
-    out_embeds.resize((size_t)out_d * n_proj);
-    std::vector<float> mid_buf(mid_dim);
+    // Where the MLP runs. The scalar path below is O(n_proj * (C_us*mid +
+    // mid*out)) single-threaded floats plus a to_f32() of ~28 MB of F16
+    // weights on EVERY image; it measured 6.6 s of a 21.5 s pipeline on M1.
+    // The graph path is the same arithmetic on the sched backend.
+    // LFM2_VL_PROJ_GGML=0 restores the scalar path.
+    const bool proj_ggml = !core_env::explicitly_off("LFM2_VL_PROJ_GGML");
 
-    for (int p = 0; p < n_proj; p++) {
-        const float * in = us_data.data() + (size_t)p;  // column p
+    out_embeds.resize((size_t)n_proj * out_d);
 
-        // Gather column p from us_data [C_us, n_proj] layout
-        std::vector<float> col_in(C_us);
-        for (int i = 0; i < C_us; i++) col_in[i] = us_data[(size_t)i * n_proj + p];
+    if (proj_ggml) {
+        // us_data is already ggml-native [C_us, n_proj], and mul_mat's output
+        // [out_d, n_proj] is flat d + p*out_d — exactly the row-major
+        // [n_proj, out_d] layout the splice wants, so no transpose is needed.
+        const size_t bufsz = ggml_tensor_overhead() * 24 + ggml_graph_overhead();
+        ggml_init_params ip = { bufsz, nullptr, true };
+        ggml_context * pg = ggml_init(ip);
+        ggml_cgraph * pgf = ggml_new_graph(pg);
 
-        // fc1: [C_us → mid_dim]
-        for (int o = 0; o < mid_dim; o++) {
-            float s = fc1_b.empty() ? 0.0f : fc1_b[o];
-            for (int i = 0; i < C_us; i++) s += col_in[i] * fc1_w[(size_t)o * C_us + i];
-            mid_buf[o] = s;
+        ggml_tensor * pin = ggml_new_tensor_2d(pg, GGML_TYPE_F32, C_us, n_proj);
+        ggml_set_name(pin, "proj_in");
+        ggml_set_input(pin);
+
+        ggml_tensor * h = ggml_mul_mat(pg, c.m.proj_fc1_w, pin);
+        if (c.m.proj_fc1_b) h = ggml_add(pg, h, c.m.proj_fc1_b);
+        h = gelu_tanh ? ggml_gelu(pg, h) : ggml_gelu_erf(pg, h);
+        ggml_tensor * po = ggml_mul_mat(pg, c.m.proj_fc2_w, h);
+        if (c.m.proj_fc2_b) po = ggml_add(pg, po, c.m.proj_fc2_b);
+        ggml_set_name(po, "proj_out");
+        ggml_set_output(po);
+        ggml_build_forward_expand(pgf, po);
+
+        ggml_backend_sched_reset(c.sched);
+        if (!ggml_backend_sched_alloc_graph(c.sched, pgf)) {
+            fprintf(stderr, "[lfm2_vl] projector graph alloc failed\n");
+            ggml_free(pg);
+            return false;
         }
-        // GELU (tanh approximation)
-        for (int i = 0; i < mid_dim; i++) {
-            float x = mid_buf[i];
-            float t = std::tanh(0.7978845608f * (x + 0.044715f * x * x * x));
-            mid_buf[i] = 0.5f * x * (1.0f + t);
+        ggml_backend_tensor_set(pin, us_data.data(), 0, us_data.size() * sizeof(float));
+        if (ggml_backend_sched_graph_compute(c.sched, pgf) != GGML_STATUS_SUCCESS) {
+            fprintf(stderr, "[lfm2_vl] projector graph compute failed\n");
+            ggml_free(pg);
+            return false;
         }
-        // fc2: [mid_dim → out_d]
-        for (int o = 0; o < out_d; o++) {
-            float s = fc2_b.empty() ? 0.0f : fc2_b[o];
-            for (int i = 0; i < mid_dim; i++) s += mid_buf[i] * fc2_w[(size_t)o * mid_dim + i];
-            out_embeds[(size_t)o * n_proj + p] = s;
+        ggml_backend_tensor_get(po, out_embeds.data(), 0, out_embeds.size() * sizeof(float));
+        ggml_free(pg);
+    } else {
+        auto fc1_w = to_f32(c.m.proj_fc1_w);
+        auto fc1_b = to_f32(c.m.proj_fc1_b);
+        auto fc2_w = to_f32(c.m.proj_fc2_w);
+        auto fc2_b = to_f32(c.m.proj_fc2_b);
+
+        std::vector<float> mid_buf(mid_dim);
+        for (int p = 0; p < n_proj; p++) {
+            const float * col_in = us_data.data() + (size_t)p * C_us;
+
+            // fc1: [C_us → mid_dim]
+            for (int o = 0; o < mid_dim; o++) {
+                float s = fc1_b.empty() ? 0.0f : fc1_b[o];
+                for (int i = 0; i < C_us; i++) s += col_in[i] * fc1_w[(size_t)o * C_us + i];
+                mid_buf[o] = s;
+            }
+            for (int i = 0; i < mid_dim; i++) {
+                const float x = mid_buf[i];
+                if (gelu_tanh) {
+                    const float t = std::tanh(0.7978845608f * (x + 0.044715f * x * x * x));
+                    mid_buf[i] = 0.5f * x * (1.0f + t);
+                } else {
+                    mid_buf[i] = 0.5f * x * (1.0f + std::erf(x * 0.70710678118654752f));
+                }
+            }
+            // fc2: [mid_dim → out_d]
+            for (int o = 0; o < out_d; o++) {
+                float s = fc2_b.empty() ? 0.0f : fc2_b[o];
+                for (int i = 0; i < mid_dim; i++) s += mid_buf[i] * fc2_w[(size_t)o * mid_dim + i];
+                out_embeds[(size_t)p * out_d + o] = s;
+            }
         }
     }
 
-    // Transpose to [n_proj, out_d] row-major for splicing
-    std::vector<float> out_row((size_t)n_proj * out_d);
-    for (int p = 0; p < n_proj; p++) {
-        for (int d = 0; d < out_d; d++) {
-            out_row[(size_t)p * out_d + d] = out_embeds[(size_t)d * n_proj + p];
-        }
-    }
-    out_embeds = std::move(out_row);
     out_n_tokens = n_proj;
     out_dim = out_d;
 
     if (c.verbosity >= 1) {
-        fprintf(stderr, "  projector: %d tokens → %d dim, %lld ms\n",
-                n_proj, out_d, ms_since(t1));
+        fprintf(stderr, "  projector: %d tokens → %d dim, %lld ms\n", n_proj, out_d, ms_since(t1));
     }
 
     // Debug: first 5 values of projector output (token 0)
     if (dbg()) {
         fprintf(stderr, "[lfm2_vl] projector first token first 5: ");
-        for (int i = 0; i < std::min(5, out_d); i++)
-            fprintf(stderr, "%.6f ", out_embeds[i]);  // [p=0, d=0..4]
+        for (int i = 0; i < std::min(5, out_d); i++) fprintf(stderr, "%.6f ", out_embeds[i]); // [p=0, d=0..4]
         fprintf(stderr, "\n");
     }
 
@@ -1304,18 +1522,14 @@ static bool encode_vision(ctx & c, const image_patches & patches,
 // LLM graph helpers
 // ============================================================================
 
-static ggml_tensor * lfm2_rms_norm(ggml_context * g, ggml_tensor * x,
-                                    ggml_tensor * w, float eps) {
+static ggml_tensor * lfm2_rms_norm(ggml_context * g, ggml_tensor * x, ggml_tensor * w, float eps) {
     if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
     return ggml_mul(g, ggml_rms_norm(g, x, eps), w);
 }
 
-static ggml_tensor * lfm2_swiglu(ggml_context * g, ggml_tensor * x,
-                                  ggml_tensor * w1, ggml_tensor * w2,
-                                  ggml_tensor * w3) {
-    return ggml_mul_mat(g, w2,
-        ggml_mul(g, ggml_silu(g, ggml_mul_mat(g, w1, x)),
-                 ggml_mul_mat(g, w3, x)));
+static ggml_tensor * lfm2_swiglu(ggml_context * g, ggml_tensor * x, ggml_tensor * w1, ggml_tensor * w2,
+                                 ggml_tensor * w3) {
+    return ggml_mul_mat(g, w2, ggml_mul(g, ggml_silu(g, ggml_mul_mat(g, w1, x)), ggml_mul_mat(g, w3, x)));
 }
 
 // ============================================================================
@@ -1342,8 +1556,7 @@ static void declare_input(ctx & c, ggml_tensor * t, const char * name) {
 // full-recompute path declared a causal mask per attention layer and never set
 // it, so every token after the first attended through allocator leftovers and
 // the decode drifted into plausible-looking nonsense a few tokens in.
-static void audit_graph_inputs(const ctx & c, const std::vector<std::string> & written,
-                               const char * graph_name) {
+static void audit_graph_inputs(const ctx & c, const std::vector<std::string> & written, const char * graph_name) {
     for (const auto & d : c.declared_inputs) {
         if (std::find(written.begin(), written.end(), d) == written.end()) {
             fprintf(stderr,
@@ -1354,20 +1567,19 @@ static void audit_graph_inputs(const ctx & c, const std::vector<std::string> & w
     }
 }
 
-static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph * gf,
-                                          int n_tokens, int n_image_tokens,
-                                          bool populate_kvc) {
+static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph * gf, int n_tokens, int n_image_tokens,
+                                         bool populate_kvc) {
     const auto & lhp = c.m.lhp;
-    const int D          = (int)lhp.hidden_size;
-    const int n_heads    = (int)lhp.n_heads;
+    const int D = (int)lhp.hidden_size;
+    const int n_heads = (int)lhp.n_heads;
     const int n_kv_heads = (int)lhp.n_kv_heads;
-    const int head_dim   = (int)lhp.head_dim;
-    const int n_layers   = (int)lhp.n_layers;
-    const float eps      = lhp.norm_eps;
-    const float theta    = lhp.rope_theta;
-    const int kv_dim     = head_dim * n_kv_heads;
-    const int conv_k     = (int)lhp.conv_kernel;
-    const int pad        = conv_k - 1;  // 2
+    const int head_dim = (int)lhp.head_dim;
+    const int n_layers = (int)lhp.n_layers;
+    const float eps = lhp.norm_eps;
+    const float theta = lhp.rope_theta;
+    const int kv_dim = head_dim * n_kv_heads;
+    const int conv_k = (int)lhp.conv_kernel;
+    const int pad = conv_k - 1; // 2
 
     c.declared_inputs.clear();
 
@@ -1394,7 +1606,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
     declare_input(c, pos, "positions");
 
     // Embedding lookup
-    ggml_tensor * x = ggml_get_rows(g, c.m.embed_tokens_w, tok_ids);  // [D, n_tokens]
+    ggml_tensor * x = ggml_get_rows(g, c.m.embed_tokens_w, tok_ids); // [D, n_tokens]
 
     // Splice image embeddings at IMAGE token positions.
     // We do this by building a combined embedding on the CPU side (set after
@@ -1438,19 +1650,19 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             K = ggml_mul(g, ggml_rms_norm(g, K, 1e-5f), f32_cast(l.attn_k_ln_w));
 
             // RoPE (NEOX interleaved, n_dims=head_dim, theta=1e6)
-            Q = ggml_rope_ext(g, Q, pos, nullptr, head_dim, GGML_ROPE_TYPE_NEOX,
-                              0, theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-            K = ggml_rope_ext(g, K, pos, nullptr, head_dim, GGML_ROPE_TYPE_NEOX,
-                              0, theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            Q = ggml_rope_ext(g, Q, pos, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                              0.0f);
+            K = ggml_rope_ext(g, K, pos, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                              0.0f);
 
             // Write KV to cache
             if (populate_kvc && c.kvc.k && attn_idx < c.kvc.n_attn_layers) {
                 ggml_tensor * K_flat = ggml_cont(g, ggml_reshape_2d(g, K, kv_dim, n_tokens));
                 ggml_tensor * V_flat = ggml_cont(g, ggml_reshape_2d(g, V, kv_dim, n_tokens));
-                ggml_tensor * k_wr = ggml_view_2d(g, c.kvc.k, kv_dim, n_tokens,
-                    c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
-                ggml_tensor * v_wr = ggml_view_2d(g, c.kvc.v, kv_dim, n_tokens,
-                    c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
+                ggml_tensor * k_wr =
+                    ggml_view_2d(g, c.kvc.k, kv_dim, n_tokens, c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
+                ggml_tensor * v_wr =
+                    ggml_view_2d(g, c.kvc.v, kv_dim, n_tokens, c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
                 ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_wr));
                 ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_wr));
             }
@@ -1472,8 +1684,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
                 declare_input(c, mask, mname);
             }
 
-            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask,
-                                                         scale, 0.0f, 0.0f);
+            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
             ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
 
@@ -1484,11 +1695,10 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             // in_proj: (D, T) → (3D, T), splits B, C, x
             ggml_tensor * bcx = ggml_mul_mat(g, l.conv_in_proj_w, h);
 
-            ggml_tensor * B  = ggml_cont(g, ggml_view_2d(g, bcx, D, n_tokens, bcx->nb[1], 0));
-            ggml_tensor * C  = ggml_cont(g, ggml_view_2d(g, bcx, D, n_tokens, bcx->nb[1],
-                                                          (size_t)D * sizeof(float)));
-            ggml_tensor * xi = ggml_cont(g, ggml_view_2d(g, bcx, D, n_tokens, bcx->nb[1],
-                                                          (size_t)2 * D * sizeof(float)));
+            ggml_tensor * B = ggml_cont(g, ggml_view_2d(g, bcx, D, n_tokens, bcx->nb[1], 0));
+            ggml_tensor * C = ggml_cont(g, ggml_view_2d(g, bcx, D, n_tokens, bcx->nb[1], (size_t)D * sizeof(float)));
+            ggml_tensor * xi =
+                ggml_cont(g, ggml_view_2d(g, bcx, D, n_tokens, bcx->nb[1], (size_t)2 * D * sizeof(float)));
 
             // Bx = B * x
             ggml_tensor * Bx = ggml_mul(g, B, xi);
@@ -1506,7 +1716,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             ggml_tensor * pad_zeros = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, pad);
             declare_input(c, pad_zeros, ("conv_pad_" + std::to_string(il)).c_str());
 
-            ggml_tensor * Bx_padded = ggml_concat(g, pad_zeros, Bx, 1);  // [D, pad+T]
+            ggml_tensor * Bx_padded = ggml_concat(g, pad_zeros, Bx, 1); // [D, pad+T]
 
             // Transpose for conv1d: [pad+T, D]
             ggml_tensor * Bx_t = ggml_cont(g, ggml_transpose(g, Bx_padded));
@@ -1518,10 +1728,9 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 
             // conv_1d_dw output: [T_out, D] where T_out = (pad+T) - K + 1 = T
             int T_conv = (int)co->ne[0];
-            if (T_conv > n_tokens)
-                co = ggml_view_2d(g, co, n_tokens, D, co->nb[1], 0);
+            if (T_conv > n_tokens) co = ggml_view_2d(g, co, n_tokens, D, co->nb[1], 0);
 
-            co = ggml_cont(g, ggml_transpose(g, co));  // [D, T]
+            co = ggml_cont(g, ggml_transpose(g, co)); // [D, T]
 
             // y = C * conv_out
             ggml_tensor * y = ggml_mul(g, C, co);
@@ -1549,8 +1758,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
     x = lfm2_rms_norm(g, x, c.m.embedding_norm_w, eps);
 
     // lm_head: logits for last token only
-    ggml_tensor * last_tok = ggml_view_2d(g, x, D, 1, x->nb[1],
-                                          (size_t)(n_tokens - 1) * x->nb[1]);
+    ggml_tensor * last_tok = ggml_view_2d(g, x, D, 1, x->nb[1], (size_t)(n_tokens - 1) * x->nb[1]);
     last_tok = ggml_cont(g, last_tok);
 
     ggml_tensor * lm_w = c.m.lm_head_w;
@@ -1566,18 +1774,17 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 // LLM decode step (single token, KV cached attention + conv state)
 // ============================================================================
 
-static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
-                                              int n_kv, int pos, int max_seq) {
+static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g, int n_kv, int pos, int max_seq) {
     const auto & lhp = c.m.lhp;
-    const int D          = (int)lhp.hidden_size;
-    const int n_heads    = (int)lhp.n_heads;
+    const int D = (int)lhp.hidden_size;
+    const int n_heads = (int)lhp.n_heads;
     const int n_kv_heads = (int)lhp.n_kv_heads;
-    const int head_dim   = (int)lhp.head_dim;
-    const int n_layers   = (int)lhp.n_layers;
-    const float eps      = lhp.norm_eps;
-    const float theta    = lhp.rope_theta;
-    const int kv_dim     = head_dim * n_kv_heads;
-    const int conv_k     = (int)lhp.conv_kernel;
+    const int head_dim = (int)lhp.head_dim;
+    const int n_layers = (int)lhp.n_layers;
+    const float eps = lhp.norm_eps;
+    const float theta = lhp.rope_theta;
+    const int kv_dim = head_dim * n_kv_heads;
+    const int conv_k = (int)lhp.conv_kernel;
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, 16384, false);
 
@@ -1609,7 +1816,7 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             ggml_tensor * K_new = ggml_mul_mat(g, l.attn_k_proj_w, h);
             ggml_tensor * V_new = ggml_mul_mat(g, l.attn_v_proj_w, h);
 
-            Q     = ggml_reshape_3d(g, Q, head_dim, n_heads, 1);
+            Q = ggml_reshape_3d(g, Q, head_dim, n_heads, 1);
             K_new = ggml_reshape_3d(g, K_new, head_dim, n_kv_heads, 1);
             V_new = ggml_reshape_3d(g, V_new, head_dim, n_kv_heads, 1);
 
@@ -1617,14 +1824,14 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             auto f32_cast = [&](ggml_tensor * t) -> ggml_tensor * {
                 return t->type == GGML_TYPE_F32 ? t : ggml_cast(g, t, GGML_TYPE_F32);
             };
-            Q     = ggml_mul(g, ggml_rms_norm(g, Q, 1e-5f), f32_cast(l.attn_q_ln_w));
+            Q = ggml_mul(g, ggml_rms_norm(g, Q, 1e-5f), f32_cast(l.attn_q_ln_w));
             K_new = ggml_mul(g, ggml_rms_norm(g, K_new, 1e-5f), f32_cast(l.attn_k_ln_w));
 
             // RoPE
-            Q     = ggml_rope_ext(g, Q, pos_t, nullptr, head_dim, GGML_ROPE_TYPE_NEOX,
-                                  0, theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-            K_new = ggml_rope_ext(g, K_new, pos_t, nullptr, head_dim, GGML_ROPE_TYPE_NEOX,
-                                  0, theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            Q = ggml_rope_ext(g, Q, pos_t, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                              0.0f);
+            K_new = ggml_rope_ext(g, K_new, pos_t, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, theta, 1.0f, 0.0f, 1.0f,
+                                  0.0f, 0.0f);
 
             K_new = ggml_cont(g, K_new);
             V_new = ggml_cont(g, V_new);
@@ -1633,33 +1840,30 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             ggml_tensor * V_flat = ggml_reshape_2d(g, V_new, kv_dim, 1);
 
             // Write K/V to cache at position n_kv
-            ggml_tensor * k_write = ggml_view_2d(g, c.kvc.k, kv_dim, 1,
-                c.kvc.k->nb[1],
-                (size_t)attn_idx * c.kvc.k->nb[2] + (size_t)n_kv * c.kvc.k->nb[1]);
-            ggml_tensor * v_write = ggml_view_2d(g, c.kvc.v, kv_dim, 1,
-                c.kvc.v->nb[1],
-                (size_t)attn_idx * c.kvc.v->nb[2] + (size_t)n_kv * c.kvc.v->nb[1]);
+            ggml_tensor * k_write = ggml_view_2d(g, c.kvc.k, kv_dim, 1, c.kvc.k->nb[1],
+                                                 (size_t)attn_idx * c.kvc.k->nb[2] + (size_t)n_kv * c.kvc.k->nb[1]);
+            ggml_tensor * v_write = ggml_view_2d(g, c.kvc.v, kv_dim, 1, c.kvc.v->nb[1],
+                                                 (size_t)attn_idx * c.kvc.v->nb[2] + (size_t)n_kv * c.kvc.v->nb[1]);
             ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
             ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
 
             // Read full KV cache for this layer (n_kv+1 valid entries)
             int n_kv_total = n_kv + 1;
-            ggml_tensor * k_layer = ggml_view_2d(g, c.kvc.k, kv_dim, n_kv_total,
-                c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
-            ggml_tensor * v_layer = ggml_view_2d(g, c.kvc.v, kv_dim, n_kv_total,
-                c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
+            ggml_tensor * k_layer =
+                ggml_view_2d(g, c.kvc.k, kv_dim, n_kv_total, c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
+            ggml_tensor * v_layer =
+                ggml_view_2d(g, c.kvc.v, kv_dim, n_kv_total, c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
 
             ggml_tensor * K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, n_kv_total);
             ggml_tensor * V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, n_kv_total);
 
-            Q      = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+            Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
             K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3));
             V_full = ggml_cont(g, ggml_permute(g, V_full, 0, 2, 1, 3));
 
             // No mask needed: only n_kv+1 valid positions in the view
             const float scale = 1.0f / sqrtf((float)head_dim);
-            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full,
-                                                         nullptr, scale, 0.0f, 0.0f);
+            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full, nullptr, scale, 0.0f, 0.0f);
             ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
@@ -1674,8 +1878,8 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             // in_proj: [D, 1] → [3D, 1]
             ggml_tensor * bcx = ggml_mul_mat(g, l.conv_in_proj_w, h);
 
-            ggml_tensor * B  = ggml_cont(g, ggml_view_1d(g, bcx, D, 0));
-            ggml_tensor * C  = ggml_cont(g, ggml_view_1d(g, bcx, D, (size_t)D * sizeof(float)));
+            ggml_tensor * B = ggml_cont(g, ggml_view_1d(g, bcx, D, 0));
+            ggml_tensor * C = ggml_cont(g, ggml_view_1d(g, bcx, D, (size_t)D * sizeof(float)));
             ggml_tensor * xi = ggml_cont(g, ggml_view_1d(g, bcx, D, (size_t)2 * D * sizeof(float)));
 
             // Bx = B * x
@@ -1688,7 +1892,7 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
 
             // Build window: concat state [D,2] with Bx [D,1] → [D, 3]
             ggml_tensor * Bx_2d = ggml_reshape_2d(g, Bx, D, 1);
-            ggml_tensor * window = ggml_concat(g, state_in, Bx_2d, 1);  // [D, 3]
+            ggml_tensor * window = ggml_concat(g, state_in, Bx_2d, 1); // [D, 3]
 
             // Depthwise conv over the window: out[d] = sum_k window(d,k) * kern(k,d).
             // conv_conv_w is [conv_k, D] (or [conv_k, 1, D]). The reduction lives in
@@ -1697,7 +1901,7 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             // the two layouts have identical shapes, so nothing else catches a swap.
             ggml_tensor * kern = l.conv_conv_w;
             if (kern->type != GGML_TYPE_F32) kern = ggml_cast(g, kern, GGML_TYPE_F32);
-            kern = ggml_reshape_2d(g, kern, kern->ne[0], D);  // [conv_k, D]
+            kern = ggml_reshape_2d(g, kern, kern->ne[0], D); // [conv_k, D]
 
             ggml_tensor * conv_out = lfm2_shortconv::step(g, window, kern, D, conv_k);
 
@@ -1746,12 +1950,11 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
 // missing the masks entirely, so ggml_flash_attn_ext read allocator leftovers
 // and every token after the first was decoded under a bogus attention pattern.
 // Returns the names written, for audit_graph_inputs().
-static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf,
-                                                       int n_tokens) {
-    const auto & lhp     = c.m.lhp;
-    const int    D       = (int)lhp.hidden_size;
-    const int    pad     = (int)lhp.conv_kernel - 1;
-    const int    n_layers = (int)lhp.n_layers;
+static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf, int n_tokens) {
+    const auto & lhp = c.m.lhp;
+    const int D = (int)lhp.hidden_size;
+    const int pad = (int)lhp.conv_kernel - 1;
+    const int n_layers = (int)lhp.n_layers;
 
     std::vector<std::string> written;
 
@@ -1761,8 +1964,7 @@ static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf
     std::vector<uint16_t> mask_data((size_t)n_tokens * n_tokens, 0);
     const uint16_t f16_neg_inf = 0xFC00;
     for (int r = 0; r < n_tokens; r++) {
-        for (int col = r + 1; col < n_tokens; col++)
-            mask_data[(size_t)r * n_tokens + col] = f16_neg_inf;
+        for (int col = r + 1; col < n_tokens; col++) mask_data[(size_t)r * n_tokens + col] = f16_neg_inf;
     }
 
     char name[64];
@@ -1771,8 +1973,7 @@ static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf
             snprintf(name, sizeof(name), "causal_mask_%d", il);
             ggml_tensor * mt = ggml_graph_get_tensor(gf, name);
             if (mt) {
-                ggml_backend_tensor_set(mt, mask_data.data(), 0,
-                                        mask_data.size() * sizeof(uint16_t));
+                ggml_backend_tensor_set(mt, mask_data.data(), 0, mask_data.size() * sizeof(uint16_t));
                 written.push_back(name);
             }
         } else {
@@ -1793,12 +1994,11 @@ struct generate_result {
     std::vector<float> confidences;
 };
 
-static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
-                     int embed_dim, const int32_t * prompt_ids, int n_prompt_tokens,
-                     int max_new_tokens, generate_result & out) {
+static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, int embed_dim, const int32_t * prompt_ids,
+                     int n_prompt_tokens, int max_new_tokens, generate_result & out) {
     const auto & lhp = c.m.lhp;
-    const int D      = (int)lhp.hidden_size;
-    const int V      = (int)lhp.vocab_size;
+    const int D = (int)lhp.hidden_size;
+    const int V = (int)lhp.vocab_size;
     const int n_layers = (int)lhp.n_layers;
 
     auto t_gen = steady_clock::now();
@@ -1816,16 +2016,14 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
         if (tok == (int32_t)lhp.image_token_id && image_embeds && img_pos < n_image_tokens) {
             // Copy from image embeddings (row-major: [n_image_tokens, D])
             for (int d = 0; d < D; d++) {
-                spliced[(size_t)t * D + d] =
-                    image_embeds[(size_t)img_pos * embed_dim + d];
+                spliced[(size_t)t * D + d] = image_embeds[(size_t)img_pos * embed_dim + d];
             }
             img_pos++;
         } else {
             // Token embedding: ggml embed_tokens [D, V], element (d, tok) = data[tok * D + d]
             if (tok >= 0 && tok < (int32_t)lhp.vocab_size) {
                 for (int d = 0; d < D; d++) {
-                    spliced[(size_t)t * D + d] =
-                        embed_w[(size_t)tok * D + d];
+                    spliced[(size_t)t * D + d] = embed_w[(size_t)tok * D + d];
                 }
             }
         }
@@ -1851,15 +2049,13 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
 
     // ── Step 3: Prefill ──
     const int max_nodes = 16384;
-    size_t meta_size = ggml_tensor_overhead() * max_nodes +
-                       ggml_graph_overhead_custom(max_nodes, false);
+    size_t meta_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ggml_init_params ip{ meta_size, nullptr, true };
     ggml_context * g = ggml_init(ip);
     if (!g) return false;
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
-    ggml_tensor * logits_t = build_prefill_graph(c, g, gf, n_prompt_tokens,
-                                                  n_image_tokens, kv_ok);
+    ggml_tensor * logits_t = build_prefill_graph(c, g, gf, n_prompt_tokens, n_image_tokens, kv_ok);
 
     ggml_backend_sched_reset(c.sched);
     if (!ggml_backend_sched_alloc_graph(c.sched, gf)) {
@@ -1875,8 +2071,8 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     // Diff: spliced is now in ggml col-major layout [D, n_tokens] = flat[d + t*D]
     diff_stage(c, "llm_embed", spliced.data(), spliced.size());
     if (c.verbosity >= 1) {
-        fprintf(stderr, "[lfm2_vl] prompt: %d tokens (%d text + %d image), img_pos used=%d\n",
-                n_prompt_tokens, n_prompt_tokens - n_image_tokens, n_image_tokens, img_pos);
+        fprintf(stderr, "[lfm2_vl] prompt: %d tokens (%d text + %d image), img_pos used=%d\n", n_prompt_tokens,
+                n_prompt_tokens - n_image_tokens, n_image_tokens, img_pos);
     }
 
     // Position IDs
@@ -1884,8 +2080,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     {
         std::vector<int32_t> pos_data(n_prompt_tokens);
         for (int i = 0; i < n_prompt_tokens; i++) pos_data[i] = i;
-        ggml_backend_tensor_set(pos_in, pos_data.data(), 0,
-                                n_prompt_tokens * sizeof(int32_t));
+        ggml_backend_tensor_set(pos_in, pos_data.data(), 0, n_prompt_tokens * sizeof(int32_t));
     }
 
     // Conv left-pads + causal attention masks
@@ -1893,7 +2088,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
         std::vector<std::string> written = set_prefill_seq_inputs(c, gf, n_prompt_tokens);
         written.push_back("emb_input");
         written.push_back("positions");
-        written.push_back("tok_ids");  // unused by the graph body (emb_input supersedes it)
+        written.push_back("tok_ids"); // unused by the graph body (emb_input supersedes it)
         written.push_back("img_emb");
         written.push_back("img_mask");
         audit_graph_inputs(c, written, "prefill");
@@ -1938,14 +2133,13 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
         ggml_backend_tensor_get(c.kvc.k, kv_check.data(), 0, 5 * sizeof(float));
         float kv_sum = 0;
         for (int i = 0; i < 5; i++) kv_sum += std::abs(kv_check[i]);
-        fprintf(stderr, "  KV cache check: k[0..4] sum=%.4f %s\n",
-                kv_sum, kv_sum > 0.01f ? "(populated)" : "(EMPTY!)");
+        fprintf(stderr, "  KV cache check: k[0..4] sum=%.4f %s\n", kv_sum, kv_sum > 0.01f ? "(populated)" : "(EMPTY!)");
     }
 
     // Extract conv state from prefill: the last (kernel-1)=2 columns of Bx
     // at each conv layer are the conv state for decode.
     if (!skip_conv_state) {
-        const int pad = (int)lhp.conv_kernel - 1;  // 2
+        const int pad = (int)lhp.conv_kernel - 1; // 2
         int conv_idx = 0;
         for (int il = 0; il < n_layers; il++) {
             if (c.m.llm_layers[il].is_attention) continue;
@@ -1976,13 +2170,16 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     ggml_free(g);
 
     // Greedy argmax
-    int no_repeat_ngram = 5;  // default no-repeat n-gram
+    int no_repeat_ngram = 5; // default no-repeat n-gram
     if (const char * e = getenv("LFM2_VL_NO_REPEAT_NGRAM")) no_repeat_ngram = atoi(e);
 
     int best_id = 0;
     float best_score = -INFINITY;
     for (int v = 0; v < V; v++) {
-        if (logits_data[v] > best_score) { best_score = logits_data[v]; best_id = v; }
+        if (logits_data[v] > best_score) {
+            best_score = logits_data[v];
+            best_id = v;
+        }
     }
     // Confidence
     {
@@ -2007,8 +2204,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     std::vector<ggml_fp16_t> kv_mask_data;
     if (kv_ok) {
         kv_mask_data.resize((size_t)max_seq_kv, ggml_fp32_to_fp16(-INFINITY));
-        for (int i = 0; i < n_prompt_tokens; i++)
-            kv_mask_data[i] = ggml_fp32_to_fp16(0.0f);
+        for (int i = 0; i < n_prompt_tokens; i++) kv_mask_data[i] = ggml_fp32_to_fp16(0.0f);
     }
 
     for (int gen = 1; gen < max_new_tokens; gen++) {
@@ -2027,12 +2223,10 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             for (int t = 0; t < total; t++) {
                 int32_t tok = all_tokens[t];
                 if (tok == (int32_t)lhp.image_token_id && image_embeds && ip2 < n_image_tokens) {
-                    for (int d = 0; d < D; d++)
-                        full_emb[(size_t)t * D + d] = image_embeds[(size_t)ip2 * embed_dim + d];
+                    for (int d = 0; d < D; d++) full_emb[(size_t)t * D + d] = image_embeds[(size_t)ip2 * embed_dim + d];
                     ip2++;
                 } else if (tok >= 0 && tok < (int32_t)lhp.vocab_size) {
-                    for (int d = 0; d < D; d++)
-                        full_emb[(size_t)t * D + d] = embed_w[(size_t)tok * D + d];
+                    for (int d = 0; d < D; d++) full_emb[(size_t)t * D + d] = embed_w[(size_t)tok * D + d];
                 }
             }
 
@@ -2088,21 +2282,23 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
 
             // Set tok_emb: look up the token embedding for best_id
             if (gen == 1 && dbg()) {
-                fprintf(stderr, "[lfm2_vl] decode step 0: input token=%d, n_kv=%d, pos=%d\n",
-                        best_id, n_kv, n_kv);
+                fprintf(stderr, "[lfm2_vl] decode step 0: input token=%d, n_kv=%d, pos=%d\n", best_id, n_kv, n_kv);
                 // Print conv state diagnostics
                 if (!c.conv_state.empty() && c.conv_state[0].size() >= 5) {
                     fprintf(stderr, "[lfm2_vl] conv_state[0] first 5: ");
                     for (int i = 0; i < 5; i++) fprintf(stderr, "%.6f ", c.conv_state[0][i]);
                     // Also print norm and max
-                    double norm = 0; float mx = 0;
-                    for (float v : c.conv_state[0]) { norm += v*v; if (std::abs(v) > mx) mx = std::abs(v); }
+                    double norm = 0;
+                    float mx = 0;
+                    for (float v : c.conv_state[0]) {
+                        norm += v * v;
+                        if (std::abs(v) > mx) mx = std::abs(v);
+                    }
                     fprintf(stderr, " norm=%.4f max=%.6f\n", std::sqrt(norm), mx);
                 }
             }
             std::vector<float> tok_emb_data(D);
-            for (int d = 0; d < D; d++)
-                tok_emb_data[d] = embed_w[(size_t)best_id * D + d];
+            for (int d = 0; d < D; d++) tok_emb_data[d] = embed_w[(size_t)best_id * D + d];
             ggml_tensor * te = ggml_graph_get_tensor(gf3, "tok_emb");
             ggml_backend_tensor_set(te, tok_emb_data.data(), 0, D * sizeof(float));
 
@@ -2139,8 +2335,13 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             ggml_backend_tensor_get(lt3, logits_data.data(), 0, V * sizeof(float));
 
             if (gen == 1 && dbg()) {
-                int am = 0; float amv = -INFINITY;
-                for (int v = 0; v < V; v++) if (logits_data[v] > amv) { amv = logits_data[v]; am = v; }
+                int am = 0;
+                float amv = -INFINITY;
+                for (int v = 0; v < V; v++)
+                    if (logits_data[v] > amv) {
+                        amv = logits_data[v];
+                        am = v;
+                    }
                 fprintf(stderr, "[lfm2_vl] decode step 0 argmax: %d (logit %.2f)\n", am, amv);
             }
 
@@ -2159,13 +2360,12 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
                     // state is [D * pad] laid out as [D, pad] column-major
                     // Shift: copy second column to first
                     if (pad >= 2) {
-                        memcpy(c.conv_state[conv_layer].data(),
-                               c.conv_state[conv_layer].data() + D,
+                        memcpy(c.conv_state[conv_layer].data(), c.conv_state[conv_layer].data() + D,
                                (size_t)D * sizeof(float));
                     }
                     // Write new column
-                    memcpy(c.conv_state[conv_layer].data() + (size_t)(pad - 1) * D,
-                           new_bx.data(), (size_t)D * sizeof(float));
+                    memcpy(c.conv_state[conv_layer].data() + (size_t)(pad - 1) * D, new_bx.data(),
+                           (size_t)D * sizeof(float));
                 }
                 conv_layer++;
             }
@@ -2175,8 +2375,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
         }
 
         // Greedy argmax with no-repeat-ngram
-        best_id = core_decode::argmax_no_repeat_ngram(logits_data.data(), V,
-                                                       out.token_ids, no_repeat_ngram);
+        best_id = core_decode::argmax_no_repeat_ngram(logits_data.data(), V, out.token_ids, no_repeat_ngram);
         best_score = logits_data[best_id];
         {
             float max_l = best_score;
@@ -2187,16 +2386,14 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
         out.token_ids.push_back(best_id);
 
         if (c.verbosity >= 2) {
-            fprintf(stderr, "  gen[%d]: token=%d (%.2f), %lld ms\n",
-                    gen, best_id, best_score, ms_since(t_step));
+            fprintf(stderr, "  gen[%d]: token=%d (%.2f), %lld ms\n", gen, best_id, best_score, ms_since(t_step));
         }
 
         if (best_id == eos_id) break;
     }
 
     if (c.verbosity >= 1) {
-        fprintf(stderr, "  generate: %zu tokens, %lld ms total\n",
-                out.token_ids.size(), ms_since(t_gen));
+        fprintf(stderr, "  generate: %zu tokens, %lld ms total\n", out.token_ids.size(), ms_since(t_gen));
     }
 
     return true;
@@ -2206,17 +2403,15 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
 // Load + free
 // ============================================================================
 
-static bool load_model(ctx & c, const char * model_path, const char * mmproj_path,
-                       int n_threads) {
+static bool load_model(ctx & c, const char * model_path, const char * mmproj_path, int n_threads) {
     c.n_threads = n_threads;
 
     // License gate
     if (!core_env::on("CRISPEMBED_ACCEPT_LFM_LICENSE")) {
-        fprintf(stderr,
-                "[lfm2_vl] LFM2.5-VL is released under the LFM-1.0 license, which\n"
-                "  includes a revenue cap for commercial use. Set the environment\n"
-                "  variable CRISPEMBED_ACCEPT_LFM_LICENSE=1 to acknowledge this.\n"
-                "  See: https://huggingface.co/LiquidAI/LFM2.5-VL-3B\n");
+        fprintf(stderr, "[lfm2_vl] LFM2.5-VL is released under the LFM-1.0 license, which\n"
+                        "  includes a revenue cap for commercial use. Set the environment\n"
+                        "  variable CRISPEMBED_ACCEPT_LFM_LICENSE=1 to acknowledge this.\n"
+                        "  See: https://huggingface.co/LiquidAI/LFM2.5-VL-3B\n");
         return false;
     }
 
@@ -2236,10 +2431,10 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
     if (c.verbosity >= 1) {
         const auto & vhp = c.m.vhp;
         const auto & lhp = c.m.lhp;
-        fprintf(stderr, "[lfm2_vl] vision: %u layers, %ud, %u heads, patch=%u\n",
-                vhp.depth, vhp.hidden_size, vhp.num_heads, vhp.patch_size);
-        fprintf(stderr, "[lfm2_vl] llm: %u layers, %ud, %u/%u heads, ff=%u\n",
-                lhp.n_layers, lhp.hidden_size, lhp.n_heads, lhp.n_kv_heads, lhp.ff_size);
+        fprintf(stderr, "[lfm2_vl] vision: %u layers, %ud, %u heads, patch=%u\n", vhp.depth, vhp.hidden_size,
+                vhp.num_heads, vhp.patch_size);
+        fprintf(stderr, "[lfm2_vl] llm: %u layers, %ud, %u/%u heads, ff=%u\n", lhp.n_layers, lhp.hidden_size,
+                lhp.n_heads, lhp.n_kv_heads, lhp.ff_size);
         // NOT the layer types here — "lfm2.layer_types" is absent from the
         // official LiquidAI GGUF, so at this point the string is still the
         // empty kv_str default and load_llm_tensors has not yet rebuilt it from
@@ -2251,23 +2446,19 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
     bool force_cpu = core_env::on("LFM2_VL_FORCE_CPU");
     c.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!c.backend) c.backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(c.backend))
-        ggml_backend_cpu_set_n_threads(c.backend, n_threads);
+    if (ggml_backend_is_cpu(c.backend)) ggml_backend_cpu_set_n_threads(c.backend, n_threads);
     c.backend_cpu = ggml_backend_is_cpu(c.backend) ? nullptr : ggml_backend_cpu_init();
     if (c.backend_cpu) ggml_backend_cpu_set_n_threads(c.backend_cpu, n_threads);
 
     // Compute meta scratch
     constexpr int kGraphCapacity = 16384;
-    c.compute_meta.resize(ggml_tensor_overhead() * kGraphCapacity +
-                          ggml_graph_overhead_custom(kGraphCapacity, false));
+    c.compute_meta.resize(ggml_tensor_overhead() * kGraphCapacity + ggml_graph_overhead_custom(kGraphCapacity, false));
 
     // Scheduler
     std::vector<ggml_backend_t> backends;
     backends.push_back(c.backend);
-    if (c.backend_cpu && c.backend_cpu != c.backend)
-        backends.push_back(c.backend_cpu);
-    c.sched = ggml_backend_sched_new(backends.data(), nullptr,
-                                      (int)backends.size(), kGraphCapacity, false, false);
+    if (c.backend_cpu && c.backend_cpu != c.backend) backends.push_back(c.backend_cpu);
+    c.sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), kGraphCapacity, false, false);
 
     // Load LLM tensors
     if (!load_llm_tensors(c, model_path)) {
@@ -2293,8 +2484,7 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
     }
 
     if (c.verbosity >= 1) {
-        fprintf(stderr, "[lfm2_vl] loaded successfully, vocab=%u, tokenizer=%s\n",
-                c.m.lhp.vocab_size,
+        fprintf(stderr, "[lfm2_vl] loaded successfully, vocab=%u, tokenizer=%s\n", c.m.lhp.vocab_size,
                 c.id_to_piece.empty() ? "none" : "ok");
     }
 
@@ -2314,13 +2504,28 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
 
 static void free_model(ctx & c) {
     free_kv_cache(c);
-    if (c.sched) { ggml_backend_sched_free(c.sched); c.sched = nullptr; }
+    if (c.sched) {
+        ggml_backend_sched_free(c.sched);
+        c.sched = nullptr;
+    }
     core_gguf::release_weight_buffer(c.mmproj_buf);
-    if (c.mmproj_ctx) { ggml_free(c.mmproj_ctx); c.mmproj_ctx = nullptr; }
+    if (c.mmproj_ctx) {
+        ggml_free(c.mmproj_ctx);
+        c.mmproj_ctx = nullptr;
+    }
     core_gguf::release_weight_buffer(c.model_buf);
-    if (c.model_ctx) { ggml_free(c.model_ctx); c.model_ctx = nullptr; }
-    if (c.backend_cpu) { ggml_backend_free(c.backend_cpu); c.backend_cpu = nullptr; }
-    if (c.backend) { ggml_backend_free(c.backend); c.backend = nullptr; }
+    if (c.model_ctx) {
+        ggml_free(c.model_ctx);
+        c.model_ctx = nullptr;
+    }
+    if (c.backend_cpu) {
+        ggml_backend_free(c.backend_cpu);
+        c.backend_cpu = nullptr;
+    }
+    if (c.backend) {
+        ggml_backend_free(c.backend);
+        c.backend = nullptr;
+    }
 }
 
 } // anonymous namespace
@@ -2346,7 +2551,18 @@ static int32_t special_tok(const lfm2_vl::ctx & c, const std::string & s) {
     return it != c.token_to_id.end() ? it->second : -1;
 }
 
-static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_image_tokens) {
+// How the image tokens were produced, so the prompt can carry the per-tile
+// markup HF's Lfm2VlProcessor._build_image_tokens emits.
+struct image_token_layout {
+    int grid_rows = 1;
+    int grid_cols = 1;
+    bool has_thumbnail = false;
+    std::vector<int> tokens_per_image; // grid tiles row-major, thumbnail last
+};
+
+static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, const image_token_layout & layout) {
+    int n_image_tokens = 0;
+    for (int n : layout.tokens_per_image) n_image_tokens += n;
     // LFM2.5-VL chat template:
     // <|startoftext|><|im_start|>user\n<image>...<image>PROMPT<|im_end|>\n
     // <|im_start|>assistant\n
@@ -2357,15 +2573,15 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     auto & c = ctx->inner;
     const auto & lhp = c.m.lhp;
 
-    int32_t bos_id      = (int32_t)lhp.bos_id;       // <|startoftext|> = 124894
+    int32_t bos_id = (int32_t)lhp.bos_id; // <|startoftext|> = 124894
     int32_t im_start_id = special_tok(c, "<|im_start|>");
-    int32_t im_end_id   = special_tok(c, "<|im_end|>");
-    int32_t image_id    = (int32_t)lhp.image_token_id;  // 124907
-    int32_t nl_id       = special_tok(c, "\n");
+    int32_t im_end_id = special_tok(c, "<|im_end|>");
+    int32_t image_id = (int32_t)lhp.image_token_id; // 124907
+    int32_t nl_id = special_tok(c, "\n");
 
     // LFM2.5-VL known special token IDs (from tokenizer.json added_tokens)
     if (im_start_id < 0) im_start_id = 124899;
-    if (im_end_id < 0)   im_end_id   = 124900;
+    if (im_end_id < 0) im_end_id = 124900;
     if (nl_id < 0) {
         // newline might be a regular token
         auto nl_ids = lfm2_vl::tokenize(c, "\n");
@@ -2373,9 +2589,9 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     }
 
     // Tokenize just the plain text portions
-    auto user_ids    = lfm2_vl::tokenize(c, "user");
-    auto prompt_ids  = lfm2_vl::tokenize(c, ctx->prompt);
-    auto assist_ids  = lfm2_vl::tokenize(c, "assistant");
+    auto user_ids = lfm2_vl::tokenize(c, "user");
+    auto prompt_ids = lfm2_vl::tokenize(c, ctx->prompt);
+    auto assist_ids = lfm2_vl::tokenize(c, "assistant");
 
     std::vector<int32_t> ids;
     ids.reserve(n_image_tokens + 30);
@@ -2388,11 +2604,30 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     for (auto id : user_ids) ids.push_back(id);
     if (nl_id >= 0) ids.push_back(nl_id);
     // <|image_start|> <image>*N <|image_end|>  (use_image_special_tokens=true)
-    int32_t img_start_id = 125009;  // <|image_start|>
-    int32_t img_end_id   = 125010;  // <|image_end|>
+    int32_t img_start_id = 125009; // <|image_start|>
+    int32_t img_end_id = 125010;   // <|image_end|>
     ids.push_back(img_start_id);
-    for (int i = 0; i < n_image_tokens; i++)
-        ids.push_back(image_id);
+    const bool multi = layout.grid_rows > 1 || layout.grid_cols > 1;
+    if (multi) {
+        // <|img_row_R_col_C|> ids are contiguous at 124908 + (R-1)*10 + (C-1)
+        // and <|img_thumbnail|> at 125008 — verified against the shipped vocab
+        // (all 100 markers, 0 mismatches), so no converter work is involved.
+        size_t img = 0;
+        for (int r = 0; r < layout.grid_rows; r++) {
+            for (int cc = 0; cc < layout.grid_cols; cc++) {
+                ids.push_back(124908 + r * 10 + cc);
+                const int n = img < layout.tokens_per_image.size() ? layout.tokens_per_image[img] : 0;
+                for (int i = 0; i < n; i++) ids.push_back(image_id);
+                img++;
+            }
+        }
+        if (layout.has_thumbnail && img < layout.tokens_per_image.size()) {
+            ids.push_back(125008); // <|img_thumbnail|>
+            for (int i = 0; i < layout.tokens_per_image[img]; i++) ids.push_back(image_id);
+        }
+    } else {
+        for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_id);
+    }
     ids.push_back(img_end_id);
     // prompt_text
     for (auto id : prompt_ids) ids.push_back(id);
@@ -2405,14 +2640,13 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     if (nl_id >= 0) ids.push_back(nl_id);
 
     if (lfm2_vl::dbg()) {
-        fprintf(stderr, "[lfm2_vl] token_ids: %zu total (%d image + %zu text)\n",
-                ids.size(), n_image_tokens, ids.size() - n_image_tokens);
+        fprintf(stderr, "[lfm2_vl] token_ids: %zu total (%d image + %zu text)\n", ids.size(), n_image_tokens,
+                ids.size() - n_image_tokens);
         fprintf(stderr, "[lfm2_vl] first 10 ids: ");
-        for (int i = 0; i < std::min(10, (int)ids.size()); i++)
-            fprintf(stderr, "%d ", ids[i]);
+        for (int i = 0; i < std::min(10, (int)ids.size()); i++) fprintf(stderr, "%d ", ids[i]);
         fprintf(stderr, "...\n");
-        fprintf(stderr, "[lfm2_vl] user=%zu prompt=%zu assist=%zu nl=%d\n",
-                user_ids.size(), prompt_ids.size(), assist_ids.size(), nl_id);
+        fprintf(stderr, "[lfm2_vl] user=%zu prompt=%zu assist=%zu nl=%d\n", user_ids.size(), prompt_ids.size(),
+                assist_ids.size(), nl_id);
         fprintf(stderr, "[lfm2_vl] prompt ids: ");
         for (auto id : prompt_ids) fprintf(stderr, "%d ", id);
         fprintf(stderr, "\n");
@@ -2428,39 +2662,80 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
 
 // ── Pipeline: preprocess → vision → generate ──
 
-static const char * run_pipeline(lfm2_vl_ocr_context * ctx,
-                                 const uint8_t * rgb, int width, int height,
-                                 int channels, int * out_len) {
+static const char * run_pipeline(lfm2_vl_ocr_context * ctx, const uint8_t * rgb, int width, int height, int channels,
+                                 int * out_len) {
     auto & c = ctx->inner;
     auto t0 = lfm2_vl::steady_clock::now();
 
-    // 1. Preprocess image
-    lfm2_vl::image_patches patches;
-    if (!lfm2_vl::preprocess_image(rgb, height, width, channels, c.m.vhp, patches)) {
+    // 1. Preprocess image (single tile, or a NaFlex tile grid + thumbnail)
+    lfm2_vl::image_tiles tiles;
+    if (!lfm2_vl::preprocess_image_tiles(rgb, height, width, channels, c.m.vhp, tiles) || tiles.tiles.empty()) {
         return nullptr;
     }
     if (c.verbosity >= 1) {
-        fprintf(stderr, "[lfm2_vl] %dx%d → %dx%d patches, %lld ms preprocess\n",
-                width, height, patches.h_patches, patches.w_patches,
-                lfm2_vl::ms_since(t0));
+        fprintf(stderr,
+                "[lfm2_vl] %dx%d → %dx%d patches x %zu image(s) (grid %dx%d%s), "
+                "%lld ms preprocess\n",
+                width, height, tiles.tiles[0].h_patches, tiles.tiles[0].w_patches, tiles.tiles.size(), tiles.grid_cols,
+                tiles.grid_rows, tiles.has_thumbnail ? " + thumb" : "", lfm2_vl::ms_since(t0));
     }
 
-    // 2. Vision encoder + projector
+    // 2. Vision encoder + projector, once per tile; the embeddings concatenate
+    //    in the same order the placeholders are emitted below.
     std::vector<float> image_embeds;
     int n_image_tokens = 0, embed_dim = 0;
-    if (!lfm2_vl::encode_vision(c, patches, image_embeds, n_image_tokens, embed_dim)) {
-        fprintf(stderr, "[lfm2_vl] vision encoder failed\n");
-        return nullptr;
+    image_token_layout layout;
+    layout.grid_rows = tiles.grid_rows;
+    layout.grid_cols = tiles.grid_cols;
+    layout.has_thumbnail = tiles.has_thumbnail;
+    for (size_t i = 0; i < tiles.tiles.size(); i++) {
+        c.diff_img_index = tiles.tiles.size() > 1 ? (int)i : -1;
+        std::vector<float> emb;
+        int n_tok = 0, dim = 0;
+        if (!lfm2_vl::encode_vision(c, tiles.tiles[i], emb, n_tok, dim)) {
+            fprintf(stderr, "[lfm2_vl] vision encoder failed on image %zu\n", i);
+            return nullptr;
+        }
+        embed_dim = dim;
+        n_image_tokens += n_tok;
+        layout.tokens_per_image.push_back(n_tok);
+        image_embeds.insert(image_embeds.end(), emb.begin(), emb.end());
     }
+    c.diff_img_index = -1;
 
     // 3. Build token IDs
-    auto token_ids = build_token_ids(ctx, n_image_tokens);
+    auto token_ids = build_token_ids(ctx, layout);
+
+    // The multi-tile markup (<|img_row_R_col_C|>, <|img_thumbnail|>, per-tile
+    // placeholder counts) is invisible to every float diff — a wrong marker id
+    // or a wrong tile order still produces a well-shaped embedding sequence.
+    // The reference ships the golden id sequence, so compare it directly.
+    if (c.has_diff_ref && c.diff_ref.has("prompt_token_ids")) {
+        auto ref_ids = c.diff_ref.get_f32("prompt_token_ids");
+        size_t n_bad = 0, first_bad = 0;
+        const size_t n = ref_ids.second;
+        for (size_t i = 0; i < n && i < token_ids.size(); i++) {
+            if ((int32_t)ref_ids.first[i] != token_ids[i]) {
+                if (!n_bad) first_bad = i;
+                n_bad++;
+            }
+        }
+        if (n != token_ids.size() || n_bad) {
+            fprintf(stderr,
+                    "  DIFF %-25s FAIL: %zu ids vs ref %zu, %zu mismatches "
+                    "(first at %zu: mine %d, ref %d)\n",
+                    "prompt_token_ids", token_ids.size(), n, n_bad, first_bad,
+                    first_bad < token_ids.size() ? token_ids[first_bad] : -1,
+                    first_bad < n ? (int)ref_ids.first[first_bad] : -1);
+        } else {
+            fprintf(stderr, "  DIFF %-25s cos_min=1.000000 (%zu ids exact)  PASS\n", "prompt_token_ids", n);
+        }
+    }
 
     // 4. Generate
     lfm2_vl::generate_result gen;
-    if (!lfm2_vl::generate(c, image_embeds.data(), n_image_tokens, embed_dim,
-                            token_ids.data(), (int)token_ids.size(),
-                            ctx->max_tokens, gen)) {
+    if (!lfm2_vl::generate(c, image_embeds.data(), n_image_tokens, embed_dim, token_ids.data(), (int)token_ids.size(),
+                           ctx->max_tokens, gen)) {
         fprintf(stderr, "[lfm2_vl] generation failed\n");
         return nullptr;
     }
@@ -2472,9 +2747,7 @@ static const char * run_pipeline(lfm2_vl_ocr_context * ctx,
     decode_ids.reserve(gen.token_ids.size());
     int eos_id = (int)c.m.lhp.eos_id;
     for (int32_t id : gen.token_ids) {
-        if (id == eos_id || id == (int32_t)c.m.lhp.bos_id ||
-            id == (int32_t)c.m.lhp.pad_id)
-            continue;
+        if (id == eos_id || id == (int32_t)c.m.lhp.bos_id || id == (int32_t)c.m.lhp.pad_id) continue;
         decode_ids.push_back(id);
     }
 
@@ -2489,8 +2762,8 @@ static const char * run_pipeline(lfm2_vl_ocr_context * ctx,
     }
 
     if (c.verbosity >= 1) {
-        fprintf(stderr, "[lfm2_vl] total pipeline: %lld ms, output: %zu chars\n",
-                lfm2_vl::ms_since(t0), ctx->last_result.size());
+        fprintf(stderr, "[lfm2_vl] total pipeline: %lld ms, output: %zu chars\n", lfm2_vl::ms_since(t0),
+                ctx->last_result.size());
     }
 
     if (out_len) *out_len = (int)ctx->last_result.size();
@@ -2501,9 +2774,7 @@ static const char * run_pipeline(lfm2_vl_ocr_context * ctx,
 // C API functions
 // ============================================================================
 
-lfm2_vl_ocr_context * lfm2_vl_ocr_init_split(const char * model_path,
-                                               const char * mmproj_path,
-                                               int n_threads) {
+lfm2_vl_ocr_context * lfm2_vl_ocr_init_split(const char * model_path, const char * mmproj_path, int n_threads) {
     if (!model_path) return nullptr;
     auto * ctx = new lfm2_vl_ocr_context();
     if (!lfm2_vl::load_model(ctx->inner, model_path, mmproj_path, n_threads)) {
@@ -2546,7 +2817,11 @@ lfm2_vl_ocr_context * lfm2_vl_ocr_init(const char * model_path, int n_threads) {
         if (dot != std::string::npos) model_base = model_base.substr(0, dot);
         mmproj = dir + "mmproj-" + model_base + "-" + suffix + ".gguf";
         FILE * f = fopen(mmproj.c_str(), "rb");
-        if (f) { fclose(f); mmproj_path = mmproj.c_str(); break; }
+        if (f) {
+            fclose(f);
+            mmproj_path = mmproj.c_str();
+            break;
+        }
     }
     if (mmproj_path) {
         fprintf(stderr, "[lfm2_vl] auto-discovered mmproj: %s\n", mmproj_path);
@@ -2569,17 +2844,14 @@ void lfm2_vl_ocr_set_max_tokens(lfm2_vl_ocr_context * ctx, int max_tokens) {
     if (ctx && max_tokens > 0) ctx->max_tokens = max_tokens;
 }
 
-const char * lfm2_vl_ocr_recognize_raw(lfm2_vl_ocr_context * ctx,
-                                        const uint8_t * pixel_bytes,
-                                        int width, int height, int channels,
-                                        int * out_len) {
+const char * lfm2_vl_ocr_recognize_raw(lfm2_vl_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
+                                       int channels, int * out_len) {
     if (!ctx || !pixel_bytes || width <= 0 || height <= 0) return nullptr;
     return run_pipeline(ctx, pixel_bytes, width, height, channels, out_len);
 }
 
-const char * lfm2_vl_ocr_recognize(lfm2_vl_ocr_context * ctx,
-                                    const float * pixels,
-                                    int width, int height, int * out_len) {
+const char * lfm2_vl_ocr_recognize(lfm2_vl_ocr_context * ctx, const float * pixels, int width, int height,
+                                   int * out_len) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
     // Convert grayscale float [0,1] to uint8 RGB
@@ -2594,8 +2866,7 @@ const char * lfm2_vl_ocr_recognize(lfm2_vl_ocr_context * ctx,
     return run_pipeline(ctx, rgb.data(), width, height, 3, out_len);
 }
 
-const float * lfm2_vl_ocr_confidences(const lfm2_vl_ocr_context * ctx,
-                                       int * n_tokens) {
+const float * lfm2_vl_ocr_confidences(const lfm2_vl_ocr_context * ctx, int * n_tokens) {
     if (!ctx || ctx->char_confidences.empty()) {
         if (n_tokens) *n_tokens = 0;
         return nullptr;
