@@ -804,8 +804,12 @@ static PCSResult pcs_run(pcs_context & ctx, const std::vector<int> & token_ids) 
         // Two ints per token: thresholded boundary, then the hard argmax.
         dump("PCS_DUMP_SEG",
              [&](FILE * fp, int t) { fprintf(fp, "%d %d", result.sbd_preds[t] ? 1 : 0, seg_argmax[t] ? 1 : 0); });
-        // 16 bits per token, MSB-first by character position — the truecase head
-        // is per-CHARACTER within the token, not one flag per token.
+        // 16 bits per token, by character position — the truecase head is
+        // per-CHARACTER within the token, not one flag per token. ⚠ Only the
+        // first `len(piece)` bits are meaningful; the reconstruction reads bit
+        // c for character c and never looks further, so the tail is padding the
+        // model fills arbitrarily and a consumer MUST truncate before comparing.
+        // Comparing all 16 fails a correct artifact (see tests/pcs_parity.py).
         dump("PCS_DUMP_CAP", [&](FILE * fp, int t) {
             for (size_t c = 0; c < result.cap_preds[t].size(); c++) {
                 fputc(result.cap_preds[t][c] ? '1' : '0', fp);

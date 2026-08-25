@@ -61,7 +61,7 @@ plain q4_k, against this reference
   post preds  : 67/67
   pre         : 67/67
   seg         : 67/67
-  cap         : 66/67   token 37: ref=1111111111111000 ours=0000000000000000
+  cap         : 66/67   token 37 (`▁ok`): ref=111 ours=000
   decoded text: 5/6      I'm ok  vs  I'm OK
 ```
 
@@ -83,8 +83,17 @@ Two details the format does not make obvious:
   traced to its conditioning rather than blamed on the cap head.
 - **`PCS_DUMP_CAP` is per CHARACTER of the token, `▁` included.** `▁hello`
   reads `1100…`: bit 0 covers the `▁` (ignored downstream) and bit 1
-  capitalises the `h`. It is not one flag per token. Bits past the token's
-  length are don't-care and the model does set them.
+  capitalises the `h`. It is not one flag per token.
+- **Bits past the piece's character count are DON'T-CARE, and must not be
+  compared.** The head always emits 16; the reconstruction reads bit `c` only
+  for character `c`. Comparing all 16 made a *correct* artifact fail — the
+  registry's `q4_k-imatrix` differs from the f32 reference on bits 4..12 of
+  `▁ok` (3 characters) while producing byte-identical text. The harness
+  truncates to the piece length, after which imatrix matches and plain q4_k
+  still mismatches on bit 0, which is the real defect. A test that flags
+  don't-care values is not stricter, it is broken — and this one was, until it
+  was run against a known-good and a known-bad artifact instead of only a
+  passing one.
 
 The hooks live in all three copies of pcs.cpp (CrispEmbed's, and both of
 CrispASR's), verified by CrispASR's `test-copies-in-sync` and by running this
