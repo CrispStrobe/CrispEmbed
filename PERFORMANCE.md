@@ -46,18 +46,35 @@ of the **same graph** returns 0.9987, so the graph is right and q4_k is simply
 lossy on 24 layers — with every argmax still matching. Always run the f16/q8_0
 arm before attributing a quant dip to the port.
 
-### A bad artifact, and what it cost
-
-`punctuate-all-f16.gguf` (local, never distributed — no registry entry) ships no
-`tokenizer.ggml.scores`, so the runtime falls back to greedy longest-match on a
-**Unigram** vocab, where greedy is the wrong algorithm rather than an
-approximation: `fox` has no `▁fox` piece, so Viterbi gives `▁`+`fox` and greedy
-gives `▁fo`+`x`.
+### What the local `punctuate-all-f16.gguf` is (corrected)
 
 | | token ids | cos_min | max_abs | preds |
 |---|--:|--:|--:|--:|
-| as shipped locally | 5/6 | −0.284548 | 9.6347 | 65/67 |
-| re-converted | 6/6 | 0.999999 | 0.0062 | 67/67 |
+| local artifact | 5/6 | −0.284548 | 9.6347 | 65/67 |
+| re-converted from `kredor/punctuate-all` | 6/6 | 0.999999 | 0.0062 | 67/67 |
+
+An earlier version of this section blamed that entirely on the missing
+`tokenizer.ggml.scores`. That is one of **two** independent differences and not
+the dominant one. Established by comparing the two files tensor-by-tensor:
+
+1. **No `tokenizer.ggml.scores`** → greedy longest-match on a *Unigram* vocab,
+   where greedy is the wrong algorithm rather than an approximation: `fox` has
+   no `▁fox` piece, so Viterbi gives `▁`+`fox` and greedy gives `▁fo`+`x`.
+   Accounts for line 4 only (max_abs 1.08).
+2. **198/199 tensors are byte-identical to `kredor/punctuate-all`; the token
+   embedding differs on 9539 rows** — and there it holds *xlm-roberta-base's*
+   values where the source model holds **zeros**. kredor zeroes 9531 rows in
+   four contiguous ranges (4086–5449, 6816–9545, 10912–12276, 51895–55966),
+   which reads as pruning token ranges for languages it does not serve.
+   Accounts for lines 0 and 2 (max_abs 9.63 and 5.78), and the correlation is
+   exact: every line containing a token in those ranges diverges by ~6–10, every
+   line without one matches to f16 rounding (0.0035–0.0055).
+
+Which behaviour is preferable is open — a zero embedding is unlikely to be
+intended semantics, and base vectors may well serve those 9531 tokens better.
+But `transformers` loads the zeros, so that is the blueprint, and parity is
+measured against it. The missing scores are an unambiguous defect; the embedding
+difference is a *divergence*, not proof of damage.
 
 
 ## fireredpunc parity vs the Python blueprint, and rerank latency (2026-08-25)
