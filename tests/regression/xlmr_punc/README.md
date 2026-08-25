@@ -118,3 +118,41 @@ Having scores is necessary, not sufficient.
 
 Decoded-text case differences are expected: the blueprint works from lowercased
 token surface forms, the runtime re-emits the user's original words on purpose.
+
+## Can we have both? (fox AND "Hello world")
+
+Yes, mechanically — the two differences are independent, so an artifact can have
+the correct Unigram scores *and* the non-zero embeddings. CrispASR's
+`convert-fullstop-punc-to-gguf.py --restore-zeroed-embeddings-from xlm-roberta-base`
+builds exactly that, and it does deliver both behaviours:
+
+| artifact | `fox` tokenization | lines matching HF | `hello world` output |
+|---|---|--:|---|
+| shipped | `▁fo`+`x` ✗ | 0/7 | `Hello world.` |
+| kredor-faithful | `▁`+`fox` ✓ | 6/7 | `Hello. World.` |
+| **hybrid** | `▁`+`fox` ✓ | **6/7** | `Hello world.` |
+
+**But it is NOT demonstrably better, and the one quality measurement mildly
+favours the shipped file.** Scored against gold prose with
+`tools/eval_punct_gold.py` (the manual CC0 transcriptions — 689 words,
+102 marks):
+
+| artifact | P | R | F1 | per-word exact |
+|---|--:|--:|--:|--:|
+| shipped | 0.588 | 0.461 | **0.516** | 0.890 |
+| kredor-faithful | 0.516 | 0.324 | 0.398 | 0.871 |
+| hybrid | 0.507 | 0.373 | 0.429 | 0.877 |
+
+Two reasons not to read that as a verdict:
+
+1. **102 marks is far too small.** The F1 gaps are ~9 marks, roughly 1–2 standard
+   errors. It cannot separate these arms.
+2. **The gold is one author's typography.** Spot-checked: gold reads
+   `…in the café, and of having nothing to do: once or twice…`, and *every* arm
+   produces `…in the café and of having nothing to do. Once or twice…`. A period
+   where Carroll wrote a colon is a stylistic difference, not an error, and it
+   is most of why the absolute numbers sit near 0.5.
+
+So: the capability exists and is reproducible; the claim "best of both worlds"
+is unproven. Settling it needs a real punctuation-restoration benchmark with
+many thousands of marks, not six sentences and a page of Alice.
