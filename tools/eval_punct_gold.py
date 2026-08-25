@@ -20,7 +20,19 @@ of the model.
 change the words; if the counts differ the segment is dropped and reported,
 because a silent misalignment turns into a meaningless F1.
 
+Two metrics, because they fail differently:
+
+  EXACT-MARK F1     did the model emit the same mark the editor did? Harsh, and
+                    partly a style contest — a period where the author wrote a
+                    colon scores as both a miss and a false positive, though a
+                    reader would call it fine.
+  BOUNDARY F1       did the model end a sentence where the editor did (any of
+                    . ?)? Far less style-dependent: whether a sentence stops is
+                    much closer to determined than which mark stops it. When the
+                    two metrics disagree, believe this one.
+
     python tools/eval_punct_gold.py <build-dir> <model.gguf> [<model.gguf> ...]
+    python tools/eval_punct_gold.py --gold <gold.json> <build-dir> <model> ...
 """
 import json
 import os
@@ -73,39 +85,60 @@ def run_model(ab, gguf, lines):
     return [ln for ln in r.stdout.splitlines() if ln.strip()]
 
 
+def load_gold_json(path):
+    d = json.load(open(path, encoding="utf-8"))
+    return [(s.get("src", "?"), s["text"]) for s in d["sentences"]]
+
+
 def main():
-    if len(sys.argv) < 3:
+    argv = sys.argv[1:]
+    gold_json = None
+    if argv and argv[0] == "--gold":
+        gold_json, argv = argv[1], argv[2:]
+    if len(argv) < 2:
         print(__doc__)
         return 2
-    build_dir, models = sys.argv[1], sys.argv[2:]
+    build_dir, models = argv[0], argv[1:]
     ab = next((c for c in (os.path.join(build_dir, "punct-ab"),
                            os.path.join(build_dir, "bin", "punct-ab")) if os.path.exists(c)), None)
     if ab is None:
         print("SKIP: punct-ab not found", file=sys.stderr)
         return 0
 
-    gold = load_gold()
+    gold = load_gold_json(gold_json) if gold_json else load_gold()
     inputs, refs, names = [], [], []
     for name, text in gold:
         pairs = split_words(text)
-        if len(pairs) < 20:
-            continue
-        # Chunk to keep each line inside the model's window with room to spare.
-        for i in range(0, len(pairs), 120):
-            chunk = pairs[i:i + 120]
-            inputs.append(" ".join(w.lower() for w, _ in chunk))
-            refs.append(chunk)
-            names.append(f"{name}[{i}]")
+        if gold_json:
+            # One sentence per line. Each is already inside the window, and
+            # keeping them separate means a bad sentence cannot drag its
+            # neighbours' alignment down with it.
+            if len(pairs) < 4:
+                continue
+            inputs.append(" ".join(w.lower() for w, _ in pairs))
+            refs.append(pairs)
+            names.append(name)
+        else:
+            if len(pairs) < 20:
+                continue
+            for i in range(0, len(pairs), 120):
+                chunk = pairs[i:i + 120]
+                inputs.append(" ".join(w.lower() for w, _ in chunk))
+                refs.append(chunk)
+                names.append(f"{name}[{i}]")
     print(f"gold: {len(refs)} segments, {sum(len(c) for c in refs)} words "
           f"({sum(1 for c in refs for _, m in c if m)} marks)\n")
 
-    print(f"{'model':<34}{'P':>8}{'R':>8}{'F1':>8}{'exact':>8}   dropped")
+    print(f"{'model':<34}{'markP':>7}{'markR':>7}{'markF1':>8}"
+          f"{'bndP':>7}{'bndR':>7}{'bndF1':>8}{'exact':>8}  drop")
     for gguf in models:
         outs = run_model(ab, gguf, inputs)
         if outs is None or len(outs) != len(inputs):
             print(f"{os.path.basename(gguf):<34}  RUN FAILED / line-count mismatch")
             continue
         tp = fp = fn = exact = total = dropped = 0
+        btp = bfp = bfn = 0
+        END = ".?"
         for ref, out in zip(refs, outs):
             hyp = split_words(out)
             if len(hyp) != len(ref):
@@ -123,11 +156,26 @@ def main():
                     fn += 1
                 else:
                     exact += 1
-        p = tp / (tp + fp) if tp + fp else 0.0
-        r_ = tp / (tp + fn) if tp + fn else 0.0
-        f1 = 2 * p * r_ / (p + r_) if p + r_ else 0.0
+                # Boundary: any sentence-ending mark counts as the same event,
+                # so `.` vs `?` is not punished and `.` vs `,` still is.
+                gb, hb = gm in END and gm != "", hm in END and hm != ""
+                if gb and hb:
+                    btp += 1
+                elif hb:
+                    bfp += 1
+                elif gb:
+                    bfn += 1
+
+        def prf(t, f, n):
+            p_ = t / (t + f) if t + f else 0.0
+            r__ = t / (t + n) if t + n else 0.0
+            return p_, r__, (2 * p_ * r__ / (p_ + r__) if p_ + r__ else 0.0)
+
+        p, r_, f1 = prf(tp, fp, fn)
+        bp, br, bf1 = prf(btp, bfp, bfn)
         acc = exact / total if total else 0.0
-        print(f"{os.path.basename(gguf):<34}{p:>8.3f}{r_:>8.3f}{f1:>8.3f}{acc:>8.3f}   {dropped}")
+        print(f"{os.path.basename(gguf):<34}{p:>7.3f}{r_:>7.3f}{f1:>8.3f}"
+              f"{bp:>7.3f}{br:>7.3f}{bf1:>8.3f}{acc:>8.3f}  {dropped}")
     return 0
 
 

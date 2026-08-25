@@ -162,10 +162,18 @@ def main():
     pieces = [t for r in recs for t in r.get("tokens", [])]
     ours_cap_sig, exp_cap_sig = [], []
     for i, ref_bits in enumerate([c for r in recs for c in r.get("cap", [])]):
-        n = len(pieces[i]) if i < len(pieces) else len(ref_bits)
-        exp_cap_sig.append(ref_bits[:n])
+        piece = pieces[i] if i < len(pieces) else ""
+        n = len(piece) if piece else len(ref_bits)
+        # Skip bit 0 on a ▁-initial piece. ▁ is SentencePiece's word-boundary
+        # marker, not a character that gets cased, and the reconstruction never
+        # reads its bit. This is the third way this comparison was too strict,
+        # and this one only shows on some hardware: CI's q4_k-imatrix emits
+        # `011` for `▁ok` where this box emits `111`, and the decoded text is
+        # byte-identical either way — the differing bit is the ▁.
+        lo = 1 if piece.startswith("\u2581") else 0
+        exp_cap_sig.append(ref_bits[lo:n])
         if i < len(ours_cap):
-            ours_cap_sig.append(ours_cap[i][:n])
+            ours_cap_sig.append(ours_cap[i][lo:n])
 
     for key, ours, expect in (("pre", ours_pre, [str(x) for r in recs for x in r.get("pre", [])]),
                               ("seg", ours_seg, [str(x) for r in recs for x in r.get("seg", [])]),

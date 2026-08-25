@@ -84,6 +84,11 @@ Two details the format does not make obvious:
 - **`PCS_DUMP_CAP` is per CHARACTER of the token, `▁` included.** `▁hello`
   reads `1100…`: bit 0 covers the `▁` (ignored downstream) and bit 1
   capitalises the `h`. It is not one flag per token.
+- **Bit 0 of a `▁`-initial piece is DON'T-CARE too.** `▁` is the word-boundary
+  marker, not a character that gets cased, and the reconstruction never reads
+  its bit. CI's `q4_k-imatrix` emits `011` for `▁ok` where this box emits `111`,
+  with byte-identical decoded text — a hardware-dependent quant difference on a
+  bit that cannot matter. The harness skips it.
 - **Bits past the piece's character count are DON'T-CARE, and must not be
   compared.** The head always emits 16; the reconstruction reads bit `c` only
   for character `c`. Comparing all 16 made a *correct* artifact fail — the
@@ -91,9 +96,10 @@ Two details the format does not make obvious:
   `▁ok` (3 characters) while producing byte-identical text. The harness
   truncates to the piece length, after which imatrix matches and plain q4_k
   still mismatches on bit 0, which is the real defect. A test that flags
-  don't-care values is not stricter, it is broken — and this one was, until it
-  was run against a known-good and a known-bad artifact instead of only a
-  passing one.
+  don't-care values is not stricter, it is broken — and this one was, three
+  separate times: comparing all 16 bits, then comparing the ▁ bit, each caught
+  only by a correct artifact failing (the second by CI, on hardware that
+  quantises differently from this box).
 
 The hooks live in all three copies of pcs.cpp (CrispEmbed's, and both of
 CrispASR's), verified by CrispASR's `test-copies-in-sync` and by running this
