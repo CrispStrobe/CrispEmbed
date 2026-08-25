@@ -297,6 +297,7 @@ via `json_escape`. Also add the capability flag to `/health` and the startup lis
 |-------|------------------|-------|--------------------|
 | `POST /embed`, `/v1/embeddings`, `/api/embed` | (dense — always) | `crispembed_encode[_batch]` | `{"texts":[...]}` → embeddings |
 | `POST /rerank` | `is_reranker` | `crispembed_rerank_batch` | `{"query","documents","top_n"}` → `{"query","results":[{"index","score","document"}]}` |
+| `POST /v1/rerank` | `is_reranker` | `crispembed_rerank_batch` | Cohere/Jina shape (#51): `{"model","query","documents":[str]\|[{"text"}],"top_n","return_documents"}` → `{"id","model","object","results":[{"index","relevance_score","document":{"text"}}],"meta"}` |
 | `POST /sparse` | `has_sparse` | `crispembed_encode_sparse` | `{"texts":[...]}` → `{"results":[{"weights":{"<token_id>":w}}]}` (SPLADE/BGE-M3) |
 | `POST /colbert/score` | `has_colbert` | `crispembed_encode_multivec` | `{"query","documents"}` → per-doc MaxSim scores |
 
@@ -308,6 +309,18 @@ Follow that convention when adding a capability — the whole block is a chain o
 `if (cap) js << ", \"cap\": true"`. **Still unrouted (lower priority):** `crispembed_encode_audio`
 (omnimodal audio embed) and a bi-encoder variant of `/rerank` — add them the same way
 if a use case appears.
+
+`/rerank` and `/v1/rerank` share one `handle_rerank_request()` rather than two
+handlers, because the scoring path is identical and only the request/response
+spelling differs; a second copy is the drift defect `core_json` was created to
+undo. The two spelling differences on `/v1/rerank` are deliberate and gated:
+`relevance_score` is `sigmoid(logit)` so the 0..1 range Cohere/Jina clients
+threshold against holds (monotonic ⇒ same ranking; `CRISPEMBED_SERVER_RERANK_RAW_SCORES=1`
+emits the raw logit instead), and `document` is echoed only under
+`"return_documents": true`, matching Cohere's default. Request parsing goes
+through `core_json::json_extract_documents`, which accepts both the `[str]` and
+`[{"text":str}]` document forms — `json_extract_strings` flattens the object form
+into twice as many garbage documents, so do not reach for it there.
 
 ### Python Bindings (`python/crispembed/_binding.py`)
 Add a class following the `CrispVit` / `CrispMathOcr` pattern:

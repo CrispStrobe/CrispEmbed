@@ -32,6 +32,7 @@
 
 #include "crispembed.h"
 #include "core/json.h"
+#include "core/env_gate.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "core/image_out.h"
@@ -53,6 +54,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
@@ -148,6 +150,148 @@ static std::string extract_path_field(const std::string & body, const char * key
         return "";
     }
     return path;
+}
+
+// ---------------------------------------------------------------------------
+// Rerank (issue #37 native shape, issue #51 Cohere/Jina shape)
+//
+// Both routes run the SAME scoring path and differ only in how the request is
+// parsed and the response is spelled, so they share one implementation. The
+// alternative — a second copy of the handler — is the "two copies drift" defect
+// core_json itself exists to undo.
+//
+//   POST /rerank      native.  {"query","documents":[str],"top_n"}
+//                     -> {"query", "results":[{index, score, document}]}
+//                     `score` is the RAW classifier logit, unbounded.
+//
+//   POST /v1/rerank   the de-facto Cohere / Jina schema, so crispembed-server
+//                     drops into LiteLLM / LlamaIndex / LangChain / llama-swap
+//                     without an adapter.
+//                     {"model","query","documents":[str] | [{"text":str}],
+//                      "top_n","return_documents"}
+//                     -> {"id","model","object","results":[{index,
+//                         relevance_score, document?:{text}}],"meta"}
+//
+// Two deliberate differences on /v1/rerank:
+//
+// (a) `relevance_score` is sigmoid(logit), i.e. 0..1, because that is what the
+//     Cohere/Jina clients document and what their score thresholds assume. The
+//     sigmoid is strictly monotonic, so the RANKING — the thing a reranker is
+//     for — is identical to /rerank's; only the scale changes. Set
+//     CRISPEMBED_SERVER_RERANK_RAW_SCORES=1 to emit the raw logit there too
+//     (for a model whose head is already calibrated, or to compare the two
+//     routes number-for-number). Never removed: it is the A/B gate for this
+//     transform.
+//
+// (b) `document` is omitted unless "return_documents": true, matching Cohere's
+//     documented default. Clients that need the text either ask for it or index
+//     back into the array they sent.
+//
+// No `usage` / token counts are emitted: the pair-encoder path exposes no token
+// count, and inventing a plausible one would be worse than leaving the optional
+// field out.
+static void handle_rerank_request(const httplib::Request & req, httplib::Response & res, crispembed_context * ctx,
+                                  std::mutex & model_mutex, const std::string & model_name, bool cohere_shape) {
+    const char * route = cohere_shape ? "/v1/rerank" : "/rerank";
+    if (!ctx) {
+        res.status = 503;
+        res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
+        return;
+    }
+    if (!crispembed_is_reranker(ctx)) {
+        res.status = 400;
+        res.set_content("{\"error\": \"loaded model is not a cross-encoder reranker\"}", "application/json");
+        return;
+    }
+
+    std::string query_text;
+    {
+        std::vector<std::string> q;
+        if (json_extract_strings(req.body, "query", q) > 0) query_text = q.front();
+    }
+    if (query_text.empty()) {
+        res.status = 400;
+        res.set_content("{\"error\": \"missing query field\"}", "application/json");
+        return;
+    }
+
+    std::vector<std::string> doc_texts;
+    if (cohere_shape) {
+        // Accepts ["a","b"] and [{"text":"a"},{"text":"b"}] alike.
+        core_json::json_extract_documents(req.body, "documents", doc_texts);
+    } else {
+        json_extract_strings(req.body, "documents", doc_texts);
+    }
+    if (doc_texts.empty()) {
+        res.status = 400;
+        res.set_content("{\"error\": \"no documents provided\"}", "application/json");
+        return;
+    }
+    const int top_n = (int)json_extract_number(req.body, "top_n", 0);
+    // Cohere's default is false; the caller already holds the documents it sent.
+    const bool return_documents = cohere_shape && core_json::json_extract_bool(req.body, "return_documents", false);
+
+    std::lock_guard<std::mutex> lock(model_mutex);
+    auto t0 = std::chrono::steady_clock::now();
+
+    // Batch rerank (caches the classifier weights → avoids a per-document
+    // GPU→CPU transfer; see crispembed_rerank_batch).
+    std::vector<const char *> doc_ptrs;
+    doc_ptrs.reserve(doc_texts.size());
+    for (const auto & d : doc_texts) doc_ptrs.push_back(d.c_str());
+    std::vector<float> scores(doc_texts.size(), 0.0f);
+    const int n_scored =
+        crispembed_rerank_batch(ctx, query_text.c_str(), doc_ptrs.data(), (int)doc_ptrs.size(), scores.data());
+    if (n_scored != (int)doc_texts.size()) {
+        res.status = 500;
+        res.set_content("{\"error\": \"rerank failed\"}", "application/json");
+        return;
+    }
+
+    std::vector<std::pair<size_t, float>> ranked;
+    ranked.reserve(doc_texts.size());
+    for (size_t i = 0; i < doc_texts.size(); ++i) {
+        if (std::isfinite(scores[i])) ranked.emplace_back(i, scores[i]);
+    }
+    std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) { return a.second > b.second; });
+    if (top_n > 0 && (int)ranked.size() > top_n) ranked.resize(top_n);
+
+    double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+    std::ostringstream js;
+    if (cohere_shape) {
+        // Read once: a per-request getenv in a served path is pointless work.
+        static const bool raw_scores = core_env::on("CRISPEMBED_SERVER_RERANK_RAW_SCORES");
+        static std::atomic<uint64_t> rerank_seq{ 0 };
+        js << "{\"id\": \"rerank-" << rerank_seq.fetch_add(1) << "\", \"model\": \"" << json_escape(model_name)
+           << "\", \"object\": \"list\", \"results\": [";
+        for (size_t i = 0; i < ranked.size(); ++i) {
+            if (i > 0) js << ", ";
+            const float logit = ranked[i].second;
+            const double rel = raw_scores ? (double)logit : 1.0 / (1.0 + std::exp(-(double)logit));
+            // 9 dp, not the native route's 6: a confident cross-encoder logit
+            // of ~+15 saturates sigmoid past 0.9999995, so at 6 dp several top
+            // hits all print "1.000000" and a client that re-sorts by score
+            // loses the ordering this route just computed. 9 dp keeps them
+            // distinct over the logit range these heads actually produce.
+            js << "{\"index\": " << ranked[i].first << ", \"relevance_score\": " << std::fixed << std::setprecision(9)
+               << rel;
+            if (return_documents) {
+                js << ", \"document\": {\"text\": \"" << json_escape(doc_texts[ranked[i].first]) << "\"}";
+            }
+            js << "}";
+        }
+        js << "], \"meta\": {\"api_version\": {\"version\": \"2\"}, \"billed_units\": {\"search_units\": 1}}}";
+    } else {
+        js << "{\"query\": \"" << json_escape(query_text) << "\", \"results\": [";
+        for (size_t i = 0; i < ranked.size(); ++i) {
+            if (i > 0) js << ", ";
+            js << "{\"index\": " << ranked[i].first << ", \"score\": " << std::fixed << std::setprecision(6)
+               << ranked[i].second << ", \"document\": \"" << json_escape(doc_texts[ranked[i].first]) << "\"}";
+        }
+        js << "]}";
+    }
+    fprintf(stderr, "crispembed-server: %s %zu docs in %.1f ms\n", route, doc_texts.size(), ms);
+    res.set_content(js.str(), "application/json");
 }
 
 static std::string extract_image_path(const std::string & body) {
@@ -1540,79 +1684,15 @@ int main(int argc, char ** argv) {
         }
     });
 
-    // POST /rerank — cross-encoder rerank (issue #37). Mirrors the CLI `--rerank
-    // --json` shape so sidecar users get cross-encoder precision without FFI or a
-    // per-call CLI spawn. The loaded model must be a reranker (is_reranker == 1).
-    // Request:  {"query": "...", "documents": ["...", "..."], "top_n": 10}
-    // Response: {"query": "...", "results": [{"index": 0, "score": 0.103284, "document": "..."}]}
+    // POST /rerank      — native shape (issue #37).
+    // POST /v1/rerank   — Cohere / Jina compatible shape (issue #51).
+    // Both share handle_rerank_request(); see its comment for the two
+    // deliberate differences (sigmoid relevance_score, opt-in documents).
     svr.Post("/rerank", [&](const httplib::Request & req, httplib::Response & res) {
-        if (!ctx) {
-            res.status = 503;
-            res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
-            return;
-        }
-        if (!crispembed_is_reranker(ctx)) {
-            res.status = 400;
-            res.set_content("{\"error\": \"loaded model is not a cross-encoder reranker\"}", "application/json");
-            return;
-        }
-
-        std::string query_text;
-        {
-            std::vector<std::string> q;
-            if (json_extract_strings(req.body, "query", q) > 0) query_text = q.front();
-        }
-        if (query_text.empty()) {
-            res.status = 400;
-            res.set_content("{\"error\": \"missing query field\"}", "application/json");
-            return;
-        }
-
-        std::vector<std::string> doc_texts;
-        json_extract_strings(req.body, "documents", doc_texts);
-        if (doc_texts.empty()) {
-            res.status = 400;
-            res.set_content("{\"error\": \"no documents provided\"}", "application/json");
-            return;
-        }
-        const int top_n = (int)json_extract_number(req.body, "top_n", 0);
-
-        std::lock_guard<std::mutex> lock(model_mutex);
-        auto t0 = std::chrono::steady_clock::now();
-
-        // Batch rerank (caches the classifier weights → avoids a per-document
-        // GPU→CPU transfer; see crispembed_rerank_batch).
-        std::vector<const char *> doc_ptrs;
-        doc_ptrs.reserve(doc_texts.size());
-        for (const auto & d : doc_texts) doc_ptrs.push_back(d.c_str());
-        std::vector<float> scores(doc_texts.size(), 0.0f);
-        const int n_scored =
-            crispembed_rerank_batch(ctx, query_text.c_str(), doc_ptrs.data(), (int)doc_ptrs.size(), scores.data());
-        if (n_scored != (int)doc_texts.size()) {
-            res.status = 500;
-            res.set_content("{\"error\": \"rerank failed\"}", "application/json");
-            return;
-        }
-
-        std::vector<std::pair<size_t, float>> ranked;
-        ranked.reserve(doc_texts.size());
-        for (size_t i = 0; i < doc_texts.size(); ++i) {
-            if (std::isfinite(scores[i])) ranked.emplace_back(i, scores[i]);
-        }
-        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) { return a.second > b.second; });
-        if (top_n > 0 && (int)ranked.size() > top_n) ranked.resize(top_n);
-
-        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
-        std::ostringstream js;
-        js << "{\"query\": \"" << json_escape(query_text) << "\", \"results\": [";
-        for (size_t i = 0; i < ranked.size(); ++i) {
-            if (i > 0) js << ", ";
-            js << "{\"index\": " << ranked[i].first << ", \"score\": " << std::fixed << std::setprecision(6)
-               << ranked[i].second << ", \"document\": \"" << json_escape(doc_texts[ranked[i].first]) << "\"}";
-        }
-        js << "]}";
-        fprintf(stderr, "crispembed-server: /rerank %zu docs in %.1f ms\n", doc_texts.size(), ms);
-        res.set_content(js.str(), "application/json");
+        handle_rerank_request(req, res, ctx, model_mutex, model_name, /*cohere_shape=*/false);
+    });
+    svr.Post("/v1/rerank", [&](const httplib::Request & req, httplib::Response & res) {
+        handle_rerank_request(req, res, ctx, model_mutex, model_name, /*cohere_shape=*/true);
     });
 
     // POST /sparse — SPLADE / BGE-M3 sparse term-weight retrieval. The loaded model
@@ -3530,7 +3610,7 @@ int main(int argc, char ** argv) {
         if (ctx) {
             js << ", \"dim\": " << dim << ", \"layers\": " << hp->n_layer << ", \"vocab\": " << hp->n_vocab;
             // Retrieval capabilities of the loaded model → the matching POST routes.
-            if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank
+            if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank + /v1/rerank
             if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse
             if (crispembed_has_colbert(ctx)) js << ", \"colbert\": true";  // POST /colbert/score
         }
@@ -3672,8 +3752,11 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
     if (ctx && crispembed_has_colbert(ctx))
         fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
-    if (ctx && crispembed_is_reranker(ctx))
+    if (ctx && crispembed_is_reranker(ctx)) {
         fprintf(stderr, "  POST /rerank          — {\"query\": \"...\", \"documents\": [...], \"top_n\": 10}\n");
+        fprintf(stderr, "  POST /v1/rerank       — Cohere/Jina shape: sigmoid relevance_score, "
+                        "\"return_documents\": true to echo text\n");
+    }
     if (ctx && crispembed_has_sparse(ctx))
         fprintf(stderr, "  POST /sparse          — {\"texts\": [\"...\"]}  (SPLADE/BGE-M3 term weights)\n");
     fprintf(stderr, "  GET  /health\n\n");

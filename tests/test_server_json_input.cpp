@@ -11,6 +11,7 @@
 #include "core/json.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -18,6 +19,8 @@
 using core_json::json_decode_string;
 using core_json::json_escape_legacy;
 using core_json::json_escape_strict;
+using core_json::json_extract_bool;
+using core_json::json_extract_documents;
 using core_json::json_extract_number;
 using core_json::json_extract_number_legacy;
 using core_json::json_extract_number_structural;
@@ -25,6 +28,7 @@ using core_json::json_extract_strings;
 using core_json::json_extract_strings_escaped;
 using core_json::json_extract_strings_legacy;
 using core_json::json_find_key_value;
+using core_json::json_skip_value;
 
 static int g_failures = 0;
 
@@ -347,6 +351,123 @@ static int crispembed_test_main() {
         size_t n = json_extract_strings(body, "images", out);
         check("T8 images: exactly the two top-level paths", n == 2 && out[0] == "/srv/a.png" && out[1] == "/srv/b.png");
         check("T8 images: decoy path did not leak", std::find(out.begin(), out.end(), "/etc/DECOY") == out.end());
+    }
+
+    // -----------------------------------------------------------------------
+    // Issue #51 — the Cohere / Jina rerank request shape.
+    //
+    // The defect these guard is specific: json_extract_strings flattens every
+    // string inside the array, so the object form
+    //     "documents": [{"text":"a"},{"text":"b"}]
+    // parses as FOUR documents ["text","a","text","b"] — the wrong cardinality
+    // AND wrong content, which the server would then happily score and return
+    // with indices that mean nothing to the caller. Each check below is written
+    // so the pre-helper behaviour fails it.
+    // -----------------------------------------------------------------------
+    {
+        std::string body =
+            S("{\"model\":\"m\",\"query\":\"q\",\"documents\":[{\"text\":\"alpha\"},{\"text\":\"beta\"}]}");
+        std::vector<std::string> out;
+        size_t n = json_extract_documents(body, "documents", out);
+        check("R1 object documents: cardinality is 2, not 4",
+              n == 2 && out.size() == 2 && out[0] == "alpha" && out[1] == "beta");
+        // The bug this replaces, stated as a property rather than a value.
+        std::vector<std::string> flat;
+        json_extract_strings(body, "documents", flat);
+        check("R1 control: the flat parser really does mis-split this shape", flat.size() == 4);
+    }
+    {
+        // The plain-string form must be untouched — /rerank's existing contract.
+        std::string body = S("{\"query\":\"q\",\"documents\":[\"a\",\"b\",\"c\"]}");
+        std::vector<std::string> out;
+        check("R2 string documents still parse as 3",
+              json_extract_documents(body, "documents", out) == 3 && out[2] == "c");
+    }
+    {
+        // Mixed forms, and escaping inside an object element (']' and \" are the
+        // exact characters issue #34 mis-split).
+        std::string body = S("{\"documents\":[\"plain ] one\",{\"text\":\"obj \\\"two\\\"\"},\"three\"]}");
+        std::vector<std::string> out;
+        size_t n = json_extract_documents(body, "documents", out);
+        check("R3 mixed string/object elements with escapes",
+              n == 3 && out[0] == "plain ] one" && out[1] == "obj \"two\"" && out[2] == "three");
+    }
+    {
+        // An object element with no "text" keeps its SLOT. Dropping it would
+        // shift every later index, and `index` is the whole point of the
+        // response — the caller maps it back onto the array it sent.
+        std::string body = S("{\"documents\":[{\"text\":\"a\"},{\"id\":7},{\"text\":\"c\"}]}");
+        std::vector<std::string> out;
+        size_t n = json_extract_documents(body, "documents", out);
+        check("R4 text-less object holds its index slot", n == 3 && out[0] == "a" && out[1].empty() && out[2] == "c");
+    }
+    {
+        // Nested objects inside an element must not confuse the element walk.
+        std::string body =
+            S("{\"documents\":[{\"meta\":{\"text\":\"DECOY\"},\"text\":\"real\"},{\"text\":\"second\"}]}");
+        std::vector<std::string> out;
+        size_t n = json_extract_documents(body, "documents", out);
+        check("R5 nested decoy inside an element does not win", n == 2 && out[0] == "real" && out[1] == "second");
+    }
+    {
+        // Degenerate single-value forms.
+        std::vector<std::string> a, b;
+        check("R6 single string value",
+              json_extract_documents(S("{\"documents\":\"solo\"}"), "documents", a) == 1 && a[0] == "solo");
+        check("R6 single object value",
+              json_extract_documents(S("{\"documents\":{\"text\":\"solo\"}}"), "documents", b) == 1 && b[0] == "solo");
+        std::vector<std::string> c;
+        check("R6 missing key yields nothing", json_extract_documents(S("{\"query\":\"q\"}"), "documents", c) == 0);
+    }
+    {
+        // A '{' inside a STRING element must not be read as an object element.
+        std::string body = S("{\"documents\":[\"a { brace\",\"b\"]}");
+        std::vector<std::string> out;
+        size_t n = json_extract_documents(body, "documents", out);
+        check("R7 brace inside a string element", n == 2 && out[0] == "a { brace" && out[1] == "b");
+    }
+    {
+        // json_skip_value: each container must end at ITS OWN closer, and a
+        // ']' / '}' inside a string must not close anything.
+        std::string obj = S("{\"a\":[1,2],\"b\":\"] } \"}TAIL");
+        check("R8 skip_value: object ends before TAIL", json_skip_value(obj, 0) == obj.find("TAIL"));
+        std::string arr = S("[\"x\",{\"y\":[3]}]REST");
+        check("R8 skip_value: array ends before REST", json_skip_value(arr, 0) == arr.find("REST"));
+        std::string str = S("\"esc \\\" quote\", next");
+        check("R8 skip_value: string honours the escaped quote", json_skip_value(str, 0) == str.find(","));
+        check("R8 skip_value: number stops at the delimiter", json_skip_value(S("42,"), 0) == 2);
+    }
+    {
+        // return_documents — structural, so a nested decoy cannot flip it, and a
+        // string value equal to the key name cannot be mistaken for the key.
+        check("R9 bool true", json_extract_bool(S("{\"return_documents\":true}"), "return_documents", false));
+        check("R9 bool false", !json_extract_bool(S("{\"return_documents\":false}"), "return_documents", true));
+        check("R9 bool default when absent", json_extract_bool(S("{\"query\":\"q\"}"), "return_documents", true));
+        check("R9 bool numeric 1/0 accepted",
+              json_extract_bool(S("{\"return_documents\":1}"), "return_documents", false) &&
+                  !json_extract_bool(S("{\"return_documents\":0}"), "return_documents", true));
+        check("R9 bool nested decoy does not win",
+              !json_extract_bool(S("{\"opts\":{\"return_documents\":true},\"return_documents\":false}"),
+                                 "return_documents", true));
+        check("R9 bool ignores a quoted value",
+              json_extract_bool(S("{\"return_documents\":\"true\"}"), "return_documents", false) == false);
+    }
+    {
+        // The sigmoid the /v1/rerank response applies to the raw logit. It is
+        // only worth a test for the property the endpoint depends on: it is
+        // strictly monotonic, so it cannot reorder results, and it lands in
+        // (0,1) for the logit range a cross-encoder head actually produces.
+        auto sigmoid = [](double x) { return 1.0 / (1.0 + std::exp(-x)); };
+        const double logits[] = { -12.0, -3.5, -1.0, 0.0, 0.25, 2.0, 11.0 };
+        bool monotonic = true, in_range = true;
+        for (size_t i = 0; i < sizeof(logits) / sizeof(logits[0]); i++) {
+            const double v = sigmoid(logits[i]);
+            if (!(v > 0.0 && v < 1.0)) in_range = false;
+            if (i > 0 && !(v > sigmoid(logits[i - 1]))) monotonic = false;
+        }
+        check("R10 sigmoid is strictly monotonic (ranking preserved)", monotonic);
+        check("R10 sigmoid stays inside (0,1)", in_range);
+        check("R10 sigmoid(0) == 0.5", std::fabs(sigmoid(0.0) - 0.5) < 1e-12);
     }
 
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");

@@ -90,6 +90,27 @@ rather than reported as `false`, so test for the key's presence, not its value.
 Text recognition can be swapped independently for TrOCR, Tesseract-LSTM,
 PP-OCRv6, EasyOCR, PARSeq, or a VLM.
 
+With a cross-encoder loaded the server exposes reranking on two routes. `POST
+/rerank` is the native shape (raw classifier logits). `POST /v1/rerank` speaks
+the de-facto Cohere / Jina schema, so `crispembed-server` drops into LiteLLM,
+LlamaIndex, LangChain or llama-swap without an adapter:
+
+```bash
+crispembed-server -m bge-reranker-v2-m3-q4_k.gguf
+curl http://localhost:8080/v1/rerank -H 'Content-Type: application/json' -d '{
+  "model": "bge-reranker-v2-m3",
+  "query": "What is the capital of France?",
+  "documents": ["Paris is the capital of France.", "Berlin is in Germany."],
+  "top_n": 2, "return_documents": true }'
+```
+
+`documents` accepts both `["text", …]` and `[{"text": "…"}, …]`.
+`relevance_score` is `sigmoid(logit)`, i.e. the 0..1 range those clients
+threshold against — the transform is monotonic, so the ranking matches
+`/rerank`'s exactly; `CRISPEMBED_SERVER_RERANK_RAW_SCORES=1` emits the raw logit
+instead. `document` is echoed only when `"return_documents": true`, matching
+Cohere's default.
+
 ---
 
 ## Install & build
