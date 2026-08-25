@@ -33,12 +33,33 @@ correctness.
 | local `punctuate-all-f16.gguf` | 5/6 | **−0.284548** | 9.6347 | 65/67 | 5/6 |
 | re-converted from `kredor/punctuate-all` | **6/6** | **0.999999** | 0.0062 | **67/67** | **6/6** |
 
-**Scope, checked rather than assumed: the bad artifact is LOCAL-ONLY.**
-`punctuate-all` has no model-registry entry, so it was never distributed — it is
-a bench file on this box. The registry's `fullstop-punc-*` entries were
-downloaded and inspected separately: they DO carry `tokenizer.ggml.scores` and a
-correct `general.name`, so they do not have this defect. An earlier draft of
-this file said "shipped", which overstated the blast radius.
+**Scope — corrected twice, so here is the verified position.**
+
+This artifact **IS distributed**. `cstr/punctuate-all-GGUF` (87 downloads at time
+of writing) and CrispASR's `--punc-model punctuate-all` shortcut, which
+auto-downloads `punctuate-all-q4_k.gguf` from it
+(`src/crispasr_punc_model.h:48`). It is also in CrispASR's README model table
+and has a model card in `hf_readmes/punctuate-all-GGUF.md`.
+
+An earlier draft of this file said "local-only, never distributed". That was
+wrong and the mistake is worth naming: CrispEmbed's `model_mgr.cpp` has no
+punctuate-all entry, I checked only there, and concluded it was never shipped.
+The shortcut lives in the *other* repo. Checking one registry does not establish
+that something is undistributed.
+
+Everything measured here was **SHA256-verified against the published LFS
+hashes** — `punctuate-all-f16.gguf` is `be54280d…`, matching byte-for-byte, so
+none of this is a bad download. The same check passed for the fullstop-punc and
+pcs artifacts.
+
+**What users actually get** (`punctuate-all-q4_k.gguf`, the shortcut's default)
+against the kredor blueprint: **preds 64/67, decoded text 4/6**. It carries both
+differences below — no `tokenizer.ggml.scores`, and the base-XLM-R embedding
+rows inherited from the f16 it was quantised from.
+
+The `fullstop-punc-*` entries were downloaded and checked separately: they DO
+carry scores and a correct `general.name`, and measure clean (q8_0 cos_min
+0.998680). They do not have this defect.
 
 ### What `punctuate-all-f16.gguf` actually is
 
