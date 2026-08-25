@@ -159,11 +159,35 @@ log(f"sibling libraries picked up: {picked}")
 # evaporate while still going green, so fail loudly instead.
 assert len(picked) == 4, f"expected 4 sibling libs, cmake reported {picked}"
 
-with kh.build_heartbeat("cmake.build"):
-    kh.sh_with_progress(
-        f"stdbuf -oL -eL cmake --build {BUILD} "
-        f"--target crispembed crispembed-server firered-punct-ab "
-        f"-j{kh.safe_build_jobs(gpu=True)}")
+build_ok = True
+try:
+    with kh.build_heartbeat("cmake.build"):
+        kh.sh_with_progress(
+            f"stdbuf -oL -eL cmake --build {BUILD} "
+            f"--target crispembed crispembed-server firered-punct-ab "
+            f"-j{kh.safe_build_jobs(gpu=True)}")
+except Exception as e:
+    build_ok = False
+    results["build_error"] = f"{type(e).__name__}: {e}"
+    log(f"BUILD FAILED: {results['build_error']}")
+
+# Export the ccache BEFORE anything can abort, and regardless of whether the
+# build succeeded. Gotcha #17: the dataset must be refreshed from a real Kaggle
+# build or the next run gets a 100% miss. A build that failed at the LAST link
+# step still compiled ~280 objects, and this run cost 19 minutes precisely
+# because the previous cache was stale — throwing that away on the way out is
+# how the next iteration costs 19 minutes too.
+try:
+    kh.export_ccache_tar()
+    log("ccache.tar exported (build_ok=%s)" % build_ok)
+except Exception as e:
+    log(f"ccache export skipped: {type(e).__name__}")
+save()
+if not build_ok:
+    results["status"] = "FAIL"
+    results["failures"] = ["build"]
+    save()
+    raise SystemExit("build failed — see build_error in results")
 
 
 def find_bin(name):
@@ -365,12 +389,3 @@ results["status"] = "OK" if not fails else "FAIL"
 results["failures"] = fails
 save()
 log(f"=== {results['status']} === failures={fails}")
-
-# Refresh the ccache dataset payload (gotcha #17: MUST come from a real Kaggle
-# build, and MUST be refreshed after every successful one or the next run gets a
-# 100% miss and a ~25 min build).
-try:
-    kh.export_ccache_tar()
-    log("ccache.tar exported for the dataset refresh")
-except Exception as e:
-    log(f"ccache export skipped: {type(e).__name__}")
