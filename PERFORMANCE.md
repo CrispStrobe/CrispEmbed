@@ -1,5 +1,66 @@
 # CrispEmbed Performance
 
+## fireredpunc parity vs the Python blueprint, and rerank latency (2026-08-25)
+
+Kaggle P100, idle box, kernel `chr1s4/crispembed-punc-rerank-cuda` v2. All of it
+against the blueprint reference checked in at `tests/regression/fireredpunc/`
+(dumped from the official Apache-2.0 checkpoint in f32 torch).
+
+### fireredpunc: the [SEP] fix holds on CUDA, and imatrix beats plain q4_k
+
+| GGUF | arm | cos_min | max_abs | preds | token ids |
+|---|---|--:|--:|--:|--:|
+| f16 | CPU | 1.000000 | 0.0021 | 119/119 | 10/10 |
+| f16 | **CUDA** | **1.000000** | 0.0026 | **119/119** | 10/10 |
+| q8_0 | CPU | 0.999234 | 0.2147 | 119/119 | 10/10 |
+| q8_0 | CUDA | 0.999845 | 0.1628 | 118/119 | 10/10 |
+| q4_k | CPU | 0.957795 | 1.2649 | 118/119 | 10/10 |
+| q4_k | CUDA | 0.937162 | 1.1278 | 118/119 | 10/10 |
+| **q4_k-imatrix** | CPU | **0.986058** | 0.7935 | 117/119 | 10/10 |
+| **q4_k-imatrix** | **CUDA** | **0.996146** | 0.8288 | **119/119** | 10/10 |
+| iq4_xs | CPU | 0.963074 | 0.9366 | 117/119 | 10/10 |
+| iq4_xs | CUDA | 0.965709 | 0.7759 | 117/119 | 10/10 |
+
+**f16 is exact on CUDA**, which is what the `[SEP]` removal needed before it
+could be trusted there — the dev guide is explicit that "correct on CPU and
+Metal" is not sufficient. The CUDA arm is provably CUDA: the backend probe
+recorded `ggml_cuda_init: found 1 CUDA devices … Tesla P100` on the GPU arm and
+nothing on the CPU arm, so a silent fallback (which would have produced
+identical numbers and read as success) is excluded.
+
+**`q4_k-imatrix` is the better artifact and it is already the registry default**
+— 0.996146 vs plain q4_k's 0.937162 on CUDA, and the only quant that keeps
+119/119 argmax agreement. This is the first time either was measured against
+ground truth rather than against each other. `iq4_xs` sits between them, so the
+registry's ordering is right.
+
+⚠ **q4_k's cos_min is hardware-dependent: 0.957795 here, 0.935078 on the VPS,
+same file byte-for-byte.** Different CPU quant kernels (the VPS builds
+`-march=native` on AVX-512) round differently on an aggressive quant. Do not
+quote a single q4_k number as if it were a property of the artifact; f16 is the
+stable one, and it is exact.
+
+### rerank: `/v1/rerank` costs nothing over `/rerank`
+
+`ettin-reranker-150m-v1-q8_0`, 3 documents, 9 interleaved rounds after a
+discarded warm-up.
+
+| route | median | min | max | spread | stdev |
+|---|--:|--:|--:|--:|--:|
+| `POST /rerank` | 27.1 ms | 26.7 | 27.4 | 1.028x | 0.91% |
+| `POST /v1/rerank` | 27.0 ms | 26.6 | 27.7 | 1.042x | 1.08% |
+
+Ratio 0.9982 — **inside the ~1% run-to-run noise, i.e. no measurable
+difference**. Ranking identical (`[1, 2, 0]` both routes), and
+`|sigmoid(logit) − relevance_score| ≤ 3e-9`.
+
+⚠ **The VPS could not produce this.** The same A/B there gave 8–19 s per call
+with a 2.4x within-arm spread — larger than any between-arm difference — because
+the box runs several agents at load 13–25. That is a ~700x inflation from
+contention alone. It could rule out a large regression and nothing else; the
+numbers above are the ones to quote.
+
+
 ## LFM2.5-VL multi-tile NaFlex + projector placement (2026-08-24)
 
 Kaggle P100, `commons_test_ocr_document.jpg` (1920x2485 → a 2x3 tile grid plus a

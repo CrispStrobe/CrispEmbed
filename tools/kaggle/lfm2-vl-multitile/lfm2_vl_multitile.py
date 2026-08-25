@@ -42,14 +42,19 @@ EMBED_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 EMBED_BRANCH = "feat/lfm2vl-multitile"
 EMBED = SCRATCH / "CrispEmbed"
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
-# ⚠ NOT a sibling of CrispEmbed. CrispEmbed's CMakeLists probes
+# Kept out of the sibling position — but the reason has changed, so do not
+# copy the old rationale forward. CrispEmbed's CMakeLists probes
 # `${CMAKE_CURRENT_SOURCE_DIR}/../CrispASR/{crisp_audio,crisp_punc,crisp_lid,
-# crisp_truecase}` and builds them when present — the dev-machine layout. On a
-# kernel that clones both repos side by side that fires by accident, and
-# CrispASR's crisp_punc then compiles against CrispEmbed's src/core and dies on
-# a missing `core/ggml_cpu_backend.h`. Cost one run (kernel v1) to learn. We
-# only want the harness from CrispASR, so keep it out of the probe's reach --
-# and pin the four dirs explicitly below so the layout cannot matter either way.
+# crisp_truecase}` and builds them when present, which is the dev-machine
+# layout. That used to DIE on a missing `core/ggml_cpu_backend.h` (cost this
+# kernel one run at v1) — that was CrispEmbed issue #50 and it is fixed. The
+# sibling layout now builds, CUDA included, verified on a P100 in
+# chr1s4/crispembed-punc-rerank-cuda.
+#
+# This kernel still keeps CrispASR out of the probe's reach and pins the four
+# dirs below, because none of audio / punctuation / LID / truecasing is on the
+# LFM2-VL OCR path: it is four libraries of build time for nothing, not a
+# workaround for a breakage.
 CRISPASR = Path("/tmp/lfm2vl_harness") / "CrispASR"
 BUILD = EMBED / "build"
 
@@ -143,6 +148,8 @@ results["cuda_arch"] = arch
 # "not found" fallback, and none of punctuation / LID / truecasing is on the
 # LFM2-VL OCR path, so this costs nothing and removes a whole class of
 # layout-dependent build failures.
+# Not a workaround any more — see the clone comment above. Pinning these to a
+# path that cannot exist skips four libraries this kernel does not use.
 NO_SIBLING = "/nonexistent/crispasr"
 flags = kh.cuda_build_flags(arch) + kh.cache_and_link_flags() + [
     f"-DCRISP_AUDIO_DIR={NO_SIBLING}/crisp_audio",

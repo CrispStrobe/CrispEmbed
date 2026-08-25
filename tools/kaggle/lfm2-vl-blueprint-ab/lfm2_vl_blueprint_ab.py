@@ -39,8 +39,12 @@ EMBED_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 EMBED_BRANCH = "feat/lfm2vl-multitile"
 EMBED = SCRATCH / "CrispEmbed"
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
-# NOT a sibling of CrispEmbed: its CMakeLists probes ../CrispASR/crisp_* and
-# builds them, which fails against CrispEmbed's src/core. Cost a run once.
+# Kept out of the sibling position, but no longer because it BREAKS: that was
+# CrispEmbed issue #50 and it is fixed (the four shared libraries now compile
+# against CrispEmbed's src/core, verified on a P100 in
+# chr1s4/crispembed-punc-rerank-cuda, CUDA included). This kernel does not use
+# audio / punc / lid / truecase, so staying out of the sibling layout just
+# avoids building four libraries it has no use for.
 CRISPASR = Path("/tmp/lfm2vl_bp_harness") / "CrispASR"
 BUILD = EMBED / "build"
 
@@ -141,6 +145,8 @@ log(f"CrispEmbed @ {results['commit']}")
 # ── Build ────────────────────────────────────────────────────────────────
 kh.install_build_toolchain()
 arch = kh.detect_cuda_arch()
+# Not a workaround any more — see the clone comment above. Pinning these to a
+# path that cannot exist skips four libraries this kernel does not use.
 NO_SIBLING = "/nonexistent/crispasr"
 flags = kh.cuda_build_flags(arch) + kh.cache_and_link_flags() + [
     f"-DCRISP_AUDIO_DIR={NO_SIBLING}/crisp_audio",
