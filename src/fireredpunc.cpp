@@ -570,8 +570,17 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
     // restored as "Hello world, this is a test." against the reference's
     // "Hello world! This is a test."
     //
+    // ⚠ SCOPED TO THE BERT PATH ONLY. This file also serves an XLM-RoBERTa
+    // variant (`fireredpunc.tokenizer_type == "sentencepiece"`, e.g. the
+    // fullstop-punc / punctuate-all models, 250002 vocab, 6 labels), and there
+    // the trailing `</s>` is CORRECT — RoBERTa token classification is trained
+    // with `<s> … </s>`. The blueprint above is FireRedPunc's, and says nothing
+    // about that model, so its shape is left exactly as shipped. Flipping it
+    // too would be changing a default on no evidence.
+    //
     // CRISPEMBED_FIREREDPUNC_SEP=1 restores the old shape for bisection.
-    static const bool append_sep = core_env::on("CRISPEMBED_FIREREDPUNC_SEP");
+    static const bool force_sep = core_env::on("CRISPEMBED_FIREREDPUNC_SEP");
+    const bool append_sep = force_sep || ctx.tokenizer.is_sentencepiece;
     const int seq_len = N + (append_sep ? 2 : 1);
 
     // ggml context for compute graph
