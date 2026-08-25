@@ -488,6 +488,10 @@ add_executable(test-server-json-input tests/test_server_json_input.cpp)
 target_include_directories(test-server-json-input PRIVATE ${CMAKE_SOURCE_DIR}/examples/server
                                                           ${CMAKE_SOURCE_DIR}/src)
 
+# Host-only: the "never stack punctuation on punctuation" predicate (#300).
+add_executable(test-punct-marks tests/test_punct_marks.cpp)
+target_include_directories(test-punct-marks PRIVATE src)
+
 # Host-only unit test for arch-driven GGUF hparam key resolution (issue #33 / A2).
 add_executable(test-hparam-keys tests/test_hparam_keys.cpp)
 target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)

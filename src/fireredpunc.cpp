@@ -11,6 +11,7 @@
 
 #include "core/bert_norm.h"
 #include "core/bert_pretok.h"
+#include "core/punct_marks.h"
 #include "core/gguf_loader.h"
 #include "imatrix.h"
 
@@ -212,29 +213,29 @@ struct WordPieceTokenizer {
     // ASCII English agreed: 2/7 fixtures exact.
     //
     // The HF-correct stack (core/bert_norm.h + core/bert_pretok.h, measured
-    // HF-exact for the embedders) is wired up behind
-    // CRISPEMBED_FIREREDPUNC_HF_TOK — but it is **OFF BY DEFAULT**, because
-    // turning it on makes the DECODED OUTPUT WORSE:
+    // HF-exact for the embedders) runs by DEFAULT, behind
+    // CRISPEMBED_FIREREDPUNC_HF_TOK=0 as the opt-out. Token ids went 2/9 -> 9/9
+    // exact vs HF's BertTokenizer on the same vocab.
+    //
+    // ⚠ This block used to say the gate was OFF by default because the HF arm
+    // made the decoded output WORSE:
     //
     //   in:   café Müller ist hier und arbeitet gut
     //   off:  Café Müller ist hier und arbeitet gut.     <- correct
     //   on:   Café Müller ist hier und arbeitet. Gut     <- period misplaced
-    //   in:   他说“这个项目”需要更多时间
-    //   off:  他说“这个项目”需要更多时间。                 <- correct
-    //   on:   他说“这个项目”需要更多时间                   <- final 。 lost
     //
-    // The reason is NOT this function. `fireredpunc_process` re-derives the
-    // subtoken COUNT per word further down ("Must match the tokenizer's
-    // splitting exactly") to map per-token label predictions back onto words.
-    // That is a SECOND copy of the WordPiece loop with its own word list, so
-    // changing the splitting here alone desynchronises the alignment and the
-    // labels land on the wrong positions.
+    // That was true, and it was NOT this function: `fireredpunc_process` used
+    // to re-derive the subtoken COUNT per word ("Must match the tokenizer's
+    // splitting exactly") in a SECOND copy of the WordPiece loop with its own
+    // word list, so changing the splitting here alone desynchronised the
+    // alignment and the labels landed on the wrong positions.
     //
-    // Fixing this properly means unifying the two loops so the alignment path
-    // consumes the same words, and validating the result against the FireRedPunc
-    // reference — which this repo does not yet have set up. Until then the
-    // measured-better tokenizer stays opt-in and the shipped default is
-    // bit-identical to what it always was. See PLAN.md.
+    // That unification HAS since been done — the counts now come from the
+    // tokenizer itself (`out_word_ntok`), the second loop is gone, and the
+    // default was flipped ON. The comment simply never got updated, so for a
+    // while the file documented the opposite of what it did. If you are here
+    // because the two disagree again, the CODE is the answer: read the
+    // `explicitly_off` call below, not this paragraph.
     std::vector<int> tokenize(const std::string & text) const { return tokenize_ex(text, nullptr); }
 
     // `out_tokens`, when non-null, receives the token SURFACE FORMS aligned
@@ -863,7 +864,9 @@ char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
                 result += ' ';
             }
             result += words_orig[w];
-            if (pred > 0 && pred < (int)ctx->labels.size()) result += ctx->labels[pred];
+            if (pred > 0 && pred < (int)ctx->labels.size() && !core_punct::ends_in_mark(result)) {
+                result += ctx->labels[pred];
+            }
             prev_pred = pred;
         }
         // punc.py: txt.replace("  ", " ")
@@ -956,7 +959,7 @@ char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
 
             if (pred_idx < (int)all_preds.size()) {
                 int pred = all_preds[pred_idx];
-                if (pred > 0 && pred < (int)ctx->labels.size()) {
+                if (pred > 0 && pred < (int)ctx->labels.size() && !core_punct::ends_in_mark(result)) {
                     result += ctx->labels[pred];
                 }
             }
