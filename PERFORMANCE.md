@@ -1,5 +1,65 @@
 # CrispEmbed Performance
 
+## Punctuation engines vs their blueprints (2026-08-25)
+
+Three engines, three references, all checked in under `tests/regression/` at
+~8 KB each so the comparison runs with no torch and no checkpoint. Run nightly
+by the `punct-parity` job.
+
+### fireredpunc (BERT) — the [SEP] fix, CPU and CUDA
+
+| GGUF | arm | cos_min | max_abs | preds |
+|---|---|--:|--:|--:|
+| f16 | CPU | 1.000000 | 0.0021 | 119/119 |
+| f16 | CUDA (P100) | 1.000000 | 0.0026 | 119/119 |
+| f16, `CRISPEMBED_FIREREDPUNC_SEP=1` (old shape) | CPU | 0.931090 | 1.8431 | 118/119 |
+| q8_0 | CPU | 0.999234 | 0.2147 | 119/119 |
+| q4_k | CPU | 0.957795 | 1.2649 | 118/119 |
+| q4_k-imatrix | CUDA | 0.996146 | 0.8288 | 119/119 |
+
+⚠ q4_k's cos_min is **hardware-dependent** — 0.957795 on Kaggle, 0.935078 on the
+VPS, byte-identical file, different CPU quant kernels. Quote f16; it is exact.
+
+### PCS — all four heads, and where quantisation actually costs
+
+| artifact | post | pre | seg | cap | decoded |
+|---|--:|--:|--:|--:|--:|
+| base | 67/67 | 67/67 | 67/67 | 67/67 | 6/6 exact |
+| q8_0 (registry) | 67/67 | — | — | — | 6/6 exact |
+| **q4_k-imatrix (registry default)** | 67/67 | 67/67 | 67/67 | **67/67** | **6/6 exact** |
+| q4_k, no imatrix | 67/67 | 67/67 | 67/67 | **66/67** | 5/6 |
+
+The single q4_k failure is token 37 (`▁ok`), cap bits `ref=111 ours=000`. Every
+punctuation decision survives q4_k; **the entire cost falls on the truecase
+head**, and imatrix recovers it. That is the first decoded-output evidence for
+the registry's imatrix default — previously a KL number only.
+
+### fullstop-punc (XLM-R large) — how to read a scary cosine
+
+| artifact | cos_min | max_abs | preds |
+|---|--:|--:|--:|
+| q8_0 | 0.998680 | 0.4013 | 67/67 |
+| q4_k | 0.922908 | 5.0325 | 67/67 |
+
+q4_k's 0.923 looks like a bug in isolation. It is not: the higher-precision arm
+of the **same graph** returns 0.9987, so the graph is right and q4_k is simply
+lossy on 24 layers — with every argmax still matching. Always run the f16/q8_0
+arm before attributing a quant dip to the port.
+
+### A bad artifact, and what it cost
+
+`punctuate-all-f16.gguf` (local, never distributed — no registry entry) ships no
+`tokenizer.ggml.scores`, so the runtime falls back to greedy longest-match on a
+**Unigram** vocab, where greedy is the wrong algorithm rather than an
+approximation: `fox` has no `▁fox` piece, so Viterbi gives `▁`+`fox` and greedy
+gives `▁fo`+`x`.
+
+| | token ids | cos_min | max_abs | preds |
+|---|--:|--:|--:|--:|
+| as shipped locally | 5/6 | −0.284548 | 9.6347 | 65/67 |
+| re-converted | 6/6 | 0.999999 | 0.0062 | 67/67 |
+
+
 ## fireredpunc parity vs the Python blueprint, and rerank latency (2026-08-25)
 
 Kaggle P100, idle box, kernel `chr1s4/crispembed-punc-rerank-cuda` v2. All of it
