@@ -36,6 +36,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <map>
 #include <string>
 #include <vector>
@@ -763,6 +764,53 @@ static PCSResult pcs_run(pcs_context & ctx, const std::vector<int> & token_ids) 
                 result.cap_preds[t][c] = logit > 0;
             }
         }
+    }
+
+    // Diff harness for the three heads PCS_DUMP_LOGITS does not reach.
+    //
+    // That hook covers post-punc only, so the pre / sentence-boundary / truecase
+    // heads could previously be checked ONLY through their effect on the
+    // restored string. That is a real gap and it showed: plain q4_k gets all 67
+    // post-punc decisions right on the reference corpus and still turns
+    // "I'm OK" into "I'm ok" — a truecase-head regression that surfaced as a text
+    // diff, with nothing to say which head produced it.
+    //
+    // Written here, after every head has finished, so the four dumps are aligned
+    // by construction rather than by three call sites agreeing about ordering.
+    // Append mode matches PCS_DUMP_LOGITS — a consumer must delete the file
+    // first, or a stale run silently shifts every comparison.
+    //
+    // ⚠ The seg head yields TWO different quantities and both are dumped,
+    // because a bug in either produces wrong text and they disagree by design:
+    //   seg  = softmax(logits)[boundary] > 0.05, the ONNX `seg_preds` output —
+    //          a low tuned threshold, NOT argmax
+    //   arg  = the hard argmax, which is what conditions the truecase head
+    // Dumping only one of them would make a mismatch in the other invisible.
+    {
+        auto dump = [&](const char * env, const std::function<void(FILE *, int)> & row) {
+            const char * path = std::getenv(env);
+            if (!path) return;
+            FILE * fp = fopen(path, "a");
+            if (!fp) return;
+            for (int t = 0; t < N; t++) {
+                row(fp, t);
+                fputc('\n', fp);
+            }
+            fclose(fp);
+        };
+        // One int per token: the pre-punc argmax (0 = <NULL>, 1 = the inverted
+        // Spanish opener).
+        dump("PCS_DUMP_PRE", [&](FILE * fp, int t) { fprintf(fp, "%d", result.pre_preds[t]); });
+        // Two ints per token: thresholded boundary, then the hard argmax.
+        dump("PCS_DUMP_SEG",
+             [&](FILE * fp, int t) { fprintf(fp, "%d %d", result.sbd_preds[t] ? 1 : 0, seg_argmax[t] ? 1 : 0); });
+        // 16 bits per token, MSB-first by character position — the truecase head
+        // is per-CHARACTER within the token, not one flag per token.
+        dump("PCS_DUMP_CAP", [&](FILE * fp, int t) {
+            for (size_t c = 0; c < result.cap_preds[t].size(); c++) {
+                fputc(result.cap_preds[t][c] ? '1' : '0', fp);
+            }
+        });
     }
 
     ggml_free(ctx0);
