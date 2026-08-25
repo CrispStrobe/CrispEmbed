@@ -81,8 +81,15 @@ def main():
         return 2
     build_dir, gguf, ref_path = sys.argv[1], sys.argv[2], sys.argv[3]
     min_cos = float(sys.argv[4]) if len(sys.argv) > 4 else 0.99
-    ab = os.path.join(build_dir, "firered-punct-ab")
-    for p in (ab, gguf, ref_path):
+    # cmake puts executables in <build> on this tree and <build>/bin on some
+    # generators/CI configs; check both rather than silently SKIPping.
+    ab = next((c for c in (os.path.join(build_dir, "firered-punct-ab"),
+                           os.path.join(build_dir, "bin", "firered-punct-ab"))
+               if os.path.exists(c)), None)
+    if ab is None:
+        print(f"SKIP: firered-punct-ab not found under {build_dir}", file=sys.stderr)
+        return 0
+    for p in (gguf, ref_path):
         if not os.path.exists(p):
             print(f"SKIP: missing {p}", file=sys.stderr)
             return 0
