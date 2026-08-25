@@ -850,7 +850,21 @@ char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
     // This is what removes the "must match the tokenizer's splitting exactly"
     // second WordPiece loop below: there is nothing to re-derive, because the
     // predictions already line up with the tokens the model was fed.
-    if (hf_tok) {
+    //
+    // ⚠ Gate on the ALIGNMENT DATA, not on hf_tok alone. `tokenize_ex` returns
+    // early for a SentencePiece tokenizer (`if (is_sentencepiece) return
+    // tokenize_sp(text);`) and never fills out_words/out_word_ntok, so for the
+    // XLM-RoBERTa punctuation models — fullstop-punc / punctuate-all / pcs-xlmr
+    // — these vectors come back EMPTY. Branching on hf_tok alone then ran a
+    // loop bounded by `words_orig.size()` zero times and returned an empty
+    // string: `--punct-model punctuate-all` silently produced NOTHING on the
+    // default path, while CRISPEMBED_FIREREDPUNC_HF_TOK=0 worked fine.
+    //
+    // Testing for the data rather than for `is_sentencepiece` is deliberate: it
+    // fails safe for any future tokenizer that also skips the alignment, which
+    // a hard-coded arch test would not.
+    const bool have_word_alignment = !words_orig.empty() && words_orig.size() == word_ntok.size();
+    if (hf_tok && have_word_alignment) {
         // ONE DELIBERATE DEVIATION FROM THE BLUEPRINT, and why.
         //
         // Upstream emits the TOKEN surface forms, so its output is lowercased
