@@ -46,6 +46,7 @@
 //     parity against a transformers 5.x reference caught it — 4 of 1816 ids,
 //     first at 519.
 
+#include "core/clean_exit.h"
 #include "lfm2_vl_tiling.h"
 
 #include "lfm2_tiling_golden.h"
@@ -84,7 +85,7 @@ int naive_round_by_factor(int value, int factor) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     using namespace lfm2_vl_tiling;
 
     const config cfg; // the shipped processor_config.json of LFM2.5-VL-3B
@@ -365,4 +366,11 @@ int main() {
 
     printf("%s — %d checks, %d failures\n", g_failures ? "FAIL" : "PASS", g_checks, g_failures);
     return g_failures ? 1 : 0;
+}
+
+// Route through core_util::clean_exit per the tools/check_test_clean_exit.sh
+// guard: a one-shot binary that returns from main() can crash in GPU-device
+// teardown at exit. Host-only here, but the guard is blanket over tests/*.cpp.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

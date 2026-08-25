@@ -20,6 +20,7 @@
 //
 // Hermetic and weight-free: no model, no file I/O.
 
+#include "core/clean_exit.h"
 #include "../src/image_preprocess.h"
 
 #include <cstdio>
@@ -150,7 +151,7 @@ static void check_resize(const char * what, int dw, int dh, const unsigned char 
     }
 }
 
-int main() {
+static int crispembed_test_main() {
     std::printf("pil bicubic resize: 4 golden resizes from Pillow\n");
     check_resize("downscale 5x5", 5, 5, kDown5x5);
     check_resize("downscale 7x4", 7, 4, kDown7x4);
@@ -197,4 +198,11 @@ int main() {
     }
     std::printf("OK\n");
     return 0;
+}
+
+// Route through core_util::clean_exit per the tools/check_test_clean_exit.sh
+// guard: a one-shot binary that returns from main() can crash in GPU-device
+// teardown at exit. Host-only here, but the guard is blanket over tests/*.cpp.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
