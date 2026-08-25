@@ -204,18 +204,14 @@ set(CRISPEMBED_HAS_CRISP_PUNC OFF)
 if(EXISTS "${CRISP_PUNC_DIR}/CMakeLists.txt")
     message(STATUS "crispembed: linking crisp_punc from ${CRISP_PUNC_DIR}")
     set(CRISPEMBED_HAS_CRISP_PUNC ON)
-    # Adopting crisp_punc REPLACES src/fireredpunc.cpp + src/pcs.cpp, and the two
-    # fireredpunc implementations have DIVERGED: CrispEmbed's carries the HF
-    # WordPiece unification (the CRISPEMBED_FIREREDPUNC_HF_TOK work — token ids
-    # 2/9 -> 9/9 exact vs HF), CrispASR's does not. So merely having a sibling
-    # CrispASR checkout silently swaps the punctuation restorer for an older one
-    # with a known tokenizer defect — no error, just different output. Warn
-    # rather than pick for the user; -DCRISP_PUNC_DIR=/nonexistent keeps the
-    # local copies. Tracked with issue #50 (same cross-repo drift root cause).
-    message(WARNING
-        "crispembed: crisp_punc replaces src/fireredpunc.cpp, whose HF-tokenizer "
-        "fixes the shared copy does not have. Punctuation output will differ. "
-        "Pass -DCRISP_PUNC_DIR=/nonexistent to keep CrispEmbed's own copy.")
+    # Adopting crisp_punc REPLACES src/fireredpunc.cpp + src/pcs.cpp. The two
+    # fireredpunc copies HAD diverged, so this silently swapped the punctuation
+    # restorer for one with a known tokenizer defect (issue #50). They have since
+    # been reconciled in both directions — CrispEmbed's HF WordPiece unification
+    # went upstream, CrispASR's #300 no-stacking guard came downstream into the
+    # shared core/punct_marks.h — and the two now produce byte-identical output
+    # and byte-identical token ids on the same corpora. If you change one copy,
+    # change the other; the sibling-crispasr CI job builds this configuration.
 else()
     message(STATUS "crispembed: crisp_punc not found at ${CRISP_PUNC_DIR} — using local copies")
 endif()
@@ -697,18 +693,14 @@ target_include_directories(test-spm-norm PRIVATE src)
 # Punctuates each input line; the arm is chosen by
 # CRISPEMBED_FIREREDPUNC_HF_TOK, so one binary produces both.
 #
-# Only built when CrispEmbed's OWN src/fireredpunc.cpp is compiled in. Both the
-# gate this A/Bs and the fireredpunc_debug_token_ids() hook it links against are
-# local to that copy; CrispASR's crisp_punc has neither, so with a sibling
-# CrispASR present this target used to fail the default build outright with
-# `undefined reference to fireredpunc_debug_token_ids` (issue #50's defect
-# class, third instance). There is nothing for it to A/B against the shared
-# library, so not building it is the honest outcome rather than a workaround.
-if(NOT CRISPEMBED_HAS_CRISP_PUNC)
-    add_executable(firered-punct-ab tests/firered_punct_ab.cpp)
-    target_include_directories(firered-punct-ab PRIVATE src)
-    target_link_libraries(firered-punct-ab PRIVATE crispembed)
-endif()
+# Builds in BOTH layouts now. It used to fail to link against a sibling
+# CrispASR with `undefined reference to fireredpunc_debug_token_ids`, because
+# adopting crisp_punc drops src/fireredpunc.cpp and the shared copy had neither
+# that hook nor the tokenizer gate this A/Bs. Both were ported upstream, so the
+# two copies expose the same surface and this target is layout-independent.
+add_executable(firered-punct-ab tests/firered_punct_ab.cpp)
+target_include_directories(firered-punct-ab PRIVATE src)
+target_link_libraries(firered-punct-ab PRIVATE crispembed)
 
 # Live (needs a GGUF): dump the token ids the shipping runtime produces, for
 # ANY tokenizer family. SentencePiece/BPE parity cannot be checked from a
