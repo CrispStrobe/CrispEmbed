@@ -149,10 +149,27 @@ def main():
                 fails += 1
 
     # pre / seg / cap: flat per-token streams, same order as the logits dump.
-    for key, ours, refkey, fmt in (("pre", ours_pre, "pre", str),
-                                   ("seg", ours_seg, "seg", str),
-                                   ("cap", ours_cap, "cap", str)):
-        expect = [fmt(x) for r in recs for x in r.get(refkey, [])]
+    #
+    # ⚠ cap is truncated to the piece's CHARACTER count before comparing. The
+    # head always emits 16 bits, but the reconstruction only ever reads bit `c`
+    # for character `c` of the piece — everything past that is padding the model
+    # fills arbitrarily. Comparing all 16 made a CORRECT artifact fail: the
+    # q4_k-imatrix build differs from the f32 reference on bits 4..12 of `▁ok`
+    # (3 characters) and produces byte-identical text. Comparing the first 3,
+    # it matches, while plain q4_k — which really does lose the capitalisation —
+    # still mismatches on bit 0. A test that flags don't-care values is not a
+    # stricter test, it is a broken one.
+    pieces = [t for r in recs for t in r.get("tokens", [])]
+    ours_cap_sig, exp_cap_sig = [], []
+    for i, ref_bits in enumerate([c for r in recs for c in r.get("cap", [])]):
+        n = len(pieces[i]) if i < len(pieces) else len(ref_bits)
+        exp_cap_sig.append(ref_bits[:n])
+        if i < len(ours_cap):
+            ours_cap_sig.append(ours_cap[i][:n])
+
+    for key, ours, expect in (("pre", ours_pre, [str(x) for r in recs for x in r.get("pre", [])]),
+                              ("seg", ours_seg, [str(x) for r in recs for x in r.get("seg", [])]),
+                              ("cap", ours_cap_sig, exp_cap_sig)):
         if not ours:
             print(f"{key:<12}: NOT DUMPED — PCS_DUMP_{key.upper()} produced nothing")
             fails += 1
