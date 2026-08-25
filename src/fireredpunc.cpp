@@ -555,8 +555,24 @@ static bool fireredpunc_load(fireredpunc_context & ctx, const char * path) {
 
 static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::vector<int> & token_ids) {
     const int N = (int)token_ids.size();
-    // Prepend CLS + append SEP
-    const int seq_len = N + 2;
+    // Blueprint: [CLS] + tokens, and NO [SEP].
+    //
+    // fireredpunc_bert.py::_forward is `add_cls()` then BertModel then
+    // `outputs[0][:, 1:]` — it prepends [CLS], drops its output, and never
+    // appends a separator. This port used to append one anyway. BERT is
+    // bidirectional, so that is not a harmless trailing token: every real token
+    // attends to it, shifting the whole distribution.
+    //
+    // Measured against the blueprint (tools/dump_fireredpunc_reference.py) on
+    // the f16 GGUF, 119 tokens: with [SEP] cos_min 0.931090 / max_abs 1.8431 —
+    // an order of magnitude past the f16 numerical floor, i.e. structural, not
+    // precision. It also changed the OUTPUT: "hello world this is a test"
+    // restored as "Hello world, this is a test." against the reference's
+    // "Hello world! This is a test."
+    //
+    // CRISPEMBED_FIREREDPUNC_SEP=1 restores the old shape for bisection.
+    static const bool append_sep = core_env::on("CRISPEMBED_FIREREDPUNC_SEP");
+    const int seq_len = N + (append_sep ? 2 : 1);
 
     // ggml context for compute graph
     size_t mem = ggml_tensor_overhead() * (ctx.n_layers * 40 + 50) + 1024 * 1024;
@@ -671,8 +687,8 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
         std::vector<int32_t> ids(seq_len);
         ids[0] = ctx.cls_id;
         for (int i = 0; i < N; i++) ids[i + 1] = token_ids[i];
-        // SEP token: 102 for BERT, 2 for RoBERTa
-        ids[N + 1] = ctx.tokenizer.is_sentencepiece ? 2 : 102;
+        // SEP token: 102 for BERT, 2 for RoBERTa. Off by default — see above.
+        if (append_sep) ids[N + 1] = ctx.tokenizer.is_sentencepiece ? 2 : 102;
         ggml_backend_tensor_set(inp_ids, ids.data(), 0, seq_len * sizeof(int32_t));
 
         std::vector<int32_t> pos(seq_len);
