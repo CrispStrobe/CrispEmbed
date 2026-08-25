@@ -119,40 +119,46 @@ Having scores is necessary, not sufficient.
 Decoded-text case differences are expected: the blueprint works from lowercased
 token surface forms, the runtime re-emits the user's original words on purpose.
 
-## Can we have both? (fox AND "Hello world")
+## Can we have both? (fox AND "Hello world") — YES, measured
 
-Yes, mechanically — the two differences are independent, so an artifact can have
-the correct Unigram scores *and* the non-zero embeddings. CrispASR's
+The two differences are independent, so an artifact can have the correct Unigram
+scores *and* the non-zero embeddings. CrispASR's
 `convert-fullstop-punc-to-gguf.py --restore-zeroed-embeddings-from xlm-roberta-base`
-builds exactly that, and it does deliver both behaviours:
+builds it, and it delivers both behaviours:
 
-| artifact | `fox` tokenization | lines matching HF | `hello world` output |
+| artifact | `fox` | lines matching HF | `hello world` output |
 |---|---|--:|---|
 | shipped | `▁fo`+`x` ✗ | 0/7 | `Hello world.` |
 | kredor-faithful | `▁`+`fox` ✓ | 6/7 | `Hello. World.` |
 | **hybrid** | `▁`+`fox` ✓ | **6/7** | `Hello world.` |
 
-**But it is NOT demonstrably better, and the one quality measurement mildly
-favours the shipped file.** Scored against gold prose with
-`tools/eval_punct_gold.py` (the manual CC0 transcriptions — 689 words,
-102 marks):
+Scored against `tests/regression/punct_gold/` — 120 sentences, 350 marks, real
+editors' punctuation in EN/DE/FR:
 
-| artifact | P | R | F1 | per-word exact |
-|---|--:|--:|--:|--:|
-| shipped | 0.588 | 0.461 | **0.516** | 0.890 |
-| kredor-faithful | 0.516 | 0.324 | 0.398 | 0.871 |
-| hybrid | 0.507 | 0.373 | 0.429 | 0.877 |
+| artifact | markF1 | bndF1 | per-word exact |
+|---|--:|--:|--:|
+| shipped | 0.767 | 0.926 | 0.941 |
+| kredor-faithful | 0.713 | 0.884 | 0.931 |
+| **hybrid** | **0.767** | 0.919 | **0.943** |
 
-Two reasons not to read that as a verdict:
+Paired bootstrap, 2000 resamples, 95% interval on the markF1 difference:
 
-1. **102 marks is far too small.** The F1 gaps are ~9 marks, roughly 1–2 standard
-   errors. It cannot separate these arms.
-2. **The gold is one author's typography.** Spot-checked: gold reads
-   `…in the café, and of having nothing to do: once or twice…`, and *every* arm
-   produces `…in the café and of having nothing to do. Once or twice…`. A period
-   where Carroll wrote a colon is a stylistic difference, not an error, and it
-   is most of why the absolute numbers sit near 0.5.
+```
+shipped  - hybrid           -0.0006  [-0.0269, +0.0237]  not distinguishable
+shipped  - kredor-faithful  +0.0536  [+0.0192, +0.0886]  SIGNIFICANT
+kredor   - hybrid           -0.0542  [-0.0838, -0.0245]  SIGNIFICANT
+```
 
-So: the capability exists and is reproducible; the claim "best of both worlds"
-is unproven. Settling it needs a real punctuation-restoration benchmark with
-many thousands of marks, not six sentences and a page of Alice.
+So: **restoring the zeroed embeddings is a real, significant gain** (+0.054
+markF1, +0.035 boundary F1 — those zero rows genuinely cost quality), and
+**fixing the tokenization costs nothing measurable**. The hybrid matches the
+shipped artifact's quality while being tokenization-correct. That is best of
+both worlds, and it is now an interval rather than an impression.
+
+⚠ **An earlier 102-mark version of this evaluation said the opposite** — shipped
+0.516 vs hybrid 0.429 — and was flagged at the time as ~1–2 standard errors and
+unable to settle anything. At 350 marks they are tied and the interval straddles
+zero. That gap was noise. It is recorded here because the lesson generalises:
+under a few hundred marks, a punctuation comparison is undecided, whatever the
+two decimals say.
+

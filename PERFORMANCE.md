@@ -1,5 +1,38 @@
 # CrispEmbed Performance
 
+## punctuate-all: can we have both? (2026-08-25)
+
+The shipped `punctuate-all` artifact has base-XLM-R embeddings but greedy
+tokenization; a faithful re-conversion has correct Viterbi tokenization but
+kredor's 9531 zeroed embedding rows. A hybrid with both is buildable —
+CrispASR's `convert-fullstop-punc-to-gguf.py --restore-zeroed-embeddings-from`.
+
+Scored on `tests/regression/punct_gold/` — 120 sentences, 350 marks, real
+editors' punctuation from public-domain EN/DE/FR prose:
+
+| artifact | markF1 | bndF1 | per-word exact | `fox` |
+|---|--:|--:|--:|---|
+| shipped | 0.767 | 0.926 | 0.941 | ✗ |
+| kredor-faithful | 0.713 | 0.884 | 0.931 | ✓ |
+| **hybrid** | **0.767** | 0.919 | **0.943** | ✓ |
+
+Paired bootstrap, 2000 resamples of the sentences, 95% CI on the markF1 gap:
+
+```
+shipped - hybrid           -0.0006  [-0.0269, +0.0237]  not distinguishable
+shipped - kredor-faithful  +0.0536  [+0.0192, +0.0886]  SIGNIFICANT
+kredor  - hybrid           -0.0542  [-0.0838, -0.0245]  SIGNIFICANT
+```
+
+**Restoring the zeroed embeddings is a significant gain; fixing the tokenization
+costs nothing measurable.** The hybrid is best-of-both.
+
+⚠ **Sample size decided this, twice.** An earlier run on 102 marks reported
+shipped 0.516 vs hybrid 0.429 — the reverse — and was flagged then as ~1–2 SE.
+At 350 marks the interval straddles zero. Under a few hundred marks a
+punctuation comparison is undecided regardless of how far apart the numbers look.
+
+
 ## Punctuation engines vs their blueprints (2026-08-25)
 
 Three engines, three references, all checked in under `tests/regression/` at

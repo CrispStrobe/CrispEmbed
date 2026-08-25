@@ -129,6 +129,7 @@ def main():
     print(f"gold: {len(refs)} segments, {sum(len(c) for c in refs)} words "
           f"({sum(1 for c in refs for _, m in c if m)} marks)\n")
 
+    scores = {}
     print(f"{'model':<34}{'markP':>7}{'markR':>7}{'markF1':>8}"
           f"{'bndP':>7}{'bndR':>7}{'bndF1':>8}{'exact':>8}  drop")
     for gguf in models:
@@ -138,22 +139,24 @@ def main():
             continue
         tp = fp = fn = exact = total = dropped = 0
         btp = bfp = bfn = 0
+        per_sentence = []   # (tp, fp, fn) per sentence, for the paired bootstrap
         END = ".?"
         for ref, out in zip(refs, outs):
             hyp = split_words(out)
             if len(hyp) != len(ref):
                 dropped += 1
                 continue
+            s_tp = s_fp = s_fn = 0
             for (_, gm), (_, hm) in zip(ref, hyp):
                 total += 1
                 if gm and hm and gm == hm:
-                    tp += 1; exact += 1
+                    tp += 1; s_tp += 1; exact += 1
                 elif gm and hm:      # wrong mark: a false positive AND a miss
-                    fp += 1; fn += 1
+                    fp += 1; fn += 1; s_fp += 1; s_fn += 1
                 elif hm:
-                    fp += 1
+                    fp += 1; s_fp += 1
                 elif gm:
-                    fn += 1
+                    fn += 1; s_fn += 1
                 else:
                     exact += 1
                 # Boundary: any sentence-ending mark counts as the same event,
@@ -165,6 +168,8 @@ def main():
                     bfp += 1
                 elif gb:
                     bfn += 1
+            per_sentence.append((s_tp, s_fp, s_fn))
+        scores[os.path.basename(gguf)] = per_sentence
 
         def prf(t, f, n):
             p_ = t / (t + f) if t + f else 0.0
@@ -176,6 +181,38 @@ def main():
         acc = exact / total if total else 0.0
         print(f"{os.path.basename(gguf):<34}{p:>7.3f}{r_:>7.3f}{f1:>8.3f}"
               f"{bp:>7.3f}{br:>7.3f}{bf1:>8.3f}{acc:>8.3f}  {dropped}")
+
+    # Paired bootstrap over SENTENCES. Paired because every model saw the same
+    # sentences: comparing two independent confidence intervals would throw away
+    # that pairing and overstate the uncertainty. Resampling sentences (not
+    # marks) is what respects the fact that marks within a sentence are not
+    # independent draws.
+    if len(scores) >= 2:
+        import random
+        names_ = list(scores)
+        n = min(len(v) for v in scores.values())
+        print("\n  paired bootstrap, 2000 resamples of the 120 sentences "
+              "(markF1 difference, 95% interval):")
+        for i in range(len(names_)):
+            for j in range(i + 1, len(names_)):
+                a, b = scores[names_[i]][:n], scores[names_[j]][:n]
+                diffs = []
+                rnd = random.Random(20260825)
+                for _ in range(2000):
+                    idx = [rnd.randrange(n) for _ in range(n)]
+                    def f1_of(v):
+                        t = sum(v[k][0] for k in idx)
+                        f = sum(v[k][1] for k in idx)
+                        m = sum(v[k][2] for k in idx)
+                        p_ = t / (t + f) if t + f else 0.0
+                        r__ = t / (t + m) if t + m else 0.0
+                        return 2 * p_ * r__ / (p_ + r__) if p_ + r__ else 0.0
+                    diffs.append(f1_of(a) - f1_of(b))
+                diffs.sort()
+                lo, hi = diffs[int(0.025 * len(diffs))], diffs[int(0.975 * len(diffs))]
+                verdict = "SIGNIFICANT" if (lo > 0 or hi < 0) else "not distinguishable"
+                print(f"    {names_[i][:26]:<27} - {names_[j][:26]:<27} "
+                      f"{sum(diffs)/len(diffs):+.4f}  [{lo:+.4f}, {hi:+.4f}]  {verdict}")
     return 0
 
 
