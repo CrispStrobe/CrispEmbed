@@ -46,7 +46,22 @@ of the **same graph** returns 0.9987, so the graph is right and q4_k is simply
 lossy on 24 layers — with every argmax still matching. Always run the f16/q8_0
 arm before attributing a quant dip to the port.
 
-### What the local `punctuate-all-f16.gguf` is (corrected)
+### What `punctuate-all*.gguf` is (corrected twice — read the scope note)
+
+⚠ **It is DISTRIBUTED**, not a local bench file: `cstr/punctuate-all-GGUF` plus
+CrispASR's `--punc-model punctuate-all` shortcut, which auto-downloads the q4_k
+(`src/crispasr_punc_model.h:48`). An earlier version of this section called it
+local-only because CrispEmbed's `model_mgr.cpp` has no entry for it — the
+shortcut is in the other repo. Checking one registry proves nothing about the
+other.
+
+All artifacts below were **SHA256-verified against the published LFS hashes**
+before being measured, so none of this is a bad download.
+
+**What the shortcut actually downloads** (`punctuate-all-q4_k.gguf`) vs the
+kredor blueprint: **preds 64/67 (95.5%), decoded text 4/6**. Concretely, it
+misses a sentence break (`hello. world.` → `Hello world.`) and emits a comma
+where the blueprint emits a period. It inherits both differences below.
 
 | | token ids | cos_min | max_abs | preds |
 |---|--:|--:|--:|--:|
