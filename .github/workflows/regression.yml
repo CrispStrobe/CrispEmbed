@@ -32,6 +32,12 @@ on:
       - 'tests/test_tesseract_page_geometry.py'
       - 'tests/test_tesseract_line_confidence.py'
       - 'src/tesseract_lstm.cpp'
+      - 'src/fireredpunc.cpp'
+      - 'src/pcs.cpp'
+      - 'tests/firered_punc_parity.py'
+      - 'tests/xlmr_punc_parity.py'
+      - 'tests/pcs_parity.py'
+      - 'tests/punct_ab.cpp'
       - 'tests/test_tesseract_runtime_contract.py'
       - 'tests/test_ppocrv6_pipeline_benchmark.py'
       - 'tests/test_ocr_backend_matrix.py'
@@ -238,6 +244,87 @@ jobs:
           python tests/test_image_root.py \
             --det-model .face-models/yunet.gguf \
             --build-dir build
+
+  # Punctuation parity against the Python/ONNX blueprints.
+  #
+  # All three punctuation engines got a blueprint reference (2026-08-25) and two
+  # of the three had a real bug the day they got one: fireredpunc appended a
+  # [SEP] its blueprint never emits (f16 cos_min 0.931 -> 1.000000), and the
+  # XLM-R path returned EMPTY output on its default arm. Neither was visible
+  # from an exit code or a smoke test — which is the same argument that
+  # motivated this whole workflow.
+  #
+  # The references are checked in (8 KB each) and need no torch, no
+  # transformers and no checkpoint. What they DO need is the GGUF, so this
+  # cannot join the model-free tier and lives here with the other model-gated
+  # jobs. ~690 MB of downloads, hence nightly/dispatch plus pushes that touch
+  # the punctuation sources, not every push.
+  punct-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    if: >-
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential ninja-build
+          pip install huggingface_hub
+      - name: Build the punctuation drivers
+        run: |
+          cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target punct-ab firered-punct-ab -j"$(nproc)"
+      - name: Fetch models
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          mkdir -p .punct-models
+          python - <<'PY'
+          import shutil
+          from huggingface_hub import hf_hub_download
+          # f16 for fireredpunc: the gate there is structural (cos >= 0.99), and
+          # f16 is the arm that separates a graph bug from quantisation — a
+          # k-quant alone cannot make that call.
+          # q4_k-imatrix for pcs: that IS the registry default, so CI checks what
+          # users actually download.
+          # q4_k for fullstop-punc: q8_0 is 600 MB and the structural break this
+          # guards against is visible at either precision (with a looser floor).
+          for repo, name in (
+              ("cstr/fireredpunc-GGUF", "fireredpunc.gguf"),
+              ("cstr/pcs-xlmr-base-GGUF", "pcs-xlmr-base-q4_k-imatrix.gguf"),
+              ("cstr/fullstop-punc-multilang-GGUF", "fullstop-punc-q4_k.gguf"),
+          ):
+              shutil.copy(hf_hub_download(repo_id=repo, filename=name), f".punct-models/{name}")
+              print("got", name, flush=True)
+          PY
+      - name: fireredpunc (BERT) vs blueprint
+        env: { LD_LIBRARY_PATH: build }
+        run: |
+          python tests/firered_punc_parity.py build \
+            .punct-models/fireredpunc.gguf \
+            tests/regression/fireredpunc/blueprint_ref.txt
+      - name: PCS — all four heads vs blueprint
+        env: { LD_LIBRARY_PATH: build }
+        run: |
+          python tests/pcs_parity.py build \
+            .punct-models/pcs-xlmr-base-q4_k-imatrix.gguf \
+            tests/regression/pcs/blueprint_ref.txt
+      - name: fullstop-punc (XLM-R) vs blueprint
+        env: { LD_LIBRARY_PATH: build }
+        # 0.90 floor: this is the q4_k arm, and q4_k on a 24-layer model reaches
+        # cos_min 0.923 against an f32 reference while still agreeing with it on
+        # every argmax. Measured, not assumed — the q8_0 arm of the same graph
+        # is 0.9987, which is how the two were told apart. A floor tighter than
+        # the quant would fail nightly for no defect.
+        run: |
+          python tests/xlmr_punc_parity.py build \
+            .punct-models/fullstop-punc-q4_k.gguf \
+            tests/regression/fullstop_punc/blueprint_ref.txt 0.90
 
   # scan_cleanup do-no-harm guard. Classical (tier-1) preprocessing needs no
   # model and no network, so this runs on every PR/push that touches the
