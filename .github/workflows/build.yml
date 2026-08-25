@@ -207,6 +207,20 @@ jobs:
       - name: Build the four shared libraries
         run: cmake --build build-sibling -j4 --target crisp_audio crisp_punc crisp_lid crisp_truecase
 
+      # The mirrored files must not drift. CrispASR has test-copies-in-sync for
+      # its own duplicated copies and it is the most effective test in either
+      # tree; this is the cross-repo half, which did not exist and which issue
+      # #50 is the cost of. Only meaningful with a sibling checkout, so it lives
+      # in this job rather than the model-free tier.
+      - name: Mirrored files are in sync with CrispASR
+        run: |
+          set -euo pipefail
+          cmake --build build-sibling -j4 --target test-cross-repo-sync
+          CRISPEMBED_SOURCE_DIR="$PWD" \
+          CRISPASR_SIBLING_DIR="$PWD/../CrispASR" \
+            ./build-sibling/test-cross-repo-sync
+        shell: bash
+
   build-android:
     name: android-${{ matrix.abi }}
     runs-on: ubuntu-latest

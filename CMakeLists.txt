@@ -488,6 +488,12 @@ target_include_directories(test-server-json-input PRIVATE ${CMAKE_SOURCE_DIR}/ex
 add_executable(test-punct-marks tests/test_punct_marks.cpp)
 target_include_directories(test-punct-marks PRIVATE src)
 
+# Host-only: the files CrispEmbed mirrors from CrispASR must not drift (#50).
+# Skips unless CRISPASR_SIBLING_DIR points at a real checkout, so a standalone
+# build is unaffected; the sibling-crispasr CI job supplies it.
+add_executable(test-cross-repo-sync tests/test_cross_repo_sync.cpp)
+target_include_directories(test-cross-repo-sync PRIVATE src)
+
 # Host-only unit test for arch-driven GGUF hparam key resolution (issue #33 / A2).
 add_executable(test-hparam-keys tests/test_hparam_keys.cpp)
 target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)
