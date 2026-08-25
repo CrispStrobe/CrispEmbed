@@ -92,6 +92,25 @@ For Q4_K, use the C-side quantizer: `crispembed-quantize input-f16.gguf output-q
 
 Create `tools/dump_yourmodel_reference.py`.
 
+> **A GGUF tensor archive is not the only shape this can take, and for a small
+> classifier it is the wrong one.** `tools/dump_fireredpunc_reference.py` +
+> `tests/firered_punc_parity.py` are the lightweight variant: a flat text file
+> of per-token ids, logits, argmax preds and decoded output, checked in at 9 KB
+> under `tests/regression/fireredpunc/`, so the comparison runs with **no torch,
+> no `transformers` and no checkpoint download**. Two things it is worth copying:
+> the dumper derives its `BertConfig` from the checkpoint's own tensor shapes
+> rather than a `config.json` (so it does not pull a 411 MB backbone just to
+> overwrite it), and the comparator takes an explicit `min-cos` instead of
+> hard-coding one — because the same 0.93 that means "structural bug" at f16
+> means "the quantiser" at q4_k, and the way you tell them apart is by running
+> the f16 arm of the same graph.
+>
+> That harness existed for one day before it found a bug that had shipped:
+> the model prepends `[CLS]` and appends nothing, the port appended `[SEP]`, and
+> being bidirectional that moved every token's distribution (f16 cos_min
+> 0.931090 -> 1.000000). The tokenizer had been at 9/9 exact vs HuggingFace the
+> whole time. **Tokenizer parity is not model parity.**
+
 **Purpose:** Capture per-layer intermediate activations from the Python reference implementation (PyTorch/HF transformers), write them to a GGUF tensor archive. The C++ test binary then compares its own activations against these.
 
 **What to capture:**
