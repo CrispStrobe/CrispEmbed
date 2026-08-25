@@ -30,10 +30,17 @@ correctness.
 
 | artifact | token ids | cos_min | max_abs | preds | decoded |
 |---|--:|--:|--:|--:|--:|
-| shipped `punctuate-all-f16.gguf` | 5/6 | **−0.284548** | 9.6347 | 65/67 | 5/6 |
+| local `punctuate-all-f16.gguf` | 5/6 | **−0.284548** | 9.6347 | 65/67 | 5/6 |
 | re-converted from `kredor/punctuate-all` | **6/6** | **0.999999** | 0.0062 | **67/67** | **6/6** |
 
-**The shipped artifact is stale and should be replaced.** It carries only
+**Scope, checked rather than assumed: the bad artifact is LOCAL-ONLY.**
+`punctuate-all` has no model-registry entry, so it was never distributed — it is
+a bench file on this box. The registry's `fullstop-punc-*` entries were
+downloaded and inspected separately: they DO carry `tokenizer.ggml.scores` and a
+correct `general.name`, so they do not have this defect. An earlier draft of
+this file said "shipped", which overstated the blast radius.
+
+**The local artifact is stale and should be replaced.** It carries only
 `tokenizer.ggml.tokens` and no `tokenizer.ggml.scores`, so the runtime falls
 back to greedy longest-match — and XLM-R's SP model is *Unigram*, where greedy
 is not an approximation but the wrong algorithm. `fox` has no `▁fox` piece:
@@ -52,10 +59,9 @@ to `max_abs` 0.004 (proving the weights are the same model). Something else in
 that file differs too. It is archaeology on an artifact being replaced, so it was
 left uninvestigated rather than explained away.
 
-⚠ **Scope of the claim.** What is measured here is the local
-`punctuate-all-f16.gguf`. Whether the registry's `fullstop-punc-*.gguf` entries
-have the same defect is UNVERIFIED — they are a different model (XLM-R large,
-24L/1024) and were not downloaded. Check them the same way before trusting them.
+⚠ **`fullstop-punc` is a different model** (XLM-R large, 24L/1024) and needs
+its own reference — `--model oliverguhr/fullstop-punctuation-multilang-large`.
+Having scores is necessary, not sufficient.
 
 Decoded-text case differences are expected: the blueprint works from lowercased
 token surface forms, the runtime re-emits the user's original words on purpose.
