@@ -106,7 +106,7 @@ jobs:
             --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file test-render-provenance \
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
                      test-bert-norm test-spm-norm test-imatrix-alias test-no-repeat-ngram test-env-gate \
-                     test-lfm2-tiling test-pil-resize
+                     test-lfm2-tiling test-pil-resize test-server-json-input
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
@@ -123,6 +123,7 @@ jobs:
           ./build/test-env-gate
           ./build/test-lfm2-tiling
           ./build/test-pil-resize
+          ./build/test-server-json-input
           python3 tests/test_vendored_kaggle_harness.py
 
       - name: Smoke test (Windows)
@@ -162,6 +163,48 @@ jobs:
             dist/lib/
             dist/bin/
           if-no-files-found: warn
+
+  sibling-crispasr:
+    name: sibling-crispasr (shared libs)
+    runs-on: ubuntu-latest
+    # Issue #50. CrispEmbed's CMakeLists defaults CRISP_AUDIO_DIR /
+    # CRISP_PUNC_DIR / CRISP_LID_DIR / CRISP_TRUECASE_DIR to ../CrispASR/*, and
+    # add_subdirectory()s each one it finds — the documented dev-machine layout
+    # (~/code/CrispEmbed beside ~/code/CrispASR). Those four libraries then
+    # compile against THIS repo's src/core, so any header CrispASR's core has
+    # and CrispEmbed's does not breaks a from-source build here while both
+    # repos stay green on their own. That is exactly how #50 shipped: twice, as
+    # a std::map/std::unordered_map mismatch in audio_tower.cpp and then as a
+    # missing core/ggml_cpu_backend.h. Every job above builds CrispEmbed ALONE,
+    # so none of them can see it.
+    #
+    # Builds only the four shared-library targets: it is the cross-repo header
+    # contract under test, not CrispEmbed itself (the matrix above covers that).
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Clone CrispASR as a sibling
+        run: git clone --depth 1 https://github.com/CrispStrobe/CrispASR.git ../CrispASR
+
+      - name: Configure with the sibling defaults
+        run: |
+          set -euo pipefail
+          cmake -S . -B build-sibling -DCMAKE_BUILD_TYPE=Release 2>&1 | tee configure.log
+          # Assert the defaults actually picked the sibling up. Each of the four
+          # has a clean "not found — disabled" fallback, so without this the job
+          # would go green having compiled none of the code it exists to cover.
+          for lib in crisp_audio crisp_punc crisp_lid crisp_truecase; do
+            grep -q "linking $lib from" configure.log || {
+              echo "::error::$lib was NOT picked up from ../CrispASR — this job is testing nothing"
+              exit 1
+            }
+          done
+        shell: bash
+
+      - name: Build the four shared libraries
+        run: cmake --build build-sibling -j4 --target crisp_audio crisp_punc crisp_lid crisp_truecase
 
   build-android:
     name: android-${{ matrix.abi }}
