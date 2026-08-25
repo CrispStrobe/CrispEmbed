@@ -15,6 +15,7 @@ Model + binary discovery (skips cleanly if unavailable, so PR CI without models
 just skips instead of failing):
 
   CRISPEMBED_TEST_EMBED_MODEL=/path/to/text-embed.gguf   # required to run
+  CRISPEMBED_TEST_RERANK_MODEL=/path/to/cross-encoder.gguf  # /v1/rerank (issue #51)
   CRISPEMBED_SERVER_BIN=/path/to/crispembed-server       # else auto-detected
 
 Usage:
@@ -57,6 +58,19 @@ def _find_model() -> str | None:
     return None
 
 
+def _find_rerank_model() -> str | None:
+    """A cross-encoder GGUF for the /rerank + /v1/rerank routes (issue #51).
+
+    Separate from the embedding model on purpose: the rerank routes are guarded
+    by ``crispembed_is_reranker`` and a text-embedding model gets a 400 there,
+    so they need their own server instance with a cross-encoder loaded.
+    """
+    env = os.environ.get("CRISPEMBED_TEST_RERANK_MODEL")
+    if env and Path(env).expanduser().is_file():
+        return str(Path(env).expanduser())
+    return None
+
+
 def _free_port() -> int:
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
@@ -75,6 +89,7 @@ def _post(url: str, payload: str, timeout: float = 60.0) -> dict:
 
 SERVER_BIN = _find_server_bin()
 MODEL = _find_model()
+RERANK_MODEL = _find_rerank_model()
 
 
 @unittest.skipUnless(SERVER_BIN and MODEL, "needs crispembed-server + CRISPEMBED_TEST_EMBED_MODEL")
@@ -260,7 +275,152 @@ class ServerJsonInputLegacyGateLive(unittest.TestCase):
         self.assertNotEqual(n, 6, "legacy scan must still mis-parse (gate is live)")
 
 
+@unittest.skipUnless(SERVER_BIN and RERANK_MODEL, "needs crispembed-server + CRISPEMBED_TEST_RERANK_MODEL")
+class ServerRerankLive(unittest.TestCase):
+    """Issue #51 — /v1/rerank in the de-facto Cohere / Jina shape.
+
+    Everything here is a property of the response, not a hard-coded score: the
+    point is that the endpoint is a drop-in for clients that expect that schema,
+    and that it agrees with the native /rerank route on the only thing a
+    reranker is actually for — the ORDER.
+
+    The fixture is deliberately unambiguous (one document answers the query,
+    one is off-topic) so the ranking assertion tests the endpoint rather than
+    the model's discrimination.
+    """
+
+    QUERY = "What is the capital of France?"
+    DOCS = [
+        "Bananas are a good source of potassium.",
+        "Paris is the capital and most populous city of France.",
+        "The Rust compiler enforces memory safety without a garbage collector.",
+    ]
+    RELEVANT = 1  # index of the Paris document
+
+    proc: subprocess.Popen
+    port: int
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.port = _free_port()
+        cls.proc = subprocess.Popen(
+            [SERVER_BIN, "-m", RERANK_MODEL, "--host", "127.0.0.1", "--port", str(cls.port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        base = f"http://127.0.0.1:{cls.port}"
+        deadline = time.time() + 120
+        while time.time() < deadline:
+            if cls.proc.poll() is not None:
+                raise RuntimeError("server exited during startup (model failed to load?)")
+            try:
+                health = json.loads(urllib.request.urlopen(base + "/health", timeout=2).read().decode("utf-8"))
+                if not health.get("reranker"):
+                    raise unittest.SkipTest("CRISPEMBED_TEST_RERANK_MODEL is not a cross-encoder")
+                return
+            except unittest.SkipTest:
+                raise
+            except Exception:
+                time.sleep(1)
+        raise RuntimeError("server did not become ready in time")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if getattr(cls, "proc", None):
+            cls.proc.terminate()
+            try:
+                cls.proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                cls.proc.kill()
+
+    def _base(self) -> str:
+        return f"http://127.0.0.1:{self.port}"
+
+    def _v1(self, payload: dict) -> dict:
+        return _post(self._base() + "/v1/rerank", json.dumps(payload))
+
+    def test_string_documents(self) -> None:
+        d = self._v1({"model": "m", "query": self.QUERY, "documents": self.DOCS})
+        self.assertEqual(len(d["results"]), len(self.DOCS), "one result per document")
+        self.assertEqual(d["results"][0]["index"], self.RELEVANT, "the on-topic document ranks first")
+        for r in d["results"]:
+            self.assertIn("relevance_score", r, "Cohere/Jina score key")
+            self.assertNotIn("score", r, "the native raw-logit key must not leak into /v1")
+            self.assertNotIn("document", r, "documents are opt-in (Cohere default)")
+
+    def test_object_documents_same_result(self) -> None:
+        # The shape json_extract_strings would have mis-split into 2x garbage
+        # documents. Same query, same corpus, expressed as objects: identical
+        # cardinality and identical winner.
+        d = self._v1({"query": self.QUERY, "documents": [{"text": t} for t in self.DOCS]})
+        self.assertEqual(len(d["results"]), len(self.DOCS), "object form must not double the count")
+        self.assertEqual(d["results"][0]["index"], self.RELEVANT)
+
+    def test_return_documents_echoes_text(self) -> None:
+        d = self._v1({"query": self.QUERY, "documents": self.DOCS, "return_documents": True})
+        top = d["results"][0]
+        self.assertEqual(top["document"]["text"], self.DOCS[top["index"]], "echoed text matches its index")
+
+    def test_relevance_scores_are_probabilities_and_sorted(self) -> None:
+        d = self._v1({"query": self.QUERY, "documents": self.DOCS})
+        scores = [r["relevance_score"] for r in d["results"]]
+        for s in scores:
+            # Bounds, not strict inequality: the response rounds to 9 dp, so a
+            # very confident logit can legitimately print as 1.000000000. The
+            # strict (0,1) property of the sigmoid itself is pinned in
+            # test-server-json-input (R10).
+            self.assertGreaterEqual(s, 0.0)
+            self.assertLessEqual(s, 1.0)
+        self.assertEqual(scores, sorted(scores, reverse=True), "results are descending by score")
+
+    def test_top_n_truncates(self) -> None:
+        d = self._v1({"query": self.QUERY, "documents": self.DOCS, "top_n": 1})
+        self.assertEqual(len(d["results"]), 1)
+        self.assertEqual(d["results"][0]["index"], self.RELEVANT)
+
+    def test_ranking_agrees_with_native_route(self) -> None:
+        # sigmoid is monotonic, so /v1/rerank must not reorder anything relative
+        # to /rerank. This is the guard that keeps the score transform honest:
+        # a non-monotonic "normalization" would break here, not in a unit test.
+        native = _post(self._base() + "/rerank", json.dumps({"query": self.QUERY, "documents": self.DOCS}))
+        v1 = self._v1({"query": self.QUERY, "documents": self.DOCS})
+        self.assertEqual(
+            [r["index"] for r in native["results"]],
+            [r["index"] for r in v1["results"]],
+            "sigmoid must preserve the native ordering",
+        )
+
+    def test_envelope_fields(self) -> None:
+        d = self._v1({"model": "whatever", "query": self.QUERY, "documents": self.DOCS})
+        self.assertEqual(d["object"], "list")
+        self.assertIn("id", d)
+        self.assertIn("model", d)
+        self.assertIn("meta", d)
+
+    def test_missing_documents_is_400(self) -> None:
+        with self.assertRaises(urllib.error.HTTPError) as cm:
+            self._v1({"query": self.QUERY})
+        self.assertEqual(cm.exception.code, 400)
+
+    def test_missing_query_is_400(self) -> None:
+        with self.assertRaises(urllib.error.HTTPError) as cm:
+            self._v1({"documents": self.DOCS})
+        self.assertEqual(cm.exception.code, 400)
+
+    def test_native_route_is_unchanged(self) -> None:
+        # /rerank keeps its original contract: raw `score`, always-echoed
+        # `document`, no relevance_score.
+        d = _post(self._base() + "/rerank", json.dumps({"query": self.QUERY, "documents": self.DOCS}))
+        self.assertEqual(d["query"], self.QUERY)
+        top = d["results"][0]
+        self.assertIn("score", top)
+        self.assertNotIn("relevance_score", top)
+        self.assertEqual(top["document"], self.DOCS[top["index"]])
+
+
 if __name__ == "__main__":
     if not (SERVER_BIN and MODEL):
         print("SKIP: set CRISPEMBED_TEST_EMBED_MODEL (and build crispembed-server) to run")
+    if not (SERVER_BIN and RERANK_MODEL):
+        print("SKIP: set CRISPEMBED_TEST_RERANK_MODEL to run the /v1/rerank tests (issue #51)")
     unittest.main()

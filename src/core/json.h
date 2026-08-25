@@ -273,6 +273,132 @@ inline size_t json_extract_strings(const std::string & body, const char * key, s
 }
 
 // ---------------------------------------------------------------------------
+// Structural value skipping + the Cohere/Jina `documents` shape (issue #51).
+//
+// json_extract_strings flattens EVERY string it meets inside the array, which is
+// correct for `["a","b"]` but wrong for the object form the de-facto rerank API
+// also accepts:
+//     "documents": [{"text": "a"}, {"text": "b"}]
+// there it would yield ["text","a","text","b"] — four documents, all garbage.
+// So the object form needs an element-aware walk, which needs a value skipper.
+// ---------------------------------------------------------------------------
+
+// Skip exactly one JSON value beginning at body[i] (i must be its first
+// character, not whitespace). Returns the index just past the value, or npos if
+// the value is malformed/unterminated. String-aware at every depth, so a '}' or
+// ']' inside a string never closes a container.
+inline size_t json_skip_value(const std::string & body, size_t i) {
+    if (i >= body.size()) return std::string::npos;
+    const char c = body[i];
+    if (c == '"') {
+        std::string s;
+        size_t end = 0;
+        return json_decode_string(body, i, s, end) ? end : std::string::npos;
+    }
+    if (c == '{' || c == '[') {
+        int depth = 0;
+        size_t j = i;
+        while (j < body.size()) {
+            const char d = body[j];
+            if (d == '"') {
+                std::string s;
+                size_t end = 0;
+                if (!json_decode_string(body, j, s, end)) return std::string::npos;
+                j = end;
+                continue;
+            }
+            if (d == '{' || d == '[') depth++;
+            if (d == '}' || d == ']') {
+                depth--;
+                if (depth == 0) return j + 1;
+            }
+            j++;
+        }
+        return std::string::npos;
+    }
+    // Number / true / false / null — run to the first structural delimiter.
+    size_t j = i;
+    while (j < body.size() && body[j] != ',' && body[j] != '}' && body[j] != ']') j++;
+    return j > i ? j : std::string::npos;
+}
+
+// Extract rerank documents from `key`, accepting BOTH shapes the Cohere / Jina
+// API allows (and the single-value degenerate forms):
+//     "documents": ["a", "b"]              -> ["a", "b"]
+//     "documents": [{"text":"a"}, {"text":"b"}] -> ["a", "b"]
+//     "documents": "a"                     -> ["a"]
+//     "documents": {"text":"a"}            -> ["a"]
+// Only the `text` field of an object element is read (Cohere's `rank_fields`
+// multi-field form is not supported). An object element WITHOUT a `text` field
+// yields an empty string rather than being dropped: the response's `index`
+// values must line up with the caller's array positions, and silently shrinking
+// the list would shift every index after it. Returns the number appended.
+//
+// Routed through json_extract_strings for the plain-string case so the
+// CRISPEMBED_SERVER_LEGACY_JSON A/B gate still covers it.
+inline size_t json_extract_documents(const std::string & body, const char * key, std::vector<std::string> & out) {
+    const size_t p = json_find_key_value(body, key);
+    if (p == std::string::npos) return 0;
+
+    // No object elements anywhere in the value -> the plain-string path, which
+    // keeps the legacy gate in play for the shape that predates this helper.
+    const size_t vend = json_skip_value(body, p);
+    if (vend == std::string::npos) return 0;
+    if (body[p] != '{' && body.find('{', p) >= vend) return json_extract_strings(body, key, out);
+
+    const size_t before = out.size();
+    auto push_object = [&](const std::string & obj) {
+        std::vector<std::string> t;
+        json_extract_strings_escaped(obj, "text", t);
+        out.push_back(t.empty() ? std::string() : std::move(t.front()));
+    };
+
+    if (body[p] == '{') {
+        push_object(body.substr(p, vend - p));
+    } else if (body[p] == '"') {
+        std::string s;
+        size_t end = 0;
+        if (json_decode_string(body, p, s, end)) out.push_back(std::move(s));
+    } else if (body[p] == '[') {
+        size_t q = p + 1;
+        while (q < body.size()) {
+            while (q < body.size() &&
+                   (body[q] == ',' || body[q] == ' ' || body[q] == '\t' || body[q] == '\n' || body[q] == '\r'))
+                q++;
+            if (q >= body.size() || body[q] == ']') break;
+            const size_t e = json_skip_value(body, q);
+            if (e == std::string::npos) break;
+            if (body[q] == '"') {
+                std::string s;
+                size_t end = 0;
+                if (json_decode_string(body, q, s, end)) out.push_back(std::move(s));
+            } else if (body[q] == '{') {
+                push_object(body.substr(q, e - q));
+            }
+            // Anything else (a bare number/null element) is not a document; skip.
+            q = e;
+        }
+    }
+    return out.size() - before;
+}
+
+// ---------------------------------------------------------------------------
+// Boolean extraction — same depth-1 structural lookup as the number/array
+// readers, so a string VALUE equal to the key name cannot be mistaken for the
+// key. Accepts JSON `true`/`false` and, leniently, the numeric 1/0 that some
+// clients send. Anything else (including a quoted "true") returns `def`.
+// ---------------------------------------------------------------------------
+inline bool json_extract_bool(const std::string & body, const char * key, bool def) {
+    const size_t p = json_find_key_value(body, key);
+    if (p == std::string::npos) return def;
+    if (body.compare(p, 4, "true") == 0) return true;
+    if (body.compare(p, 5, "false") == 0) return false;
+    if (body[p] == '1') return true;
+    if (body[p] == '0') return false;
+    return def;
+}
+
+// ---------------------------------------------------------------------------
 // Scalar number extraction — the server hand-rolled ~14 of these as
 // body.find("\"key\"") + atof/atoi, which carry the SAME key-decoy bug B2 fixed
 // for arrays (a string value equal to the key name is matched as the key). Route
