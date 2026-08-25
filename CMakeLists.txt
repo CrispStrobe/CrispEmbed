@@ -708,6 +708,13 @@ add_executable(firered-punct-ab tests/firered_punct_ab.cpp)
 target_include_directories(firered-punct-ab PRIVATE src)
 target_link_libraries(firered-punct-ab PRIVATE crispembed)
 
+# Live (needs a GGUF): drives ANY punctuation model through the public C API,
+# which dispatches on general.architecture — so it reaches PCS, which
+# firered-punct-ab cannot (it calls fireredpunc_* directly).
+add_executable(punct-ab tests/punct_ab.cpp)
+target_include_directories(punct-ab PRIVATE src)
+target_link_libraries(punct-ab PRIVATE crispembed)
+
 # Live (needs a GGUF): dump the token ids the shipping runtime produces, for
 # ANY tokenizer family. SentencePiece/BPE parity cannot be checked from a
 # vocab file the way WordPiece can — merges, charsmap and pre-tokenizer
