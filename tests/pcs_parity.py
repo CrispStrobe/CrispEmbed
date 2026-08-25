@@ -8,19 +8,31 @@ gate anyway because they are exactly what produces the text.
 
 Two gates:
 
-  1. POST-PUNC PREDICTIONS  per token, exact. The runtime dumps its post-punc
-     logits to $PCS_DUMP_LOGITS; their argmax must equal the blueprint's
-     `post_preds`. This is the head that decides every mark.
-  2. DECODED TEXT           exact, and gated — unlike the other two harnesses.
-     PCS emits truecasing itself rather than leaving the caller's words alone,
-     so there is no deliberate case deviation to excuse: the blueprint's string
-     and the runtime's should match character for character.
+  1. ALL FOUR HEADS  per token, exact:
+       post  argmax of $PCS_DUMP_LOGITS      vs the blueprint's `post_preds`
+       pre   $PCS_DUMP_PRE                   vs `pre_preds`
+       seg   $PCS_DUMP_SEG column 0          vs `seg_preds`
+       cap   $PCS_DUMP_CAP (16 bits/token)   vs `cap_preds`
+  2. DECODED TEXT    exact, and gated — unlike the other two harnesses. PCS
+     emits truecasing itself rather than leaving the caller's words alone, so
+     there is no deliberate case deviation to excuse: the blueprint's string and
+     the runtime's should match character for character.
 
-NOT compared, and worth stating rather than leaving implied: `pre_preds`,
-`cap_preds` and `seg_preds` have no runtime dump hook, so they are checked only
-through their effect on the decoded text. A regression that changed truecasing
-while leaving punctuation alone would be caught by gate 2 but not localised.
-Adding PCS_DUMP_CAP / PCS_DUMP_SEG would close that.
+Gate 1 used to cover post-punc only, which localised nothing: plain q4_k gets
+all 67 post-punc decisions right on this corpus and still turns "I'm OK" into
+"I'm ok". That is a truecase-head regression, and with only post-punc dumped it
+could be seen but not attributed. The three hooks now exist for exactly that.
+
+⚠ `$PCS_DUMP_SEG` has TWO columns and only the first is compared here. Column 0
+is `softmax(logits)[boundary] > 0.05`, the ONNX `seg_preds` output; column 1 is
+the hard argmax, which the runtime feeds the truecase head as its
+"is-sentence-initial" conditioning. The blueprint exports only the former, so
+the latter has no reference — it is dumped so a cap mismatch can be traced to
+its conditioning rather than to the cap head itself.
+
+⚠ The cap bitstring is per CHARACTER of the token, `▁` included. `▁hello`
+therefore reads `1100...`: bit 0 covers the `▁` (ignored downstream) and bit 1
+capitalises the `h`. It is not one flag per token.
 
 Usage:
     python tests/pcs_parity.py <build-dir> <pcs.gguf> <ref.txt>
@@ -48,6 +60,12 @@ def parse_ref(path):
             cur["ids"] = [int(x) for x in line[5:].split()]
         elif line.startswith("#POST "):
             cur["post"] = [int(x) for x in line[6:].split()]
+        elif line.startswith("#PRE "):
+            cur["pre"] = [int(x) for x in line[5:].split()]
+        elif line.startswith("#SEG "):
+            cur["seg"] = line[5:].split()
+        elif line.startswith("#CAP "):
+            cur["cap"] = line[5:].split()
         elif line.startswith("#PUNC "):
             cur["punc"] = line[6:]
     if cur:
@@ -72,17 +90,29 @@ def main():
     with open(corpus, "w") as f:
         f.write("\n".join(r["text"] for r in recs) + "\n")
 
-    logits_path = os.path.join(build_dir, "pcs_parity_logits.txt")
-    if os.path.exists(logits_path):
-        os.remove(logits_path)  # the dump APPENDS; a stale file silently misaligns
+    paths = {k: os.path.join(build_dir, f"pcs_parity_{k}.txt")
+             for k in ("logits", "pre", "seg", "cap")}
+    for pth in paths.values():
+        if os.path.exists(pth):
+            os.remove(pth)  # the dumps APPEND; a stale file silently misaligns
     run = subprocess.run([ab, gguf, corpus], capture_output=True, text=True,
-                         env=dict(os.environ, PCS_DUMP_LOGITS=logits_path))
+                         env=dict(os.environ,
+                                  PCS_DUMP_LOGITS=paths["logits"],
+                                  PCS_DUMP_PRE=paths["pre"],
+                                  PCS_DUMP_SEG=paths["seg"],
+                                  PCS_DUMP_CAP=paths["cap"]))
     if run.returncode != 0:
         print(f"SKIP: rc={run.returncode}\n{run.stderr[-500:]}")
         return 0
     ours_punc = [ln for ln in run.stdout.splitlines() if ln.strip()]
-    flat = [[float(x) for x in ln.split()] for ln in open(logits_path) if ln.strip()] \
-        if os.path.exists(logits_path) else []
+
+    def read_lines(key):
+        return [ln.strip() for ln in open(paths[key])] if os.path.exists(paths[key]) else []
+
+    flat = [[float(x) for x in ln.split()] for ln in read_lines("logits") if ln]
+    ours_pre = [ln for ln in read_lines("pre") if ln]
+    ours_seg = [ln.split()[0] for ln in read_lines("seg") if ln]
+    ours_cap = [ln for ln in read_lines("cap") if ln]
 
     fails = 0
 
@@ -117,6 +147,29 @@ def main():
                 print(f"  line {ri} {tokn!r}: ref={refp}({rl}) ours={ourp}({ol})")
             if diffs:
                 fails += 1
+
+    # pre / seg / cap: flat per-token streams, same order as the logits dump.
+    for key, ours, refkey, fmt in (("pre", ours_pre, "pre", str),
+                                   ("seg", ours_seg, "seg", str),
+                                   ("cap", ours_cap, "cap", str)):
+        expect = [fmt(x) for r in recs for x in r.get(refkey, [])]
+        if not ours:
+            print(f"{key:<12}: NOT DUMPED — PCS_DUMP_{key.upper()} produced nothing")
+            fails += 1
+            continue
+        if len(ours) != len(expect):
+            print(f"{key:<12}: MISALIGNED (ref {len(expect)} tokens, ours {len(ours)})")
+            fails += 1
+            continue
+        ok = sum(1 for a, b in zip(ours, expect) if a == b)
+        print(f"{key:<12}: {ok}/{len(expect)} tokens agree ({100.0*ok/len(expect):.2f}%)")
+        if ok != len(expect):
+            shown = 0
+            for i, (a, b) in enumerate(zip(ours, expect)):
+                if a != b and shown < 5:
+                    print(f"  token {i}: ref={b} ours={a}")
+                    shown += 1
+            fails += 1
 
     same = sum(1 for i, r in enumerate(recs)
                if i < len(ours_punc) and ours_punc[i] == r.get("punc"))

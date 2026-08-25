@@ -48,11 +48,44 @@ recovers it and matches the f32 reference exactly, which is the first
 decoded-output evidence for the registry's `q4_k-imatrix` default; its
 description ("4.2x lower KL vs f32") had only ever been a divergence number.
 
-## Not covered
+## All four heads are compared
 
-`pre_preds`, `cap_preds` and `seg_preds` have no runtime dump hook, so they are
-checked only through their effect on the decoded text — which is why the `I'm
-OK` regression above shows up as a text diff rather than as a head-level one. A
-change that altered truecasing while leaving punctuation alone would be caught
-but not localised. `PCS_DUMP_CAP` / `PCS_DUMP_SEG` alongside the existing
-`PCS_DUMP_LOGITS` would close that.
+`PCS_DUMP_LOGITS` only ever covered post-punc, so the other three heads could be
+checked only through their effect on the restored string — which is why the
+`I'm OK` regression above first showed up as a text diff with nothing to say
+which head caused it. `PCS_DUMP_PRE`, `PCS_DUMP_SEG` and `PCS_DUMP_CAP` close
+that, and the localisation is immediate:
+
+```
+plain q4_k, against this reference
+  post preds  : 67/67
+  pre         : 67/67
+  seg         : 67/67
+  cap         : 66/67   token 37: ref=1111111111111000 ours=0000000000000000
+  decoded text: 5/6      I'm ok  vs  I'm OK
+```
+
+One token, one head. The punctuation path is untouched by q4_k; the whole cost
+is the truecase head dropping a single token's capitalisation.
+
+All three hooks are written after every head has finished, in one block, so the
+four dumps are aligned by construction rather than by separate call sites
+agreeing about ordering. They **append**, like `PCS_DUMP_LOGITS` — a consumer
+must delete the file first or a stale run silently shifts every comparison.
+
+Two details the format does not make obvious:
+
+- **`PCS_DUMP_SEG` has two columns.** Column 0 is
+  `softmax(logits)[boundary] > 0.05`, the ONNX `seg_preds` output — a low tuned
+  threshold, *not* argmax. Column 1 is the hard argmax, which conditions the
+  truecase head's "is-sentence-initial" input. The blueprint exports only the
+  former, so only that is gated; the latter is dumped so a cap mismatch can be
+  traced to its conditioning rather than blamed on the cap head.
+- **`PCS_DUMP_CAP` is per CHARACTER of the token, `▁` included.** `▁hello`
+  reads `1100…`: bit 0 covers the `▁` (ignored downstream) and bit 1
+  capitalises the `h`. It is not one flag per token. Bits past the token's
+  length are don't-care and the model does set them.
+
+The hooks live in all three copies of pcs.cpp (CrispEmbed's, and both of
+CrispASR's), verified by CrispASR's `test-copies-in-sync` and by running this
+harness through the sibling build — 67/67 on every head either way.
