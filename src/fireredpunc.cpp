@@ -1074,14 +1074,24 @@ char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
             cap_next = false;
         } else {
             fixed += c;
-            // `cap_next` used to survive every character that was not a
-            // lowercase ASCII letter, so it stayed armed across CJK and across
-            // an ALREADY-capitalised initial: `我在Google...` came out as
-            // `GOogle`, because 'G' did not disarm it and the following 'o'
-            // did. Any non-space character ends the "start of sentence"
-            // position — which is also closer to upstream's RuleBaedTxtFix,
-            // where only txt[0] and a post-`.!?` position are capitalised.
-            // HF path only, so the historical arm stays byte-identical.
+            // #308: an ALREADY-uppercase letter must disarm cap_next, or the
+            // pending capitalisation lands on the NEXT character and "And"
+            // becomes "ANd". This applies on BOTH arms — it is a bug fix, not a
+            // behaviour preference. CrispASR shipped it (762d9e27, after it
+            // "lived in a dead copy" for months) and CrispEmbed's copy only ever
+            // had it on the HF arm; the two are one file now, so the fix wins
+            // over byte-identity with this repo's older legacy output. Keep the
+            // literal form: CrispASR's tests/test-copies-in-sync.cpp greps for
+            // it in both of its copies.
+            if (c >= 'A' && c <= 'Z') {
+                cap_next = false;
+            }
+            // The HF path goes further. `cap_next` used to survive every
+            // character that was not a lowercase ASCII letter, so it stayed
+            // armed across CJK too: `我在Google...` came out as `GOogle`. Any
+            // non-space character ends the "start of sentence" position, which
+            // is also closer to upstream's RuleBaedTxtFix, where only txt[0]
+            // and a post-`.!?` position are capitalised.
             if (hf_tok && c != ' ') cap_next = false;
             // Check for sentence enders (. ? ! and their full-width versions)
             if (c == '.' || c == '?' || c == '!') {
