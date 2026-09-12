@@ -14,8 +14,12 @@ Pod::Spec.new do |s|
   s.author           = { 'CrispStrobe' => 'info@crispstrobe.com' }
   s.source           = { :path => '.' }
 
-  s.platform         = :osx, '10.15'
-  s.osx.deployment_target = '10.15'
+  # The distributed dylibs are Apple-silicon-only, and ggml's Metal event
+  # synchronization calls an API introduced in macOS 12 — so 12.0 is the
+  # real floor. Claiming 10.15, as this did, made the pod installable on
+  # systems where the dylib cannot load at all.
+  s.platform         = :osx, '12.0'
+  s.osx.deployment_target = '12.0'
 
   # The prebuilt libs are produced by CI (release.yml) and published as GitHub
   # release assets; this fetches the tarball for this pod's version on `pod
