@@ -15,6 +15,7 @@ METAL=ON
 SHARED=OFF
 CLEAN=false
 JOBS=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
+DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-12.0}"
 CMAKE_EXTRA=()
 
 while [[ $# -gt 0 ]]; do
@@ -57,6 +58,9 @@ fi
 echo "[INFO] Configuring..."
 cmake -S . -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_OSX_DEPLOYMENT_TARGET="$DEPLOYMENT_TARGET" \
+    -DCMAKE_OSX_ARCHITECTURES=arm64 \
+    -DGGML_NATIVE=OFF \
     -DGGML_METAL="$METAL" \
     -DGGML_METAL_EMBED_LIBRARY=ON \
     -DCRISPEMBED_BUILD_SHARED="$SHARED" \
