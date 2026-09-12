@@ -66,7 +66,7 @@ jobs:
             lib_name: libcrispembed.so
           - name: macos-arm64
             os: macos-latest
-            cmake_args: -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple
+            cmake_args: -DGGML_NATIVE=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple
             lib_name: libcrispembed.dylib
           - name: windows-x86_64
             os: windows-latest
