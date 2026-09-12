@@ -123,6 +123,8 @@ jobs:
             # SME in and break every M1/M2/M3 user.
             cmake_args: >-
               -DGGML_NATIVE=OFF
+              -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0
+              -DCMAKE_OSX_ARCHITECTURES=arm64
               -DGGML_METAL=ON
               -DGGML_METAL_EMBED_LIBRARY=ON
               -DGGML_BLAS=ON
