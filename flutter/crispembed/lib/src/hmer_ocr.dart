@@ -41,10 +41,11 @@ DynamicLibrary _openLib([String? libPath]) {
 }
 
 /// On-device handwritten math OCR via CrispEmbed's HMER model.
-class CrispEmbedHmerOcr {
+class CrispEmbedHmerOcr implements Finalizable {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
   bool _disposed = false;
+  late final NativeFinalizer _finalizer;
 
   late final _HmerFreeDart _free;
   late final _HmerRecognizeGrayDart _recognizeGray;
@@ -76,6 +77,10 @@ class CrispEmbedHmerOcr {
     if (_ctx == nullptr) {
       throw Exception('Failed to load HMER model: $modelPath');
     }
+    
+    final freePtr = _lib.lookup<NativeFunction<Void Function(Pointer<Void>)>>('crispembed_hmer_model_free');
+    _finalizer = NativeFinalizer(freePtr.cast());
+    _finalizer.attach(this, _ctx.cast(), detach: this);
   }
 
   /// Recognize handwritten math from a grayscale float image.

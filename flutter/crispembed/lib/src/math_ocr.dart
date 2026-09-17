@@ -38,10 +38,11 @@ DynamicLibrary _openOcrLib([String? libPath]) {
 }
 
 /// On-device math OCR via CrispEmbed's ggml inference.
-class CrispEmbedOcr {
+class CrispEmbedOcr implements Finalizable {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
   bool _disposed = false;
+  late final NativeFinalizer _finalizer;
 
   late final _OcrFreeDart _free;
   late final _OcrRecognizeDart _recognize;
@@ -72,6 +73,10 @@ class CrispEmbedOcr {
     if (_ctx == nullptr) {
       throw Exception('Failed to load OCR model: $modelPath');
     }
+    
+    final freePtr = _lib.lookup<NativeFunction<Void Function(Pointer<Void>)>>('crispembed_ocr_model_free');
+    _finalizer = NativeFinalizer(freePtr.cast());
+    _finalizer.attach(this, _ctx.cast(), detach: this);
   }
 
   /// Recognize math from a grayscale float image.
