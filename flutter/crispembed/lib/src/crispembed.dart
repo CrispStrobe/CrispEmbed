@@ -1567,10 +1567,11 @@ class CrispPix2Struct {
 /// print(text);
 /// gv.dispose();
 /// ```
-class CrispGraniteVision {
+class CrispGraniteVision implements Finalizable {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
   bool _disposed = false;
+  late final NativeFinalizer _finalizer;
 
   late final CrispembedGraniteVisionRecognizeDart _recognizeFn;
   late final CrispembedGraniteVisionFreeDart _freeFn;
@@ -1594,6 +1595,10 @@ class CrispGraniteVision {
     if (_ctx == nullptr) {
       throw Exception('Failed to load Granite Vision model: $modelPath');
     }
+    
+    final freePtr = _lib.lookup<NativeFunction<Void Function(Pointer<Void>)>>('crispembed_granite_vision_free');
+    _finalizer = NativeFinalizer(freePtr.cast());
+    _finalizer.attach(this, _ctx.cast(), detach: this);
   }
 
   void _bindFunctions() {
