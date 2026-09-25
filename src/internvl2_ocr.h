@@ -345,6 +345,7 @@ internvl2_ocr_context * internvl2_ocr_init(const char * model_path, int n_thread
 void internvl2_ocr_free(internvl2_ocr_context * ctx);
 
 void internvl2_ocr_set_prompt(internvl2_ocr_context * ctx, const char * prompt);
+const char * internvl2_ocr_get_prompt(const internvl2_ocr_context * ctx);
 void internvl2_ocr_set_max_tokens(internvl2_ocr_context * ctx, int max_tokens);
 
 const char * internvl2_ocr_recognize_raw(internvl2_ocr_context * ctx, const uint8_t * pixel_bytes, int width,

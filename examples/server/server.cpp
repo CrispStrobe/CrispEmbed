@@ -402,6 +402,8 @@ int main(int argc, char ** argv) {
     std::string lid_model_path;        // text LID model
     bool enable_ocr_orch = false;      // --ocr-pipeline: enable orchestrator endpoint
     int ocr_max_tokens = 0;            // --ocr-max-tokens N (0 = engine default)
+    int server_dim = 0;                // --dim N: default Matryoshka truncation (0 = native)
+    std::string ocr_prompt;            // --ocr-prompt TEXT ("" = engine default)
     std::string vlm_model_path;        // VLM escalation model for orchestrator
     int vlm_engine = 0;                // 0=GOT, 1=GLM, 2=Qwen2-VL(+PaddleOCR-VL), 3=InternVL2
     std::string punct_model_path;      // punct restoration model for orchestrator
@@ -475,6 +477,12 @@ int main(int argc, char ** argv) {
             lid_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-max-tokens") == 0 && i + 1 < argc)
             ocr_max_tokens = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--offline") == 0)
+            crispembed_mgr::set_offline(true);
+        else if (strcmp(argv[i], "--dim") == 0 && i + 1 < argc)
+            server_dim = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--ocr-prompt") == 0 && i + 1 < argc)
+            ocr_prompt = argv[++i];
         else if (strcmp(argv[i], "--ocr-pipeline") == 0)
             enable_ocr_orch = true;
         else if (strcmp(argv[i], "--ocr-engine") == 0 && i + 1 < argc)
@@ -511,6 +519,11 @@ int main(int argc, char ** argv) {
             instructir_model_path = argv[++i];
         else if (strcmp(argv[i], "--adair-model") == 0 && i + 1 < argc)
             adair_model_path = argv[++i];
+        else
+            // An unrecognised option (or one missing its value) used to be
+            // dropped without a word, so a typo'd flag looked like a feature
+            // that did not work (issue #56).
+            fprintf(stderr, "crispembed-server: warning: ignoring unknown option '%s' (or missing value)\n", argv[i]);
     }
 
     // ocr_det_model_path counts as a model: `--ocr-pipeline --ocr-det D
@@ -526,6 +539,11 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
+        fprintf(stderr, "  --offline never access the network: models must be local paths or already cached\n");
+        fprintf(stderr, "            (also CRISPEMBED_OFFLINE=1 or HF_HUB_OFFLINE=1)\n");
+        fprintf(stderr, "  --dim N   default Matryoshka truncation of text embeddings (truncate to N dims,\n");
+        fprintf(stderr, "            then L2-renormalize). Requests may override it with \"dimensions\"\n");
+        fprintf(stderr, "            on /embed, /v1/embeddings, /api/embed and /api/embeddings.\n");
         fprintf(stderr, "\nRequest sandboxing:\n");
         fprintf(stderr, "  --image-root DIR  confine every {\"image\": PATH} request to DIR.\n");
         fprintf(stderr, "                    Endpoints read images by server-side path; without\n");
@@ -556,6 +574,9 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-max-tokens N  generation cap for VLM OCR engines (0 = engine default)\n");
+        fprintf(stderr, "  --ocr-prompt TEXT   default instruction for prompt-following VLM OCR engines\n");
+        fprintf(stderr, "                      (qwen2vl/qwen3vl/olmocr, internvl2, lfm2-vl, granite-vision);\n");
+        fprintf(stderr, "                      POST /ocr/model also takes a per-request \"prompt\"\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, ...);\n");
@@ -620,12 +641,48 @@ int main(int argc, char ** argv) {
         }
         hp = crispembed_get_hparams(ctx);
         dim = hp->n_output > 0 ? hp->n_output : hp->n_embd;
+        if (server_dim < 0 || (server_dim > 0 && dim > 0 && server_dim > dim)) {
+            fprintf(stderr, "error: --dim %d is outside 1..%d (the model's native dimension)\n", server_dim, dim);
+            return 1;
+        }
+        if (server_dim > 0 && server_dim < dim) {
+            crispembed_set_dim(ctx, server_dim);
+            fprintf(stderr, "crispembed-server: Matryoshka truncation %d -> %d dims (L2-renormalized)\n", dim,
+                    server_dim);
+        }
         model_name = model_path;
         auto slash = model_name.find_last_of("/\\");
         if (slash != std::string::npos) model_name = model_name.substr(slash + 1);
         auto dot = model_name.rfind(".gguf");
         if (dot != std::string::npos) model_name = model_name.substr(0, dot);
     }
+
+    // Per-request Matryoshka truncation (issue #55). OpenAI and Ollama both
+    // call the field "dimensions". The library truncates and re-normalizes
+    // (crispembed_set_dim), so the client receives a unit vector of the
+    // requested length instead of truncating — and re-normalizing — itself.
+    // Returns 0 when absent, the requested size when valid, -1 when invalid
+    // (err is filled). A value equal to the native size is a valid no-op.
+    auto request_dim = [&](const std::string & body, std::string & err) -> int {
+        const double v = json_extract_number(body, "dimensions", 0.0);
+        if (v == 0.0) return 0;
+        const int n = (int)v;
+        if ((double)n != v || n < 1 || (dim > 0 && n > dim)) {
+            err = "dimensions must be an integer in 1.." + std::to_string(dim);
+            return -1;
+        }
+        return n;
+    };
+    // Applies a request's dimensions for the duration of one locked encode and
+    // restores the server default (--dim) afterwards; the context is shared.
+    struct dim_scope {
+        crispembed_context * c;
+        int restore;
+        bool active;
+        ~dim_scope() {
+            if (active) crispembed_set_dim(c, restore);
+        }
+    };
 
     httplib::Server svr;
 
@@ -657,12 +714,22 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\": \"no texts provided\"}", "application/json");
             return;
         }
+        std::string dim_err;
+        const int req_dim = request_dim(body, dim_err);
+        if (req_dim < 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"" + json_escape(dim_err) + "\"}", "application/json");
+            return;
+        }
 
         std::lock_guard<std::mutex> lock(model_mutex);
+        dim_scope dscope{ ctx, server_dim, req_dim > 0 };
+        if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
         auto t0 = std::chrono::steady_clock::now();
 
         std::ostringstream js;
         js << "{\"embeddings\": [";
+        int out_dim = 0; // actual (possibly truncated) length
 
         if (texts.size() == 1) {
             // Single text: use single encode
@@ -673,6 +740,7 @@ int main(int argc, char ** argv) {
                 res.set_content("{\"error\": \"encoding failed\"}", "application/json");
                 return;
             }
+            out_dim = d;
             js << "[";
             for (int j = 0; j < d; j++) {
                 if (j > 0) js << ", ";
@@ -690,6 +758,7 @@ int main(int argc, char ** argv) {
                 res.set_content("{\"error\": \"batch encoding failed\"}", "application/json");
                 return;
             }
+            out_dim = d;
             for (size_t i = 0; i < texts.size(); i++) {
                 if (i > 0) js << ", ";
                 js << "[";
@@ -701,7 +770,9 @@ int main(int argc, char ** argv) {
             }
         }
 
-        js << "], \"dim\": " << dim << "}";
+        // Report the length actually returned: with --dim / "dimensions" it is
+        // the truncated size, not the model's native one.
+        js << "], \"dim\": " << out_dim << "}";
 
         auto t1 = std::chrono::steady_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
@@ -726,8 +797,19 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\": {\"message\": \"no input\"}}", "application/json");
             return;
         }
+        std::string dim_err;
+        const int req_dim = request_dim(body, dim_err);
+        if (req_dim < 0) {
+            res.status = 400;
+            res.set_content("{\"error\": {\"message\": \"" + json_escape(dim_err) +
+                                "\", \"type\": \"invalid_request_error\", \"param\": \"dimensions\"}}",
+                            "application/json");
+            return;
+        }
 
         std::lock_guard<std::mutex> lock(model_mutex);
+        dim_scope dscope{ ctx, server_dim, req_dim > 0 };
+        if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
 
         std::ostringstream js;
         // Batch encode all texts at once
@@ -776,8 +858,17 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\": \"no input provided\"}", "application/json");
             return;
         }
+        std::string dim_err;
+        const int req_dim = request_dim(body, dim_err);
+        if (req_dim < 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"" + json_escape(dim_err) + "\"}", "application/json");
+            return;
+        }
 
         std::lock_guard<std::mutex> lock(model_mutex);
+        dim_scope dscope{ ctx, server_dim, req_dim > 0 };
+        if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
         auto t0 = std::chrono::steady_clock::now();
 
         std::vector<const char *> ptrs(texts.size());
@@ -832,8 +923,17 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\": \"no prompt provided\"}", "application/json");
             return;
         }
+        std::string dim_err;
+        const int req_dim = request_dim(body, dim_err);
+        if (req_dim < 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"" + json_escape(dim_err) + "\"}", "application/json");
+            return;
+        }
 
         std::lock_guard<std::mutex> lock(model_mutex);
+        dim_scope dscope{ ctx, server_dim, req_dim > 0 };
+        if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
 
         int d = 0;
         const float * vec = crispembed_encode(ctx, text.c_str(), &d);
@@ -1137,6 +1237,9 @@ int main(int argc, char ** argv) {
         if (!resolved.empty()) ocr_model_path = resolved;
         ocr_model_ctx = crispembed_ocr_model_init(ocr_model_path.c_str(), n_threads);
         if (!ocr_model_ctx) fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", ocr_model_path.c_str());
+        if (ocr_model_ctx && !ocr_prompt.empty() && !crispembed_ocr_model_set_prompt(ocr_model_ctx, ocr_prompt.c_str()))
+            fprintf(stderr, "Warning: --ocr-prompt ignored: OCR model '%s' runs a fixed task prompt\n",
+                    ocr_model_path.c_str());
     }
 
     // ── General OCR Pipeline (text detection + recognition) ──
@@ -1239,7 +1342,7 @@ int main(int argc, char ** argv) {
         // "max_tokens" instead. This was hardcoded to 0 until 2026-08-25, the
         // same defect the CLI's stage builder had.
         st.vlm_max_tokens = ocr_max_tokens;
-        st.vlm_prompt = nullptr;
+        st.vlm_prompt = ocr_prompt.empty() ? nullptr : ocr_prompt.c_str();
         st.page_segmentation = 0;
         st.min_chars = 8;
         st.min_confidence = 0.5f;
@@ -1767,9 +1870,28 @@ int main(int argc, char ** argv) {
 
         int req_max_tokens = 0;
         req_max_tokens = (int)json_extract_number(body, "max_tokens", req_max_tokens);
+        // Optional per-request instruction for prompt-following VLMs. It is
+        // applied for this request only; the startup --ocr-prompt (or the
+        // engine default) is restored afterwards so one client's instruction
+        // does not leak into the next request on the shared context.
+        std::string req_prompt;
+        {
+            std::vector<std::string> pv;
+            if (json_extract_strings(body, "prompt", pv) > 0) req_prompt = pv.front();
+        }
 
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
         if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
+        int prompt_applied = -1; // -1 = no per-request prompt
+        if (!req_prompt.empty()) prompt_applied = crispembed_ocr_model_set_prompt(ocr_model_ctx, req_prompt.c_str());
+        struct prompt_restore {
+            void * ctx;
+            const std::string & dflt;
+            bool active;
+            ~prompt_restore() {
+                if (active) crispembed_ocr_model_set_prompt(ctx, dflt.empty() ? nullptr : dflt.c_str());
+            }
+        } restore{ ocr_model_ctx, ocr_prompt, prompt_applied == 1 };
         auto t0 = std::chrono::steady_clock::now();
 
         int w = 0, h = 0, ch = 0;
@@ -1799,8 +1921,9 @@ int main(int argc, char ** argv) {
             if (i > 0) js << ",";
             js << std::fixed << std::setprecision(4) << tok_conf[i];
         }
-        js << "]"
-           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+        js << "]";
+        if (prompt_applied >= 0) js << ", \"prompt_applied\": " << (prompt_applied ? "true" : "false");
+        js << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /ocr/model in %.1f ms (%d chars, conf=%.2f)\n", ms, out_len, mean_conf);
         res.set_content(js.str(), "application/json");
@@ -3609,6 +3732,8 @@ int main(int argc, char ** argv) {
         js << "{\"status\": \"ok\"";
         if (ctx) {
             js << ", \"dim\": " << dim << ", \"layers\": " << hp->n_layer << ", \"vocab\": " << hp->n_vocab;
+            // "dim" stays the native size; the served default after --dim is separate.
+            if (server_dim > 0 && server_dim < dim) js << ", \"output_dim\": " << server_dim;
             // Retrieval capabilities of the loaded model → the matching POST routes.
             if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank + /v1/rerank
             if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse

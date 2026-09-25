@@ -24,6 +24,15 @@ std::string cache_dir();
 std::string resolve_model(const std::string & arg, bool auto_download = false,
                           const std::string & accepted_license = "");
 
+// Offline mode (issue #52): when on, nothing in this process reaches the
+// network — resolve_model() only returns files that already exist (explicit
+// paths or cached registry entries, companions included) and fails with a
+// clear message instead of downloading. On when set_offline(true) was called
+// (--offline) or CRISPEMBED_OFFLINE is set to a non-"0" value, or
+// HF_HUB_OFFLINE is truthy (1/true/yes/on), matching the Hugging Face tools.
+void set_offline(bool offline);
+bool offline();
+
 // List available model names
 void list_models();
 

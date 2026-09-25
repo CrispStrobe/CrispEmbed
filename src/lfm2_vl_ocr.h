@@ -59,6 +59,9 @@ float lfm2_vl_ocr_mean_confidence(const lfm2_vl_ocr_context * ctx);
 /// Set the user prompt for the next recognition.
 void lfm2_vl_ocr_set_prompt(lfm2_vl_ocr_context * ctx, const char * prompt);
 
+/// Current user prompt (owned by ctx, valid until the next set_prompt or free).
+const char * lfm2_vl_ocr_get_prompt(const lfm2_vl_ocr_context * ctx);
+
 /// Set max tokens for generation.
 void lfm2_vl_ocr_set_max_tokens(lfm2_vl_ocr_context * ctx, int max_tokens);
 

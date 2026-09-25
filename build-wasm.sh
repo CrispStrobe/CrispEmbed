@@ -157,6 +157,7 @@ EXPORTED_FUNCS="[\
 '_wasm_ocr_confidences',\
 '_wasm_ocr_mean_confidence',\
 '_wasm_ocr_set_max_tokens',\
+'_wasm_ocr_set_prompt',\
 '_wasm_ocr_free',\
 '_wasm_ocr_pipeline_init',\
 '_wasm_ocr_pipeline_run',\
