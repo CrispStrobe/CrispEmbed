@@ -108,6 +108,13 @@ CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembe
 // Model registry / auto-download helpers shared by the CLI and wrappers.
 CRISPEMBED_API const char * crispembed_cache_dir(void);
 CRISPEMBED_API const char * crispembed_resolve_model(const char * arg, int auto_download);
+// Offline mode: when on, crispembed_resolve_model never touches the network —
+// it returns cached/local files only and fails with a message otherwise. Also
+// enabled by CRISPEMBED_OFFLINE=1 or a truthy HF_HUB_OFFLINE, even when
+// crispembed_set_offline(0) was called. crispembed_is_offline() reports the
+// effective state.
+CRISPEMBED_API void crispembed_set_offline(int offline);
+CRISPEMBED_API int crispembed_is_offline(void);
 // Get recommended prefix for a model. Returns NULL if not needed.
 CRISPEMBED_API const char * crispembed_query_prefix(const char * model_name);
 CRISPEMBED_API const char * crispembed_passage_prefix(const char * model_name);
@@ -614,6 +621,14 @@ CRISPEMBED_API float crispembed_ocr_model_mean_confidence(const void * ctx);
 /// No-op for formula OCR engines (pix2tex, HMER, BTTR, etc.) that use fixed
 /// decode budgets. Must be called before crispembed_ocr_model_recognize.
 CRISPEMBED_API void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens);
+
+/// Replace the instruction text sent to an instruction-following VLM engine
+/// (Qwen2-VL / Qwen2.5-VL / Qwen3-VL / PaddleOCR-VL / olmOCR, InternVL2,
+/// LFM2-VL, Granite-Vision). NULL or "" restores the engine's default prompt.
+/// Returns 1 when the loaded engine accepts a custom prompt, 0 when it does not
+/// (formula/line recognizers and fixed-task document VLMs) — in that case the
+/// call has no effect. Applies to subsequent crispembed_ocr_model_recognize calls.
+CRISPEMBED_API int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt);
 
 // --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
 // Kept for ABI compatibility; prefer the crispembed_ocr_model_* names above.

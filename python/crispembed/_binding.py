@@ -80,6 +80,29 @@ def set_gpu_backend(name: Optional[str], lib_path: Optional[str] = None) -> None
     lib.crispembed_set_gpu_backend((name or "").encode("utf-8"))
 
 
+def set_offline(offline: bool = True, lib_path: Optional[str] = None) -> None:
+    """Forbid (or re-allow) network access for model resolution, process-wide.
+
+    In offline mode model names resolve only to files already in the cache
+    (``crispembed_cache_dir()``) and explicit paths; anything missing fails with
+    a message naming the expected location instead of downloading. Setting
+    ``CRISPEMBED_OFFLINE=1`` or ``HF_HUB_OFFLINE=1`` has the same effect and
+    cannot be overridden by ``set_offline(False)``.
+    """
+    lib = _load_library(lib_path)
+    lib.crispembed_set_offline.argtypes = [ctypes.c_int]
+    lib.crispembed_set_offline.restype = None
+    lib.crispembed_set_offline(1 if offline else 0)
+
+
+def is_offline(lib_path: Optional[str] = None) -> bool:
+    """Effective offline state (``set_offline`` or the environment variables)."""
+    lib = _load_library(lib_path)
+    lib.crispembed_is_offline.argtypes = []
+    lib.crispembed_is_offline.restype = ctypes.c_int
+    return bool(lib.crispembed_is_offline())
+
+
 def accept_biometric_use(lib_path: Optional[str] = None) -> None:
     """Acknowledge that this process may run face *recognition* models.
 
@@ -144,10 +167,15 @@ class CrispEmbed:
         n_threads: int = 4,
         lib_path: Optional[str] = None,
         auto_download: Optional[bool] = None,
+        offline: Optional[bool] = None,
     ):
         self._lib = _load_library(lib_path)
         self._setup_signatures()
 
+        # offline=True switches the whole process to offline mode (the model
+        # manager is process-global); None leaves the current state alone.
+        if offline is not None:
+            set_offline(offline, lib_path=lib_path)
         resolved = self.resolve_model(model_path, auto_download=auto_download)
 
         # Init model
@@ -1653,6 +1681,14 @@ def _setup_ocr_model_signatures(lib):
     lib.crispembed_ocr_model_mean_confidence.argtypes = [ctypes.c_void_p]
     lib.crispembed_ocr_model_mean_confidence.restype = ctypes.c_float
 
+    lib.crispembed_ocr_model_set_max_tokens.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    lib.crispembed_ocr_model_set_max_tokens.restype = None
+
+    # Optional: older shared libraries predate the prompt setter.
+    if hasattr(lib, "crispembed_ocr_model_set_prompt"):
+        lib.crispembed_ocr_model_set_prompt.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        lib.crispembed_ocr_model_set_prompt.restype = ctypes.c_int
+
 
 class CrispOcrModel:
     """Math/document OCR  - recognizes LaTeX or text from images.
@@ -1685,6 +1721,27 @@ class CrispOcrModel:
             model_path.encode("utf-8"), n_threads)
         if not self._ctx:
             raise RuntimeError(f"Failed to load OCR model: {model_path}")
+
+    def set_max_tokens(self, max_tokens: int) -> None:
+        """Cap the number of tokens a VLM OCR engine generates (no-op for
+        formula/line recognizers)."""
+        self._lib.crispembed_ocr_model_set_max_tokens(self._ctx, int(max_tokens))
+
+    def set_prompt(self, prompt: Optional[str]) -> bool:
+        """Set the instruction sent to a prompt-following VLM engine.
+
+        Supported: Qwen2-VL / Qwen2.5-VL / Qwen3-VL (incl. PaddleOCR-VL,
+        olmOCR), InternVL2, LFM2-VL, Granite-Vision. ``None`` or ``""``
+        restores the engine's default prompt.
+
+        Returns:
+            True when the prompt was applied, False when the loaded engine runs
+            a fixed task prompt (formula/line recognizers, GOT, GLM-OCR, ...).
+        """
+        if not hasattr(self._lib, "crispembed_ocr_model_set_prompt"):
+            raise RuntimeError("this libcrispembed build predates crispembed_ocr_model_set_prompt")
+        arg = prompt.encode("utf-8") if prompt else None
+        return bool(self._lib.crispembed_ocr_model_set_prompt(self._ctx, arg))
 
     def recognize(self, image) -> str:
         """Recognize LaTeX from an image.

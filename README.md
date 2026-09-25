@@ -61,6 +61,7 @@ cmake -S . -B build && cmake --build build -j        # macOS: ./build-macos.sh (
 ./build/crispembed -m flova           --ocr score.png         # music → LilyPond
 ./build/crispembed -m transcoda       --ocr page.png          # full-page score → **kern
 ./build/crispembed -m qwen3vl-2b      --ocr document.png      # VLM document OCR
+./build/crispembed -m qwen3vl-2b      --ocr ui.png --ocr-prompt "Extract only the menu text."
 
 # Cross-modal & face
 ./build/crispembed -m clip-vit-base-patch16 --image photo.jpg
@@ -110,6 +111,37 @@ threshold against — the transform is monotonic, so the ranking matches
 `/rerank`'s exactly; `CRISPEMBED_SERVER_RERANK_RAW_SCORES=1` emits the raw logit
 instead. `document` is echoed only when `"return_documents": true`, matching
 Cohere's default.
+
+**Matryoshka truncation over HTTP.** Models trained for it (jina-v5, EmbeddingGemma,
+Qwen3-Embedding, …) keep most of their retrieval quality at a fraction of their
+native width. The server truncates *and* L2-renormalizes, so clients receive
+unit vectors of the requested length and never download the discarded tail:
+
+```bash
+crispembed-server -m jina-v5-nano --dim 256          # default for every request
+curl http://localhost:8080/v1/embeddings -d '{"input": ["hi"], "dimensions": 128}'
+```
+
+`"dimensions"` (the OpenAI / Ollama field name) is accepted on `/embed`,
+`/v1/embeddings`, `/api/embed` and `/api/embeddings` and overrides `--dim` for
+that request only; a value outside 1..native returns 400. `/health` keeps `dim`
+as the native size and adds `output_dim` when `--dim` is active.
+
+**Offline operation.** `--offline` (CLI and server), `CRISPEMBED_OFFLINE=1`,
+`HF_HUB_OFFLINE=1`, or `crispembed.set_offline(True)` in Python forbid every
+download: model names resolve only to already-cached files (see `--cache-dir`)
+and explicit paths, and a missing model fails with the path it was expected at
+instead of reaching out to the network. Stage the cache ahead of time on a
+connected machine, then deploy.
+
+**Custom VLM OCR prompts.** `--ocr-prompt TEXT` (CLI and server; per-request
+`"prompt"` on `POST /ocr/model`; `CrispOcrModel.set_prompt()` in Python) replaces
+the instruction sent to prompt-following VLMs: Qwen2/2.5/3-VL (incl.
+PaddleOCR-VL, olmOCR), InternVL2, LFM2-VL and Granite-Vision. Formula/line
+recognizers and fixed-task document VLMs (GOT, GLM-OCR, LightOnOCR,
+DeepSeek-OCR2, …) run the task prompt they were trained on and warn that the
+option is ignored. Unknown command-line options now warn instead of being
+silently swallowed as input text.
 
 ---
 

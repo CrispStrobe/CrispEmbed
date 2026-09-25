@@ -2964,6 +2964,10 @@ void lfm2_vl_ocr_set_prompt(lfm2_vl_ocr_context * ctx, const char * prompt) {
     if (ctx && prompt) ctx->prompt = prompt;
 }
 
+const char * lfm2_vl_ocr_get_prompt(const lfm2_vl_ocr_context * ctx) {
+    return ctx ? ctx->prompt.c_str() : nullptr;
+}
+
 void lfm2_vl_ocr_set_max_tokens(lfm2_vl_ocr_context * ctx, int max_tokens) {
     if (ctx && max_tokens > 0) ctx->max_tokens = max_tokens;
 }
