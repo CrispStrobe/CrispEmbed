@@ -301,6 +301,10 @@ void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx);
 // Set the text prompt for generation (default: "Describe this image.")
 void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt);
 
+// Current text prompt (the model-specific default until set_prompt is called).
+// Owned by ctx, valid until the next set_prompt or free.
+const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx);
+
 // Set max generation tokens (default: 512)
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens);
 

@@ -1740,6 +1740,10 @@ void internvl2_ocr_set_prompt(internvl2_ocr_context * ctx, const char * prompt) 
     if (ctx && prompt) ctx->prompt = prompt;
 }
 
+const char * internvl2_ocr_get_prompt(const internvl2_ocr_context * ctx) {
+    return ctx ? ctx->prompt.c_str() : nullptr;
+}
+
 void internvl2_ocr_set_max_tokens(internvl2_ocr_context * ctx, int max_tokens) {
     if (ctx) ctx->max_tokens = max_tokens;
 }

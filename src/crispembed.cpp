@@ -2617,6 +2617,14 @@ extern "C" const char * crispembed_resolve_model(const char * arg, int auto_down
     return value.c_str();
 }
 
+extern "C" void crispembed_set_offline(int offline) {
+    crispembed_mgr::set_offline(offline != 0);
+}
+
+extern "C" int crispembed_is_offline(void) {
+    return crispembed_mgr::offline() ? 1 : 0;
+}
+
 extern "C" const char * crispembed_query_prefix(const char * model_name) {
     return crispembed_mgr::get_query_prefix(model_name);
 }
@@ -4370,6 +4378,15 @@ enum ocr_model_type {
 struct ocr_model {
     ocr_model_type type;
     void * ctx;
+    // Custom instruction for engines whose recognize call takes the prompt as
+    // an argument rather than as context state (Granite-Vision). Empty = the
+    // engine's own default.
+    std::string prompt;
+    // The engine's default prompt, captured on the first set_prompt so that
+    // set_prompt(NULL/"") can restore it (the server applies per-request
+    // prompts to one shared context).
+    std::string default_prompt;
+    bool default_captured = false;
 };
 
 static ocr_model_type detect_arch(const char * path) {
@@ -4615,7 +4632,8 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
     }
     case OCR_MODEL_GRANITE_VISION:
-        return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch, nullptr, ol);
+        return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch,
+                                        u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);
     case OCR_MODEL_LIGHTONOCR:
         return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_DEEPSEEK_OCR2:
@@ -4683,7 +4701,8 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
             uint8_t v = (uint8_t)(px[i] * 255.0f + 0.5f);
             rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
         }
-        return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3, nullptr, ol);
+        return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3,
+                                        u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);
     }
     case OCR_MODEL_LIGHTONOCR: {
         std::vector<uint8_t> gray(w * h);
@@ -4836,6 +4855,50 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
         // were missing from all three until 2026-08-25 — the flag simply did
         // nothing on them, which reads as "the model rambles", not as a bug.
         break;
+    }
+}
+
+extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) {
+    if (!ctx) return 0;
+    auto * u = (ocr_model *)ctx;
+    const bool reset = !prompt || !*prompt;
+    // Engines that keep the prompt as context state: snapshot their default
+    // once, before the first override, so a reset restores it exactly.
+    auto apply = [&](const char * current, auto setter) {
+        if (!u->default_captured) {
+            u->default_prompt = current ? current : "";
+            u->default_captured = true;
+        }
+        if (reset) {
+            if (!u->default_prompt.empty()) setter(u->default_prompt.c_str());
+        } else {
+            setter(prompt);
+        }
+        return 1;
+    };
+    switch (u->type) {
+    case OCR_MODEL_QWEN2VL: {
+        auto * c = (qwen2vl_ocr_context *)u->ctx;
+        return apply(qwen2vl_ocr_get_prompt(c), [&](const char * p) { qwen2vl_ocr_set_prompt(c, p); });
+    }
+    case OCR_MODEL_INTERNVL2: {
+        auto * c = (internvl2_ocr_context *)u->ctx;
+        return apply(internvl2_ocr_get_prompt(c), [&](const char * p) { internvl2_ocr_set_prompt(c, p); });
+    }
+    case OCR_MODEL_LFM2_VL: {
+        auto * c = (lfm2_vl_ocr_context *)u->ctx;
+        return apply(lfm2_vl_ocr_get_prompt(c), [&](const char * p) { lfm2_vl_ocr_set_prompt(c, p); });
+    }
+    case OCR_MODEL_GRANITE_VISION:
+        u->prompt = reset ? std::string() : std::string(prompt);
+        return 1;
+    default:
+        // Formula/line recognizers have no text prompt, and the remaining
+        // document VLMs (GOT, GLM-OCR, LightOnOCR, DeepSeek-OCR2, SmolDocling,
+        // Unlimited-OCR) run a fixed task prompt they were fine-tuned on.
+        // Report "not applied" so callers can tell the user instead of
+        // silently producing prompt-independent output (issue #56).
+        return 0;
     }
 }
 

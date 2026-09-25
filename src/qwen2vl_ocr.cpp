@@ -3134,9 +3134,18 @@ void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
             ctx->prompt_ids = ctx->tokenize(prompt);
             fprintf(stderr, "qwen2vl_ocr: prompt tokenized to %zu tokens\n", ctx->prompt_ids.size());
         } else {
+            // No BPE merges in this GGUF: build_token_ids() would fall back to
+            // the hardcoded "Describe this image." ids and the new prompt would
+            // be ignored without a trace. Say so instead.
+            fprintf(stderr, "qwen2vl_ocr: warning: GGUF has no BPE merges; custom prompt cannot be tokenized "
+                            "and will be ignored\n");
             ctx->prompt_ids.clear();
         }
     }
+}
+
+const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->prompt.c_str() : nullptr;
 }
 
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {

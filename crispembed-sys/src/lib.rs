@@ -227,6 +227,12 @@ extern "C" {
     /// Resolve a model argument to a local GGUF path.
     pub fn crispembed_resolve_model(arg: *const c_char, auto_download: c_int) -> *const c_char;
 
+    /// Offline mode: model resolution never downloads (also CRISPEMBED_OFFLINE
+    /// or a truthy HF_HUB_OFFLINE). `crispembed_is_offline` reports the
+    /// effective state.
+    pub fn crispembed_set_offline(offline: c_int);
+    pub fn crispembed_is_offline() -> c_int;
+
     /// Registry accessors for wrapper-side model listing.
     pub fn crispembed_n_models() -> c_int;
     pub fn crispembed_model_name(index: c_int) -> *const c_char;
@@ -603,6 +609,18 @@ extern "C" {
     /// Mean confidence score across all tokens from the most recent math OCR
     /// call. Returns 0.0 if no recognition has been performed yet.
     pub fn crispembed_ocr_model_mean_confidence(ctx: *const OcrModelContext) -> c_float;
+
+    /// Override the generation budget of a VLM OCR engine (no-op otherwise).
+    pub fn crispembed_ocr_model_set_max_tokens(ctx: *mut OcrModelContext, max_tokens: c_int);
+
+    /// Replace the instruction sent to a prompt-following VLM engine
+    /// (Qwen2/3-VL, InternVL2, LFM2-VL, Granite-Vision); NULL or "" restores
+    /// the engine default. Returns 1 when applied, 0 when the engine runs a
+    /// fixed task prompt.
+    pub fn crispembed_ocr_model_set_prompt(
+        ctx: *mut OcrModelContext,
+        prompt: *const c_char,
+    ) -> c_int;
 
     /// Recognize math from grayscale float pixels [0..1].
     /// Returns a NUL-terminated LaTeX string owned by the context, valid

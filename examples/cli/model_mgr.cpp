@@ -3,6 +3,7 @@
 #include "model_mgr.h"
 
 #include "crispembed.h"   // crispembed_accept_biometric_use
+#include "core/env_gate.h" // core_env::on
 #include "model_hashes.h" // model_pinned_sha256 (generated)
 
 #include <algorithm>
@@ -179,7 +180,28 @@ bool unpinned_downloads_allowed() {
     return env && *env && strcmp(env, "0") != 0;
 }
 
+bool g_offline = false; // set_offline(); env gates are read on each query
+
+// HF_HUB_OFFLINE follows huggingface_hub's own parsing (1/true/yes/on, any
+// case), so a value that library treats as "off" ("false", "no") is off here
+// too — core_env::on would read "false" as ON.
+bool hf_hub_offline_env() {
+    const char * e = std::getenv("HF_HUB_OFFLINE");
+    if (!e || !*e) return false;
+    std::string v(e);
+    for (char & c : v) c = (char)std::tolower((unsigned char)c);
+    return v == "1" || v == "true" || v == "yes" || v == "on";
+}
+
 } // namespace
+
+void set_offline(bool offline_mode) {
+    g_offline = offline_mode;
+}
+
+bool offline() {
+    return g_offline || core_env::on("CRISPEMBED_OFFLINE") || hf_hub_offline_env();
+}
 
 struct ModelEntry {
     const char * name;
@@ -1973,6 +1995,16 @@ static bool download_file(const std::string & source_url, const std::string & de
     (void)dest_path;
     return false;
 #else
+    // The single choke point every network fetch goes through (models and
+    // their companions alike), so offline mode is enforced here rather than
+    // trusted to each caller.
+    if (offline()) {
+        fprintf(stderr,
+                "crispembed: offline mode — not downloading\n  %s\n"
+                "Pre-populate the cache (%s) or pass a local .gguf path.\n",
+                source_url.c_str(), cache_dir().c_str());
+        return false;
+    }
     if (!url_is_https(source_url)) {
         fprintf(stderr,
                 "crispembed: refusing to download over a non-HTTPS URL:\n  %s\n"
@@ -2158,9 +2190,9 @@ static bool ensure_companion(const ModelEntry * entry, const std::string & dir) 
     const std::string path = dir + "/" + entry->companion_file;
     if (file_exists(path)) return true;
 
-    if (!download_supported()) {
-        fprintf(stderr, "Model '%s' needs companion file %s, and auto-download is unavailable.\n", entry->name,
-                entry->companion_file);
+    if (!download_supported() || offline()) {
+        fprintf(stderr, "Model '%s' needs companion file %s, and %s.\n", entry->name, entry->companion_file,
+                offline() ? "offline mode forbids downloading it" : "auto-download is unavailable");
         return false;
     }
 
@@ -2214,6 +2246,16 @@ std::string resolve_model(const std::string & arg, bool auto_download, const std
         // before the companion was registered, or an interrupted install.
         ensure_companion(entry, dir);
         return cached;
+    }
+
+    // Offline: fail before any license/download prompt, naming where the
+    // file was expected so it can be staged there ahead of time.
+    if (offline()) {
+        fprintf(stderr,
+                "Model '%s' is not cached and offline mode is on (--offline / CRISPEMBED_OFFLINE / "
+                "HF_HUB_OFFLINE).\n  expected: %s\n  source:   %s\n",
+                entry->name, cached.c_str(), entry->url);
+        return "";
     }
 
     const bool restricted = license_requires_acceptance(entry->license);

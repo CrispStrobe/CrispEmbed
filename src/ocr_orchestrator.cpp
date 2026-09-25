@@ -1612,6 +1612,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             }
         }
         if (st.params.vlm_max_tokens > 0) lfm2_vl_ocr_set_max_tokens(ctx->lfm2vl, st.params.vlm_max_tokens);
+        if (!st.params.vlm_prompt.empty()) lfm2_vl_ocr_set_prompt(ctx->lfm2vl, st.params.vlm_prompt.c_str());
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
         const unsigned char * img = px;
@@ -1671,6 +1672,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        // The unified dispatcher hides which model it loaded, so both knobs go
+        // through its own setters (no-ops on engines without the concept).
+        if (st.params.vlm_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ctx->unified, st.params.vlm_max_tokens);
+        if (!st.params.vlm_prompt.empty()) crispembed_ocr_model_set_prompt(ctx->unified, st.params.vlm_prompt.c_str());
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
         const unsigned char * img = px;

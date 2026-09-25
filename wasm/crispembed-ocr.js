@@ -307,7 +307,7 @@ class CrispEmbedOCRWrapper {
   }
 
   static async create({ modelUrl, modelPath = '/model.gguf', nThreads = 1,
-                         maxTokens, onProgress } = {}) {
+                         maxTokens, prompt, onProgress } = {}) {
     if (!modelUrl) throw new Error('modelUrl is required');
     onProgress?.(0);
 
@@ -327,6 +327,13 @@ class CrispEmbedOCRWrapper {
     if (maxTokens != null) {
       module.ccall('wasm_ocr_set_max_tokens', null,
         ['number', 'number'], [ctxPtr, maxTokens]);
+    }
+    // Custom instruction for prompt-following VLMs (Qwen2/3-VL, InternVL2,
+    // LFM2-VL, Granite-Vision). Older builds without the export keep working.
+    if (prompt != null && module._wasm_ocr_set_prompt) {
+      const ok = module.ccall('wasm_ocr_set_prompt', 'number',
+        ['number', 'string'], [ctxPtr, prompt]);
+      if (!ok) console.warn('[CrispEmbedOCR] prompt ignored: this model runs a fixed task prompt');
     }
 
     try { module.FS.unlink(modelPath); } catch (_) {}

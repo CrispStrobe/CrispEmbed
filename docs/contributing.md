@@ -314,7 +314,7 @@ via `json_escape`. Also add the capability flag to `/health` and the startup lis
 
 | Route | Capability guard | C ABI | Request → Response |
 |-------|------------------|-------|--------------------|
-| `POST /embed`, `/v1/embeddings`, `/api/embed` | (dense — always) | `crispembed_encode[_batch]` | `{"texts":[...]}` → embeddings |
+| `POST /embed`, `/v1/embeddings`, `/api/embed`, `/api/embeddings` | (dense — always) | `crispembed_encode[_batch]` (+ `crispembed_set_dim` for `"dimensions"` / `--dim`, restored after each request) | `{"texts":[...]}` → embeddings |
 | `POST /rerank` | `is_reranker` | `crispembed_rerank_batch` | `{"query","documents","top_n"}` → `{"query","results":[{"index","score","document"}]}` |
 | `POST /v1/rerank` | `is_reranker` | `crispembed_rerank_batch` | Cohere/Jina shape (#51): `{"model","query","documents":[str]\|[{"text"}],"top_n","return_documents"}` → `{"id","model","object","results":[{"index","relevance_score","document":{"text"}}],"meta"}` |
 | `POST /sparse` | `has_sparse` | `crispembed_encode_sparse` | `{"texts":[...]}` → `{"results":[{"weights":{"<token_id>":w}}]}` (SPLADE/BGE-M3) |

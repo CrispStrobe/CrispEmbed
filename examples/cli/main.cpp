@@ -119,6 +119,11 @@ static void print_usage(const char * prog) {
                     "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/lfm2-vl/unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
     fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
+    fprintf(stderr, "  --ocr-prompt TEXT   custom instruction for prompt-following VLM OCR engines\n");
+    fprintf(stderr,
+            "                      (qwen2vl/qwen3vl/paddleocr-vl/olmocr, internvl2, lfm2-vl, granite-vision),\n");
+    fprintf(stderr,
+            "                      --ocr and --ocr-pipeline alike. Other engines ignore it (with a warning).\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
@@ -199,6 +204,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
+    fprintf(stderr, "  --offline        never access the network: use local paths / cached models only\n");
+    fprintf(stderr, "                   (also CRISPEMBED_OFFLINE=1 or HF_HUB_OFFLINE=1)\n");
     fprintf(stderr, "  --accept-license SPDX  pre-accept a restricted license (e.g. cc-by-nc-4.0, gemma)\n");
     fprintf(stderr,
             "                          required for non-commercial / vendor-licensed models in non-TTY mode.\n");
@@ -306,6 +313,7 @@ static int cli_main(int argc, char ** argv) {
     std::string pix2struct_path;     // --pix2struct FILE: Pix2Struct document understanding
     int pix2struct_max_tokens = 256; // --pix2struct-max-tokens N
     int ocr_max_tokens = 0;          // --ocr-max-tokens N (0 = engine default)
+    std::string ocr_prompt;          // --ocr-prompt TEXT ("" = engine default)
     std::string pipeline_vlm_model;  // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;     // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;     // --ocr-min-chars: accept-gate override (-1 = default)
@@ -375,6 +383,8 @@ static int cli_main(int argc, char ** argv) {
             detect_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) {
             ocr_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-prompt") == 0 && i + 1 < argc) {
+            ocr_prompt = argv[++i];
         } else if (strcmp(argv[i], "--ocr-max-tokens") == 0 && i + 1 < argc) {
             ocr_max_tokens = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
@@ -542,6 +552,8 @@ static int cli_main(int argc, char ** argv) {
             list_lora = true;
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
+        } else if (strcmp(argv[i], "--offline") == 0) {
+            crispembed_mgr::set_offline(true);
         } else if (strcmp(argv[i], "--accept-license") == 0 && i + 1 < argc) {
             accepted_license = argv[++i];
         } else if (strcmp(argv[i], "--list-models") == 0) {
@@ -557,6 +569,18 @@ static int cli_main(int argc, char ** argv) {
             print_usage(argv[0]);
             return 0;
         } else {
+            // Anything else is an input text. An unrecognised "--option" lands
+            // here too, and in image modes (--ocr, --ocr-pipeline, ...) texts
+            // are never read, so a typo'd or unsupported flag — and its value —
+            // vanished without a trace (issue #56: --ocr-prompt did not exist
+            // yet and the run looked like the prompt was ignored). Keep the
+            // text semantics, but say so.
+            if (argv[i][0] == '-' && argv[i][1] == '-' && argv[i][2] != '\0') {
+                fprintf(stderr,
+                        "warning: unknown option '%s' (or missing value) is treated as input text; "
+                        "see --help\n",
+                        argv[i]);
+            }
             texts.push_back(argv[i]);
         }
     }
@@ -1205,6 +1229,17 @@ static int cli_main(int argc, char ** argv) {
             // graph rather than at load.
             const bool is_vlm =
                 (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 19;
+            // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
+            // internvl2, granite-vision, qwen3vl, unified (model-dependent),
+            // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
+            const bool takes_prompt =
+                eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 || eid == 19;
+            if (!ocr_prompt.empty() && !takes_prompt) {
+                fprintf(stderr,
+                        "warning: --ocr-prompt ignored: --ocr-engine %s runs a fixed task prompt "
+                        "(custom prompts: qwen2vl, qwen3vl, olmocr, internvl2, lfm2-vl, granite-vision)\n",
+                        pipeline_engine.c_str());
+            }
             if (eid == 14 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: --ocr-engine unified dispatches on GGUF metadata; provide the model "
                                 "via --ocr-rec FILE\n");
@@ -1295,7 +1330,7 @@ static int cli_main(int argc, char ** argv) {
             // (crispembed_ocr_model_set_max_tokens below) and silently did
             // nothing on --ocr-pipeline, for every VLM engine.
             st.vlm_max_tokens = ocr_max_tokens;
-            st.vlm_prompt = nullptr;
+            st.vlm_prompt = ocr_prompt.empty() ? nullptr : ocr_prompt.c_str();
             st.page_segmentation = tesseract_pageseg ? 1 : 0;
             st.min_chars = min_chars;
             st.min_confidence = min_conf;
@@ -1305,6 +1340,10 @@ static int cli_main(int argc, char ** argv) {
                 truecase_model.empty() ? nullptr : truecase_model.c_str(),
                 tess_model_dir.empty() ? nullptr : tess_model_dir.c_str(), &st, 1, n_threads);
         } else {
+            if (!ocr_prompt.empty()) {
+                fprintf(stderr, "warning: --ocr-prompt ignored: the default --ocr-pipeline path has no prompt-driven "
+                                "stage; pick a VLM with --ocr-engine (e.g. qwen3vl) or use -m MODEL --ocr FILE\n");
+            }
             // Default flat path (DBNet+TrOCR + source-type routing).
             det = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
             rec = resolve(ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path);
@@ -1970,6 +2009,10 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         if (ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(octx, ocr_max_tokens);
+        if (!ocr_prompt.empty() && !crispembed_ocr_model_set_prompt(octx, ocr_prompt.c_str())) {
+            fprintf(stderr, "warning: --ocr-prompt ignored: this OCR model runs a fixed task prompt "
+                            "(custom prompts: qwen2vl/qwen3vl, internvl2, lfm2-vl, granite-vision)\n");
+        }
         int w, h, ch;
         // Normalize OCR input to RGB so model preprocessors see the same
         // channel layout as the Python/PIL reference path.
@@ -2017,7 +2060,7 @@ static int cli_main(int argc, char ** argv) {
                 }
             }
             if (json_output) {
-                printf("{\"text\":\"%s\"}\n", output_text.c_str());
+                printf("{\"text\":\"%s\"}\n", json_escape(output_text).c_str());
             } else {
                 printf("%s\n", output_text.c_str());
             }
