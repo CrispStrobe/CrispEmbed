@@ -27,6 +27,16 @@ std::vector<float> compute(const float * samples, int n_samples, const float * w
         const int pad = n_fft / 2;
         padded_in.assign((size_t)(pad + n_samples + pad), 0.0f);
         std::memcpy(padded_in.data() + pad, samples, (size_t)n_samples * sizeof(float));
+        if (p.center_pad_reflect) {
+            for (int i = 0; i < pad; i++) {
+                const int src = (i + 1) < n_samples ? (i + 1) : n_samples - 1;
+                padded_in[pad - 1 - i] = samples[src];
+            }
+            for (int i = 0; i < pad; i++) {
+                const int src = (n_samples - 2 - i) >= 0 ? (n_samples - 2 - i) : 0;
+                padded_in[pad + n_samples + i] = samples[src];
+            }
+        }
         in_ptr = padded_in.data();
         in_len = (int)padded_in.size();
     } else {

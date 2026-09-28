@@ -118,6 +118,9 @@ struct Params {
     // already padded the input.
     bool center_pad = true;
 
+    // Use reflect padding instead of zero padding for center_pad.
+    bool center_pad_reflect = false;
+
     // Drop the last STFT frame. Matches Whisper / HF feature extractor
     // convention that produces floor((n - n_fft) / hop + 1) - 1 frames
     // instead of the full count.
