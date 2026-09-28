@@ -190,9 +190,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: Preflight pinned artifacts
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python tests/regression/preflight.py
+        # Every manifest artifact is public. Do not inject an expired token:
+        # huggingface_hub rejects it with 401 instead of falling back anonymously.
+        run: env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tests/regression/preflight.py
 
   # Tier 2: full end-to-end on the CPU backend. Nightly / manual only —
   # PRs stop at smoke + preflight so they don't burn build+download time.
@@ -217,7 +217,6 @@ jobs:
           cmake --build build --target crispembed-cli test-got-ocr-diff -j"$(nproc)"
       - name: Run got-ocr2 regression (CPU)
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
           BUILD_DIR: build
           GOT_OCR_FORCE_CPU: '1'
           LD_LIBRARY_PATH: build
@@ -284,9 +283,8 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target punct-ab firered-punct-ab -j"$(nproc)"
       - name: Fetch models
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
+          unset HF_TOKEN HUGGING_FACE_HUB_TOKEN
           mkdir -p .punct-models
           python - <<'PY'
           import shutil

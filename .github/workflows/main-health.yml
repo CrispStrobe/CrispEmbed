@@ -119,14 +119,10 @@ jobs:
       # script falls back to its retry/backoff. Either way a rate limit is now
       # reported as INCONCLUSIVE, never as "the header is stale".
       - name: Verify model SHA-256 pins are current
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python tools/fetch_model_hashes.py --check
+        run: env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/fetch_model_hashes.py --check
 
       # The declared size is what a user sees before agreeing to a download.
       # Same daily-job rationale (one API call per repo), and it catches the
       # same class of drift as the pin check: a re-upload at a different quant.
       - name: Verify registry sizes match the published files
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python tools/fetch_model_hashes.py --check-sizes
+        run: env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/fetch_model_hashes.py --check-sizes
