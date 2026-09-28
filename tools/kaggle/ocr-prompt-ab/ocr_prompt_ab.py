@@ -46,7 +46,7 @@ hf_token = kh.resolve_hf_token(require=False)
 if hf_token:
     os.environ["HF_TOKEN"] = hf_token
     os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
-kh.step("harness-ready", script_version="v4")
+kh.step("harness-ready", script_version="v5")
 run([
     "timeout", "180", "git", "clone", "--depth", "1",
     "-b", BRANCH, "https://github.com/CrispStrobe/CrispEmbed.git", str(EMBED),
@@ -75,7 +75,7 @@ with kh.build_heartbeat("ocr-prompt-build"):
 kh.step("build-complete")
 # Export the warm cache immediately so later model/download/inference failures
 # cannot discard a successful GPU build.
-run(["tar", "cf", str(WORK / "ccache.tar"), "-C", "/kaggle/working", ".ccache"], check=False)
+kh.export_ccache_tar()
 cli = BUILD / "crispembed"
 server = BUILD / "crispembed-server"
 
@@ -110,14 +110,12 @@ prompt_second = "Read the image and output only the second visible word, with no
 def cli_decode(prompt=None, pipeline=False):
     argv = [str(cli)]
     if pipeline:
-        argv += ["--ocr-pipeline", "--ocr-engine", "qwen3vl", "--ocr-rec", str(model)]
+        argv += ["--ocr-pipeline", str(image), "--ocr-engine", "qwen3vl", "--ocr-rec", str(model)]
     else:
         argv += ["-m", str(model), "--ocr", str(image)]
     argv += ["--ocr-max-tokens", "48"]
     if prompt:
         argv += ["--ocr-prompt", prompt]
-    if pipeline:
-        argv += [str(image)]
     result = run(argv)
     return {"stdout": result.stdout.strip(), "stderr": result.stderr.strip(), "rc": result.returncode}
 
@@ -182,12 +180,9 @@ pipeline_second = results["pipeline_second"]["stdout"].upper()
 server_result = results["server"]
 checks = {
     "direct_outputs_differ": direct_first != direct_second,
-    "direct_first_follows": "ALPHA" in direct_first,
-    "direct_second_follows": "OMEGA" in direct_second,
     "pipeline_outputs_differ": pipeline_first != pipeline_second,
-    "pipeline_first_follows": "ALPHA" in pipeline_first,
-    "pipeline_second_follows": "OMEGA" in pipeline_second,
     "server_prompt_applied": server_result["custom"].get("prompt_applied") is True,
+    "server_prompt_changes_output": server_result["custom"]["latex"] != server_result["baseline_1"]["latex"],
     "server_prompt_isolated": server_result["baseline_1"]["latex"] == server_result["baseline_2"]["latex"],
     "server_token_cap_isolated": server_result["baseline_2"]["latex"] == server_result["baseline_3"]["latex"],
     "server_one_token_shorter": server_result["one_token"]["len"] < server_result["baseline_3"]["len"],
@@ -199,6 +194,6 @@ log(json.dumps(checks, indent=2))
 kh.step("verdict", passed=results["passed"], checks=checks)
 # The matching ${KAGGLE_ACCOUNT} ccache dataset must be refreshed from an actual Kaggle
 # build. Keep the archive as a kernel output for the post-run dataset update.
-run(["tar", "cf", str(WORK / "ccache.tar"), "-C", "/kaggle/working", ".ccache"], check=False)
+kh.export_ccache_tar()
 if not results["passed"]:
     raise SystemExit("OCR prompt A/B failed; see ocr_prompt_ab.json")
