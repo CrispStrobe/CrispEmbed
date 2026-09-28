@@ -12,7 +12,7 @@ from pathlib import Path
 WORK = Path("/kaggle/working")
 SCRATCH = Path("/tmp/ocr_prompt_ab")
 EMBED = SCRATCH / "CrispEmbed"
-ASR = SCRATCH / "CrispASR"
+ASR = Path("/tmp/ocr_prompt_harness/CrispASR")
 BUILD = EMBED / "build"
 RESULT = WORK / "ocr_prompt_ab.json"
 BRANCH = "fix/issues-52-55-56"
@@ -36,6 +36,7 @@ def run(argv, *, check=True, capture=True, env=None):
 
 SCRATCH.mkdir(parents=True, exist_ok=True)
 WORK.mkdir(parents=True, exist_ok=True)
+ASR.parent.mkdir(parents=True, exist_ok=True)
 run(["git", "clone", "--depth", "1", "https://github.com/CrispStrobe/CrispASR.git", str(ASR)])
 sys.path.insert(0, str(ASR / "tools" / "kaggle"))
 import kaggle_harness as kh  # noqa: E402
@@ -45,7 +46,7 @@ hf_token = kh.resolve_hf_token(require=False)
 if hf_token:
     os.environ["HF_TOKEN"] = hf_token
     os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
-kh.step("harness-ready", script_version="v3")
+kh.step("harness-ready", script_version="v4")
 run([
     "timeout", "180", "git", "clone", "--depth", "1",
     "-b", BRANCH, "https://github.com/CrispStrobe/CrispEmbed.git", str(EMBED),
@@ -58,7 +59,13 @@ kh.step("repo-ready", commit=commit)
 
 kh.install_build_toolchain()
 arch = kh.detect_cuda_arch()
-flags = kh.cuda_build_flags(arch) + kh.cache_and_link_flags()
+unused_sibling = "/nonexistent/crispasr"
+flags = kh.cuda_build_flags(arch) + kh.cache_and_link_flags() + [
+    f"-DCRISP_AUDIO_DIR={unused_sibling}/crisp_audio",
+    f"-DCRISP_PUNC_DIR={unused_sibling}/crisp_punc",
+    f"-DCRISP_LID_DIR={unused_sibling}/crisp_lid",
+    f"-DCRISP_TRUECASE_DIR={unused_sibling}/crisp_truecase",
+]
 run(["cmake", "-S", str(EMBED), "-B", str(BUILD), "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", *flags])
 with kh.build_heartbeat("ocr-prompt-build"):
     kh.sh_with_progress(
