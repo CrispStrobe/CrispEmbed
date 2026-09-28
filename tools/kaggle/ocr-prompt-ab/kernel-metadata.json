@@ -1,5 +1,5 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/crispembed-ocr-prompt-ab",
+  "id": "${KAGGLE_ACCOUNT}/crispembed-ocr-prompt-a-b",
   "title": "CrispEmbed OCR prompt A B",
   "code_file": "ocr_prompt_ab.py",
   "language": "python",
