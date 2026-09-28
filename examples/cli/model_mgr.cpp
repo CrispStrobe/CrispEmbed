@@ -2,9 +2,9 @@
 
 #include "model_mgr.h"
 
-#include "crispembed.h"   // crispembed_accept_biometric_use
+#include "crispembed.h"    // crispembed_accept_biometric_use
 #include "core/env_gate.h" // core_env::on
-#include "model_hashes.h" // model_pinned_sha256 (generated)
+#include "model_hashes.h"  // model_pinned_sha256 (generated)
 
 #include <algorithm>
 #include <cstdint>

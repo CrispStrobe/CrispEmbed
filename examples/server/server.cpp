@@ -1777,8 +1777,7 @@ int main(int argc, char ** argv) {
                         escaped += c;
                 }
                 js << "{\"index\": " << results[i].index << ", \"score\": " << results[i].score << ", \"text\": \""
-                   << escaped << "\""
-                   << "}";
+                   << escaped << "\"" << "}";
             }
             js << "], \"ms\": " << ms << "}";
 
@@ -1966,9 +1965,8 @@ int main(int argc, char ** argv) {
         js << "{\"results\": [";
         for (int i = 0; i < n_results; i++) {
             if (i > 0) js << ",";
-            js << "{\"text\":\"" << json_escape(results[i].text) << "\""
-               << ",\"bbox\":[" << results[i].x << "," << results[i].y << "," << (results[i].x + results[i].w) << ","
-               << (results[i].y + results[i].h) << "]"
+            js << "{\"text\":\"" << json_escape(results[i].text) << "\"" << ",\"bbox\":[" << results[i].x << ","
+               << results[i].y << "," << (results[i].x + results[i].w) << "," << (results[i].y + results[i].h) << "]"
                << ",\"confidence\":" << results[i].confidence << ",\"rec_confidence\":" << results[i].confidence << "}";
         }
         js << "],\"n\":" << n_results << ",\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
@@ -2013,15 +2011,13 @@ int main(int argc, char ** argv) {
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
         std::ostringstream js;
-        js << "{\"text\":\"" << json_escape(full_text ? full_text : "") << "\""
-           << ",\"n_regions\":" << n_results << ",\"mean_confidence\":" << std::fixed << std::setprecision(4)
-           << mean_conf << ",\"results\":[";
+        js << "{\"text\":\"" << json_escape(full_text ? full_text : "") << "\"" << ",\"n_regions\":" << n_results
+           << ",\"mean_confidence\":" << std::fixed << std::setprecision(4) << mean_conf << ",\"results\":[";
         for (int i = 0; i < n_results; i++) {
             if (i > 0) js << ",";
             float rec_conf = crispembed_ocr_pipeline_region_rec_confidence(ocr_orch_ctx, i);
-            js << "{\"text\":\"" << json_escape(results[i].text) << "\""
-               << ",\"bbox\":[" << results[i].x << "," << results[i].y << "," << (results[i].x + results[i].w) << ","
-               << (results[i].y + results[i].h) << "]"
+            js << "{\"text\":\"" << json_escape(results[i].text) << "\"" << ",\"bbox\":[" << results[i].x << ","
+               << results[i].y << "," << (results[i].x + results[i].w) << "," << (results[i].y + results[i].h) << "]"
                << ",\"confidence\":" << results[i].confidence << ",\"rec_confidence\":" << std::fixed
                << std::setprecision(4) << rec_conf << "}";
         }
@@ -2034,8 +2030,8 @@ int main(int argc, char ** argv) {
             if (i) js << ",";
             js << order[i];
         }
-        js << "],\"markdown\":\"" << json_escape(markdown ? markdown : "") << "\""
-           << ",\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
+        js << "],\"markdown\":\"" << json_escape(markdown ? markdown : "") << "\"" << ",\"ms\":" << std::fixed
+           << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /ocr/pipeline in %.1f ms (%d regions, conf=%.2f)\n", ms, n_results,
                 mean_conf);
@@ -2286,9 +2282,8 @@ int main(int argc, char ** argv) {
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
         std::ostringstream js;
-        js << "{\"lang\": \"" << (lang ? lang : "") << "\""
-           << ", \"confidence\": " << std::fixed << std::setprecision(4) << conf << ", \"ms\": " << std::setprecision(1)
-           << ms << "}";
+        js << "{\"lang\": \"" << (lang ? lang : "") << "\"" << ", \"confidence\": " << std::fixed
+           << std::setprecision(4) << conf << ", \"ms\": " << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /lid/detect → %s (%.2f) in %.1f ms\n", lang ? lang : "?", conf, ms);
         res.set_content(js.str(), "application/json");
@@ -2837,10 +2832,9 @@ int main(int argc, char ** argv) {
         const int scale = crispembed_text_sr_upscale_factor(text_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /text/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -2899,10 +2893,9 @@ int main(int argc, char ** argv) {
         const int scale = crispembed_pan_sr_scale(pan_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /pan/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -2960,10 +2953,9 @@ int main(int argc, char ** argv) {
         const int scale = crispembed_hat_sr_scale(hat_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /hat/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -3021,10 +3013,9 @@ int main(int argc, char ** argv) {
         const int scale = (w > 0) ? ow / w : 2;
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /dat/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -3082,10 +3073,9 @@ int main(int argc, char ** argv) {
         const int scale = crispembed_safmn_sr_scale(safmn_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /safmn/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -3143,10 +3133,9 @@ int main(int argc, char ** argv) {
         const int scale = crispembed_esrgan_sr_scale(esrgan_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /esrgan/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -3205,10 +3194,9 @@ int main(int argc, char ** argv) {
         const int scale = crispembed_swinir_sr_scale(swinir_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /swinir/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n", ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
@@ -3264,10 +3252,9 @@ int main(int argc, char ** argv) {
         crispembed_tbsrn_sr_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
-           << ", \"original_height\": " << h << ", \"upscale_factor\": 4"
-           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << ow
+           << ", \"height\": " << oh << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": 4" << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /tbsrn/sr in %.1f ms (%dx%d -> %dx%d, 4x)\n", ms, w, h, ow, oh);
         res.set_content(js.str(), "application/json");
@@ -3323,9 +3310,8 @@ int main(int argc, char ** argv) {
         crispembed_restormer_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
-           << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << w
+           << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /restormer in %.1f ms (%dx%d)\n", ms, w, h);
         res.set_content(js.str(), "application/json");
@@ -3380,9 +3366,8 @@ int main(int argc, char ** argv) {
         crispembed_scunet_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
-           << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << w
+           << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /scunet/denoise in %.1f ms (%dx%d)\n", ms, w, h);
         res.set_content(js.str(), "application/json");
@@ -3446,9 +3431,9 @@ int main(int argc, char ** argv) {
         crispembed_instructir_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << w << ", \"height\": " << h << ", \"task\": " << task << ", \"ms\": " << std::fixed
-           << std::setprecision(1) << ms << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << w
+           << ", \"height\": " << h << ", \"task\": " << task << ", \"ms\": " << std::fixed << std::setprecision(1)
+           << ms << "}";
 
         fprintf(stderr, "crispembed-server: /instructir/restore task=%d in %.1f ms (%dx%d)\n", task, ms, w, h);
         res.set_content(js.str(), "application/json");
@@ -3503,9 +3488,8 @@ int main(int argc, char ** argv) {
         crispembed_adair_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
-           << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
-           << "}";
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\"" << ", \"width\": " << w
+           << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /adair/restore in %.1f ms (%dx%d)\n", ms, w, h);
         res.set_content(js.str(), "application/json");
