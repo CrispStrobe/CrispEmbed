@@ -41,12 +41,18 @@ sys.path.insert(0, str(ASR / "tools" / "kaggle"))
 import kaggle_harness as kh  # noqa: E402
 
 kh.init_progress()
+hf_token = kh.resolve_hf_token(require=False)
+if hf_token:
+    os.environ["HF_TOKEN"] = hf_token
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
+kh.step("harness-ready", script_version="v2")
 run([
     "git", "clone", "--depth", "1", "--recursive", "--shallow-submodules",
     "-b", BRANCH, "https://github.com/CrispStrobe/CrispEmbed.git", str(EMBED),
 ])
 commit = run(["git", "-C", str(EMBED), "rev-parse", "HEAD"]).stdout.strip()
 log(f"CrispEmbed {commit}")
+kh.step("repo-ready", commit=commit)
 
 kh.install_build_toolchain()
 arch = kh.detect_cuda_arch()
@@ -57,6 +63,7 @@ with kh.build_heartbeat("ocr-prompt-build"):
         f"stdbuf -oL -eL cmake --build {BUILD} --target crispembed crispembed-server "
         f"-j{kh.safe_build_jobs(gpu=True)}"
     )
+kh.step("build-complete")
 cli = BUILD / "crispembed"
 server = BUILD / "crispembed-server"
 
@@ -164,5 +171,9 @@ results["checks"] = checks
 results["passed"] = all(checks.values())
 RESULT.write_text(json.dumps(results, indent=2))
 log(json.dumps(checks, indent=2))
+kh.step("verdict", passed=results["passed"], checks=checks)
+# The matching ${KAGGLE_ACCOUNT} ccache dataset must be refreshed from an actual Kaggle
+# build. Keep the archive as a kernel output for the post-run dataset update.
+run(["tar", "cf", str(WORK / "ccache.tar"), "-C", "/kaggle/working", ".ccache"], check=False)
 if not results["passed"]:
     raise SystemExit("OCR prompt A/B failed; see ocr_prompt_ab.json")
