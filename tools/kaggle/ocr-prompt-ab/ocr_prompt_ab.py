@@ -45,11 +45,13 @@ hf_token = kh.resolve_hf_token(require=False)
 if hf_token:
     os.environ["HF_TOKEN"] = hf_token
     os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
-kh.step("harness-ready", script_version="v2")
+kh.step("harness-ready", script_version="v3")
 run([
-    "git", "clone", "--depth", "1", "--recursive", "--shallow-submodules",
+    "timeout", "180", "git", "clone", "--depth", "1",
     "-b", BRANCH, "https://github.com/CrispStrobe/CrispEmbed.git", str(EMBED),
 ])
+kh.step("repo-cloned")
+run(["timeout", "180", "git", "-C", str(EMBED), "submodule", "update", "--init", "--depth", "1"])
 commit = run(["git", "-C", str(EMBED), "rev-parse", "HEAD"]).stdout.strip()
 log(f"CrispEmbed {commit}")
 kh.step("repo-ready", commit=commit)
