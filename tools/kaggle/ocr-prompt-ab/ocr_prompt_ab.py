@@ -73,6 +73,9 @@ with kh.build_heartbeat("ocr-prompt-build"):
         f"-j{kh.safe_build_jobs(gpu=True)}"
     )
 kh.step("build-complete")
+# Export the warm cache immediately so later model/download/inference failures
+# cannot discard a successful GPU build.
+run(["tar", "cf", str(WORK / "ccache.tar"), "-C", "/kaggle/working", ".ccache"], check=False)
 cli = BUILD / "crispembed"
 server = BUILD / "crispembed-server"
 
@@ -84,7 +87,18 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 image = SCRATCH / "prompt.png"
 canvas = Image.new("RGB", (1000, 420), "white")
 draw = ImageDraw.Draw(canvas)
-font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 110)
+font = None
+for font_path in (
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+):
+    try:
+        font = ImageFont.truetype(font_path, 110)
+        break
+    except OSError:
+        pass
+if font is None:
+    font = ImageFont.load_default(size=110)
 draw.text((70, 45), "ALPHA", fill="black", font=font)
 draw.text((70, 210), "OMEGA", fill="black", font=font)
 canvas.save(image)

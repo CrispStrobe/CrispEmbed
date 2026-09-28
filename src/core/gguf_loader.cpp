@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <map>
 #include <mutex>
 
@@ -332,15 +333,53 @@ struct MappedFile {
 
 } // namespace
 
-bool load_weights(const char * path, ggml_backend_t backend, const char * model_tag, WeightLoad & out, bool try_mmap) {
+static bool load_weights_impl(const char * path, ggml_backend_t backend, IncludeTensor include_tensor, void * user,
+                              const char * model_tag, WeightLoad & out, bool try_mmap) {
     const char * tag = model_tag ? model_tag : "core_gguf";
 
-    gguf_init_params gp = { /*.no_alloc=*/true, /*.ctx=*/&out.ctx };
+    ggml_context * source_ctx = nullptr;
+    gguf_init_params gp = { /*.no_alloc=*/true, /*.ctx=*/&source_ctx };
     gguf_context * gctx = gguf_init_from_file(path, gp);
-    if (!gctx || !out.ctx) {
+    if (!gctx || !source_ctx) {
         fprintf(stderr, "%s: failed to load tensor metadata from '%s'\n", tag, path);
         if (gctx) gguf_free(gctx);
+        if (source_ctx) ggml_free(source_ctx);
         return false;
+    }
+
+    if (include_tensor) {
+        size_t n_selected = 0;
+        for (ggml_tensor * t = ggml_get_first_tensor(source_ctx); t; t = ggml_get_next_tensor(source_ctx, t))
+            if (include_tensor(ggml_get_name(t), user)) n_selected++;
+        const size_t overhead = ggml_tensor_overhead();
+        if (n_selected == 0 || overhead == 0 || n_selected > (std::numeric_limits<size_t>::max() - 1024) / overhead) {
+            fprintf(stderr, "%s: tensor filter selected no usable weights from '%s'\n", tag, path);
+            gguf_free(gctx);
+            ggml_free(source_ctx);
+            return false;
+        }
+        ggml_init_params fp = { n_selected * overhead + 1024, nullptr, true };
+        out.ctx = ggml_init(fp);
+        if (!out.ctx) {
+            gguf_free(gctx);
+            ggml_free(source_ctx);
+            return false;
+        }
+        for (ggml_tensor * t = ggml_get_first_tensor(source_ctx); t; t = ggml_get_next_tensor(source_ctx, t)) {
+            if (!include_tensor(ggml_get_name(t), user)) continue;
+            ggml_tensor * selected = ggml_dup_tensor(out.ctx, t);
+            if (!selected) {
+                gguf_free(gctx);
+                ggml_free(source_ctx);
+                ggml_free(out.ctx);
+                out.ctx = nullptr;
+                return false;
+            }
+            ggml_set_name(selected, ggml_get_name(t));
+        }
+        ggml_free(source_ctx);
+    } else {
+        out.ctx = source_ctx;
     }
 
     const size_t data_off = gguf_get_data_offset(gctx);
@@ -483,6 +522,20 @@ bool load_weights(const char * path, ggml_backend_t backend, const char * model_
 
     gguf_free(gctx);
     return true;
+}
+
+bool load_weights(const char * path, ggml_backend_t backend, const char * model_tag, WeightLoad & out, bool try_mmap) {
+    return load_weights_impl(path, backend, nullptr, nullptr, model_tag, out, try_mmap);
+}
+
+bool load_weights_filtered(const char * path, ggml_backend_t backend, IncludeTensor include_tensor, void * user,
+                           const char * model_tag, WeightLoad & out) {
+    if (!include_tensor) {
+        fprintf(stderr, "%s: load_weights_filtered requires a non-null tensor predicate\n",
+                model_tag ? model_tag : "core_gguf");
+        return false;
+    }
+    return load_weights_impl(path, backend, include_tensor, user, model_tag, out, false);
 }
 
 bool load_weights_split(const char * path, ggml_backend_t gpu_backend, ggml_backend_t cpu_backend, IsGpuTensor is_gpu,

@@ -155,6 +155,10 @@ struct WeightLoad {
 bool load_weights(const char * path, ggml_backend_t backend, const char * model_tag, WeightLoad & out,
                   bool try_mmap = false);
 
+using IncludeTensor = bool (*)(const char * tensor_name, void * user);
+bool load_weights_filtered(const char * path, ggml_backend_t backend, IncludeTensor include_tensor, void * user,
+                           const char * model_tag, WeightLoad & out);
+
 // Split-residency weight loader (logic synced from CrispASR PLAN #69a).
 // Tensors for which `is_gpu(tensor_name, user) == true` are allocated on
 // gpu_backend; the rest on cpu_backend. Compute graphs then follow weight
