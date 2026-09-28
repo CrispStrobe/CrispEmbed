@@ -70,20 +70,20 @@ inline ggml_backend_buffer_type_t buffer_type() {
 // #403's release exposed why it belongs here: `ggml_cpu_has_*()` are symbols in
 // libggml-cpu, so calling them directly fails to LINK under GGML_BACKEND_DL —
 // which is exactly the configuration the CUDA packages are built in (#355).
-inline bool has_feature(const char* name) {
+inline bool has_feature(const char * name) {
     if (!name) {
         return false;
     }
     struct entry {
-        const char* name;
+        const char * name;
         int (*fn)(void);
     };
     static const entry k[] = {
-        {"AVX", ggml_cpu_has_avx},   {"AVX2", ggml_cpu_has_avx2}, {"AVX512", ggml_cpu_has_avx512},
-        {"FMA", ggml_cpu_has_fma},   {"F16C", ggml_cpu_has_f16c}, {"BMI2", ggml_cpu_has_bmi2},
-        {"NEON", ggml_cpu_has_neon}, {"SSE3", ggml_cpu_has_sse3}, {"SSSE3", ggml_cpu_has_ssse3},
+        { "AVX", ggml_cpu_has_avx },   { "AVX2", ggml_cpu_has_avx2 }, { "AVX512", ggml_cpu_has_avx512 },
+        { "FMA", ggml_cpu_has_fma },   { "F16C", ggml_cpu_has_f16c }, { "BMI2", ggml_cpu_has_bmi2 },
+        { "NEON", ggml_cpu_has_neon }, { "SSE3", ggml_cpu_has_sse3 }, { "SSSE3", ggml_cpu_has_ssse3 },
     };
-    for (const entry& e : k) {
+    for (const entry & e : k) {
         if (std::strcmp(e.name, name) == 0) {
             return e.fn() != 0;
         }
@@ -108,7 +108,7 @@ inline bool is_metal(ggml_backend_t b) {
 }
 
 // Compute a graph on the CPU. Direct call: identical to every existing site.
-inline enum ggml_status compute(ggml_context* ctx, ggml_cgraph* gf, int n_threads) {
+inline enum ggml_status compute(ggml_context * ctx, ggml_cgraph * gf, int n_threads) {
     return ggml_graph_compute_with_ctx(ctx, gf, n_threads);
 }
 
@@ -116,16 +116,16 @@ inline enum ggml_status compute(ggml_context* ctx, ggml_cgraph* gf, int n_thread
 // none. Callers already fall back to ggml_get_type_traits()->from_float_ref,
 // which lives in ggml-base and is always linkable.
 inline ggml_from_float_t from_float_for(enum ggml_type type) {
-    const auto* t = ggml_get_type_traits_cpu(type);
+    const auto * t = ggml_get_type_traits_cpu(type);
     return t ? t->from_float : nullptr;
 }
 
 // Plan + compute, kept separate so a hot loop can size its work buffer once and
 // reuse it across frames (the VAD per-frame and wav2vec2 per-layer paths).
-inline ggml_cplan plan(ggml_cgraph* gf, int n_threads, ggml_threadpool_t pool = nullptr) {
+inline ggml_cplan plan(ggml_cgraph * gf, int n_threads, ggml_threadpool_t pool = nullptr) {
     return ggml_graph_plan(gf, n_threads, pool);
 }
-inline enum ggml_status compute_planned(ggml_cgraph* gf, ggml_cplan* p, int /*n_threads*/) {
+inline enum ggml_status compute_planned(ggml_cgraph * gf, ggml_cplan * p, int /*n_threads*/) {
     return ggml_graph_compute(gf, p);
 }
 
@@ -225,7 +225,7 @@ inline ggml_backend_reg_t reg() {
 // "ggml_backend_get_features", whose NULL-terminated array carries exactly the
 // names ggml compiled in ("AVX2", "FMA", "AVX512", ...). Absent name => absent
 // feature, which is also the right answer when the CPU module failed to load.
-inline bool has_feature(const char* name) {
+inline bool has_feature(const char * name) {
     if (!name) {
         return false;
     }
@@ -237,7 +237,7 @@ inline bool has_feature(const char* name) {
     if (!fn) {
         return false;
     }
-    for (ggml_backend_feature* f = fn(r); f && f->name; ++f) {
+    for (ggml_backend_feature * f = fn(r); f && f->name; ++f) {
         if (std::strcmp(f->name, name) == 0) {
             return true;
         }
@@ -261,7 +261,7 @@ inline bool is_metal(ggml_backend_t b) {
     }
     ggml_backend_dev_t dev = ggml_backend_get_device(b);
     ggml_backend_reg_t r = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
-    const char* n = r ? ggml_backend_reg_name(r) : nullptr;
+    const char * n = r ? ggml_backend_reg_name(r) : nullptr;
     return n && std::strcmp(n, "Metal") == 0;
 }
 
@@ -272,7 +272,7 @@ inline bool is_metal(ggml_backend_t b) {
 // The backend is thread_local, not a shared static: a ggml backend is not safe
 // for concurrent use, and several of these call sites run inside worker threads.
 // One instance per thread, created on first use and reused after that.
-inline enum ggml_status compute(ggml_context* ctx, ggml_cgraph* gf, int n_threads) {
+inline enum ggml_status compute(ggml_context * ctx, ggml_cgraph * gf, int n_threads) {
     (void)ctx; // the backend owns its own plan; no scratch context needed
     static thread_local ggml_backend_t tls = nullptr;
     if (!tls) {
@@ -300,11 +300,11 @@ inline ggml_from_float_t from_float_for(enum ggml_type) {
 // ⚠ That costs the optimisation those sites exist for — "no scheduler, no
 // threadpool churn" per frame becomes a fresh plan per call. Measured cost is
 // unknown on this path; it is one more reason the DL build stays opt-in.
-inline ggml_cplan plan(ggml_cgraph*, int, ggml_threadpool_t = nullptr) {
+inline ggml_cplan plan(ggml_cgraph *, int, ggml_threadpool_t = nullptr) {
     ggml_cplan p = {};
     return p;
 }
-inline enum ggml_status compute_planned(ggml_cgraph* gf, ggml_cplan*, int n_threads) {
+inline enum ggml_status compute_planned(ggml_cgraph * gf, ggml_cplan *, int n_threads) {
     static thread_local ggml_backend_t tls = nullptr;
     if (!tls) {
         tls = init();
