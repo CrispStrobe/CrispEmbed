@@ -154,6 +154,11 @@ void wasm_ocr_set_max_tokens(void * ctx, int max_tokens) {
 }
 
 WASM_EXPORT
+int wasm_ocr_get_max_tokens(void * ctx) {
+    return crispembed_ocr_model_get_max_tokens(ctx);
+}
+
+WASM_EXPORT
 int wasm_ocr_set_prompt(void * ctx, const char * prompt) {
     return crispembed_ocr_model_set_prompt(ctx, prompt);
 }

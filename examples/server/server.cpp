@@ -664,8 +664,8 @@ int main(int argc, char ** argv) {
     // Returns 0 when absent, the requested size when valid, -1 when invalid
     // (err is filled). A value equal to the native size is a valid no-op.
     auto request_dim = [&](const std::string & body, std::string & err) -> int {
+        if (core_json::json_find_key_value(body, "dimensions") == std::string::npos) return 0;
         const double v = json_extract_number(body, "dimensions", 0.0);
-        if (v == 0.0) return 0;
         const int n = (int)v;
         if ((double)n != v || n < 1 || (dim > 0 && n > dim)) {
             err = "dimensions must be an integer in 1.." + std::to_string(dim);
@@ -1881,17 +1881,21 @@ int main(int argc, char ** argv) {
         }
 
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
+        const int previous_max_tokens = crispembed_ocr_model_get_max_tokens(ocr_model_ctx);
         if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
         int prompt_applied = -1; // -1 = no per-request prompt
         if (!req_prompt.empty()) prompt_applied = crispembed_ocr_model_set_prompt(ocr_model_ctx, req_prompt.c_str());
-        struct prompt_restore {
+        struct request_state_restore {
             void * ctx;
             const std::string & dflt;
-            bool active;
-            ~prompt_restore() {
-                if (active) crispembed_ocr_model_set_prompt(ctx, dflt.empty() ? nullptr : dflt.c_str());
+            int previous_max_tokens;
+            bool prompt_active;
+            bool max_tokens_active;
+            ~request_state_restore() {
+                if (prompt_active) crispembed_ocr_model_set_prompt(ctx, dflt.empty() ? nullptr : dflt.c_str());
+                if (max_tokens_active) crispembed_ocr_model_set_max_tokens(ctx, previous_max_tokens);
             }
-        } restore{ ocr_model_ctx, ocr_prompt, prompt_applied == 1 };
+        } restore{ ocr_model_ctx, ocr_prompt, previous_max_tokens, prompt_applied == 1, req_max_tokens > 0 };
         auto t0 = std::chrono::steady_clock::now();
 
         int w = 0, h = 0, ch = 0;

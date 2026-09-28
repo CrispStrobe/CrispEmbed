@@ -2802,6 +2802,10 @@ extern "C" void unlimited_ocr_set_max_tokens(unlimited_ocr_context * ctx, int ma
     if (ctx) ctx->max_tokens = max_tokens;
 }
 
+extern "C" int unlimited_ocr_get_max_tokens(const unlimited_ocr_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 
 unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_threads) {
     // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).

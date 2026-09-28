@@ -1683,6 +1683,8 @@ def _setup_ocr_model_signatures(lib):
 
     lib.crispembed_ocr_model_set_max_tokens.argtypes = [ctypes.c_void_p, ctypes.c_int]
     lib.crispembed_ocr_model_set_max_tokens.restype = None
+    lib.crispembed_ocr_model_get_max_tokens.argtypes = [ctypes.c_void_p]
+    lib.crispembed_ocr_model_get_max_tokens.restype = ctypes.c_int
 
     # Optional: older shared libraries predate the prompt setter.
     if hasattr(lib, "crispembed_ocr_model_set_prompt"):
@@ -1726,6 +1728,10 @@ class CrispOcrModel:
         """Cap the number of tokens a VLM OCR engine generates (no-op for
         formula/line recognizers)."""
         self._lib.crispembed_ocr_model_set_max_tokens(self._ctx, int(max_tokens))
+
+    def get_max_tokens(self) -> int:
+        """Return the active VLM generation cap (0 for non-generative engines)."""
+        return int(self._lib.crispembed_ocr_model_get_max_tokens(self._ctx))
 
     def set_prompt(self, prompt: Optional[str]) -> bool:
         """Set the instruction sent to a prompt-following VLM engine.

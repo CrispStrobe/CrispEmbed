@@ -3126,13 +3126,14 @@ void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx) {
     }
 }
 
-void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
+int qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
     if (ctx && prompt) {
         ctx->prompt = prompt;
         if (ctx->tokenizer_can_encode) {
             ctx->use_qari_default_prompt = false;
             ctx->prompt_ids = ctx->tokenize(prompt);
             fprintf(stderr, "qwen2vl_ocr: prompt tokenized to %zu tokens\n", ctx->prompt_ids.size());
+            return 1;
         } else {
             // No BPE merges in this GGUF: build_token_ids() would fall back to
             // the hardcoded "Describe this image." ids and the new prompt would
@@ -3140,8 +3141,10 @@ void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
             fprintf(stderr, "qwen2vl_ocr: warning: GGUF has no BPE merges; custom prompt cannot be tokenized "
                             "and will be ignored\n");
             ctx->prompt_ids.clear();
+            return 0;
         }
     }
+    return 0;
 }
 
 const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx) {
@@ -3150,6 +3153,10 @@ const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx) {
 
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {
     if (ctx) ctx->max_tokens = max_tokens;
+}
+
+extern "C" int qwen2vl_ocr_get_max_tokens(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
 }
 
 // Internal: run full pipeline (preprocess → vision → tokenize → generate)

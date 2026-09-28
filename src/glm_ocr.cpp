@@ -1900,6 +1900,10 @@ extern "C" void glm_ocr_set_max_tokens(glm_ocr_context * ctx, int max_tokens) {
     if (ctx) ctx->max_tokens = max_tokens;
 }
 
+extern "C" int glm_ocr_get_max_tokens(const glm_ocr_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 
 glm_ocr_context * glm_ocr_init(const char * model_path, int n_threads) {
     // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).

@@ -1748,6 +1748,10 @@ void internvl2_ocr_set_max_tokens(internvl2_ocr_context * ctx, int max_tokens) {
     if (ctx) ctx->max_tokens = max_tokens;
 }
 
+extern "C" int internvl2_ocr_get_max_tokens(const internvl2_ocr_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 const char * internvl2_ocr_recognize_raw(internvl2_ocr_context * ctx, const uint8_t * pixel_bytes, int width,
                                          int height, int channels, int * out_len) {
     if (!ctx || !pixel_bytes) {
