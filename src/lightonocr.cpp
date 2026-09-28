@@ -1534,6 +1534,10 @@ extern "C" void lightonocr_set_max_tokens(lightonocr_context * c, int max_tokens
     if (c) c->max_tokens = max_tokens;
 }
 
+extern "C" int lightonocr_get_max_tokens(const lightonocr_context * c) {
+    return c ? c->max_tokens : 0;
+}
+
 extern "C" const char * lightonocr_recognize_raw(lightonocr_context * c, const uint8_t * pixels, int width, int height,
                                                  int channels, int * out_len) {
     if (!c) return nullptr;

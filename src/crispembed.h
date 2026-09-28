@@ -622,6 +622,10 @@ CRISPEMBED_API float crispembed_ocr_model_mean_confidence(const void * ctx);
 /// decode budgets. Must be called before crispembed_ocr_model_recognize.
 CRISPEMBED_API void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens);
 
+/// Return the active generation cap for a VLM OCR model, or 0 when the model
+/// uses an engine-specific default / does not generate autoregressively.
+CRISPEMBED_API int crispembed_ocr_model_get_max_tokens(const void * ctx);
+
 /// Replace the instruction text sent to an instruction-following VLM engine
 /// (Qwen2-VL / Qwen2.5-VL / Qwen3-VL / PaddleOCR-VL / olmOCR, InternVL2,
 /// LFM2-VL, Granite-Vision). NULL or "" restores the engine's default prompt.

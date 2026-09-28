@@ -2703,6 +2703,10 @@ extern "C" void deepseek_ocr2_set_max_tokens(deepseek_ocr2_context * ctx, int ma
     if (ctx) ctx->max_tokens = max_tokens;
 }
 
+extern "C" int deepseek_ocr2_get_max_tokens(const deepseek_ocr2_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 
 deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_threads) {
     // The engine that froze a 4 GB host 3/3 (SubtitleEdit PR-13238) — refuse

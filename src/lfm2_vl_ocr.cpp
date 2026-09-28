@@ -2972,6 +2972,10 @@ void lfm2_vl_ocr_set_max_tokens(lfm2_vl_ocr_context * ctx, int max_tokens) {
     if (ctx && max_tokens > 0) ctx->max_tokens = max_tokens;
 }
 
+extern "C" int lfm2_vl_ocr_get_max_tokens(const lfm2_vl_ocr_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 const char * lfm2_vl_ocr_recognize_raw(lfm2_vl_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
                                        int channels, int * out_len) {
     if (!ctx || !pixel_bytes || width <= 0 || height <= 0) return nullptr;

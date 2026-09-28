@@ -381,6 +381,10 @@ void smoldocling_set_max_tokens(smoldocling_context * ctx, int max_tokens) {
     if (ctx && max_tokens > 0) ctx->max_tokens = max_tokens;
 }
 
+extern "C" int smoldocling_get_max_tokens(const smoldocling_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 // ── SigLIP Vision Encoder (ggml graph — BLAS accelerated) ────────────
 
 // Run SigLIP ViT via ggml graph. Builds a compute graph with all

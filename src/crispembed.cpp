@@ -5,6 +5,7 @@
 #include "tokenizer.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+
 #include "core/hparam_keys.h"
 #include "core/imatrix_alias.h"
 #include "core/init_bench.h"
@@ -4348,6 +4349,19 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "ppocrv6_ocr.h"
 #include "core/gguf_loader.h"
 
+// Engine-local state accessors used to make request-scoped generation caps
+// reversible in the unified dispatcher.
+extern "C" int qwen2vl_ocr_get_max_tokens(const qwen2vl_ocr_context * ctx);
+extern "C" int internvl2_ocr_get_max_tokens(const internvl2_ocr_context * ctx);
+extern "C" int granite_vision_get_max_tokens(const granite_vision_context * ctx);
+extern "C" int lightonocr_get_max_tokens(const lightonocr_context * ctx);
+extern "C" int smoldocling_get_max_tokens(const smoldocling_context * ctx);
+extern "C" int lfm2_vl_ocr_get_max_tokens(const lfm2_vl_ocr_context * ctx);
+extern "C" int got_ocr_get_max_tokens(const got_ocr_context * ctx);
+extern "C" int glm_ocr_get_max_tokens(const glm_ocr_context * ctx);
+extern "C" int deepseek_ocr2_get_max_tokens(const deepseek_ocr2_context * ctx);
+extern "C" int unlimited_ocr_get_max_tokens(const unlimited_ocr_context * ctx);
+
 enum ocr_model_type {
     OCR_MODEL_PIX2TEX,
     OCR_MODEL_HMER,
@@ -4814,7 +4828,7 @@ extern "C" float crispembed_ocr_model_mean_confidence(const void * ctx) {
 }
 
 extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) {
-    if (!ctx || max_tokens <= 0) return;
+    if (!ctx || max_tokens < 0) return;
     auto * u = (ocr_model *)ctx;
     switch (u->type) {
     case OCR_MODEL_QWEN2VL:
@@ -4858,6 +4872,35 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
     }
 }
 
+extern "C" int crispembed_ocr_model_get_max_tokens(const void * ctx) {
+    if (!ctx) return 0;
+    auto * u = (const ocr_model *)ctx;
+    switch (u->type) {
+    case OCR_MODEL_QWEN2VL:
+        return qwen2vl_ocr_get_max_tokens((const qwen2vl_ocr_context *)u->ctx);
+    case OCR_MODEL_INTERNVL2:
+        return internvl2_ocr_get_max_tokens((const internvl2_ocr_context *)u->ctx);
+    case OCR_MODEL_GRANITE_VISION:
+        return granite_vision_get_max_tokens((const granite_vision_context *)u->ctx);
+    case OCR_MODEL_LIGHTONOCR:
+        return lightonocr_get_max_tokens((const lightonocr_context *)u->ctx);
+    case OCR_MODEL_SMOLDOCLING:
+        return smoldocling_get_max_tokens((const smoldocling_context *)u->ctx);
+    case OCR_MODEL_LFM2_VL:
+        return lfm2_vl_ocr_get_max_tokens((const lfm2_vl_ocr_context *)u->ctx);
+    case OCR_MODEL_GOT_OCR:
+        return got_ocr_get_max_tokens((const got_ocr_context *)u->ctx);
+    case OCR_MODEL_GLM_OCR:
+        return glm_ocr_get_max_tokens((const glm_ocr_context *)u->ctx);
+    case OCR_MODEL_DEEPSEEK_OCR2:
+        return deepseek_ocr2_get_max_tokens((const deepseek_ocr2_context *)u->ctx);
+    case OCR_MODEL_UNLIMITED_OCR:
+        return unlimited_ocr_get_max_tokens((const unlimited_ocr_context *)u->ctx);
+    default:
+        return 0;
+    }
+}
+
 extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) {
     if (!ctx) return 0;
     auto * u = (ocr_model *)ctx;
@@ -4870,24 +4913,30 @@ extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) 
             u->default_captured = true;
         }
         if (reset) {
-            if (!u->default_prompt.empty()) setter(u->default_prompt.c_str());
+            if (!u->default_prompt.empty()) return setter(u->default_prompt.c_str());
+            return 1;
         } else {
-            setter(prompt);
+            return setter(prompt);
         }
-        return 1;
     };
     switch (u->type) {
     case OCR_MODEL_QWEN2VL: {
         auto * c = (qwen2vl_ocr_context *)u->ctx;
-        return apply(qwen2vl_ocr_get_prompt(c), [&](const char * p) { qwen2vl_ocr_set_prompt(c, p); });
+        return apply(qwen2vl_ocr_get_prompt(c), [&](const char * p) { return qwen2vl_ocr_set_prompt(c, p); });
     }
     case OCR_MODEL_INTERNVL2: {
         auto * c = (internvl2_ocr_context *)u->ctx;
-        return apply(internvl2_ocr_get_prompt(c), [&](const char * p) { internvl2_ocr_set_prompt(c, p); });
+        return apply(internvl2_ocr_get_prompt(c), [&](const char * p) {
+            internvl2_ocr_set_prompt(c, p);
+            return 1;
+        });
     }
     case OCR_MODEL_LFM2_VL: {
         auto * c = (lfm2_vl_ocr_context *)u->ctx;
-        return apply(lfm2_vl_ocr_get_prompt(c), [&](const char * p) { lfm2_vl_ocr_set_prompt(c, p); });
+        return apply(lfm2_vl_ocr_get_prompt(c), [&](const char * p) {
+            lfm2_vl_ocr_set_prompt(c, p);
+            return 1;
+        });
     }
     case OCR_MODEL_GRANITE_VISION:
         u->prompt = reset ? std::string() : std::string(prompt);

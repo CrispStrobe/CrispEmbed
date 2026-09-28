@@ -613,6 +613,9 @@ extern "C" {
     /// Override the generation budget of a VLM OCR engine (no-op otherwise).
     pub fn crispembed_ocr_model_set_max_tokens(ctx: *mut OcrModelContext, max_tokens: c_int);
 
+    /// Return the active generation budget (0 for non-generative engines).
+    pub fn crispembed_ocr_model_get_max_tokens(ctx: *const OcrModelContext) -> c_int;
+
     /// Replace the instruction sent to a prompt-following VLM engine
     /// (Qwen2/3-VL, InternVL2, LFM2-VL, Granite-Vision); NULL or "" restores
     /// the engine default. Returns 1 when applied, 0 when the engine runs a

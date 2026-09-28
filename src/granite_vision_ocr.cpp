@@ -395,6 +395,10 @@ void granite_vision_set_max_tokens(granite_vision_context * ctx, int max_tokens)
     if (ctx) ctx->max_tokens = max_tokens > 0 ? max_tokens : 2048;
 }
 
+extern "C" int granite_vision_get_max_tokens(const granite_vision_context * ctx) {
+    return ctx ? ctx->max_tokens : 0;
+}
+
 // ── ggml graph for 27-layer SigLIP ViT ────────────────────────────────
 //
 // Input x_in: [T*D] row-major (T rows of D floats, same layout as the scalar x).

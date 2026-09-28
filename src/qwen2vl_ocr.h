@@ -299,7 +299,9 @@ qwen2vl_ocr_context * qwen2vl_ocr_init_split(const char * llm_path, const char *
 void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx);
 
 // Set the text prompt for generation (default: "Describe this image.")
-void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt);
+// Returns 1 when the prompt was tokenized and will be used, 0 when this GGUF
+// lacks the tokenizer data needed to apply arbitrary text.
+int qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt);
 
 // Current text prompt (the model-specific default until set_prompt is called).
 // Owned by ctx, valid until the next set_prompt or free.
