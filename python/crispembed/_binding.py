@@ -176,7 +176,10 @@ class CrispEmbed:
         # manager is process-global); None leaves the current state alone.
         if offline is not None:
             set_offline(offline, lib_path=lib_path)
-        resolved = self.resolve_model(model_path, auto_download=auto_download)
+        # Resolve through the same library whose process-wide state was just
+        # configured. With an explicit lib_path, falling back to _find_lib()
+        # here can load a second copy with offline mode still disabled.
+        resolved = self.resolve_model(model_path, auto_download=auto_download, lib_path=lib_path)
 
         # Init model
         self._ctx = self._lib.crispembed_init(
