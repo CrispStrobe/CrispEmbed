@@ -93,6 +93,8 @@ def cli_decode(prompt=None, pipeline=False):
     argv += ["--ocr-max-tokens", "48"]
     if prompt:
         argv += ["--ocr-prompt", prompt]
+    if pipeline:
+        argv += [str(image)]
     result = run(argv)
     return {"stdout": result.stdout.strip(), "stderr": result.stderr.strip(), "rc": result.returncode}
 
