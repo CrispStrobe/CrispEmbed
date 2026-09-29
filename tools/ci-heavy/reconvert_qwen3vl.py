@@ -10,7 +10,7 @@ clean runner and gates it:
   2. gguf_vs_safetensors.py: every LLM tensor within F16 rounding of upstream
   3. qwen3vl_stage_diff.py on the new file: exact OCR text + stage gate
   4. crispembed-quantize to q8_0 q6_k q4_k q3_k q2_k
-  5. --upload: push the set to the HF repo (needs HF_TOKEN write access to it)
+  5. --keep f16|quants|all: put that subset + SHA256SUMS into the run artifact
 
     gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/reconvert_qwen3vl.py \\
         -f args="--profile unimumer" \\
@@ -63,21 +63,26 @@ if ok:
         if step(f"quantize_{t}", [q, f16, dst, t]):
             files.append(dst)
     res["sizes_gb"] = {p.name: round(p.stat().st_size / 1e9, 2) for p in files}
-if ok and "--upload" in sys.argv:
-    from huggingface_hub import HfApi
-    api = HfApi(token=os.environ.get("HF_TOKEN") or None)
-    try:
-        for p in files:
-            api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name, repo_id=prof["repo"],
-                            commit_message=f"Reconvert {p.name} from {prof['hf']} (the previous F16 had zeroed "
-                                           f"layer-18 norm tensors; every quant derived from it)")
-        res["uploaded"] = [p.name for p in files]
-    except Exception as e:  # typically: the CI token is not scoped to this repo
-        res["upload_error"] = repr(e)[:500]
-        ok = False
+# --keep f16|quants|all: copy that subset into $HEAVY_OUT (the run artifact) with a
+# sha256 manifest, for upload from a machine that holds the HF write token.
+if ok and "--keep" in sys.argv:
+    import hashlib
+    import shutil
+    which = sys.argv[sys.argv.index("--keep") + 1]
+    keep = [p for p in files if which == "all" or (which == "f16") == p.name.endswith("-f16.gguf")]
+    lines = []
+    for p in keep:
+        h = hashlib.sha256()
+        with open(p, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 24), b""):
+                h.update(chunk)
+        lines.append(f"{h.hexdigest()}  {p.name}")
+        shutil.copy(p, OUT / p.name)
+    (OUT / "SHA256SUMS").write_text("\n".join(lines) + "\n")
+    res["kept"] = [p.name for p in keep]
 (OUT / "result.json").write_text(json.dumps(res, indent=1))
 summary = [f"### reconvert {prof['hf']}\n", f"steps: {res['steps']}", f"sizes: {res.get('sizes_gb')}",
-           f"uploaded: {res.get('uploaded')}  error: {res.get('upload_error')}"]
+           f"kept (artifact): {res.get('kept')}"]
 for sub in ("verify", "stage_diff"):
     s = OUT / sub / "summary.md"
     if s.exists():
