@@ -102,13 +102,19 @@ def dump_reference(model, proc, img_path, out_gguf):
             hooks.append(lyr.register_forward_pre_hook(
                 lambda m, a, k, i=i: cap.__setitem__(f"llm_post_ds_{i - 1}", arr(first_arg(a, k))), with_kwargs=True))
     hooks.append(txt.norm.register_forward_hook(lambda m, a, o: cap.__setitem__("llm_final_norm", arr(o))))
+    # The mRoPE ids the text model actually receives (get_rope_index's
+    # signature differs between transformers versions; this does not).
+    pos_cap = {}
+    hooks.append(txt.register_forward_pre_hook(
+        lambda m, a, k: pos_cap.__setitem__("p", k.get("position_ids")), with_kwargs=True))
     with torch.no_grad():
         model(**inputs)
-        pos, _ = model.model.get_rope_index(inputs["input_ids"], inputs.get("image_grid_thw"), None,
-                                            inputs.get("attention_mask"))
     for h in hooks:
         h.remove()
-    cap["mrope_positions"] = pos[:, 0, :].T.float().numpy().copy()  # (T, 3)
+    pos = pos_cap.get("p")
+    if pos is not None:
+        pos = pos[-3:, 0, :]  # (3, T); newer versions prepend a text-position row
+        cap["mrope_positions"] = pos.T.float().numpy().copy()  # (T, 3)
     pixels = inputs["pixel_values"].float().numpy()
 
     w = gguf.GGUFWriter(str(out_gguf), "qwen3vl_ref")
