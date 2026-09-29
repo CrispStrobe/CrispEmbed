@@ -62,6 +62,15 @@ struct llm_hparams {
     float routed_scaling_factor = 1.0f;
     int eos_token_id = 1;
     int max_position_embeddings = 4096;
+    // Prompt layout and decode rule are per checkpoint (GGUF keys below).
+    // Defaults = Unlimited-OCR: "<bos><image>document parsing." and the model
+    // card's sliding no_repeat_ngram 35 / window 128. jina-ocr-v1 (same
+    // architecture) uses "<|User|>:\n<image>{instruction}<|Assistant|>:\n",
+    // no BOS, plain greedy.
+    std::vector<int32_t> prompt_prefix_ids = { 0 };
+    std::vector<int32_t> prompt_instr_ids = { 34030, 76466, 16 };
+    int no_repeat_ngram = 35;
+    int ngram_window = 128;
 };
 
 // ---------------------------------------------------------------------------
@@ -470,6 +479,18 @@ static bool load_hparams(uocr_ctx & ctx, const char * path) {
     l.rope_theta = f32v("unlimited_ocr.rope_theta", l.rope_theta);
     l.routed_scaling_factor = f32v("unlimited_ocr.routed_scaling_factor", l.routed_scaling_factor);
     l.eos_token_id = u32("unlimited_ocr.eos_token_id", l.eos_token_id);
+    l.no_repeat_ngram = (int)u32("unlimited_ocr.no_repeat_ngram", (uint32_t)l.no_repeat_ngram);
+    l.ngram_window = (int)u32("unlimited_ocr.ngram_window", (uint32_t)l.ngram_window);
+    for (auto [key, dst] :
+         { std::pair<const char *, std::vector<int32_t> *>{ "unlimited_ocr.prompt_prefix_ids", &l.prompt_prefix_ids },
+           { "unlimited_ocr.prompt_instr_ids", &l.prompt_instr_ids } }) {
+        const int ai = gguf_find_key(g, key);
+        if (ai >= 0 && gguf_get_arr_type(g, ai) == GGUF_TYPE_INT32) {
+            const int n = (int)gguf_get_arr_n(g, ai);
+            const auto * d = (const int32_t *)gguf_get_arr_data(g, ai);
+            dst->assign(d, d + n);
+        }
+    }
 
     // Tokenizer
     int vocab_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -2701,7 +2722,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
         // ngram_window=128). Mirrors SlidingWindowNoRepeatNgramProcessor over the
         // full input_ids (prompt placeholders + generated). Without it the
         // detection-box decode gets stuck repeating a partial box.
-        int nrng = 35, nwin = 128;
+        int nrng = lhp.no_repeat_ngram, nwin = lhp.ngram_window;
         if (const char * e = getenv("UOCR_NO_REPEAT_NGRAM")) nrng = atoi(e);
         if (const char * e = getenv("UOCR_NGRAM_WINDOW")) nwin = atoi(e);
         if (nrng > 1) {
@@ -3154,7 +3175,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     // leading newline: "document parsing." directly follows the <image> block.
     // "document parsing." → [document=34030, Ġparsing=76466, .=16] (verified
     // against the model's tokenizer.json). Override with UOCR_INSTR.
-    std::vector<int32_t> instr_ids = { 34030, 76466, 16 };
+    std::vector<int32_t> instr_ids = mdl.lhp.prompt_instr_ids;
     if (const char * ov = getenv("UOCR_INSTR")) {
         instr_ids.clear();
         const char * p = ov;
@@ -3170,7 +3191,8 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         }
     }
 
-    int n_prompt = 1 /*bos*/ + n_vis_total + (int)instr_ids.size();
+    const std::vector<int32_t> & prefix_ids = mdl.lhp.prompt_prefix_ids;
+    int n_prompt = (int)prefix_ids.size() + n_vis_total + (int)instr_ids.size();
     std::vector<float> prompt_embeds((size_t)n_prompt * D);
 
     int row = 0;
@@ -3190,8 +3212,10 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     // the <image> placeholder id (128815).
     std::vector<int32_t> prompt_ids;
     prompt_ids.reserve(n_prompt);
-    prompt_ids.push_back(0); // bos
-    put_tok(0);              // bos = <|begin_of_sentence|>
+    for (int32_t id : prefix_ids) { // Unlimited-OCR: <bos>; jina-ocr-v1: <|User|> ":\n"
+        prompt_ids.push_back(id);
+        put_tok(id);
+    }
 
     // Vision features (already includes image_newline per row + view_separator)
     memcpy(prompt_embeds.data() + (size_t)row * D, vis_features.data(), (size_t)n_vis_total * D * sizeof(float));
@@ -3204,8 +3228,8 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     }
 
     if (core_env::on("UOCR_DBG")) {
-        fprintf(stderr, "  [dbg] prompt: bos + %d vis + %zu instr = %d tokens; instr_ids:", n_vis_total,
-                instr_ids.size(), n_prompt);
+        fprintf(stderr, "  [dbg] prompt: %zu prefix + %d vis + %zu instr = %d tokens; instr_ids:", prefix_ids.size(),
+                n_vis_total, instr_ids.size(), n_prompt);
         for (int32_t id : instr_ids) fprintf(stderr, " %d", id);
         fprintf(stderr, "\n");
     }

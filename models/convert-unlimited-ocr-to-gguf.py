@@ -141,6 +141,11 @@ def main():
     p.add_argument("--name", default="unlimited-ocr", help="general.name")
     p.add_argument("--license", default="MIT", help="general.license")
     p.add_argument("--source", default="https://huggingface.co/baidu/Unlimited-OCR", help="general.source")
+    # Prompt layout + decode rule for fine-tunes that differ from Unlimited-OCR's
+    # "<bos><image>document parsing." with a sliding 35-gram ban (engine defaults).
+    p.add_argument("--prompt-prefix-ids", help="comma-separated token ids before the image block")
+    p.add_argument("--prompt-instr-ids", help="comma-separated token ids after the image block")
+    p.add_argument("--no-repeat-ngram", type=int, help="0 = plain greedy")
     args = p.parse_args()
 
     model_dir = Path(args.model_dir)
@@ -238,6 +243,13 @@ def main():
     writer.add_string("general.name", args.name)
     writer.add_string("general.license", args.license)
     writer.add_string("general.source", args.source)
+    ids = lambda v: [int(x) for x in v.split(",") if x.strip()]
+    if args.prompt_prefix_ids is not None:
+        writer.add_array("unlimited_ocr.prompt_prefix_ids", ids(args.prompt_prefix_ids))
+    if args.prompt_instr_ids is not None:
+        writer.add_array("unlimited_ocr.prompt_instr_ids", ids(args.prompt_instr_ids))
+    if args.no_repeat_ngram is not None:
+        writer.add_uint32("unlimited_ocr.no_repeat_ngram", args.no_repeat_ngram)
 
     # LLM hyperparams
     writer.add_uint32("unlimited_ocr.hidden_size", hidden_size)

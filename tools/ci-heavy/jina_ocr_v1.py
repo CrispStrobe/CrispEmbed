@@ -61,10 +61,25 @@ try:
     from huggingface_hub import snapshot_download
 
     snap = Path(snapshot_download(MODEL, local_dir=str(SCR / "jina-ocr-v1")))
+    # The prompt layout comes from upstream's own processor + chat template:
+    # "<|User|>:\n" <image block> "{recommended prompt}<|Assistant|>:\n", no BOS.
+    import torch
+    from PIL import Image
+    from transformers import AutoProcessor
+    proc = AutoProcessor.from_pretrained(str(snap), trust_remote_code=True)
+    probe = proc.prepare_ocr_inputs(Image.new("RGB", (64, 64), "white"), device=torch.device("cpu"),
+                                    crop_mode=False, base_size=1024, image_size=1024)["input_ids"][0].tolist()
+    first = probe.index(IMAGE_TOKEN)
+    last = len(probe) - 1 - probe[::-1].index(IMAGE_TOKEN)
+    res["prompt_prefix_ids"], res["prompt_instr_ids"] = probe[:first], probe[last + 1:]
+    log(f"prompt prefix {res['prompt_prefix_ids']} instr {res['prompt_instr_ids']}")
     log("converting")
     subprocess.check_call([sys.executable, str(REPO / "models/convert-unlimited-ocr-to-gguf.py"),
                            "--model-dir", str(snap), "--output", str(gguf), "--fp16", "--name", "jina-ocr-v1",
-                           "--license", "cc-by-nc-4.0", "--source", "https://huggingface.co/jinaai/jina-ocr-v1"])
+                           "--license", "cc-by-nc-4.0", "--source", "https://huggingface.co/jinaai/jina-ocr-v1",
+                           "--prompt-prefix-ids", ",".join(map(str, res["prompt_prefix_ids"])),
+                           "--prompt-instr-ids", ",".join(map(str, res["prompt_instr_ids"])),
+                           "--no-repeat-ngram", "0"])
     res["gguf_gb"] = round(gguf.stat().st_size / 1e9, 2)
     log("building crispembed-cli")
     b = SCR / "build"
@@ -80,12 +95,9 @@ try:
     res["gguf_gb"] = {q: round(p.stat().st_size / 1e9, 2) for q, p in GGUFS.items()}
     exe = next(p for p in b.rglob("crispembed") if p.is_file() and os.access(p, os.X_OK))
 
-    import torch
-    from PIL import Image
-    from transformers import AutoModelForCausalLM, AutoProcessor
+    from transformers import AutoModelForCausalLM
 
     torch.set_num_threads(os.cpu_count() or 4)
-    proc = AutoProcessor.from_pretrained(str(snap), trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(str(snap), dtype=torch.bfloat16, trust_remote_code=True).eval()
 
     def hf(img, crop_mode):
@@ -115,7 +127,8 @@ try:
 
     for name, path in IMAGES.items():
         e = hf_out[name]
-        env = dict(os.environ, UOCR_INSTR=",".join(map(str, e["instr_ids"])), UOCR_DBG="1")
+        # No UOCR_INSTR: the GGUF's own prompt_prefix_ids / prompt_instr_ids are under test.
+        env = dict(os.environ, UOCR_DBG="1")
         for q, gp in GGUFS.items():
             r = subprocess.run([str(exe), "-m", str(gp), "--ocr", str(path), "--ocr-max-tokens", str(MAX_NEW),
                                 "-t", str(os.cpu_count() or 4)], capture_output=True, text=True, env=env, timeout=3600)
