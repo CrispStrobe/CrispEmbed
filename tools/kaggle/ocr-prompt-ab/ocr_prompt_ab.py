@@ -15,7 +15,7 @@ EMBED = SCRATCH / "CrispEmbed"
 ASR = Path("/tmp/ocr_prompt_harness/CrispASR")
 BUILD = EMBED / "build"
 RESULT = WORK / "ocr_prompt_ab.json"
-BRANCH = "fix/issues-52-55-56"
+BRANCH = "main"  # the fix merged; re-runs verify main
 MODEL_URL = (
     "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/"
     "qwen3-vl-2b-q4_k.gguf"
@@ -73,9 +73,6 @@ with kh.build_heartbeat("ocr-prompt-build"):
         f"-j{kh.safe_build_jobs(gpu=True)}"
     )
 kh.step("build-complete")
-# Export the warm cache immediately so later model/download/inference failures
-# cannot discard a successful GPU build.
-kh.export_ccache_tar()
 cli = BUILD / "crispembed"
 server = BUILD / "crispembed-server"
 
@@ -189,11 +186,21 @@ checks = {
 }
 results["checks"] = checks
 results["passed"] = all(checks.values())
+# The checks above prove prompt ROUTING (output changes with the prompt, overrides
+# are request-scoped). They pass on garbage too: a model that emits scrambled
+# letters still "differs". Report reading quality separately and loudly, so a
+# routing pass is never mistaken for correct OCR. Not gating: it is a separate
+# bug from issue #56 (seen 2026-09-28: default output "A L E P H A H ...").
+default_text = results["direct_default"]["stdout"].upper()
+results["quality"] = {
+    "default_reads_alpha": "ALPHA" in default_text,
+    "default_reads_omega": "OMEGA" in default_text,
+    "first_prompt_says_alpha": "ALPHA" in direct_first,
+    "second_prompt_says_omega": "OMEGA" in direct_second,
+}
+log("OCR reading quality (not gating): " + json.dumps(results["quality"]))
 RESULT.write_text(json.dumps(results, indent=2))
 log(json.dumps(checks, indent=2))
 kh.step("verdict", passed=results["passed"], checks=checks)
-# The matching ${KAGGLE_ACCOUNT} ccache dataset must be refreshed from an actual Kaggle
-# build. Keep the archive as a kernel output for the post-run dataset update.
-kh.export_ccache_tar()
 if not results["passed"]:
     raise SystemExit("OCR prompt A/B failed; see ocr_prompt_ab.json")
