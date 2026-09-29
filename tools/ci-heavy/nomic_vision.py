@@ -115,6 +115,14 @@ try:
         res["images"][name] = e
         log(f"{name}: {e}")
         (OUT / "result.json").write_text(json.dumps(res, indent=1))
+    if "--keep-gguf" in sys.argv:  # artifact + SHA256SUMS, for upload with the HF write token elsewhere
+        import hashlib
+        import shutil
+        sums = []
+        for gp in ggufs.values():
+            sums.append(f"{hashlib.sha256(gp.read_bytes()).hexdigest()}  {gp.name}")
+            shutil.copy(gp, OUT / gp.name)
+        (OUT / "SHA256SUMS").write_text("\n".join(sums) + "\n")
 except Exception:
     res["errors"].append(traceback.format_exc())
     print(res["errors"][-1], file=sys.stderr)
