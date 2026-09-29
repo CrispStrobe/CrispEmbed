@@ -150,7 +150,7 @@ try:
         model = AutoModelForCausalLM.from_pretrained(str(snap), dtype=torch.bfloat16, trust_remote_code=True).eval()
 
         def swap(obj, t):
-            if torch.is_tensor(obj) and obj.dim() >= 3 and tuple(obj.shape[-3:]) == (3, 1024, 1024):
+            if torch.is_tensor(obj) and tuple(obj.shape[-3:]) == (3, 1024, 1024) and obj.numel() == t.numel():
                 return t.reshape(obj.shape).to(obj.dtype), 1
             if isinstance(obj, (list, tuple)):
                 out, n = [], 0
