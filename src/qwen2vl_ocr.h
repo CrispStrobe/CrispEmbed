@@ -188,6 +188,10 @@ struct context {
 
     // Optional diff harness path (set before encode to enable comparison)
     std::string diff_ref_path;
+    // Greedy decode bans repeated n-grams of this size (0/1 = off). 3 keeps VLM
+    // OCR out of loops (#25); formula models set 0 - LaTeX legitimately repeats
+    // trigrams ("^ { 2" in x^2 + y^2) and upstream decodes plain greedy.
+    int no_repeat_ngram = 3;
 
     // Temporary: deepstack embeds for passing through generate → run_llm_forward
     const float * const * deepstack_embeds_tmp = nullptr;

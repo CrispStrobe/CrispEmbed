@@ -2591,7 +2591,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     out.token_confidences.clear();
     const int prefill_logit_row = (prefill.n_logits == n_prompt_tokens) ? (n_prompt_tokens - 1) : 0;
     const float * last_logits = prefill.logits + (size_t)prefill_logit_row * V;
-    const int no_repeat_ngram = 3;
+    const int no_repeat_ngram = ctx.no_repeat_ngram;
     int best_id = argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
     float best_score = last_logits[best_id];
 
@@ -2966,6 +2966,9 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     // llm_final_norm) - e.g. tools/ci-heavy/qwen3vl_stage_diff.py. The compare
     // code in this file was unreachable before: nothing ever set diff_ref_path.
     // Verbosity 2 also enables the mRoPE position comparison.
+    if (const char * nr = getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
+        if (*nr) ctx->inner.no_repeat_ngram = atoi(nr);
+    }
     if (const char * ref = getenv("CRISPEMBED_QWEN2VL_REF")) {
         if (*ref) {
             ctx->inner.diff_ref_path = ref;
@@ -2987,7 +2990,10 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
                       "Output only the transcribed text, nothing else.";
     }
     // Uni-MuMER handwritten math recognition prompt (from paper, Appendix A).
+    // Plain greedy like upstream: the n-gram ban turned "x ^ { 2 } + y ^ { 2 }"
+    // into "y ^ { \prime ..." (stage diff: prefill exact, text off).
     if (is_unimumer) {
+        if (!getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) ctx->inner.no_repeat_ngram = 0;
         ctx->prompt = "I have an image of a handwritten mathematical expression. Please "
                       "write out the expression of the formula in the image using LaTeX "
                       "format.";
