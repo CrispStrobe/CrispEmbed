@@ -29,6 +29,8 @@ import time
 import traceback
 from pathlib import Path
 
+import numpy as np
+
 OUT = Path(os.environ.get("HEAVY_OUT", "out"))
 SCR = Path(os.environ.get("HEAVY_SCRATCH", "scratch"))
 OUT.mkdir(parents=True, exist_ok=True)
@@ -38,7 +40,7 @@ MODEL = "jinaai/jina-ocr-v1"
 IMAGES = {n: REPO / "tests/regression/images" / f"{n}.png" for n in ("fox", "scan_page_pd")}
 QUICK = "--quick" in sys.argv  # prompt/prefix diagnosis: one image, no tiled arm, no quants
 if QUICK:
-    IMAGES = {"fox": IMAGES["fox"]}
+    IMAGES = {"scan_page_pd": IMAGES["scan_page_pd"]}
 MAX_NEW = 256
 IMAGE_TOKEN = 128815
 res = {"model": MODEL, "images": {}, "errors": []}
@@ -128,7 +130,7 @@ try:
     for name, path in IMAGES.items():
         e = hf_out[name]
         # No UOCR_INSTR: the GGUF's own prompt_prefix_ids / prompt_instr_ids are under test.
-        env = dict(os.environ, UOCR_DBG="1")
+        env = dict(os.environ, UOCR_DBG="1", UOCR_DUMP_PIXELS=str(SCR / f"pix_{name}.f32"))
         for q, gp in GGUFS.items():
             r = subprocess.run([str(exe), "-m", str(gp), "--ocr", str(path), "--ocr-max-tokens", str(MAX_NEW),
                                 "-t", str(os.cpu_count() or 4)], capture_output=True, text=True, env=env, timeout=3600)
@@ -142,6 +144,44 @@ try:
         res["images"][name] = e
         save()
         log(f"[{name}] cpp: {e['cpp'][:200]!r} ratios f16/q8/q4: {e['cpp_ratio']}/{e.get('cpp_q8_0_ratio')}/{e.get('cpp_q4_k_ratio')}")
+    # Same-pixels arm: upstream on the C++ engine's exact preprocessed global view.
+    # If this equals the C++ text, the remaining gap is preprocessing rounding.
+    if QUICK:
+        model = AutoModelForCausalLM.from_pretrained(str(snap), dtype=torch.bfloat16, trust_remote_code=True).eval()
+
+        def swap(obj, t):
+            if torch.is_tensor(obj) and obj.dim() >= 3 and tuple(obj.shape[-3:]) == (3, 1024, 1024):
+                return t.reshape(obj.shape).to(obj.dtype), 1
+            if isinstance(obj, (list, tuple)):
+                out, n = [], 0
+                for o in obj:
+                    r, k = swap(o, t)
+                    out.append(r)
+                    n += k
+                return type(obj)(out) if not isinstance(obj, tuple) else tuple(out), n
+            if isinstance(obj, dict):
+                out, n = {}, 0
+                for k2, v in obj.items():
+                    out[k2], k = swap(v, t)
+                    n += k
+                return out, n
+            return obj, 0
+
+        for name, path in IMAGES.items():
+            pix = torch.from_numpy(np.fromfile(SCR / f"pix_{name}.f32", dtype=np.float32))
+            inputs = proc.prepare_ocr_inputs(Image.open(path).convert("RGB"), device=torch.device("cpu"),
+                                             crop_mode=False, base_size=1024, image_size=1024)
+            inputs, n_swapped = swap(dict(inputs), pix)
+            with torch.no_grad():
+                out = model.generate(**inputs, max_new_tokens=MAX_NEW, do_sample=False)
+            t = proc.decode_ocr(out, inputs["input_ids"]).strip()
+            e = res["images"][name]
+            e["hf_on_cpp_pixels"], e["n_swapped"] = t, n_swapped
+            e["hf_on_cpp_pixels_vs_cpp"] = round(difflib.SequenceMatcher(None, t.split(), e["cpp"].split()).ratio(), 4)
+            e["hf_on_cpp_pixels_exact"] = norm(t) == norm(e["cpp"])
+            log(f"[{name}] HF on C++ pixels (swapped {n_swapped}): exact={e['hf_on_cpp_pixels_exact']} "
+                f"ratio={e['hf_on_cpp_pixels_vs_cpp']}")
+        save()
     if "--keep-gguf" in sys.argv:
         for gp in GGUFS.values():
             shutil.copy(gp, OUT / gp.name)
