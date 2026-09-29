@@ -39,6 +39,23 @@ struct layer {
     ggml_tensor *ln2_w = nullptr, *ln2_b = nullptr;
     ggml_tensor *fc1_w = nullptr, *fc1_b = nullptr;
     ggml_tensor *fc2_w = nullptr, *fc2_b = nullptr;
+    // Nomic SwiGLU MLP: fc2(LN(fc11(x) * silu(fc12(x))))
+    ggml_tensor *fc11_w = nullptr, *fc11_b = nullptr;
+    ggml_tensor *fc12_w = nullptr, *fc12_b = nullptr;
+    ggml_tensor *ffn_norm_w = nullptr, *ffn_norm_b = nullptr;
+};
+
+// nomic-embed-vision: a latent query attends over all tokens; the result feeds
+// a gated MLP whose output is added to the CLS token (NomicMultiHeadAttentionPooling).
+struct nomic_pool_head {
+    ggml_tensor * latent = nullptr; // [D, 1]
+    ggml_tensor *q_w = nullptr, *q_b = nullptr;
+    ggml_tensor *kv_w = nullptr, *kv_b = nullptr; // [2D, D]: k | v
+    ggml_tensor *o_w = nullptr, *o_b = nullptr;
+    ggml_tensor *ln_w = nullptr, *ln_b = nullptr;
+    ggml_tensor *fc11_w = nullptr, *fc11_b = nullptr;
+    ggml_tensor *fc12_w = nullptr, *fc12_b = nullptr;
+    ggml_tensor *fc2_w = nullptr, *fc2_b = nullptr;
 };
 
 struct attn_pool_head {
@@ -67,7 +84,13 @@ struct context {
     bool has_attn_pool = false;
     bool has_visual_proj = false;
     bool use_quick_gelu = false; // CLIP uses quick_gelu, SigLIP uses gelu
-    bool deskew = false;         // optional document deskew in encode_file
+    bool swiglu = false;         // Nomic: gated SiLU MLP with an inner LayerNorm
+    float mlp_ln_eps = 1e-5f;
+    bool rope_2d = false; // Nomic: 2-D rotary on patch tokens (interleaved pairs)
+    float rope_theta = 10000.0f;
+    int rope_ref_h = 0, rope_ref_w = 0;
+    bool has_nomic_pool = false;
+    bool deskew = false; // optional document deskew in encode_file
     float deskew_max_angle = 15.0f;
 
     // Weights
@@ -80,6 +103,7 @@ struct context {
     ggml_tensor * visual_proj_w = nullptr;
     std::vector<layer> layers;
     attn_pool_head head;
+    nomic_pool_head npool;
 
     // Backend
     ggml_backend_t backend = nullptr;
@@ -136,7 +160,14 @@ bool load(context ** out, const char * path, int n_threads) {
         };
         std::string act = str_val("vit.hidden_act", "gelu");
         ctx->use_quick_gelu = (act == "quick_gelu");
+        ctx->swiglu = (act == "swiglu");
     }
+    ctx->mlp_ln_eps = f32v("vit.mlp_ln_eps", 1e-5f);
+    ctx->rope_2d = boolv("vit.rope_2d", false);
+    ctx->rope_theta = f32v("vit.rope_theta", 10000.0f);
+    ctx->rope_ref_h = u32("vit.rope_ref_h", 0);
+    ctx->rope_ref_w = u32("vit.rope_ref_w", 0);
+    ctx->has_nomic_pool = boolv("vit.has_nomic_pool", false);
 
     // Read per-channel image normalization from GGUF (falls back to SigLIP defaults)
     auto read_f32_arr3 = [&](const char * key, float * dst) {
@@ -213,8 +244,19 @@ bool load(context ** out, const char * path, int n_threads) {
         L.fc1_b = get(pfx + "ffn.fc1.bias");
         L.fc2_w = get(pfx + "ffn.fc2.weight");
         L.fc2_b = get(pfx + "ffn.fc2.bias");
+        // Pre-fused QKV from the converter (Nomic); used as-is, skips the fusion below
+        L.qkv_w = get(pfx + "attn.qkv.weight");
+        L.qkv_b = get(pfx + "attn.qkv.bias");
+        L.fc11_w = get(pfx + "ffn.fc11.weight");
+        L.fc11_b = get(pfx + "ffn.fc11.bias");
+        L.fc12_w = get(pfx + "ffn.fc12.weight");
+        L.fc12_b = get(pfx + "ffn.fc12.bias");
+        L.ffn_norm_w = get(pfx + "ffn.norm.weight");
+        L.ffn_norm_b = get(pfx + "ffn.norm.bias");
 
-        if (!L.ln1_w || !L.q_w || !L.fc1_w) {
+        const bool has_attn = L.q_w || L.qkv_w;
+        const bool has_mlp = ctx->swiglu ? (L.fc11_w && L.fc12_w && L.fc2_w) : (L.fc1_w != nullptr);
+        if (!L.ln1_w || !has_attn || !has_mlp) {
             fprintf(stderr, "vit_embed: missing tensors for layer %d\n", i);
             return false;
         }
@@ -235,8 +277,32 @@ bool load(context ** out, const char * path, int n_threads) {
         ctx->head.fc2_b = get("head.mlp.fc2.bias");
     }
 
+    if (ctx->has_nomic_pool) {
+        auto & P = ctx->npool;
+        P.latent = get("nomic_pool.latent");
+        P.q_w = get("nomic_pool.q.weight");
+        P.q_b = get("nomic_pool.q.bias");
+        P.kv_w = get("nomic_pool.kv.weight");
+        P.kv_b = get("nomic_pool.kv.bias");
+        P.o_w = get("nomic_pool.o.weight");
+        P.o_b = get("nomic_pool.o.bias");
+        P.ln_w = get("nomic_pool.ln.weight");
+        P.ln_b = get("nomic_pool.ln.bias");
+        P.fc11_w = get("nomic_pool.mlp.fc11.weight");
+        P.fc11_b = get("nomic_pool.mlp.fc11.bias");
+        P.fc12_w = get("nomic_pool.mlp.fc12.weight");
+        P.fc12_b = get("nomic_pool.mlp.fc12.bias");
+        P.fc2_w = get("nomic_pool.mlp.fc2.weight");
+        P.fc2_b = get("nomic_pool.mlp.fc2.bias");
+        if (!P.latent || !P.q_w || !P.kv_w || !P.o_w || !P.ln_w || !P.fc11_w || !P.fc12_w || !P.fc2_w) {
+            fprintf(stderr, "vit_embed: incomplete nomic pooling head\n");
+            return false;
+        }
+    }
+
     // Fuse QKV weights for better matmul parity: [D, D] × 3 → [3D, D]
-    {
+    // (skipped when the GGUF already carries fused enc.N.attn.qkv, e.g. Nomic)
+    if (!ctx->layers.empty() && ctx->layers[0].q_w && !ctx->layers[0].qkv_w) {
         int D = ctx->hidden;
         ggml_init_params fp = { ggml_tensor_overhead() * ctx->n_layers * 2 + 1024, nullptr, true };
         ggml_context * fg = ggml_init(fp);
@@ -282,7 +348,8 @@ bool load(context ** out, const char * path, int n_threads) {
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
     fprintf(stderr, "vit_embed: loaded %d layers, %s pooling%s%s\n", ctx->n_layers,
-            ctx->has_attn_pool ? "attention" : (ctx->has_cls_token ? "CLS" : "mean"),
+            ctx->has_nomic_pool ? "nomic latent-attention"
+                                : (ctx->has_attn_pool ? "attention" : (ctx->has_cls_token ? "CLS" : "mean")),
             ctx->has_visual_proj ? ", visual_proj" : "", ctx->use_quick_gelu ? ", quick_gelu" : "");
     return true;
 }
@@ -306,7 +373,7 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
 
     // Build ggml graph
     const int extra = (ctx->has_attn_pool ? 60 : 0) + (ctx->has_cls_token ? 10 : 0);
-    const int ops_per_layer = ctx->use_quick_gelu ? 50 : 40;
+    const int ops_per_layer = (ctx->rope_2d || ctx->swiglu) ? 90 : (ctx->use_quick_gelu ? 50 : 40);
     const int debug_extra = (getenv("VIT_DEBUG") ? ctx->n_layers + 5 : 0);
     const int total_nodes = ctx->n_layers * ops_per_layer + 200 + extra + debug_extra;
     size_t buf_size = ggml_tensor_overhead() * total_nodes + ggml_graph_overhead_custom(total_nodes, false);
@@ -367,6 +434,30 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
         ggml_set_output(x);
     }
 
+    // Nomic 2-D rotary: per-token cos/sin tables [hd, 1, S], filled on the host
+    // after allocation (CLS column: cos 1, sin 0 - HF skips the prefix token).
+    ggml_tensor * rope_cos = nullptr;
+    ggml_tensor * rope_sin = nullptr;
+    if (ctx->rope_2d) {
+        rope_cos = ggml_new_tensor_3d(g, GGML_TYPE_F32, hd, 1, S);
+        rope_sin = ggml_new_tensor_3d(g, GGML_TYPE_F32, hd, 1, S);
+        ggml_set_name(rope_cos, "rope_cos");
+        ggml_set_name(rope_sin, "rope_sin");
+        ggml_set_input(rope_cos);
+        ggml_set_input(rope_sin);
+    }
+    // x * cos + rot(x) * sin with interleaved pairs: rot(x)[2i] = -x[2i+1],
+    // rot(x)[2i+1] = x[2i] (timm apply_rot_embed_cat). t is contiguous [hd, nh, S].
+    auto apply_rope = [&](ggml_tensor * t) -> ggml_tensor * {
+        const int64_t P = ggml_nelements(t) / 2;
+        ggml_tensor * t2 = ggml_reshape_2d(g, t, 2, P);
+        ggml_tensor * ev = ggml_cont(g, ggml_view_2d(g, t2, 1, P, t2->nb[1], 0));
+        ggml_tensor * od = ggml_cont(g, ggml_view_2d(g, t2, 1, P, t2->nb[1], sizeof(float)));
+        ggml_tensor * rot = ggml_concat(g, ggml_neg(g, od), ev, 0); // [2, P]
+        rot = ggml_reshape_3d(g, rot, hd, nh, S);
+        return ggml_add(g, ggml_mul(g, t, rope_cos), ggml_mul(g, rot, rope_sin));
+    };
+
     // Encoder layers (pre-LN ViT: LN → Attn → Add → LN → MLP → Add)
     for (int il = 0; il < ctx->n_layers; il++) {
         const auto & L = ctx->layers[il];
@@ -397,6 +488,10 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
         Q = ggml_reshape_3d(g, Q, hd, nh, S);
         K = ggml_reshape_3d(g, K, hd, nh, S);
         V = ggml_reshape_3d(g, V, hd, nh, S);
+        if (ctx->rope_2d) {
+            Q = apply_rope(Q);
+            K = apply_rope(K);
+        }
         Q = ggml_permute(g, Q, 0, 2, 1, 3); // [hd, S, nh]
         K = ggml_permute(g, K, 0, 2, 1, 3);
         V = ggml_permute(g, V, 0, 2, 1, 3);
@@ -421,17 +516,33 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
         x = ggml_mul(g, x, L.ln2_w);
         if (L.ln2_b) x = ggml_add(g, x, L.ln2_b);
 
-        // MLP: fc1 → activation → fc2
-        x = ggml_mul_mat(g, L.fc1_w, x);
-        if (L.fc1_b) x = ggml_add(g, x, L.fc1_b);
-        // CLIP uses quick_gelu = x * sigmoid(1.702x), SigLIP uses gelu (tanh approx)
-        if (ctx->use_quick_gelu) {
-            x = ggml_mul(g, x, ggml_sigmoid(g, ggml_scale(g, ggml_dup(g, x), 1.702f)));
+        if (ctx->swiglu) {
+            // Nomic: fc2(LN(fc11(x) * silu(fc12(x))))
+            ggml_tensor * y = ggml_mul_mat(g, L.fc11_w, x);
+            if (L.fc11_b) y = ggml_add(g, y, L.fc11_b);
+            ggml_tensor * gate = ggml_mul_mat(g, L.fc12_w, x);
+            if (L.fc12_b) gate = ggml_add(g, gate, L.fc12_b);
+            x = ggml_mul(g, y, ggml_silu(g, gate));
+            if (L.ffn_norm_w) {
+                x = ggml_norm(g, x, ctx->mlp_ln_eps);
+                x = ggml_mul(g, x, L.ffn_norm_w);
+                if (L.ffn_norm_b) x = ggml_add(g, x, L.ffn_norm_b);
+            }
+            x = ggml_mul_mat(g, L.fc2_w, x);
+            if (L.fc2_b) x = ggml_add(g, x, L.fc2_b);
         } else {
-            x = ggml_gelu(g, x);
+            // MLP: fc1 → activation → fc2
+            x = ggml_mul_mat(g, L.fc1_w, x);
+            if (L.fc1_b) x = ggml_add(g, x, L.fc1_b);
+            // CLIP uses quick_gelu = x * sigmoid(1.702x), SigLIP uses gelu (tanh approx)
+            if (ctx->use_quick_gelu) {
+                x = ggml_mul(g, x, ggml_sigmoid(g, ggml_scale(g, ggml_dup(g, x), 1.702f)));
+            } else {
+                x = ggml_gelu(g, x);
+            }
+            x = ggml_mul_mat(g, L.fc2_w, x);
+            if (L.fc2_b) x = ggml_add(g, x, L.fc2_b);
         }
-        x = ggml_mul_mat(g, L.fc2_w, x);
-        if (L.fc2_b) x = ggml_add(g, x, L.fc2_b);
 
         // Residual add
         x = ggml_add(g, residual, x);
@@ -457,7 +568,40 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
 
     ggml_tensor * pooled = nullptr;
 
-    if (ctx->has_attn_pool && ctx->head.probe && ctx->head.in_proj_w) {
+    if (ctx->has_nomic_pool) {
+        // ── Nomic latent-attention pooling (NomicMultiHeadAttentionPooling) ──
+        // attn_out = out_proj(MHA(q = Wq·latent, k|v = Wkv·x)); no rope here.
+        // output   = x[:, 0] + GatedMLP(LN(attn_out))   (HF adds the MLP to every
+        // token of the residual stream and the embedding is token 0).
+        const auto & P = ctx->npool;
+        ggml_tensor * lat = ggml_reshape_2d(g, P.latent, D, 1);
+        ggml_tensor * q = ggml_mul_mat(g, P.q_w, lat); // [D, 1]
+        if (P.q_b) q = ggml_add(g, q, P.q_b);
+        ggml_tensor * kv = ggml_mul_mat(g, P.kv_w, x); // [2D, S]
+        if (P.kv_b) kv = ggml_add(g, kv, P.kv_b);
+        ggml_tensor * Kp = ggml_cont(g, ggml_view_2d(g, kv, D, S, kv->nb[1], 0));
+        ggml_tensor * Vp = ggml_cont(g, ggml_view_2d(g, kv, D, S, kv->nb[1], D * sizeof(float)));
+        ggml_tensor * Qp = ggml_permute(g, ggml_reshape_3d(g, q, hd, nh, 1), 0, 2, 1, 3);
+        Kp = ggml_permute(g, ggml_reshape_3d(g, Kp, hd, nh, S), 0, 2, 1, 3);
+        Vp = ggml_permute(g, ggml_reshape_3d(g, Vp, hd, nh, S), 0, 2, 1, 3);
+        ggml_tensor * a = core_ggml::assert_fa_layout(
+            ggml_flash_attn_ext(g, Qp, Kp, Vp, nullptr, 1.0f / std::sqrt((float)hd), 0.0f, 0.0f), hd, nh);
+        ggml_flash_attn_ext_set_prec(a, GGML_PREC_F32);
+        a = ggml_reshape_2d(g, a, D, 1);
+        a = ggml_mul_mat(g, P.o_w, a);
+        if (P.o_b) a = ggml_add(g, a, P.o_b);
+        ggml_tensor * ln = ggml_norm(g, a, eps);
+        ln = ggml_mul(g, ln, P.ln_w);
+        if (P.ln_b) ln = ggml_add(g, ln, P.ln_b);
+        ggml_tensor * y = ggml_mul_mat(g, P.fc11_w, ln);
+        if (P.fc11_b) y = ggml_add(g, y, P.fc11_b);
+        ggml_tensor * gt = ggml_mul_mat(g, P.fc12_w, ln);
+        if (P.fc12_b) gt = ggml_add(g, gt, P.fc12_b);
+        ggml_tensor * mlp = ggml_mul_mat(g, P.fc2_w, ggml_mul(g, y, ggml_silu(g, gt)));
+        if (P.fc2_b) mlp = ggml_add(g, mlp, P.fc2_b);
+        ggml_tensor * cls = ggml_view_2d(g, x, D, 1, x->nb[1], 0);
+        pooled = ggml_reshape_1d(g, ggml_add(g, cls, mlp), D);
+    } else if (ctx->has_attn_pool && ctx->head.probe && ctx->head.in_proj_w) {
         // ── SigLIP attention pooling head ──
         // x is [D, T] after post_ln.
         // probe is [D, 1, 1] or [D, 1] or [D] — reshape to [D, 1]
@@ -567,6 +711,30 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
     auto t_pre0 = bench ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     ggml_tensor * px = ggml_graph_get_tensor(gf, "pixels");
     ggml_backend_tensor_set(px, pixels, 0, ctx->n_channels * H * W * sizeof(float));
+    if (ctx->rope_2d) {
+        // timm build_rotary_pos_embed(in_pixels=False): freq_i = theta^(-i/nb), nb = hd/4;
+        // grid coords t = arange(n) / n * ref_n (eva resize); pair p < nb uses the
+        // row coordinate, p >= nb the column one; each angle feeds one (2i, 2i+1) pair.
+        const int nb = hd / 4;
+        const float ref_h = ctx->rope_ref_h > 0 ? (float)ctx->rope_ref_h : (float)grid;
+        const float ref_w = ctx->rope_ref_w > 0 ? (float)ctx->rope_ref_w : (float)grid;
+        std::vector<float> rc((size_t)hd * S, 1.0f), rs((size_t)hd * S, 0.0f);
+        const int first = S - T; // prefix tokens (CLS) keep cos 1 / sin 0
+        for (int t = 0; t < T; t++) {
+            const float ph = (float)(t / grid) / (float)grid * ref_h;
+            const float pw = (float)(t % grid) / (float)grid * ref_w;
+            for (int p = 0; p < hd / 2; p++) {
+                const int bi = p % nb;
+                const float band = std::pow(ctx->rope_theta, -(float)bi / (float)nb);
+                const float ang = (p < nb ? ph : pw) * band;
+                const size_t o = (size_t)(first + t) * hd + 2 * p;
+                rc[o] = rc[o + 1] = std::cos(ang);
+                rs[o] = rs[o + 1] = std::sin(ang);
+            }
+        }
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "rope_cos"), rc.data(), 0, rc.size() * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "rope_sin"), rs.data(), 0, rs.size() * sizeof(float));
+    }
     if (bench) {
         auto t_pre1 = std::chrono::steady_clock::now();
         fprintf(stderr, "[vit_embed-bench] preprocess: %.3f ms\n",
