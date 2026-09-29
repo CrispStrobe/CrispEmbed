@@ -3075,8 +3075,9 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             std::string arch = gguf_get_val_str(g, arch_idx);
             // Qwen3-VL template: no default system block (upstream token-exact;
             // CRISPEMBED_QWEN3VL_SYSTEM=1 restores the Qwen2-VL-style block).
-            // Uni-MuMER keeps its captured behaviour.
-            if (arch == "qwen3vl" && !is_unimumer && !getenv("CRISPEMBED_QWEN3VL_SYSTEM")) {
+            // Includes Uni-MuMER: its processor uses the same template (stage
+            // diff vs phxember/Uni-MuMER-Qwen3-VL-2B: 11 extra leading tokens).
+            if (arch == "qwen3vl" && !getenv("CRISPEMBED_QWEN3VL_SYSTEM")) {
                 ctx->no_default_system = true;
             }
             if ((arch == "qwen3vl" || arch == "qwen2vl") && !is_qari && !is_unimumer && !ctx->is_olmocr) {
