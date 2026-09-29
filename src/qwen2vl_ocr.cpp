@@ -1822,19 +1822,6 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
     for (int il = 0; il < n_layers; il++) {
         const auto & ly = ctx.m.llm_layers[il];
 
-        // Qwen3-VL deepstack injection: add deepstack features at image positions
-        // before layer computation. Layer 0 ← deepstack[0], layer 1 ← deepstack[1],
-        // etc.
-        if (has_image && il < n_ds && ds_inject_tensors[il]) {
-            x = ggml_add(g, x, ds_inject_tensors[il]);
-            if (!ctx.diff_ref_path.empty()) {
-                char dsname[64];
-                std::snprintf(dsname, sizeof(dsname), "llm_post_ds_%d", il);
-                ggml_set_name(x, dsname);
-                ggml_set_output(x);
-            }
-        }
-
         ggml_tensor * residual = x;
 
         // Pre-attn RMSNorm
@@ -1967,6 +1954,22 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         std::snprintf(name, sizeof(name), "llm_layer_%d", il);
         ggml_set_name(x, name);
         if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+
+        // Qwen3-VL deepstack: deepstack[il] is added at image positions to the
+        // OUTPUT of decoder layer il (transformers Qwen3VLTextModel.forward:
+        // decoder_layer(...) then _deepstack_process(..., embeds[layer_idx])).
+        // It used to be added to the layer's INPUT - one layer early - which
+        // perturbed every row from the first image token on from layer 0 and
+        // scrambled large display text (stage diff vs transformers, 2026-09-29).
+        if (has_image && il < n_ds && ds_inject_tensors[il]) {
+            x = ggml_add(g, x, ds_inject_tensors[il]);
+            if (!ctx.diff_ref_path.empty()) {
+                char dsname[64];
+                std::snprintf(dsname, sizeof(dsname), "llm_post_ds_%d", il);
+                ggml_set_name(x, dsname);
+                ggml_set_output(x);
+            }
+        }
     }
 
     // Final RMSNorm
