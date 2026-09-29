@@ -28,7 +28,8 @@ OUT = Path(os.environ.get("HEAVY_OUT", "out"))
 OUT.mkdir(parents=True, exist_ok=True)
 arg = lambda k: sys.argv[sys.argv.index(k) + 1]
 hf_repo = arg("--hf")
-g_repo, g_file = arg("--gguf").rsplit("/", 1)[0], arg("--gguf").rsplit("/", 1)[1]
+local = "--gguf-local" in sys.argv
+g_repo, g_file = (None, arg("--gguf-local")) if local else (arg("--gguf").rsplit("/", 1)[0], arg("--gguf").rsplit("/", 1)[1])
 
 SUFFIX = {
     "attn_norm.weight": "input_layernorm.weight", "ffn_norm.weight": "post_attention_layernorm.weight",
@@ -45,7 +46,7 @@ for f in snap.glob("*.safetensors"):
     with safe_open(str(f), "pt") as h:
         for k in h.keys():
             where[k] = f
-reader = GGUFReader(hf_hub_download(g_repo, g_file))
+reader = GGUFReader(g_file if local else hf_hub_download(g_repo, g_file))
 
 import torch  # noqa: E402  (bf16 safetensors need torch to read)
 
@@ -71,11 +72,14 @@ for t in reader.tensors:
     cos = float((g * ref).sum() / (np.linalg.norm(g) * np.linalg.norm(ref) + 1e-30))
     e = {"tensor": t.name, "upstream": key, "max_abs": float(d.max()), "rel": rel, "cos": cos}
     rows.append(e)
-    if cos < 0.99999 or rel > 1e-2:
+    # F16 storage: relative error per element <= 2^-11 ~ 4.9e-4 of its magnitude, so
+    # max|d| / max|ref| stays well under 1e-3 for a faithful copy. (Cosine is not the
+    # gate: float32 accumulation over ~10M elements reads 0.9999 on exact copies.)
+    if rel > 1e-3:
         bad.append(e)
 
 (OUT / "result.json").write_text(json.dumps({"bad": bad, "all": rows}, indent=1))
-lines = [f"### {g_file} vs {hf_repo}: {len(rows)} LLM tensors compared, {len(bad)} off\n"]
+lines = [f"### {Path(g_file).name} vs {hf_repo}: {len(rows)} LLM tensors compared, {len(bad)} off\n"]
 lines += [f"- `{b['tensor']}`: {b}" for b in bad[:40]]
 worst = sorted(rows, key=lambda e: e["cos"])[:5]
 lines += ["\nlowest cos:"] + [f"- `{e['tensor']}` cos {e['cos']:.6f} rel {e['rel']:.2e}" for e in worst]
