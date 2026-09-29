@@ -1604,6 +1604,17 @@ static const ModelEntry k_registry[] = {
       "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 
+    // jina-ocr-v1 — DeepSeek-OCR fine-tune (same engine as Unlimited-OCR); the GGUF
+    // carries its own prompt layout, rope base 1e6 and plain-greedy decode.
+    // CC BY-NC 4.0: flagged, needs --accept-license to auto-download.
+    { "jina-ocr-v1", "jina-ocr-v1-q4_k.gguf",
+      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q4_k.gguf",
+      "jina-ocr-v1 (DeepSeek-OCR MoE 3.4B / 570M active, doc OCR -> Markdown, Q4_K)", "2.3 GB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-ocr-v1" },
+    { "jina-ocr-v1-q8", "jina-ocr-v1-q8_0.gguf",
+      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q8_0.gguf",
+      "jina-ocr-v1 (Q8_0)", "3.6 GB", "cc-by-nc-4.0", "https://huggingface.co/jinaai/jina-ocr-v1" },
+
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
     // License: Apache-2.0
     { "paddleocr-vl", "paddleocr-vl-0.9b-q8_0.gguf",
