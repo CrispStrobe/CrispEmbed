@@ -136,6 +136,11 @@ def main():
                     help="Path to HF model directory (with safetensors + config)")
     p.add_argument("--output", required=True, help="Output GGUF path")
     p.add_argument("--fp16", action="store_true", help="Store as FP16")
+    # Other DeepSeek-OCR v1 fine-tunes share this architecture (e.g.
+    # jinaai/jina-ocr-v1): label the file with their own identity and licence.
+    p.add_argument("--name", default="unlimited-ocr", help="general.name")
+    p.add_argument("--license", default="MIT", help="general.license")
+    p.add_argument("--source", default="https://huggingface.co/baidu/Unlimited-OCR", help="general.source")
     args = p.parse_args()
 
     model_dir = Path(args.model_dir)
@@ -230,10 +235,9 @@ def main():
     writer = gguf.GGUFWriter(str(args.output), arch="unlimited_ocr",
                               use_temp_file=True)
 
-    writer.add_string("general.name", "unlimited-ocr")
-    writer.add_string("general.license", "MIT")
-    writer.add_string("general.source",
-                       "https://huggingface.co/baidu/Unlimited-OCR")
+    writer.add_string("general.name", args.name)
+    writer.add_string("general.license", args.license)
+    writer.add_string("general.source", args.source)
 
     # LLM hyperparams
     writer.add_uint32("unlimited_ocr.hidden_size", hidden_size)
