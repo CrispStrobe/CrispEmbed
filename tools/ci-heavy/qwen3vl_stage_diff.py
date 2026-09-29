@@ -47,6 +47,16 @@ IMAGES = {
     "fox": REPO / "tests/regression/images/fox.png",
     "alpha_omega_1000x420": HERE / "fixtures/alpha_omega_1000x420.png",
 }
+# transformers greedy output on the same PNGs (tools/ci-heavy/qwen3vl_ref_ocr.py,
+# run 36533519606). The C++ text must equal these exactly.
+EXPECTED_TEXT = {
+    "fox": "The quick brown fox jumps\nover the lazy dog. 12345",
+    "alpha_omega_1000x420": "ALPHA\nOMEGA",
+}
+# Stage-by-stage gate only where the INPUT is identical: fox's patches match
+# transformers to 2/255, the ALPHA/OMEGA resize differs by up to ~15/255 at
+# sharp text edges (interpolation kernel), which alone moves later stages.
+STRICT_STAGES = {"fox"}
 res = {"images": {}, "errors": []}
 
 
@@ -296,7 +306,25 @@ if res["errors"]:
     lines.append("\n**errors:**\n```\n" + res["errors"][-1][-1500:] + "\n```")
 (OUT / "summary.md").write_text("\n".join(lines) + "\n")
 print("\n".join(lines))
-ok = (not res["errors"] and len(names) == len(IMAGES)
-      and all(res["images"][n]["cpp"]["stages"] and all(e["pass"] for e in res["images"][n]["cpp"]["stages"].values())
-              and (res["images"][n]["cpp"]["mrope_mismatches"] or [0])[0] == 0 for n in names))
+def image_ok(n):
+    c = res["images"][n]["cpp"]
+    text_ok = c.get("ocr_text", "").strip() == EXPECTED_TEXT[n]
+    # F16 GGUF vs fp32 reference: a single numerically fragile row may dip
+    # (fox: 1 of 600 rows to 0.986 in vision blocks 17-22, recovered at 23).
+    # Every bug found here broke ~100% of rows, so gate on the row picture:
+    # median row >= 0.9999 and at most 0.5% of rows under 0.999, per stage.
+    rows = c.get("rows", {})
+    stages_ok = bool(rows) and all(
+        "rows_cpp" in e and e["rows_cpp"] == e["rows_ref"] and e["cos_median"] >= 0.9999
+        and e["n_bad"] <= max(1, int(0.005 * e["rows_ref"]))
+        for e in rows.values())
+    mrope_ok = (c["mrope_mismatches"] or [1])[0] == 0
+    return text_ok and mrope_ok and (stages_ok or n not in STRICT_STAGES)
+
+
+verdict = {n: image_ok(n) for n in names}
+print("verdict:", verdict)
+with open(OUT / "summary.md", "a") as f:
+    f.write(f"\n**verdict** (exact OCR text on all, mRoPE exact, every stage on {sorted(STRICT_STAGES)}): {verdict}\n")
+ok = not res["errors"] and len(names) == len(IMAGES) and all(verdict.values())
 sys.exit(0 if ok else 1)
