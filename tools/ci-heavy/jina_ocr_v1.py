@@ -185,9 +185,21 @@ try:
             log(f"[{name}] HF fp32 on C++ pixels (swapped {n_swapped}): exact={e['hf_on_cpp_pixels_exact']} "
                 f"ratio={e['hf_on_cpp_pixels_vs_cpp']}")
         save()
-    if "--keep-gguf" in sys.argv:
-        for gp in GGUFS.values():
-            shutil.copy(gp, OUT / gp.name)
+    # --keep f16|quants|all: that subset + SHA256SUMS into the run artifact, only
+    # when every fixture matched upstream (the publish gate).
+    if "--keep" in sys.argv and all(e.get("cpp_matches_global") for e in res["images"].values()):
+        import hashlib
+        which = sys.argv[sys.argv.index("--keep") + 1]
+        sums = []
+        for q, gp in GGUFS.items():
+            if which == "all" or (which == "f16") == (q == "f16"):
+                h = hashlib.sha256()
+                with open(gp, "rb") as f:
+                    for chunk in iter(lambda: f.read(1 << 24), b""):
+                        h.update(chunk)
+                sums.append(f"{h.hexdigest()}  {gp.name}")
+                shutil.copy(gp, OUT / gp.name)
+        (OUT / "SHA256SUMS").write_text("\n".join(sums) + "\n")
 except Exception:
     res["errors"].append(traceback.format_exc())
     print(res["errors"][-1], file=sys.stderr)
