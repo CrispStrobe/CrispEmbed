@@ -361,6 +361,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
+| **jina-ocr-v1** | SAM + CLIP-L + DeepSeek-V2 MoE (Unlimited-OCR engine) | 3.4B (570M active) | Doc OCR → Markdown; text exact vs transformers | CC BY-NC 4.0 |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |
 | **LFM2.5-VL** | SigLIP2 NaFlex 400M + LFM2 hybrid conv/attn 3B | 3.4B | Doc OCR (VLM); needs `CRISPEMBED_ACCEPT_LFM_LICENSE=1` | LFM-1.0 (revenue-capped) |
 
@@ -709,7 +710,7 @@ is governed by its **upstream** license. Check the **License** column in
 | License class | Examples | What you can do |
 |---|---|---|
 | **Permissive** (Apache-2.0 / MIT / CC-BY-4.0) | most BERT/XLM-R/MPNet, BGE, E5, Granite, MXBai, Nomic, Qwen3, Harrier, GTE-v1.5, SMT, TrOMR, Flova, Transcoda (CC-BY-4.0), LiLT | commercial use OK with normal attribution |
-| **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
+| **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, `jina-ocr-v1`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
 | **LFM Open License v1.0** | `lfm2-embed*`, `lfm2-colbert`, `gliner-lfm` | free under $10M annual revenue |
 | **Gemma Terms** | `embeddinggemma-300m` | commercial OK, subject to Google's Prohibited Use Policy |
 | **Other restricted** | Surya weights (OpenRAIL-M, free < $5M), Texo (AGPL) | see the model card |
