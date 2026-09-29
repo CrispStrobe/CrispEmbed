@@ -36,6 +36,9 @@ SCR.mkdir(parents=True, exist_ok=True)
 REPO = Path(__file__).resolve().parents[2]
 MODEL = "jinaai/jina-ocr-v1"
 IMAGES = {n: REPO / "tests/regression/images" / f"{n}.png" for n in ("fox", "scan_page_pd")}
+QUICK = "--quick" in sys.argv  # prompt/prefix diagnosis: one image, no tiled arm, no quants
+if QUICK:
+    IMAGES = {"fox": IMAGES["fox"]}
 MAX_NEW = 256
 IMAGE_TOKEN = 128815
 res = {"model": MODEL, "images": {}, "errors": []}
@@ -70,7 +73,7 @@ try:
                            f"-j{os.cpu_count() or 4}"], stdout=subprocess.DEVNULL)
     qexe = next(p for p in b.rglob("crispembed-quantize") if p.is_file() and os.access(p, os.X_OK))
     GGUFS = {"f16": gguf}
-    for q in ("q8_0", "q4_k"):
+    for q in (() if QUICK else ("q8_0", "q4_k")):
         dst = SCR / f"jina-ocr-v1-{q}.gguf"
         subprocess.check_call([str(qexe), str(gguf), str(dst), q], stdout=subprocess.DEVNULL)
         GGUFS[q] = dst
@@ -98,10 +101,13 @@ try:
     for name, path in IMAGES.items():
         img = Image.open(path).convert("RGB")
         g_text, g_ids = hf(img, False)
-        t_text, _ = hf(img, True)
+        t_text = "" if QUICK else hf(img, True)[0]
         last_img = max(i for i, t in enumerate(g_ids) if t == IMAGE_TOKEN)
         instr = g_ids[last_img + 1:]
+        first_img = min(i for i, t in enumerate(g_ids) if t == IMAGE_TOKEN)
         hf_out[name] = {"hf_global": g_text, "hf_tiled": t_text, "hf_n_prompt": len(g_ids),
+                        "hf_prefix_ids": g_ids[:first_img], "hf_prefix_text": proc.tokenizer.decode(g_ids[:first_img]),
+                        "hf_between_ids": [t for t in g_ids[first_img:last_img + 1] if t != IMAGE_TOKEN],
                         "hf_n_image_tokens": sum(t == IMAGE_TOKEN for t in g_ids), "instr_ids": instr,
                         "bos": g_ids[0]}
         log(f"[{name}] hf_global: {g_text[:200]!r}")
@@ -139,7 +145,9 @@ lines = [f"### {MODEL} via the DeepSeek-OCR v1 engine (F16 GGUF, CPU) vs transfo
 for n, e in res["images"].items():
     lines.append(f"| {n} | {cell(e['hf_global'])} | {cell(e['cpp'])} | {e['cpp_matches_global']} | "
                  f"{e.get('cpp_ratio')} / {e.get('cpp_q8_0_ratio')} / {e.get('cpp_q4_k_ratio')} | {cell(e['hf_tiled'])} |")
-    lines.append(f"| | prompt HF {e['hf_n_prompt']} tok ({e['hf_n_image_tokens']} image); C++ {e['cpp_prompt_line']} | | | | |")
+    lines.append(f"| | prompt HF {e['hf_n_prompt']} tok ({e['hf_n_image_tokens']} image), prefix {e.get('hf_prefix_ids')} "
+                 f"{e.get('hf_prefix_text')!r}, non-image ids inside the image block {e.get('hf_between_ids')}; "
+                 f"C++ {e['cpp_prompt_line']} | | | | |")
 if res["errors"]:
     lines.append("\n**errors:**\n```\n" + res["errors"][-1][-2000:] + "\n```")
 (OUT / "summary.md").write_text("\n".join(lines) + "\n")
