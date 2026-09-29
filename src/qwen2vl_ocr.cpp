@@ -195,12 +195,32 @@ bool load_hparams(context & ctx, const char * path) {
     lhp.num_key_value_heads = u32_3("qwen3vl.num_key_value_heads", lhp.num_key_value_heads);
     lhp.head_dim = u32_3("qwen3vl.attention.head_dim", u32_3("qwen3vl.attention.key_length", lhp.head_dim));
     lhp.image_token_id = u32_3("qwen3vl.image_token_id", lhp.image_token_id);
+    // Qwen3-VL GGUFs carry ONLY qwen3vl.* keys, so every qwen2vl.* read above
+    // falls back to the header defaults, which are Qwen2-VL's. These were not
+    // re-read here and so silently kept the wrong values: CLIP mean/std
+    // instead of 0.5/0.5 (every input pixel mis-normalised; stage diff vs
+    // transformers: input max_abs 1.15, all vision rows off, text misread on
+    // large display text), min/max_pixels 3136/12845056 instead of
+    // 65536/16777216 (different resize for small and very large images).
+    vhp.intermediate_size = u32_3("qwen3vl.vision.intermediate_size", vhp.intermediate_size);
+    vhp.in_channels = u32_3("qwen3vl.vision.in_channels", vhp.in_channels);
+    vhp.min_pixels = u32_3("qwen3vl.vision.min_pixels", vhp.min_pixels);
+    vhp.max_pixels = u32_3("qwen3vl.vision.max_pixels", vhp.max_pixels);
+    for (const char * key : { "qwen3vl.vision.image_mean", "qwen3vl.vision.image_std" }) {
+        const int ai = gguf_find_key(g, key);
+        if (ai >= 0 && gguf_get_arr_n(g, ai) >= 3) {
+            const auto * data = (const float *)gguf_get_arr_data(g, ai);
+            float * dst = std::strstr(key, "mean") ? vhp.image_mean : vhp.image_std;
+            for (int i = 0; i < 3; i++) dst[i] = data[i];
+        }
+    }
 
     auto f32_3 = [&](const char * k, float d) {
         int i = gguf_find_key(g, k);
         return i >= 0 ? gguf_get_val_f32(g, i) : d;
     };
     lhp.rope_theta = f32_3("qwen3vl.rope_theta", lhp.rope_theta);
+    lhp.rms_norm_eps = f32_3("qwen3vl.rms_norm_eps", lhp.rms_norm_eps);
 
     // Tie embeddings
     int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
