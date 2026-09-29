@@ -1,0 +1,151 @@
+# Heavy CPU job - run one script from tools/ci-heavy/ on a GitHub-hosted runner.
+#
+# For the CPU work that used to go to Kaggle: Python reference dumps, parity
+# diffs, ASR roundtrips, download -> convert -> quantize -> upload. Standard
+# runners are free for public repos (Linux: 4 vCPU, 16 GB RAM, ~14 GB disk +
+# the /mnt scratch disk, 6 h per job). Anything that needs a real GPU stays
+# on Kaggle (see tools/kaggle/README.md).
+#
+# Contract for a script (tools/ci-heavy/README.md):
+#   - $HEAVY_OUT      write results here; uploaded as the run's artifact
+#   - $HEAVY_SCRATCH  big scratch dir (models, builds); not uploaded
+#   - $HF_TOKEN       from the HF_TOKEN repository secret (may be empty)
+#   - optional $HEAVY_OUT/summary.md is appended to the job summary
+#   - exit non-zero on a failed check, so the run shows red
+#
+# Run: Actions -> Heavy CPU job -> Run workflow, or
+#   gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/<name>.py [-f args=...]
+
+name: Heavy CPU job
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: 'Script under tools/ci-heavy/ (e.g. tools/ci-heavy/qwen3vl_ref_ocr.py)'
+        required: true
+        type: string
+      args:
+        description: 'Arguments passed to the script (split on spaces)'
+        required: false
+        default: ''
+        type: string
+      pip:
+        description: 'Extra pip packages before the run (space-separated; torch goes through the CPU index)'
+        required: false
+        default: ''
+        type: string
+      runner:
+        description: 'Runner'
+        required: false
+        default: 'ubuntu-latest'
+        type: choice
+        options: [ubuntu-latest, ubuntu-24.04-arm, macos-14]
+      timeout_minutes:
+        description: 'Script timeout in minutes (job hard limit is 360)'
+        required: false
+        default: '300'
+        type: string
+
+permissions:
+  contents: read
+
+# One run per script at a time; a second dispatch queues instead of racing.
+concurrency:
+  group: heavy-cpu-${{ inputs.script }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 350
+    env:
+      SCRIPT: ${{ inputs.script }}
+      ARGS: ${{ inputs.args }}
+      PIP_EXTRA: ${{ inputs.pip }}
+      TIMEOUT_MIN: ${{ inputs.timeout_minutes }}
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate script path
+        run: |
+          case "$SCRIPT" in
+            tools/ci-heavy/*.py|tools/ci-heavy/*.sh) ;;
+            *) echo "::error::script must be a .py/.sh under tools/ci-heavy/ (got '$SCRIPT')"; exit 1 ;;
+          esac
+          case "$SCRIPT" in *..*) echo "::error::no '..' in script path"; exit 1 ;; esac
+          [ -f "$SCRIPT" ] || { echo "::error::$SCRIPT not found at ${GITHUB_SHA::8}"; exit 1; }
+          [[ "$TIMEOUT_MIN" =~ ^[0-9]+$ ]] || { echo "::error::timeout_minutes must be a number"; exit 1; }
+
+      - name: Free disk and set up scratch (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          df -h / /mnt 2>/dev/null || true
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup \
+                      /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          # /mnt is a separate, larger disk on the Linux x64 images; fall back to $RUNNER_TEMP.
+          if sudo mkdir -p /mnt/heavy 2>/dev/null && sudo chown "$USER" /mnt/heavy; then S=/mnt/heavy; else S="$RUNNER_TEMP/heavy"; fi
+          mkdir -p "$S/scratch" "$RUNNER_TEMP/out"
+          echo "HEAVY_SCRATCH=$S/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$S/scratch/hf" >> "$GITHUB_ENV"
+          df -h / "$S" 2>/dev/null || true
+
+      - name: Set up scratch (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "$RUNNER_TEMP/heavy/scratch" "$RUNNER_TEMP/out"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/heavy/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/heavy/scratch/hf" >> "$GITHUB_ENV"
+
+      - name: Set output dir
+        run: echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install extra pip packages
+        if: inputs.pip != ''
+        run: |
+          python -m pip install -q --upgrade pip
+          read -ra pkgs <<< "$PIP_EXTRA"
+          torch=(); rest=()
+          for p in "${pkgs[@]}"; do case "$p" in torch|torch[=\<\>]*|torchvision*|torchaudio*) torch+=("$p");; *) rest+=("$p");; esac; done
+          if [ ${#torch[@]} -gt 0 ]; then
+            if [ "$RUNNER_OS" = "Linux" ]; then
+              python -m pip install -q "${torch[@]}" --index-url https://download.pytorch.org/whl/cpu
+            else
+              python -m pip install -q "${torch[@]}"
+            fi
+          fi
+          [ ${#rest[@]} -eq 0 ] || python -m pip install -q "${rest[@]}"
+          python -m pip list 2>/dev/null | grep -i -E "^(torch|transformers|numpy|onnx|huggingface)" || true
+
+      - name: Run ${{ inputs.script }}
+        run: |
+          read -ra argv <<< "$ARGS"
+          echo "runner: $RUNNER_OS/$RUNNER_ARCH  cpus: $(nproc 2>/dev/null || sysctl -n hw.ncpu)  commit: ${GITHUB_SHA::8}"
+          case "$SCRIPT" in
+            *.py) cmd=(python -u "$SCRIPT" "${argv[@]}") ;;
+            *.sh) cmd=(bash "$SCRIPT" "${argv[@]}") ;;
+          esac
+          if command -v timeout >/dev/null; then
+            timeout "${TIMEOUT_MIN}m" "${cmd[@]}"
+          else
+            "${cmd[@]}"
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          if [ -f "$HEAVY_OUT/summary.md" ]; then cat "$HEAVY_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+          du -sh "$HEAVY_OUT" 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heavy-${{ github.run_id }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: warn
+          retention-days: 14
