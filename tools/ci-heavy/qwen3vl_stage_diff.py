@@ -63,6 +63,7 @@ MODEL = _prof["model"]
 GGUF_REPO, GGUF_FILE = _prof["gguf"]
 if "--gguf-file" in sys.argv:  # e.g. a q8_0 file of the same repo, to separate precision from logic
     GGUF_FILE = sys.argv[sys.argv.index("--gguf-file") + 1]
+GGUF_LOCAL = sys.argv[sys.argv.index("--gguf-local") + 1] if "--gguf-local" in sys.argv else None  # freshly converted
 PROMPT = _prof["prompt"]
 IMAGES = _prof["images"]
 # The C++ OCR text must equal transformers' own greedy output (computed in
@@ -251,7 +252,7 @@ try:
     log("building crispembed-cli")
     exe = build_cpp()
     log(f"built {exe}")
-    gg = hf_hub_download(GGUF_REPO, GGUF_FILE)
+    gg = GGUF_LOCAL or hf_hub_download(GGUF_REPO, GGUF_FILE)
     model = Qwen3VLForConditionalGeneration.from_pretrained(MODEL, torch_dtype=torch.float32).eval()
     proc = AutoProcessor.from_pretrained(MODEL)
     for name, img in IMAGES.items():
