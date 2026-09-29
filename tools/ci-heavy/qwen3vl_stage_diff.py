@@ -89,6 +89,8 @@ def dump_reference(model, proc, img_path, out_gguf):
     def first_arg(args, kwargs):
         return args[0] if args else kwargs["hidden_states"]
 
+    hooks.append(vis.patch_embed.register_forward_hook(
+        lambda m, a, o: cap.__setitem__("vis_patch_embed_nopos", arr(o))))
     hooks.append(vis.blocks[0].register_forward_pre_hook(
         lambda m, a, k: cap.__setitem__("vis_patch_embed", arr(first_arg(a, k))), with_kwargs=True))
     for i, blk in enumerate(vis.blocks):
@@ -226,6 +228,14 @@ try:
         log(f"C++: {name}")
         cpp = run_cpp(exe, gg, img, ref, SCR / f"patches_{name}.bin", SCR / f"dump_{name}")
         cpp["rows"] = analyse_rows(SCR / f"dump_{name}", cap, meta["grid_thw"])
+        if name == "fox":  # raw material for offline analysis (~15 MB)
+            pe = SCR / f"dump_{name}" / "vis_patch_embed.f32"
+            pf = SCR / f"patches_{name}.bin"
+            np.savez_compressed(
+                OUT / "fox_arrays.npz", ref_pixels=pixels,
+                cpp_pixels=np.fromfile(pf, dtype=np.float32, offset=16).reshape(pixels.shape) if pf.exists() else np.zeros(0),
+                ref_patch_embed=cap["vis_patch_embed"], ref_patch_embed_nopos=cap["vis_patch_embed_nopos"],
+                cpp_patch_embed=np.fromfile(pe, dtype=np.float32) if pe.exists() else np.zeros(0))
         try:
             cpp["patches"] = compare_patches(SCR / f"patches_{name}.bin", pixels)
         except Exception as e:

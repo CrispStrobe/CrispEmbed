@@ -2798,6 +2798,10 @@ struct qwen2vl_ocr_context {
     bool has_tokenizer = false;
     bool tokenizer_can_encode = false;
     bool use_qari_default_prompt = false;
+    // Qwen3-VL's chat template adds NO default system message (Qwen2-VL's
+    // does). Set for arch "qwen3vl" in post_load_init; the stage diff against
+    // transformers showed 11 extra leading tokens otherwise.
+    bool no_default_system = false;
     std::string prompt = "Describe this image.";
     std::vector<int32_t> prompt_ids; // cached tokenized prompt
     int max_tokens = 2048;
@@ -2870,7 +2874,7 @@ struct qwen2vl_ocr_context {
         // the image + OCR instruction), so skip the system block in that mode.
         // Qwen2-VL's chat template prepends a default system message when none
         // is supplied. Include it (set CRISPEMBED_QARI_NO_SYSTEM=1 to drop it).
-        if (!getenv("CRISPEMBED_QARI_NO_SYSTEM")) {
+        if (!getenv("CRISPEMBED_QARI_NO_SYSTEM") && !no_default_system) {
             ids.push_back(im_start_id);
             ids.push_back(system_id);
             ids.push_back(newline_id);
@@ -3046,6 +3050,12 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
         int arch_idx = gguf_find_key(g, "general.architecture");
         if (arch_idx >= 0) {
             std::string arch = gguf_get_val_str(g, arch_idx);
+            // Qwen3-VL template: no default system block (upstream token-exact;
+            // CRISPEMBED_QWEN3VL_SYSTEM=1 restores the Qwen2-VL-style block).
+            // Uni-MuMER keeps its captured behaviour.
+            if (arch == "qwen3vl" && !is_unimumer && !getenv("CRISPEMBED_QWEN3VL_SYSTEM")) {
+                ctx->no_default_system = true;
+            }
             if ((arch == "qwen3vl" || arch == "qwen2vl") && !is_qari && !is_unimumer && !ctx->is_olmocr) {
                 // Both Qwen2.5-VL (arch "qwen2vl") and Qwen3-VL are instruct VLMs whose
                 // default "Describe this image." prompt yields a verbose description
