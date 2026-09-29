@@ -61,6 +61,8 @@ PROFILES = {
 _prof = PROFILES[sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "qwen3vl"]
 MODEL = _prof["model"]
 GGUF_REPO, GGUF_FILE = _prof["gguf"]
+if "--gguf-file" in sys.argv:  # e.g. a q8_0 file of the same repo, to separate precision from logic
+    GGUF_FILE = sys.argv[sys.argv.index("--gguf-file") + 1]
 PROMPT = _prof["prompt"]
 IMAGES = _prof["images"]
 # The C++ OCR text must equal transformers' own greedy output (computed in
@@ -291,7 +293,7 @@ def order(k):
 
 names = list(res["images"])
 all_stages = sorted({s for n in names for s in res["images"][n]["cpp"]["stages"]}, key=order)
-lines = [f"### {MODEL} stage diff: C++ (F16 GGUF, CPU) vs transformers (fp32)\n",
+lines = [f"### {MODEL} stage diff: C++ ({GGUF_FILE}, CPU) vs transformers (fp32)\n",
          "| stage | " + " | ".join(names) + " |", "|---|" + "---|" * len(names)]
 for n in names:
     c = res["images"][n]["cpp"]
