@@ -388,6 +388,18 @@ inline bool Ref::load(const std::string & path) {
 
 inline Report Ref::compare(const std::string & name, const float * data, size_t n_elem, int row_dim) const {
     Report r;
+    // CRISPEMBED_DIFF_DUMP_DIR=<dir>: also write what was compared, as raw
+    // float32 <dir>/<name>.f32, so a summary number that looks wrong can be
+    // taken apart row by row outside the binary (row order, token count).
+    if (const char * dd = getenv("CRISPEMBED_DIFF_DUMP_DIR")) {
+        if (*dd && data) {
+            const std::string path = std::string(dd) + "/" + name + ".f32";
+            if (FILE * f = fopen(path.c_str(), "wb")) {
+                fwrite(data, sizeof(float), n_elem, f);
+                fclose(f);
+            }
+        }
+    }
     auto it = tensors_.find(name);
     if (it == tensors_.end()) {
         fprintf(stderr, "crispembed_diff: tensor '%s' not found in archive\n", name.c_str());

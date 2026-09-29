@@ -127,11 +127,14 @@ def dump_reference(model, proc, img_path, out_gguf):
     w.close()
     grid = inputs["image_grid_thw"][0].tolist()
     return {"n_tokens": int(inputs["input_ids"].shape[1]), "grid_thw": grid,
-            "stages": {k: list(v.shape) for k, v in cap.items()}}, pixels
+            "input_ids": inputs["input_ids"][0].tolist(),
+            "stages": {k: list(v.shape) for k, v in cap.items()}}, pixels, cap
 
 
-def run_cpp(exe, gguf_path, img, ref, patches_out):
-    env = dict(os.environ, CRISPEMBED_QWEN2VL_REF=str(ref), CRISPEMBED_DUMP_PATCHES=str(patches_out))
+def run_cpp(exe, gguf_path, img, ref, patches_out, dump_dir):
+    dump_dir.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, CRISPEMBED_QWEN2VL_REF=str(ref), CRISPEMBED_DUMP_PATCHES=str(patches_out),
+               CRISPEMBED_DIFF_DUMP_DIR=str(dump_dir))
     r = subprocess.run([str(exe), "-m", str(gguf_path), "--ocr", str(img), "--ocr-max-tokens", "4",
                         "-t", str(os.cpu_count() or 4)], capture_output=True, text=True, env=env, timeout=3600)
     stages = {}
@@ -139,9 +142,58 @@ def run_cpp(exe, gguf_path, img, ref, patches_out):
         stages[m.group(1)] = {"cos_min": float(m.group(2)), "max_abs": float(m.group(3)), "pass": m.group(4) == "PASS"}
     mm = re.search(r"mRoPE pos mismatches: (\d+)/(\d+)", r.stderr)
     mism = [l.strip() for l in r.stderr.splitlines() if "MISMATCH tok" in l][:10]
+    (OUT / f"cpp_stderr_{Path(img).stem}.txt").write_text(r.stderr)
     return {"rc": r.returncode, "stages": stages,
             "mrope_mismatches": [int(mm.group(1)), int(mm.group(2))] if mm else None, "mrope_examples": mism,
             "stderr_tail": r.stderr[-3000:]}
+
+
+def block_to_raster(h, w, m=2):
+    """perm[i] = raster index of the patch at merge-block position i."""
+    perm = []
+    for mh in range(h // m):
+        for mw in range(w // m):
+            for ir in range(m):
+                for ic in range(m):
+                    perm.append((mh * m + ir) * w + mw * m + ic)
+    return np.array(perm)
+
+
+def row_cos(a, b):
+    na = np.linalg.norm(a, axis=1)
+    nb = np.linalg.norm(b, axis=1)
+    return (a * b).sum(1) / np.maximum(na * nb, 1e-30)
+
+
+def analyse_rows(dump_dir, cap, grid):
+    """Per stage: row counts, bad rows, and whether a raster<->block row
+    permutation (vision) or an offset (LLM) explains the mismatch."""
+    out = {}
+    h, w = grid[1], grid[2]
+    for name, ref in cap.items():
+        f = dump_dir / f"{name}.f32"
+        if not f.exists() or ref.ndim != 2:
+            continue
+        cpp = np.fromfile(f, dtype=np.float32)
+        D = ref.shape[1]
+        if cpp.size % D:
+            out[name] = {"cpp_elems": int(cpp.size), "ref_shape": list(ref.shape), "note": "not a multiple of D"}
+            continue
+        cpp = cpp.reshape(-1, D)
+        n = min(len(cpp), len(ref))
+        cs = row_cos(cpp[:n], ref[:n])
+        bad = np.where(cs < 0.999)[0]
+        e = {"rows_cpp": len(cpp), "rows_ref": len(ref), "n_bad": int(len(bad)),
+             "first_bad": int(bad[0]) if len(bad) else None, "cos_min": float(cs.min()),
+             "cos_median": float(np.median(cs))}
+        if name.startswith("vis_") and len(cpp) == len(ref) == h * w:
+            p = block_to_raster(h, w)
+            inv = np.empty_like(p); inv[p] = np.arange(len(p))
+            # known-answer checked: C++ rows in raster order -> cpp[p] matches
+            e["cos_min_if_cpp_is_raster"] = float(row_cos(cpp[p], ref).min())
+            e["cos_min_if_ref_is_raster"] = float(row_cos(cpp[inv], ref).min())
+        out[name] = e
+    return out
 
 
 def compare_patches(cpp_file, ref_pixels):
@@ -170,9 +222,10 @@ try:
     for name, img in IMAGES.items():
         log(f"reference: {name}")
         ref = SCR / f"ref_{name}.gguf"
-        meta, pixels = dump_reference(model, proc, img, ref)
+        meta, pixels, cap = dump_reference(model, proc, img, ref)
         log(f"C++: {name}")
-        cpp = run_cpp(exe, gg, img, ref, SCR / f"patches_{name}.bin")
+        cpp = run_cpp(exe, gg, img, ref, SCR / f"patches_{name}.bin", SCR / f"dump_{name}")
+        cpp["rows"] = analyse_rows(SCR / f"dump_{name}", cap, meta["grid_thw"])
         try:
             cpp["patches"] = compare_patches(SCR / f"patches_{name}.bin", pixels)
         except Exception as e:
@@ -207,6 +260,19 @@ for s in all_stages:
         e = res["images"][n]["cpp"]["stages"].get(s)
         cells.append("—" if not e else f"{'✅' if e['pass'] else '❌'} {e['cos_min']:.5f} / {e['max_abs']:.1e}")
     lines.append(f"| {s} | " + " | ".join(cells) + " |")
+for n in names:
+    rows = res["images"][n]["cpp"].get("rows", {})
+    lines += [f"\n#### {n}: row analysis", "| stage | rows C++/ref | bad rows | first bad | cos median | cos_min if C++ raster / if ref raster |",
+              "|---|---|---|---|---|---|"]
+    for st in sorted(rows, key=order):
+        e = rows[st]
+        if "rows_cpp" not in e:
+            lines.append(f"| {st} | {e} | | | | |")
+            continue
+        perm = (f"{e['cos_min_if_cpp_is_raster']:.4f} / {e['cos_min_if_ref_is_raster']:.4f}"
+                if "cos_min_if_cpp_is_raster" in e else "")
+        lines.append(f"| {st} | {e['rows_cpp']}/{e['rows_ref']} | {e['n_bad']} | {e['first_bad']} | "
+                     f"{e['cos_median']:.5f} | {perm} |")
 if res["errors"]:
     lines.append("\n**errors:**\n```\n" + res["errors"][-1][-1500:] + "\n```")
 (OUT / "summary.md").write_text("\n".join(lines) + "\n")
