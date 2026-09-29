@@ -67,6 +67,8 @@ jobs:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive   # ggml, for scripts that build the C++ side
 
       - name: Validate script path
         run: |

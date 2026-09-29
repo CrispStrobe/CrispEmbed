@@ -2934,6 +2934,17 @@ struct qwen2vl_ocr_context {
 
 // Shared post-load init: load tokenizer from GGUF, set special IDs
 static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
+    // Stage-by-stage comparison against a reference GGUF (vis_patch_embed,
+    // vis_layer_N, mrope_positions, llm_embed, llm_layer_N, llm_post_ds_N,
+    // llm_final_norm) - e.g. tools/ci-heavy/qwen3vl_stage_diff.py. The compare
+    // code in this file was unreachable before: nothing ever set diff_ref_path.
+    // Verbosity 2 also enables the mRoPE position comparison.
+    if (const char * ref = getenv("CRISPEMBED_QWEN2VL_REF")) {
+        if (*ref) {
+            ctx->inner.diff_ref_path = ref;
+            if (ctx->inner.verbosity < 2) ctx->inner.verbosity = 2;
+        }
+    }
     std::string model_path_lc = gguf_path ? gguf_path : "";
     for (char & c : model_path_lc) c = (char)std::tolower((unsigned char)c);
     bool is_qari =
