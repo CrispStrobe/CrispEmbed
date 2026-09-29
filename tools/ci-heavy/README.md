@@ -20,7 +20,7 @@ person, with GPU sessions used for GPU work.
 
 ```bash
 gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/qwen3vl_ref_ocr.py \
-    -f pip="torch transformers>=4.57 accelerate pillow"
+    -f pip="torch torchvision transformers>=4.57 accelerate pillow"
 gh run watch "$(gh run list -w heavy-cpu.yml -L 1 --json databaseId -q '.[0].databaseId')"
 gh run download <run-id>           # the $HEAVY_OUT artifact
 ```

@@ -15,7 +15,7 @@ Arms, per image, same prompt and resize as the C++ engine:
 Compared against the C++ outputs recorded below (crispembed CPU, q4_k).
 
     gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/qwen3vl_ref_ocr.py \\
-        -f pip="torch transformers>=4.57 accelerate pillow"
+        -f pip="torch torchvision transformers>=4.57 accelerate pillow"
 """
 import json
 import os
