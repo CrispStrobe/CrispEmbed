@@ -19,6 +19,7 @@ $HEAVY_SCRATCH; with --keep-gguf it is also copied to $HEAVY_OUT.
     gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/jina_ocr_v1.py \\
         -f pip="torch torchvision transformers accelerate pillow gguf safetensors einops addict easydict"
 """
+import difflib
 import json
 import os
 import shutil
@@ -59,13 +60,21 @@ try:
     snap = Path(snapshot_download(MODEL, local_dir=str(SCR / "jina-ocr-v1")))
     log("converting")
     subprocess.check_call([sys.executable, str(REPO / "models/convert-unlimited-ocr-to-gguf.py"),
-                           "--model-dir", str(snap), "--output", str(gguf), "--fp16"])
+                           "--model-dir", str(snap), "--output", str(gguf), "--fp16", "--name", "jina-ocr-v1",
+                           "--license", "cc-by-nc-4.0", "--source", "https://huggingface.co/jinaai/jina-ocr-v1"])
     res["gguf_gb"] = round(gguf.stat().st_size / 1e9, 2)
     log("building crispembed-cli")
     b = SCR / "build"
     subprocess.check_call(["cmake", "-S", str(REPO), "-B", str(b), "-DCMAKE_BUILD_TYPE=Release"], stdout=subprocess.DEVNULL)
-    subprocess.check_call(["cmake", "--build", str(b), "--target", "crispembed-cli", f"-j{os.cpu_count() or 4}"],
-                          stdout=subprocess.DEVNULL)
+    subprocess.check_call(["cmake", "--build", str(b), "--target", "crispembed-cli", "crispembed-quantize",
+                           f"-j{os.cpu_count() or 4}"], stdout=subprocess.DEVNULL)
+    qexe = next(p for p in b.rglob("crispembed-quantize") if p.is_file() and os.access(p, os.X_OK))
+    GGUFS = {"f16": gguf}
+    for q in ("q8_0", "q4_k"):
+        dst = SCR / f"jina-ocr-v1-{q}.gguf"
+        subprocess.check_call([str(qexe), str(gguf), str(dst), q], stdout=subprocess.DEVNULL)
+        GGUFS[q] = dst
+    res["gguf_gb"] = {q: round(p.stat().st_size / 1e9, 2) for q, p in GGUFS.items()}
     exe = next(p for p in b.rglob("crispembed") if p.is_file() and os.access(p, os.X_OK))
 
     import torch
@@ -77,7 +86,10 @@ try:
     model = AutoModelForCausalLM.from_pretrained(str(snap), dtype=torch.bfloat16, trust_remote_code=True).eval()
 
     def hf(img, crop_mode):
-        inputs = proc.prepare_ocr_inputs(img, device=torch.device("cpu"), crop_mode=crop_mode)
+        # Global arm at 1024 (base_size = image_size = 1024): the one view the C++
+        # engine encodes (273 vision tokens); crop_mode=False alone gives 640.
+        extra = {} if crop_mode else {"base_size": 1024, "image_size": 1024}
+        inputs = proc.prepare_ocr_inputs(img, device=torch.device("cpu"), crop_mode=crop_mode, **extra)
         with torch.no_grad():
             out = model.generate(**inputs, max_new_tokens=MAX_NEW, do_sample=False)
         return proc.decode_ocr(out, inputs["input_ids"]).strip(), inputs["input_ids"][0].tolist()
@@ -98,18 +110,22 @@ try:
     for name, path in IMAGES.items():
         e = hf_out[name]
         env = dict(os.environ, UOCR_INSTR=",".join(map(str, e["instr_ids"])), UOCR_DBG="1")
-        r = subprocess.run([str(exe), "-m", str(gguf), "--ocr", str(path), "--ocr-max-tokens", str(MAX_NEW),
-                            "-t", str(os.cpu_count() or 4)], capture_output=True, text=True, env=env, timeout=3600)
-        e["cpp"] = r.stdout.strip()
-        e["cpp_rc"] = r.returncode
-        e["cpp_prompt_line"] = next((l.strip() for l in r.stderr.splitlines() if "[dbg] prompt:" in l), None)
-        (OUT / f"cpp_stderr_{name}.txt").write_text(r.stderr[-20000:])
+        for q, gp in GGUFS.items():
+            r = subprocess.run([str(exe), "-m", str(gp), "--ocr", str(path), "--ocr-max-tokens", str(MAX_NEW),
+                                "-t", str(os.cpu_count() or 4)], capture_output=True, text=True, env=env, timeout=3600)
+            key = "cpp" if q == "f16" else f"cpp_{q}"
+            e[key] = r.stdout.strip()
+            e[key + "_ratio"] = round(difflib.SequenceMatcher(None, e["hf_global"].split(), e[key].split()).ratio(), 4)
+            if q == "f16":
+                e["cpp_prompt_line"] = next((l.strip() for l in r.stderr.splitlines() if "[dbg] prompt:" in l), None)
+                (OUT / f"cpp_stderr_{name}.txt").write_text(r.stderr[-20000:])
         e["cpp_matches_global"] = norm(e["cpp"]) == norm(e["hf_global"])
         res["images"][name] = e
         save()
-        log(f"[{name}] cpp: {e['cpp'][:200]!r}")
+        log(f"[{name}] cpp: {e['cpp'][:200]!r} ratios f16/q8/q4: {e['cpp_ratio']}/{e.get('cpp_q8_0_ratio')}/{e.get('cpp_q4_k_ratio')}")
     if "--keep-gguf" in sys.argv:
-        shutil.copy(gguf, OUT / gguf.name)
+        for gp in GGUFS.values():
+            shutil.copy(gp, OUT / gp.name)
 except Exception:
     res["errors"].append(traceback.format_exc())
     print(res["errors"][-1], file=sys.stderr)
@@ -118,11 +134,12 @@ finally:
 
 cell = lambda s: "`" + (s or "").replace("\n", "⏎").replace("|", "\\|")[:160] + "`"
 lines = [f"### {MODEL} via the DeepSeek-OCR v1 engine (F16 GGUF, CPU) vs transformers (bf16)\n",
-         f"GGUF: {res.get('gguf_gb')} GB\n", "| image | HF global view | C++ | match | HF tiled (default) |",
-         "|---|---|---|---|---|"]
+         f"GGUF: {res.get('gguf_gb')} GB\n", "| image | HF global view (1024) | C++ f16 | exact | word ratio f16 / q8_0 / q4_k | HF tiled (default) |",
+         "|---|---|---|---|---|---|"]
 for n, e in res["images"].items():
-    lines.append(f"| {n} | {cell(e['hf_global'])} | {cell(e['cpp'])} | {e['cpp_matches_global']} | {cell(e['hf_tiled'])} |")
-    lines.append(f"| | prompt HF {e['hf_n_prompt']} tok ({e['hf_n_image_tokens']} image); C++ {e['cpp_prompt_line']} | | | |")
+    lines.append(f"| {n} | {cell(e['hf_global'])} | {cell(e['cpp'])} | {e['cpp_matches_global']} | "
+                 f"{e.get('cpp_ratio')} / {e.get('cpp_q8_0_ratio')} / {e.get('cpp_q4_k_ratio')} | {cell(e['hf_tiled'])} |")
+    lines.append(f"| | prompt HF {e['hf_n_prompt']} tok ({e['hf_n_image_tokens']} image); C++ {e['cpp_prompt_line']} | | | | |")
 if res["errors"]:
     lines.append("\n**errors:**\n```\n" + res["errors"][-1][-2000:] + "\n```")
 (OUT / "summary.md").write_text("\n".join(lines) + "\n")
