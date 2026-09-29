@@ -683,6 +683,32 @@ MODELS = {
             "q4_k": 0.9662,
         },
     },
+    "nomic-embed-vision-v1.5": {
+        "base_model": "nomic-ai/nomic-embed-vision-v1.5",
+        "arch": "ViT-B/16 (2-D rotary, SwiGLU, latent-attention pooling)",
+        "dim": 768,
+        "layers": 12,
+        "params": "92M",
+        "pooling": "latent attention + CLS",
+        "tokenizer": "none (image encoder)",
+        "license": "apache-2.0",
+        "langs": [],
+        "desc": ("Nomic Embed Vision v1.5 — image embeddings in the nomic-embed-text-v1.5 space. "
+                 "Card published separately (tools/ci-heavy/nomic_vision.py parity)."),
+    },
+    "jina-ocr-v1": {
+        "base_model": "jinaai/jina-ocr-v1",
+        "arch": "SAM ViT-B + CLIP-L/14 + DeepSeek-V2 MoE (Unlimited-OCR engine)",
+        "dim": 1280,
+        "layers": 12,
+        "params": "3.4B (570M active)",
+        "pooling": "n/a (OCR)",
+        "tokenizer": "LlamaTokenizerFast",
+        "license": "cc-by-nc-4.0",
+        "langs": [],
+        "desc": ("jina-ocr-v1 — document OCR to Markdown. Card published separately "
+                 "(tools/ci-heavy/jina_ocr_v1.py parity)."),
+    },
     "most-embed-de": {
         "base_model": "malteos/most-embed-de",
         "arch": "Ministral3 bidirectional encoder",
