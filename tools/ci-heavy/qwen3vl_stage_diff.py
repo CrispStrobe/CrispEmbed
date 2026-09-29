@@ -133,6 +133,43 @@ def dump_reference(model, proc, img_path, out_gguf):
             "stages": {k: list(v.shape) for k, v in cap.items()}}, pixels, cap
 
 
+def rope_variants(model, proc, img_path):
+    """llm_layer_0 from transformers under alternative rope layouts, to see
+    which one the C++ output actually matches."""
+    import torch
+    from PIL import Image
+    from transformers.models.qwen3_vl import modeling_qwen3_vl as mq
+
+    img = Image.open(img_path).convert("RGB")
+    msgs = [{"role": "user", "content": [{"type": "image", "image": img}, {"type": "text", "text": PROMPT}]}]
+    inputs = proc.apply_chat_template(msgs, tokenize=True, add_generation_prompt=True, return_dict=True,
+                                      return_tensors="pt")
+    cls = mq.Qwen3VLTextRotaryEmbedding
+    orig = cls.apply_interleaved_mrope
+
+    def sectioned(self, freqs, mrope_section):  # Qwen2-VL layout: TTT..HHH..WWW
+        chunks = freqs.split(list(mrope_section), dim=-1)
+        return torch.cat([c[i % 3] for i, c in enumerate(chunks)], dim=-1)
+
+    def t_only(self, freqs, mrope_section):  # 1-D rope on the temporal ids
+        return freqs[0]
+
+    out = {}
+    lyr0 = model.model.language_model.layers[0]
+    for name, fn in (("interleaved", orig), ("sectioned", sectioned), ("t_only", t_only)):
+        cls.apply_interleaved_mrope = fn
+        box = {}
+        h = lyr0.register_forward_hook(lambda m, a, o: box.__setitem__("x", (o[0] if isinstance(o, tuple) else o)))
+        try:
+            with torch.no_grad():
+                model(**inputs)
+        finally:
+            h.remove()
+            cls.apply_interleaved_mrope = orig
+        out[name] = box["x"].detach().float().reshape(-1, box["x"].shape[-1]).numpy()
+    return out
+
+
 def run_cpp(exe, gguf_path, img, ref, patches_out, dump_dir):
     dump_dir.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, CRISPEMBED_QWEN2VL_REF=str(ref), CRISPEMBED_DUMP_PATCHES=str(patches_out),
@@ -228,6 +265,20 @@ try:
         log(f"C++: {name}")
         cpp = run_cpp(exe, gg, img, ref, SCR / f"patches_{name}.bin", SCR / f"dump_{name}")
         cpp["rows"] = analyse_rows(SCR / f"dump_{name}", cap, meta["grid_thw"])
+        if name == "fox":
+            try:
+                var = rope_variants(model, proc, img)
+                c0 = np.fromfile(SCR / f"dump_{name}" / "llm_layer_0.f32", dtype=np.float32)
+                vres = {}
+                for vn, va in var.items():
+                    c = c0.reshape(-1, va.shape[1])[:len(va)]
+                    cs = row_cos(c, va)
+                    vres[vn] = {"n_bad": int((cs < 0.999).sum()), "cos_median": round(float(np.median(cs)), 5),
+                                "cos_min": round(float(cs.min()), 5)}
+                cpp["rope_hypotheses_llm_layer_0"] = vres
+                log(f"rope hypotheses: {vres}")
+            except Exception:
+                cpp["rope_hypotheses_llm_layer_0"] = {"error": traceback.format_exc()[-800:]}
         if name == "fox":  # raw material for offline analysis (~15 MB)
             pe = SCR / f"dump_{name}" / "vis_patch_embed.f32"
             pf = SCR / f"patches_{name}.bin"
@@ -262,6 +313,8 @@ lines = ["### Qwen3-VL-2B stage diff: C++ (F16 GGUF, CPU) vs transformers (fp32)
          "| stage | " + " | ".join(names) + " |", "|---|" + "---|" * len(names)]
 for n in names:
     c = res["images"][n]["cpp"]
+    if "rope_hypotheses_llm_layer_0" in c:
+        lines.insert(1, f"- **{n}** llm_layer_0 vs transformers under rope variants: {c['rope_hypotheses_llm_layer_0']}")
     lines.insert(1, f"- **{n}**: tokens {res['images'][n]['ref']['n_tokens']}, grid {res['images'][n]['ref']['grid_thw']}, "
                     f"patches {c.get('patches')}, mRoPE mismatches {c['mrope_mismatches']} {c['mrope_examples'][:3]}")
 for s in all_stages:
