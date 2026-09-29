@@ -266,6 +266,11 @@ def main():
     writer.add_uint32("unlimited_ocr.sliding_window", sliding_window)
     writer.add_uint32("unlimited_ocr.max_position_embeddings",
                       lang_cfg.get("max_position_embeddings", 32768))
+    # rope base / norm eps: absent in Unlimited-OCR's config (engine defaults
+    # 10000 / 1e-6 match), but jina-ocr-v1 sets rope_theta = 1e6. Not writing it
+    # left jina on base 10000 - short text read exactly, long pages drifted.
+    writer.add_float32("unlimited_ocr.rope_theta", float(lang_cfg.get("rope_theta", 10000.0)))
+    writer.add_float32("unlimited_ocr.rms_norm_eps", float(lang_cfg.get("rms_norm_eps", 1e-6)))
 
     # SAM hyperparams
     writer.add_uint32("unlimited_ocr.sam.width", sam_width)
