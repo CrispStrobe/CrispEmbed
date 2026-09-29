@@ -40,23 +40,35 @@ OUT.mkdir(parents=True, exist_ok=True)
 SCR.mkdir(parents=True, exist_ok=True)
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
-MODEL = "Qwen/Qwen3-VL-2B-Instruct"
-GGUF_REPO, GGUF_FILE = "cstr/qwen3-vl-2b-crispembed-gguf", "qwen3-vl-2b-f16.gguf"
-PROMPT = "Read all the text in this image. Output the exact text content only."  # qwen2vl_ocr.cpp default
-IMAGES = {
-    "fox": REPO / "tests/regression/images/fox.png",
-    "alpha_omega_1000x420": HERE / "fixtures/alpha_omega_1000x420.png",
+# Default: Qwen3-VL-2B. `--model unimumer` runs the same diff for the
+# Uni-MuMER fine-tune (its own prompt, GGUF and formula fixtures).
+PROFILES = {
+    "qwen3vl": dict(
+        model="Qwen/Qwen3-VL-2B-Instruct",
+        gguf=("cstr/qwen3-vl-2b-crispembed-gguf", "qwen3-vl-2b-f16.gguf"),
+        prompt="Read all the text in this image. Output the exact text content only.",  # qwen2vl_ocr.cpp default
+        images={"fox": REPO / "tests/regression/images/fox.png",
+                "alpha_omega_1000x420": HERE / "fixtures/alpha_omega_1000x420.png"},
+        strict={"fox"}),
+    "unimumer": dict(
+        model="phxember/Uni-MuMER-Qwen3-VL-2B",
+        gguf=("cstr/uni-mumer-qwen3-vl-2b-GGUF", "uni-mumer-qwen3-vl-2b-f16.gguf"),
+        prompt=("I have an image of a handwritten mathematical expression. Please write out the expression of "
+                "the formula in the image using LaTeX format."),
+        images={n: REPO / "tests/regression/images" / f"{n}.png" for n in ("formula_quadratic", "mixtex_pow")},
+        strict={"formula_quadratic", "mixtex_pow"}),
 }
-# transformers greedy output on the same PNGs (tools/ci-heavy/qwen3vl_ref_ocr.py,
-# run 36533519606). The C++ text must equal these exactly.
-EXPECTED_TEXT = {
-    "fox": "The quick brown fox jumps\nover the lazy dog. 12345",
-    "alpha_omega_1000x420": "ALPHA\nOMEGA",
-}
-# Stage-by-stage gate only where the INPUT is identical: fox's patches match
-# transformers to 2/255, the ALPHA/OMEGA resize differs by up to ~15/255 at
-# sharp text edges (interpolation kernel), which alone moves later stages.
-STRICT_STAGES = {"fox"}
+_prof = PROFILES[sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "qwen3vl"]
+MODEL = _prof["model"]
+GGUF_REPO, GGUF_FILE = _prof["gguf"]
+PROMPT = _prof["prompt"]
+IMAGES = _prof["images"]
+# The C++ OCR text must equal transformers' own greedy output (computed in
+# dump_reference). Stage-by-stage gate only where the INPUT is identical to
+# transformers' (qwen3vl: the ALPHA/OMEGA resize differs by ~15/255 at sharp
+# text edges, which alone moves later stages).
+STRICT_STAGES = _prof["strict"]
+MAX_NEW = 64
 res = {"images": {}, "errors": []}
 
 
@@ -128,6 +140,9 @@ def dump_reference(model, proc, img_path, out_gguf):
         pos = pos[-3:, 0, :]  # (3, T); newer versions prepend a text-position row
         cap["mrope_positions"] = pos.T.float().numpy().copy()  # (T, 3)
     pixels = inputs["pixel_values"].float().numpy()
+    with torch.no_grad():
+        gen = model.generate(**inputs, max_new_tokens=MAX_NEW, do_sample=False)
+    hf_text = proc.batch_decode(gen[:, inputs["input_ids"].shape[1]:], skip_special_tokens=True)[0].strip()
 
     w = gguf.GGUFWriter(str(out_gguf), "qwen3vl_ref")
     w.add_string("general.name", "qwen3vl_reference_transformers")
@@ -139,7 +154,7 @@ def dump_reference(model, proc, img_path, out_gguf):
     w.close()
     grid = inputs["image_grid_thw"][0].tolist()
     return {"n_tokens": int(inputs["input_ids"].shape[1]), "grid_thw": grid,
-            "input_ids": inputs["input_ids"][0].tolist(),
+            "input_ids": inputs["input_ids"][0].tolist(), "hf_text": hf_text,
             "stages": {k: list(v.shape) for k, v in cap.items()}}, pixels, cap
 
 
@@ -209,7 +224,7 @@ def analyse_rows(dump_dir, cap, grid):
 
 
 def cpp_ocr_text(exe, gguf_path, img):
-    r = subprocess.run([str(exe), "-m", str(gguf_path), "--ocr", str(img), "--ocr-max-tokens", "48",
+    r = subprocess.run([str(exe), "-m", str(gguf_path), "--ocr", str(img), "--ocr-max-tokens", str(MAX_NEW),
                         "-t", str(os.cpu_count() or 4)], capture_output=True, text=True, timeout=3600)
     return r.stdout.strip()
 
@@ -276,11 +291,12 @@ def order(k):
 
 names = list(res["images"])
 all_stages = sorted({s for n in names for s in res["images"][n]["cpp"]["stages"]}, key=order)
-lines = ["### Qwen3-VL-2B stage diff: C++ (F16 GGUF, CPU) vs transformers (fp32)\n",
+lines = [f"### {MODEL} stage diff: C++ (F16 GGUF, CPU) vs transformers (fp32)\n",
          "| stage | " + " | ".join(names) + " |", "|---|" + "---|" * len(names)]
 for n in names:
     c = res["images"][n]["cpp"]
-    lines.insert(1, f"- **{n}** C++ OCR text: `{c.get('ocr_text', '').replace(chr(10), '⏎')}`")
+    lines.insert(1, f"- **{n}** C++ OCR text: `{c.get('ocr_text', '').replace(chr(10), '⏎')}` | transformers: "
+                    f"`{res['images'][n]['ref'].get('hf_text', '').replace(chr(10), '⏎')}`")
     lines.insert(1, f"- **{n}**: tokens {res['images'][n]['ref']['n_tokens']}, grid {res['images'][n]['ref']['grid_thw']}, "
                     f"patches {c.get('patches')}, mRoPE mismatches {c['mrope_mismatches']} {c['mrope_examples'][:3]}")
 for s in all_stages:
@@ -308,7 +324,7 @@ if res["errors"]:
 print("\n".join(lines))
 def image_ok(n):
     c = res["images"][n]["cpp"]
-    text_ok = c.get("ocr_text", "").strip() == EXPECTED_TEXT[n]
+    text_ok = " ".join(c.get("ocr_text", "").split()) == " ".join(res["images"][n]["ref"]["hf_text"].split())
     # F16 GGUF vs fp32 reference: a single numerically fragile row may dip
     # (fox: 1 of 600 rows to 0.986 in vision blocks 17-22, recovered at 23).
     # Every bug found here broke ~100% of rows, so gate on the row picture:
