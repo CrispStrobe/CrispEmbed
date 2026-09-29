@@ -1205,6 +1205,11 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/clip-vit-large-patch14-GGUF/resolve/main/clip-vit-large-patch14.gguf",
       "CLIP ViT-L/14 vision encoder (304M)", "1.2 GB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
 
+    { "nomic-embed-vision-v1.5", "nomic-embed-vision-v1.5-f16.gguf",
+      "https://huggingface.co/cstr/nomic-embed-vision-v1.5-GGUF/resolve/main/nomic-embed-vision-v1.5-f16.gguf",
+      "Nomic Embed Vision v1.5 (ViT-B/16, 92M; same space as nomic-embed-text-v1.5)", "188 MB", "apache-2.0",
+      "https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5" },
+
     { "clip-text-base", "clip-text-base-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-q4_k-imatrix.gguf",
       "CLIP text encoder base (63M, 512d, Q4_K+imatrix)", "50 MB", "mit",

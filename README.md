@@ -470,8 +470,16 @@ AuraFace recognition.
 ```bash
 ./build/crispembed -m clip-text-base "a photo of a cat"
 ./build/crispembed -m clip-vit-base-patch16 --image photo.jpg
+./build/crispembed -m nomic-embed-vision-v1.5 --image photo.jpg
 ./build/crispembed -m yunet --detect photo.jpg --json
 ```
+
+**nomic-embed-vision-v1.5** (Apache-2.0, 92M) embeds images into the space of
+`nomic-embed-text-v1.5`: search images with `"search_query: ..."` text
+embeddings. Its model card applies a parameter-free LayerNorm (subtract the
+mean, divide by the standard deviation) to the *text* vector before L2
+normalisation for cross-modal scoring. Image embeddings match transformers at
+cosine 1.000000 (F32 and F16, `tools/ci-heavy/nomic_vision.py`).
 
 > **Face recognition is biometric processing.** A face template is
 > special-category personal data (GDPR Art. 9), and searching a gallery of them
