@@ -146,8 +146,11 @@ try:
         log(f"[{name}] cpp: {e['cpp'][:200]!r} ratios f16/q8/q4: {e['cpp_ratio']}/{e.get('cpp_q8_0_ratio')}/{e.get('cpp_q4_k_ratio')}")
     # Same-pixels arm: upstream on the C++ engine's exact preprocessed global view.
     # If this equals the C++ text, the remaining gap is preprocessing rounding.
+    # float32 here: the default arms run upstream in bf16 (8-bit mantissa), which
+    # alone can flip near-tie tokens (curly vs straight quotes) - C++ is F16
+    # weights with F32 accumulation. Same pixels + fp32 isolates the port.
     if QUICK:
-        model = AutoModelForCausalLM.from_pretrained(str(snap), dtype=torch.bfloat16, trust_remote_code=True).eval()
+        model = AutoModelForCausalLM.from_pretrained(str(snap), dtype=torch.float32, trust_remote_code=True).eval()
 
         def swap(obj, t):
             if torch.is_tensor(obj) and tuple(obj.shape[-3:]) == (3, 1024, 1024) and obj.numel() == t.numel():
@@ -179,7 +182,7 @@ try:
             e["hf_on_cpp_pixels"], e["n_swapped"] = t, n_swapped
             e["hf_on_cpp_pixels_vs_cpp"] = round(difflib.SequenceMatcher(None, t.split(), e["cpp"].split()).ratio(), 4)
             e["hf_on_cpp_pixels_exact"] = norm(t) == norm(e["cpp"])
-            log(f"[{name}] HF on C++ pixels (swapped {n_swapped}): exact={e['hf_on_cpp_pixels_exact']} "
+            log(f"[{name}] HF fp32 on C++ pixels (swapped {n_swapped}): exact={e['hf_on_cpp_pixels_exact']} "
                 f"ratio={e['hf_on_cpp_pixels_vs_cpp']}")
         save()
     if "--keep-gguf" in sys.argv:
