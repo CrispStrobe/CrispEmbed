@@ -3031,6 +3031,16 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         }
     }
 
+    // UOCR_DUMP_PIXELS=<path>: write the normalised global view [3, imgS, imgS]
+    // (float32), so a reference can be run on exactly these pixels - separates
+    // preprocessing rounding from model differences.
+    if (const char * dp = getenv("UOCR_DUMP_PIXELS")) {
+        if (FILE * f = fopen(dp, "wb")) {
+            fwrite(pixels.data(), sizeof(float), pixels.size(), f);
+            fclose(f);
+        }
+    }
+
     const bool bench = ctx->inner.bench;
     auto t_total = std::chrono::steady_clock::now();
     bool dbg_t = core_env::on("UOCR_DBG");
