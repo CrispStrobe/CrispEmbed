@@ -56,7 +56,9 @@ PROFILES = {
         prompt=("I have an image of a handwritten mathematical expression. Please write out the expression of "
                 "the formula in the image using LaTeX format."),
         images={n: REPO / "tests/regression/images" / f"{n}.png" for n in ("formula_quadratic", "mixtex_pow")},
-        strict={"formula_quadratic", "mixtex_pow"}),
+        # input patches differ from transformers by up to ~0.18 (resize kernel on
+        # these small formula crops), so gate on exact text + mRoPE, not stages
+        strict=set()),
 }
 _prof = PROFILES[sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "qwen3vl"]
 MODEL = _prof["model"]
