@@ -4,6 +4,36 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## September 29–30, 2026 — Qwen3-VL fixed, Uni-MuMER republished, Nomic vision + jina-ocr-v1 shipped
+
+All validated against upstream transformers on free GitHub runners
+(`.github/workflows/heavy-cpu.yml`, scripts in `tools/ci-heavy/`) and published
+with sha256 checks against the runner's manifest.
+
+- **Qwen3-VL (#56 follow-up)**: large display text came out as scrambled letters
+  while `fox.png` was exact. `tools/ci-heavy/qwen3vl_stage_diff.py` (transformers
+  forward hooks; `CRISPEMBED_QWEN2VL_REF` revived the dead diff harness,
+  `CRISPEMBED_DIFF_DUMP_DIR` dumps compared stages) found three port bugs: the
+  Qwen2-VL default system prompt (11 extra tokens), no `qwen3vl.*` preprocessor
+  keys read (CLIP mean/std instead of 0.5/0.5, wrong min/max pixels), and
+  deepstack added one decoder layer early. Now `ALPHA⏎OMEGA` like upstream; fox
+  matches at every stage.
+- **Uni-MuMER**: the published F16 GGUF had three zeroed layer-18 tensors
+  (every quant derived from it) and the fixed `no_repeat_ngram=3` banned LaTeX's
+  repeated trigrams. Reconverted on CI (`reconvert_qwen3vl.py`: convert → every
+  tensor vs safetensors → stage diff → quantize), `no_repeat_ngram` now per model;
+  LaTeX exact vs upstream from the downloaded file.
+- **#53 nomic-embed-vision-v1.5** (Apache-2.0): vit_embed variant (2-D rope,
+  SwiGLU with inner LN, latent-attention pooling), cosine 1.000000 F32/F16;
+  `cstr/nomic-embed-vision-v1.5-GGUF`.
+- **#57 jina-ocr-v1** (CC BY-NC 4.0): runs on the Unlimited-OCR (DeepSeek-OCR v1)
+  engine. The converter never wrote `rope_theta` (jina 1e6 vs engine default 1e4),
+  and the prompt layout (`<|User|>`/`<|Assistant|>`, no BOS) and plain-greedy decode
+  are now GGUF keys. Text exact vs transformers for F16/q8_0/q4_k;
+  `cstr/jina-ocr-v1-GGUF`. HunyuanOCR deferred (licence excludes the EU).
+- **most-embed-de**: already supported (2026-08-20); re-proven on current code
+  (`tools/ci-heavy/most_embed_de.py`: q8_0 cosine 0.9996+, retrieval identical).
+
 ## August 7, 2026 — round-N+3-consumption session (active-work board archive)
 
 Shipped rows moved off the PLAN.md active-work board at the round-N+4

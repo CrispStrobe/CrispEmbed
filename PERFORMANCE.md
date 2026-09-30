@@ -1,5 +1,19 @@
 # CrispEmbed Performance
 
+## Parity vs transformers — Qwen3-VL, Uni-MuMER, Nomic vision, jina-ocr-v1, most-embed-de (2026-09-29/30)
+
+All on GitHub runners (CPU) via `tools/ci-heavy/`; C++ = crispembed on the GGUF named.
+
+| model | GGUF | metric | result |
+|---|---|---|---|
+| Qwen3-VL-2B | F16 | OCR text, fox + ALPHA/OMEGA 1000x420 | identical to transformers (was scrambled letters) |
+| Qwen3-VL-2B | F16 | fox, every stage (vision 24 + LLM 28 + deepstack) | median row cosine >= 0.9999, 1 fragile row of 600 in vision blocks 17-22 |
+| Uni-MuMER-Qwen3-VL-2B | F16 (republished) | LaTeX, 2 formula fixtures | identical |
+| nomic-embed-vision-v1.5 | F32 / F16 | embedding cosine, 4 images, raw pixels and file path | 1.000000 |
+| jina-ocr-v1 | F16 / q8_0 / q4_k | OCR text, fox + book page (1024 global view) | identical (word ratio 1.0) |
+| most-embed-de | q8_0 | embedding cosine, 8 German texts | 0.9996-0.9998, retrieval top-1 identical |
+| most-embed-de | q4_k-attn-q8 (default) | embedding cosine | 0.9893-0.9939, retrieval top-1 identical |
+
 ## punctuate-all: can we have both? (2026-08-25)
 
 The shipped `punctuate-all` artifact has base-XLM-R embeddings but greedy

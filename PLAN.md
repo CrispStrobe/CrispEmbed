@@ -4,6 +4,17 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## OPEN 2026-09-30 — follow-ups from the Qwen3-VL / jina / Nomic round
+
+- **Qwen3-VL resize**: C++ vs transformers input patches differ by up to ~15/255 at
+  sharp text edges (fast torchvision vs PIL resampler; see image_preprocess.h); text
+  is identical on the fixtures, so low priority.
+- **jina-ocr-v1**: CrispEmbed encodes one 1024 global view; upstream's default
+  "Gundam" mode adds up to nine 640 tiles for dense small print — not implemented.
+- **Licences** (user policy, 2026-09-29): non-commercial (CC BY-NC) OK; research-only
+  NOT (#59 LocateAnything-3B declined); HunyuanOCR (#57, Tencent licence excludes the
+  EU/UK/South Korea) deferred — no reply on the issue.
+
 ## HANDOVER — OCR round N+4 (written 2026-08-07, after the round-N+3-consumption session)
 
 **Read before doing anything:** this section; the ~7 DONE board rows below

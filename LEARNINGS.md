@@ -1,5 +1,30 @@
 # CrispEmbed — Technical Learnings
 
+## When the control arm fails like the test arm, fix the instrument first (2026-09-29, Qwen3-VL)
+
+The first transformers stage diff failed every stage on `fox.png` too — whose OCR
+was exact. Row 0 matched to 4 decimals through all 28 layers, so the comparison
+was misaligned (token counts differed), not the model. A per-row analysis (row
+counts, first bad row, a row-permutation test) localised each real bug in one
+run afterwards: the system prompt (+11 rows), input normalisation (every vision
+row), deepstack placement (every row from the first image token).
+
+## A fine-tune on an existing engine: diff its config against the base before any stage diff (2026-09-29)
+
+jina-ocr-v1 matched upstream on a single line of text and drifted on a full page.
+Preprocessing (same pixels) and precision (fp32 reference) were ruled out; the
+config diff found it in seconds: `rope_theta` 1e6, which the converter never
+wrote, so the engine used its 1e4 default. A wrong rope base barely matters at
+small positions and grows with sequence length. Check rope base, prompt template
+and generation config (n-gram bans, BOS) first.
+
+## Same wrong output from F16 and q8_0 points at the file, not the precision (2026-09-29, Uni-MuMER)
+
+A per-tensor GGUF-vs-safetensors check (`tools/ci-heavy/gguf_vs_safetensors.py`)
+found three zeroed tensors in a published file — likely a silently corrupted
+CIFS download. Gate on relative error beyond F16 rounding, not cosine: float32
+accumulation reads ~0.9999 on exact copies of large tensors.
+
 ## A cached CMake `option()` silently disabled Metal — and the binary still reported `GGML_METAL:BOOL=ON` (2026-08-05, T14)
 
 Every measurement in the first half of the T14 round was CPU while being
