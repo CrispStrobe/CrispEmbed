@@ -4,6 +4,2126 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## September 30, 2026 — PLAN compaction: finished sections moved out of PLAN.md
+
+Verbatim as they stood in PLAN.md: the landed active-work board rows, the consumed
+handover rounds 3-7, and every task/brief marked DONE / CLOSED / COMPLETED / RESOLVED
+(F1 F7 F8 F9 F7b F9b, T1 T7 T8 T10 T11 T13 T14 T15 T18, R1 R2 R4-R8, O1-O7, E1-E3 E5-E7,
+the Tesseract CJK lane).
+Headings re-levelled under this entry.
+
+1. ~~**pix2struct decode graph — CUDA-first**~~ **DONE 2026-08-07 (merged
+   `69e39a62`, board row + PERFORMANCE.md top): ggml decode graph ~9x on
+   P100, text byte-identical everywhere, per-kind CUDA default landed; v2
+   kernel proved the true default arm.**
+2. ~~**dbnet auto-CUDA default**~~ **DONE 2026-08-07 (merged `7713c6ad`,
+   board row + PERFORMANCE.md top): CUDA decoded-text roundtrip passed —
+   recognized text identical, only 1px/conf digits move; O11-pattern
+   default landed in `src/ocr_detect.cpp`.**
+3. ~~**O7 remainder**~~ **O7 SWEEP COMPLETE 2026-08-08.**
+   ~~ppformulanet-l~~ DONE (merged `5d0be2ee`: mk scope, −31% stage,
+   byte-identical; whole-run −1.9%, decoder-bound).
+   ~~got~~ CLOSED N/A (default neck is a ggml graph; convs only under
+   `CRISPEMBED_GOT_OCR_SCALAR_NECK`).
+   ~~deepseek~~ **CLOSED N/A 2026-08-08 — the 08-07 "needs refactor"
+   note was WRONG in premise**: `if (!ds_env_on("DS_SAM_CONV_CPU"))`
+   makes the sched graph the default on EVERY backend; the local static
+   conv chain is an explicit opt-out debug path, so a dispatcher
+   refactor would accelerate nothing that ships. Every O7 engine is now
+   either flipped (ppocrv6-det, HMER, ppformulanet-l) or graph-default
+   (posformer, got, deepseek).
+
+6. ~~**Hygiene**~~ **DONE 2026-08-07**: N+3 handover + 4 DONE rows archived
+   to HISTORY (`9423dcd5`).
+7. ~~**pix2struct ggml-decode-on-CPU default**~~ **CLOSED NO-FLIP
+   2026-08-07 late (PERFORMANCE.md top): the Kaggle 1.65x was a threading
+   wall win, not a kernel win — nt1 on M1 the ggml graph loses (+11-45%),
+   `-t 4` buys −25/−34% wall with MORE total CPU. CPU default stays scalar;
+   the gate remains the wall-latency opt-in. O3 encoder-on-GPU measured
+   FLAT on CUDA (±4%) — stays closed.**
+
+### OPEN — embedding-lane language coverage (opened 2026-08-08 answering issue #44)
+
+**How this opened:** issue #44 ("which model is best for Japanese?") was first
+answered for the OCR lanes; the asker may have meant the EMBEDDING models. That
+exposed a whole untested axis — `docs/LANGUAGES.md` covered OCR only, every
+embedder parity test uses English-only text (`test_all_parity.py` `TEXTS`), and
+the registry's embedder language strings ("XLM-R 768d 100+ languages") are
+upstream model-card claims we had never checked. Japanese is now verified for 8
+embedders (`99f39f64`, `157f5e08`); everything below is what that left open.
+
+**DONE so far:** harness `tests/embed_language_eval.py` (3 checks: monolingual
+paraphrase, cross-lingual alignment, **non-degeneracy**; English-only models
+kept in as a permanent negative control). Verified JA: granite-embedding-107m
+(0.966/0.940, best), bge-m3, jina-v5-small/nano, Qwen3-Embedding-0.6B,
+LFM2.5-Embedding-350M, nomic-embed-text-v2-moe, arctic-embed-m-v2. Table +
+method in `docs/LANGUAGES.md`.
+
+**VPS work package:** E1/E2/E3/E5/E6 are all CPU-only and need no GPU — they
+are written up as a ready-to-run brief for the 8 GB VPS in
+[`docs/vps-embedding-lane-brief.md`](vps-embedding-lane-brief.md) (paths, disk
+rules, worktree requirement, acceptance). E4 is Kaggle. E7 is partly done.
+
+#### E1. Finish the JA embedder matrix — 7 shipped multilingual aliases untested [Opus] — DONE 2026-08-08
+
+**5 of 7 tested** (VPS CPU-only run, q8_0 quants, `1b5870da`+). All 5 pass
+all 3 checks. 2 skipped (granite-r2 97m/311m not cached, BPE/o200k models).
+
+| Model | C1 margin | C2 xl margin | C3 unrel | Note |
+|---|--:|--:|--:|---|
+| paraphrase-multilingual-MiniLM-L12-v2 | +1.036 | +1.042 | -0.055 | **best separation** |
+| multilingual-e5-large (no prefix) | +0.180 | +0.166 | 0.805 | narrow margin |
+| multilingual-e5-base (no prefix) | +0.162 | +0.178 | 0.815 | narrow margin |
+| multilingual-e5-small (no prefix) | +0.178 | +0.168 | 0.791 | narrow margin |
+| granite-embedding-278m-multilingual | +0.565 | +0.514 | 0.392 | strong |
+| granite-embedding-278m (non-multi) | +0.565 | +0.514 | 0.392 | = multilingual |
+
+The e5 family has narrow margins likely due to missing `query: `/`passage: `
+prefix (stated per row). `paraphrase-multilingual-MiniLM-L12-v2` is the
+surprise winner — strongest JA separation of ANY model tested.
+`granite-embedding-278m` non-multilingual = multilingual (identical scores,
+likely same weights).
+
+Remaining: `granite-embedding-97m-r2`, `granite-embedding-311m-r2` (not cached,
+BPE/o200k). Also GTE-v1.5 multilingual entries (not cached).
+
+#### E2. Rerankers on Japanese — an entire untested lane [Opus] — DONE 2026-08-08
+
+**All 3 rerankers pass** on JA (2 fixture queries, `44936954`+). Score gaps:
+
+| Model | JA cats gap | JA cooking gap | EN control gap |
+|---|--:|--:|--:|
+| bge-reranker-v2-m3 (q4_k) | +17.13 | +10.07 | +10.62 |
+| jina-reranker-v2-base-multilingual (q4_k) | +4.57 | +2.14 | +4.09 |
+| bge-reranker-base (q4_k) | +14.75 | +14.84 | +13.65 |
+
+**Key finding:** there are NO English-only rerankers in the registry.
+`bge-reranker-base` uses 250k SentencePiece/XLM-R, not a 30k WordPiece. The
+embedder "wrong model" trap does NOT apply to any shipped reranker.
+
+Harness: `tests/reranker_language_eval.py`.
+
+#### E3. Languages beyond Japanese [Opus] — DONE 2026-08-17
+
+Arabic and Korean added to both embedding and reranker harnesses. All cached
+multilingual models (10 embedders, 3 rerankers) evaluated on both new
+languages. Results in `docs/LANGUAGES.md`.
+
+**Embedding findings:**
+- All multilingual models pass all 3 checks for both AR and KO.
+- **Arabic margins are narrower than JA across the board** (granite-107m:
+  AR +0.12 vs JA +0.53). This is a real signal, not a test artifact — the
+  negative controls confirm the test discriminates (EN-only models show
+  near-chance cross-lingual and tiny paraphrase margins on AR).
+- **Korean tracks close to Japanese.** EN-only models are even MORE degenerate
+  on KO than JA (unrelated cosine 0.99 vs 0.33), confirming total tokenizer
+  collapse.
+- `paraphrase-multilingual-MiniLM-L12-v2` has the best AR cross-lingual
+  score (+1.04 margin) despite weak AR paraphrase (+0.76).
+
+**Reranker findings:**
+- All 3 rerankers pass all AR and KO cases. Gaps slightly narrower than JA
+  (jina AR cooking +1.32 is the smallest gap but still clearly positive).
+- Same "no EN-only reranker control" caveat as E2.
+
+**Models not tested (SKIP, not FAIL):** bge-m3 (iq4_xs), Qwen3-Embedding,
+LFM2.5, nomic-embed, arctic-embed — not cached on VPS. These are multilingual
+models with 250k SentencePiece tokenizers; no reason to expect failure.
+
+#### E4. A defensible quality ranking needs MTEB, not this harness [Opus, offload]
+
+The eval separates "works" from "degenerate"; it is NOT a ranking — do not let
+0.966 be quoted as a benchmark score (the issue reply says so explicitly).
+For a real ranking use MTEB-JA / JMTEB via `kaggle_mteb.py` on Kaggle per the
+offload directive, not this 16 GB Mac.
+
+#### E5. WordPiece CJK path is not HF-faithful (low impact, real) [Opus] — DONE 2026-08-08
+
+**Measured and guarded** (`9648dfac`). Three-way comparison documented in
+`tests/wordpiece_cjk_parity.py`:
+
+1. **Historical per-byte path** (shipped): entire JA string → 1 word → [UNK].
+   Both JA sentences → [CLS] [UNK] [SEP] — bit-identical.
+2. **core_bert::pretokenize** (opt-in via `pre=bert`): CJK ideographs split,
+   kana stays glued, Unicode punct isolated. Different sequences for the two JA
+   sentences, but differs from HF (no NFD accent strip).
+3. **HF reference**: NFD + accent strip + CJK split → 10 vs 9 tokens.
+
+Test guard added to `test_bert_pretokenize.cpp`: 3 E5-pretok cases, 3 E5-hist
+cases, differential assertion (pretokenize produces different results for the
+two JA sentences; historical produces 1 word each).
+
+**NEW FINDING (bigger than CJK): European accent-stripping divergence.** HF's
+`BasicTokenizer` with `do_lower_case=True` applies NFD + Mn-strip (café→cafe,
+Müller→muller, über→uber) before WordPiece. Our per-byte path does not strip
+accents. Every accented European word diverges: HF gets a clean whole-word
+vocab hit while ours produces partial+[UNK] splits. Measured side-by-side:
+
+| Input | HF tokens | Our tokens |
+|---|---|---|
+| café | `cafe` | `caf` + `[UNK]` |
+| Müller | `muller` | `m` + `[UNK]` |
+| résumé | `resume` | `r` + `[UNK]` |
+| über | `uber` | `[UNK]` |
+
+**Impact:** German/French/Spanish/Portuguese embeddings from every uncased
+WordPiece model we ship diverge from HF on accented text — in-domain text,
+unlike the JA case. **Fix constraints:** must NOT apply to LaBSE (cased,
+`strip_accents=False`); must be conditioned on model metadata
+(`strip_accents` not in GGUF today — the converter does not record it); any
+fix ships env-gated default-OFF per house rules; English parity check
+required before flipping.
+
+#### E6. Make the silent failure LOUD — runtime out-of-vocabulary warning [Opus] — DONE 2026-08-08
+
+**Shipped** (`1b5870da`). One-shot stderr warning when ≥50% of content tokens
+(CLS/SEP/PAD excluded) are `[UNK]`:
+
+```
+crispembed: warning: 100% of input tokens are [UNK] — this model's vocabulary
+may not cover this script; see docs/LANGUAGES.md for models that do
+(silence with CRISPEMBED_WARN_UNK=0)
+```
+
+Silenced by `CRISPEMBED_WARN_UNK=0`. Fires in both single-encode and
+batch-encode paths. No hot-path cost (integer count over already-materialized
+token array, one-shot per context). Tested: triggers on JA text with
+all-MiniLM-L6-v2, silent on English text, silent with `=0`.
+
+#### E7. Embedder vocabulary script-scan — DONE 2026-08-17 (decision: do NOT surface)
+
+**Decision: do NOT wire scanner output as a `--list-models` column for
+embedders/rerankers.** The E3 cross-reference proved the scanner is unreliable
+in BOTH directions for embedding models:
+
+- **False positive**: all-MiniLM-L6-v2 scans kana=188 but JA is broken
+- **False negative**: jina-v5-small scans kana=0 but JA passes strongly
+
+Root cause: BPE tokenizers (jina, Qwen-style) encode non-Latin scripts as
+byte sequences — no script code points in the token strings. 30k WordPiece
+vocabs carry script tokens the model can't functionally use.
+
+The scanner remains valid for OCR recognizers (where the dictionary genuinely
+gates emittable characters — the PP-OCRv6 zero-kana finding that started this
+thread). Cross-reference table in `docs/LANGUAGES.md`. Scanner caveat updated
+in `tools/scan_model_languages.py`.
+
+#### E7b. (superseded) Give embedders the "Scripts" treatment [Opus] — CLOSED by E7 decision
+
+Superseded by E7 decision above: the scanner is unreliable in both directions
+for embedders (BPE false negatives + WordPiece false positives), so a `Scripts`
+column would be actively misleading. The measured eval tables in LANGUAGES.md
+are the authoritative source for embedder language support.
+
+| Since | Branch / worktree | Task | Status |
+|-------|-------------------|------|--------|
+| 2026-09-25 | `claude/eager-volta-rf2dk6` | **Issues #52 / #55 / #56 (opt-in surfaces, no default changed).** **#56** `--ocr-prompt` never existed: the CLI pushed the unknown flag + value into `texts`, which `--ocr` never reads, so output was prompt-independent by construction. Now: `crispembed_ocr_model_set_prompt()` (qwen2vl/qwen3vl/paddleocr-vl/olmocr, internvl2, lfm2-vl, granite-vision; returns 0 + CLI warning elsewhere; NULL restores the captured default), CLI/server stage builders pass `vlm_prompt` (were hardcoded nullptr), lfm2-vl + unified stages forward it, server `/ocr/model` takes per-request `"prompt"` (restored after), unknown `--options` warn on CLI + server, `--ocr --json` output is now `json_escape`d. Guard: `tests/test_ocr_prompt_surfaces.py` (CI lint tier). ⚠ **VLM decode with a custom prompt is UNVERIFIED** — HF was policy-blocked in the session; TODO: qwen3vl-2b A/B default vs custom prompt, compare decoded text. **#55** server `--dim N` + per-request `"dimensions"` on all four embed routes (400 outside 1..native, default restored per request, `/embed` `dim` now reports the returned length, `/health` adds `output_dim`). Verified on a synthetic 64-d BERT: every route returns unit vectors of the requested length; the 16-d vector equals renorm(prefix of the 64-d) to <1e-5. **#52** `--offline` (CLI/server), `CRISPEMBED_OFFLINE`, truthy `HF_HUB_OFFLINE`, C ABI `crispembed_set_offline/is_offline`, Python `set_offline()` / `CrispEmbed(offline=True)`; enforced in `download_file()` (the one network choke point, companions included). Verified: uncached → clear error with expected path, cached → loads. #53 (nomic-embed-vision) and #57 (HunyuanOCR, jina-ocr-v1) are new-model ports that need HF weights + the Python blueprint — NOT started. | **DONE (VLM prompt A/B pending)** |
+| 2026-08-25 | `fix/punc-stacking` (merged) | **All three punctuation engines now have blueprint ground truth, and CI runs it.** There was none for any of them; two of the three had a real bug the day they got one. **(a) fireredpunc** — the blueprint prepends `[CLS]` and appends NOTHING; the port appended `[SEP]`. BERT is bidirectional so every token attended to it: f16 `cos_min 0.931090 → 1.000000`, preds 118/119 → 119/119. Scoped to the BERT path only — XLM-R genuinely wants `</s>`, and applying it repo-wide would have been changing a default on no evidence. **(b) XLM-R path returned EMPTY output** on its default arm: `tokenize_ex` returns early for SentencePiece and never fills the word alignment, while `fireredpunc_process` branched on `hf_tok` alone and looped over zero words. Now gates on the DATA being present, not on the arch, so it fails safe for any future tokenizer. **(c) PCS is clean** — 67/67 on all four heads, decoded text EXACT (gated on exact equality, unlike the other two, because PCS truecases itself so there is no deliberate deviation to excuse). New `PCS_DUMP_PRE/_SEG/_CAP` localise a regression to one head and one token: plain q4_k keeps all 67 punctuation decisions and loses one truecasing (`I'm OK`→`I'm ok`) — **the whole quant cost is the truecase head**, and `q4_k-imatrix` (the registry default) recovers it exactly. First DECODED-OUTPUT evidence for that default; its description had only ever been a KL number. **(d) A local artifact was bad**: `punctuate-all-f16.gguf` ships no `tokenizer.ggml.scores`, so the runtime falls back to greedy longest-match on a UNIGRAM vocab — `fox` has no `▁fox` piece, so Viterbi gives `▁`+`fox` and greedy gives `▁fo`+`x`. `cos_min -0.284548` vs `0.999999` re-converted. ⚠ **CORRECTED afterwards:** the scores explain only line 4 (max_abs 1.08). A tensor-by-tensor diff showed **198/199 tensors byte-identical to `kredor/punctuate-all`**, with the token embedding holding **xlm-roberta-base's values on the 9539 rows kredor ZEROES** (4 contiguous ranges) — that is the dominant effect (lines 0/2, max_abs 9.63/5.78), and the correlation with "line contains a zeroed-range token" is exact. Which is preferable is open: a zero embedding is unlikely to be intended semantics, but `transformers` loads the zeros so that IS the blueprint. ⚠ **SECOND CORRECTION — it IS distributed.** `cstr/punctuate-all-GGUF` (87 downloads) + CrispASR's `--punc-model punctuate-all` shortcut auto-downloads the q4_k (`src/crispasr_punc_model.h:48`), and it is in CrispASR's README table with a model card. I had checked only CrispEmbed's `model_mgr.cpp`, found nothing, and concluded "never distributed" — the shortcut is in the OTHER repo. **What users get** (`punctuate-all-q4_k`) measures preds 64/67, decoded 4/6 vs the blueprint. All artifacts SHA256-verified against the published LFS hashes before measuring. The `fullstop-punc-*` entries were downloaded and are clean. Converter fixed: `add_name` was hard-coded so every model claimed to be the large one, and scores now fall back to `tokenizer.json`. New `punct-parity` CI job runs all three references nightly + on punct pushes | **DONE** |
+| 2026-08-25 | `fix/punc-stacking` (merged) | **Three guards of mine were inert or wrong until deliberately exercised — recorded because the pattern is the lesson.** (1) The cross-repo sync test searched the RAW file, so a marker quoted in a COMMENT satisfied it — including the comment saying "keep this literal, the test greps for it". (2) After stripping comments it still passed with #308 reverted, because `if (c >= 'A' && c <= 'Z')` also matches the legacy lowercasing loop; the needle was present but not SPECIFIC. (3) The PCS cap gate compared all 16 bits and **failed a CORRECT artifact** — only `len(piece)` bits are read, the rest is padding the model fills arbitrarily. Each was found by breaking the code on purpose and watching the guard say OK; none would have surfaced from a passing run | **DONE** |
+| 2026-08-25 | `fix/punc-stacking` (merged) + Kaggle `${KAGGLE_ACCOUNT}/crispembed-punc-rerank-cuda` | **Kaggle P100 run: sibling build validated on CUDA, fireredpunc parity confirmed on CUDA, rerank latency finally measured on an idle box — and it found a FOURTH instance of the issue-#50 drift.** (a) **`mold: library not found: crispasr_link_ggml_cuda`** — `crisp_audio/CMakeLists.txt` links an INTERFACE target defined only in CrispASR's TOP-LEVEL CMakeLists, and CMake does not error on an unknown name in `target_link_libraries`, it degrades it to a raw `-l<name>`. So it failed at the LAST link step of a 19-minute build. It needs the sibling layout AND a GPU build, so every CPU sibling build passes — **including the new `sibling-crispasr` CI job, since GitHub runners have no CUDA**. Fixed by probing `if(TARGET …)` with a `NOT GGML_BACKEND_DL`-guarded fallback (CrispASR `c12cb147`); this Kaggle kernel is the only thing covering that combination. (b) **v2 green: `status OK`, zero failures**, all four siblings picked up on a fresh P100. (c) **fireredpunc f16 cos_min 1.000000 on CUDA** (probe recorded `ggml_cuda_init: found 1 CUDA devices`, so no silent CPU fallback) — the `[SEP]` fix holds on CUDA, LEARNING-35 satisfied. **q4_k-imatrix 0.996146 / 119-119 vs plain q4_k 0.937162 / 118-119** — first ground-truth measurement of either, and it validates the registry default. ⚠ q4_k cos_min is HARDWARE-dependent (0.957795 Kaggle vs 0.935078 VPS, byte-identical file) — quote f16, not q4_k. (d) **rerank: `/v1/rerank` 27.0 ms vs `/rerank` 27.1 ms, stdev ~1%, ratio 0.9982 — no measurable cost**, ranking identical, `|sigmoid(logit) − relevance_score| ≤ 3e-9`. The VPS gave 8-19 s at 2.4x spread for the same A/B (load 13-25 from other agents): a ~700x contention artifact. Full numbers in `PERFORMANCE.md` top. Also: ccache dataset refreshed from this run (gotcha #17), and the kernel now exports it even on a FAILED build — v1 threw away ~280 compiled objects on the way out | **DONE** |
+| 2026-08-25 | `fix/punc-stacking` (merged) | **XLM-R punctuation models returned EMPTY output on the default path.** `--punct-model fullstop-punc` (a first-class registry entry) produced nothing at all — not degraded, empty. `tokenize_ex` returns early for SentencePiece and never fills `out_words`/`out_word_ntok`, but `fireredpunc_process` branched on `hf_tok` ALONE and ran a loop bounded by `words_orig.size()` = 0. `CRISPEMBED_FIREREDPUNC_HF_TOK=0` worked, which is why it survived. Now gates on the alignment data being present — deliberately NOT `!is_sentencepiece`, so it fails safe for any future tokenizer that also skips the alignment. punctuate-all-f16: 4 empty lines → byte-identical to the legacy arm; BERT path unchanged at cos_min 1.000000. Found while checking that the `[SEP]` scoping had not disturbed the XLM-R path — it had not, this was already broken | **DONE** |
+| 2026-08-25 | `fix/punc-stacking` (merged to `main`) | **fireredpunc: ground truth built, and it immediately found a real forward-pass bug.** Neither repo had a MODEL reference for this engine — the tokenizer was checked against HF (9/9 exact) but nothing checked the forward pass, and a tokenizer can be exact while the graph is wrong. It was. **The blueprint (`fireredpunc_bert.py::_forward`) prepends `[CLS]`, drops its output, and appends NOTHING; both ports appended `[SEP]`.** BERT is bidirectional, so every real token attended to it. f16 GGUF, 119 tokens: `cos_min 0.931090 / max_abs 1.8431 / preds 118/119` → after: `1.000000 / 0.0021 / 119/119`. 0.93 at F16 is an order of magnitude past the numerical floor, which is what identified it as structural. User-visible on near-ties (`Hello world, this is a test.` vs the reference's `Hello world! This is a test.`); output-neutral on 8 ordinary lines, which is why it shipped unnoticed. Gate `CRISPEMBED_FIREREDPUNC_SEP=1` reproduces `0.931090` exactly. Quants vs the same reference: q8_0 `0.999234`/119-119, q4_k `0.935078`/118-119 — the q4_k dip is the QUANTISER (proof: the f16 arm of the same graph is exact), so the harness takes an explicit `min-cos` rather than a hard-coded floor that would mislabel it. New: `tools/dump_fireredpunc_reference.py` (runs the blueprint on the official Apache-2.0 checkpoint; derives BertConfig from tensor shapes so no 411 MB backbone download), `tests/firered_punc_parity.py` (gates ids → logits → preds; decoded text REPORTED not gated, since upstream lowercases+recapitalises while CrispEmbed emits the user's original words on purpose), `tests/regression/fireredpunc/` (9 KB reference checked in, so the comparison runs with no torch and no checkpoint). Merged CrispEmbed `305d9b91` + CrispASR `7ccc3004` | **DONE** |
+| 2026-08-25 | `fix/punc-stacking` (merged to `main`) | **fireredpunc #300: CrispEmbed was stacking punctuation on already-punctuated text.** `...for you.` → `...for you..`, `...更多时间。` → `...更多时间。。`, `...mark?` → `...mark??`, measured on fireredpunc-q8_0. CrispASR's copy had the guard since #300; CrispEmbed's never got it, and it matters MORE here — `--punct-model` post-processes OCR text, where already-punctuated input is the common case. Predicate moved to the shared `core/punct_marks.h` (it had been written twice and the copies disagreed, which is how one shipped without it); guard `tests/test_punct_marks.cpp`, 21 checks, in the CI model-free tier, and the pre-fix predicate fails 4/4 of its mark cases. Both reconstruction paths fixed; A/B on an unpunctuated corpus BYTE-IDENTICAL, so the guard is a no-op exactly where it should be. Also corrected a comment in the same file that documented the OPPOSITE of the code (claimed the HF tokenizer gate was off by default and made output worse; both were true once, the fix landed and flipped it, the comment never followed) | **DONE** |
+| 2026-08-25 | `feat/issue-50-51` / `.claude/worktrees/feat-issue-50-51` | **Issues #50 + #51 (outside reporter).** **#50 build failure with a sibling CrispASR — REPRODUCED and FIXED, but not the failure that was reported.** The reported symptom (`ctx.tensors` std::map vs `wl.tensors` std::unordered_map at audio_tower.cpp:282) was already fixed upstream by the `core_gguf::tensor_map` alias (CrispASR `66dc549b`, in v0.8.0) — the reporter's CrispASR clone predates it. Building CrispEmbed against a CURRENT `../CrispASR` fails differently: `crisp_audio`/`crisp_punc`/`crisp_lid` now `#include "core/ggml_cpu_backend.h"` (CrispASR `f7464aeb`, the #355 GGML_BACKEND_DL work) and that header did not exist in CrispEmbed's `src/core`, so the shared libs — which compile against the CONSUMER's core — died with `No such file or directory`. Fixed by mirroring the header (only the direct-call branch compiles here; CrispEmbed's ~150 `ggml_backend_cpu_init` sites are untouched). **Both symptoms are the same defect: CI builds each repo alone, so the cross-repo header contract is unguarded.** New `sibling-crispasr` job in `build.yml` clones CrispASR as a sibling, asserts all four libs were actually picked up (a silent `not found — disabled` would make the job pass having compiled nothing), and builds them. **Two MORE instances of the same drift found while verifying, both beyond the report.** (a) `firered-punct-ab` fails to LINK in the sibling layout: adopting `crisp_punc` drops CrispEmbed's own `src/fireredpunc.cpp`, and `fireredpunc_debug_token_ids()` — the hook that test links against — exists only there. Target is now built only when `NOT CRISPEMBED_HAS_CRISP_PUNC`; against the shared library it has nothing to A/B. (b) **Worse, and silent:** the two `fireredpunc.cpp` copies have diverged (CrispEmbed 1090 lines vs CrispASR 917), and only CrispEmbed's carries the HF WordPiece unification (`CRISPEMBED_FIREREDPUNC_HF_TOK`, token ids 2/9 → 9/9 exact vs HF). So merely HAVING a sibling CrispASR swaps the punctuation restorer for the older one with the known tokenizer defect — no error, just different output. Configure now emits a `message(WARNING …)` naming the swap and the `-DCRISP_PUNC_DIR=/nonexistent` escape; picking one copy for the user is a separate call, not this issue's. **#51 `/v1/rerank` in the de-facto Cohere/Jina shape — SHIPPED.** Shares one `handle_rerank_request()` with `/rerank`; the scoring path is identical and only the spelling differs. `documents` accepts `[str]` AND `[{"text":str}]` via new `core_json::json_extract_documents` (`json_extract_strings` flattens the object form into 2x garbage documents — that's the R1 control check); `relevance_score` = `sigmoid(logit)` gated by `CRISPEMBED_SERVER_RERANK_RAW_SCORES=1`; `document` echoed only under `"return_documents": true` (Cohere's default). No fabricated `usage`/token counts. Guards: 23 new checks in `test-server-json-input` (now in the CI model-free tier) + a `ServerRerankLive` class gated on `CRISPEMBED_TEST_RERANK_MODEL`, incl. the ordering-agreement test that keeps the sigmoid honest. **Verified:** full sibling build 301/301 green (`BUILD_EXIT=0`, zero FAILED) and the no-sibling build of `crispembed-server`/`test-server-json-input`/`firered-punct-ab` green too; `test-server-json-input` 82/82; `tests/test_server_live.py` 20/20 against `ettin-reranker-150m-v1-q4_k` (10 new rerank tests, 10 embedding tests re-run to clear the shared `json.h` edit). Live A/B on the same 3-doc fixture: native `/rerank` logits `10.924636 / -4.582216 / -5.166111` → `/v1/rerank` `0.999981991 / 0.010128557 / 0.005674335` (exactly `sigmoid()` of them, 9 dp) → `CRISPEMBED_SERVER_RERANK_RAW_SCORES=1` reproduces the raw logits — **index order 1,2,0 identical in all three arms**, which is the sigmoid-is-order-preserving claim measured rather than asserted. ⚠ One process note: the first binary I tested printed 6 dp from a stale `.o` that ninja considered up-to-date (mtime newer than the source, content older). Caught only by reading the emitted digits, then pinned by `objdump`-ing the precision constant out of the object — HARD RULE #8's stale-binary trap, live | **DONE — ready to merge** |
+| 2026-08-24 | `perf/lfm2vl-mac` / `.claude/worktrees/perf-lfm2vl-mac` | **LFM2.5-VL Q4_K validated end-to-end on M1 Metal; five defaults flipped, all A/B'd. Full writeup + every number: `docs/lfm2_vl/PLAN.md`.** (1) The resize FILTER was the whole of the "projector cos 0.958 F16 drift" — HF uses PIL bicubic + antialias, we point-sampled bilinear; against the reference's golden `pixel_values` that is cos_min 0.8159 with 6.7% excess patch energy vs 0.999999. projector_out 0.9575 → 0.998966. (2) The projector was a scalar CPU loop + a 28 MB `to_f32()` per image: 6581 → **8 ms**. (3) The LLM's flash-attention carried `GGML_PREC_F32`, which THIS FORK's Metal backend REFUSES — so all 8 attention layers ran on the CPU with the whole KV cache copied both ways every token: decode **159 → 62 ms/token**, logits cos the same to 6 digits. (4) The decode also `ggml_cont`'d the entire KV cache per layer per token where a strided view suffices: another **1.42x**. (5) `LFM2_VL_FLASH_ATTN` in the VISION encoder was BROKEN and had never been A/B'd — a spurious trailing permute after `flash_attn_ext` (the Jun-2026 wave's defect class); it produced cos_global 0.563 and hallucinated "a room with a table and chairs" for a receipt. Fixed, matches the reference exactly, 1.28x, now default on. (6) **Multi-tile NaFlex implemented and default-on**, gated by the reference's own `prompt_token_ids` (1816/1816 EXACT on a 2x3+thumbnail page) and pinned by the new hermetic `tests/test_lfm2_naflex.cpp` (19 golden layouts from `tools/lfm2_vl_tiling_oracle.py`, watched to fail on banker's-rounding and on the tie-break). Also: `crispembed_diff.h` read GGML_TYPE_I32 as type **5** (a quantized type) so every I32 reference tensor was silently skipped — the token-id guard could not fail until this was fixed to 26. **Head-to-head with `llama-mtmd-cli` b9700 on the SAME GGUF pair (same prompt, greedy, 1024 tokens): speed is a wash — vision encoder within 1-2% per tile, wall clock ours ahead on the two largest pages and behind on one — and the quality gap that appeared was OUR decode config: a no-repeat-ngram default of 5, which on a receipt forbids legitimately repeated 5-grams (`| 1 | $4`, a column of prices) and forces the decoder off the correct token. Off (now the default): mean fmt CER 0.118 → 0.106, fmt WER 0.229 → 0.204 vs llama.cpp's 0.095/0.185, better on three fixtures, unchanged on two, worse on none — and the commons_example_receipt transcript becomes BYTE-IDENTICAL to llama.cpp's, 493 chars.** **Measured, 5 CC0 fixtures, Q4_K, 1024 tokens: mean CER 0.376 → 0.228 (fmt-normalised 0.321 → 0.170), mean WER 0.598 → 0.368; commons_test_ocr_document WER 0.052 → 0.002; receipt_historical 145.7 → 55.5 s at equal output.** Harness: `tools/bench_lfm2_vl.py`. **MERGED the parallel `feat/lfm2vl-multitile` session** (same base, neither branch contained the other; overlapping conclusions agreed independently): took its `src/lfm2_vl_tiling.h` + 21311-check guard, the antialiased position-embedding resample (ATen `_compute_weights_aa` verbatim), the shared causal mask, the orchestrator/CLI wiring (engine 19 — and the two-hand-maintained-VLM-lists trap it found), the Kaggle blueprint-vs-port harness over 8 documents, and its `<|img_row_R_col_C|>` label finding (transformers <= 4.57.x transposed them). Post-merge bench is byte-for-byte the pre-merge one and `prompt_token_ids` stays 1816/1816 exact | **DONE — merged to main** |
+| 2026-08-09 | `worktree-feat-server-ocr-engine` | **Server `--ocr-engine` + `--ocr-cls` SHIPPED — the recorded issue-#45 follow-up gap closes.** Mirror of the CLI's single-stage builder (same eng_id map + per-engine registry defaults; the two maps must stay in sync — noted at both sites). `--ocr-pipeline --ocr-engine ppocrv6` alone is now a valid server startup; VLM lanes skip cleanup (CLI parity); NO `CRISPEMBED_PPOCRV6_ONESHOT` on the server (warm server amortises the Metal rec init — the CLI T5 note's other half). Smoke: /ocr/pipeline decodes the EN/DE/JA #45 fixtures byte-equal to the CLI, 2/1/1 regions, same confidences, det+rec persistent CPU graphs built warm | **DONE — merging** |
+| 2026-08-09 | `worktree-fix-issue45-surfaces` | **Issue #45 follow-up: n_threads audit of every NON-CLI surface.** The C header promised `n_threads = 0` = auto but every init clamped 0→1 thread — bit Flutter (defaults `nThreads = 0` across ~20 classes) and the Rust -sys docs; Python (defaults 4) never affected. Shared `ce_resolve_threads()` (<=0 → min(4,cores); 1 on no-pthread WASM) at ALL 36 extern-C init boundaries (34 script-patched + hmer/bttr whose param is `t`); header documents the API-wide contract. Server: blanket `-t 1` → 0 (=auto), explicit -t wins; also `--ocr-det` now counts as a model in the startup gate (`--ocr-pipeline --ocr-det D --ocr-rec R` was rejected with usage text). Validated: CLI `-t 0` ≈ `-t 4`, byte-identical output; server /ocr warm 2.9-3.8 s auto vs 4.6-8.7 s `-t 1`, identical text. **Follow-up recorded, NOT built:** the server has no `--ocr-engine` — its flat pipeline det slot hard-codes the DBNet loader, so a ppocrv6 det GGUF fails (`missing stem conv`); the CLI's engine selection uses the stages-builder API the server never plumbed. Separate feature claim | **DONE — merging** |
+| 2026-08-09 | `worktree-fix-issue45-threads` | **Issue #45 (v0.17.7 PP-OCRv6 +18% on Metal/CPU) root-caused + fixed.** Cause = O13b n_threads audit x the CLI's blanket `-t 1`: pre-audit the det/rec engines DROPPED the thread param, so the det CPU ggml graph ran at ggml's default 4 threads; honoring it pinned to 1. `-t 4` on unmodified v0.17.7 fully restores v0.17.6 (ggml pin + sched replay exonerated). Reporter's MK=1 partial recovery explained: medium rec has NO graph (`large_stem=1`) — all crops on scalar reference convs, never O7-adopted. Shipped: G5 min(4,cores) default for EVERY lane + O7 mk scope in `recognize_nchw`. **Beats v0.17.6 ~35-38%** (two-liner 3.98→2.48 s), decoded output byte-identical across all arms + EN/DE/FR/JA/ZH (+RU identical-blank, no Cyrillic in dict). Evidence PERFORMANCE.md top | **DONE (merged `ab8ebef6`; reply POSTED 2026-08-09, issue #45 comment 5231558449; issue CLOSED 2026-08-09 — v0.17.8 SHIPPED with the fix, all 16 assets green)** |
+| 2026-08-09 | `worktree-fix-accent-tokenizer` | **BOTH open items CLOSED, blueprint-driven.** (1) **SigLIP text canonicalization FIXED** — `Lowercase + strip string.punctuation + collapse \s + Strip` before the charsmap, none of it implemented. **Measured at the crispembed-diff boundary** (`test-clip-text-diff` vs an HF AutoModel ref): "A photo of a CAT, running fast!" **cos 0.8110 → 0.9995**; stock fixture 0.9991 unchanged (it is lowercase+punctuation-free, which is WHY the regression never caught this — the binary now takes an optional text arg). Token ids **4/17 → 17/17**. ⚠ **I implemented tokenizer.json's regex first and got 16/17**: there is NO fast SigLIP tokenizer (`use_fast=True` returns the slow `SiglipTokenizer`), so Python's `canonicalize_text` — which strips ALL of `string.punctuation` incl. `/ < >` — is the authority. Mirror image of bert_norm.h where Rust wins; the lesson is to check which class executes. New `core/unicode_lower.h` (plain lowercase, NO accent strip — SigLIP keeps `café`). (2) **fireredpunc UNIFIED and default FLIPPED ON.** Read the blueprint (`FireRedTeam/FireRedASR2S` punc.py + hf_bert_tokenizer.py): upstream is a plain `BertTokenizer` and `add_punc_to_txt` walks TOKENS, so the "must match the tokenizer's splitting exactly" second loop should not exist — subtoken counts now come from the tokenizer itself and the duplicate is gone. **Token ids 2/9 → 9/9 exact vs HF**; golden regression MATCHES on both arms; decoded output gains the Chinese commas and fixes `GOogle`→`Google` + `éL`→`él` (a real pre-existing `cap_next` bug: it was only cleared by a LOWERCASE letter, so it stayed armed across CJK and an already-capital initial). **One deliberate deviation, documented:** upstream emits token surface forms, so its output is lowercased/accent-stripped (`Café`→`cafe`, `ナイーブ`→`ナイーフ`); CrispEmbed exposes this as `--punct-model` over the user's OCR text, so predictions follow the blueprint per token while the emitted TEXT is the original word | **DONE — merging** |
+| 2026-08-09 | *(superseded by the row above)* | **fireredpunc tokenizer: defect CONFIRMED SEVERE, fix wired but GATED OFF — the decoded-output gate caught a regression.** Its private WordPiece loop splits on ASCII whitespace ONLY, and it serves a **Chinese** vocab (chinese-bert-wwm-ext, 21128) where text has no spaces: the whole sentence became one word so **every character after the first was looked up as a `##` continuation** (`今 ##天 ##天 ##气` vs HF `今 天 天 气`). vs hfl/chinese-bert-wwm-ext: **2/7 fixtures exact**, and the 2 that passed were pure ASCII English; `café` → `ca`+`##f`+[UNK] vs HF `cafe`. Wired the shared HF stack (`core_bert::pretokenize` + `lower_strip_accents` + whole-word [UNK]) behind `CRISPEMBED_FIREREDPUNC_HF_TOK`. **But the real-model A/B (new `tests/firered_punct_ab.cpp` + fireredpunc-q8_0) shows the HF arm is WORSE end-to-end**: `…arbeitet gut.` → `…arbeitet. Gut`, and `他说“这个项目”需要更多时间。` loses its final `。`. **Root cause found, not guessed:** `fireredpunc_process` contains a SECOND copy of the WordPiece loop (line ~760, comment "Must match the tokenizer's splitting exactly") that re-derives the per-word subtoken COUNT to map label predictions back onto words — change the splitting in one and the alignment desynchronises. Proper fix = unify the two loops + validate against the FireRedPunc reference (not set up here). **Default stays bit-identical to shipped** (verified diff-clean on both corpora) | **GATED OFF — needs the two loops unified** |
+| 2026-08-09 | `worktree-fix-accent-tokenizer` | **SPM charsmap FIXED — multilingual embedders 10/16 → 16/16 vs HF on two models.** `core/spm_norm.h` + generated table (`tools/gen_unicode_spm_norm.py`, 4837 rows from HF's own `Precompiled` component), applied BEFORE the `" "→"▁"` Replace (HF's order; the charsmap turns U+3000 into a space that must then become a word boundary). Gate `CRISPEMBED_SPM_HF_NORM`, default on for the embedding path only. charsmap section **0/5 → 5/5**, ASCII byte-identical between arms. **e2e vs e5's own ONNX export: ASCII bit-identical, accented unchanged (correctly — accents are not in this charsmap), CJK+punct 0.9758 → 0.9820, charsmap material 0.9070 → 0.9876** (the ~0.98 ceiling is the q8_0-vs-f32 quantization floor; the charsmap section was at 0.907, FAR below it, and is now at it). **Two of my own earlier claims corrected by measurement:** (a) I inferred gliner/clip "declare different normalizers" — checking showed SigLIP carries the SAME charsmap (wrapped in Lowercase/Strip we don't implement) and the shipped gliner GGUF is LFM2 **BPE** with no normalizer, so the "converter must record it" blocker was wrong; scoped to the embedding path anyway since that is what is measured. (b) The e2e gate failed ACCENTED on *equality* — demanding strict improvement turns a correct no-op into a red gate; now fails only on regression. Guard `tests/test_spm_norm.cpp` pins goldens + the printable-ASCII invariant + the \t/C0-control handling that "ASCII is untouched" would misstate | **DONE — merging** |
+| 2026-08-09 | *(superseded by the row above)* | **NEW FINDING: the multilingual SentencePiece embedders diverge from HF too — `nmt_nfkc` precompiled charsmap is not implemented anywhere.** `grep precompiled_charsmap` finds nothing in runtime, converter or GGUF. Measured on multilingual-e5-small via the new `tests/embed_tokenizer_parity.py` + `tests/dump_token_ids.cpp` (real GGUF through the public C API — SPM/BPE parity CANNOT be checked from a vocab file, merges/charsmap/pretok live in the GGUF): ascii 2/2, accented 4/4, cjk 3/3, **uni_punct 1/2** — `…` must become `...` (one token), we emit 3 `<unk>`. **Scope 4837 codepoints incl. ALL fullwidth forms (Ａａ１), U+3000 ideographic space, ﬁ/ﬂ ligatures, ①→1, ㎏→kg, ㈱→(株)** — routine in JA/ZH text, i.e. exactly the retrieval case LANGUAGES.md recommends these models for. **The good news:** the charsmap is byte-identical (sha256 `ce10d747…`) across ALL SIX shipped multilingual embedders (e5-small/base, bge-m3, granite-107m/278m-multi, arctic-m-v2) and they agree on all 65536 BMP codepoints → ONE generated table serves them all, no re-conversion, same pattern as `core/bert_norm.h`. **The blocker (genuine this time):** `SentencePieceTokenizer` is ALSO used by `gliner_ner` (DeBERTa) and `clip_text_embed` (SigLIP), whose models declare DIFFERENT normalizers, so a blanket default would be wrong — the converter must record which normalizer a model declares. NOT blind-fixed | **OPEN — next piece** |
+| 2026-08-09 | `worktree-fix-accent-tokenizer` / `.claude/worktrees/fix-accent-tokenizer` | **WordPiece HF parity round 2 — the accent report was ONE of THREE defects; all three fixed, 35/35 exact vs HF on 3 models.** Chasing E3 surfaced two more, each independently able to change the token sequence: (2) the SPLIT stage was the per-byte `isspace`/`ispunct` loop, not HF's `BertPreTokenizer` — every BERT-family tokenizer.json declares BertPreTokenizer (verified across 8 models incl. bert-base-{un,}cased, bge, e5), so CJK glued into one `[UNK]` and `“hello”` became `“`+`##hell`+`##o`+`##”`; (3) `wordpiece()` kept the matched prefix on an unsegmentable word where HF emits ONE `[UNK]` and discards it (`catソファ` → `cat`+`[UNK]` vs HF `[UNK]`), and ignored `max_input_chars_per_word=100`. Gates `CRISPEMBED_WORDPIECE_HF_{PRETOK,UNK}` (default on). **Four-arm attributable parity, 35 sentences × 9 sections: MiniLM/mpnet 4 → 25 → 34 → 35/35; LaBSE (cased control) 25 → 25 → 35 → 35/35** — the accent arm leaves LaBSE byte-identical, which is the breakage the old doc predicted. **e2e embeddings vs ONNX: ASCII bit-identical, accented 0.6466 → 1.000000, CJK+unicode-punct 0.5908 → 1.000000.** Notable: `He said “hello” — then left…` (ordinary English, typographic punctuation) was at cos **0.430** — this was never only a European-language bug. ASCII safety stated per-fix and honestly: 1 and 2 are hard invariants (2 with a deliberate C0-control exception, tested), 3 is empirical. Round 1 below | **DONE — merging** |
+| 2026-08-09 | *(landed via the same worktree, merged `396f48bc`)* | **E3 accented-Latin tokenizer divergence FIXED — the LANGUAGES.md known-issue closes.** Uncased WordPiece models lowercased with a per-BYTE `std::tolower`, so HF's `BertNormalizer` strip-accents+lowercase never ran: `café`→`caf`+[UNK], `über`→[UNK]. New `core/bert_norm.h` + a table GENERATED from HF's own **Rust** normalizer (`tools/gen_unicode_bert_norm.py`), gated `CRISPEMBED_WORDPIECE_HF_NORM` (default ON, `=0` = historical bytes). **Token-id parity vs HF, both models: 4/24 → 24/24 exact, 80 [UNK] → 0; ASCII bit-identical between arms.** Two traps the generated table avoids, both silent: `Ø`/`Ł`/`Đ`/`ß`/`ı` have NO canonical decomposition so HF keeps them (`Łódź`→`łodz`, not `lodz`), and the Rust normalizer **disagrees with Python `unicodedata` on 441 late-Unicode combining marks** + does not apply Final_Sigma — generating from `unicodedata` (the obvious route) would have shipped 441 divergences from what users run. Hangul handled arithmetically (11172 rows off the table). **Corrects a recorded claim:** the old note said a fix was blocked on the converter recording `strip_accents`; HF resolves `strip_accents.unwrap_or(lowercase)`, so `do_lower_case` alone decides and no re-conversion is needed. Guard `tests/test_bert_norm.cpp` written FIRST and watched fail. **Decoded-output gate PASSED** (`tests/embed_accent_parity.py`, real CLI + real f32 GGUF vs the model's own ONNX export under ORT): ASCII **bit-identical** old-vs-new at cos 1.000000, accented mean cos vs reference **0.646574 → 1.000000** (fr 0.487 / es 0.566 / pt 0.574 / de 0.731 / no 0.875 → all 1.000000). **Follow-up recorded, NOT fixed here:** `src/fireredpunc.cpp` has its own ASCII-only lowercase WordPiece tokenizer with the same defect class; it is a separate Chinese+English punctuation model with no ground-truth reference set up, so it stays un-touched rather than blind-fixed | **DONE — merging** |
+| 2026-08-08 | `feat/tesseract-cjk-page` / `.claude/worktrees/feat-tesseract-cjk-page` | **Tesseract CJK lane items 2+3+4 ALL DONE — the lane's three open follow-ups close together.** (2) **Page-level CJK path SHIPPED**: the tesseract stage dispatches `model_a` on GGUF metadata, so a PP-OCRv6 detector supplies line-level boxes (DBNet fragment grouping + seg router bypassed on that arm; `[tesseract-det] path=ppocrv6` line). `crispembed_ocr_init` dispatches the rec slot too, so a `tesseract_lstm` GGUF reaches the orchestrator instead of the flat math_ocr loader. **`japanese_print.png` decodes BYTE-EXACT — 3/3 lines, page CER 0.0000** vs the gt, in BOTH the `--ocr-det/--ocr-rec` and `--ocr-pipeline --ocr-engine tesseract` forms (baseline: `(no text detected)` and `regions=0` respectively). Latin default lane BYTE-IDENTICAL base-vs-new, 5/5 sha-compared (fox, scan_strip, simple_form, receipt_example, german_official_print). (3) **CLI misroute guard**: geometry-gated warning naming the exact pipeline command when a line recognizer gets a page (page warns / 517x45 line crop stays silent and still decodes exactly / det models never warn). (4) **Registry `languages` field** + `tools/scan_model_languages.py` + `--list-models` "Scripts" column, all 15 recognizers scanned from shipped GGUFs; guard test verified failing-first. **Two stale claims corrected by measurement:** the T11 "flat pipeline SEGFAULTs on a tesseract rec" note is stale (it refuses loudly at rc=1 today), and `tests/test_ocr_backend_matrix.py` was RED on main since `69e39a62` (rejected the pix2struct row's own "Yes on CUDA") — fixed here. **New fact:** `tesseract-kor` has 1089 hangul and ZERO CJK ideographs, so mixed hanja Korean is out of dict | **DONE — merging** |
+| 2026-08-08 | *(landed via `docs/language-matrix`, merged `6b89a79d`)* | **Issue #44 (Japanese) answered with evidence + docs/LANGUAGES.md shipped.** Dict scans: ppocrv6 tiny rec has ZERO kana; small/medium 180 kana + 15565 CJK. Japanese VERIFIED: new fixture `tests/regression/images/japanese_print.png` decodes 3/3 lines EXACTLY via medium det+rec (conf 0.97-0.98, boxes ±1px of official paddle, same models). tesseract-jpn ships but near-garbage on the fixture (Latin-tuned seg) — recorded. **New trap documented + follow-up:** `-m rec.gguf --ocr img` silently routes to rec-only single-line mode (page squashed to one 48px strip → garble); pipeline needs explicit `--ocr-rec`. TODO: CLI guard (warn or use -m as rec for pipeline engines); registry `languages` field from dict scans | **DONE (reply POSTED 2026-08-08, issue #44 comment 5224840359)** |
+| 2026-08-08 | `perf/glm-vit-levers` / `.claude/worktrees/perf-glm-vit` (measure-only; PERFORMANCE.md top) | **GLM ViT levers round 1 DONE (user-funded): flash + F16MM measured as QUALITY LOSSES vs the real HF decode (kurrent CER 0.039 vs base 0.019; fox/strip byte-identical; flash+F16MM cancel back to base) — both stay gated. The F32-cast policy costs 30-39% of the vision tower (indicative timing, loaded box). Lever 2 bake-F32-at-load SHIPPED gated-off `87d32dbd` (byte-identical 3/3 fixtures; measured LOSING on the loaded 16GB box — memory pressure; re-verdict on big-RAM/quiet). REMAINING: earlier-spatial-merge (full quality gates), quiet-box timing re-take** | **ROUND 1+2 DONE — merge lever open** |
+| 2026-08-07 | *(kernel `${KAGGLE_ACCOUNT}/crispembed-t4-draw` v1; `${KAGGLE_ACCOUNT}/crispembed-ccache` seeded and VERIFIED warm — 829 files)* | **Round N+4 queue #4 attempted TWICE (08-07 + 08-08) — ${KAGGLE_ACCOUNT} drew P100 on BOTH days; seven P100s total across two accounts/two days, T4 stays open (Colab-T4 port is the realistic route, see queue #4).** Free third replication of the P100 verdict: warm Phase 1 time-neutral (f32 72.2 vs f16 71.6 ms) with the known 20→19 region drift. ${KAGGLE_ACCOUNT} kernel infra is now ready (ccache clone + hf-token dataset wired), so a future re-draw is a one-push retry on EITHER account, different day. **Also closed this checkpoint:** O7-got N/A (ggml-graph default neck); O7-deepseek needs the dispatcher refactor (separate claim) | **DONE (draw failed honestly; T4 open)** |
+| 2026-08-07 | *(landed via `perf/o7-ppfnl`, merged `5d0be2ee`)* | **Round N+4 queue #3 (ppformulanet-l half) + item #7 DONE — one flip, one honest no-flip.** (a) ppformulanet-l mk scope LANDED: neck/proj convs 453-467 → 311-320 ms (−31%, byte-identical sha `302819ecbd41`, quiet-M1 nt1 pairs); whole-run −1.9% process CPU (decoder-bound — recorded); TRUE default verified on mk, `=0` restores reference. New `[ppfn_l-bench] neck+proj convs` attribution line. (b) pix2struct ggml-decode-on-CPU: **NO M1 FLIP** — nt1 the ggml graph LOSES (+11-45% dec); `-t 4` wins wall (−25/−34%) only by spending more total CPU (threading, the Kaggle x86 1.65x explained); CPU default stays scalar, gate stays opt-in. O7 remainder: got/deepseek preprocessing convs. Evidence PERFORMANCE.md top | **DONE** |
+| 2026-08-07 | *(landed via `perf/pix2struct-cuda-decode`, merged ff to `69e39a62`)* | **Round N+4 queue #1 DONE — pix2struct ggml decode graph LANDED with the per-kind CUDA default.** Decoder 3640-3746 → 369-460 ms (~9x q8_0; 12.8x f16; 10.6x scan_strip) on P100, decoded text byte-identical across ALL arms × fixtures × quants in BOTH kernel versions; v2 proved the TRUE default arm (no env ⇒ `path=ggml`, matches forced-CUDA; `=0` still forces scalar). Local gates: byte-identical CPU + Metal (MTL0 proven), f16 + q8_0; Metal/CPU default unchanged (`path=scalar`). Implementation: device-resident self/cross KV (got_ocr pattern), in-graph KV cpy, gallocr reserved once, T5 rel-bias as per-step input. CPU-ggml-decode measured 1.65x on Kaggle x86 but stays opt-in pending a quiet-box M1 verdict. Evidence PERFORMANCE.md top | **DONE** |
+| 2026-08-07 | *(kernel `${KAGGLE_ACCOUNT}/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
+| 2026-08-08 | *(landed on `main` via `feat/embed-language-matrix`, `e78d4b63`)* | **E5+E6+E1+E2 ALL DONE.** E5: WordPiece CJK+European accent parity measured+guarded (`9648dfac`). E6: UNK-ratio warning shipped (`1b5870da`). E1: 5/7 new embedders verified JA, all pass (`44936954`). E2: 3/3 rerankers pass JA, no EN-only control exists (`87be0626`). European NFD accent-strip divergence documented user-facing (`e78d4b63`). | **DONE** |
+| 2026-08-17 | *(on `feat/embed-language-matrix`, `e5b04e79`)* | **E3 DONE.** Arabic + Korean added to embedding + reranker harnesses. All multilingual models pass all checks for both languages. Arabic margins narrower than JA/KO across the board (key finding). EN-only controls confirm test validity (KO cosine 0.99 = total collapse). Also fixed batch-encode `CRISPEMBED_WARN_UNK` gate to use `core_env::explicitly_off` (`febd2e46`). | **DONE** |
+| 2026-08-18 | *(on `feat/embed-language-matrix`)* | **E7 DONE.** Scanner cross-referenced against E1/E3 measured results: unreliable in BOTH directions for embedders (BPE false negatives: jina kana=0 but passes; WP false positives: MiniLM kana=188 but broken). Decision: do NOT surface as `--list-models` column for embedders. Scanner caveat updated. E7b closed. | **DONE** |
+| 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
+| 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
+
+### HANDOVER — round 7 (ARCHIVED 2026-08-05; all four lanes + release consumed — see round 8 above)
+
+Round 6 is COMPLETE (evidence in the board rows above — do not re-derive):
+**G8=F10** (CrispASR `fd3c0e5e`: T18 cpu short-circuit synced, a pre-existing
+`--gpu-backend cpu`/`metal` LID crash found+fixed in their vendored whisper
+wrapper, PLAN #88 write-path DECIDED with the cache cap adopted there),
+**mxbai GELU A/B** (`0a72e267`: erf-exact now the pooler default, server
+`/rerank` process-abort on quantized 2-layer rerankers fixed — was live for
+jina-reranker-v2), **mxbai artifact re-ship** (`da0272e8`: the shipped pair
+had NO ContextPooler — near-inverted xsmall rankings; 10 `*-g7c.gguf`
+uploaded, 2 pins re-pointed, fresh-download verified), **`*_BENCH`
+presence-gate audit** (`d04f3572`: 68 sites → `core_env::on()` in
+`src/core/env_gate.h`, hermetic `test-env-gate` in model-free CI), and
+**reranker imatrix re-collection** (`87e11a4e`: 6/7 published reranker
+imatrices had the `leaf_N` defect; 7/7 re-collected on correct bases, 29
+files uploaded, pipeline now RAISES on `0 with imatrix`).
+
+#### Remaining work, in value order (orchestrator Fable; per-task tiers noted)
+
+- **Reranker sub-Q8 re-pin decisions** (coordinator, small; measurement
+  delegable). The imatrix row records the numbers: jina
+  `-q4_k-imatrix` (SHA-pinned, `examples/cli/model_hashes.h:251`) and
+  bge-reranker-v2-m3 sub-Q8 aliases are the clear `-f7` candidates
+  (tau +.031 / dscore −26% for bge-m3). Local-Metal cross-check FIRST
+  (G3 precedent; Kaggle A/B was x86-CPU-only).
+- **mxbai DeBERTa q/k imatrix provenance A/B** (small, Opus-tier with
+  gates). Recorded in the imatrix row: `quantize.cpp` prefers the direct
+  `blk.N.attn_{q,k}` match over the merged alias, and DeBERTa-v2 applies
+  q/k a second time to rel-position embeddings — so mxbai q/k importance
+  was collected over the WRONG inputs. Options: prefer the merged alias for
+  DeBERTa, or accumulate both. Judge by decoded rerank scores.
+- **Output-affecting presence-gate sweep** (successor to the BENCH audit;
+  session-sized, NOT mechanical). 267 presence-based sites over 156
+  non-BENCH vars remain; many select compute paths (`=0` changes OUTPUT).
+  Priority cluster: `src/unlimited_ocr.cpp`'s ~40 `UOCR_*` gates — the
+  exact mirror of the fixed `DS_*` set. Needs a per-gate output A/B, the
+  ds-gates methodology (`tests/results/ds-gates/run_gates.sh` is the
+  template).
+- **T16 (TableFormer port), T17 (Fraktur bisect)** — dedicated sessions,
+  briefs in OPEN TASKS; Fable-tier, never delegate the math. T16 still
+  needs the A5 document-structure gold.
+- **N3 (OCR perf H2/H4/H5/H6), N4 (esrgan/scunet q8 publish — NEVER ship
+  esrgan q4_k), N7 (OCR/VL quantize-and-run sweep)** — unowned, briefs in
+  the round-2 archive.
+- **A release is now credible**: post-v0.17.5 main carries the DS_ audit,
+  G7c, the mxbai rerank fixes (crash + calibration), the BENCH audit, and
+  the imatrix tooling — a reasonable v0.17.6 for a session that wants one
+  (CrispASR-style process: RELEASE_NOTES + scripts/bump-version.sh).
+
+#### Discipline deltas learned THIS round (additive)
+
+- **A device-pref filter must be applied at BOTH backend-init AND
+  weight-buffer planning.** CrispASR's whisper wrapper filtered devices in
+  `whisper_backend_init_gpu` but not `make_buft_list` → weights on a device
+  the sched doesn't carry → `sched_backend_id_from_cur` abort. Any future
+  per-device filter: grep for every place that enumerates devices.
+- **Don't assume the cwd reset — verify with `pwd`.** The reset-to-main-tree
+  behavior is real but not universal; this round a format+build "in the main
+  tree" had actually persisted in a worktree (harmless here, but the inverse
+  mistake runs stale main-tree binaries). Absolute paths remain the rule.
+- **`cmake --build build --target <cli>` can report "Built target" without
+  recompiling a changed source** when the object belongs to a sibling
+  library target (make-based dirs). Judge by the `Building CXX object` line
+  for the file you changed, and re-run the behavioral check after ANY
+  rebuild that shows no compile line.
+- **New boolean env gates use `core_env::on()`** (`src/core/env_gate.h`,
+  guarded by `test-env-gate` in model-free CI). Never write
+  `getenv(X) != nullptr` again.
+- **Duplicated lazy-init blocks are a crash surface** — the `/rerank` abort
+  came from a second copy of the classifier-cache population that had not
+  received the single-doc path's dequant fix. Populate caches in exactly
+  one place.
+
+#### Environment as left (2026-08-05, post-round-6)
+
+- Main volume ~25 GB free. Session scratchpad GGUF/HF caches deleted.
+  `/tmp/crispembed-regression` untouched. `~/.cache/crispembed-local/`
+  unchanged, all registry-pinned.
+- v0.17.5 latest tag; main = `da0272e8`+ (this handover lands after it).
+  Round-6 worktrees/branches all removed; the three pre-existing IN
+  PROGRESS rows (feat/ocr-engine-parity, feat/easyocr-ggml,
+  feat/ppocr-next-20260731) + older .codex worktrees remain — check the
+  board before touching.
+- New HF artifacts this round: `cstr/mxbai-rerank-{xsmall,base}-v1-GGUF`
+  `*-g7c.gguf` (f16 + 4 quants each, READMEs note the defect, old files
+  kept for old pins) and 29 reranker `-f7` imatrix/quant files across 7
+  repos (ms-marco composed as `-g7c-f7`). All new mxbai q8_0 pins
+  fresh-download SHA-verified.
+- CrispASR main `057ce9f3`+ (G8 landed there as `fd3c0e5e`; their box
+  stays hazardous — check their PLAN before claiming anything).
+- HF account cstr, token `../.env`; always `HF_HOME=~/.cache/hf-<task>` or
+  the session scratchpad. Kaggle ${KAGGLE_ACCOUNT} (new kernel
+  `${KAGGLE_ACCOUNT}/crispembed-imatrix-rerank-f7` v1 good), one kernel at a time.
+  Python `/Users/christianstrobele/miniconda3/bin/python` — NOT for torch
+  parity on BERT-class forwards (ONNX Runtime instead).
+
+### HANDOVER — round 6 (ARCHIVED 2026-08-05; all five lanes consumed — see round 7 above)
+
+Round 5 is COMPLETE (evidence in the board rows above — do not re-derive):
+**v0.17.5 was cut by a parallel session** (`51e7d729` bump + tag; my merges
+landed post-tag), **DS_ value-parse audit** (`91ebb55d`: every presence-based
+boolean gate in deepseek_ocr2.cpp value-parsed via `ds_env_on()`, incl. two
+finds beyond the brief — `DS2_FORCE_CPU`, `DS_PROFILE`; new `DS_DBG=1`
+gate-resolution stderr line; 42/42 three-spelling checks,
+`tests/results/ds-gates/`), and **G7c expanded** (`63997e2c`: shipped
+ms-marco rerankers had NO BertPooler stage — scores ±0.2 instead of ±11,
+tail reordered; converter-only fold to the 2-layer tanh head, f16 ≤0.0009 vs
+the ONNX reference, 10 `*-g7c.gguf` artifacts uploaded + 4 pins re-pointed,
+`tests/results/g7c/SUMMARY.md`). **G7b DECIDED closed** (no ST-pooler parity
+path; G7a precedent). LEARNINGS' 2026-07-03 ms-marco RANK-head claim
+corrected in place.
+
+#### Remaining work, in value order (model-tier notes: the orchestrator
+should be Fable; per-task tiers noted)
+
+- **G8 = F10, CrispASR twins** (other repo, coordinate; Opus-capable with a
+  strict brief, Fable preferred for the decisions). Recon 2026-08-05: their
+  `gpu_backend_pref.h` still lacks the T18 `--gpu-backend cpu` short-circuit;
+  PLAN #88 (pipeline-cache write path) unclaimed. HAZARDS unchanged: backups
+  disk ~1.8 GB free, several concurrent agents, load spikes, CI perpetually
+  cancelled (not a signal). Push a CLAIMED block to their main BEFORE
+  starting; sync logic not bytes (pcs.cpp rule).
+- **mxbai erf-vs-tanh GELU A/B** (new rider from G7c; small, Opus-level with
+  strict gates). The DeBERTa ContextPooler in `crispembed_apply_classifier`
+  uses tanh-approx GELU where HF `gelu` is erf-exact (same class as the
+  granite projector finding). One variable; judge by decoded rerank scores vs
+  an ONNX reference (NOT local torch — see discipline below); mxbai pair only.
+- **Reranker imatrix re-collection** (F7b leftover; Opus-level — established
+  t19 Kaggle pipeline). All published reranker `.imatrix` files are pre-F7
+  (no attn q/k/v coverage). Note the ms-marco ones must be re-collected on
+  the `-g7c` artifacts.
+- ~~**`CRISPEMBED_*_BENCH` presence-gate audit**~~ — DONE on
+  `feat/bench-gates` (68 sites / 60 files through `core/env_gate.h`); see the
+  board row. **Successor, unowned:** the same `=0`-inverts sweep for the 267
+  presence-based NON-BENCH gates (156 distinct vars). That one is NOT
+  mechanical — many select a backend or compute path, so each needs a decoded
+  output A/B, not a compile+smoke. Start with `unlimited_ocr.cpp`'s ~40
+  `UOCR_*` gates: they mirror the already-fixed `DS_*` set one-for-one.
+- **T16 (TableFormer port), T17 (Fraktur bisect)** — dedicated sessions,
+  briefs in OPEN TASKS. Both are graph/decoder-semantics work: **Fable-level,
+  never delegate the math** (dev-guide rule). T16 still needs the A5
+  document-structure gold.
+- **N3 (OCR perf H2/H4/H5/H6)** — Opus-level with the standing timing
+  discipline; brief in the round-2 archive. **N4 (esrgan/scunet q8 publish —
+  NEVER ship esrgan q4_k)** and **N7 (OCR/VL quantize-and-run sweep)** —
+  mechanical with clear gates, Opus-level; briefs in the round-2 archive.
+- No release this round: v0.17.5 is fresh; accumulated post-tag main (DS_
+  audit + G7c) is not yet a v0.17.6.
+
+#### Discipline deltas learned THIS round (additive)
+
+- **The shell cwd resets to the MAIN tree after any command that `cd`s
+  elsewhere** — a bare `./build/crispembed` then runs the main tree's stale
+  binary (this round rebuilt and "verified" the wrong build before catching
+  it). Run worktree binaries by ABSOLUTE path, or re-`cd` in every command.
+- **Local miniconda torch mis-executes BERT-class forwards** (all-NaN padded
+  batches, bus errors in tiny Linears, garbage orderings; fresh re-download
+  did not help). Parity references on this box come from ONNX Runtime
+  (`Xenova/<model>` exports are faithful; onnxruntime 1.25.1 in miniconda) or
+  a remote box. A broken reference nearly mis-attributed G7c.
+- **Conversion mode must match the published `.imatrix` names**: a `--crisp`
+  re-conversion of an ollama-mode artifact gets `0 with imatrix` (silently
+  no-importance quants). Always read the quantizer's `N with imatrix` line.
+- **Replacing HF artifacts in place breaks released binaries' SHA pins** —
+  ship fixes under task-suffixed names (`-g7c`, G3's `-f7` precedent), keep
+  the old files, re-point registry + `model_hashes.h`.
+- **macOS ships bash 3.2**: no `declare -A` in test runner scripts (a
+  comparison block died on it; the runs survived, the comparisons re-ran
+  standalone).
+- **"Verified vs upstream" claims can be code-level only** — G7c's defect
+  hid behind a LEARNINGS claim that never inspected the shipped GGUF's
+  tensor list. Verify artifact-level: read the tensor names.
+
+#### Environment as left (2026-08-05, post-round-5)
+
+- Main volume ~26 GB free. `/tmp/crispembed-regression` intact (~8.4 GB,
+  ephemeral). `~/.cache/crispembed-local/` unchanged. Session scratchpad
+  cleaned (GGUFs/ONNX deleted).
+- v0.17.5 is the latest tag. Round-5 worktrees/branches removed; the three
+  pre-existing IN PROGRESS board rows (feat/ocr-engine-parity,
+  feat/easyocr-ggml, feat/ppocr-next-20260731) + older .codex worktrees
+  remain — check the board before touching.
+- New HF artifacts: `cstr/ms-marco-MiniLM-L-{6,12}-v2-GGUF` `*-g7c.gguf`
+  (f16 + 4 quants each), READMEs note the fix; old files retained for old
+  releases' pins. All 4 new pins fresh-download SHA-verified.
+- HF: account cstr, token `../.env`, always `HF_HOME=~/.cache/hf-<task>` (or
+  scratchpad). Kaggle ${KAGGLE_ACCOUNT}, one kernel at a time. Python
+  `/Users/christianstrobele/miniconda3/bin/python` (but NOT for torch parity
+  references — see discipline).
+
+### HANDOVER — round 5 (ARCHIVED 2026-08-05; DS_ audit + G7b/c consumed — see round 6 above)
+
+Round 4 is COMPLETE (both items coordinator's own work, evidence in the board
+rows above — do not re-derive): **G1** (SmolDocling vision split residency
+`703161b1`+`ad28b77e`, GPU default, vision 2.9-4.6× on Metal,
+`tests/results/g1/SUMMARY.md`) and **G2b** (`8c210291`, `DS2_CROP_MODE`
+default ON after the regressions were proven formatting-only,
+`tests/results/g2b/SUMMARY.md`). New shared infra: `core_gguf::
+load_weights_split` (CrispASR #69a logic) is now available to every engine.
+
+#### Remaining work, in value order
+
+- **G7b/c** (LaBSE ST-pooler parity product decision; `bert.pooler_act`
+  gelu-vs-tanh A/B) — unchanged, briefs in the round-3/round-2 archives.
+  **G7a decided this round: NOT publishing a LaBSE GGUF** (no demand signal
+  two rounds running; the fixed converter on main regenerates everything, so
+  the `hf-f8` leftovers were deleted per the regenerate-don't-trust rule).
+- **G8 = F10, CrispASR twins** — recon done 2026-08-05: their
+  `gpu_backend_pref.h` still lacks the T18 cpu short-circuit and PLAN #88 is
+  unclaimed on their board, BUT their box is hazardous (backups disk ~1.8 GB
+  free, several concurrent agents, load spikes 100+). Claim with a CLAIMED
+  block pushed to their main first; verify locally per their conventions
+  (their CI is perpetually cancelled — not a signal).
+- **DS_* value-parse audit** (new, small, unowned) — see the G2b board row.
+- **T16 (TableFormer), T17 (Fraktur bisect)** — dedicated sessions, briefs in
+  OPEN TASKS. **N3 (OCR perf H2/H4/H5/H6), N4 (esrgan/scunet q8 publish —
+  NEVER ship esrgan q4_k), N7 (OCR/VL quantize-and-run sweep)** — unowned,
+  briefs in the round-2 archive sections.
+- A release: accumulated main (G1-G7d, crop default, cache cap, arctic
+  re-pin, thread default) is a strong v0.17.5 — CrispASR-style process
+  (RELEASE_NOTES + scripts/bump-version.sh), still uncut.
+
+#### Environment as left (2026-08-05, post-round-4)
+
+- Main volume ~28 GB free. `~/.cache/hf-f7` and `~/.cache/hf-f8` DELETED
+  (G3 done / G7a decided). `/tmp/crispembed-regression` (~8.4 GB, both
+  deepseek gold GGUFs) intact — reboot-ephemeral. `~/.cache/crispembed-local/`
+  unchanged, all registry-pinned.
+- Round-4 worktrees/branches removed. The three pre-existing IN PROGRESS
+  board rows + older .codex worktrees remain — check the board before
+  touching. No tag cut this round.
+- Discipline deltas THIS round (additive): (1) result-dir `.txt` framing —
+  the g2 corpus runner strips the CLI's trailing newline, so raw-CLI captures
+  cmp as DIFF against recorded arms; normalize trailing newlines before
+  byte-comparing. (2) run_one.py needs miniconda python (system python3
+  lacks huggingface_hub). (3) The T15 "31.7 s fox vision" number was a
+  different CPU-only build — same-binary baselines only (G1 re-learned it).
+
+### HANDOVER — round 4 (ARCHIVED 2026-08-05; G1/G2b consumed — see round 5 above)
+
+Round 3 is COMPLETE — every G-item except G1/G8 consumed, all
+coordinator-verified before merge: **G2** (deepseek dynamic-crop port
+`d5788a88`+`e81c827e` — CPU cc0 CER now BEATS the A4 reference, Metal german
+1024-cap fixed; opt-in `DS2_CROP_MODE=1`), **G3** (arctic sub-Q8 aliases
+re-pinned to `-f7` `464f812f`, granite-r2 alias decision: none), **G4**
+(Metal cache cap in every GPU lane `c1ccb1f4`; 683 MB archive DELETED),
+**G5** (embed one-shot `-t` default → min(4,cores) `5fcd7006`), **G6**
+(`DS2_KV_F16` quantified, stays opt-in; gate value-parsed `73beea9f`),
+**G7d** (driver fail-fast `10d160ba`). Evidence: board rows above,
+`tests/results/g2/SUMMARY.md`, `tests/results/g6/SUMMARY.md`. Do not
+re-derive.
+
+#### Remaining work, in value order
+
+**G1 = F4 — SmolDocling vision backend split-residency (OWN WORK, quiet
+box).** Brief unchanged in the round-2 archive below. G4 confirmed at run
+time the engine is CPU-only today (`ggml_backend_cpu_init`,
+src/smoldocling_ocr.cpp:297) — exactly what this item changes.
+
+**G2b — deepseek crop-mode follow-ups (new, from G2's acceptance).**
+(a) The Metal `receipt_historical` CER regression under crops (0.138→0.305)
+is FORMATTING drift, not content garbage — Metal's decode wraps items in
+heavier markdown (`- **item**: price`) than the plain-text GT; CPU reads the
+same content at 0.135. Diagnose why the Metal trajectory goes markdown-heavy
+(same class as the T14 near-tie divergence), then (b) decide the
+`DS2_CROP_MODE` default flip — the reference contract runs crop_mode=True,
+so default-ON is the contract-faithful end state; the flip is a coordinator
+decision and also needs the synth_01_noise 0.015→0.045 delta re-examined.
+
+**G7a/b/c — LaBSE/WordPiece leftovers (small, unowned).** (a) publishing a
+LaBSE GGUF stays OPTIONAL (no demand signal this round — convert with
+`--crisp`, battery, upload, pin; REGENERATE the f16, don't trust leftovers);
+(b) ST `2_Dense`==BertPooler parity (cos ≈ −0.05 vs full ST stack) — wants a
+product decision; (c) `bert.pooler_act` gelu-vs-tanh default (rerank-only
+today) — changing it perturbs rerank outputs, needs its own A/B.
+
+**G8 = F10 — CrispASR twins (other repo, coordinate before touching).**
+Brief in the round-2 archive. CrispASR main was active again today.
+
+**T16 (TableFormer), T17 (Fraktur bisect)** — dedicated sessions, briefs in
+OPEN TASKS. **N3 OCR perf H-items, N4 esrgan/scunet q8 publish, N7 OCR/VL
+quantize-and-run sweep** — unowned, briefs in the round-2 archive sections.
+
+#### Discipline deltas learned THIS round (additive)
+
+- **Value-parse env gates; presence-based gates invert `=0`.** `DS2_KV_F16=0`
+  ENABLED f16 until `73beea9f`. When touching any engine, check its gates for
+  the `getenv(X) ?` pattern before A/B-ing with `X=0`.
+- **Hoisting an Apple-specific header into a shared header breaks non-Apple
+  builds** — G4's hoist needed a platform guard, caught and fixed by a
+  parallel session (`bbc2a516`). Guard before pushing, not after CI reds.
+- **Read the transcripts before classifying a CER delta.** The "Metal crop
+  regression" is markdown-formatting drift with correct content; a CER
+  number alone would have mis-filed it as a vision bug.
+- **Serialize heavy work even when only correctness is claimed.** Running
+  the G2 matrix + G3 downloads + the G4 agent concurrently produced a
+  69-minute page decode (results valid, wall-clock wrecked). One heavy
+  consumer at a time is also a throughput rule.
+- **`tools/format.sh --fix` prints "rewrote N files" even when bytes are
+  unchanged** (idempotent output) — don't panic-rebuild on the message, but
+  the cheap rebuild habit stays correct.
+- **Gold-gate artifacts cache under `/tmp/crispembed-regression/`**
+  (`run_one.py --work-dir` default, `REGRESSION_WORK` env) — NOT
+  `~/.cache/hf-regression` (a round-3 note said hf-regression was the cache;
+  it never was for run_one; /tmp is reboot-ephemeral, so gold gates after a
+  reboot re-download ~4.5 GB).
+- **Main moves under you mid-round** (two pushes from parallel sessions
+  today) — always `git fetch` + rebase before the ff-merge push; the board
+  table prevented all duplicate work.
+
+#### Environment as left (2026-08-05 late)
+
+- Main volume ~23 GB free. `~/.cache/hf-f7` grew to 2.9 GB (arctic f32 gold
+  + 5 quants — served G3's cross-check, now DELETABLE). `~/.cache/hf-f8`
+  (3.5 GB) still deletable once G7a is decided. `/tmp/crispembed-regression`
+  holds ~4.5 GB of gold-gate deepseek artifacts (ephemeral, safe to leave).
+  `~/.cache/crispembed/arctic-embed-m-v2-q4_k-imatrix-f7.gguf` is the newly
+  pinned registry artifact (keep).
+- **The 683 MB Metal shader archive is DELETED** (G4's scheduled step). It
+  can only regrow from long-running processes (one-shot CLIs `_exit()` before
+  the write); the cap keeps any regrowth bounded at open time.
+- All round-3 worktrees/branches removed. Remaining worktrees belong to the
+  three pre-existing IN PROGRESS sessions (board table) + older .codex ones.
+- Kaggle unchanged (`${KAGGLE_ACCOUNT}/crispembed-imatrix-t19` v3 latest good run).
+  v0.17.4 remains the latest tag; this round shipped no tag — the accumulated
+  main (crop port, cache cap, re-pin, thread default) is a reasonable v0.17.5
+  candidate for a session that wants a release.
+
+### HANDOVER — round 3 (ARCHIVED 2026-08-05 late; G2-G7d consumed — see round 4 above; G1/G8 briefs still live below)
+
+Read this section, the "Active work in flight" table above, and the status
+blocks it references BEFORE doing anything. The 2026-08-05 follow-up round is
+COMPLETE: **F1** (deepseek no-repeat-ngram guard, `e9f84f16`, full status
+block below), **F7+F7b** (imatrix QKV coverage fix `68033e8d` + Kaggle
+re-run — arctic q4_k+imatrix .9614→.9937 mean, `-f7` artifacts on HF, pins
+untouched), **F8** (LaBSE-class WordPiece conversion path was broken 0/20 —
+three-layer fix `f31c6531`), **F9+F9b** (CrispASR harness fail-fast
+`342c5f7f` + all 15 stale vendored copies re-synced `3ade993a`), and
+hermetic CI guards around every fix (`fcc60afd` + `test-no-repeat-ngram`,
+each verified to FAIL on the defect it guards). All coordinator-verified
+before merge; evidence in the status blocks and `tests/results/f1/`. Do not
+re-derive any of it.
+
+**Session shape that worked twice now, recommended again:** one heavy item
+as the orchestrator's own work, the rest delegated with acceptance-gated
+briefs the coordinator re-verifies BEFORE merging (re-run hermetic tests
+yourself, regenerate goldens independently, spot-run artifacts). Agent
+output is plausible-until-verified — this round two agent briefs were
+CORRECTED by verification (F9: the stale resolver was CrispEmbed's vendored
+copy, not CrispASR canonical). Default flips, promotions, pin changes, and
+ground-truth edits are never delegated.
+
+#### Remaining work, in value order (briefs live in the archived handover below unless restated)
+
+**G1 = F4 — SmolDocling vision backend port (OWN WORK, do not delegate).**
+Brief unchanged below. Needs a QUIET box (it is graph/residency A/B work) —
+do not run it alongside delegated model-running agents. Remember the
+worktree Metal trap in the discipline deltas below.
+
+**G2 = F5 — DeepSeek-OCR2 dynamic-crop port (session-sized; value ROSE
+with F1's data).** Brief unchanged below, plus new evidence from the F1
+matrix (`tests/results/f1/`): the remaining cc0 gap is now clearly
+crop-mode + a METAL-SPECIFIC trajectory problem — CPU reads the cc0 set at
+mean CER 0.25-0.28 vs Metal 0.66, and `german_official_print` loops-with-
+varying-tokenization ONLY on Metal (still caps at 1024 even guarded; exact
+ngram bans cannot break a loop that re-tokenizes itself). Port the
+reference's crop logic (blueprint line-by-line), gate it separately from
+the F1 guard, re-run the F1 matrix arms + gold gate. If the Metal german
+cap survives crop mode, it becomes its own Metal-numerics item.
+
+**G3 — arctic imatrix re-pin decision (coordinator, small; measurement
+delegable).** §F7b outcome above: the shipped pinned
+`arctic-embed-m-v2-q4_k-imatrix.gguf` measures far below the `-f7` re-quant
+(.9614 vs .9937 mean, Kaggle x86 CPU). Do the local-Metal cross-check
+(e5-f32 + imatrix artifacts cached in `~/.cache/hf-f7`; T19-E3 saw ~0.002
+backend delta), then re-pin the registry alias to the `-f7` artifact and
+update `model_hashes.h`. q8_0 stays default regardless. Also decide whether
+granite-r2's new canonical-name imatrix artifacts get registry aliases.
+
+**G4 = F2 — Metal pipeline-cache cap adoption across the other Metal lanes
+(delegable).** Brief unchanged below. The 683 MB archive at
+`~/Library/Caches/ggml-metal/` is STILL on disk; delete it once the cap is
+adopted everywhere.
+
+**G5 = F3 — embed-CLI `-t 1` default (coordinator decision, small).**
+Brief unchanged below (T18 data).
+
+**G6 = F6 — quantify DS2_KV_F16 (delegable, small).** Brief unchanged
+below. Note it now composes with F1: run it guard-on (the default), both
+arms, and use `tests/results/f1/` as the comparison baseline — the T14-era
+numbers no longer reproduce post-tokenfix (see the F1 status block).
+
+**G7 = F8b — LaBSE/WordPiece follow-ups (delegable, small).** §F8 outcome
+above: (a) optionally publish a LaBSE GGUF (convert with `--crisp`, battery,
+upload, pin — the fixed converter is on main; agent's fixed f16 lives in
+the session scratchpad but REGENERATE, don't trust a leftover); (b) ST
+`2_Dense`==BertPooler parity gap (cos ≈ −0.05 vs full ST stack) — decide
+whether CLS+pooler-tanh parity is wanted; (c) `bert.pooler_act` gelu-vs-tanh
+default (rerank-only today); (d) flip `unlimited-ocr-convert` /
+`crispembed-splade-fix` / `deepseek-ocr2-convert` drivers to
+`resolve_hf_token(require=True)` (they bootstrap kh from the CrispASR clone
+so they already have the resolver, not the fail-fast).
+
+**G8 = F10 — CrispASR twins (other repo, coordinate before touching).**
+Brief unchanged below. Note CrispASR main is active (another session pushed
+`f0f9f242` today) — fetch + check its PLAN before claiming.
+
+**T16 (TableFormer) and T17 (Fraktur bisect)** — unchanged, dedicated
+sessions; briefs in OPEN TASKS below. **N3 OCR perf H-items, N4 esrgan/scunet
+q8 publish, N7 OCR/VL quantize-and-run sweep** — still unowned, briefs in
+the archived handover's board sections below.
+
+#### Discipline deltas learned THIS round (additive to the archived ones)
+
+- **A fresh worktree's cmake configures GGML_METAL=OFF on this box** (bit
+  T19-E4 and now F1). Always `-DGGML_METAL=ON` explicitly, then verify
+  `GGML_METAL:BOOL=ON` in CMakeCache AND MTL0 in the run's stderr. The
+  metallib EMBED pin (`9288d3b5`) works once Metal is actually ON.
+- **The backend device name prints ONLY with an explicit `--gpu-backend`
+  flag** — the default `ggml_backend_init_best()` path is silent, so "no
+  MTL0 in stderr" on a default run proves nothing in either direction. Pass
+  `--gpu-backend metal` / `cpu` explicitly on EVERY A/B arm so each run's
+  own stderr carries backend proof. (This is how F1 caught its own
+  CPU-mislabelled-as-Metal smoke runs — timings nearly identical across
+  "backends" is the tell.)
+- **When a per-arm identity gate fails, run the baseline (feature-OFF) arms
+  before concluding.** F1's CPU cc0 "failure" was fully pre-existing —
+  guard-off arms diverged at the SAME first byte. Attribution turned a
+  blocked gate into an accepted, explained one in ~20 min of compute.
+- **Exact-ngram repetition bans cannot break loops that vary their
+  tokenization** ("Aufraktvert ren"/"Aufraktvertre ten"). Record such pages
+  as decode-trajectory problems, not guard failures.
+- **Two-dot `git diff origin/main` on a pre-rebase branch shows phantom
+  reversions** of everything main gained since the branch point (misread
+  twice this round, F8 and F7b). Use three-dot `origin/main...HEAD` (or
+  `git show --stat` per commit) to see a branch's real change set.
+- **`git worktree remove` fails on worktrees containing submodules** —
+  use `--force`, or `rm -rf` + `git worktree prune`.
+- **Agent briefs must forbid box-wide process kills.** One agent ran
+  `pkill -f ninja` to retarget its own build and could have killed a
+  parallel session's build. Put "never pkill/killall anything you did not
+  start" in every brief on this shared box.
+- **`format.sh` runs as a pre-commit hook here** — if you formatted after
+  testing, the committed bytes are the formatted ones; rebuild+rerun the
+  cheap hermetic targets post-format (non-semantic, but proves the
+  committed state is the tested state).
+
+#### Environment as left (2026-08-05 evening)
+
+- Main volume ~24 GB free (was 42 — session caches below account for it).
+  `~/.cache/hf-f8` (3.5 GB, LaBSE f16s + HF snapshot) is DELETABLE once G7a
+  is decided; `~/.cache/hf-f7` (455 MB, e5 f32 + shipped imatrix) KEEP for
+  G3's cross-check; `~/.cache/hf-regression` (~4.5 GB, both pinned deepseek
+  q4_k GGUFs) KEEP — it makes future gold-gate runs download-free.
+- `~/.cache/crispembed-local/` unchanged from the last handover (all
+  registry-pinned). New HF artifacts: `cstr/{arctic-embed-m-v2,f2llm-v2-80m}-GGUF`
+  `-f7` imatrix quants + ab files; `cstr/granite-embedding-{97m,311m}-multilingual-r2-GGUF`
+  first-time imatrix artifacts (canonical names). All pinned SHAs verified
+  untouched.
+- The 683 MB Metal shader archive is still at `~/Library/Caches/ggml-metal/`
+  (G4 deletes it). v0.17.4 remains the latest tag; the round shipped no tag.
+- All this session's worktrees and branches are removed. Remaining
+  worktrees belong to other sessions — check the board table before
+  touching. CrispASR main = `f0f9f242` (active today; F9 landed there as
+  `342c5f7f`).
+- Kaggle: `${KAGGLE_ACCOUNT}/crispembed-imatrix-t19` v3 is the latest good run; one
+  kernel at a time; the t19 driver now hard-fails without an HF token.
+
+### F1 — DeepSeek-OCR2 repetition guard (HIGHEST VALUE, delegable with strict gates)
+
+The lane implements NO repetition guard while the reference contract
+(`tests/regression/gold/deepseek-ocr2/contract.json`) specifies
+`no_repeat_ngram_size=20`. 2 of 5 cc0 pages spiral into the 1024-token cap
+(commons_test_ocr_document loops "and that they were filled with rubbish",
+simple_form loops a box list) — that alone drives cc0 CER to ~1.06 while
+`receipt_historical` already BEATS the reference when decode terminates
+(0.1198 vs 0.3633). **Do:** port `argmax_no_repeat_ngram` from
+`qwen2vl_ocr.cpp` / `internvl2_ocr.cpp` into the deepseek decode (BOTH the
+persistent default and `DS2_LEGACY_DECODE` paths — they must stay comparable),
+env-gated with the old behavior restorable. **Acceptance:** decoded text
+judged, not cosine — synth 20/20 CER unchanged (no spiral there = guard must
+be a no-op), cc0 CER moves materially toward the reference's 0.187 raw /
+0.111 stripped, spiral pages terminate before the cap, CPU and Metal, both
+decode paths byte-identical to each other per arm. This CHANGES OUTPUT — the
+coordinator re-runs the gold gate before merge.
+
+#### F1 status [DONE 2026-08-05, merged `e9f84f16`, coordinator-verified]
+
+**Shipped:** `argmax_no_repeat_ngram` at the single argmax site both decode
+arms share, default ngram=20 (the contract's `no_repeat_ngram_size`);
+`DS2_NO_REPEAT_NGRAM=0` restores the plain argmax. Confidence is now
+stabilised on the global max (bit-identical to the old `1/sum_e` when the
+guard does not fire). Helper hoisted to `src/core/no_repeat_ngram.h` and
+shared by all three carriers (qwen2vl/internvl2 swap is verbatim code,
+compile-checked + unit-tested; no local fixture exists for those two —
+their guard is the hermetic test).
+
+**Acceptance (13-sweep matrix, `tests/results/f1/`, decoded text only; box
+carried load, no timing claims):**
+- **Arm identity (guard on):** Metal 25/25 + CPU synth 5/5 byte-identical.
+  CPU cc0 4/5 differ between arms — **pre-existing, proven**: guard-OFF
+  baseline arms diverge on the same pages at the SAME first byte (german
+  char 67, simple_form char 165); T14's legacy host-side reduction-order
+  near-tie mechanism. The guard introduces no arm divergence.
+- **No-op where nothing spirals:** synth 25/25 byte-identical guard-vs-base;
+  synth CER unchanged (0.00228 raw).
+- **Termination:** CPU all 5 cc0 pages terminate (german 1024-cap→228 tok,
+  simple_form→90). Metal commons_test_ocr_document 1024→720 tok
+  (CER 0.83→0.33). ⚠ **Metal `german_official_print` still caps**: its loop
+  varies tokenization ("Aufraktvert ren"/"Aufraktvertre ten") so no exact
+  20-gram ever repeats — exact-ngram bans cannot break it. Baseline also
+  caps (CER 2.08 vs 2.14 guarded); it is the Metal-vs-CPU trajectory gap
+  (CPU reads the same page at 0.59), F5's lane, not a guard regression.
+- **cc0 CER vs the A4 reference (0.187 raw / 0.111 stripped):** Metal mean
+  0.744→0.657 raw; CPU 0.254 (legacy) / 0.279 (persistent). Post-tokenfix
+  note: the T14-era numbers no longer reproduce — `simple_form` no longer
+  spirals on Metal even unguarded (52 tok, CER 0.45 vs T14's 2.69), so the
+  tokenize_simple fix already moved this lane; the owed post-merge re-gate
+  is hereby recorded in these tables.
+- **Gold gate:** fox.png `cer=0.000` + garbage-guard PASS on BOTH manifest
+  entries (per-expert and stacked), run with the final merged binary.
+
+**Found, not fixed:** (1) the Metal german cap above (F5/crop-mode is the
+likely fix — more image tokens, better-conditioned decode); (2) CPU cc0
+Metal-vs-CPU quality gap is large on loop-prone pages (CPU 0.25 vs Metal
+0.66 mean) — worth a look when F5 lands; (3) the CPU arm near-tie
+divergence is inherent to the legacy arm's host-side norm/LM-head and was
+accepted with attribution (T14 precedent).
+
+### F7 — imatrix QKV coverage fix (delegable, well-scoped)
+
+`src/crispembed.cpp:799-832` pre-merges q/k/v into one F32 tensor at load and
+never `ggml_set_name`s it → the imatrix collector files its statistics under
+ggml's auto `leaf_N` and the quantizer matches nothing — every BERT-family
+`attn.{q,k,v}.weight` quantizes with NO importance (arctic: only 36/73
+tensors covered). The collected leaf_N vector (width 768 = QKV input) is
+already the correct importance for all three — fix is naming + a quantizer
+alias, not new infrastructure. Then re-run the arctic imatrix pipeline
+(kernel `tools/kaggle/crispembed-imatrix-t19/`, corpus committed) and expect
+q4_k+imatrix to finally separate from plain q4_k (today 0.948/0.961 vs
+0.947/0.958 — barely). Continuous metrics, never thresholded-only.
+
+### F8 — LaBSE-class WordPiece audit (delegable, small)
+
+WordPiece vocabs >100k still take the old detection heuristic (deliberate
+blast-radius decision in granite-r2). Audit the shipped LaBSE-class GGUF:
+token-id parity vs HF on the standard battery; fix via the tokenizer.json
+`model.type` path if wrong, with the absent-key=historical-behavior rule.
+
+#### F8 outcome (2026-08-05, `f31c6531`) — audit found the conversion path broken, fixed 3 layers
+
+Nothing LaBSE-class was shipped (no registry entry, no cstr GGUF). Converting
+`sentence-transformers/LaBSE` (501k WordPiece) exposed three stacked defects:
+converter `is_sentencepiece` >100k heuristic, runtime `n>100000 → SPM`
+routing, and the historical per-byte ASCII pre-tokenizer (can never match HF
+on CJK/unicode-punct/NBSP). Fixed: converter honours tokenizer.json
+`model.type == "WordPiece"` + writes `tokenizer.ggml.pre = "bert"` when
+declared; routing hoisted to pure `resolve_tokenizer_family()`
+(src/tokenizer.h, explicit numeric type is FINAL; community `model="bert"`
++ >100k corner deliberately frozen); HF-faithful BertPreTokenizer in
+`src/core/bert_pretok.h` gated on `pre="bert"` (absent key = historical
+byte path, shipped GGUFs byte-identical — verified on 4 models). Hermetic
+`tests/test_bert_pretokenize.cpp` in model-free CI. E2E: fixed LaBSE f16 vs
+HF f32 CLS = cos 1.000000 (10 texts).
+
+**F8b (open, small):** (a) publishing a LaBSE GGUF is now possible if wanted
+(convert + battery + upload + pin). (b) LaBSE's ST `2_Dense` is bit-equal to
+the BertModel pooler (tanh); CrispEmbed matches pre-pooler CLS, not the full
+ST stack (cos vs pooled ≈ −0.05) — full ST parity needs pooler-tanh at CLS
+pooling. (c) `bert.pooler_act` defaults to `"gelu"` where BERT's pooler is
+tanh (currently rerank-only, harmless). (d) Three upload-bearing kernels
+without a vendored harness (`unlimited-ocr-convert`, `crispembed-splade-fix`,
+`deepseek-ocr2-convert`) bootstrap `kh` from the CrispASR clone so they get
+F9's resolver but not fail-fast — flipping them to `require=True` is cheap.
+
+### F9 — Kaggle harness token-glob fix (CrispASR repo, delegable)
+
+`resolve_hf_token()` misses the LONG dataset mount path
+(`/kaggle/input/datasets/<acct>/<slug>/`) — a kernel on such a worker
+completes and then loses every upload to 401 (cost one full 21-min imatrix
+run). The t19 kernel carries the local fix; hoist it into CrispASR's
+`kaggle_harness.py` so every future kernel gets it. Also carried there:
+kaggle_usage.md gotcha #26 (script kernels ship only code_file — vendor
+data in the repo clone).
+
+### F7b — re-collect + re-quantize the published BERT-family imatrix artifacts (post-F7, Kaggle)
+
+F7 (`68033e8d`) fixed the coverage defect, so **every published BERT-family
+`.imatrix` on HF (e5, arctic, bge, …) still carries the `leaf_N` defect and
+every published `*-q4_k-imatrix.gguf` was built with no q/k/v importance.**
+Re-run the t19 pipeline (`tools/kaggle/crispembed-imatrix-t19/`, corpus
+committed) with an F7-fixed binary; expect q4_k+imatrix to separate (local
+e5-small evidence: cos_min 0.9847→0.9889, mean 0.9889→0.9913). The e5-small
+f32 + shipped imatrix are cached under `~/.cache/hf-f7` for this. One kernel
+at a time; promotion decisions stay with the coordinator (IQ4_XS note in
+T19-E3 applies).
+
+#### F7b outcome (2026-08-05, kernel v3) — coordinator decision items
+
+Numbers in the wave-3 row above; full A/B in
+`cstr/*-GGUF/*-f7-imatrix-ab.txt` (and granite's canonical-name ab files).
+Left OPEN deliberately:
+1. **Re-point the registry's arctic q4_k-imatrix alias at the `-f7` artifact?**
+   The shipped pinned `arctic-embed-m-v2-q4_k-imatrix.gguf` (301cae98…) was
+   built with NO q/k/v importance and measures far below the `-f7` re-quant
+   (.9614 vs .9937 mean). The A/B ran on Kaggle x86 CPU only — do the
+   local-Metal cross-check first (T19-E3 saw ~0.002 backend FP delta), then
+   re-pin. q8_0 stays the default regardless (q4_k+imat .9937 < q8 .9996).
+2. **IQ4_XS guidance narrowed:** T19-E3's "IQ4_XS+imatrix is the best sub-Q8"
+   held only under the coverage defect for BERT-family models; post-F7 arctic
+   q4_k+imatrix wins all three tails. Decoder-family (f2llm) keeps the IQ4_XS
+   ordering. Re-measure per family; never generalise across the pre-merge
+   boundary.
+3. granite-311m iq4_xs quantizes some `ffn.fc2` tensors as iq4_nl fallback
+   (dimension constraint) — benign, note when reading its size numbers.
+
+### F9b — CrispEmbed's vendored kaggle_harness.py copies are stale (the ACTUAL t19 culprit)
+
+F9's verification corrected the brief: CrispASR's canonical harness has
+globbed both mount depths since `81826457` (2026-06-20); what lost the t19
+uploads is the stale vendored copy in
+`tools/kaggle/crispembed-imatrix-quant/` (hard-coded owner + name-filtered
+scan; several other `tools/kaggle/*/kaggle_harness.py` copies exist with
+~300-line drift vs canonical). CrispEmbed kernels clone CrispEmbed, so the
+canonical fix never reaches them. **Do:** re-sync each vendored copy from
+CrispASR canonical (now also carrying F9's `resolve_hf_token(require=True)`
+fail-fast — uploading kernels should call it first), checking each kernel
+dir for deliberate local drift before overwriting. Sync logic, not bytes,
+where a copy has real local changes (pcs.cpp rule).
+
+### T11 status [DONE 2026-08-04]: all 18 engines CLI-reachable; document pipeline + markdown via CLI; `tests/test_cli_engine_names.py` guards enum↔name coverage. Found while validating (pre-existing, unowned): feeding a Tesseract GGUF into the FLAT pipeline's rec slot mis-dispatches as `math_ocr` (vocab=1200) and SEGFAULTS on region 1 — the flat rec loader needs an arch check that fails loudly instead.
+
+### T18 status [DONE 2026-08-05, `feat/t18-embed-oneshot-init`, NOT merged]: 4.8x one-shot, byte-identical output, and the cost was NOT what the ticket assumed
+
+**Headline: 895 ms → 186 ms (4.81x) one-shot on multilingual-e5-small q8_0,
+STILL ON METAL, output byte-identical.** The ~1.3 s the ticket recorded
+reproduced as 0.89-0.91 s on a quiet box (same shape, lower absolute — the
+earlier figure was presumably measured under load); the *structure* of the
+claim was right and the *suspect* was wrong.
+
+**Per-component init profile** (`CRISPEMBED_INIT_BENCH=1`, the instrument this
+branch adds — M1 16 GB, multilingual-e5-small q8_0, medians):
+
+| component | before | after | note |
+|---|--:|--:|---|
+| `crispembed_init/arch_detect_gguf_open` | 29.3 ms | 29.3 ms | GGUF metadata parse (250k-token vocab KV) |
+| `load_model/gguf_init_from_file` | 29.7 ms | **0.0 ms** | was a SECOND parse of the same file — now reuses the first |
+| `load_model/vocab_read` | 6.0 ms | 6.0 ms | 250k strings out of the KV array |
+| `load_model/tokenizer_build` | 12.0 ms | 12.0 ms | **the recorded SPM suspect — 12 ms, not the problem** |
+| `load_model/backend_init` | **683.1 ms** | **29.4 ms** | Metal device + pipeline cache |
+| `load_model/sched+meta` | 0.8 ms | 0.5 ms | |
+| `load_model/weights_load` | 46.9 ms | 46.4 ms | |
+| first `crispembed_encode` | 21.0 ms | ~17-20 ms | includes Metal PSO JIT |
+| **process wall** | **895 ms** | **186 ms** | |
+
+**The real cause: ggml-metal's persistent `MTLBinaryArchive` pipeline cache.**
+ggml carries a CrispASR patch (PLAN #88) that opens
+`~/Library/Caches/ggml-metal/<device>.archive` before any PSO is created. That
+archive is append-only across every engine and every Crisp binary that ever ran
+on the box; on this machine it had reached **683 MB**, and opening it costs
+~1 ms/MB — 683 of the 820 ms of internal init. Two things make it strictly a
+loss for a one-shot CLI:
+
+1. **It buys nothing measurable.** First encode was 20.3 ms with the archive
+   open and 17.4 ms with it skipped — marginally *worse* with it. macOS keeps
+   its own system-level shader cache underneath, which is what actually makes
+   the second run fast.
+2. **A one-shot CrispEmbed binary can never repay it.** The archive is
+   serialised back only from `ggml_metal_device_free()`, which runs at
+   static-destructor time — and the one-shot CLIs leave via
+   `core_util::clean_exit` → `_exit()`, which skips it (the known
+   clean_exit-bypasses-atexit hazard, striking somewhere new). Proven directly:
+   pointed at an empty `GGML_METAL_PIPELINE_CACHE` dir the run logs "pipeline
+   cache created" and exits leaving the directory **empty**. So the CLI pays the
+   open and never writes an entry — read-only cost, forever.
+
+**Levers applied, in measured order** (each independently gated; the gates ARE
+the A/B mechanism — one binary, both arms):
+
+| # | Lever | Gate to restore old behaviour | Measured delta (e5-small one-shot) |
+|---|---|---|--:|
+| 1 | Skip a Metal pipeline-cache archive larger than a cap (default 64 MB), decided by `stat` before the device exists (`src/core/metal_pipeline_cache_policy.h`) | `CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB=0` | **−654 ms** |
+| 2 | `--gpu-backend cpu` genuinely returns the CPU backend instead of falling through to `ggml_backend_init_best()` (`src/core/gpu_backend_pref.h`) | `CRISPEMBED_GPU_PREF_CPU_LEGACY=1` | 0.86 s → 0.14 s **on that flag** (6.1x); no effect on the default path |
+| 3 | Reuse `crispembed_init()`'s GGUF parse in `load_model()` / the decoder tokenizer load instead of parsing the file a second time | `CRISPEMBED_GGUF_REPARSE=1` | **−29 ms** |
+| 4 | `CRISPEMBED_ONESHOT_CPU=1` picks CPU when no `--gpu-backend` was given (CLI only) | off by default | −40 ms, opt-in — see recommendation |
+
+Lever 2 has a sharp edge worth remembering: the obvious implementation,
+`ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU)`, **still initialises
+Metal** because enumerating the registry constructs every device. It measured
+29 ms of Metal init on a "cpu" request. `ggml_backend_cpu_init()` touches no
+registry and is the correct call.
+
+**Acceptance** (interleaved same-binary A/B, medians, `sysctl vm.loadavg` first
+value gate >8 — 0 pairs discarded, load stayed 1.8-2.5 throughout):
+
+| case | before | after | speedup | output |
+|---|--:|--:|--:|---|
+| e5-small one-shot `--json "ein test"` (n=7 pairs) | 895 ms (892-901) | **186 ms** (184-187) | **4.81x** | byte-identical |
+| arctic-embed-m-v2 q8_0 one-shot (n=5) | 911 ms (908-916) | **202 ms** (200-264) | **4.51x** | byte-identical |
+| e5-small warm batch-512 (n=5) | 5977 ms | 5451 ms | 1.10x (no regression) | byte-identical, 64/64 |
+| arctic warm batch-64 (n=5) | 1672 ms | 908 ms | 1.84x | byte-identical, 64/64 |
+
+Output identity was checked on the actual vectors, not a summary: 64 texts per
+model, `worst cos = 1.000000000`, `|before| = |after| = 1.000000`, ratio
+1.000000000, and the JSON is byte-for-byte equal. The math path is untouched —
+every change is in init.
+
+**Negative / refuted results, on the record:**
+- **The SPM tokenizer suspect is refuted.** Building the 250k-entry XLM-R
+  SentencePiece tokenizer is 12.0 ms and reading the vocab out of the GGUF is
+  6.0 ms — together 2% of the old fixed cost. No quadratic construction, no
+  disk cache needed. Do not spend time here.
+- **Weight I/O was never the story either**, confirming the ticket: e5-small
+  (132 MB) and arctic (330 MB) both paid the same ~683 ms Metal init.
+- **CPU-default for small embedders is now a much weaker lever than it looked.**
+  Before the fix it would have saved ~700 ms; after it, 40 ms.
+- `ggml_backend_dev_by_type(...CPU)` as a "cheap CPU" path: measured worse than
+  useless (see above), kept out.
+
+**CPU-default recommendation — data for the coordinator, decision NOT taken
+here.** Post-fix sweep, batch-64, times include that arm's own init:
+
+| model | Metal `-t 1` | CPU `-t 1` | CPU `-t 4` |
+|---|--:|--:|--:|
+| multilingual-e5-small q8_0 | 0.77 s | 0.76 s | **0.35 s** |
+| arctic-embed-m-v2 q8_0 | **0.91 s** | 2.77 s | 0.91 s |
+
+One-shot single text post-fix: e5-small 0.18 s Metal vs 0.14 s CPU; arctic
+0.20 s vs 0.17 s. So: **the backend default is no longer the interesting knob —
+the `-t 1` default is.** CPU with 4 threads beats Metal by 2.2x on the small
+embedder and ties on the large one, while CPU at the shipped `-t 1` is 3x
+*worse* than Metal on the large one. A blanket "small embedders default to CPU"
+switch would be defensible on e5-small and wrong on arctic-at-`-t 1`;
+`CRISPEMBED_ONESHOT_CPU=1` ships gated off so the flip can be made with a
+size/thread rule rather than a guess. Suggested follow-up before any flip:
+measure a thread-count default for the embed CLI, which looks like the larger
+untaken win.
+
+**Found, not fixed:**
+1. **Every Metal lane in the repo pays this same archive-open cost**, not just
+   the embedder — the OCR/VLM/SR engines all call `crispasr_init_gpu_backend()`.
+   The policy header is deliberately standalone; adopting it elsewhere is a
+   one-line `core_metal_cache::apply()` before the backend init. Only the embed
+   path is measured and changed on this branch.
+2. **The pipeline cache is arguably broken repo-wide**, not merely oversized: no
+   one-shot Crisp binary that exits via `clean_exit`/`_exit()` can write to it,
+   so it can only be filled by long-running or normally-unwinding processes
+   while every short process pays to read it. Whether the patch should flush at
+   the end of a run, scope the archive per engine, or be retired is CrispASR
+   PLAN #88's call, not this branch's.
+3. The 683 MB archive is still on disk (this branch only stops *reading* it);
+   deleting it is safe and reclaims the space.
+4. `-t` defaults to 1 for the embed CLI (see recommendation above).
+
+**Env gates added:** `CRISPEMBED_INIT_BENCH`,
+`CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB`, `CRISPEMBED_GGUF_REPARSE`,
+`CRISPEMBED_GPU_PREF_CPU_LEGACY`, `CRISPEMBED_ONESHOT_CPU` — all documented in
+README "One-shot CLI startup" and in the headers themselves. Model-free CI
+battery re-run green (backend-smoke auto/metal/cpu, provenance x3, msac,
+temp-file, qwen 39, o200k 85, bpe 246 checks). `test-backend-smoke cpu` now
+reports `name=CPU type=0` where it used to report `MTL0` — the same
+fall-through, visible in a test that had been passing over it.
+
+**T19-E1 status [DONE 2026-08-04, merged]:** F2LLM-v2 **80m/160m/330m
+shipped** (cstr, f16+q8_0, registry+pins; 0.6B was already shipped and needed
+nothing). Converter docstring claim was REAL — worked as-is. Contract: last-token
+pool, L2, query prompt "Instruct: Given a question, retrieve passages that can
+help answer the question.\nQuery: ", no doc prefix, EOS <|im_end|> (NOT
+Qwen3-Embedding's <|endoftext|>). Parity: f16 cos 1.000000 all sizes; q8_0
+≥0.9989 except 0.6B 0.9909 (+3.8% norms — known-soft, consistent with
+LEARNINGS). German retrieval 5/5 everywhere; independently re-verified at
+merge (registry download, 0.611>0.147>-0.030). **The real find — a shipped
+tokenizer bug:** `core_bpe::tokenize_simple` collapsed all whitespace runs to
+single spaces (newlines deleted) — cos 0.9803 on code, 0.9907 on this
+family's OWN query prompt, hidden on newline-free text; proven by reproducing
+our magnitudes in HF with collapsed input. Degraded the already-shipped 0.6B
+and by construction every Qwen-family embedder (qwen3-embed, octen, jina-v5,
+harrier). Fixed via a real declared-regex `qwen_pretokenize`
+(`CRISPEMBED_BPE_LEGACY_WHITESPACE=1` restores), guarded by a hermetic
+39-check test in model-free CI (verified fail-on-broken). **Follow-up filed:**
+other `tokenize_simple` callers (lfm2, OCR engines) likely share the defect —
+audit them. Phantom-bug note preserved in the commit: a 0.845/0.756 "port
+bug" on 330m/80m was the agent's own harness double-applying the new auto
+query prefix — weights were always correct.
+
+**T19-E1-FOLLOWUP status [DONE 2026-08-04, `feat/tokenize-simple-audit`, NOT
+merged]:** audit of the remaining `core_bpe::tokenize_simple` callers. Complete
+inventory (`grep -rn tokenize_simple src/ examples/ tests/`) is FOUR sites in
+three files; all four are converted, each keeping
+`CRISPEMBED_BPE_LEGACY_WHITESPACE=1` as the restore gate.
+
+| Caller | Checkpoint | Declared `pre_tokenizer` | Battery BEFORE | Real-input exposure | Fixed | AFTER |
+|---|---|---|---|---|---|---|
+| `src/lfm2_embed.cpp:362` | `LiquidAI/LFM2.5-Embedding-350M` | Split + ByteLevel, `…\|\p{N}{1,3}\|…` (Qwen regex, 3-digit runs) | 14/40 cases wrong | **LIVE** — arbitrary user text; wrong ids on 951/1508 random strings (63.1%) | yes → `tokenize_lfm2` | 0/40; ids 0/1508 wrong; embedding cos vs HF 0.9857 → **0.9997** |
+| `src/deepseek_ocr2.cpp:2417` | `deepseek-ai/DeepSeek-OCR-2` | Split SEQUENCE: `\p{N}{1,3}`, CJK/kana runs, then a `[\p{P}\p{S}]`-based regex | 15/40 cases wrong | **LIVE** — the fixed `"\nFree OCR."` prompt, every page | yes → `tokenize_deepseek` | 0/40; prompt ids now byte-exact vs HF |
+| `src/deepseek_ocr2.cpp:2304` | same | same | same | latent — inside `getenv("DS_TEXT_TEST")` | yes | same |
+| `src/unlimited_ocr.cpp:2877` | `baidu/Unlimited-OCR` | byte-identical to DeepSeek-OCR-2's | same | latent — inside `getenv("UOCR_TEXT_TEST")`; the production prompt is hardcoded ids | yes | same |
+
+**Headline (deepseek-ocr2, the requested deliverable): the prompt ids did NOT
+match the reference contract, and now do.** `tests/regression/gold/deepseek-ocr2/contract.json`
+gives `free_ocr = "<image>\nFree OCR. "`, which `format_messages()` strips to
+`"<image>\nFree OCR."`; the reference tokenizer encodes that as
+`[128815, 201, 21431, 126041, 16]` — `<image>` (matching the contract's
+`image_token_id`) followed by `Ċ Free ĠOCR .`. `tokenize_simple` DELETED the
+leading newline and emitted **3 ids where the reference emits 4**:
+`[21431, 126041, 16]`, i.e. every page ran with token `201` missing from the
+instruction. `tokenize_deepseek("\nFree OCR.")` now returns
+`[201, 21431, 126041, 16]`, byte-identical to HF. The GGUF's vocab/merges come
+verbatim from the same `tokenizer.json`
+(`models/convert-deepseek-ocr2-to-gguf.py:170`), so the check transfers.
+Per the split of work the full decode gate is the coordinator's after both
+branches land — the 5.3 GB model was NOT run here.
+
+**Two further real bugs the audit turned up, both pre-existing:**
+
+1. **The merged E1 fix was itself still wrong on non-ASCII punctuation.**
+   `qwen_is_letter` answered true for every byte >= 0x80, so `\p{L}` swallowed
+   quotes, dashes, currency and emoji into the neighbouring word. HF splits
+   `sagte „Hallo“ heute` into 5 pre-tokens; we produced 3. `«quote»`, `€£abc`,
+   `→→x`, `a©®b`, `中文，测试。` all wrong — i.e. ordinary German typographic
+   text on EVERY Qwen-family embedder, which is the German-retrieval workload
+   T19 exists for. Fixed by classifying codepoints against real Unicode general
+   categories (`src/core/unicode_class.h`, generated, 774 ranges): 9 of 40
+   qwen battery cases were failing, now 0.
+2. **`bpe_one`'s merge heap had no tie-break.** HuggingFace orders its BPE heap
+   by `(rank, pos)` both ascending; `std::priority_queue` with a rank-only
+   comparator leaves equal ranks in an unspecified order, so a run of
+   equal-rank pairs could merge from the middle: `"qqqqqc"` gave `qq q qq c`
+   instead of `qq qq q c`. Cost 4 of 1508 random strings on EVERY vocab tried
+   (qwen, lfm2, deepseek). One-line comparator fix; affects all byte-level BPE
+   callers, not just the audited ones.
+
+**Verification.** Guard written before the fix and watched fail (HARD RULE 2c):
+`tests/test_bpe_pretokenize.cpp`, 246 hermetic checks, model-free CI alongside
+`test-qwen-pretokenize`. Pre-fix it reported **38 pre-tokenizer failures**
+(qwen 9 / lfm2 14 / deepseek 15) plus **2 tie-break failures**; post-fix 0.
+Golden splits are HuggingFace's own `pre_tokenize_str()` output, regenerated by
+`tools/gen_bpe_pretokenize_test.py`. Beyond the fixture: 4000 random
+mixed-script strings per family pre-tokenize identically to HF (0 mismatches),
+and with the real vocab+merges loaded, 1508 strings tokenize to **identical ids**
+for all three (0 mismatches, against 63% wrong under `tokenize_simple`).
+`test-qwen-pretokenize` (the E1 guard) stays at 39/39.
+
+**Acceptance.** lfm2: newline-heavy German text, q8_0, CLS pooling per the
+model's `1_Pooling/config.json`, reference = the repo's own
+`Lfm2BidirectionalModel` via `trust_remote_code` (the plain causal `AutoModel`
+is the WRONG reference and scores 0.09 — worth knowing before anyone re-runs
+this). cos vs HF 0.985685 → **0.999686**; the residue is q8_0. Caveat per HARD
+RULE 2b: the CLI L2-normalizes, so `|mine|` is 1.0 by construction and this
+number is scale-blind — magnitude parity is the `test-lfm2-diff` harness's job
+and was not re-run. Control: newline-free ASCII text is **byte-identical**
+before/after, confirming why the defect stayed invisible. unlimited_ocr:
+decoded output provably unchanged — the converted call is inside the
+`UOCR_TEXT_TEST` debug block and the production prompt is the hardcoded
+`{34030, 76466, 16}`, which this audit independently re-verified equals HF's
+`document parsing.`; the 3.3 GB model was not run.
+
+**Not fixed / known approximations.** `\p{N}` for the CJK-adjacent scripts is
+exact via the table, but codepoints absent from it default to letter (correct
+for every script tried); `\s` is Unicode White_Space; the deepseek stage-3
+alternative 1 is ASCII-only as declared. Everything measurable is covered by
+the fuzz above. Also unaudited: `tokenize_simple` itself is left in place and
+still exported — it is now only reachable through the legacy gate.
+
+**T19-E2 status [DONE 2026-08-04, merged]:** `arctic-embed-m-v2` shipped
+(f32/q8_0/q4_k on cstr, registry+pins, q8_0 default — q4_k without imatrix is
+weak here: cos_min 0.954, imatrix TODO). Per-stage parity cos 1.000000 after
+TWO REAL pre-existing bugs the port exposed: (1) **the fused gated-FFN branch
+never applied `ffn.fc2.bias`** — invisible on ModernBERT (no bias) but live in
+every shipped GTE v1.5 GGUF; the tensors are IN the published files, so
+`gte-base/large-en-v1.5` are repaired in place (shipped q8_0 cos vs HF
+0.985→0.9996), no re-upload needed; (2) gated-FFN activation was guessed
+per-arch (tanh) where HF uses exact-erf — now self-describing via
+`bert.ffn_act` (absent key = historical behavior, published GGUFs
+byte-identical). Also: `query_prefix()` had NO arctic rule — the shipped
+`arctic-embed-l-v2`/v1 models were running UNPREFIXED; wired for both
+generations. German retrieval sanity 5/5 top-1 at f16/q8/q4; independently
+re-verified end-to-end at merge (registry download + auto-prefix + erf
+kernel; ECB 0.652 > Rhein 0.307 > Kartoffelsalat 0.055).
+**granite-r2 gap report (backbone PROVEN via token-id bypass, per-stage cos
+0.99994+):** blocked ONLY on tokenizers — (a) `is_sentencepiece` misfires on
+BPE vocabs >100k in BOTH converter (`convert-bert-to-gguf.py:418`) and
+runtime (`crispembed.cpp:546/576`) → fix = read tokenizer.json `model.type`;
+(b) 97m needs an o200k-style regex pre-tokenizer (~1 function beside
+`gpt2_pretokenize`); (c) 311m needs the existing SPM-BPE mode wired
+(embedder path hardcodes `spm_style=false`). Small, well-scoped follow-up.
+**New open item (repo-wide, pre-existing):** `--biencoder` applies the QUERY
+prefix to documents too (`examples/cli/main.cpp:2461`, context-level prefix)
+— affects bge/e5/nomic/lfm2/arctic; cost ~0.03-0.07 cosine, no rank flips
+measured, but needs its own A/B before changing (silently alters output).
+
+**T19-E3 status [branch `feat/imatrix-quants`, 2026-08-04]:** imatrix quants for
+`arctic-embed-m-v2` + the F2LLM-v2 family. Support already existed end to end
+(`src/imatrix.{h,cpp}` collector gated on `CRISPEMBED_IMATRIX_OUT`, installed on
+the sched in `crispembed.cpp:627/2341` and flushed from `crispembed_free`;
+`tools/quantize.cpp --imatrix`; `tools/kaggle/crispembed-imatrix-quant/`;
+`tools/imatrix_ab.py`) — nothing new was built. Three defects were found in it.
+
+**(1) The calibration corpus never shipped.** A Kaggle *script* kernel carries
+only its `code_file` (usage #26), so `read_corpus`'s `Path(__file__).parent`
+lookup always missed and every imatrix quant to date silently calibrated on the
+10-sentence English `_CALIB_FB` fallback — recorded as `calib=10` in the
+uploaded `*-imatrix-ab.txt`. Corpora now load from the CLONE and a miss raises.
+
+**(2) imatrix covers only 36 of arctic's 73 quantized tensors.**
+`src/crispembed.cpp:799-832` pre-merges q/k/v into one F32 `L.qkv_w` at load
+time and never `ggml_set_name`s it, so the collector files that matmul's
+statistics under ggml's auto name `leaf_N`, which matches nothing at quantize
+time — every `enc.N.attn.{q,k,v}.weight` is quantized with NO importance
+(quantizer prints `36 with imatrix`, vs f2llm-80m's `56` of 57 and 0.6b's `196`
+of 197; the decoder path does not pre-merge). The collected `leaf_N` vector is
+width 768 = the QKV input, i.e. already the correct importance vector for all
+three — so the fix is naming + a quantizer alias, not new infrastructure.
+**Affects every BERT-family imatrix quant shipped** (bge / e5 / MiniLM / mpnet /
+gte / arctic). TODO, not done here (runtime graph code).
+
+**(3) imatrix is a NO-OP for q8_0.** Every f2llm q8_0-vs-q8_0+imatrix pair came
+back identical to 6 dp (0.999684 / 0.999555 / 0.999161 / 0.992944) —
+`ggml_quantize_chunk` ignores the importance vector for Q8_0. So the "soft
+0.6B q8_0" cannot be improved this way; that lane is closed.
+
+A/B: cosine vs the full-precision GGUF over 65 held-out texts (43 doc + 22
+through the model's own query prompt; German + English + code + newline-heavy),
+calibrated on 134 disjoint texts. Kaggle CPU arms, cross-checked locally on
+Metal (arctic mean 0.9584 vs 0.9607 local — backend FP delta only):
+
+| model | q8_0 min/mean | q4_k min/mean | q4_k+imat min/mean | verdict |
+|---|---|---|---|---|
+| arctic-embed-m-v2 | .9994/.9996 | .9466/.9584 | .9480/.9614 | better, still weak |
+| f2llm-v2-80m | .9992/.9997 | .9499/.9727 | .9455/.9767 | mean better, **min worse** |
+| f2llm-v2-160m | .9993/.9996 | .9331/.9652 | .9495/.9719 | better |
+| f2llm-v2-330m | .9986/.9992 | .8840/.9230 | .9179/.9501 | clearly better |
+| f2llm-v2-0.6b (local) | .9964/.9975 | .6044/.6911 | .7821/.8238 | far better, still unusable |
+
+Norm ratio is 1.0000 for every arm on every text: the pooled-embedding API
+L2-normalizes, so the "+3.8 % norm inflation" noted in E1 is not observable (or
+consequential) through it — that metric only guards against a quant that breaks
+normalization. German retrieval stayed 5/5 top-1 for EVERY arm including
+0.6b q4_k at cos 0.69, which is exactly why a thresholded check cannot gate an
+imatrix decision; its distractor scores tell the real story (gold
+0.628/0.167/0.039 vs q4_k 0.786/0.519/**0.480**).
+
+**The strongest result is one the q4_k-only brief would have missed: IQ4_XS
++imatrix beats Q4_K+imatrix on BOTH tails and is smaller, on all four models
+that survive 4 bits at all.** min/mean: arctic .9667/.9757 vs .9480/.9614 (270
+vs 274 MB); 80m .9601/.9812 vs .9455/.9767 (74.4 vs 74.7); 160m .9645/.9766 vs
+.9495/.9719 (142.9 vs 143.5); 330m .9443/.9619 vs .9179/.9501 (259.5 vs 261.6).
+It also repairs the one place imatrix made Q4_K *worse* (80m's min, 0.9499 ->
+0.9455). If anything below Q8_0 is ever promoted, it should be IQ4_XS.
+
+**The rule is not universal — the 0.6b inverts it**: iq4_xs+imatrix .6936/.7889
+vs q4_k+imatrix .7654/.8115. Both are unusable, so the 0.6b keeps no sub-Q8
+alias, but do not generalize IQ4_XS to a model without measuring it.
+
+**Kaggle:** `${KAGGLE_ACCOUNT}/crispembed-imatrix-t19`. Run 1 completed the full pipeline
+for all five models in 21 min and then lost every artifact to `401` on each
+upload — `resolve_hf_token()` does not glob the LONG dataset mount path
+`/kaggle/input/datasets/<acct>/<slug>/`, which is the only layout that worker
+had (`HF auth: /kaggle/input contains 1 entries: ['datasets']` →
+`hf_token_ok: False`), while the ccache warm globs it and succeeded on the same
+run. The driver now globs both and aborts up front when no token is found. **A
+CrispASR harness fix is the proper home for this** — every kernel on such a
+worker silently loses its uploads.
+
+**Conclusion: imatrix helps q4_k everywhere but promotes nothing.** q4_k stays
+far below q8_0 on all five, so q8_0 remains the right default and no registry
+default was flipped. The one shipped file this touches — f2llm-v2-0.6b's
+existing `-q4_k-imatrix.gguf` (calibrated on the 10-text fallback) — measures
+min .7891 / mean .8345 locally, slightly ABOVE the new corpus's .7821/.8238, so
+the re-calibration is published under `-c2` names and is NOT a promotion
+candidate; its SHA is pinned in `model_hashes.h` and was not overwritten.
+
+**T19-E4 status [DONE 2026-08-04, branch `feat/granite-r2-tokenizers`]:**
+`granite-embedding-{97m,311m}-multilingual-r2` **shipped** (cstr, f16+q8_0,
+registry + SHA pins, Q8_0 default — no imatrix calibrated yet). E2's three
+gap items were all real and all fixed; a fourth defect fell out of the
+token-id diff. Contract from each model card's own snippet: **CLS pooling,
+L2-normalize, NO query or document prefix** (both `config_sentence_transformers.json`
+prompts are empty strings), ModernBERT backbone, 8192 ctx.
+
+- **(a) BPE-vs-SPM detection.** `is_sentencepiece` was
+  `hasattr(sp_model) or vocab_size > 100000`, so any BPE vocab over 100k
+  converted as SentencePiece. tokenizer.json `model.type` now overrides it.
+  WordPiece vocabs over 100k (**LaBSE**, 501k) are deliberately LEFT on the
+  historical path so nothing else changes — **still open**, and its shipped
+  GGUF is worth an audit.
+- **(b) o200k pre-tokenizer (97m).** The first pre-tokenizer here that
+  **branches on letter case** — two of its seven alternatives are
+  `[Lu Lt Lm Lo M]* [Ll Lm Lo M]+` and its mirror. The repo's historical
+  "any byte >= 0x80 is a letter" shortcut puts every non-ASCII letter in BOTH
+  classes, which splits an all-caps German word after its umlaut
+  (`ÄRGER` -> `Ä` + `RGER`). Needed a real general-category table:
+  `src/core/unicode_categ.h` (generated, 2779 ranges, `tools/gen_unicode_categ.py`).
+- **(c) SPM-BPE mode (311m).** Wired via `tokenizer.ggml.is_spm_bpe` (the key
+  the decoder path already read), including across the post-weight-load merges
+  reload. Its post-processor prepends `<bos>` and appends NOTHING and the
+  tokenizer exposes no cls/sep at all, so cls/sep/add_bos/add_eos now come
+  from the TemplateProcessing template, not the BERT 101/102 defaults.
+- **(d) NEW, found by the id diff — the merges blob cannot hold a newline.**
+  `tokenizer.merges` is a NEWLINE-separated tensor, so a merge that CONTAINS a
+  newline is unrepresentable. The Gemma vocab has **465** of them
+  (`"\n\n" -> "\n\n\n"`), so `a\n\nb` tokenized as two separate newline
+  tokens. Fixed with a NUL-separated `tokenizer.merges_nul` tensor emitted
+  ALONGSIDE the legacy one only when needed, preferred when present — old
+  binaries keep reading the legacy tensor unchanged. **Any other SPM-BPE GGUF
+  converted by this script has the same defect baked in; re-conversion is the
+  only fix.**
+
+Numbers (CPU; the HF f32 reference was first validated against each model
+card's own published cos_sim matrix):
+
+| model | token ids vs HF | f16 cos_min | f16 pre-norm ratio | q8_0 cos_min | q8_0 pre-norm ratio | German 10-doc |
+|---|---|---|---|---|---|---|
+| granite-97m-r2 | **20/20 exact** | 1.000000 | 1.000000 | 0.999580 | 0.998388..1.001975 | 5/5 f16 + q8 |
+| granite-311m-r2 | **20/20 exact** | 1.000000 | 1.000000 | 0.999758 | 0.999349..1.000586 | 5/5 f16 + q8 |
+
+The id battery is German umlauts + all-caps, multi-space runs, newlines/tabs/
+CRLF, a code snippet, unicode punctuation/quotes/currency, NBSP + soft hyphen,
+CJK, Cyrillic, emoji, long compounds, contractions and digit groups. Retrieval
+scores match the HF reference to 3 decimals (ECB 0.909/0.939, Rhein
+0.945/0.949, Kartoffelsalat 0.937/0.941).
+
+**Regression (the detection change must not touch any shipped model).** New
+binary vs one built from the SAME tree with only the three changed sources
+reverted — identical compiler flags, identical ggml, so the comparison is not
+confounded: `multilingual-e5-small-q8`, `arctic-embed-m-v2`,
+`gte-modernbert-base`, `f2llm-v2-80m`, `nomic-embed-text-v1.5-q8` are
+**BIT-IDENTICAL, 0 token diffs**, covering the XLM-R/SPM, WordPiece,
+ModernBERT-BPE (incl. the merges-tensor read) and decoder-BPE paths. ⚠ The
+first attempt A/B'd against the main checkout's binary and showed cos ~0.9994
+"changes" — that build has `GGML_METAL=ON` and the worktree's does not
+([[build-dir-can-be-cpu-only]]); token ids were identical throughout, which is
+what said the tokenizer was innocent.
+
+**Guard:** `tests/test_o200k_pretokenize.cpp`, hermetic (no vocab, weights or
+network), goldens from HuggingFace's own `pre_tokenize_str`, in the model-free
+CI job. 85 checks. Written before the implementation and verified to FAIL on
+three independent mutations: the naive non-ASCII-is-a-letter table (27
+failures), `\p{N}{1,3}` narrowed to `{1,1}` (6), and the dropped contraction
+suffix (2).
+
+**Second NEW pre-existing defect, in the pinning tool itself:**
+`tools/fetch_model_hashes.py` matched resolve-URLs with a regex over the raw
+C++, so a URL written as ADJACENT string literals (what clang-format produces
+past 120 columns) never matched and the entry was silently **left unpinned** —
+`unpinned: 0` cannot see it, because such URLs never enter the list. That is
+how **`granite-embedding-278m-multilingual` and `-107m-multilingual` shipped
+with no SHA pin at all.** The tool now splices adjacent literals first; both
+are pinned in this branch's regeneration.
+
+**⚠ MERGE NOTE:** branch `feat/tokenize-simple-audit` adds
+`src/core/unicode_class.h` for the same job. That table carries no case
+information and so cannot serve the o200k split; `unicode_categ.h` here is a
+strict SUPERSET and maps 1:1 onto its enum (mapping documented in the header).
+Keep `unicode_categ.h`, express `core_uc_class` as that mapping, drop the
+other generator.
+
+**Not done / TODO:** no imatrix q4_k for either model (Q8_0 is the registry
+default, mirroring arctic-embed-m-v2 — add them to the imatrix lane); the
+LaBSE >100k-WordPiece detection question above; and neither model was measured
+on Metal (all numbers here are CPU, worktree built `GGML_METAL=OFF`).
+
+### T14 status [DONE 2026-08-05, `feat/t14-deepseek2-decode-graph`]
+
+**Shipped:** `[deepseek-ocr2-stage-bench]` (the T12 gap — `CRISPEMBED_DEEPSEEK_OCR2_BENCH=1`,
+net-of-load, prefill/decode split so a prefill change cannot masquerade as a
+decode win) + a persistent single-graph decode step, now the DEFAULT, with the
+per-layer path kept selectable (`DS2_LEGACY_DECODE=1`).
+
+**Acceptance (a) decoded text:** byte-identical, legacy vs persistent, on all
+**25** gold fixtures on Metal (20 synth + 5 labelled CC0; identical SHA-256 over
+the concatenated transcripts and identical `gen_tokens` per page) and on the CPU
+subset. Never diffed against the gold itself — gold is a threshold reference.
+
+**Acceptance (b) interleaved same-window A/B** (Metal, M1, `commons_example_receipt.png`,
+217 generated tokens, 9 scored pairs + a discarded cold pair, alternating arms,
+one process per run, pairs load-gated at 1-min loadavg ≤ 8; observed 1.4-2.5):
+
+| arm | decode med | min | max | spread | total med | prefill med | sam med |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| legacy per-layer | 11473.7 ms | 11022.9 | 12117.2 | 0.095 | 15815.2 ms | 461.1 ms | 2754.4 ms |
+| persistent graph | **8191.5 ms** | 8035.6 | 13463.7 | 0.663 | **12784.8 ms** | 462.1 ms | 2821.5 ms |
+
+**1.40x decode, 1.24x end-to-end.** Per-pair ratios 0.700 / 0.676 / 0.971 /
+0.694 / 1.049 / 0.697 / 0.718 / 1.176 / 0.725 — median **0.700**, with 6 of 9
+clustered at 0.68-0.73 and three upward excursions. Legacy's own spread is only
+0.095, so the persistent arm's 0.663 is excursion-driven, not a wider
+distribution; the median is the honest headline and the spread is quoted rather
+than trimmed. **(c) No regression in the untouched stages:** prefill 461 vs 462
+ms, sam 2754 vs 2822 ms, qwen2_enc 379 vs 376 ms — prefill deliberately still
+runs the per-layer path.
+
+**The task's stated premise was wrong, and that is the reusable finding.** T14
+was scoped as "the decode graph is rebuilt and freed per layer per token" ⇒
+amortise the rebuild. Measured with `DS_PROFILE=1`, the legacy path's graph
+build+alloc is **1% of decode on CPU (26 ms of 5223 ms) and ~3-6% on Metal** —
+there was never enough build overhead to be worth amortising. The win is
+elsewhere: one graph per token replaces **13 backend dispatches and 24
+host<->device hidden-state transfers per token**. Before porting this pattern to
+qwen2vl/granite/smoldocling (PERFORMANCE.md P2), measure the overhead fraction
+first — the lever is dispatch/transfer count, not graph construction.
+
+**Copying qwen2vl verbatim was a 2.42x REGRESSION, and this is the trap to
+record.** qwen2vl reads the full allocated `max_seq` every step and lets the
+mask hide the tail. Here `max_seq` is `n_prompt+max_new+64` = 1408 while only
+~478 slots are ever live, so every layer of every token attended over ~3x too
+many slots and materialised three full `cont(permute(...))` copies of a
+`[1280 x 1408]` K/V. Interleaved on Metal: decode 13654.9 ms legacy vs 32419.5
+ms persistent, per-pair ratios 2.669 / 2.098 / 2.424 / 3.439 / 2.362 (median
+**2.424**), no overlap. Fixed by bucketing the read depth to a multiple of 256
+(`DS2_KV_BUCKET`, 0 restores the qwen2vl behaviour), which keeps the constant
+shape that lets `sched_alloc` skip reallocation while reading only a little more
+than is live: decode 32419 ms -> 8192 ms. **A pattern that is right for one
+engine can be inverted by that engine's `max_seq`-to-live-slots ratio.**
+
+**F16 KV (`DS2_KV_F16=1`) is implemented but deliberately NOT measured as part of
+the acceptance gate and NOT default.** It is a precision change, so bundling it
+with the graph refactor would have made any text diff unattributable; the
+byte-identity gate ran with the cache dtype held fixed at F32. Quantifying it is
+open work.
+
+**Blocking infra bug found and worked around: Metal was silently OFF.** A build
+dir configured once without Metal caches `GGML_METAL_EMBED_LIBRARY=OFF`, and
+`option()` never revisits a cached value, so a later `-DGGML_METAL=ON` leaves the
+library un-embedded; ggml then writes `default.metallib` to `build/bin/` while
+`ggml_metal_library_init` looks beside `argv[0]` in `build/`, fails, and falls
+back to CPU **while `CMakeCache.txt` still reads `GGML_METAL:BOOL=ON`**. Every
+measurement taken before this was found was CPU mislabelled as Metal (`sam`
+17.7 s vs 3.2 s). Worked around with `ln -sf bin/default.metallib
+build/default.metallib`; the real fix (`GGML_METAL_EMBED_LIBRARY=ON`, or CMake
+copying the metallib beside the executable) is **unowned follow-up work** —
+it affects every Metal claim this repo makes from a `build/` binary. Full
+mechanism in LEARNINGS.md.
+
+**CPU arm — 5/5 synth byte-identical; ONE cc0 fixture differs by ONE codepoint,
+and it is explained.** On `commons_example_receipt.png` under `DS2_FORCE_CPU=1`
+the legacy arm emits `**Jackson–Washington**` (U+2013 en dash) where the
+persistent arm emits `**Jackson-Washington**` (ASCII hyphen), plus one extra
+blank line. That is the entire diff. Mechanism: the legacy path runs the final
+RMSNorm host-side in `rmsnorm_cpu` (sequential f32 accumulation) and dispatches
+the LM head as its own graph, while the persistent path does both in-graph with
+a different reduction order; the last-bit logit difference resolves a near-tie
+between `-` and `–`. The comparison matrix shows this is a property of the
+FIXTURE, not of the new path:
+
+| config | bytes | sha12 | CER |
+|---|--:|---|--:|
+| CPU legacy | 574 | `ad1afaa6e857` | 0.22604 |
+| CPU persistent | 573 | `06cc11c9184c` | **0.22359** |
+| Metal legacy | 566 | `046b089ec4e7` | **0.22359** |
+| Metal persistent | 566 | `046b089ec4e7` | **0.22359** |
+
+Three of the four configurations agree exactly, and the outlier is **legacy on
+CPU**, not the new path — the persistent arm on CPU converges to the same text
+both Metal arms produce. CPU-vs-Metal disagreement (table-cell whitespace) is
+strictly larger than arm-vs-arm disagreement on this page. CER moves 0.22604 ->
+0.22359 on this one fixture, i.e. toward the cross-backend consensus; every other
+scored fixture is bit-for-bit equal, so both corpora's mean CER is identical to
+5 decimals between arms.
+
+**CER vs the A4 gold's own ground truth (threshold reference, never a byte
+diff).** Both arms score IDENTICALLY to 5 decimals, as byte-identity requires —
+so this is a threshold observation about the lane, not a T14 result. Numbers are
+**pre-`feat/tokenize-simple-audit`** (that branch restores the dropped `\n` in
+`"\nFree OCR."` and will move every page; a post-merge re-gate is owed):
+
+| corpus | n | arm | CER raw | CER stripped | reference (A4) |
+|---|--:|---|--:|--:|--:|
+| synth | 20 | legacy | 0.00567 | 0.00348 | 0.00199 |
+| synth | 20 | persistent | 0.00567 | 0.00348 | 0.00199 |
+| cc0 | 5 | legacy | 1.06321 | 1.01739 | 0.18743 / 0.11063 |
+| cc0 | 5 | persistent | 1.06321 | 1.01739 | 0.18743 / 0.11063 |
+
+The cc0 mean is **not** a broad recognition gap — it is two pages spiralling into
+the `max_new`=1024 cap:
+
+| fixture | native CER | stripped | ref CER | chars | ref chars | gen tokens |
+|---|--:|--:|--:|--:|--:|--:|
+| `commons_example_receipt.png` | 0.2236 | 0.0270 | 0.2113 | 566 | 559 | 217 |
+| `commons_test_ocr_document.jpg` | 0.0406 | 0.0339 | 0.0074 | 2958 | 2991 | 690 |
+| `receipt_historical.png` | **0.1198** | 0.1263 | 0.3633 | 753 | 1070 | 434 |
+| `german_official_print.jpg` | 2.2438 | 2.2398 | 0.1933 | 2962 | 1078 | **1024** |
+| `simple_form.png` | 2.6883 | 2.6599 | 0.1619 | 762 | 287 | **1024** |
+
+On the three pages that terminate normally the lane is competitive and
+`receipt_historical` **beats** the reference (0.1198 vs 0.3633). The two capped
+pages end in literal `FinlandFinlandFinland...`.
+
+**Root cause of that, found not fixed — the lane implements no repetition guard
+at all.** The captured contract (`tests/regression/gold/deepseek-ocr2/`) records
+the reference generating with **`no_repeat_ngram_size=20`**; `src/deepseek_ocr2.cpp`
+takes a plain `std::max_element` argmax with no equivalent, while
+`qwen2vl_ocr.cpp` and `internvl2_ocr.cpp` both already carry
+`argmax_no_repeat_ngram`. Porting that helper is a self-contained, high-value
+follow-up that should recover both capped pages; it is deliberately out of this
+branch because it changes decoded output and needs its own quality gate.
+
+**Found, not fixed (each is someone else's lane):** (1) `--gpu-backend cpu`
+silently falls through to Metal because `crispasr_init_gpu_backend()` scans only
+GPU/iGPU devices — T18 owns it; this branch added the engine-local
+`DS2_FORCE_CPU=1` it needed instead. (2) The lane feeds a single 1024x1024 view
+(257 image tokens) while the A4 reference uses dynamic cropping (up to 1121
+tokens), so native CC0 CER cannot approach the reference's until crop mode is
+ported — a contract gap, not a T14 regression, and both arms share it
+identically. (3) `--ocr-engine`'s help string omits `deepseek-ocr2` (and other
+ids) though `eng_id` accepts it. (4) Two CC0 pages hit the 1024 `max_new` cap in
+both arms.
+
+**Artifacts:** `tests/results/t14/` (per-fixture transcripts + `runs.json`
+stage-bench rows for every arm, both A/B windows) and
+`tests/run_deepseek_ocr2_bench.py` (sweep + load-gated interleave modes).
+
+### T15 status [DONE 2026-08-04, `feat/t15-smoldocling-doctags`]: contract fixed, native ≥ reference on 4/5 pages; backend port deferred with data
+
+The "duplicated DocTags" was NOT a dedup/parsing problem — it was THREE
+stacked contract defects, all invisible to tensor parity (the recorded 0.9999
+was measured against a dumper that hand-squashed to 512², i.e. a
+matched-WRONG-preprocessing reference):
+
+1. **Converter dropped all 145 added tokens** (`model.vocab` only → vocab
+   49152, not 49280), so detok silently deleted every generated
+   `<loc_N>`/`<doctag>`/`<row_r_col_c>` id (out-of-range → `continue`) —
+   the "mangled markup". Fixed in `convert-smoldocling-to-gguf.py`;
+   **GGUFs converted before 2026-08-04 are defective** — all three quants
+   re-converted and re-uploaded to `cstr/smoldocling-GGUF`, q8_0 SHA
+   re-pinned, fresh-download re-verified.
+2. **Preprocessing fed one squashed nearest-neighbor 512² image**; the
+   reference does Lanczos longest-edge-2048 → round-up-to-512-multiples →
+   512² tiles + squashed global view + `<fake>`/`<row_r_col_c>`/`<global-img>`
+   prompt layout. The squashed input is what made the decoder hallucinate
+   the duplicate regions. Ported exactly (incl. the "\n"+"\n"→single-token
+   1116 BPE subtlety); prompt ids byte-identical to the reference processor
+   on fox.png (347/347, pixel_values [1,5,3,512,512]).
+   `SMOLDOCLING_LEGACY_PREPROC=1` restores the old path.
+3. **max_tokens hardcoded 128** (a parity-era TODO) and
+   `crispembed_ocr_model_set_max_tokens` never dispatched here — every page
+   silently truncated. Default 1024, `--ocr-max-tokens` wired.
+
+Also: registry name `smoldocling` added (engine was `-m <path>`-only — the
+T11 reachability class), DocTags-aware payload scoring in
+`ocr_engine_benchmark.py`.
+
+**Acceptance (artifact `tests/results/ocr_parity_smoldocling_2026-08-04.json`,
+raw paired outputs included):** fox payload CER **0.86 → 0.0000** (exact);
+vs cc0 ground truth, native q8_0 **beats the transformers-f32 reference on
+its own model**: commons 0.0077 vs 0.0956, receipt_historical 0.2344 vs
+0.4935; scan_page_pd native visibly more correct (ref truncated at the
+1024 cap with misreads). simple_form: shared failure — native emits a clean
+`<picture>` classification (CER 1.0), the reference DEGENERATES into a
+"Véhévé…" repetition loop (raw CER 3.23) — same receipt/form-class chaos
+recorded for the A1/A3 references. q4_k and f16 fox-gated too (q4_k locs
+shift more; payload exact).
+
+**Deferred with data (the "then" half):** backend un-hardcode. Stage split
+now: vision+connector 31.7 s of 37.3 s total on fox (5 sub-images, CPU) —
+the port target is the per-tile SigLIP graph (compute-bound, GPU-shaped);
+the 135M per-token decode is the CPU-favored shape per the persistent-decode
+LEARNINGS. Split residency; do NOT move decode blindly. PERFORMANCE.md has
+the table. Full pages are 72–103 s CPU — slower than pre-fix (N+1 vision
+forwards) and worth the backend session.
+
+### T1 — Transcribe 5-10 CC0 scans [DONE 2026-08-03 for the 5 scoreable English-lane fixtures]
+
+**Landed:** `tests/regression/images/cc0/ground_truth.json` (branch
+`feat/cc0-ground-truth`, merged) — manual transcription with per-fixture
+confidence and conventions (as-printed hyphenation, column reading order,
+bleed-through excluded). `simple_table.jpg` is excluded as directional-only
+per the trap note below; the out-of-scope fixtures (Fraktur manuscript,
+Arabic, handwriting, sheet music) remain unlabelled. T2 and the real-scan CER
+column are now unblocked; first scored results are in the 2026-08-03
+head-to-head subsection above. Original brief kept below for the remaining
+out-of-scope fixtures.
+
+### T7 — PP-OCRv6 detector graph geometry parity [CLOSED 2026-08-04 — one-line bug; graph promoted to default and it IS a performance item after all]
+
+**The divergence was an arithmetic bug, not a postprocessor disagreement:**
+the graph's fused-stage insert-SE applied `ggml_scale(gate, 0.2f)` *and*
+`ggml_scale_bias(gate, 0.2f, 0.5f)` — hard-sigmoid squashed to `0.04x+0.5`
+where the scalar path (and Paddle's SELayer) use `0.2x+0.5`; the proc-stage
+SE never had the extra scale, which is why divergence started exactly at
+`fused0` (cosine 0.988). After the fix: probability cosine ~1e-8 with equal
+norms on synth/german/receipt.
+
+**And the "2.6-6.8x slower" claim was a backend artifact:** `DET_GRAPH`
+*implied* GPU load, so the graph had only ever been timed on Metal (1693 ms)
+— on the CPU backend the same graph runs **175 ms vs 316 ms scalar** on
+synth_00_clean and **1363 ms vs 2056 ms** on the 1920x2518 Fraktur page.
+Promoted to default for tiny/small on CPU (25-fixture labelled CER net-better,
+0.06394 vs 0.06410; receipt hits 0.00000; box-level diffs are threshold
+jitter). `CRISPEMBED_PPOCRV6_DET_SCALAR=1` restores scalar;
+`CRISPEMBED_PPOCRV6_DET_GPU_LOAD` is the explicit GPU opt-in.
+
+**Same day, the medium tier followed:** `run_medium_neck` (RepLKFPN: adjust /
+top-down / project / bottom-up / lateral / med_ic refinement) is now in the
+persistent graph, every `med_*` tap at cosine 0.99999998-1.0, probability
+0.99999999 with equal norms and same box counts. Detector time
+**6911→1024 ms** (synth page) and **41438→8711 ms** (`german_official_print`),
+German CER graph 0.04856 vs scalar 0.04955 — the CPU-scalar medium detector
+was why the medium tier blew the 120 s benchmark guard, so the highest-quality
+tier is now actually usable. Medium graph default like tiny/small.
+
+Remaining: Metal conv perf, and the comparator's own graph-box extraction
+(emits `graph=0` — the accept path is exercised instead).
+
+### OPEN TASKS — Tesseract CJK lane (opened 2026-08-08, from the issue-#44 investigation)
+
+Root causes proven on `tests/regression/images/japanese_print.png` + line
+crops (evidence in `docs/LANGUAGES.md` and the 2026-08-08 board rows):
+
+1. ~~**Multi-code recoder vs single-code default decode**~~ **FIXED
+   2026-08-08 (`b61f22ae`)** — auto-compose on multi-code recoders; all
+   gates passed (jpn lines exact by default, `=0` restores, Latin
+   byte-identical old-vs-new in default AND forced-compose arms).**
+   CJK traineddata encodes kanji as 2-3-code radical-stroke sequences; the
+   production greedy single-code path emits `<class>` per un-composed kanji
+   while kana pass. `CRISPEMBED_TESSERACT_RECODE_COMPOSE=1` decodes the
+   clean line crop CHARACTER-EXACT (`日本語のテキスト認識テスト`).
+   Fix: auto-enable compose at model load when the recoder contains any
+   multi-code entry — no-op for single-code (Latin) models, preserving the
+   measured Latin default; env keeps absolute precedence (`=0` forces the
+   single-code path even on CJK, `=1` forces compose on Latin).
+   Gates: byte-identity on the Latin/Fraktur fixture corpus; Japanese line
+   crops decode exact; no timing regression on the Latin arm (compose must
+   be a true no-op when the recoder is single-code).
+2. ~~**CJK page segmentation**~~ **FIXED 2026-08-08 (`feat/tesseract-cjk-page`).**
+   The diagnosis held on all three counts, and the cheapest fix was the right
+   one: the tesseract stage now dispatches `model_a` on GGUF metadata, so a
+   **PP-OCRv6 detector** hosts detection and supplies line-level boxes. Because
+   those boxes are already lines, the DBNet fragment grouping AND the
+   segmentation router are bypassed on that arm (a DBNet det keeps the
+   unchanged historical path). `crispembed_ocr_init` dispatches the REC slot on
+   metadata too, so a `tesseract_lstm` GGUF reaches the orchestrator instead of
+   the flat `math_ocr_init` loader — that was fact (c).
+   **Gates: `japanese_print.png` decodes BYTE-EXACT (3/3 lines, page CER
+   0.0000)** in both the `--ocr-det/--ocr-rec` and the `--ocr-pipeline
+   --ocr-engine tesseract` forms; baseline produced `(no text detected)` and
+   `regions=0`. Latin default lane byte-identical base-vs-new on 5 fixtures.
+   Prints `[tesseract-det] path=ppocrv6 boxes=N`.
+3. ~~**CLI misroute guard**~~ **DONE 2026-08-08.** The CLI reads
+   `general.architecture` (+ `ppocrv6.kind`) from `-m` and, for a line
+   recognizer used without `--ocr-rec`, prints the cause plus the exact
+   pipeline command to run instead. Deliberately NOT auto-rerouting: chose the
+   warning because recognizing a single cropped line that way is a legitimate,
+   actively-used flow (it is how the CJK line-level decode is validated), so
+   the warning is **geometry-gated** (fires only above 100 px image height).
+   Verified page-warns / line-crop-silent / detector-silent.
+4. ~~**Registry `languages` field**~~ **DONE 2026-08-08.**
+   `tools/scan_model_languages.py` makes the `docs/LANGUAGES.md` recipe
+   executable; its output IS the registry field, shown as the `--list-models`
+   "Scripts" column. All 15 recognizers scanned from their shipped GGUFs (the
+   10 uncached tesseract models were fetched for it). `ppocrv6-tiny-rec` now
+   visibly reads `latin+cjk+greek` next to small/medium's `+kana`.
+   `tests/test_registry_languages.py` guards labels + measured facts and was
+   verified to FAIL first on an injected issue-#44 regression. Coverage is
+   documented as necessary-not-sufficient; a blank column means NOT SCANNED.
+   **New fact:** `tesseract-kor` = 1089 hangul, ZERO CJK ideographs — mixed
+   hanja Korean is out of dict.
+
+**Unrelated defect found while building, recorded not fixed:**
+`crispembed_ocr_model_recognize_gray` (`src/crispembed.cpp:4467`) has no
+`OCR_MODEL_UNLIMITED_OCR` case and silently returns `nullptr` for that engine
+(live `-Wswitch` warning). Needs a gray→RGB adapter; unowned, untested.
+
+### T11 — Reachability: every engine invocable, the document pipeline reachable from the CLI
+
+Six enum engines have no CLI name (`deepseek_ocr2`, `tesseract_fraktur`,
+`parseq`, `pix2struct`, `granite_vision`, `unified` — `examples/cli/main.cpp`
+`eng_id` map vs `src/ocr_orchestrator.h:41-59`), and `--ocr-pipeline` can
+never set `layout_model`/`table_model`/`formula_model`/`route_*`, so the
+existing layout→table→formula→markdown assembly is C-ABI/server-only. This
+exact bug class hid ppocrv6 for months (no `map_engine` id, no CLI name).
+**Do:** name every engine; add `--ocr-layout/--ocr-table/--ocr-formula` (or
+one `--ocr-document` preset) to the pipeline path; extend
+`tests/test_ocr_backend_matrix.py` to assert enum↔CLI-name coverage so the
+class cannot recur. **Acceptance:** each engine runs by name on a fixture;
+the receipt produces markdown with a table via CLI alone; the matrix smoke
+fails if a future engine ships nameless.
+
+### T18 — Embedder one-shot fixed init (~1.2-1.4 s) dominates CLI latency; warm compute already beats onnxruntime
+
+Measured 2026-08-04, M1 16GB, same-window A/B, 64 German sentences (~12 words,
+padded len 30), multilingual-e5-small q8_0 vs the official fp32 ONNX export on
+onnxruntime 1.25.1 CPU EP (tokenizers batch, mean-pool+L2, warm):
+
+| config | load/init | warm per-text (batch 64) | single-text warm |
+|---|--:|--:|--:|
+| crispembed q8_0 (Metal, one-shot CLI) | **~1.2-1.4 s** | 5.7-11.7 ms (marginal) | n/a (one-shot pays init) |
+| onnxruntime fp32 CPU | 0.44 s session | 12.1-14.4 ms | 13.6 ms |
+
+Output parity q8 vs ONNX fp32: cosine min 0.99993 / mean 0.99995 (n=64).
+So the "ONNX is much faster" experience is NOT compute — warm-vs-warm we are
+~1.4x ahead — it is the **fixed one-shot init**: ~1.2-1.4 s regardless of
+model size (132 MB e5 and 23 MB MiniLM both pay it → not weight I/O), and
+`--gpu-backend cpu` still initializes the Metal device (stderr shows the
+pipeline-cache load either way), so the flag does not skip the cost.
+**Do:** (a) make `--gpu-backend cpu` actually skip GPU device init for the
+embed path; (b) profile the remaining fixed cost (SPM tokenizer build for the
+250k XLM-R vocab is a suspect) and lazy-init what one-shot embedding does not
+need; (c) consider a CPU-default for small embedders in one-shot CLI mode
+(T5 precedent: workload-dependent backend). Server mode already amortizes —
+this is a CLI/scripting-latency item. **Acceptance:** one-shot
+`crispembed -m multilingual-e5-small --json "text"` total time down ≥3x with
+embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
+in warm batch throughput.
+
+### T13 — olmOCR lane (the one absent family; cheapest add)
+
+Zero trace in the repo. It is an Apache-2.0 Qwen2.5-VL-7B fine-tune, so the
+`qwen2vl_ocr` engine and converter path should carry it. **Do:** convert the
+olmOCR-2 checkpoint; implement its document-anchoring prompt contract;
+registry + CLI name; gold fixtures from its toolkit. q4_k first (16 GB box;
+DeepSeek at 5.3 GB peak ran). **Acceptance:** decoded output parity vs the
+olmOCR toolkit on ≥5 anchored pages (their own eval format), HARD RULE #3
+decoded-text gate, and a T12 harness row.
+
+### T14 — DeepSeek-OCR: persistent decode graph + F16 KV (open lever #2) + CER gate
+
+The decode graph is rebuilt and freed per layer per token, KV is F32 —
+explicitly the one engine the GPU-decode "done" note does not cover
+(§DeepSeek-OCR-2 levers). The qwen2vl engine next door already has the
+persistent `build_decode_step_graph` + F16-KV pattern. Warm profile today:
+~12 s total, decode 3.8 s. **Do:** copy the pattern; keep `DS_*` fallbacks;
+CER gate via T12 BEFORE the perf work (no recorded reference parity exists).
+**Acceptance:** decoded text unchanged on the existing fixtures, warm decode
+time down with interleaved A/B, a reference CER row, and the CLI name from
+T11.
+
+### T15 — SmolDocling: fix the DocTags output before touching speed
+
+Tensor parity 0.9999 but LIVE payload CER 0.86 from duplicated DocTags —
+the harness-blind zone (LEARNINGS: diff the input/output contract, not more
+tensors). Backend is hardcoded `ggml_backend_cpu_init`. **Do:** first
+deduplicate/parse DocTags against reference output on gold pages; only then
+un-hardcode the backend and A/B GPU. **Acceptance:** payload CER on gold
+pages comparable to the reference implementation's own output; then
+backend A/B with text gates. Related Docling-quality debt to carry: layout
+detection score 0.934 vs HF reference 0.955.
+
+### T1 (original brief) — Transcribe 5-10 CC0 scans [BLOCKS T2, O8, and the WER column]
+
+**This is the highest-leverage task available and it gates the others.** Every
+remaining routing decision is a proxy for "which output is more correct", and
+that question is answerable directly for a handful of pages.
+
+**Why it is blocking.** The 14 CC0 scans have **no ground truth**, so every
+"better" judgement in this area is a character-count proxy against DBNet — and
+that proxy was proven *directionally wrong* on `german_official_document.jpg`,
+where an English model transliterating 1848 Fraktur scored "better" purely for
+hallucinating more fluently. Seven candidate probes have now been falsified
+against labels of that quality (see T2). Tuning an eighth has a worse expected
+return than an hour of transcription.
+
+**Do** Transcribe the six fixtures the English lane can legitimately be scored
+on: `commons_test_ocr_document.jpg` (two-column English print),
+`german_official_print.jpg`, `receipt_historical.png`,
+`commons_example_receipt.png`, `simple_form.png`, `simple_table.jpg`. Store them
+in the same schema as `~/crispembed-ocr-synth/ground_truth.json`
+(`records[] = {file, text}`) under `tests/regression/images/cc0/`, and record
+provenance explicitly — who transcribed, and confidence per fixture.
+
+**Known traps.** `simple_table.jpg` is 200x102: its title and 5x5 grid are
+legible but the cell **digits are unrecoverable** even upscaled 6x, so mark it
+directional-only, never a CER gate. These fixtures are **out of scope** for the
+English lane entirely and must not be scored with it: `german_official_document`
+(1848 Fraktur), `arabic_handwriting`, `german_kurrent_handwriting`,
+`handwritten_letter` (handwriting), `arabic_printed_line` (needs
+`tesseract-ara`), `public_domain_sheet_music` (not prose). A Fraktur model is
+already cached (`tesseract-frk-*`) if someone wants that lane scored properly.
+
+**Acceptance** A ground-truth file that lets `tests/ocr_external_parity.py`
+report absolute CER on real scans, with per-fixture provenance and confidence.
+
+---
+
+### T8 (original brief) — small, self-contained
+
+**State.** `extract_path_field` was moved onto `core_json`'s depth-1 finder on
+2026-08-03 (commit `54aeaecb`), so every *path* field — `image`, `output`,
+`file`, `model` — is now read the same way the confinement checks it. Eight
+non-path reads were not converted and still do a bare `body.find("\"key\"")`.
+
+**Why it matters.** A textual scan matches the key anywhere, including inside a
+nested object. `{"meta":{"format":"a"},"format":"b"}` makes the server take the
+nested value while a validating proxy in front reads the top-level one, so the
+two disagree about what was requested. That is exactly the disagreement the
+`image` field had. These are non-path fields, so nothing is reachable through
+them the way an arbitrary path was — this is consistency work, not an open hole,
+and should not be written up as a vulnerability.
+
+**Do** Convert `examples/server/server.cpp` lines **1218, 1872, 1935** (`"text"`),
+**2378, 3243** (`"format"`), **2394** (`"results"`), **3249** (`"autorotate"`),
+**3255** (`"images"`) to `core_json::json_extract_strings` /
+`json_extract_number`. Line numbers are as of `b95f4f93`; re-grep
+`body\.find("\\"` before trusting them.
+
+**Acceptance** `tests/test_server_json_input.cpp` gains a nested-decoy case per
+converted field, each failing before the change and passing after. No behaviour
+change for well-formed requests.
+
+---
+
+### R1 — Tesseract recognizer batching + weight/graph reuse — **PREMISE DEAD 2026-08-06: recognition is 0.4 s, not 38.3 s; the gap is ALL detection now**
+
+Re-measured on current main (`perf/r1-tesseract` investigation, same fixture
+`german_official_print.jpg` 1920x2518, same comparator, 3 repeats, `frk`
+q8-seeded artifact, workers 4). **Every number in the old item was stale**:
+
+| | old record (2026-08-02) | current main (2026-08-06) |
+|---|--:|--:|
+| native recognize | 38,338 ms | **382-423 ms** |
+| native detect (dbnet) | 102 ms | 3,804-3,822 ms |
+| native stage total | 38,690 ms | 4,314-4,368 ms |
+| official tesseract 5.5.2 | 9,340 ms | 1,803-1,833 ms |
+| native CER vs official | 0.5279 | **0.2351** |
+
+The recognizer was already fixed by landed work nobody re-measured against:
+the **int8 recurrent-weight cache** (`379434b1` + `e49d390d`, 2026-08-01/02 —
+**default-ON**, opt-out `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1`; verified
+by disable-arm: recognize 4,346 ms off vs 581 ms on = 7.5x), plus the
+Metal-init load skip (`25ceb9db`) and LSTM scratch reuse (`31f71239`). The
+residency survey's "gated int8 recurrent-kernel cache" wording was wrong — it
+is opt-out, not opt-in. Per-line batching is now a LOW-value item (~0.4 s
+total at stake).
+
+**The real Fraktur-lane frontier today** (same runs):
+
+- dbnet route: stage 4.31-4.37 s, CER **0.2351** — 88% of it is the dbnet
+  CPU graph at `det_target_short=736` (consistent with its documented
+  ~10 s/1472x736 CPU cost; Metal measured 139 s = no help; **the CUDA arm is
+  the open lever**, and dbnet still needs adding to the conv-ab kernel's O9
+  phase — v1 only covers ppocrv6 det + layout).
+- classical-pageseg route: stage 1.15-1.24 s (**faster than official's
+  1.81 s**), detect 40 ms, but CER 0.4123 (23 lines) — the H9 column-count
+  router already arbitrates between the two routes; pageseg QUALITY is the
+  remaining item (the existing quality lane: crop geometry, recoder/decoder
+  semantics).
+
+Successor items: (a) dbnet det cost on big pages — CUDA re-A/B (add to
+conv-ab v2) and the R6-x86 verdict; (b) pageseg quality to make the fast
+route's CER competitive; (c) the recognizer itself is no longer the
+bottleneck and needs no batching work.
+
+---
+
+### T8 — Server: 8 JSON field reads still scan textually [DONE 2026-08-04, merged via `chore/ocr-followups-0804`]
+
+All listed sites (3× `text`, 2× `format`, `results`, `autorotate`, `images`)
+plus the per-result-object `text` moved onto `core_json` depth-1 helpers;
+9 nested-decoy checks added to `tests/test_server_json_input.cpp` (all pass).
+Two extras found while in there: (a) the `images` array was the one
+path-valued input that BYPASSED `--image-root` confinement — each entry now
+goes through `path_within` like the single-image field; (b) the T11
+segfault (Tesseract GGUF in the flat rec slot) is fixed — `math_ocr_init`
+now refuses foreign GGUFs loudly naming their `general.architecture`
+(positive-tested: pix2tex-mfr q4_k still maps 12/12+6/6). Residual, NOT
+fixed: an engine load failure inside the flat pipeline still yields
+`regions=0` with exit code 0 — indistinguishable from a blank page for a
+benchmarking caller (HARD RULE #8 class); needs a status channel through
+the orchestrator before the CLI can exit nonzero. Original brief below.
+
+### T10 — PP-OCRv6 symbol-class gap [RESOLVED 2026-08-04 — it was the cleanup stage, not the recognizer]
+
+**Root cause, proven by bisection; fix merged as `fix/ppocrv6-cleanup-default`.**
+The recognizer port is CORRECT: on the pipeline's own dumped crops it decodes
+the receipt perfectly, scalar and batch identically (`test-ppocrv6-rec`
+parity=PASS 5/5), and the activation audit (stem ReLU / channel-mixer GELU /
+neck SiLU ×5 / tiny-guide Hardswish) matches both `rec_lcnetv4.py` and the
+official ONNX op pattern (13 Erf, 5 `x·σ(x)` SiLU, 10 ReLU, 5 HardSigmoid).
+The corruption came from `--ocr-pipeline`'s scan-cleanup stage:
+`scan_cleanup_process` converts to grayscale and runs **despeckle +
+blackfilter unconditionally** (defaults on, and
+`--no-deskew/--no-crop-borders/--no-whiten` do not touch them — they have no
+CLI switches at all), eroding thin strokes on clean rendered type before the
+detector ever sees the page. `test-ppocrv6-direct` on the cleaned image
+reproduces `$`→`S`, `:tem`, `QLY`, `Frice` byte-for-byte; on the raw image it
+reads everything.
+
+**Fix (merged):** the ppocrv6 stage skips destructive cleanup by default,
+mirroring the VLM carve-out and the official pipeline (which detects on the
+raw page); `CRISPEMBED_PPOCRV6_CLEANUP=1` restores the old behaviour.
+Same-binary validation: labelled CC0 mean CER 0.332→**0.293** / WER
+0.557→**0.473** (receipt 0.0885→**0.0025**, beating official paddle's 0.0074;
+form 0.737→0.615, also ahead of paddle; Fraktur 0.0486→0.0535 and dot-matrix
+0.0260→0.0273, noise-level), and the lane's median engine_ms fell
+9414→**7682**, now below paddleocr-py's 7933 on these pages. Cost, reported
+rather than hidden: synth mean CER 0.0031→0.0070 (still 2.7x ahead of
+paddle's 0.0185), concentrated in the `_noise` variants where despeckle acted
+as a denoiser (`synth_00/01/02/03_noise` +0.008/+0.008/+0.007/+0.026-ish,
+plus a ±0.02-0.04 wobble on two `clean` fixtures in opposite directions).
+
+**Follow-ups spawned:** (a) the T2 cleanup router now owns the noise-page
+axis, with fresh per-arm ppocrv6 evidence on both corpora; (b) despeckle and
+blackfilter deserve CLI flags — today they are unreachable knobs; (c) the
+official-ONNX `-ref.gguf` stage-diff remains the right tool if a
+recognizer-level anomaly ever resurfaces (reference:
+`~/venvs/rapidocr/.../models/PP-OCRv6_rec_small.onnx`; do NOT use the repo's
+gold archives as the reference — they are dumps of our own torch mirror and
+prove only self-consistency).
+
+---
+
+### R2 — `layout_detect` deformable cross-attention — **PREMISE STALE; real hotspot found + FIXED 2026-08-05**
+
+**The "dominant Phase-2 cost" claim was measured before `2a43e4f4`** (the
+2026-07-11 cpu_linear threading) and survived into the survey uncorrected: on
+current main the deform loop is **16 ms of an 856 ms Phase 2 (~2%)** on
+`scan_page_pd` at `-t 4`. New permanent per-stage timers behind
+`CRISPEMBED_LAYOUT_DETECT_BENCH` found the ACTUAL dominant cost: the decoder
+**level input projection** (1x1 conv over 8400 tokens; scalar `(n,o,i)` nest,
+inner reduction striding `feat_col` by N_lv, single-threaded) — **549 ms,
+64% of Phase 2**. Landed on `perf/r2-deform`: rewritten in the `2a43e4f4`
+AXPY form + threaded over output rows, byte-identical accumulation order.
+Result: level-proj 549 -> 77.6 ms at `-t 1` (contiguity alone, 7.1x) and
+~30 ms at `-t 4` (~15x); **Phase 2 846 -> 318 ms median (2.66x)**; whole
+layout call 2332 -> ~1700 ms. **CLI region output byte-identical** at both
+thread counts. The deform loop itself stays as-is deliberately (16 ms does
+not justify restructuring risk). Remaining, re-scoped honestly: **Phase 1
+(Metal backbone+encoder, ~1.4 s) is now ~80% of the layout call** — that is a
+GPU-graph question (profile split composition/warmup vs steady-state before
+touching), not a scalar-island one; and Phase 2's next items are value-proj
+(101 ms) + the per-call weight re-dequant/re-transpose/re-upload in the
+self-attn ggml block.
+
+### R4 — `lightonocr` has no backend gate at all — **DONE 2026-08-05**
+
+**Landed on `perf/conv2d-gemm`** (rider on the R6 branch). The gate exists:
+`CRISPEMBED_LIGHTONOCR_GPU=1` opts into `crispasr_init_gpu_backend()` (got_ocr
+sched pattern: CPU fallback appended, `ggml_backend_cpu_set_n_threads` sites
+guarded behind `ggml_backend_is_cpu`), `CRISPEMBED_LIGHTONOCR_FORCE_CPU=1`
+overrides. **Default unchanged and verified**: 0 Metal markers in the default
+arm, output byte-identical to the pre-change binary. Metal arm proven live
+(`ggml_metal` init in stderr), decoded text IDENTICAL to CPU on
+`scan_strip.png` q4_k. First probe (loaded M1, single pair): Metal 7.2 s wall
+/ 1.4 s user vs CPU `-t 4` 5.4 s wall / 20.4 s user — **no wall win on the
+small fixture, CPU stays the default**; the flip decision now just needs
+per-fixture/per-backend pairs. Full numbers in `PERFORMANCE.md` ("R6
+conv2d_cpu im2col-tile A/B", rider paragraph). Note: the survey's "31.6 s
+cold" did not reproduce on this fixture (~5.4 s CPU warm) — re-measure before
+citing it.
+
+### R5 — Decode-step graph caching — **CLOSED 2026-08-06 for all three candidates (O5)**
+
+The required first step was done (`perf/o5-decode-overhead`) and it closes the
+item, exactly as the deepseek T14 precedent predicted:
+
+- **qwen2vl**: build+alloc **2.2%** of decode (446 of 20708 ms over 125
+  steps, existing `QWEN_DBG=1` per-step timers; measured under heavy box load,
+  which inflates the CPU-side build share if anything — the quiet number is
+  lower). Correct OCR text. A persistent decode graph cannot win more than
+  ~2% here.
+- **granite_vision**: build+alloc **9.2%** (1075 of 11660 ms over 180 steps
+  at 64.8 ms/tok; NEW permanent build/compute split on the
+  `[granite_ocr-bench] decode:` line). Single-digit but borderline — worth at
+  most ~1 s of a 21.7 s end-to-end run; recorded for whoever revisits.
+- **smoldocling**: the premise was structurally WRONG — its decode step
+  (`sd_llm_decode_step`) is a hand-written CPU loop (`core_cpu`/`sd_linear`)
+  with a **host `std::vector` KV cache**; there is no decode graph to cache
+  and never was. The old wording "device-resident KV but rebuild the decode
+  graph each step" was also wrong about granite in the other direction: its
+  DEFAULT decode is the per-step ggml graph (`gv_run_llm_body` T=1, Metal
+  F16 KV); the scalar loop is the fallback.
+
+Correction retained from before: math_ocr, easyocr and ppocrv6 rec already
+reuse built cgraphs. The WebGPU `unreachable` trap note stays relevant only
+if anyone reopens this with a per-backend gate.
+
+### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread — **BUILT + MEASURED BOTH ARCHES (x86 arm CLOSED 2026-08-06)**
+
+**x86 verdict (conv-ab kernel, Xeon 2.0 GHz, 3 interleaved rounds, unit gate
+180/180 on AVX2): the interchange alone WINS ~13% (nt=1 31.3 s vs legacy
+35.9 s median) and nt=4 is 1.76x (20.4 s)** — the M1 −5% verdict was
+L2-size-dependent as hypothesized (12 MB shared L2 vs small private Xeon L2).
+A per-arch default (interchange on x86, legacy on Apple Silicon) is now
+evidence-backed whenever an engine adopts the path; the register-blocked
+micro-kernel (item 3 below) is now justified to open, since the memory-side
+win is real on x86. Original M1 record follows.
+
+**Landed on `perf/conv2d-gemm`**: `core_cpu::conv2d_im2col_cpu` — im2col
+position tiles + oc-outer loop interchange + fork-join threading, **bitwise
+identical to the generic path by construction** (same patch order, same
+`dot_product` per element; exact-equality unit guard over 9 shapes at nt=1
+and nt=4). Gates `CRISPEMBED_CONV2D_GEMM=1` / `CRISPEMBED_CONV2D_THREADS=N`,
+**default OFF per the A/B rule**. M1 verdict (PP-OCRv6 medium scalar det,
+interleaved pairs, full table in `PERFORMANCE.md`): **nt=4 wall 2.04x, won
+all 5 pairs**; **nt=1 is 4-7% SLOWER** — the M1's 12 MB shared L2 already
+holds these weight matrices, so the interchange alone doesn't pay here; the
+win available today is threading. Remaining, in order:
+
+1. **Kaggle AVX2 A/B of the same three arms** (small private L2 is where the
+   interchange hypothesis should win; also the honest CPU baseline for any
+   CUDA/discrete-GPU residency decision). Per the offload directive, not on
+   this Mac.
+2. Per-engine opt-ins where latency matters (the SR family, DBNet, scalar
+   det fallback) — the gate is process-wide today, engines can pass their
+   own `n_threads` via `conv2d_im2col_cpu` directly.
+3. Register-blocked GEMM micro-kernel — changes accumulation order, so it
+   forfeits byte-equality and needs decoded-output A/Bs per engine; only
+   worth opening if the x86 arm shows the memory-side win is real.
+4. Fold the two private threaded copies (`deepseek_ocr2.cpp:287`,
+   `unlimited_ocr.cpp:267`) onto the shared kernel once its default story
+   settles.
+
+### R7 — `scunet_denoise` — the missing `DequantCache` — **CLOSED 2026-08-05: measured, not worth it**
+
+The item argued from presence (18 other files have one), not from cost.
+Measured on `perf/r7-scunet` (permanent atomic accumulator in `to_f32`,
+printed on the `CRISPEMBED_SCUNET_BENCH` total line): on
+`scunet-color-f32.gguf` / `scan_strip.png` at `-t 4`, ALL weight `to_f32`
+copies sum to **~4-5 ms of a ~4.3 s tile pass (~0.1%)**. A cache would be
+dead code; for an f16 artifact the bound is a few times that — still ~1%.
+**No DequantCache added; the instrumentation stays** so the number is
+re-checkable per artifact. scunet's real cost is the Swin/conv compute itself
+(~27 s for a 520x260 image), which belongs to the explicitly-deprioritized
+SR-on-GPU research item. Third stale premise found by measure-first this
+session (after R2's deform loop and R4's "31.6 s cold").
+
+Prior correction retained: WMSA is window-parallel across `n_threads`
+(default follows `-t`).
+
+### R8 — ggml-metal ICB (indirect command buffer) replay — **CLOSED premise-failed 2026-08-07**
+
+~~Metal decode is per-op-dispatch bound~~ — it is not, and the repo already
+knew (the 2026-07-13 "82-89% GPU-execute" note below survived this brief).
+Re-measured on current main with the fork's §210 probe: host-encode is 2.2%
+(glm-ocr) / 5.1% (got-ocr2) of a decode step, so an ICB replay's ceiling is
+2-5%. See the 2026-08-07 PERFORMANCE.md entry. Do not re-derive without a
+new engine that actually measures encode-bound.
+
+### O1 — Restore a trustworthy OCR baseline [COMPLETED]
+
+- Fix duplicate region emission in the batched DBNet + TrOCR path.
+- Add a regression test for one output region per detected region and no
+  duplicated reading-order text.
+- Record baseline latency and region/text counts in `PERFORMANCE.md`.
+
+**Started:** DBNet postprocessing now handles degenerate one-point contours;
+the local fox fixture improves from 0 to 10 detected regions. The remaining
+baseline work is an automated model-backed assertion and sequential/batched
+comparison.
+
+**Done when:** batch and sequential recognition produce equivalent region counts
+and no duplicate text on the OCR fixture set. The benchmark harness now accepts
+`--expect-regions` and repeated `--expect-text` assertions for CI.
+
+### O2 — Define a structured document result contract [COMPLETED]
+
+- Add a C++ `ocr_document` result containing page dimensions, text regions,
+  layout regions, tables, formulas, confidence, and engine provenance.
+- Keep the existing orchestrator result and C API source-compatible; provide an
+  adapter first, then migrate callers.
+- Add serialization tests for empty, text-only, and mixed structured results.
+
+**Started:** `ocr_orchestrator::result` now carries page dimensions and optional
+layout regions. Layout inference is lazy and remains disabled unless
+`config.layout_model` is set; existing callers and default latency are unchanged.
+
+**Done when:** callers can consume one structured result without depending on a
+specific OCR engine.
+
+### O3 — Add CPU-only region routing after layout detection [COMPLETED]
+
+- Introduce a pure routing module with `text`, `table`, `formula`, and
+  `fallback` destinations.
+- Route by layout label, confidence tier, containment/overlap, and explicit
+  per-request feature policy; suppress duplicate text when a specialized
+  recognizer owns a region.
+- Unit-test every decision seam without model weights.
+
+**Started:** `ocr_orchestrator::result` now carries the model-free routing plan;
+table/formula/image policy is explicit in `config` and text-only by default.
+
+**Done when:** a synthetic page produces a deterministic routing plan and the
+existing specialized engines can be dispatched from it.
+
+### O4 — Remove temporary image files from stage handoffs [COMPLETED]
+
+- Add an in-memory RGB image/crop view shared by cleanup, detection, and
+  recognizers; retain file APIs as load-and-forward wrappers.
+- Make cleanup output ownership explicit and avoid unnecessary copies.
+
+**Started:** `ocr_detect::detect_rgb` and `ocr_pipeline::run_raw` now accept
+borrowed interleaved pixels; file APIs forward through them. The orchestrator
+cleanup handoff still uses a temporary PNG and is the next O4 slice.
+
+**Done when:** cleanup → detection/recognition runs without creating
+`/tmp/crispembed_ocr_*.png`, with CPU/Metal output parity.
+
+### O5 — Make capabilities and failures explicit [COMPLETED]
+
+- Add an OCR capability query for loaded engines, languages, output types, and
+  structure stages.
+- Validate incompatible requests before inference; use stable errors instead of
+  silent empty structure results.
+- Add image dimension/pixel guards and per-item batch error isolation.
+
+**Started:** enabling table/formula routing now fails at initialization unless
+the required layout and specialized GGUF backends are configured.
+
+**Done when:** every advertised feature is executable or rejected with a stable,
+test-covered reason.
+
+### O6 — Add reusable pipeline pooling and batch execution [COMPLETED]
+
+- Define a bounded OCR pipeline pool for server use; retain the current path for
+  single-threaded and WASM builds.
+- Batch compatible crop recognition, cap batch size, and isolate bad inputs.
+- Add queue/deadline metrics before changing defaults.
+
+**Started:** DBNet+TrOCR inference contexts now serialize mutable decoder state
+with an internal mutex, preventing concurrent callers from corrupting KV/cache
+state. `ocr_pipeline_pool` now provides bounded isolated contexts with blocking
+slot acquisition. The basic C OCR API selects the pool size from
+`CRISPEMBED_OCR_POOL_SIZE` (default `1`); server-level queue/deadline metrics
+remain a follow-up operational enhancement.
+
+**Done when:** concurrent requests do not share mutable decoder state and batch
+  throughput improves without changing decoded text.
+
+### O7 — Establish unified accuracy/performance gates [COMPLETED]
+
+- Add fixtures for receipt, form, dense page, screenshot, photo, table, and
+  formula workloads.
+- Measure CER/WER or exact-match, region recall, structure accuracy, p50/p95
+  latency, memory, and batch throughput.
+- Add regression thresholds and decoded-output checks for optimizations.
+
+**Started:** `tests/ocr_benchmark.py` runs the real detector and pipeline test
+binaries and reports region counts, decoded regions, and stage timings as text
+or JSON. It uses local GGUFs and does not download models implicitly.
+
+**Done when:** one reproducible command reports OCR quality and cost, suitable
+for CI. **Complete:** `tests/ocr_benchmark.py` provides this command and JSON
+output.
+
+### Validation follow-up — external document parser [COMPLETED]
+
+- Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
+  render tests.
+- Live M1 Metal gate passed: DBNet detected 10/10 fox fixture regions and
+  TrOCR recognized 10/10; measured warm total was 5.0–5.3 s/image, with 8/10
+  exact words and 6.1% CER.
+- The comparison implementation's live execution is environment-blocked, not silently skipped: the
+  CPU configure probe lacks OpenCV development files, while the production
+  path requires CUDA/TensorRT and this host has no NVIDIA device/usable Docker
+  daemon. The documented NVIDIA numbers are recorded in
+  `PERFORMANCE.md` as reference claims only.
+- Next actionable benchmark item: run both engines on a shared corpus on an
+  NVIDIA host, then add detector/recognizer quality and throughput thresholds
+  to `tests/ocr_benchmark.py`.
+- Quantization A/B resolved the current fox errors: TrOCR-small-printed Q4_K
+  produced 8/10 exact words, while the same ggml pipeline with the recommended
+  Q8_0 model produced 10/10. Keep Q8_0 as the default quality model; do not
+  treat Q4_K as a quality-preserving OCR quantization.
+- Q8 is now the benchmark/WASM/example default. The pipeline rejects filenames
+  identifying TrOCR Q4_K unless `CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1` is set.
+  Text crops also receive a classical 0°/180° orientation check, and results
+  now expose TrOCR mean/per-character confidence values.
+- Added parity-facing structured output: deterministic reading-order indices
+  and lightweight Markdown export are available from the orchestrator result
+  and C API after each page run.
+- Added modular server/API discovery: `/capabilities`, `/health/live`, and
+  `/health/ready`; structured pipeline responses now include reading order and
+  Markdown. Pipeline params and native server flags can independently enable
+  layout, Tesseract-backed table cells, and PP-FormulaNet formulas.
+- Added a `unified` pipeline stage backed by `crispembed_ocr_model_*`: any
+  metadata-dispatched GGUF engine can now be selected as an escalation or
+  specialist stage without adding another orchestrator-specific enum. This
+  preserves the existing modular engine matrix, including Tesseract-LSTM,
+  PARSeq, VLMs, math, and music engines where full-page/crop routing makes
+  sense.
+
+---
+
+
 ## September 29–30, 2026 — Qwen3-VL fixed, Uni-MuMER republished, Nomic vision + jina-ocr-v1 shipped
 
 All validated against upstream transformers on free GitHub runners
