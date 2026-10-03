@@ -37,7 +37,8 @@ The base alias `lfm2-encoder-230m` in CrispEmbed continues to select official F1
 
 ## Run
 
-Build CrispEmbed from main at ef2cb170 or later (no release binary claim).
+Build CrispEmbed from current main, including the published registry aliases
+(no release binary claim).
 Download and run the 330 MB model with:
 
 ```sh
