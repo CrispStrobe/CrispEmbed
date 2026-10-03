@@ -54,6 +54,25 @@ MODELS = {
         "langs": ["en"],
         "desc": "Snowflake Arctic Embed XS. CLS pooling, optimized for retrieval.",
     },
+    "LFM2.5-Encoder-230M": {
+        "base_model": "LiquidAI/LFM2.5-Encoder-230M",
+        "arch": "LFM2 bidirectional masked encoder",
+        "dim": 1024,
+        "layers": 14,
+        "params": "230M",
+        "pooling": "raw per-token (CLS available)",
+        "tokenizer": "BPE",
+        "license": "lfm1.0",
+        "langs": ["en", "de", "es", "fr", "it", "nl", "pl", "pt", "ar", "hi", "ja", "ru", "tr", "vi", "zh"],
+        "desc": "Calibrated general-purpose masked encoder; no trained retrieval head.",
+        "card_file": "docs/lfm2-encoder-hf-card.md",
+        "license_files": ["models/licenses/lfm1.0/LICENSE"],
+        "publish_files": [
+            "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+            "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+            "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+        ],
+    },
     "lfm2-embed": {
         "base_model": "LiquidAI/LFM2.5-Embedding-350M",
         "arch": "LFM2.5",
@@ -954,6 +973,8 @@ test set ({modalities}):
 def make_readme(model_name, files_info):
     """Generate a HuggingFace model card README."""
     m = MODELS[model_name]
+    if m.get("card_file"):
+        return (Path(__file__).resolve().parent.parent / m["card_file"]).read_text()
     repo_name = f"cstr/{model_name}-GGUF"
 
     # File table
@@ -1198,6 +1219,9 @@ def upload_model(model_name, gguf_dir, dry_run=False, readme_only=False):
     skip_suffixes = ["-q4_0.gguf", "-q5_0.gguf", "-q5_1.gguf"]
     for f in sorted(os.listdir(gguf_dir)):
         if f.startswith(model_name) and f.endswith(".gguf"):
+            approved = MODELS[model_name].get("publish_files")
+            if approved is not None and f not in approved:
+                continue
             if any(f.endswith(s) for s in skip_suffixes):
                 continue
             path = os.path.join(gguf_dir, f)

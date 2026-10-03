@@ -59,4 +59,6 @@ static int crispembed_test_main() {
     return q8 && q4 ? 0 : 1;
 }
 
-int main() { core_util::clean_exit(crispembed_test_main()); }
+int main() {
+    core_util::clean_exit(crispembed_test_main());
+}

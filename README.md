@@ -327,6 +327,13 @@ normalized token features plus tied masked-LM predictions. Use
 or Python `model.fill_mask(...)` / `model.encode_tokens(..., normalize=False)`.
 F16 is the default; CPU inference is validated against the official Python
 model. GPU encoder APIs require `CRISPEMBED_LFM2_ENCODER=1` pending GPU parity.
+Calibrated downloads are available as `lfm2-encoder-230m-mixed330`,
+`lfm2-encoder-230m-mixed210` and `lfm2-encoder-230m-q4k` from
+[cstr/LFM2.5-Encoder-230M-GGUF](https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF).
+For mixed profiles, use `CRISPEMBED_LFM2_F32_DOT=1` for the measured precision mode.
+The HTTP server exposes `/tokens`, `/masked-logits` and `/fill-mask`;
+`/health` reports `masked_lm` when available.
+
 This is a general-purpose masked encoder; retrieval needs task-specific
 fine-tuning. See [usage and parity results](docs/lfm2-encoder.md).
 

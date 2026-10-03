@@ -16,7 +16,13 @@ crispembed -m LFM2.5-Encoder-230M-F16.gguf --capabilities --json
 ```
 
 Registry names are `lfm2-encoder-230m` (F16), `lfm2-encoder-230m-f16`,
-`lfm2-encoder-230m-q8`, and `lfm2-encoder-230m-q4`. Downloads use the existing
+`lfm2-encoder-230m-q8`, and `lfm2-encoder-230m-q4`. Calibrated profiles are
+`lfm2-encoder-230m-mixed330`, `lfm2-encoder-230m-mixed210` and
+`lfm2-encoder-230m-q4k` from
+[cstr/LFM2.5-Encoder-230M-GGUF](https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF).
+All three published files match the audit hashes and have registry SHA-256 pins.
+Use the explicit precision modes documented below; selecting an alias does not
+automatically change arithmetic. Downloads use the existing
 LFM license acknowledgement and SHA-256 verification. Query/document prefixes
 are absent because this checkpoint is a general-purpose masked encoder,
 not the retrieval-trained LFM2.5-Embedding model.
@@ -411,3 +417,56 @@ All original-weight, same-weight and cross-runtime comparisons, per-mask rank/ma
 changes, 2 x 297 passing layer checks, full API replays, settings, known artifact hashes
 and timing/RSS samples are in
 [the arithmetic audit manifest](../tests/results/lfm2-encoder/arithmetic_audit.json).
+
+## HTTP API and hosted regression fixtures
+
+The server exposes the same encoder outputs as the C/Python/Rust/Dart APIs:
+
+| Route | Request | Response |
+|---|---|---|
+| `POST /tokens` | `{"text":"...","normalize":false}` | `token_ids`, `dim`, `normalized`, `embeddings` |
+| `POST /masked-logits` | `{"text":"... [MASK] ..."}` | mask `positions`, `vocab`, raw `logits` |
+| `POST /fill-mask` | `{"text":"... [MASK] ...","top_k":5}` | `masks` with positions and decoded predictions |
+
+`/tokens` defaults to raw features. Both masked routes recognize `[MASK]` as an
+alias for `<|mask|>` and evaluate multiple masks jointly. Fill-mask returns token
+IDs, UTF-8 replacement-decoded pieces, raw logits and full-vocabulary probabilities;
+`top_k` must be an integer from 1 to 100. `/health` includes `masked_lm: true`
+when that capability is active; absent for unsupported models. Calls serialize
+with pooled encoding under the shared model mutex.
+
+```sh
+CRISPEMBED_LFM2_F32_DOT=1 crispembed-server \
+  -m lfm2-encoder-230m-mixed330 --host 127.0.0.1 --port 8080
+curl -s http://127.0.0.1:8080/fill-mask \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"The capital of France is [MASK].","top_k":5}'
+```
+
+[Hosted fixtures](https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/tree/main/lfm2-encoder-230m)
+contain `original-fp32/` and `same-q8-fp32/`, each with 15 layer archives, exact
+text/ID metadata and the full decoded vocabulary. Use the former for original
+checkpoint parity and the latter only with the official Q8 GGUF to isolate
+arithmetic error. Hosted model repo `results/` mirrors the three audit manifests.
+
+```sh
+hf download cstr/crispembed-regression-fixtures --repo-type dataset \
+  --include 'lfm2-encoder-230m/*' --local-dir "$LFM2_FIXTURE_DIR"
+CRISPEMBED_LFM2_F32_DOT=1 python tests/lfm2_server_parity.py \
+  --server build/crispembed-server --model "$LFM2_Q8" \
+  --lib build/libcrispembed.so --log "$LFM2_SERVER_LOG"
+```
+
+The HTTP comparator checks raw/normalized arrays, token IDs, all logits, top-100
+decoded predictions and probabilities against the Python C ABI, plus escaping,
+multiple masks, repeated calls and invalid inputs. It stops the server before
+loading the Python model so model executions remain serial. Source integration
+is complete for this text encoder; CrispCalc's OCR catalog/orchestrator entries
+are inapplicable because it does not recognize images.
+
+Publication and integration checks are recorded in
+[the publication manifest](../tests/results/lfm2-encoder/publication.json).
+The three new aliases pass remote SHA-256, size and upstream/rehost license checks.
+The whole-registry hash checker currently also flags pre-existing unrelated
+missing/drifted pins; this publication preserves those existing pins rather than
+accepting changed upstream model bytes without validation.

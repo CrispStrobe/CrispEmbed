@@ -4,6 +4,19 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## October 3, 2026 — encoder publication and HTTP completion
+
+Published three validated calibrated/mixed GGUFs, model card, license and audit
+metrics to cstr/LFM2.5-Encoder-230M-GGUF; hosted both Python layer reference suites
+in the regression dataset. Added pinned auto-download aliases and publisher
+metadata with an explicit approved-file list. Routed raw/normalized token features,
+raw masked logits and decoded fill-mask predictions over HTTP, with capability
+discovery and shared model locking. Live Q8/mixed330 HTTP/Python tests cover full
+arrays/logits, 700 top predictions per profile, UTF-8 decoding and invalid/repeated
+inputs. Real fresh-cache alias download plus fill-mask and hosted fixture replay
+passed. Existing unrelated registry pin drift is recorded, not silently accepted.
+F16 remains the default and accuracy modes remain opt-in.
+
 ## October 3, 2026 — encoder arithmetic and upstream audit
 
 Corrected the earlier weight-only explanation: quantized GGML matmuls also round

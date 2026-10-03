@@ -3,6 +3,9 @@
 // Usage: crispembed-server -m model.gguf [--port 8080] [--host 0.0.0.0]
 //
 // Endpoints:
+//   POST /tokens          — raw or normalized per-token features and IDs
+//   POST /masked-logits   — raw tied masked-LM logits and positions
+//   POST /fill-mask       — decoded top-k mask predictions
 //   POST /embed           — {"texts": ["hello"]} → {"embeddings": [[...]]}
 //   POST /v1/embeddings   — OpenAI-compatible embedding API
 //   POST /api/embed       — Ollama-compatible (batch)
@@ -31,6 +34,9 @@
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
+#include "core/token_utf8.h"
+#include <algorithm>
+#include <numeric>
 #include "core/json.h"
 #include "core/env_gate.h"
 #include "ocr_render.h"
@@ -150,6 +156,93 @@ static std::string extract_path_field(const std::string & body, const char * key
         return "";
     }
     return path;
+}
+
+// Preserve context-owned outputs until serialization completes, under the same
+// lock as pooled embeddings. Fill-mask and full logits share one inference path.
+static void handle_encoder_request(const httplib::Request & req, httplib::Response & res, crispembed_context * ctx,
+                                   std::mutex & model_mutex, int mode) {
+    auto error = [&](int status, const char * message) {
+        res.status = status;
+        res.set_content("{\"error\":\"" + json_escape(message) + "\"}", "application/json");
+    };
+    if (!ctx) return error(503, "no embedding model loaded");
+    if (mode && !crispembed_has_masked_lm(ctx)) return error(400, "loaded model has no masked LM head");
+    std::vector<std::string> texts;
+    if (json_extract_strings(req.body, "text", texts) != 1 || texts.front().empty())
+        return error(400, "provide one nonempty text field");
+    const std::string original = texts.front();
+    if (original.find('\0') != std::string::npos) return error(400, "text contains embedded NUL");
+    std::string text = original;
+    if (mode) {
+        size_t at = 0;
+        while ((at = text.find("[MASK]", at)) != std::string::npos) {
+            text.replace(at, 6, "<|mask|>");
+            at += 8;
+        }
+    }
+    const double requested_k = json_extract_number(req.body, "top_k", 5);
+    if (mode == 2 &&
+        (!std::isfinite(requested_k) || requested_k < 1 || requested_k > 100 || std::floor(requested_k) != requested_k))
+        return error(400, "top_k must be an integer from 1 to 100");
+    const bool normalize = core_json::json_extract_bool(req.body, "normalize", false);
+    std::lock_guard<std::mutex> lock(model_mutex);
+    int rows = 0, dim = 0;
+    const int32_t * positions = nullptr;
+    const float * data = mode        ? crispembed_masked_logits(ctx, text.c_str(), &rows, &dim, &positions)
+                         : normalize ? crispembed_encode_tokens(ctx, text.c_str(), &rows, &dim)
+                                     : crispembed_encode_tokens_raw(ctx, text.c_str(), &rows, &dim);
+    if (!data || rows <= 0 || dim <= 0)
+        return error(400, mode ? "text requires a mask token" : "token encoding failed");
+    const int32_t * ids = mode ? positions : crispembed_last_token_ids(ctx);
+    if (!ids) return error(500, "token positions unavailable");
+    std::ostringstream js;
+    js << std::setprecision(9) << "{\"text\":\"" << json_escape(original) << "\",";
+    if (mode != 2) {
+        js << (mode ? "\"positions\":[" : "\"token_ids\":[");
+        for (int r = 0; r < rows; ++r) js << (r ? "," : "") << ids[r];
+        js << "]," << (mode ? "\"vocab\":" : "\"dim\":") << dim;
+        if (!mode) js << ",\"normalized\":" << (normalize ? "true" : "false");
+        js << (mode ? ",\"logits\":[" : ",\"embeddings\":[");
+        for (int r = 0; r < rows; ++r) {
+            js << (r ? ",[" : "[");
+            for (int c = 0; c < dim; ++c) {
+                const float value = data[(size_t)r * dim + c];
+                if (!std::isfinite(value)) return error(500, "nonfinite encoder output");
+                js << (c ? "," : "") << value;
+            }
+            js << "]";
+        }
+        js << "]}";
+    } else {
+        js << "\"masks\":[";
+        for (int r = 0; r < rows; ++r) {
+            const float * logits = data + (size_t)r * dim;
+            for (int c = 0; c < dim; ++c)
+                if (!std::isfinite(logits[c])) return error(500, "nonfinite masked logits");
+            std::vector<int> order(dim);
+            std::iota(order.begin(), order.end(), 0);
+            const int k = std::min((int)requested_k, dim);
+            std::partial_sort(order.begin(), order.begin() + k, order.end(),
+                              [&](int a, int b) { return logits[a] == logits[b] ? a < b : logits[a] > logits[b]; });
+            const double maximum = logits[order[0]];
+            double denominator = 0;
+            for (int c = 0; c < dim; ++c) denominator += std::exp((double)logits[c] - maximum);
+            js << (r ? "," : "") << "{\"position\":" << positions[r] << ",\"predictions\":[";
+            for (int j = 0; j < k; ++j) {
+                const int id = order[j];
+                int size = 0;
+                const char * bytes = crispembed_token_bytes(ctx, id, &size);
+                const auto token = core_utf8::token_utf8_lossy(bytes ? bytes : "", size);
+                js << (j ? "," : "") << "{\"token_id\":" << id << ",\"token\":\"" << json_escape(token)
+                   << "\",\"logit\":" << logits[id]
+                   << ",\"score\":" << std::exp((double)logits[id] - maximum) / denominator << "}";
+            }
+            js << "]}";
+        }
+        js << "]}";
+    }
+    res.set_content(js.str(), "application/json");
 }
 
 // ---------------------------------------------------------------------------
@@ -693,6 +786,17 @@ int main(int argc, char ** argv) {
         { "Access-Control-Allow-Headers", "Content-Type, Authorization" },
     });
     svr.Options("/(.*)", [](const httplib::Request &, httplib::Response & res) { res.status = 204; });
+
+    // Raw token features and tied masked-LM predictions.
+    svr.Post("/tokens", [&](const httplib::Request & req, httplib::Response & res) {
+        handle_encoder_request(req, res, ctx, model_mutex, 0);
+    });
+    svr.Post("/masked-logits", [&](const httplib::Request & req, httplib::Response & res) {
+        handle_encoder_request(req, res, ctx, model_mutex, 1);
+    });
+    svr.Post("/fill-mask", [&](const httplib::Request & req, httplib::Response & res) {
+        handle_encoder_request(req, res, ctx, model_mutex, 2);
+    });
 
     // POST /embed — simple API
     svr.Post("/embed", [&](const httplib::Request & req, httplib::Response & res) {
@@ -3722,6 +3826,7 @@ int main(int argc, char ** argv) {
             js << ", \"dim\": " << dim << ", \"layers\": " << hp->n_layer << ", \"vocab\": " << hp->n_vocab;
             // "dim" stays the native size; the served default after --dim is separate.
             if (server_dim > 0 && server_dim < dim) js << ", \"output_dim\": " << server_dim;
+            if (crispembed_has_masked_lm(ctx)) js << ", \"masked_lm\": true";
             // Retrieval capabilities of the loaded model → the matching POST routes.
             if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank + /v1/rerank
             if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse
@@ -3863,6 +3968,11 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
     fprintf(stderr, "  POST /render/ocr           — {\"results\": [...], \"format\": \"hocr|alto|pdf\"}\n");
     fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
+    if (ctx) fprintf(stderr, "  POST /tokens          — raw or normalized token embeddings and IDs\n");
+    if (ctx && crispembed_has_masked_lm(ctx)) {
+        fprintf(stderr, "  POST /fill-mask       — {\"text\": \"... [MASK] ...\", \"top_k\": 5}\n");
+        fprintf(stderr, "  POST /masked-logits   — raw logits for all mask positions\n");
+    }
     if (ctx && crispembed_has_colbert(ctx))
         fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     if (ctx && crispembed_is_reranker(ctx)) {

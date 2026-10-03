@@ -1664,6 +1664,21 @@ static const ModelEntry k_registry[] = {
       "LFM2.5 Encoder 230M masked LM (Q4_0)", "149 MB", "lfm1.0",
       "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M" },
 
+    // Calibrated profiles: opt into CRISPEMBED_LFM2_F32_DOT=1 for mixed
+    // models, or CRISPEMBED_LFM2_F32_MATMUL=1 for the Q4_K audit control.
+    { "lfm2-encoder-230m-mixed330", "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+      "https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+      "LFM2.5 Encoder 230M Q8+F16 critical matrices (FP32-dot opt-in)", "330 MB", "lfm1.0",
+      "https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF" },
+    { "lfm2-encoder-230m-mixed210", "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+      "https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+      "LFM2.5 Encoder 230M calibrated Q4_K+Q8 critical matrices (FP32-dot opt-in)", "210 MB", "lfm1.0",
+      "https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF" },
+    { "lfm2-encoder-230m-q4k", "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+      "https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+      "LFM2.5 Encoder 230M calibrated Q4_K (approximate)", "165 MB", "lfm1.0",
+      "https://huggingface.co/cstr/LFM2.5-Encoder-230M-GGUF" },
+
     // LFM2.5-Embedding-350M — LiquidAI bidirectional hybrid (10 ShortConv + 6 GQA)
     // 1024-dim CLS pooling, 11 languages (EN/ES/DE/FR/IT/PT/AR/SV/NO/JA/KO)
     // License: LFM Open License v1.0 (commercial use requires separate agreement)

@@ -1,0 +1,122 @@
+{
+  "date": "2026-10-03",
+  "model_repo": "cstr/LFM2.5-Encoder-230M-GGUF",
+  "model_weight_revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+  "fixture_repo": "cstr/crispembed-regression-fixtures",
+  "fixture_revision": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+  "fixture_path": "lfm2-encoder-230m",
+  "license": "lfm1.0",
+  "artifacts": {
+    "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf": {
+      "filename": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+      "bytes": 165331968,
+      "sha256": "637e55268d57977b28cff6ccddb2f9fe64c5f9224e7d56004ddb7fff96a402b1",
+      "tensor_types": {
+        "Q8_0": 1,
+        "F32": 49,
+        "Q4_K": 82
+      }
+    },
+    "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf": {
+      "filename": "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+      "bytes": 209893888,
+      "sha256": "217a92f55aefa85896083f83efde81fb80ff323a5ea3fea84fea63c917abb3fd",
+      "tensor_types": {
+        "Q8_0": 55,
+        "F32": 49,
+        "Q4_K": 28
+      },
+      "overrides": [
+        "*.attn*weight=q8_0",
+        "*conv.*_proj.weight=q8_0",
+        "*.ff.w2.weight=q8_0"
+      ]
+    },
+    "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf": {
+      "filename": "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+      "bytes": 330152448,
+      "sha256": "122d803449862fc1ad367db1de5c26212ec50ab9e8dbe92e5669a7b3e2643d90",
+      "tensor_types": {
+        "Q8_0": 29,
+        "F32": 49,
+        "F16": 54
+      },
+      "overrides": [
+        "*.attn*weight=f16",
+        "*conv.*_proj.weight=f16",
+        "*.ff.w2.weight=f16"
+      ]
+    }
+  },
+  "http_validation": {
+    "comparator": "tests/lfm2_server_parity.py",
+    "mode": "CRISPEMBED_LFM2_F32_DOT=1",
+    "profiles": [
+      "official Q8_0",
+      "mixed330"
+    ],
+    "cases_per_profile": 4,
+    "masks_per_profile": 7,
+    "predictions_per_mask": 100,
+    "contracts": [
+      "health discovery",
+      "raw and normalized tokens/IDs",
+      "full masked logits",
+      "decoded tokens/logits/probabilities",
+      "JSON escaping",
+      "adjacent and multilingual masks",
+      "repeated requests after alternating output shapes",
+      "empty/NUL/missing text",
+      "invalid top_k",
+      "no-mask failure"
+    ],
+    "result": "PASS",
+    "explicitly_disabled_capability_guard": {
+      "profile": "official Q8_0",
+      "result": "PASS"
+    }
+  },
+  "hosted_fixture_replay": {
+    "path": "lfm2-encoder-230m/same-q8-fp32/000.gguf",
+    "reference_text_source": "same-q8-fp32/index.json case 0",
+    "model": "official Q8_0",
+    "mode": "FP32 row-dot",
+    "layer_checks_passed": 20,
+    "layer_checks_failed": 0
+  },
+  "download_roundtrip": {
+    "alias": "lfm2-encoder-230m-mixed330",
+    "empty_cache": true,
+    "sha256_verified": true,
+    "text": "The capital of France is [MASK].",
+    "top_token_id": 5242,
+    "decoded": " Paris",
+    "result": "PASS"
+  },
+  "registry_validation": {
+    "new_pin_size_license_checks": "PASS for all three new URLs; upstream and rehost license agree",
+    "global_pin_check": "FAIL: pre-existing unrelated missing/drifted pins; existing pins preserved instead of accepting changed upstream bytes",
+    "unrelated_changed_upstream_files": [
+      "LiquidAI/LFM2.5-VL-3B-GGUF/LFM2.5-VL-3B-Q4_K_M.gguf",
+      "LiquidAI/LFM2.5-VL-3B-GGUF/mmproj-LFM2.5-VL-3B-F16.gguf"
+    ]
+  },
+  "contributing_checklist": {
+    "runtime": "src/lfm2_embed.cpp",
+    "converter": "models/convert-lfm2-to-gguf.py",
+    "reference": "tools/dump_lfm2_reference.py",
+    "c_api": "src/crispembed.{h,cpp}",
+    "cmake": "CMakeLists.txt",
+    "cli_registry": "examples/cli/{main,model_mgr,model_hashes}.{cpp,h}",
+    "bindings": [
+      "python/crispembed/_binding.py",
+      "crispembed-sys/src/lib.rs",
+      "crispembed/src/lib.rs",
+      "flutter/crispembed/lib/src/crispembed.dart"
+    ],
+    "http": "examples/server/server.cpp",
+    "publisher": "models/upload_to_hf.py",
+    "ocr_catalog": "Not applicable: text-only masked encoder, no image recognition",
+    "default": "Official F16 retained; precision modes opt-in"
+  }
+}

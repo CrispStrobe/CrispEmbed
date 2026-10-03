@@ -4,16 +4,23 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
-## NOW 2026-10-03 — LFM2 encoder publication and surface completion
+## DONE 2026-10-03 — LFM2 encoder publication and surface completion
 
-Branch feat/lfm2-encoder-publish, based on ef2cb170. Audit found C ABI, CLI,
-converter, reference dumper, CMake and Python/Rust/Dart present. Remaining:
-publish calibrated Q4_K and mixed210/mixed330 to cstr/LFM2.5-Encoder-230M-GGUF
-with upstream license, measured limitations and hashes; publish original and
-same-weight Python references to regression dataset; add pinned registry aliases;
-route token features and masked prediction over HTTP and validate against Python.
-F16 default and precision opt-ins stay stable. CrispCalc's OCR catalog is not
-applicable to this text-only masked encoder; do not register it as an OCR engine.
+Published calibrated165/mixed210/mixed330 to cstr/LFM2.5-Encoder-230M-GGUF,
+verified remote hashes, included unchanged upstream license and measured model card.
+Published both 15-case Python reference suites to the regression dataset. Added
+three registry aliases with generated SHA-256 pins and publisher metadata with
+an explicit file allowlist (excludes ablation artifacts). New /tokens,
+/masked-logits and /fill-mask HTTP routes expose the C API under the model mutex;
+/health discovers masked_lm. Actual HTTP/Python parity passes for Q8 and mixed330
+on four cases/seven masks each, full logits and top-100 decoded predictions;
+explicitly-disabled capability guards pass. Fresh mixed330 alias download verifies
+its hash and returns Paris. Hosted reference smoke passes 20 layer checks.
+Formatter, parser and Q8/Q4_K arithmetic regressions pass. Global hash checker
+still reports pre-existing unrelated missing/drifted pins; these were not blindly
+rotated. All three new URLs pass pin/size/license checks. F16 default and opt-ins
+stay stable. Text encoder does not belong in CrispCalc's OCR catalog. Provenance:
+tests/results/lfm2-encoder/publication.json and docs/lfm2-encoder.md.
 
 ## DONE 2026-10-03 — LFM2 encoder quantization audit
 
