@@ -4,6 +4,17 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## NOW 2026-10-03 — LFM2 encoder publication and surface completion
+
+Branch feat/lfm2-encoder-publish, based on ef2cb170. Audit found C ABI, CLI,
+converter, reference dumper, CMake and Python/Rust/Dart present. Remaining:
+publish calibrated Q4_K and mixed210/mixed330 to cstr/LFM2.5-Encoder-230M-GGUF
+with upstream license, measured limitations and hashes; publish original and
+same-weight Python references to regression dataset; add pinned registry aliases;
+route token features and masked prediction over HTTP and validate against Python.
+F16 default and precision opt-ins stay stable. CrispCalc's OCR catalog is not
+applicable to this text-only masked encoder; do not register it as an OCR engine.
+
 ## DONE 2026-10-03 — LFM2 encoder quantization audit
 
 Separated weight rounding from activation quantization with exact GGUF weights
