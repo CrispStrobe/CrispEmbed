@@ -4,6 +4,17 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## NOW 2026-10-03 — LFM2.5-Encoder-230M
+
+- Work: `feat/lfm2-encoder-230m`, based on `5981b10e` (origin/main).
+- Official Q8_0 loads with the existing LFM2 backend; pooled CLI smoke succeeds.
+- In flight: Python per-layer reference; LFM2 dispatch for raw/normalized token
+  features; tied masked-LM logits and fill-mask CLI/bindings; registry pins.
+- New encoder APIs remain opt-in via `CRISPEMBED_LFM2_ENCODER=1` until parity
+  is measured. Existing pooled/ColBERT behavior stays available.
+- Next: F16/Q8_0/Q4_0 parity, exact tokenizer checks, decoded mask predictions,
+  invalid-input/repeated-call checks, record measured limits.
+
 ## OPEN 2026-09-30 — follow-ups from the Qwen3-VL / jina / Nomic round
 
 - **Qwen3-VL resize**: C++ vs transformers input patches differ by up to ~15/255 at
