@@ -1131,3 +1131,8 @@ target_link_libraries(test-lfm2-diff PRIVATE crispembed)
 
 add_executable(test-lfm2-colbert-diff tests/test_lfm2_colbert_diff.cpp)
 target_link_libraries(test-lfm2-colbert-diff PRIVATE crispembed)
+
+# Weight-free regression for FP32 activation arithmetic with quantized weights.
+add_executable(test-quant-f32-matmul tests/test_quant_f32_matmul.cpp)
+target_include_directories(test-quant-f32-matmul PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(test-quant-f32-matmul PRIVATE ggml ggml-cpu)

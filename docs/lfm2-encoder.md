@@ -92,8 +92,8 @@ taking the worst case; cosine is the worst token/mask row across the suite.
 | Q4_K + imatrix (CrispEmbed) | 0.75290679 | 28.2212% | 0.98749220 | 15.8073% | 11/15 |
 
 F16 is the default because it passes the port-correctness gate and preserves all
-15 decoded mask predictions. Q8_0 and Q4_0 execute correctly but their quantized
-weights change predictions; Q4_0 also shows substantial hidden-feature drift.
+15 decoded mask predictions. Q8_0 and Q4_0 execute correctly but their low-precision
+inference changes predictions; Q4_0 also shows substantial hidden-feature drift.
 All five match the reference token IDs and decode all 65536 vocabulary slots.
 The F16 per-layer replay passes all 297 checks over 15 inputs, including the
 production scheduler path. Live Rust and Dart examples exercise the same C ABI as Python.
@@ -326,3 +326,22 @@ USE_TF=0 python tools/dump_lfm2_reference.py --model "$LFM2_HF_DIR" \
   --gguf-weights "$LFM2_Q8" --texts-file tests/lfm2_encoder_cases.json \
   --long-context --output "$LFM2_SAME_WEIGHT_REFS"
 ```
+
+
+`CRISPEMBED_LFM2_F32_DOT=1` uses a CPU row-dequantization operator instead of
+materializing each complete matrix. It keeps FP32 activations and reuses one
+FP32 weight row per worker. No full-model FP32 cache is retained. Unsupported
+layouts fall back to the graph-cast control. Both modes are opt-in and leave
+GGUF storage unchanged. The bounded-row operator's Q8_0 and Q4_K regression
+fixture deliberately includes an activation outlier: the ordinary Q8-activation
+path erases its smaller coordinates, while the precise path matches an independent
+FP64 dot product over dequantized weights. Production same-weight replays pass all
+297 layer checks and full API contracts for both modes.
+
+```sh
+CRISPEMBED_LFM2_F32_DOT=1 crispembed -m LFM2.5-Encoder-230M-Q8_0.gguf \
+  --fill-mask "The capital of France is [MASK]."
+```
+
+Collect calibration statistics on the FP32 source, as above: the row-dot custom
+operator does not participate in the ordinary matmul importance collector.

@@ -13,6 +13,7 @@
 #include "ggml-cpu.h"
 #include "gguf.h"
 
+#include "core/quant_f32_matmul.h"
 #include "core/gguf_loader.h"
 #include "core/ggml_metal_guard.h"
 #include "core/bpe.h"
@@ -484,7 +485,12 @@ static std::vector<int32_t> lfm2_tokenize(const lfm2_embed_model & m, const char
 // activations in F32. Scheduler liveness reuses temporary matrix buffers; no
 // full-model F32 cache is retained. The MLM head needs its own larger temporary.
 static ggml_tensor * lfm2_mul_mat(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
-    if (core_env::on("CRISPEMBED_LFM2_F32_MATMUL") && ggml_is_quantized(w->type)) {
+    const bool row_dot = core_env::on("CRISPEMBED_LFM2_F32_DOT");
+    if (row_dot && ggml_is_quantized(w->type) && x->type == GGML_TYPE_F32 && w->ne[2] == 1 && w->ne[3] == 1 &&
+        x->ne[2] == 1 && x->ne[3] == 1 && ggml_is_contiguous(w) && ggml_is_contiguous(x)) {
+        return core_cpu::quant_f32_matmul(g, w, x);
+    }
+    if ((row_dot || core_env::on("CRISPEMBED_LFM2_F32_MATMUL")) && ggml_is_quantized(w->type)) {
         ggml_tensor * original = w;
         w = ggml_cast(g, w, GGML_TYPE_F32);
         ggml_set_name(w, ggml_get_name(original));

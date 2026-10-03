@@ -1,0 +1,39 @@
+name: LFM2 precise arithmetic fixture
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/lfm2_embed.cpp'
+      - 'src/core/quant_f32_matmul.h'
+      - 'tests/test_quant_f32_matmul.cpp'
+      - 'CMakeLists.txt'
+      - 'ggml'
+      - '.github/workflows/lfm2-arithmetic.yml'
+  pull_request:
+    paths:
+      - 'src/lfm2_embed.cpp'
+      - 'src/core/quant_f32_matmul.h'
+      - 'tests/test_quant_f32_matmul.cpp'
+      - 'CMakeLists.txt'
+      - 'ggml'
+      - '.github/workflows/lfm2-arithmetic.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  outlier-activations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build CPU fixture
+        run: |
+          cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF
+          cmake --build build --target test-quant-f32-matmul -j2
+      - name: Verify FP32 activations survive quantized-weight matmuls
+        run: build/test-quant-f32-matmul

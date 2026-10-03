@@ -27,7 +27,7 @@ lower (0.556311 vs 0.736032). Whole-tensor cosine and decoded agreement tell a
 different part of the story: per-row minima expose fragile tokens while pooled
 vectors hide them. Always report CLS, mean/global and minimum-row cosine, norms
 and decoded predictions together. Port precision F16 stays clean (297 checks;
-lowest intermediate cosine 0.999985), separating quantized-weight drift from the
+lowest intermediate cosine 0.999985), separating low-precision inference drift from the
 backbone implementation. Separate-corpus imatrix calibration improves Q4_K to
 CLS 0.970741/token 0.752907/11 of 15 mask predictions, but does not restore parity.
 The official Q4_0 tied embedding/head is Q6_K, while CrispEmbed Q4_K holds it Q8_0;

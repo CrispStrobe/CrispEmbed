@@ -14,8 +14,12 @@ feat/lfm2-encoder-audit; artifacts remain outside Git. Same-weight Q8 control fo
 activation arithmetic dominates: Python Q8/F32 token cosine 0.995925 versus native
 0.946652. New opt-in CRISPEMBED_LFM2_F32_MATMUL reaches 0.995881 versus original
 FP32 and 0.999999707 versus identical-weight Python (15/15 same-weight masks).
-Pinned upstream library built; cross-runtime replay is running. Next: full contracts,
-layer diff, selective-profile retest, and time/memory measurements.
+Pinned upstream CPU replay completed: Q8 token cosine 0.980839, Q4 0.737134,
+F16 0.999886. All match tokenizer IDs. Both FP32 cast and bounded-row-dot paths
+pass 297 same-weight layer checks and full API contracts. Mixed330 with FP32
+activations reaches token cosine 0.999818 (14/15 original masks). Row-dot Q8/Q4
+outlier fixture passes; profiling is running. Next: record memory/latency limits,
+land regression CI and final audit provenance.
 
 ## DONE 2026-10-03 — LFM2 encoder mixed precision
 
