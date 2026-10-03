@@ -42,6 +42,8 @@ def main():
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--texts-file", help="JSON list of texts; --output becomes a reference directory")
     parser.add_argument("--long-context", action="store_true", help="Add a >512-token case to a reference suite")
+    parser.add_argument("--gguf-weights", type=Path,
+                        help="Replace HF weights with exactly dequantized GGUF weights; isolate runtime arithmetic")
     args = parser.parse_args()
 
     # Load tokenizer + model via AutoModel (needs trust_remote_code for
@@ -54,6 +56,8 @@ def main():
     print(f"Loading model from {args.model} ...")
     config = json.loads((Path(args.model) / "config.json").read_text())
     is_mlm = "Lfm2BidirectionalForMaskedLM" in config.get("architectures", [])
+    if args.gguf_weights and not is_mlm:
+        parser.error("--gguf-weights requires the masked encoder checkpoint")
     model = (AutoModelForMaskedLM if is_mlm else AutoModel).from_pretrained(
         args.model,
         trust_remote_code=True,
@@ -61,6 +65,9 @@ def main():
         attn_implementation="eager",
     )
     model.eval()
+    if args.gguf_weights:
+        from lfm2_gguf_reference_weights import load_gguf_weights
+        load_gguf_weights(model, args.gguf_weights)
 
     # Tokenise
 
@@ -115,7 +122,8 @@ def main():
         import transformers
         (Path(args.output) / "versions.json").write_text(json.dumps({
             "torch": torch.__version__, "transformers": transformers.__version__,
-            "architecture": config["architectures"], "attention": "eager", "dtype": "float32"}, indent=2))
+            "architecture": config["architectures"], "attention": "eager", "dtype": "float32",
+            "gguf_weights": args.gguf_weights.name if args.gguf_weights else None}, indent=2))
     for case, text in enumerate(texts):
         output_path = str(Path(args.output) / f"{case:03d}.gguf") if args.texts_file else args.output
         intermediates.clear()

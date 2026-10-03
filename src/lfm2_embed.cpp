@@ -479,6 +479,19 @@ static std::vector<int32_t> lfm2_tokenize(const lfm2_embed_model & m, const char
 // Graph building blocks  (bidirectional LFM2 — matches gliner_ner.cpp exactly)
 // ============================================================================
 
+// Quantized CPU matmuls normally quantize their F32 activation operand to Q8.
+// This opt-in control dequantizes matrix weights in the graph instead, keeping
+// activations in F32. Scheduler liveness reuses temporary matrix buffers; no
+// full-model F32 cache is retained. The MLM head needs its own larger temporary.
+static ggml_tensor * lfm2_mul_mat(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
+    if (core_env::on("CRISPEMBED_LFM2_F32_MATMUL") && ggml_is_quantized(w->type)) {
+        ggml_tensor * original = w;
+        w = ggml_cast(g, w, GGML_TYPE_F32);
+        ggml_set_name(w, ggml_get_name(original));
+    }
+    return ggml_mul_mat(g, w, x);
+}
+
 static ggml_tensor * lfm2_rms_norm(ggml_context * g, ggml_tensor * x, ggml_tensor * w, float eps) {
     // Metal ggml_mul requires src[1] to be F32; cast if stored as F16.
     if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
@@ -487,13 +500,13 @@ static ggml_tensor * lfm2_rms_norm(ggml_context * g, ggml_tensor * x, ggml_tenso
 
 static ggml_tensor * lfm2_swiglu(ggml_context * g, ggml_tensor * x, ggml_tensor * w1, ggml_tensor * w2,
                                  ggml_tensor * w3) {
-    return ggml_mul_mat(g, w2, ggml_mul(g, ggml_silu(g, ggml_mul_mat(g, w1, x)), ggml_mul_mat(g, w3, x)));
+    return lfm2_mul_mat(g, w2, ggml_mul(g, ggml_silu(g, lfm2_mul_mat(g, w1, x)), lfm2_mul_mat(g, w3, x)));
 }
 
 // Bidirectional ShortConv (symmetric centre-padding, not causal).
 static ggml_tensor * lfm2_short_conv(ggml_context * g, ggml_tensor * x, const lfm2_layer & w, int H, int T) {
     // in_proj: (H, T) → (3H, T)
-    ggml_tensor * bcx = ggml_mul_mat(g, w.conv_in_proj_w, x);
+    ggml_tensor * bcx = lfm2_mul_mat(g, w.conv_in_proj_w, x);
 
     ggml_tensor * B = ggml_cont(g, ggml_view_2d(g, bcx, H, T, bcx->nb[1], 0));
     ggml_tensor * C = ggml_cont(g, ggml_view_2d(g, bcx, H, T, bcx->nb[1], H * sizeof(float)));
@@ -514,15 +527,15 @@ static ggml_tensor * lfm2_short_conv(ggml_context * g, ggml_tensor * x, const lf
     co = ggml_cont(g, ggml_transpose(g, co)); // (H, T)
 
     ggml_tensor * y = ggml_mul(g, ggml_cont(g, C), ggml_cont(g, co));
-    return ggml_mul_mat(g, w.conv_out_proj_w, y);
+    return lfm2_mul_mat(g, w.conv_out_proj_w, y);
 }
 
 // Bidirectional GQA (no causal mask).
 static ggml_tensor * lfm2_gqa(ggml_context * g, ggml_tensor * x, const lfm2_layer & w, int H, int nh, int nkv, int hd,
                               int T, float theta, ggml_tensor * pos) {
-    ggml_tensor * Q = ggml_mul_mat(g, w.attn_q_proj_w, x);
-    ggml_tensor * K = ggml_mul_mat(g, w.attn_k_proj_w, x);
-    ggml_tensor * V = ggml_mul_mat(g, w.attn_v_proj_w, x);
+    ggml_tensor * Q = lfm2_mul_mat(g, w.attn_q_proj_w, x);
+    ggml_tensor * K = lfm2_mul_mat(g, w.attn_k_proj_w, x);
+    ggml_tensor * V = lfm2_mul_mat(g, w.attn_v_proj_w, x);
 
     Q = ggml_reshape_3d(g, Q, hd, nh, T);
     K = ggml_reshape_3d(g, K, hd, nkv, T);
@@ -544,7 +557,7 @@ static ggml_tensor * lfm2_gqa(ggml_context * g, ggml_tensor * x, const lfm2_laye
     ggml_tensor * attn =
         core_ggml::assert_fa_layout(ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f), hd, nh);
     attn = ggml_reshape_2d(g, attn, H, T);
-    return ggml_mul_mat(g, w.attn_out_proj_w, attn);
+    return lfm2_mul_mat(g, w.attn_out_proj_w, attn);
 }
 
 // One LFM2 layer: norm → op → residual → norm → SwiGLU → residual.
@@ -592,7 +605,7 @@ static bool lfm2_encoder_forward(lfm2_embed_ctx * ctx, const std::vector<int32_t
         ggml_set_input(mask_indices);
         // MLM weights are tied to the input embedding matrix. Retain RAW hidden
         // magnitudes; normalization would alter logits and softmax probabilities.
-        cur = ggml_mul_mat(g, ctx->model.embed_tokens_w, ggml_get_rows(g, cur, mask_indices));
+        cur = lfm2_mul_mat(g, ctx->model.embed_tokens_w, ggml_get_rows(g, cur, mask_indices));
     }
     ggml_set_output(cur);
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
@@ -901,7 +914,7 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text, float * 
         ggml_set_output(cg.hidden);
 
         // ColBERT projection: [H, T] → matmul with proj [cd, H] → [cd, T]
-        cg.projected = ggml_mul_mat(cg.g, ctx->model.colbert_proj_w, cur);
+        cg.projected = lfm2_mul_mat(cg.g, ctx->model.colbert_proj_w, cur);
         ggml_set_name(cg.projected, "colbert_out");
         ggml_set_output(cg.projected);
 

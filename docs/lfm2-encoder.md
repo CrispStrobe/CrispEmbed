@@ -300,3 +300,29 @@ checks but fails decoded top-1 agreement (20 pass / 1 fail). The long probe repo
 0.999 at layer 8 and grows further at layers 9 and 13. The compact model's strict
 diff reports 6/17, 7/14 and 5/15 pass/fail respectively. Counts include norm and
 decoded-output failures, not only cosine checks.
+
+
+## FP32 arithmetic audit (CPU, opt-in)
+
+`CRISPEMBED_LFM2_F32_MATMUL=1` dequantizes matrix operands temporarily inside
+the graph, allowing FP32 activations instead of the quantized CPU kernel's Q8
+activation operand. GGUF storage is unchanged. This costs extra temporary memory
+and repeated dequantization; it is an accuracy control, not a smaller-memory claim.
+The default remains unchanged. GPU accuracy and speed are unverified.
+
+With the official Q8_0 file, the first complete same-weight audit reaches
+0.995881 minimum token cosine against the original FP32 checkpoint, compared
+with 0.946652 on the ordinary quantized CPU path. Against official Python loaded
+with exactly dequantized Q8 weights, this path reaches 0.999999707 and matches all
+15 mask predictions. The remaining checkpoint comparison changes one low-margin
+mask prediction (FP32 top-two gap 0.02834). Full profiling and upstream comparison
+are recorded as active work in PLAN.md.
+
+```sh
+CRISPEMBED_LFM2_F32_MATMUL=1 crispembed -m LFM2.5-Encoder-230M-Q8_0.gguf \
+  --fill-mask "The capital of France is [MASK]."
+# Isolate storage rounding by loading exact GGUF weights into the official model.
+USE_TF=0 python tools/dump_lfm2_reference.py --model "$LFM2_HF_DIR" \
+  --gguf-weights "$LFM2_Q8" --texts-file tests/lfm2_encoder_cases.json \
+  --long-context --output "$LFM2_SAME_WEIGHT_REFS"
+```

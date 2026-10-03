@@ -4,6 +4,19 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## NOW 2026-10-03 — LFM2 encoder quantization audit
+
+Audit identical quantized weights in official FP32 Python and native inference
+before more precision sweeps. Compare the official GGUF path with pinned llama.cpp
+encoder support (merged cb7934c, PR 29862). Inspect the publisher's fill-mask recipe,
+activation arithmetic, calibration coverage and evaluation margins. Active branch:
+feat/lfm2-encoder-audit; artifacts remain outside Git. Same-weight Q8 control found
+activation arithmetic dominates: Python Q8/F32 token cosine 0.995925 versus native
+0.946652. New opt-in CRISPEMBED_LFM2_F32_MATMUL reaches 0.995881 versus original
+FP32 and 0.999999707 versus identical-weight Python (15/15 same-weight masks).
+Pinned upstream library built; cross-runtime replay is running. Next: full contracts,
+layer diff, selective-profile retest, and time/memory measurements.
+
 ## DONE 2026-10-03 — LFM2 encoder mixed precision
 
 Added repeatable matrix precision overrides to crispembed-quantize with
