@@ -1,0 +1,44 @@
+name: Quantizer precision overrides
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/quantize.cpp'
+      - 'src/core/imatrix_alias.h'
+      - 'tests/test_quantize_tensor_overrides.py'
+      - 'CMakeLists.txt'
+      - 'ggml'
+      - '.github/workflows/quantize-overrides.yml'
+  pull_request:
+    paths:
+      - 'tools/quantize.cpp'
+      - 'src/core/imatrix_alias.h'
+      - 'tests/test_quantize_tensor_overrides.py'
+      - 'CMakeLists.txt'
+      - 'ggml'
+      - '.github/workflows/quantize-overrides.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quantize-overrides:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install fixture dependencies
+        run: python -m pip install --quiet numpy gguf
+      - name: Build CPU quantizer
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF
+          cmake --build build --target crispembed-quantize -j2
+      - name: Check stored precision and protected operands
+        run: python tests/test_quantize_tensor_overrides.py

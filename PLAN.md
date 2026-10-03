@@ -4,6 +4,18 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## NOW 2026-10-03 — LFM2 encoder mixed precision
+
+`feat/lfm2-encoder-mixed`: test selective high-precision tensor groups atop
+calibrated Q4_K, using the same independent importance statistics and held-out
+FP32 reference. Screen attention, ShortConv projections, FFN down/gate/up,
+late layers, and the tied embedding/head. Add explicit matrix precision overrides
+to crispembed-quantize, verify their stored types and preservation rules, then
+replay the complete reference suite on the best size/quality candidates.
+Expanded FP32-source calibration completed: 174 records, 185 samples, 12065 tokens,
+max length 1149; all 82 importance vectors validated. Single-group F16 ablations
+are complete; combined Q4_K/Q6_K policies are being screened.
+
 ## DONE 2026-10-03 — LFM2 encoder Q4_K comparison
 
 Measured official F16/Q8_0/Q4_0 plus CrispEmbed Q4_K and calibrated Q4_K on the

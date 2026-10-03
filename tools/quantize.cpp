@@ -37,6 +37,33 @@ static bool g_decoder_f16 = false;
 static bool g_decoder_attn_q8 = false;
 static bool g_ppocrv6_q8_head = false;
 
+struct TensorTypeOverride {
+    std::string pattern;
+    ggml_type type;
+};
+static std::vector<TensorTypeOverride> g_tensor_types;
+
+// Portable glob matching for GGUF tensor names (* and ?), including Windows.
+static bool tensor_name_matches(const std::string & pattern, const std::string & name) {
+    size_t p = 0, n = 0, star = std::string::npos, retry = 0;
+    while (n < name.size()) {
+        if (p < pattern.size() && (pattern[p] == '?' || (pattern[p] != '*' && pattern[p] == name[n]))) {
+            ++p;
+            ++n;
+        } else if (p < pattern.size() && pattern[p] == '*') {
+            star = p++;
+            retry = n;
+        } else if (star != std::string::npos) {
+            p = star + 1;
+            n = ++retry;
+        } else {
+            return false;
+        }
+    }
+    while (p < pattern.size() && pattern[p] == '*') ++p;
+    return p == pattern.size();
+}
+
 // Per-tensor importance vectors loaded from a CrispEmbed imatrix file
 // (see src/imatrix.cpp). Keyed by weight name; value length == n_per_row.
 // importance[c] = sum_of_squares[c] / count. Passed to ggml_quantize_chunk,
@@ -180,6 +207,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     gguf_set_val_u32(ctx_out, "general.file_type", ftype);
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
+    // Reject misspelled patterns before opening/truncating the output file.
+    for (const auto & rule : g_tensor_types) {
+        bool found = false;
+        for (int i = 0; i < n_tensors; ++i) {
+            if (tensor_name_matches(rule.pattern, gguf_get_tensor_name(ctx_in, i))) found = true;
+        }
+        if (!found) {
+            fprintf(stderr, "Tensor override matches no tensor: %s\n", rule.pattern.c_str());
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+    }
     const int arch_key = gguf_find_key(ctx_in, "general.architecture");
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
@@ -664,13 +705,23 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(decoder→F16) ");
         }
 
+        // Explicit precision overrides apply to eligible matrix weights after
+        // automatic policies. Norm/bias/conv guards above remain in force.
+        // With overlapping patterns the last matching rule wins.
+        const bool is_shortconv_kernel =
+            sname.find(".shortconv.conv.") != std::string::npos || sname.find(".conv.conv.") != std::string::npos;
+        if (quantize && !is_shortconv_kernel) {
+            for (const auto & rule : g_tensor_types) {
+                if (tensor_name_matches(rule.pattern, sname)) qtype_used = rule.type;
+            }
+        }
         int64_t qk = ggml_blck_size(qtype_used);
 
         // Fallback chain for K-quants: if row width isn't 256-aligned,
         // fall back to a legacy quant with block size 32.
         if (quantize && ncols % qk != 0) {
             ggml_type fallback = GGML_TYPE_COUNT;
-            switch (qtype) {
+            switch (qtype_used) {
             case GGML_TYPE_Q2_K:
             case GGML_TYPE_Q3_K:
             case GGML_TYPE_Q4_K:
@@ -867,7 +918,25 @@ int main(int argc, char ** argv) {
             g_decoder_attn_q8 = true;
         else if (a == "--ppocrv6-q8-head")
             g_ppocrv6_q8_head = true;
-        else if (a == "--imatrix") {
+        else if (a == "--tensor-type") {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "--tensor-type requires GLOB=TYPE\n");
+                return 1;
+            }
+            const std::string spec = argv[++i];
+            const size_t equals = spec.rfind('=');
+            const std::map<std::string, ggml_type> types = { { "f32", GGML_TYPE_F32 },
+                                                             { "f16", GGML_TYPE_F16 },
+                                                             { "q8_0", GGML_TYPE_Q8_0 },
+                                                             { "q6_k", GGML_TYPE_Q6_K },
+                                                             { "q5_k", GGML_TYPE_Q5_K } };
+            const auto type = types.find(equals == std::string::npos ? "" : spec.substr(equals + 1));
+            if (equals == std::string::npos || equals == 0 || type == types.end()) {
+                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k\n", spec.c_str());
+                return 1;
+            }
+            g_tensor_types.push_back({ spec.substr(0, equals), type->second });
+        } else if (a == "--imatrix") {
             if (i + 1 >= argc) {
                 fprintf(stderr, "--imatrix requires a file path\n");
                 return 1;
@@ -879,10 +948,13 @@ int main(int argc, char ** argv) {
     if (pos.size() != 3) {
         fprintf(stderr,
                 "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--decoder-attn-q8] "
-                "[--ppocrv6-q8-head] [--imatrix <file>]\n\n",
+                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]...\n\n",
                 argv[0]);
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
+        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");
+        fprintf(stderr,
+                "                          * and ? match tensor names; last match wins; norm/conv guards remain\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
