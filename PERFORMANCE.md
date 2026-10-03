@@ -11,13 +11,60 @@ taking the worst case; cosine is the worst token/mask row across the suite.
 | F16 | 0.99998947 | 0.1813% | 0.99999957 | 0.0976% | 15/15 |
 | Q8_0 | 0.94665218 | 7.2592% | 0.99934877 | 3.6796% | 13/15 |
 | Q4_0 | 0.73603180 | 79.9290% | 0.93175417 | 56.8220% | 9/15 |
+| Q4_K (CrispEmbed) | 0.55631144 | 42.5520% | 0.97438016 | 41.5711% | 10/15 |
+| Q4_K + imatrix (CrispEmbed) | 0.75290679 | 28.2212% | 0.98749220 | 15.8073% | 11/15 |
 
 F16 is the default because it passes the port-correctness gate and preserves all
 15 decoded mask predictions. Q8_0 and Q4_0 execute correctly but their quantized
 weights change predictions; Q4_0 also shows substantial hidden-feature drift.
-All three match the reference token IDs and decode all 65536 vocabulary slots.
+All five match the reference token IDs and decode all 65536 vocabulary slots.
 The F16 per-layer replay passes all 297 checks over 15 inputs, including the
 production scheduler path. Live Rust and Dart examples exercise the same C ABI as Python.
+
+Additional cosine metrics, each taking the worst of the same 15 inputs. CLS is
+the first-token vector; its cosine is unchanged by L2 normalization. Whole-tensor
+cosine compares all hidden elements together, while row mean weights each token
+equally. These are reference-agreement measurements, not retrieval/task accuracy.
+
+| GGUF | Size (MB) | CLS min cosine | Hidden min global cosine | Hidden min mean-row cosine |
+|---|---:|---:|---:|---:|
+| F16 | 461.9 | 0.99999924 | 0.99999843 | 0.99999934 |
+| Q8_0 | 246.6 | 0.99353220 | 0.99737641 | 0.99823156 |
+| Q4_0 | 149.1 | 0.85402948 | 0.87691055 | 0.86674437 |
+| Q4_K (CrispEmbed) | 165.3 | 0.93585145 | 0.92115994 | 0.93970592 |
+| Q4_K + imatrix (CrispEmbed) | 165.3 | 0.97074061 | 0.96062564 | 0.96542450 |
+
+Q4_K is a footprint tradeoff, not a parity-preserving default. Importance-matrix
+calibration improves CLS/global cosine and mask agreement versus plain Q4_K and
+official Q4_0, but substantial per-token and norm errors remain. Keep F16 when
+raw features or Python-reference parity matter. Q8_0 is a closer approximation
+at a larger size. The mask suite includes stress inputs such as adjacent masks
+and reserved tokens; its top-1 counts are agreement, not a labeled quality score.
+
+`test-lfm2-diff` uses `crispembed_diff::Ref`. F16 passes all 297 checks over the
+15 inputs at the 0.999 worst-row threshold; its lowest intermediate-layer cosine
+is 0.999985 (layer 13, long input). Quantized probes on English, Japanese/Chinese
+and the long input fail that strict port threshold. Their exact shapes/token IDs
+still match, and the reference comparison shows drift accumulating through layers.
+The 649-token probe is particularly informative:
+
+| GGUF | Layer 0 min cosine | Layer 13 min cosine | Final norm min cosine | Final norm global cosine |
+|---|---:|---:|---:|---:|
+| F16 | 1.000000 | 0.999985 | 0.999989 | 0.99999946 |
+| Q8_0 | 0.999947 | 0.946592 | 0.946652 | 0.99850363 |
+| Q4_0 | 0.996677 | 0.666887 | 0.736032 | 0.90467989 |
+| Q4_K (CrispEmbed) | 0.997529 | 0.432208 | 0.556311 | 0.93648052 |
+| Q4_K + imatrix (CrispEmbed) | 0.998555 | 0.537307 | 0.752907 | 0.96062565 |
+
+CrispEmbed's Q4_K artifacts use 82 Q4_K backbone matrices, one Q8_0 tied
+embedding/LM matrix, and 49 unchanged F32 norm/ShortConv tensors. Official Q4_0
+instead uses 82 Q4_0 matrices and a Q6_K tied embedding matrix. Both local Q4_K
+files are 165331968 bytes. Calibration uses 134 separate EN/DE/code/structured
+corpus sentences plus 17 eight-sentence groups (6711 tokens); none of the held-out
+texts occurs in that corpus. All 82 backbone matrices receive importance vectors.
+This small corpus does not establish a best possible multilingual quantization.
+
+Full metrics and artifact hashes: [result manifest](tests/results/lfm2-encoder/quantization.json).
 
 Reproduction and API details: [docs/lfm2-encoder.md](docs/lfm2-encoder.md).
 

@@ -1,0 +1,5655 @@
+{
+  "reference": {
+    "architecture": "Lfm2BidirectionalForMaskedLM",
+    "dtype": "float32",
+    "attention": "eager",
+    "torch": "2.11.0+cu130",
+    "transformers": "5.13.0.dev0",
+    "cases": 15,
+    "masks": 15,
+    "long_input_tokens": 649,
+    "model_id": "LiquidAI/LFM2.5-Encoder-230M"
+  },
+  "calibration": {
+    "corpus": "tools/kaggle/crispembed-imatrix-quant/calib_corpus.jsonl",
+    "sha256": "04112e6dc674c91986928bfedc30c5fe3892effaeceb5551777db711c4d6cd9a",
+    "sentences": 134,
+    "group_size": 8,
+    "samples": 151,
+    "tokens": 6711,
+    "importance_tensors": 82,
+    "held_out_text_overlap": 0
+  },
+  "models": {
+    "f16": {
+      "filename": "LFM2.5-Encoder-230M-F16.gguf",
+      "bytes": 461882368,
+      "sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+      "top1_matches": 15,
+      "masks": 15,
+      "summary": {
+        "cls": {
+          "cos_min": 0.9999992412255218,
+          "cos_mean": 0.9999992412255218,
+          "cos_global": 0.9999992412255218,
+          "max_relative_error": 0.0012695893834979342
+        },
+        "hidden": {
+          "cos_min": 0.9999894746164296,
+          "cos_mean": 0.9999993421828685,
+          "cos_global": 0.9999984295178994,
+          "max_relative_error": 0.0018132946105112024
+        },
+        "logits": {
+          "cos_min": 0.9999995650547326,
+          "cos_mean": 0.9999995650547326,
+          "cos_global": 0.9999995650547339,
+          "max_relative_error": 0.0009755378035163239
+        }
+      },
+      "cases": [
+        {
+          "case": 0,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9999955400469518,
+            "cos_mean": 0.9999993421828685,
+            "cos_global": 0.9999985497117901,
+            "relative_error": 0.0017210850226770627,
+            "mine_norm": 143.42177743183066,
+            "ref_norm": 143.4575789680133
+          },
+          "cls": {
+            "cos_min": 0.9999997965321333,
+            "cos_mean": 0.9999997965321333,
+            "cos_global": 0.9999997965321333,
+            "relative_error": 0.0006384909997268589,
+            "mine_norm": 55.51671679990809,
+            "ref_norm": 55.51522296286042
+          },
+          "logits": {
+            "cos_min": 0.9999998993228837,
+            "cos_mean": 0.9999998993228837,
+            "cos_global": 0.9999998993228851,
+            "relative_error": 0.0004500271508603829,
+            "mine_norm": 941.6856913525114,
+            "ref_norm": 941.7180008207076
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 1,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9999962395572627,
+            "cos_mean": 0.9999994667648977,
+            "cos_global": 0.9999993050265119,
+            "relative_error": 0.0011808900270849272,
+            "mine_norm": 201.907304775986,
+            "ref_norm": 201.92107255151876
+          },
+          "cls": {
+            "cos_min": 0.9999998819465469,
+            "cos_mean": 0.9999998819465469,
+            "cos_global": 0.9999998819465469,
+            "relative_error": 0.0005048530017136285,
+            "mine_norm": 77.27487132651497,
+            "ref_norm": 77.26429505314995
+          },
+          "logits": {
+            "cos_min": 0.9999999118255584,
+            "cos_mean": 0.9999999118255584,
+            "cos_global": 0.9999999118255596,
+            "relative_error": 0.0004712905684659123,
+            "mine_norm": 1234.7314951806775,
+            "ref_norm": 1234.9958063806575
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 52362,
+              "token": "Berlin",
+              "reference_id": 52362,
+              "reference_token": "Berlin"
+            }
+          ]
+        },
+        {
+          "case": 2,
+          "tokens": 10,
+          "hidden": {
+            "cos_min": 0.9999962719052196,
+            "cos_mean": 0.9999995166771954,
+            "cos_global": 0.9999993004562099,
+            "relative_error": 0.0011849218634476892,
+            "mine_norm": 197.7103404038366,
+            "ref_norm": 197.7243937019481
+          },
+          "cls": {
+            "cos_min": 0.9999998590423685,
+            "cos_mean": 0.9999998590423685,
+            "cos_global": 0.9999998590423688,
+            "relative_error": 0.0005455616169346215,
+            "mine_norm": 75.99450153119648,
+            "ref_norm": 75.98498461088874
+          },
+          "logits": {
+            "cos_min": 0.9999999054999935,
+            "cos_mean": 0.9999999054999935,
+            "cos_global": 0.9999999054999945,
+            "relative_error": 0.00044346842109581753,
+            "mine_norm": 991.2526278105179,
+            "ref_norm": 991.339508928574
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 3,
+          "tokens": 17,
+          "hidden": {
+            "cos_min": 0.9999933061404688,
+            "cos_mean": 0.9999994377024852,
+            "cos_global": 0.9999984295178994,
+            "relative_error": 0.0018132946105112024,
+            "mine_norm": 169.03424005806946,
+            "ref_norm": 169.09935596911725
+          },
+          "cls": {
+            "cos_min": 0.9999997631452635,
+            "cos_mean": 0.9999997631452635,
+            "cos_global": 0.9999997631452637,
+            "relative_error": 0.0006957821784640315,
+            "mine_norm": 43.60022621912522,
+            "ref_norm": 43.59578989769663
+          },
+          "logits": {
+            "cos_min": 0.9999999272337098,
+            "cos_mean": 0.9999999317107156,
+            "cos_global": 0.9999999317070143,
+            "relative_error": 0.0003700399037955539,
+            "mine_norm": 1624.4884591084021,
+            "ref_norm": 1624.518681113346
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            },
+            {
+              "token_id": 7053,
+              "token": " Berlin",
+              "reference_id": 7053,
+              "reference_token": " Berlin"
+            }
+          ]
+        },
+        {
+          "case": 4,
+          "tokens": 2,
+          "hidden": {
+            "cos_min": 0.9999995787484859,
+            "cos_mean": 0.9999996563184925,
+            "cos_global": 0.9999996257240422,
+            "relative_error": 0.001004232526506883,
+            "mine_norm": 46.76162951313212,
+            "ref_norm": 46.7854998845754
+          },
+          "cls": {
+            "cos_min": 0.9999995787484859,
+            "cos_mean": 0.9999995787484859,
+            "cos_global": 0.9999995787484859,
+            "relative_error": 0.0010215549567150867,
+            "mine_norm": 38.34216886623554,
+            "ref_norm": 38.359385763821535
+          },
+          "logits": {
+            "cos_min": 0.9999997842350493,
+            "cos_mean": 0.9999997842350493,
+            "cos_global": 0.9999997842350502,
+            "relative_error": 0.0007692252867396728,
+            "mine_norm": 999.5549486017487,
+            "ref_norm": 999.9553685417266
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 511,
+              "token": "\"",
+              "reference_id": 511,
+              "reference_token": "\""
+            }
+          ]
+        },
+        {
+          "case": 5,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9999996496078145,
+            "cos_mean": 0.9999996890410726,
+            "cos_global": 0.9999996578490181,
+            "relative_error": 0.0009876346756734408,
+            "mine_norm": 45.98243990766033,
+            "ref_norm": 46.00727914100182
+          },
+          "cls": {
+            "cos_min": 0.9999996496078145,
+            "cos_mean": 0.9999996496078145,
+            "cos_global": 0.9999996496078145,
+            "relative_error": 0.0009251368464346455,
+            "mine_norm": 35.575640841716485,
+            "ref_norm": 35.58966922404587
+          },
+          "logits": {
+            "cos_min": 0.999999830779498,
+            "cos_mean": 0.9999998376540251,
+            "cos_global": 0.9999998372519987,
+            "relative_error": 0.0007006064105726657,
+            "mine_norm": 1282.5009547702373,
+            "ref_norm": 1283.0228877039222
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 512,
+              "reference_token": "#"
+            },
+            {
+              "token_id": 633,
+              "token": "�",
+              "reference_id": 633,
+              "reference_token": "�"
+            }
+          ]
+        },
+        {
+          "case": 6,
+          "tokens": 1,
+          "hidden": {
+            "cos_min": 0.9999994059124945,
+            "cos_mean": 0.9999994059124945,
+            "cos_global": 0.9999994059124945,
+            "relative_error": 0.0011120459077377353,
+            "mine_norm": 29.77153594065107,
+            "ref_norm": 29.77810964884332
+          },
+          "cls": {
+            "cos_min": 0.9999994059124945,
+            "cos_mean": 0.9999994059124945,
+            "cos_global": 0.9999994059124945,
+            "relative_error": 0.0011120459077377353,
+            "mine_norm": 29.77153594065107,
+            "ref_norm": 29.77810964884332
+          }
+        },
+        {
+          "case": 7,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9999992412255218,
+            "cos_mean": 0.9999996230562043,
+            "cos_global": 0.9999993708062536,
+            "relative_error": 0.0011607198131218309,
+            "mine_norm": 67.89019207314186,
+            "ref_norm": 67.91048116907412
+          },
+          "cls": {
+            "cos_min": 0.9999992412255218,
+            "cos_mean": 0.9999992412255218,
+            "cos_global": 0.9999992412255218,
+            "relative_error": 0.0012695893834979342,
+            "mine_norm": 59.841561772393305,
+            "ref_norm": 59.85999004078574
+          }
+        },
+        {
+          "case": 8,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.9999986730360563,
+            "cos_mean": 0.99999969613498,
+            "cos_global": 0.9999994912006044,
+            "relative_error": 0.001059013833947241,
+            "mine_norm": 112.891879295071,
+            "ref_norm": 112.92833959639789
+          },
+          "cls": {
+            "cos_min": 0.9999997136201819,
+            "cos_mean": 0.9999997136201819,
+            "cos_global": 0.9999997136201819,
+            "relative_error": 0.0007607436199798429,
+            "mine_norm": 36.97707630301434,
+            "ref_norm": 36.97994448869384
+          }
+        },
+        {
+          "case": 9,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.9999964261808294,
+            "cos_mean": 0.9999996636664765,
+            "cos_global": 0.9999996696004784,
+            "relative_error": 0.0008132607624829213,
+            "mine_norm": 301.13905047077594,
+            "ref_norm": 301.14649036854536
+          },
+          "cls": {
+            "cos_min": 0.9999998311817122,
+            "cos_mean": 0.9999998311817122,
+            "cos_global": 0.9999998311817123,
+            "relative_error": 0.0005817057885992943,
+            "mine_norm": 83.2519508294393,
+            "ref_norm": 83.25423740066873
+          },
+          "logits": {
+            "cos_min": 0.9999999020325261,
+            "cos_mean": 0.9999999101726947,
+            "cos_global": 0.9999999099705015,
+            "relative_error": 0.00043241564036537603,
+            "mine_norm": 2917.4760447613835,
+            "ref_norm": 2917.7190976884986
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 20374,
+              "reference_token": "東京"
+            },
+            {
+              "token_id": 52377,
+              "token": "京都",
+              "reference_id": 52377,
+              "reference_token": "京都"
+            }
+          ]
+        },
+        {
+          "case": 10,
+          "tokens": 11,
+          "hidden": {
+            "cos_min": 0.9999980445813839,
+            "cos_mean": 0.9999997135304463,
+            "cos_global": 0.9999997250953818,
+            "relative_error": 0.0007611855082311757,
+            "mine_norm": 231.36535622040412,
+            "ref_norm": 231.40522840599206
+          },
+          "cls": {
+            "cos_min": 0.9999997235221397,
+            "cos_mean": 0.9999997235221397,
+            "cos_global": 0.9999997235221397,
+            "relative_error": 0.0007567533771650072,
+            "mine_norm": 82.8357085411036,
+            "ref_norm": 82.84736553835278
+          },
+          "logits": {
+            "cos_min": 0.9999998490373255,
+            "cos_mean": 0.9999998490373255,
+            "cos_global": 0.999999849037327,
+            "relative_error": 0.000567561780839007,
+            "mine_norm": 877.408038020982,
+            "ref_norm": 877.5328945914181
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 528,
+              "token": "3",
+              "reference_id": 528,
+              "reference_token": "3"
+            }
+          ]
+        },
+        {
+          "case": 11,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9999986344511457,
+            "cos_mean": 0.999999423285462,
+            "cos_global": 0.999999480795415,
+            "relative_error": 0.0011407717888502352,
+            "mine_norm": 97.89356685677929,
+            "ref_norm": 97.94384212123187
+          },
+          "cls": {
+            "cos_min": 0.9999996825788162,
+            "cos_mean": 0.9999996825788162,
+            "cos_global": 0.9999996825788162,
+            "relative_error": 0.0010024948373817772,
+            "mine_norm": 59.607957888566354,
+            "ref_norm": 59.64426454205843
+          },
+          "logits": {
+            "cos_min": 0.9999995650547326,
+            "cos_mean": 0.9999995650547326,
+            "cos_global": 0.9999995650547339,
+            "relative_error": 0.0009755378035163239,
+            "mine_norm": 973.5796216228833,
+            "ref_norm": 973.8585477332456
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 526,
+              "token": "1",
+              "reference_id": 526,
+              "reference_token": "1"
+            }
+          ]
+        },
+        {
+          "case": 12,
+          "tokens": 7,
+          "hidden": {
+            "cos_min": 0.9999993556592035,
+            "cos_mean": 0.9999996333763852,
+            "cos_global": 0.9999996158370245,
+            "relative_error": 0.0008765630108136501,
+            "mine_norm": 86.44374361420863,
+            "ref_norm": 86.44430198104229
+          },
+          "cls": {
+            "cos_min": 0.9999996922118175,
+            "cos_mean": 0.9999996922118175,
+            "cos_global": 0.9999996922118176,
+            "relative_error": 0.0008083001392982816,
+            "mine_norm": 49.75437290199869,
+            "ref_norm": 49.74472020839599
+          },
+          "logits": {
+            "cos_min": 0.9999998654075581,
+            "cos_mean": 0.9999998654075581,
+            "cos_global": 0.9999998654075593,
+            "relative_error": 0.0005392295415587935,
+            "mine_norm": 994.2914736306041,
+            "ref_norm": 994.4377039888593
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 7593,
+              "token": "ā",
+              "reference_id": 7593,
+              "reference_token": "ā"
+            }
+          ]
+        },
+        {
+          "case": 13,
+          "tokens": 20,
+          "hidden": {
+            "cos_min": 0.9999974020068112,
+            "cos_mean": 0.9999997280551189,
+            "cos_global": 0.9999994303963093,
+            "relative_error": 0.00108794012023948,
+            "mine_norm": 196.1434509747926,
+            "ref_norm": 196.1849045412022
+          },
+          "cls": {
+            "cos_min": 0.9999998503323567,
+            "cos_mean": 0.9999998503323567,
+            "cos_global": 0.9999998503323569,
+            "relative_error": 0.0005932829593238808,
+            "mine_norm": 56.656575376120834,
+            "ref_norm": 56.66958695418492
+          },
+          "logits": {
+            "cos_min": 0.9999998368572613,
+            "cos_mean": 0.9999998368572613,
+            "cos_global": 0.999999836857262,
+            "relative_error": 0.0006279426388480219,
+            "mine_norm": 975.2801137194277,
+            "ref_norm": 975.5347107767259
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 54055,
+              "token": " Enjoy",
+              "reference_id": 54055,
+              "reference_token": " Enjoy"
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "tokens": 649,
+          "hidden": {
+            "cos_min": 0.9999894746164296,
+            "cos_mean": 0.9999995725731847,
+            "cos_global": 0.9999994439445518,
+            "relative_error": 0.001063410843548512,
+            "mine_norm": 1311.7773226383742,
+            "ref_norm": 1311.598539944019
+          },
+          "cls": {
+            "cos_min": 0.9999997021465492,
+            "cos_mean": 0.9999997021465492,
+            "cos_global": 0.9999997021465494,
+            "relative_error": 0.0007733531920089009,
+            "mine_norm": 39.332242710583515,
+            "ref_norm": 39.33416864981945
+          },
+          "logits": {
+            "cos_min": 0.9999999258617702,
+            "cos_mean": 0.9999999258617702,
+            "cos_global": 0.9999999258617714,
+            "relative_error": 0.0003879556399193993,
+            "mine_norm": 890.0841890091292,
+            "ref_norm": 890.0421952087931
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        }
+      ],
+      "diff_probes": [
+        {
+          "case": 0,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000078174099405,
+              "max_abs": 0.000426,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.000021975694587,
+              "max_abs": 0.000726,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000087990573023,
+              "max_abs": 0.000771,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000132685562564,
+              "max_abs": 0.000906,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000109386892033,
+              "max_abs": 0.000843,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000025740838925,
+              "max_abs": 0.00191,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.000021547137182,
+              "max_abs": 0.00258,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.0000655606364974,
+              "max_abs": 0.00484,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.0000851580611574,
+              "max_abs": 0.0145,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.0000489639333259,
+              "max_abs": 0.0101,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0003272897578341,
+              "max_abs": 0.565,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0003103485384826,
+              "max_abs": 0.563,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0002697282135262,
+              "max_abs": 0.562,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.0001773537189025,
+              "max_abs": 0.552,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.999994,
+              "cos_mean": 0.99999928,
+              "cos_global": 0.99999928,
+              "norm_ratio": 1.0000016528204798,
+              "max_abs": 1.25,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999934,
+              "cos_global": 0.99999857,
+              "norm_ratio": 0.9997504628214803,
+              "max_abs": 0.0871,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999982,
+              "cos_global": 0.99999982,
+              "norm_ratio": 1.0000268755107609,
+              "max_abs": 0.0042,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999982,
+              "cos_global": 0.99999982,
+              "norm_ratio": 1.0,
+              "max_abs": 7.31e-05,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999934,
+              "cos_global": 0.99999857,
+              "norm_ratio": 0.9997504628214803,
+              "max_abs": 0.0871,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999988,
+              "cos_global": 0.99999988,
+              "norm_ratio": 0.9999656489528906,
+              "max_abs": 0.00838,
+              "passes_cos_0_999": true
+            }
+          ]
+        },
+        {
+          "case": 9,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000175575698176,
+              "max_abs": 0.000426,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000035462621524,
+              "max_abs": 0.000774,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 0.9999874020512525,
+              "max_abs": 0.00147,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 0.9999878678042401,
+              "max_abs": 0.00103,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.000003426244297,
+              "max_abs": 0.00223,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.000018035810254,
+              "max_abs": 0.00284,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.99994052095818,
+              "max_abs": 0.00967,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.9999816837696097,
+              "max_abs": 0.00887,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.9999536042229114,
+              "max_abs": 0.007,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.9999807610380304,
+              "max_abs": 0.00937,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 1.0,
+              "norm_ratio": 0.9999045010479831,
+              "max_abs": 0.269,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 1.0,
+              "norm_ratio": 0.999905575272199,
+              "max_abs": 0.271,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999988,
+              "cos_global": 1.0,
+              "norm_ratio": 0.9998972001445195,
+              "max_abs": 0.277,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 1.0,
+              "norm_ratio": 0.999910924939228,
+              "max_abs": 0.272,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.999992,
+              "cos_mean": 0.99999928,
+              "cos_global": 0.99999839,
+              "norm_ratio": 0.9998536479172099,
+              "max_abs": 1.57,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999964,
+              "cos_global": 0.99999964,
+              "norm_ratio": 0.9999752744913337,
+              "max_abs": 0.0975,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999982,
+              "cos_global": 0.99999982,
+              "norm_ratio": 0.9999726019940319,
+              "max_abs": 0.00514,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999982,
+              "cos_global": 0.99999982,
+              "norm_ratio": 1.0,
+              "max_abs": 6.14e-05,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999964,
+              "cos_global": 0.99999964,
+              "norm_ratio": 0.9999752744913337,
+              "max_abs": 0.0975,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999988,
+              "cos_global": 0.99999988,
+              "norm_ratio": 0.9999167431817461,
+              "max_abs": 0.0155,
+              "passes_cos_0_999": true
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 0.9999976157197763,
+              "max_abs": 0.000426,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 0.9999735918081748,
+              "max_abs": 0.000936,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.000004294761807,
+              "max_abs": 0.000759,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000200951709648,
+              "max_abs": 0.00194,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 1.0,
+              "cos_mean": 1.0,
+              "cos_global": 1.0,
+              "norm_ratio": 1.0000224646393143,
+              "max_abs": 0.00305,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.0000584582719936,
+              "max_abs": 0.00267,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.9999800750803697,
+              "max_abs": 0.0494,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.999978785788595,
+              "max_abs": 0.0508,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 0.9999751049345272,
+              "max_abs": 0.0483,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999988,
+              "cos_global": 0.99999988,
+              "norm_ratio": 1.0000125356751948,
+              "max_abs": 0.0462,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.999997,
+              "cos_mean": 0.99999982,
+              "cos_global": 0.99999982,
+              "norm_ratio": 0.9999135802264774,
+              "max_abs": 1.44,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.999994,
+              "cos_mean": 0.99999988,
+              "cos_global": 0.99999982,
+              "norm_ratio": 0.9999456508657373,
+              "max_abs": 1.43,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999982,
+              "cos_global": 0.99999982,
+              "norm_ratio": 0.999879636413782,
+              "max_abs": 1.43,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.999998,
+              "cos_mean": 0.99999988,
+              "cos_global": 0.99999988,
+              "norm_ratio": 0.9999867216423475,
+              "max_abs": 1.37,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.999985,
+              "cos_mean": 0.99999964,
+              "cos_global": 0.99999958,
+              "norm_ratio": 0.9996759052199803,
+              "max_abs": 1.79,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.999989,
+              "cos_mean": 0.99999958,
+              "cos_global": 0.99999946,
+              "norm_ratio": 1.0001363473643041,
+              "max_abs": 0.114,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 1.0,
+              "cos_mean": 0.9999997,
+              "cos_global": 0.9999997,
+              "norm_ratio": 0.9999510349361155,
+              "max_abs": 0.00456,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 1.0,
+              "cos_mean": 0.9999997,
+              "cos_global": 0.9999997,
+              "norm_ratio": 1.0,
+              "max_abs": 0.000107,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.999989,
+              "cos_mean": 0.99999958,
+              "cos_global": 0.99999946,
+              "norm_ratio": 1.0001363473643041,
+              "max_abs": 0.114,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 1.0,
+              "cos_mean": 0.99999994,
+              "cos_global": 0.99999994,
+              "norm_ratio": 1.000047179786733,
+              "max_abs": 0.0067,
+              "passes_cos_0_999": true
+            }
+          ]
+        }
+      ],
+      "tensor_types": {
+        "F16": 83,
+        "F32": 49
+      }
+    },
+    "q8": {
+      "filename": "LFM2.5-Encoder-230M-Q8_0.gguf",
+      "bytes": 246596608,
+      "sha256": "790d3fb0d97712e7c43bb446484e8b3935c0a3c471db23c7a45cfbcb165a36a4",
+      "top1_matches": 13,
+      "masks": 15,
+      "summary": {
+        "cls": {
+          "cos_min": 0.993532201566922,
+          "cos_mean": 0.993532201566922,
+          "cos_global": 0.993532201566922,
+          "max_relative_error": 0.11878420714634425
+        },
+        "hidden": {
+          "cos_min": 0.9466521760080364,
+          "cos_mean": 0.9982315575726114,
+          "cos_global": 0.9973764136116854,
+          "max_relative_error": 0.07259237210087632
+        },
+        "logits": {
+          "cos_min": 0.9993487705785746,
+          "cos_mean": 0.9993487705785746,
+          "cos_global": 0.9993487705785756,
+          "max_relative_error": 0.03679553094759527
+        }
+      },
+      "cases": [
+        {
+          "case": 0,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9983291698961142,
+            "cos_mean": 0.9991239803532918,
+            "cos_global": 0.9988434927970938,
+            "relative_error": 0.0484173749492987,
+            "mine_norm": 142.47301401685866,
+            "ref_norm": 143.4575789680133
+          },
+          "cls": {
+            "cos_min": 0.9990002657329307,
+            "cos_mean": 0.9990002657329307,
+            "cos_global": 0.9990002657329307,
+            "relative_error": 0.058766152515145616,
+            "mine_norm": 53.34213026685585,
+            "ref_norm": 55.51522296286042
+          },
+          "logits": {
+            "cos_min": 0.9997800066413681,
+            "cos_mean": 0.9997800066413681,
+            "cos_global": 0.9997800066413692,
+            "relative_error": 0.02521286608146702,
+            "mine_norm": 928.3351780258472,
+            "ref_norm": 941.7180008207076
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 1,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9984071309716538,
+            "cos_mean": 0.9994095605911912,
+            "cos_global": 0.9993478035167713,
+            "relative_error": 0.03624181176108596,
+            "mine_norm": 201.16697477046867,
+            "ref_norm": 201.92107255151876
+          },
+          "cls": {
+            "cos_min": 0.9995403881524587,
+            "cos_mean": 0.9995403881524587,
+            "cos_global": 0.9995403881524587,
+            "relative_error": 0.03101589549432636,
+            "mine_norm": 76.72228480079302,
+            "ref_norm": 77.26429505314995
+          },
+          "logits": {
+            "cos_min": 0.9997650389983105,
+            "cos_mean": 0.9997650389983105,
+            "cos_global": 0.9997650389983114,
+            "relative_error": 0.02349640206496541,
+            "mine_norm": 1223.5076767268527,
+            "ref_norm": 1234.9958063806575
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 52362,
+              "token": "Berlin",
+              "reference_id": 52362,
+              "reference_token": "Berlin"
+            }
+          ]
+        },
+        {
+          "case": 2,
+          "tokens": 10,
+          "hidden": {
+            "cos_min": 0.9984914336196715,
+            "cos_mean": 0.9993967454545303,
+            "cos_global": 0.9993077649952297,
+            "relative_error": 0.03721367533659988,
+            "mine_norm": 197.40343514852225,
+            "ref_norm": 197.7243937019481
+          },
+          "cls": {
+            "cos_min": 0.9994004926186023,
+            "cos_mean": 0.9994004926186023,
+            "cos_global": 0.9994004926186024,
+            "relative_error": 0.03462205532581082,
+            "mine_norm": 75.92597478054134,
+            "ref_norm": 75.98498461088874
+          },
+          "logits": {
+            "cos_min": 0.9997228377320514,
+            "cos_mean": 0.9997228377320514,
+            "cos_global": 0.9997228377320522,
+            "relative_error": 0.02559791987735825,
+            "mine_norm": 981.1016229375258,
+            "ref_norm": 991.339508928574
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 3,
+          "tokens": 17,
+          "hidden": {
+            "cos_min": 0.9984704047120379,
+            "cos_mean": 0.9993468645917012,
+            "cos_global": 0.9991865923344779,
+            "relative_error": 0.040375256224373886,
+            "mine_norm": 169.3003297878712,
+            "ref_norm": 169.09935596911725
+          },
+          "cls": {
+            "cos_min": 0.9992971122323091,
+            "cos_mean": 0.9992971122323091,
+            "cos_global": 0.9992971122323091,
+            "relative_error": 0.03772047300403511,
+            "mine_norm": 43.38249880246017,
+            "ref_norm": 43.59578989769663
+          },
+          "logits": {
+            "cos_min": 0.9998535409656355,
+            "cos_mean": 0.9998559284530352,
+            "cos_global": 0.9998546192769736,
+            "relative_error": 0.01842415583955823,
+            "mine_norm": 1612.9446695131544,
+            "ref_norm": 1624.518681113346
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            },
+            {
+              "token_id": 7053,
+              "token": " Berlin",
+              "reference_id": 7053,
+              "reference_token": " Berlin"
+            }
+          ]
+        },
+        {
+          "case": 4,
+          "tokens": 2,
+          "hidden": {
+            "cos_min": 0.99845189136415,
+            "cos_mean": 0.9986934203162962,
+            "cos_global": 0.9986077248501345,
+            "relative_error": 0.05474670969590286,
+            "mine_norm": 46.035005356020335,
+            "ref_norm": 46.7854998845754
+          },
+          "cls": {
+            "cos_min": 0.99845189136415,
+            "cos_mean": 0.99845189136415,
+            "cos_global": 0.99845189136415,
+            "relative_error": 0.05793219034916021,
+            "mine_norm": 37.678723618520806,
+            "ref_norm": 38.359385763821535
+          },
+          "logits": {
+            "cos_min": 0.9993487705785746,
+            "cos_mean": 0.9993487705785746,
+            "cos_global": 0.9993487705785756,
+            "relative_error": 0.03629460471194146,
+            "mine_norm": 995.3974783255387,
+            "ref_norm": 999.9553685417266
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 511,
+              "token": "\"",
+              "reference_id": 511,
+              "reference_token": "\""
+            }
+          ]
+        },
+        {
+          "case": 5,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9991324623752029,
+            "cos_mean": 0.9992996791616021,
+            "cos_global": 0.9992221908879823,
+            "relative_error": 0.042836113435395375,
+            "mine_norm": 45.201756074884294,
+            "ref_norm": 46.00727914100182
+          },
+          "cls": {
+            "cos_min": 0.9991324623752029,
+            "cos_mean": 0.9991324623752029,
+            "cos_global": 0.9991324623752031,
+            "relative_error": 0.04602611514346471,
+            "mine_norm": 34.86130837831255,
+            "ref_norm": 35.58966922404587
+          },
+          "logits": {
+            "cos_min": 0.9997300370834851,
+            "cos_mean": 0.9997478489463618,
+            "cos_global": 0.9997475763967751,
+            "relative_error": 0.023068709273139986,
+            "mine_norm": 1275.985261602215,
+            "ref_norm": 1283.0228877039222
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 512,
+              "reference_token": "#"
+            },
+            {
+              "token_id": 535,
+              "token": ":",
+              "reference_id": 633,
+              "reference_token": "�"
+            }
+          ]
+        },
+        {
+          "case": 6,
+          "tokens": 1,
+          "hidden": {
+            "cos_min": 0.9986847987918847,
+            "cos_mean": 0.9986847987918847,
+            "cos_global": 0.9986847987918847,
+            "relative_error": 0.05609141990326143,
+            "mine_norm": 30.416405438180444,
+            "ref_norm": 29.77810964884332
+          },
+          "cls": {
+            "cos_min": 0.9986847987918847,
+            "cos_mean": 0.9986847987918847,
+            "cos_global": 0.9986847987918847,
+            "relative_error": 0.05609141990326143,
+            "mine_norm": 30.416405438180444,
+            "ref_norm": 29.77810964884332
+          }
+        },
+        {
+          "case": 7,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9989068975615584,
+            "cos_mean": 0.999002031770206,
+            "cos_global": 0.9988710494812189,
+            "relative_error": 0.048752189179230444,
+            "mine_norm": 68.5781987205924,
+            "ref_norm": 67.91048116907412
+          },
+          "cls": {
+            "cos_min": 0.9989068975615584,
+            "cos_mean": 0.9989068975615584,
+            "cos_global": 0.9989068975615584,
+            "relative_error": 0.04986364433990116,
+            "mine_norm": 60.83373226816855,
+            "ref_norm": 59.85999004078574
+          }
+        },
+        {
+          "case": 8,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.993532201566922,
+            "cos_mean": 0.9982315575726114,
+            "cos_global": 0.9973764136116854,
+            "relative_error": 0.07259237210087632,
+            "mine_norm": 112.02013122869073,
+            "ref_norm": 112.92833959639789
+          },
+          "cls": {
+            "cos_min": 0.993532201566922,
+            "cos_mean": 0.993532201566922,
+            "cos_global": 0.993532201566922,
+            "relative_error": 0.11878420714634425,
+            "mine_norm": 35.45127154126599,
+            "ref_norm": 36.97994448869384
+          }
+        },
+        {
+          "case": 9,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.9986255679320575,
+            "cos_mean": 0.9995791820601557,
+            "cos_global": 0.9995681860559988,
+            "relative_error": 0.029384429496281266,
+            "mine_norm": 300.9992248473648,
+            "ref_norm": 301.14649036854536
+          },
+          "cls": {
+            "cos_min": 0.9994395897994213,
+            "cos_mean": 0.9994395897994213,
+            "cos_global": 0.9994395897994214,
+            "relative_error": 0.03382134011779025,
+            "mine_norm": 83.6101106445142,
+            "ref_norm": 83.25423740066873
+          },
+          "logits": {
+            "cos_min": 0.9997331154468517,
+            "cos_mean": 0.9997397715672836,
+            "cos_global": 0.9997259290221877,
+            "relative_error": 0.025450680164343494,
+            "mine_norm": 2887.7903858035243,
+            "ref_norm": 2917.7190976884986
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 20374,
+              "reference_token": "東京"
+            },
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 52377,
+              "reference_token": "京都"
+            }
+          ]
+        },
+        {
+          "case": 10,
+          "tokens": 11,
+          "hidden": {
+            "cos_min": 0.9984977353878963,
+            "cos_mean": 0.9995256122245177,
+            "cos_global": 0.9995438264165134,
+            "relative_error": 0.030589092831366422,
+            "mine_norm": 232.42272276870455,
+            "ref_norm": 231.40522840599206
+          },
+          "cls": {
+            "cos_min": 0.99951601891949,
+            "cos_mean": 0.99951601891949,
+            "cos_global": 0.99951601891949,
+            "relative_error": 0.031184052903619603,
+            "mine_norm": 82.98720674854287,
+            "ref_norm": 82.84736553835278
+          },
+          "logits": {
+            "cos_min": 0.9996470029855706,
+            "cos_mean": 0.9996470029855706,
+            "cos_global": 0.999647002985572,
+            "relative_error": 0.03406479949180072,
+            "mine_norm": 858.5141526673169,
+            "ref_norm": 877.5328945914181
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 528,
+              "token": "3",
+              "reference_id": 528,
+              "reference_token": "3"
+            }
+          ]
+        },
+        {
+          "case": 11,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9983786390477483,
+            "cos_mean": 0.9989326033058828,
+            "cos_global": 0.9991012674825077,
+            "relative_error": 0.047345496104868524,
+            "mine_norm": 95.78983153595148,
+            "ref_norm": 97.94384212123187
+          },
+          "cls": {
+            "cos_min": 0.9994105314352018,
+            "cos_mean": 0.9994105314352018,
+            "cos_global": 0.9994105314352015,
+            "relative_error": 0.04199398394729178,
+            "mine_norm": 58.16662092166691,
+            "ref_norm": 59.64426454205843
+          },
+          "logits": {
+            "cos_min": 0.9993903558334014,
+            "cos_mean": 0.9993903558334014,
+            "cos_global": 0.9993903558334029,
+            "relative_error": 0.03679553094759527,
+            "mine_norm": 961.9498601486536,
+            "ref_norm": 973.8585477332456
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 526,
+              "token": "1",
+              "reference_id": 526,
+              "reference_token": "1"
+            }
+          ]
+        },
+        {
+          "case": 12,
+          "tokens": 7,
+          "hidden": {
+            "cos_min": 0.9988711253926402,
+            "cos_mean": 0.9991942724163734,
+            "cos_global": 0.9991780521411439,
+            "relative_error": 0.04076693184339649,
+            "mine_norm": 86.74729060521264,
+            "ref_norm": 86.44430198104229
+          },
+          "cls": {
+            "cos_min": 0.9994765167195486,
+            "cos_mean": 0.9994765167195486,
+            "cos_global": 0.9994765167195486,
+            "relative_error": 0.034329465757333866,
+            "mine_norm": 49.14754682886992,
+            "ref_norm": 49.74472020839599
+          },
+          "logits": {
+            "cos_min": 0.9995797491679468,
+            "cos_mean": 0.9995797491679468,
+            "cos_global": 0.9995797491679479,
+            "relative_error": 0.02898880770390459,
+            "mine_norm": 994.1798882355675,
+            "ref_norm": 994.4377039888593
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 7593,
+              "token": "ā",
+              "reference_id": 7593,
+              "reference_token": "ā"
+            }
+          ]
+        },
+        {
+          "case": 13,
+          "tokens": 20,
+          "hidden": {
+            "cos_min": 0.9987957238013856,
+            "cos_mean": 0.9994705212719104,
+            "cos_global": 0.9993826753741442,
+            "relative_error": 0.035199254643408596,
+            "mine_norm": 195.63760070981272,
+            "ref_norm": 196.1849045412022
+          },
+          "cls": {
+            "cos_min": 0.9994743681406334,
+            "cos_mean": 0.9994743681406334,
+            "cos_global": 0.9994743681406335,
+            "relative_error": 0.03249580879121209,
+            "mine_norm": 56.51320732737036,
+            "ref_norm": 56.66958695418492
+          },
+          "logits": {
+            "cos_min": 0.9998246770413013,
+            "cos_mean": 0.9998246770413013,
+            "cos_global": 0.9998246770413018,
+            "relative_error": 0.018943147529968552,
+            "mine_norm": 972.5654634943071,
+            "ref_norm": 975.5347107767259
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 54055,
+              "token": " Enjoy",
+              "reference_id": 54055,
+              "reference_token": " Enjoy"
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "tokens": 649,
+          "hidden": {
+            "cos_min": 0.9466521760080364,
+            "cos_mean": 0.9987763504665187,
+            "cos_global": 0.9985036421707048,
+            "relative_error": 0.05567056776118354,
+            "mine_norm": 1323.3127882379742,
+            "ref_norm": 1311.598539944019
+          },
+          "cls": {
+            "cos_min": 0.9994352184503638,
+            "cos_mean": 0.9994352184503638,
+            "cos_global": 0.9994352184503639,
+            "relative_error": 0.034226259201596866,
+            "mine_norm": 39.056454779082244,
+            "ref_norm": 39.33416864981945
+          },
+          "logits": {
+            "cos_min": 0.9997348586841758,
+            "cos_mean": 0.9997348586841758,
+            "cos_global": 0.9997348586841773,
+            "relative_error": 0.023155808232463746,
+            "mine_norm": 887.6298552114041,
+            "ref_norm": 890.0421952087931
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        }
+      ],
+      "diff_probes": [
+        {
+          "case": 0,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99997818,
+              "cos_global": 0.9999842,
+              "norm_ratio": 1.0001398842596925,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.999962,
+              "cos_mean": 0.99997753,
+              "cos_global": 0.99997491,
+              "norm_ratio": 0.9998140177793694,
+              "max_abs": 0.0331,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.999958,
+              "cos_mean": 0.99998051,
+              "cos_global": 0.99997985,
+              "norm_ratio": 0.9996772704564196,
+              "max_abs": 0.0268,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.999962,
+              "cos_mean": 0.99996817,
+              "cos_global": 0.99996793,
+              "norm_ratio": 1.0000042625510213,
+              "max_abs": 0.0329,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.999956,
+              "cos_mean": 0.99997151,
+              "cos_global": 0.99996948,
+              "norm_ratio": 0.9993150088321909,
+              "max_abs": 0.0681,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.99992,
+              "cos_mean": 0.99994636,
+              "cos_global": 0.99994206,
+              "norm_ratio": 1.002276052802422,
+              "max_abs": 0.169,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.999933,
+              "cos_mean": 0.99995208,
+              "cos_global": 0.99994683,
+              "norm_ratio": 1.0015303231033656,
+              "max_abs": 0.261,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.999904,
+              "cos_mean": 0.99992478,
+              "cos_global": 0.99992388,
+              "norm_ratio": 0.9995664105337368,
+              "max_abs": 0.193,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.999884,
+              "cos_mean": 0.9999184,
+              "cos_global": 0.9999153,
+              "norm_ratio": 0.9993337300988451,
+              "max_abs": 0.367,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.999753,
+              "cos_mean": 0.99984479,
+              "cos_global": 0.99984908,
+              "norm_ratio": 1.0020508947056943,
+              "max_abs": 0.254,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.999558,
+              "cos_mean": 0.99982321,
+              "cos_global": 0.99998593,
+              "norm_ratio": 1.0038553371494392,
+              "max_abs": 5.37,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.99947,
+              "cos_mean": 0.99980479,
+              "cos_global": 0.99997604,
+              "norm_ratio": 1.003766951732059,
+              "max_abs": 5.39,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.999343,
+              "cos_mean": 0.99973708,
+              "cos_global": 0.99996674,
+              "norm_ratio": 1.0033677990501657,
+              "max_abs": 5.4,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.999677,
+              "cos_mean": 0.99988341,
+              "cos_global": 0.99994051,
+              "norm_ratio": 1.0016440375886855,
+              "max_abs": 5.34,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.99877,
+              "cos_mean": 0.99961305,
+              "cos_global": 0.99961627,
+              "norm_ratio": 1.0062706341023622,
+              "max_abs": 12.7,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.998329,
+              "cos_mean": 0.99912399,
+              "cos_global": 0.99884349,
+              "norm_ratio": 0.9931368283701926,
+              "max_abs": 0.646,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.999,
+              "cos_mean": 0.99900025,
+              "cos_global": 0.99900025,
+              "norm_ratio": 0.9608558726161314,
+              "max_abs": 0.527,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.999,
+              "cos_mean": 0.99900025,
+              "cos_global": 0.99900025,
+              "norm_ratio": 1.0,
+              "max_abs": 0.00484,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.998329,
+              "cos_mean": 0.99912399,
+              "cos_global": 0.99884349,
+              "norm_ratio": 0.9931368283701926,
+              "max_abs": 0.646,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.99978,
+              "cos_mean": 0.99978,
+              "cos_global": 0.99978,
+              "norm_ratio": 0.985788938148999,
+              "max_abs": 0.491,
+              "passes_cos_0_999": true
+            }
+          ]
+        },
+        {
+          "case": 9,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99997407,
+              "cos_global": 0.99998057,
+              "norm_ratio": 1.0000186758863665,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.99994,
+              "cos_mean": 0.99996555,
+              "cos_global": 0.99996299,
+              "norm_ratio": 1.0005347007565164,
+              "max_abs": 0.0424,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.999938,
+              "cos_mean": 0.99996608,
+              "cos_global": 0.9999662,
+              "norm_ratio": 0.9998647544536972,
+              "max_abs": 0.0353,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.99993,
+              "cos_mean": 0.99995327,
+              "cos_global": 0.99995208,
+              "norm_ratio": 1.0017632059487236,
+              "max_abs": 0.0479,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.999896,
+              "cos_mean": 0.99994814,
+              "cos_global": 0.99994689,
+              "norm_ratio": 1.0017083718177238,
+              "max_abs": 0.0959,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.999897,
+              "cos_mean": 0.99993664,
+              "cos_global": 0.99993443,
+              "norm_ratio": 1.0009915172552442,
+              "max_abs": 0.0828,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.999882,
+              "cos_mean": 0.99993616,
+              "cos_global": 0.9999187,
+              "norm_ratio": 0.9988945799846776,
+              "max_abs": 0.703,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.999847,
+              "cos_mean": 0.99990296,
+              "cos_global": 0.99988896,
+              "norm_ratio": 1.0001097331462878,
+              "max_abs": 0.679,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.999705,
+              "cos_mean": 0.99985266,
+              "cos_global": 0.99985504,
+              "norm_ratio": 1.0007808970610967,
+              "max_abs": 0.587,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.999705,
+              "cos_mean": 0.99982035,
+              "cos_global": 0.99982172,
+              "norm_ratio": 1.0023509005978848,
+              "max_abs": 0.495,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.999646,
+              "cos_mean": 0.99981445,
+              "cos_global": 0.99998361,
+              "norm_ratio": 1.0148026733374482,
+              "max_abs": 21.6,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.999556,
+              "cos_mean": 0.99983829,
+              "cos_global": 0.99996746,
+              "norm_ratio": 1.0138187784474781,
+              "max_abs": 21.6,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.99955,
+              "cos_mean": 0.99981129,
+              "cos_global": 0.99996424,
+              "norm_ratio": 1.0135403429310108,
+              "max_abs": 21.6,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.999764,
+              "cos_mean": 0.99990255,
+              "cos_global": 0.99992335,
+              "norm_ratio": 1.0081347889326673,
+              "max_abs": 21.7,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.9985,
+              "cos_mean": 0.99952096,
+              "cos_global": 0.9993813,
+              "norm_ratio": 1.0052931405835712,
+              "max_abs": 11.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.998626,
+              "cos_mean": 0.99957919,
+              "cos_global": 0.99956816,
+              "norm_ratio": 0.9995110452626105,
+              "max_abs": 0.44,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.99944,
+              "cos_mean": 0.9994396,
+              "cos_global": 0.9994396,
+              "norm_ratio": 1.0042745333528622,
+              "max_abs": 0.302,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.99944,
+              "cos_mean": 0.9994396,
+              "cos_global": 0.9994396,
+              "norm_ratio": 1.0,
+              "max_abs": 0.00375,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.998626,
+              "cos_mean": 0.99957919,
+              "cos_global": 0.99956816,
+              "norm_ratio": 0.9995110452626105,
+              "max_abs": 0.44,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.999733,
+              "cos_mean": 0.99973977,
+              "cos_global": 0.99972594,
+              "norm_ratio": 0.9897424285678142,
+              "max_abs": 1.04,
+              "passes_cos_0_999": true
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99998665,
+              "cos_global": 0.99998659,
+              "norm_ratio": 1.0000234333803808,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.999947,
+              "cos_mean": 0.99996847,
+              "cos_global": 0.99996597,
+              "norm_ratio": 0.9995652751962195,
+              "max_abs": 0.0615,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.99995,
+              "cos_mean": 0.99996811,
+              "cos_global": 0.99996746,
+              "norm_ratio": 0.9997946527198104,
+              "max_abs": 0.0314,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.999945,
+              "cos_mean": 0.99996156,
+              "cos_global": 0.99996132,
+              "norm_ratio": 1.0005640233958415,
+              "max_abs": 0.0641,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.999924,
+              "cos_mean": 0.99995661,
+              "cos_global": 0.99995452,
+              "norm_ratio": 1.0002821646209177,
+              "max_abs": 0.0667,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.99992,
+              "cos_mean": 0.99994522,
+              "cos_global": 0.99994355,
+              "norm_ratio": 0.9988936020400527,
+              "max_abs": 0.129,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.998871,
+              "cos_mean": 0.99992192,
+              "cos_global": 0.99990106,
+              "norm_ratio": 0.998904507758883,
+              "max_abs": 2.82,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.997758,
+              "cos_mean": 0.99988991,
+              "cos_global": 0.99989057,
+              "norm_ratio": 1.0017305243723593,
+              "max_abs": 2.67,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.998848,
+              "cos_mean": 0.99985534,
+              "cos_global": 0.9998436,
+              "norm_ratio": 1.002049559793566,
+              "max_abs": 3.43,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.997377,
+              "cos_mean": 0.99979877,
+              "cos_global": 0.99979985,
+              "norm_ratio": 0.9996244296366643,
+              "max_abs": 3.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.98659,
+              "cos_mean": 0.99969733,
+              "cos_global": 0.99728906,
+              "norm_ratio": 1.0094166959531585,
+              "max_abs": 148.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.977031,
+              "cos_mean": 0.99972373,
+              "cos_global": 0.99777949,
+              "norm_ratio": 1.0066837443654113,
+              "max_abs": 147.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.978813,
+              "cos_mean": 0.99957883,
+              "cos_global": 0.99798542,
+              "norm_ratio": 1.00765131771177,
+              "max_abs": 147.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.984407,
+              "cos_mean": 0.99978548,
+              "cos_global": 0.99912053,
+              "norm_ratio": 0.9963837790465611,
+              "max_abs": 146.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.946592,
+              "cos_mean": 0.99931836,
+              "cos_global": 0.99930489,
+              "norm_ratio": 0.9865347803176969,
+              "max_abs": 81.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.946652,
+              "cos_mean": 0.99877638,
+              "cos_global": 0.99850363,
+              "norm_ratio": 1.0089312643326112,
+              "max_abs": 5.21,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.999435,
+              "cos_mean": 0.99943525,
+              "cos_global": 0.99943525,
+              "norm_ratio": 0.9929396496435275,
+              "max_abs": 0.147,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.999435,
+              "cos_mean": 0.99943525,
+              "cos_global": 0.99943525,
+              "norm_ratio": 1.0,
+              "max_abs": 0.00367,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.946652,
+              "cos_mean": 0.99877638,
+              "cos_global": 0.99850363,
+              "norm_ratio": 1.0089312643326112,
+              "max_abs": 5.21,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.999735,
+              "cos_mean": 0.99973488,
+              "cos_global": 0.99973488,
+              "norm_ratio": 0.9972896879858529,
+              "max_abs": 0.394,
+              "passes_cos_0_999": true
+            }
+          ]
+        }
+      ],
+      "tensor_types": {
+        "Q8_0": 83,
+        "F32": 49
+      }
+    },
+    "q4": {
+      "filename": "LFM2.5-Encoder-230M-Q4_0.gguf",
+      "bytes": 149079040,
+      "sha256": "6c2a549f375b56cf9b22b8c7173df9c5b5a23b274316a7a70addecaea3963fcc",
+      "top1_matches": 9,
+      "masks": 15,
+      "summary": {
+        "cls": {
+          "cos_min": 0.8540294756374573,
+          "cos_mean": 0.8540294756374573,
+          "cos_global": 0.8540294756374573,
+          "max_relative_error": 0.8659490543434933
+        },
+        "hidden": {
+          "cos_min": 0.7360318007895931,
+          "cos_mean": 0.8667443671906104,
+          "cos_global": 0.8769105462473484,
+          "max_relative_error": 0.7992899694053608
+        },
+        "logits": {
+          "cos_min": 0.9317541668193732,
+          "cos_mean": 0.9317541668193732,
+          "cos_global": 0.9317541668193747,
+          "max_relative_error": 0.5682195440752427
+        }
+      },
+      "cases": [
+        {
+          "case": 0,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.867064168083247,
+            "cos_mean": 0.9292046254001664,
+            "cos_global": 0.9031413032855367,
+            "relative_error": 0.4472456932219442,
+            "mine_norm": 147.53359667798696,
+            "ref_norm": 143.4575789680133
+          },
+          "cls": {
+            "cos_min": 0.9526406430695535,
+            "cos_mean": 0.9526406430695535,
+            "cos_global": 0.9526406430695535,
+            "relative_error": 0.3404917898749292,
+            "mine_norm": 61.38892659735541,
+            "ref_norm": 55.51522296286042
+          },
+          "logits": {
+            "cos_min": 0.9774414424524067,
+            "cos_mean": 0.9774414424524067,
+            "cos_global": 0.9774414424524083,
+            "relative_error": 0.22518019626795518,
+            "mine_norm": 994.012031902264,
+            "ref_norm": 941.7180008207076
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 1,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.8710259253607666,
+            "cos_mean": 0.9548747412050784,
+            "cos_global": 0.9479034305157673,
+            "relative_error": 0.3280658613839799,
+            "mine_norm": 207.2343020830796,
+            "ref_norm": 201.92107255151876
+          },
+          "cls": {
+            "cos_min": 0.9641720533507991,
+            "cos_mean": 0.9641720533507991,
+            "cos_global": 0.9641720533507991,
+            "relative_error": 0.2653956525830987,
+            "mine_norm": 73.88475339850353,
+            "ref_norm": 77.26429505314995
+          },
+          "logits": {
+            "cos_min": 0.9801096519127345,
+            "cos_mean": 0.9801096519127345,
+            "cos_global": 0.9801096519127366,
+            "relative_error": 0.2237909410928489,
+            "mine_norm": 1338.1642406613964,
+            "ref_norm": 1234.9958063806575
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 52362,
+              "token": "Berlin",
+              "reference_id": 52362,
+              "reference_token": "Berlin"
+            }
+          ]
+        },
+        {
+          "case": 2,
+          "tokens": 10,
+          "hidden": {
+            "cos_min": 0.867126029854607,
+            "cos_mean": 0.9577844145448324,
+            "cos_global": 0.9496146389375715,
+            "relative_error": 0.3134207097595956,
+            "mine_norm": 187.90231998553233,
+            "ref_norm": 197.7243937019481
+          },
+          "cls": {
+            "cos_min": 0.9692209777318255,
+            "cos_mean": 0.9692209777318255,
+            "cos_global": 0.9692209777318257,
+            "relative_error": 0.24641044352535374,
+            "mine_norm": 74.43374160505684,
+            "ref_norm": 75.98498461088874
+          },
+          "logits": {
+            "cos_min": 0.9853019939361642,
+            "cos_mean": 0.9853019939361642,
+            "cos_global": 0.985301993936166,
+            "relative_error": 0.2033743594955652,
+            "mine_norm": 1086.1811959429142,
+            "ref_norm": 991.339508928574
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 3,
+          "tokens": 17,
+          "hidden": {
+            "cos_min": 0.8682536054079919,
+            "cos_mean": 0.9490476449586047,
+            "cos_global": 0.9352159098653385,
+            "relative_error": 0.35843098474562896,
+            "mine_norm": 167.56184387880535,
+            "ref_norm": 169.09935596911725
+          },
+          "cls": {
+            "cos_min": 0.9632358763791596,
+            "cos_mean": 0.9632358763791596,
+            "cos_global": 0.9632358763791596,
+            "relative_error": 0.3045846611661643,
+            "mine_norm": 48.24946817916847,
+            "ref_norm": 43.59578989769663
+          },
+          "logits": {
+            "cos_min": 0.9817845326373603,
+            "cos_mean": 0.9843542170208068,
+            "cos_global": 0.9845263399303624,
+            "relative_error": 0.18983856323288184,
+            "mine_norm": 1717.9912560483526,
+            "ref_norm": 1624.518681113346
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            },
+            {
+              "token_id": 7053,
+              "token": " Berlin",
+              "reference_id": 7053,
+              "reference_token": " Berlin"
+            }
+          ]
+        },
+        {
+          "case": 4,
+          "tokens": 2,
+          "hidden": {
+            "cos_min": 0.8540294756374573,
+            "cos_mean": 0.8911024165563904,
+            "cos_global": 0.8769105462473484,
+            "relative_error": 0.7992899694053608,
+            "mine_norm": 70.90489291134598,
+            "ref_norm": 46.7854998845754
+          },
+          "cls": {
+            "cos_min": 0.8540294756374573,
+            "cos_mean": 0.8540294756374573,
+            "cos_global": 0.8540294756374573,
+            "relative_error": 0.8659490543434933,
+            "mine_norm": 59.31499716311531,
+            "ref_norm": 38.359385763821535
+          },
+          "logits": {
+            "cos_min": 0.9499786755367099,
+            "cos_mean": 0.9499786755367099,
+            "cos_global": 0.9499786755367114,
+            "relative_error": 0.529522794143727,
+            "mine_norm": 1377.5313558386342,
+            "ref_norm": 999.9553685417266
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 1,
+              "token": "<|startoftext|>",
+              "reference_id": 511,
+              "reference_token": "\""
+            }
+          ]
+        },
+        {
+          "case": 5,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.8731510812728344,
+            "cos_mean": 0.9167325727750693,
+            "cos_global": 0.8975102632055265,
+            "relative_error": 0.7367743223530544,
+            "mine_norm": 68.44647709293719,
+            "ref_norm": 46.00727914100182
+          },
+          "cls": {
+            "cos_min": 0.8731510812728344,
+            "cos_mean": 0.8731510812728344,
+            "cos_global": 0.8731510812728344,
+            "relative_error": 0.8181517244978816,
+            "mine_norm": 54.46071398262641,
+            "ref_norm": 35.58966922404587
+          },
+          "logits": {
+            "cos_min": 0.9667122152502591,
+            "cos_mean": 0.9667941689792796,
+            "cos_global": 0.9667622551141594,
+            "relative_error": 0.41367683375705394,
+            "mine_norm": 1657.6225498169229,
+            "ref_norm": 1283.0228877039222
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 512,
+              "reference_token": "#"
+            },
+            {
+              "token_id": 3548,
+              "token": "ney",
+              "reference_id": 633,
+              "reference_token": "�"
+            }
+          ]
+        },
+        {
+          "case": 6,
+          "tokens": 1,
+          "hidden": {
+            "cos_min": 0.9359239836505094,
+            "cos_mean": 0.9359239836505094,
+            "cos_global": 0.9359239836505096,
+            "relative_error": 0.35541574373848056,
+            "mine_norm": 29.290077003201826,
+            "ref_norm": 29.77810964884332
+          },
+          "cls": {
+            "cos_min": 0.9359239836505094,
+            "cos_mean": 0.9359239836505094,
+            "cos_global": 0.9359239836505096,
+            "relative_error": 0.35541574373848056,
+            "mine_norm": 29.290077003201826,
+            "ref_norm": 29.77810964884332
+          }
+        },
+        {
+          "case": 7,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9367981763879131,
+            "cos_mean": 0.9453907277267236,
+            "cos_global": 0.948194704494278,
+            "relative_error": 0.32297414586048906,
+            "mine_norm": 68.34373131339349,
+            "ref_norm": 67.91048116907412
+          },
+          "cls": {
+            "cos_min": 0.9501651424883177,
+            "cos_mean": 0.9501651424883177,
+            "cos_global": 0.9501651424883177,
+            "relative_error": 0.3213089680684167,
+            "mine_norm": 61.5341412874223,
+            "ref_norm": 59.85999004078574
+          }
+        },
+        {
+          "case": 8,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.7441924102092321,
+            "cos_mean": 0.925711899614773,
+            "cos_global": 0.9008036782456356,
+            "relative_error": 0.4350724579280293,
+            "mine_norm": 104.78849711811247,
+            "ref_norm": 112.92833959639789
+          },
+          "cls": {
+            "cos_min": 0.9376134014460368,
+            "cos_mean": 0.9376134014460368,
+            "cos_global": 0.9376134014460368,
+            "relative_error": 0.35020208368934125,
+            "mine_norm": 36.22445913106815,
+            "ref_norm": 36.97994448869384
+          }
+        },
+        {
+          "case": 9,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.8848089283690407,
+            "cos_mean": 0.9674173402339353,
+            "cos_global": 0.9667511973192107,
+            "relative_error": 0.2578830008528923,
+            "mine_norm": 301.1737917456106,
+            "ref_norm": 301.14649036854536
+          },
+          "cls": {
+            "cos_min": 0.9552775265314493,
+            "cos_mean": 0.9552775265314493,
+            "cos_global": 0.9552775265314496,
+            "relative_error": 0.296492187824511,
+            "mine_norm": 81.32187485905129,
+            "ref_norm": 83.25423740066873
+          },
+          "logits": {
+            "cos_min": 0.9823882937069048,
+            "cos_mean": 0.9838923071878748,
+            "cos_global": 0.9838271817485277,
+            "relative_error": 0.17948297710957017,
+            "mine_norm": 2903.806484348336,
+            "ref_norm": 2917.7190976884986
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 20374,
+              "reference_token": "東京"
+            },
+            {
+              "token_id": 44112,
+              "token": " Москва",
+              "reference_id": 52377,
+              "reference_token": "京都"
+            }
+          ]
+        },
+        {
+          "case": 10,
+          "tokens": 11,
+          "hidden": {
+            "cos_min": 0.8112534472636549,
+            "cos_mean": 0.9527098286873329,
+            "cos_global": 0.9579419156584954,
+            "relative_error": 0.2870472533021513,
+            "mine_norm": 223.28994772676657,
+            "ref_norm": 231.40522840599206
+          },
+          "cls": {
+            "cos_min": 0.9594419471954424,
+            "cos_mean": 0.9594419471954424,
+            "cos_global": 0.9594419471954424,
+            "relative_error": 0.2863324297188384,
+            "mine_norm": 83.64210565438316,
+            "ref_norm": 82.84736553835278
+          },
+          "logits": {
+            "cos_min": 0.9630901113114982,
+            "cos_mean": 0.9630901113114982,
+            "cos_global": 0.9630901113115001,
+            "relative_error": 0.5682195440752427,
+            "mine_norm": 1284.2746135765226,
+            "ref_norm": 877.5328945914181
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5741,
+              "token": "ها",
+              "reference_id": 528,
+              "reference_token": "3"
+            }
+          ]
+        },
+        {
+          "case": 11,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.7735145121844575,
+            "cos_mean": 0.8667443671906104,
+            "cos_global": 0.9021072175159885,
+            "relative_error": 0.4950962568649823,
+            "mine_norm": 112.12973199203554,
+            "ref_norm": 97.94384212123187
+          },
+          "cls": {
+            "cos_min": 0.9403890926686536,
+            "cos_mean": 0.9403890926686536,
+            "cos_global": 0.9403890926686538,
+            "relative_error": 0.47715355758430733,
+            "mine_norm": 76.05024289800957,
+            "ref_norm": 59.64426454205843
+          },
+          "logits": {
+            "cos_min": 0.9317541668193732,
+            "cos_mean": 0.9317541668193732,
+            "cos_global": 0.9317541668193747,
+            "relative_error": 0.368345626951654,
+            "mine_norm": 967.7785678569221,
+            "ref_norm": 973.8585477332456
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 526,
+              "token": "1",
+              "reference_id": 526,
+              "reference_token": "1"
+            }
+          ]
+        },
+        {
+          "case": 12,
+          "tokens": 7,
+          "hidden": {
+            "cos_min": 0.7875708966436131,
+            "cos_mean": 0.8802920106799041,
+            "cos_global": 0.8907777176038623,
+            "relative_error": 0.45476596691569954,
+            "mine_norm": 75.51283656991289,
+            "ref_norm": 86.44430198104229
+          },
+          "cls": {
+            "cos_min": 0.9306415851955863,
+            "cos_mean": 0.9306415851955863,
+            "cos_global": 0.9306415851955865,
+            "relative_error": 0.369193988673221,
+            "mine_norm": 43.85855687518873,
+            "ref_norm": 49.74472020839599
+          },
+          "logits": {
+            "cos_min": 0.9425495134876877,
+            "cos_mean": 0.9425495134876877,
+            "cos_global": 0.942549513487689,
+            "relative_error": 0.3363112202322546,
+            "mine_norm": 898.7305086587035,
+            "ref_norm": 994.4377039888593
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 3132,
+              "token": "är",
+              "reference_id": 7593,
+              "reference_token": "ā"
+            }
+          ]
+        },
+        {
+          "case": 13,
+          "tokens": 20,
+          "hidden": {
+            "cos_min": 0.8872057253271474,
+            "cos_mean": 0.9556465821928114,
+            "cos_global": 0.9489515735802332,
+            "relative_error": 0.3237811366544612,
+            "mine_norm": 200.51069245973753,
+            "ref_norm": 196.1849045412022
+          },
+          "cls": {
+            "cos_min": 0.958555315804988,
+            "cos_mean": 0.958555315804988,
+            "cos_global": 0.9585553158049882,
+            "relative_error": 0.2916692011515455,
+            "mine_norm": 50.78227482001188,
+            "ref_norm": 56.66958695418492
+          },
+          "logits": {
+            "cos_min": 0.9818748302625308,
+            "cos_mean": 0.9818748302625308,
+            "cos_global": 0.981874830262532,
+            "relative_error": 0.18965458890750564,
+            "mine_norm": 964.544136703415,
+            "ref_norm": 975.5347107767259
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 54055,
+              "token": " Enjoy",
+              "reference_id": 54055,
+              "reference_token": " Enjoy"
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "tokens": 649,
+          "hidden": {
+            "cos_min": 0.7360318007895931,
+            "cos_mean": 0.9243021074464055,
+            "cos_global": 0.904679868366825,
+            "relative_error": 0.42913481927008224,
+            "mine_norm": 1253.4857714801913,
+            "ref_norm": 1311.598539944019
+          },
+          "cls": {
+            "cos_min": 0.9554248620281539,
+            "cos_mean": 0.9554248620281539,
+            "cos_global": 0.955424862028154,
+            "relative_error": 0.29939738492083356,
+            "mine_norm": 39.53787510477573,
+            "ref_norm": 39.33416864981945
+          },
+          "logits": {
+            "cos_min": 0.942412101700895,
+            "cos_mean": 0.942412101700895,
+            "cos_global": 0.9424121017008962,
+            "relative_error": 0.3462654208983872,
+            "mine_norm": 918.5946453866653,
+            "ref_norm": 890.0421952087931
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 4481,
+              "token": " France",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        }
+      ],
+      "diff_probes": [
+        {
+          "case": 0,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.99956,
+              "cos_mean": 0.99982071,
+              "cos_global": 0.99984521,
+              "norm_ratio": 0.9999558197892758,
+              "max_abs": 0.0133,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.997529,
+              "cos_mean": 0.99847221,
+              "cos_global": 0.998335,
+              "norm_ratio": 1.0039106780932412,
+              "max_abs": 0.254,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.996937,
+              "cos_mean": 0.99852216,
+              "cos_global": 0.99842548,
+              "norm_ratio": 1.0005596902030243,
+              "max_abs": 0.294,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.996577,
+              "cos_mean": 0.99750489,
+              "cos_global": 0.99736714,
+              "norm_ratio": 0.9746159403276083,
+              "max_abs": 0.826,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.996407,
+              "cos_mean": 0.99775457,
+              "cos_global": 0.99759847,
+              "norm_ratio": 0.995460865347736,
+              "max_abs": 0.424,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.993836,
+              "cos_mean": 0.99548167,
+              "cos_global": 0.99547243,
+              "norm_ratio": 0.9817019910215391,
+              "max_abs": 0.773,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.992383,
+              "cos_mean": 0.99559724,
+              "cos_global": 0.99555606,
+              "norm_ratio": 0.985999667298908,
+              "max_abs": 1.26,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.98863,
+              "cos_mean": 0.99170101,
+              "cos_global": 0.99158764,
+              "norm_ratio": 0.9811887795797228,
+              "max_abs": 1.5,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.983328,
+              "cos_mean": 0.9901036,
+              "cos_global": 0.99004304,
+              "norm_ratio": 1.007690027394988,
+              "max_abs": 5.13,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.97228,
+              "cos_mean": 0.98151624,
+              "cos_global": 0.98203361,
+              "norm_ratio": 1.0157560326010389,
+              "max_abs": 4.5,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.967672,
+              "cos_mean": 0.97945702,
+              "cos_global": 0.99853611,
+              "norm_ratio": 1.0842408980367682,
+              "max_abs": 116.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.962876,
+              "cos_mean": 0.97950715,
+              "cos_global": 0.99752146,
+              "norm_ratio": 1.0782850789842198,
+              "max_abs": 116.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.919985,
+              "cos_mean": 0.970047,
+              "cos_global": 0.99637157,
+              "norm_ratio": 1.0722698520027207,
+              "max_abs": 116.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.96436,
+              "cos_mean": 0.98737919,
+              "cos_global": 0.99316674,
+              "norm_ratio": 1.0334971739754106,
+              "max_abs": 115.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.855779,
+              "cos_mean": 0.96363735,
+              "cos_global": 0.96903276,
+              "norm_ratio": 0.9855277966504117,
+              "max_abs": 101.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.867064,
+              "cos_mean": 0.92920464,
+              "cos_global": 0.90314132,
+              "norm_ratio": 1.0284127124658542,
+              "max_abs": 6.12,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.952641,
+              "cos_mean": 0.95264065,
+              "cos_global": 0.95264065,
+              "norm_ratio": 1.1058034639291017,
+              "max_abs": 2.51,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.952641,
+              "cos_mean": 0.95264065,
+              "cos_global": 0.95264065,
+              "norm_ratio": 0.999999,
+              "max_abs": 0.035,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.867064,
+              "cos_mean": 0.92920464,
+              "cos_global": 0.90314132,
+              "norm_ratio": 1.0284127124658542,
+              "max_abs": 6.12,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.977441,
+              "cos_mean": 0.97744143,
+              "cos_global": 0.97744143,
+              "norm_ratio": 1.0555304294921115,
+              "max_abs": 4.19,
+              "passes_cos_0_999": false
+            }
+          ]
+        },
+        {
+          "case": 9,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.99956,
+              "cos_mean": 0.99979609,
+              "cos_global": 0.99982125,
+              "norm_ratio": 0.9999295460574198,
+              "max_abs": 0.0133,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.996058,
+              "cos_mean": 0.99752462,
+              "cos_global": 0.99731976,
+              "norm_ratio": 1.0022763514892268,
+              "max_abs": 0.287,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.995962,
+              "cos_mean": 0.99754387,
+              "cos_global": 0.99748284,
+              "norm_ratio": 1.004472782533017,
+              "max_abs": 0.44,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.99513,
+              "cos_mean": 0.99631661,
+              "cos_global": 0.99621779,
+              "norm_ratio": 0.9897460124817667,
+              "max_abs": 0.481,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.9937,
+              "cos_mean": 0.99597096,
+              "cos_global": 0.99596047,
+              "norm_ratio": 1.0032866828559215,
+              "max_abs": 0.367,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.992618,
+              "cos_mean": 0.99419582,
+              "cos_global": 0.99408352,
+              "norm_ratio": 0.986912594155269,
+              "max_abs": 0.89,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.992588,
+              "cos_mean": 0.99466079,
+              "cos_global": 0.99494213,
+              "norm_ratio": 0.9824858633872959,
+              "max_abs": 1.17,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.986404,
+              "cos_mean": 0.99143326,
+              "cos_global": 0.99153918,
+              "norm_ratio": 0.9771581982203724,
+              "max_abs": 1.45,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.960042,
+              "cos_mean": 0.98393017,
+              "cos_global": 0.98485148,
+              "norm_ratio": 0.9785018586519052,
+              "max_abs": 3.51,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.96207,
+              "cos_mean": 0.98118871,
+              "cos_global": 0.9813028,
+              "norm_ratio": 0.9651299824021239,
+              "max_abs": 3.28,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.946341,
+              "cos_mean": 0.97868794,
+              "cos_global": 0.99847758,
+              "norm_ratio": 0.9291933069982325,
+              "max_abs": 104.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.951982,
+              "cos_mean": 0.98170197,
+              "cos_global": 0.99727356,
+              "norm_ratio": 0.9295176925270103,
+              "max_abs": 105.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.953869,
+              "cos_mean": 0.98008031,
+              "cos_global": 0.99668628,
+              "norm_ratio": 0.9338250219863977,
+              "max_abs": 105.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.975367,
+              "cos_mean": 0.99027872,
+              "cos_global": 0.99481952,
+              "norm_ratio": 0.9386741424047156,
+              "max_abs": 104.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.902074,
+              "cos_mean": 0.96472776,
+              "cos_global": 0.95726335,
+              "norm_ratio": 0.9455368557113688,
+              "max_abs": 61.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.884809,
+              "cos_mean": 0.96741736,
+              "cos_global": 0.96675122,
+              "norm_ratio": 1.000090700046161,
+              "max_abs": 4.18,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.955278,
+              "cos_mean": 0.9552775,
+              "cos_global": 0.9552775,
+              "norm_ratio": 0.9767896849546415,
+              "max_abs": 2.64,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.955278,
+              "cos_mean": 0.9552775,
+              "cos_global": 0.9552775,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0323,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.884809,
+              "cos_mean": 0.96741736,
+              "cos_global": 0.96675122,
+              "norm_ratio": 1.000090700046161,
+              "max_abs": 4.18,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.982388,
+              "cos_mean": 0.98389232,
+              "cos_global": 0.98382717,
+              "norm_ratio": 0.9952316867975943,
+              "max_abs": 7.54,
+              "passes_cos_0_999": false
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.99956,
+              "cos_mean": 0.99985284,
+              "cos_global": 0.99985152,
+              "norm_ratio": 1.0000606305602346,
+              "max_abs": 0.0133,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.996677,
+              "cos_mean": 0.99800718,
+              "cos_global": 0.99793565,
+              "norm_ratio": 1.0013370652447833,
+              "max_abs": 0.252,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.996694,
+              "cos_mean": 0.99787599,
+              "cos_global": 0.99783921,
+              "norm_ratio": 0.9982287175232736,
+              "max_abs": 0.297,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.996435,
+              "cos_mean": 0.99746346,
+              "cos_global": 0.99737692,
+              "norm_ratio": 1.0028935601902291,
+              "max_abs": 0.519,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.995597,
+              "cos_mean": 0.99695396,
+              "cos_global": 0.9968276,
+              "norm_ratio": 0.99363147819768,
+              "max_abs": 0.466,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.994149,
+              "cos_mean": 0.99558669,
+              "cos_global": 0.9955557,
+              "norm_ratio": 0.9940416649325287,
+              "max_abs": 0.947,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.991052,
+              "cos_mean": 0.99448574,
+              "cos_global": 0.99392682,
+              "norm_ratio": 1.0013997720426933,
+              "max_abs": 11.9,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.983344,
+              "cos_mean": 0.99047828,
+              "cos_global": 0.9904846,
+              "norm_ratio": 0.9774662825443768,
+              "max_abs": 12.4,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.979204,
+              "cos_mean": 0.98700166,
+              "cos_global": 0.98681825,
+              "norm_ratio": 0.9787629385139937,
+              "max_abs": 14.9,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.967613,
+              "cos_mean": 0.97774583,
+              "cos_global": 0.97809523,
+              "norm_ratio": 0.9465296399093422,
+              "max_abs": 15.7,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.919466,
+              "cos_mean": 0.97220033,
+              "cos_global": 0.97172165,
+              "norm_ratio": 1.0570737117777027,
+              "max_abs": 598.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.903964,
+              "cos_mean": 0.97812474,
+              "cos_global": 0.9724862,
+              "norm_ratio": 1.0369520101595209,
+              "max_abs": 598.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.867581,
+              "cos_mean": 0.96678197,
+              "cos_global": 0.97258097,
+              "norm_ratio": 1.052442032110598,
+              "max_abs": 598.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.954556,
+              "cos_mean": 0.98370427,
+              "cos_global": 0.97975737,
+              "norm_ratio": 0.9972918134024165,
+              "max_abs": 595.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.666887,
+              "cos_mean": 0.96230781,
+              "cos_global": 0.96354359,
+              "norm_ratio": 1.1031846034860646,
+              "max_abs": 234.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.736032,
+              "cos_mean": 0.9243021,
+              "cos_global": 0.90467989,
+              "norm_ratio": 0.9556931541835213,
+              "max_abs": 18.7,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.955425,
+              "cos_mean": 0.95542485,
+              "cos_global": 0.95542485,
+              "norm_ratio": 1.0051789326058436,
+              "max_abs": 1.34,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.955425,
+              "cos_mean": 0.95542485,
+              "cos_global": 0.95542485,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0341,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.736032,
+              "cos_mean": 0.9243021,
+              "cos_global": 0.90467989,
+              "norm_ratio": 0.9556931541835213,
+              "max_abs": 18.7,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.942412,
+              "cos_mean": 0.94241208,
+              "cos_global": 0.94241208,
+              "norm_ratio": 1.0320799303695916,
+              "max_abs": 5.67,
+              "passes_cos_0_999": false
+            }
+          ]
+        }
+      ],
+      "tensor_types": {
+        "Q6_K": 1,
+        "F32": 49,
+        "Q4_0": 82
+      }
+    },
+    "q4k": {
+      "filename": "LFM2.5-Encoder-230M-crisp-Q4_K.gguf",
+      "bytes": 165331968,
+      "sha256": "660ceaaa3fee1a51be3843529b25acf9047077d880bc14e6f7f91c0f9508ad52",
+      "top1_matches": 10,
+      "masks": 15,
+      "summary": {
+        "cls": {
+          "cos_min": 0.9358514497168726,
+          "cos_mean": 0.9358514497168726,
+          "cos_global": 0.9358514497168727,
+          "max_relative_error": 0.4673613916706479
+        },
+        "hidden": {
+          "cos_min": 0.5563114354198847,
+          "cos_mean": 0.9397059168509161,
+          "cos_global": 0.9211599368718765,
+          "max_relative_error": 0.42552010649887023
+        },
+        "logits": {
+          "cos_min": 0.9743801637949254,
+          "cos_mean": 0.9743801637949254,
+          "cos_global": 0.9743801637949272,
+          "max_relative_error": 0.4157114641835097
+        }
+      },
+      "cases": [
+        {
+          "case": 0,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.8517333818670647,
+            "cos_mean": 0.9488165469510488,
+            "cos_global": 0.9211599368718765,
+            "relative_error": 0.39253907109312797,
+            "mine_norm": 124.80078916313713,
+            "ref_norm": 143.4575789680133
+          },
+          "cls": {
+            "cos_min": 0.9666409111357592,
+            "cos_mean": 0.9666409111357592,
+            "cos_global": 0.9666409111357592,
+            "relative_error": 0.2570107304093744,
+            "mine_norm": 52.486720967537764,
+            "ref_norm": 55.51522296286042
+          },
+          "logits": {
+            "cos_min": 0.9866796823837471,
+            "cos_mean": 0.9866796823837471,
+            "cos_global": 0.9866796823837483,
+            "relative_error": 0.16774400961646563,
+            "mine_norm": 967.7137438993393,
+            "ref_norm": 941.7180008207076
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 1,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.8720410204156659,
+            "cos_mean": 0.9639900500191815,
+            "cos_global": 0.9592915232120993,
+            "relative_error": 0.2824751926772011,
+            "mine_norm": 194.85160932385605,
+            "ref_norm": 201.92107255151876
+          },
+          "cls": {
+            "cos_min": 0.9759111002466317,
+            "cos_mean": 0.9759111002466317,
+            "cos_global": 0.9759111002466317,
+            "relative_error": 0.22207604573279258,
+            "mine_norm": 72.1984813118772,
+            "ref_norm": 77.26429505314995
+          },
+          "logits": {
+            "cos_min": 0.9870326842936347,
+            "cos_mean": 0.9870326842936347,
+            "cos_global": 0.9870326842936358,
+            "relative_error": 0.1699442908217065,
+            "mine_norm": 1150.0580379238056,
+            "ref_norm": 1234.9958063806575
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 52362,
+              "token": "Berlin",
+              "reference_id": 52362,
+              "reference_token": "Berlin"
+            }
+          ]
+        },
+        {
+          "case": 2,
+          "tokens": 10,
+          "hidden": {
+            "cos_min": 0.8671612683043959,
+            "cos_mean": 0.9622932948746996,
+            "cos_global": 0.9562069306224691,
+            "relative_error": 0.29277190734704933,
+            "mine_norm": 187.70869608847804,
+            "ref_norm": 197.7243937019481
+          },
+          "cls": {
+            "cos_min": 0.9739696033675987,
+            "cos_mean": 0.9739696033675987,
+            "cos_global": 0.9739696033675989,
+            "relative_error": 0.22678429839654676,
+            "mine_norm": 73.48114007726875,
+            "ref_norm": 75.98498461088874
+          },
+          "logits": {
+            "cos_min": 0.9841553865170718,
+            "cos_mean": 0.9841553865170718,
+            "cos_global": 0.9841553865170727,
+            "relative_error": 0.1773118412496192,
+            "mine_norm": 974.4958081438784,
+            "ref_norm": 991.339508928574
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 3,
+          "tokens": 17,
+          "hidden": {
+            "cos_min": 0.8692672071255049,
+            "cos_mean": 0.9583866500742585,
+            "cos_global": 0.9412415518472844,
+            "relative_error": 0.3379270070106424,
+            "mine_norm": 157.23293208721873,
+            "ref_norm": 169.09935596911725
+          },
+          "cls": {
+            "cos_min": 0.9658236188963917,
+            "cos_mean": 0.9658236188963917,
+            "cos_global": 0.9658236188963917,
+            "relative_error": 0.2684009947149304,
+            "mine_norm": 45.1433023770047,
+            "ref_norm": 43.59578989769663
+          },
+          "logits": {
+            "cos_min": 0.9921360154178605,
+            "cos_mean": 0.9922325825013575,
+            "cos_global": 0.9921104743834328,
+            "relative_error": 0.12914878799266327,
+            "mine_norm": 1662.10405796782,
+            "ref_norm": 1624.518681113346
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            },
+            {
+              "token_id": 7053,
+              "token": " Berlin",
+              "reference_id": 7053,
+              "reference_token": " Berlin"
+            }
+          ]
+        },
+        {
+          "case": 4,
+          "tokens": 2,
+          "hidden": {
+            "cos_min": 0.9358514497168726,
+            "cos_mean": 0.9474630709100742,
+            "cos_global": 0.9417402553156149,
+            "relative_error": 0.42552010649887023,
+            "mine_norm": 56.25475645842107,
+            "ref_norm": 46.7854998845754
+          },
+          "cls": {
+            "cos_min": 0.9358514497168726,
+            "cos_mean": 0.9358514497168726,
+            "cos_global": 0.9358514497168727,
+            "relative_error": 0.4673613916706479,
+            "mine_norm": 47.67474371294063,
+            "ref_norm": 38.359385763821535
+          },
+          "logits": {
+            "cos_min": 0.9746661787201358,
+            "cos_mean": 0.9746661787201358,
+            "cos_global": 0.9746661787201368,
+            "relative_error": 0.2640026144496581,
+            "mine_norm": 1114.8716867754208,
+            "ref_norm": 999.9553685417266
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 511,
+              "reference_token": "\""
+            }
+          ]
+        },
+        {
+          "case": 5,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9472667942708365,
+            "cos_mean": 0.9573297599505789,
+            "cos_global": 0.9530781400271082,
+            "relative_error": 0.4053219299662868,
+            "mine_norm": 56.24865096474329,
+            "ref_norm": 46.00727914100182
+          },
+          "cls": {
+            "cos_min": 0.9472667942708365,
+            "cos_mean": 0.9472667942708365,
+            "cos_global": 0.9472667942708365,
+            "relative_error": 0.43303475984044504,
+            "mine_norm": 44.07882584283891,
+            "ref_norm": 35.58966922404587
+          },
+          "logits": {
+            "cos_min": 0.981264280014413,
+            "cos_mean": 0.9830685515142769,
+            "cos_global": 0.9830770835762389,
+            "relative_error": 0.23725870932518614,
+            "mine_norm": 1454.754544211922,
+            "ref_norm": 1283.0228877039222
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 512,
+              "reference_token": "#"
+            },
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 633,
+              "reference_token": "�"
+            }
+          ]
+        },
+        {
+          "case": 6,
+          "tokens": 1,
+          "hidden": {
+            "cos_min": 0.9397059168509161,
+            "cos_mean": 0.9397059168509161,
+            "cos_global": 0.9397059168509161,
+            "relative_error": 0.3521358860386866,
+            "mine_norm": 30.482412191002776,
+            "ref_norm": 29.77810964884332
+          },
+          "cls": {
+            "cos_min": 0.9397059168509161,
+            "cos_mean": 0.9397059168509161,
+            "cos_global": 0.9397059168509161,
+            "relative_error": 0.3521358860386866,
+            "mine_norm": 30.482412191002776,
+            "ref_norm": 29.77810964884332
+          }
+        },
+        {
+          "case": 7,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9410395093064675,
+            "cos_mean": 0.9473476354682213,
+            "cos_global": 0.9480868440560182,
+            "relative_error": 0.3222265884860603,
+            "mine_norm": 67.91287587590352,
+            "ref_norm": 67.91048116907412
+          },
+          "cls": {
+            "cos_min": 0.9485910991767064,
+            "cos_mean": 0.9485910991767064,
+            "cos_global": 0.9485910991767064,
+            "relative_error": 0.3182622583369379,
+            "mine_norm": 58.78231658185527,
+            "ref_norm": 59.85999004078574
+          }
+        },
+        {
+          "case": 8,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.855913359747914,
+            "cos_mean": 0.9461992974295345,
+            "cos_global": 0.9349732987642433,
+            "relative_error": 0.3596929840263722,
+            "mine_norm": 112.31736043010092,
+            "ref_norm": 112.92833959639789
+          },
+          "cls": {
+            "cos_min": 0.9560481038170253,
+            "cos_mean": 0.9560481038170253,
+            "cos_global": 0.9560481038170253,
+            "relative_error": 0.31088098509494433,
+            "mine_norm": 39.175363168405305,
+            "ref_norm": 36.97994448869384
+          }
+        },
+        {
+          "case": 9,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.8692999175402628,
+            "cos_mean": 0.9715582595735175,
+            "cos_global": 0.971251617518868,
+            "relative_error": 0.23874479079251482,
+            "mine_norm": 297.9494890756306,
+            "ref_norm": 301.14649036854536
+          },
+          "cls": {
+            "cos_min": 0.9696911003273667,
+            "cos_mean": 0.9696911003273667,
+            "cos_global": 0.9696911003273668,
+            "relative_error": 0.2494582830062592,
+            "mine_norm": 84.91872604870349,
+            "ref_norm": 83.25423740066873
+          },
+          "logits": {
+            "cos_min": 0.9882225590251436,
+            "cos_mean": 0.988349619817209,
+            "cos_global": 0.9883274591032118,
+            "relative_error": 0.15585715370952755,
+            "mine_norm": 2787.659686562852,
+            "ref_norm": 2917.7190976884986
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 20374,
+              "reference_token": "東京"
+            },
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 52377,
+              "reference_token": "京都"
+            }
+          ]
+        },
+        {
+          "case": 10,
+          "tokens": 11,
+          "hidden": {
+            "cos_min": 0.8941946787506848,
+            "cos_mean": 0.9715205204340847,
+            "cos_global": 0.974977028023224,
+            "relative_error": 0.22282326568153632,
+            "mine_norm": 229.12736460963686,
+            "ref_norm": 231.40522840599206
+          },
+          "cls": {
+            "cos_min": 0.9691604303898969,
+            "cos_mean": 0.9691604303898969,
+            "cos_global": 0.9691604303898969,
+            "relative_error": 0.2505577754369071,
+            "mine_norm": 84.0445040709018,
+            "ref_norm": 82.84736553835278
+          },
+          "logits": {
+            "cos_min": 0.9743801637949254,
+            "cos_mean": 0.9743801637949254,
+            "cos_global": 0.9743801637949272,
+            "relative_error": 0.4157114641835097,
+            "mine_norm": 1161.8519149128415,
+            "ref_norm": 877.5328945914181
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 1133,
+              "token": "18",
+              "reference_id": 528,
+              "reference_token": "3"
+            }
+          ]
+        },
+        {
+          "case": 11,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.929236351078913,
+            "cos_mean": 0.9484921866791294,
+            "cos_global": 0.946548975959932,
+            "relative_error": 0.32667005827536255,
+            "mine_norm": 97.76798177273197,
+            "ref_norm": 97.94384212123187
+          },
+          "cls": {
+            "cos_min": 0.9667403480922104,
+            "cos_mean": 0.9667403480922104,
+            "cos_global": 0.9667403480922104,
+            "relative_error": 0.2766673858133121,
+            "mine_norm": 51.367625136790934,
+            "ref_norm": 59.64426454205843
+          },
+          "logits": {
+            "cos_min": 0.9756282851681334,
+            "cos_mean": 0.9756282851681334,
+            "cos_global": 0.9756282851681346,
+            "relative_error": 0.3090927070840677,
+            "mine_norm": 1162.1230249406183,
+            "ref_norm": 973.8585477332456
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 526,
+              "token": "1",
+              "reference_id": 526,
+              "reference_token": "1"
+            }
+          ]
+        },
+        {
+          "case": 12,
+          "tokens": 7,
+          "hidden": {
+            "cos_min": 0.9483992114369633,
+            "cos_mean": 0.9578949997316547,
+            "cos_global": 0.9584714305972281,
+            "relative_error": 0.28595560324798064,
+            "mine_norm": 81.04506209395572,
+            "ref_norm": 86.44430198104229
+          },
+          "cls": {
+            "cos_min": 0.9589696062857522,
+            "cos_mean": 0.9589696062857522,
+            "cos_global": 0.9589696062857522,
+            "relative_error": 0.2863127451971136,
+            "mine_norm": 45.715320451504844,
+            "ref_norm": 49.74472020839599
+          },
+          "logits": {
+            "cos_min": 0.9811435900423354,
+            "cos_mean": 0.9811435900423354,
+            "cos_global": 0.9811435900423363,
+            "relative_error": 0.19556296251329366,
+            "mine_norm": 1005.3133569915897,
+            "ref_norm": 994.4377039888593
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 6370,
+              "token": "aba",
+              "reference_id": 7593,
+              "reference_token": "ā"
+            }
+          ]
+        },
+        {
+          "case": 13,
+          "tokens": 20,
+          "hidden": {
+            "cos_min": 0.9040221812470917,
+            "cos_mean": 0.9665907957299632,
+            "cos_global": 0.9601633880693637,
+            "relative_error": 0.2842898179813859,
+            "mine_norm": 198.62842451646657,
+            "ref_norm": 196.1849045412022
+          },
+          "cls": {
+            "cos_min": 0.9744686825929587,
+            "cos_mean": 0.9744686825929587,
+            "cos_global": 0.9744686825929588,
+            "relative_error": 0.22719762284684178,
+            "mine_norm": 57.19234072617789,
+            "ref_norm": 56.66958695418492
+          },
+          "logits": {
+            "cos_min": 0.9917978744249762,
+            "cos_mean": 0.9917978744249762,
+            "cos_global": 0.991797874424977,
+            "relative_error": 0.15840298547048862,
+            "mine_norm": 1058.8097849016676,
+            "ref_norm": 975.5347107767259
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 54055,
+              "token": " Enjoy",
+              "reference_id": 54055,
+              "reference_token": " Enjoy"
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "tokens": 649,
+          "hidden": {
+            "cos_min": 0.5563114354198847,
+            "cos_mean": 0.9415169487712943,
+            "cos_global": 0.9364805339306274,
+            "relative_error": 0.35469578226539744,
+            "mine_norm": 1297.7503296506786,
+            "ref_norm": 1311.598539944019
+          },
+          "cls": {
+            "cos_min": 0.9684415791226715,
+            "cos_mean": 0.9684415791226715,
+            "cos_global": 0.9684415791226718,
+            "relative_error": 0.251127962583035,
+            "mine_norm": 36.884097164755154,
+            "ref_norm": 39.33416864981945
+          },
+          "logits": {
+            "cos_min": 0.9864341168032801,
+            "cos_mean": 0.9864341168032801,
+            "cos_global": 0.9864341168032814,
+            "relative_error": 0.18387008993293846,
+            "mine_norm": 951.6883972950648,
+            "ref_norm": 890.0421952087931
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        }
+      ],
+      "diff_probes": [
+        {
+          "case": 0,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99997818,
+              "cos_global": 0.9999842,
+              "norm_ratio": 1.0001398842596925,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.998398,
+              "cos_mean": 0.99891084,
+              "cos_global": 0.99882221,
+              "norm_ratio": 0.9962007858744366,
+              "max_abs": 0.201,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.998036,
+              "cos_mean": 0.99895459,
+              "cos_global": 0.99892819,
+              "norm_ratio": 1.0002336281261137,
+              "max_abs": 0.167,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.997459,
+              "cos_mean": 0.9980582,
+              "cos_global": 0.99806422,
+              "norm_ratio": 1.0060514453184763,
+              "max_abs": 0.228,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.99752,
+              "cos_mean": 0.99826068,
+              "cos_global": 0.99818718,
+              "norm_ratio": 1.0049370062968421,
+              "max_abs": 0.269,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.994727,
+              "cos_mean": 0.9964782,
+              "cos_global": 0.99646133,
+              "norm_ratio": 0.9949634743122041,
+              "max_abs": 0.513,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.994082,
+              "cos_mean": 0.99661571,
+              "cos_global": 0.99649864,
+              "norm_ratio": 0.9865666284231754,
+              "max_abs": 1.81,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.992616,
+              "cos_mean": 0.99413472,
+              "cos_global": 0.99382532,
+              "norm_ratio": 1.024315301272721,
+              "max_abs": 2.03,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.989722,
+              "cos_mean": 0.99402869,
+              "cos_global": 0.99372756,
+              "norm_ratio": 1.0010727912279542,
+              "max_abs": 4.24,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.984809,
+              "cos_mean": 0.98925817,
+              "cos_global": 0.98956746,
+              "norm_ratio": 1.0104201311720427,
+              "max_abs": 2.81,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.9794,
+              "cos_mean": 0.98980272,
+              "cos_global": 0.99696398,
+              "norm_ratio": 0.743216938540104,
+              "max_abs": 349.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.977216,
+              "cos_mean": 0.98949027,
+              "cos_global": 0.99414027,
+              "norm_ratio": 0.7540161062628298,
+              "max_abs": 350.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.975621,
+              "cos_mean": 0.98794574,
+              "cos_global": 0.99188513,
+              "norm_ratio": 0.7762404313420561,
+              "max_abs": 350.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.988003,
+              "cos_mean": 0.99421501,
+              "cos_global": 0.98577261,
+              "norm_ratio": 0.8490265219137478,
+              "max_abs": 347.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.743386,
+              "cos_mean": 0.96021169,
+              "cos_global": 0.9511289,
+              "norm_ratio": 1.084772980452435,
+              "max_abs": 338.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.851733,
+              "cos_mean": 0.94881654,
+              "cos_global": 0.92115992,
+              "norm_ratio": 0.8699490687773411,
+              "max_abs": 8.59,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.966641,
+              "cos_mean": 0.96664089,
+              "cos_global": 0.96664089,
+              "norm_ratio": 0.9454473425163519,
+              "max_abs": 2.32,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.966641,
+              "cos_mean": 0.96664089,
+              "cos_global": 0.96664089,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0387,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.851733,
+              "cos_mean": 0.94881654,
+              "cos_global": 0.92115992,
+              "norm_ratio": 0.8699490687773411,
+              "max_abs": 8.59,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.98668,
+              "cos_mean": 0.98667967,
+              "cos_global": 0.98667967,
+              "norm_ratio": 1.027604576426401,
+              "max_abs": 3.01,
+              "passes_cos_0_999": false
+            }
+          ]
+        },
+        {
+          "case": 9,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99997407,
+              "cos_global": 0.99998057,
+              "norm_ratio": 1.0000186758863665,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.996405,
+              "cos_mean": 0.99790734,
+              "cos_global": 0.9977082,
+              "norm_ratio": 0.9995550313030305,
+              "max_abs": 0.42,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.99634,
+              "cos_mean": 0.99790508,
+              "cos_global": 0.99790537,
+              "norm_ratio": 0.9988242806249021,
+              "max_abs": 0.303,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.995151,
+              "cos_mean": 0.99672866,
+              "cos_global": 0.99666989,
+              "norm_ratio": 1.002446783010783,
+              "max_abs": 0.381,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.992405,
+              "cos_mean": 0.9963581,
+              "cos_global": 0.99626154,
+              "norm_ratio": 1.007122929836919,
+              "max_abs": 0.349,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.991542,
+              "cos_mean": 0.99468195,
+              "cos_global": 0.99451166,
+              "norm_ratio": 1.0172324647343653,
+              "max_abs": 0.686,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.993096,
+              "cos_mean": 0.99518639,
+              "cos_global": 0.99522781,
+              "norm_ratio": 1.016502210637721,
+              "max_abs": 2.79,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.991208,
+              "cos_mean": 0.99311256,
+              "cos_global": 0.99295819,
+              "norm_ratio": 1.0189321468753958,
+              "max_abs": 2.6,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.981038,
+              "cos_mean": 0.99018061,
+              "cos_global": 0.99035931,
+              "norm_ratio": 1.0230310699292275,
+              "max_abs": 3.35,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.980298,
+              "cos_mean": 0.9876973,
+              "cos_global": 0.98739833,
+              "norm_ratio": 0.9984840538543245,
+              "max_abs": 3.88,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.977477,
+              "cos_mean": 0.98650223,
+              "cos_global": 0.9984346,
+              "norm_ratio": 1.0638480277999331,
+              "max_abs": 97.1,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.981903,
+              "cos_mean": 0.98893046,
+              "cos_global": 0.99767077,
+              "norm_ratio": 1.0579944786342574,
+              "max_abs": 96.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.979141,
+              "cos_mean": 0.98734504,
+              "cos_global": 0.99742293,
+              "norm_ratio": 1.054818708825203,
+              "max_abs": 95.9,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.987289,
+              "cos_mean": 0.9934448,
+              "cos_global": 0.99563974,
+              "norm_ratio": 1.0244430030684242,
+              "max_abs": 94.2,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.788913,
+              "cos_mean": 0.95912188,
+              "cos_global": 0.93402255,
+              "norm_ratio": 1.0520345670584894,
+              "max_abs": 219.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.8693,
+              "cos_mean": 0.97155827,
+              "cos_global": 0.97125161,
+              "norm_ratio": 0.9893839338333434,
+              "max_abs": 5.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.969691,
+              "cos_mean": 0.9696911,
+              "cos_global": 0.9696911,
+              "norm_ratio": 1.0199928570599786,
+              "max_abs": 2.18,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.969691,
+              "cos_mean": 0.9696911,
+              "cos_global": 0.9696911,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0259,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.8693,
+              "cos_mean": 0.97155827,
+              "cos_global": 0.97125161,
+              "norm_ratio": 0.9893839338333434,
+              "max_abs": 5.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.988223,
+              "cos_mean": 0.98834962,
+              "cos_global": 0.98832744,
+              "norm_ratio": 0.95542431390156,
+              "max_abs": 6.48,
+              "passes_cos_0_999": false
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99998665,
+              "cos_global": 0.99998659,
+              "norm_ratio": 1.0000234333803808,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.997529,
+              "cos_mean": 0.99847949,
+              "cos_global": 0.99841642,
+              "norm_ratio": 0.996113513471411,
+              "max_abs": 0.321,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.997172,
+              "cos_mean": 0.99833363,
+              "cos_global": 0.99826992,
+              "norm_ratio": 1.004129133530129,
+              "max_abs": 0.225,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.996752,
+              "cos_mean": 0.99765402,
+              "cos_global": 0.9975785,
+              "norm_ratio": 1.0111599262663649,
+              "max_abs": 0.569,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.995727,
+              "cos_mean": 0.99720305,
+              "cos_global": 0.99706507,
+              "norm_ratio": 1.0080208208664672,
+              "max_abs": 0.418,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.993678,
+              "cos_mean": 0.99626201,
+              "cos_global": 0.99613428,
+              "norm_ratio": 1.016814238962932,
+              "max_abs": 1.48,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.973859,
+              "cos_mean": 0.99514365,
+              "cos_global": 0.99436295,
+              "norm_ratio": 0.9858007821989675,
+              "max_abs": 13.1,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.948939,
+              "cos_mean": 0.99259466,
+              "cos_global": 0.99257809,
+              "norm_ratio": 1.041562560182356,
+              "max_abs": 13.4,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.96036,
+              "cos_mean": 0.99087971,
+              "cos_global": 0.99069613,
+              "norm_ratio": 1.0253516013270503,
+              "max_abs": 12.3,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.962431,
+              "cos_mean": 0.98797184,
+              "cos_global": 0.98790598,
+              "norm_ratio": 1.0289396461053064,
+              "max_abs": 10.6,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.6741,
+              "cos_mean": 0.98383033,
+              "cos_global": 0.96916515,
+              "norm_ratio": 0.861301969868364,
+              "max_abs": 686.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.721022,
+              "cos_mean": 0.98653275,
+              "cos_global": 0.97110152,
+              "norm_ratio": 0.8980250448487191,
+              "max_abs": 686.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.816581,
+              "cos_mean": 0.97768545,
+              "cos_global": 0.97029144,
+              "norm_ratio": 0.9027283964741536,
+              "max_abs": 686.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.86287,
+              "cos_mean": 0.99032992,
+              "cos_global": 0.98405546,
+              "norm_ratio": 0.9753529252168149,
+              "max_abs": 681.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.432208,
+              "cos_mean": 0.97274369,
+              "cos_global": 0.97529405,
+              "norm_ratio": 1.0273919923715438,
+              "max_abs": 372.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.556311,
+              "cos_mean": 0.94151694,
+              "cos_global": 0.93648052,
+              "norm_ratio": 0.9894417804809479,
+              "max_abs": 22.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.968442,
+              "cos_mean": 0.96844161,
+              "cos_global": 0.96844161,
+              "norm_ratio": 0.9377114303704461,
+              "max_abs": 0.886,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.968442,
+              "cos_mean": 0.96844161,
+              "cos_global": 0.96844161,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0226,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.556311,
+              "cos_mean": 0.94151694,
+              "cos_global": 0.93648052,
+              "norm_ratio": 0.9894417804809479,
+              "max_abs": 22.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.986434,
+              "cos_mean": 0.9864341,
+              "cos_global": 0.9864341,
+              "norm_ratio": 1.0692621571556427,
+              "max_abs": 3.07,
+              "passes_cos_0_999": false
+            }
+          ]
+        }
+      ],
+      "tensor_types": {
+        "Q8_0": 1,
+        "F32": 49,
+        "Q4_K": 82
+      }
+    },
+    "q4ki": {
+      "filename": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+      "bytes": 165331968,
+      "sha256": "637e55268d57977b28cff6ccddb2f9fe64c5f9224e7d56004ddb7fff96a402b1",
+      "top1_matches": 11,
+      "masks": 15,
+      "summary": {
+        "cls": {
+          "cos_min": 0.9707406138680231,
+          "cos_mean": 0.9707406138680231,
+          "cos_global": 0.9707406138680233,
+          "max_relative_error": 0.2635368417040259
+        },
+        "hidden": {
+          "cos_min": 0.7529067870940486,
+          "cos_mean": 0.9654244974023437,
+          "cos_global": 0.9606256383104916,
+          "max_relative_error": 0.28221160079517477
+        },
+        "logits": {
+          "cos_min": 0.9874921997638979,
+          "cos_mean": 0.9874921997638979,
+          "cos_global": 0.9874921997638992,
+          "max_relative_error": 0.1580733521145622
+        }
+      },
+      "cases": [
+        {
+          "case": 0,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9673996038804762,
+            "cos_mean": 0.9784401676887536,
+            "cos_global": 0.9711057182305088,
+            "relative_error": 0.278107554261848,
+            "mine_norm": 159.7973574342277,
+            "ref_norm": 143.4575789680133
+          },
+          "cls": {
+            "cos_min": 0.9714496021332357,
+            "cos_mean": 0.9714496021332357,
+            "cos_global": 0.9714496021332357,
+            "relative_error": 0.2635368417040259,
+            "mine_norm": 60.300234254261255,
+            "ref_norm": 55.51522296286042
+          },
+          "logits": {
+            "cos_min": 0.9930584716831831,
+            "cos_mean": 0.9930584716831831,
+            "cos_global": 0.9930584716831844,
+            "relative_error": 0.11776950303061416,
+            "mine_norm": 940.735101558082,
+            "ref_norm": 941.7180008207076
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 1,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9798650387304555,
+            "cos_mean": 0.9852127585284433,
+            "cos_global": 0.9842650747978078,
+            "relative_error": 0.1782912806590189,
+            "mine_norm": 203.5456693102632,
+            "ref_norm": 201.92107255151876
+          },
+          "cls": {
+            "cos_min": 0.9837607714125939,
+            "cos_mean": 0.9837607714125939,
+            "cos_global": 0.9837607714125939,
+            "relative_error": 0.18011564738550276,
+            "mine_norm": 77.17343467327318,
+            "ref_norm": 77.26429505314995
+          },
+          "logits": {
+            "cos_min": 0.9874921997638979,
+            "cos_mean": 0.9874921997638979,
+            "cos_global": 0.9874921997638992,
+            "relative_error": 0.1580733521145622,
+            "mine_norm": 1205.57474699543,
+            "ref_norm": 1234.9958063806575
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 52362,
+              "token": "Berlin",
+              "reference_id": 52362,
+              "reference_token": "Berlin"
+            }
+          ]
+        },
+        {
+          "case": 2,
+          "tokens": 10,
+          "hidden": {
+            "cos_min": 0.9733611084346968,
+            "cos_mean": 0.985326717518363,
+            "cos_global": 0.9839106082081868,
+            "relative_error": 0.18012782911835584,
+            "mine_norm": 199.07839235658767,
+            "ref_norm": 197.7243937019481
+          },
+          "cls": {
+            "cos_min": 0.9846441369397351,
+            "cos_mean": 0.9846441369397351,
+            "cos_global": 0.9846441369397352,
+            "relative_error": 0.17874171256333973,
+            "mine_norm": 77.73412861687224,
+            "ref_norm": 75.98498461088874
+          },
+          "logits": {
+            "cos_min": 0.9904387587961214,
+            "cos_mean": 0.9904387587961214,
+            "cos_global": 0.9904387587961224,
+            "relative_error": 0.13812015746176085,
+            "mine_norm": 988.5929047729742,
+            "ref_norm": 991.339508928574
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        },
+        {
+          "case": 3,
+          "tokens": 17,
+          "hidden": {
+            "cos_min": 0.9776891010195621,
+            "cos_mean": 0.983164477172734,
+            "cos_global": 0.9800190002543532,
+            "relative_error": 0.20364976002258633,
+            "mine_norm": 173.11172412819656,
+            "ref_norm": 169.09935596911725
+          },
+          "cls": {
+            "cos_min": 0.9776891010195621,
+            "cos_mean": 0.9776891010195621,
+            "cos_global": 0.9776891010195623,
+            "relative_error": 0.25313503850697067,
+            "mine_norm": 48.78130609184239,
+            "ref_norm": 43.59578989769663
+          },
+          "logits": {
+            "cos_min": 0.9943442865275968,
+            "cos_mean": 0.9949532885692165,
+            "cos_global": 0.9947513808314701,
+            "relative_error": 0.10421751990066679,
+            "mine_norm": 1583.844740626531,
+            "ref_norm": 1624.518681113346
+          },
+          "top1_matches": 2,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            },
+            {
+              "token_id": 7053,
+              "token": " Berlin",
+              "reference_id": 7053,
+              "reference_token": " Berlin"
+            }
+          ]
+        },
+        {
+          "case": 4,
+          "tokens": 2,
+          "hidden": {
+            "cos_min": 0.98734085232286,
+            "cos_mean": 0.9880140369242267,
+            "cos_global": 0.9880687220006414,
+            "relative_error": 0.18007532804265577,
+            "mine_norm": 50.59288595638088,
+            "ref_norm": 46.7854998845754
+          },
+          "cls": {
+            "cos_min": 0.9886872215255934,
+            "cos_mean": 0.9886872215255934,
+            "cos_global": 0.9886872215255935,
+            "relative_error": 0.1844056701794724,
+            "mine_norm": 42.04042826541883,
+            "ref_norm": 38.359385763821535
+          },
+          "logits": {
+            "cos_min": 0.9928101478792329,
+            "cos_mean": 0.9928101478792329,
+            "cos_global": 0.9928101478792338,
+            "relative_error": 0.1290001289790513,
+            "mine_norm": 1040.857588644935,
+            "ref_norm": 999.9553685417266
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 1,
+              "token": "<|startoftext|>",
+              "reference_id": 511,
+              "reference_token": "\""
+            }
+          ]
+        },
+        {
+          "case": 5,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9853100224672225,
+            "cos_mean": 0.9878673110466017,
+            "cos_global": 0.9886920492044929,
+            "relative_error": 0.1513043032529299,
+            "mine_norm": 46.412864393409095,
+            "ref_norm": 46.00727914100182
+          },
+          "cls": {
+            "cos_min": 0.990111223508681,
+            "cos_mean": 0.990111223508681,
+            "cos_global": 0.990111223508681,
+            "relative_error": 0.14072148176949273,
+            "mine_norm": 35.63207081727689,
+            "ref_norm": 35.58966922404587
+          },
+          "logits": {
+            "cos_min": 0.9942282382008374,
+            "cos_mean": 0.9945988812209291,
+            "cos_global": 0.9944390449192358,
+            "relative_error": 0.10559950685715067,
+            "mine_norm": 1285.8486360068312,
+            "ref_norm": 1283.0228877039222
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 512,
+              "token": "#",
+              "reference_id": 512,
+              "reference_token": "#"
+            },
+            {
+              "token_id": 523,
+              "token": ".",
+              "reference_id": 633,
+              "reference_token": "�"
+            }
+          ]
+        },
+        {
+          "case": 6,
+          "tokens": 1,
+          "hidden": {
+            "cos_min": 0.9836001958977296,
+            "cos_mean": 0.9836001958977296,
+            "cos_global": 0.9836001958977297,
+            "relative_error": 0.20061723618775953,
+            "mine_norm": 31.90559164474221,
+            "ref_norm": 29.77810964884332
+          },
+          "cls": {
+            "cos_min": 0.9836001958977296,
+            "cos_mean": 0.9836001958977296,
+            "cos_global": 0.9836001958977297,
+            "relative_error": 0.20061723618775953,
+            "mine_norm": 31.90559164474221,
+            "ref_norm": 29.77810964884332
+          }
+        },
+        {
+          "case": 7,
+          "tokens": 3,
+          "hidden": {
+            "cos_min": 0.9787053135438779,
+            "cos_mean": 0.983982739631629,
+            "cos_global": 0.9874025706843897,
+            "relative_error": 0.16055896515193843,
+            "mine_norm": 68.90611164619578,
+            "ref_norm": 67.91048116907412
+          },
+          "cls": {
+            "cos_min": 0.9888522340694141,
+            "cos_mean": 0.9888522340694141,
+            "cos_global": 0.9888522340694142,
+            "relative_error": 0.15070271709217942,
+            "mine_norm": 60.58376944281155,
+            "ref_norm": 59.85999004078574
+          }
+        },
+        {
+          "case": 8,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.9708930648180945,
+            "cos_mean": 0.979548726071506,
+            "cos_global": 0.9797161039872944,
+            "relative_error": 0.21203838226150742,
+            "mine_norm": 118.46481185087919,
+            "ref_norm": 112.92833959639789
+          },
+          "cls": {
+            "cos_min": 0.9854603953931274,
+            "cos_mean": 0.9854603953931274,
+            "cos_global": 0.9854603953931274,
+            "relative_error": 0.20653662781684987,
+            "mine_norm": 40.78478853650986,
+            "ref_norm": 36.97994448869384
+          }
+        },
+        {
+          "case": 9,
+          "tokens": 14,
+          "hidden": {
+            "cos_min": 0.9826263532276724,
+            "cos_mean": 0.9908112654781241,
+            "cos_global": 0.9907668836615776,
+            "relative_error": 0.1358515325280953,
+            "mine_norm": 300.967998337825,
+            "ref_norm": 301.14649036854536
+          },
+          "cls": {
+            "cos_min": 0.9860521055022442,
+            "cos_mean": 0.9860521055022442,
+            "cos_global": 0.9860521055022443,
+            "relative_error": 0.16644492354007964,
+            "mine_norm": 81.95704537682892,
+            "ref_norm": 83.25423740066873
+          },
+          "logits": {
+            "cos_min": 0.9882093242570064,
+            "cos_mean": 0.9905408604189845,
+            "cos_global": 0.9905831495887779,
+            "relative_error": 0.14192646348541874,
+            "mine_norm": 2999.3402141766433,
+            "ref_norm": 2917.7190976884986
+          },
+          "top1_matches": 1,
+          "masks": 2,
+          "predictions": [
+            {
+              "token_id": 20374,
+              "token": "東京",
+              "reference_id": 20374,
+              "reference_token": "東京"
+            },
+            {
+              "token_id": 44112,
+              "token": " Москва",
+              "reference_id": 52377,
+              "reference_token": "京都"
+            }
+          ]
+        },
+        {
+          "case": 10,
+          "tokens": 11,
+          "hidden": {
+            "cos_min": 0.9563680536002291,
+            "cos_mean": 0.9859544632725885,
+            "cos_global": 0.9873684917806962,
+            "relative_error": 0.15846556264809816,
+            "mine_norm": 229.13153260529862,
+            "ref_norm": 231.40522840599206
+          },
+          "cls": {
+            "cos_min": 0.9783656115126167,
+            "cos_mean": 0.9783656115126167,
+            "cos_global": 0.9783656115126167,
+            "relative_error": 0.20953234334290555,
+            "mine_norm": 78.30344215001388,
+            "ref_norm": 82.84736553835278
+          },
+          "logits": {
+            "cos_min": 0.9897650682139051,
+            "cos_mean": 0.9897650682139051,
+            "cos_global": 0.9897650682139065,
+            "relative_error": 0.1459887584273682,
+            "mine_norm": 841.538099876106,
+            "ref_norm": 877.5328945914181
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 528,
+              "token": "3",
+              "reference_id": 528,
+              "reference_token": "3"
+            }
+          ]
+        },
+        {
+          "case": 11,
+          "tokens": 9,
+          "hidden": {
+            "cos_min": 0.9706422612190919,
+            "cos_mean": 0.9787190641288332,
+            "cos_global": 0.9807480762491915,
+            "relative_error": 0.19654312399128762,
+            "mine_norm": 93.87694675324266,
+            "ref_norm": 97.94384212123187
+          },
+          "cls": {
+            "cos_min": 0.9831824599361825,
+            "cos_mean": 0.9831824599361825,
+            "cos_global": 0.9831824599361825,
+            "relative_error": 0.18903753007146792,
+            "mine_norm": 55.72963975273799,
+            "ref_norm": 59.64426454205843
+          },
+          "logits": {
+            "cos_min": 0.9917732936854552,
+            "cos_mean": 0.9917732936854552,
+            "cos_global": 0.9917732936854566,
+            "relative_error": 0.13331396282496288,
+            "mine_norm": 929.5796075739652,
+            "ref_norm": 973.8585477332456
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 526,
+              "token": "1",
+              "reference_id": 526,
+              "reference_token": "1"
+            }
+          ]
+        },
+        {
+          "case": 12,
+          "tokens": 7,
+          "hidden": {
+            "cos_min": 0.9595885742374964,
+            "cos_mean": 0.9731292109172561,
+            "cos_global": 0.9739990446132815,
+            "relative_error": 0.22655266156848092,
+            "mine_norm": 84.15367322340747,
+            "ref_norm": 86.44430198104229
+          },
+          "cls": {
+            "cos_min": 0.9800107269730514,
+            "cos_mean": 0.9800107269730514,
+            "cos_global": 0.9800107269730516,
+            "relative_error": 0.1989634739172712,
+            "mine_norm": 48.61422841383644,
+            "ref_norm": 49.74472020839599
+          },
+          "logits": {
+            "cos_min": 0.9903491506347252,
+            "cos_mean": 0.9903491506347252,
+            "cos_global": 0.9903491506347262,
+            "relative_error": 0.1396505660572708,
+            "mine_norm": 967.7975801608311,
+            "ref_norm": 994.4377039888593
+          },
+          "top1_matches": 0,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 3132,
+              "token": "är",
+              "reference_id": 7593,
+              "reference_token": "ā"
+            }
+          ]
+        },
+        {
+          "case": 13,
+          "tokens": 20,
+          "hidden": {
+            "cos_min": 0.9780048146526814,
+            "cos_mean": 0.9860095288441102,
+            "cos_global": 0.9848604649809531,
+            "relative_error": 0.1764240830633974,
+            "mine_norm": 199.64888115691025,
+            "ref_norm": 196.1849045412022
+          },
+          "cls": {
+            "cos_min": 0.9893474187276806,
+            "cos_mean": 0.9893474187276806,
+            "cos_global": 0.9893474187276806,
+            "relative_error": 0.14573069223401747,
+            "mine_norm": 55.68260525877339,
+            "ref_norm": 56.66958695418492
+          },
+          "logits": {
+            "cos_min": 0.9905586472408233,
+            "cos_mean": 0.9905586472408233,
+            "cos_global": 0.9905586472408241,
+            "relative_error": 0.14696770107186943,
+            "mine_norm": 914.6491843246935,
+            "ref_norm": 975.5347107767259
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 54055,
+              "token": " Enjoy",
+              "reference_id": 54055,
+              "reference_token": " Enjoy"
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "tokens": 649,
+          "hidden": {
+            "cos_min": 0.7529067870940486,
+            "cos_mean": 0.9654244974023437,
+            "cos_global": 0.9606256383104916,
+            "relative_error": 0.28221160079517477,
+            "mine_norm": 1324.8097816483528,
+            "ref_norm": 1311.598539944019
+          },
+          "cls": {
+            "cos_min": 0.9707406138680231,
+            "cos_mean": 0.9707406138680231,
+            "cos_global": 0.9707406138680233,
+            "relative_error": 0.2484244967372833,
+            "mine_norm": 40.68712581107055,
+            "ref_norm": 39.33416864981945
+          },
+          "logits": {
+            "cos_min": 0.9924782570434191,
+            "cos_mean": 0.9924782570434191,
+            "cos_global": 0.9924782570434204,
+            "relative_error": 0.14788323488538144,
+            "mine_norm": 957.1863940921927,
+            "ref_norm": 890.0421952087931
+          },
+          "top1_matches": 1,
+          "masks": 1,
+          "predictions": [
+            {
+              "token_id": 5242,
+              "token": " Paris",
+              "reference_id": 5242,
+              "reference_token": " Paris"
+            }
+          ]
+        }
+      ],
+      "diff_probes": [
+        {
+          "case": 0,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99997818,
+              "cos_global": 0.9999842,
+              "norm_ratio": 1.0001398842596925,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.999015,
+              "cos_mean": 0.99934483,
+              "cos_global": 0.99927163,
+              "norm_ratio": 0.9943190985894554,
+              "max_abs": 0.219,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.998742,
+              "cos_mean": 0.99929339,
+              "cos_global": 0.99924701,
+              "norm_ratio": 0.9948470557214188,
+              "max_abs": 0.244,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.998597,
+              "cos_mean": 0.99897212,
+              "cos_global": 0.99891984,
+              "norm_ratio": 0.9968776923064648,
+              "max_abs": 0.38,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.998077,
+              "cos_mean": 0.99894202,
+              "cos_global": 0.99885964,
+              "norm_ratio": 0.9938512262759384,
+              "max_abs": 0.237,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.997523,
+              "cos_mean": 0.9980213,
+              "cos_global": 0.99796224,
+              "norm_ratio": 0.9919623034838158,
+              "max_abs": 0.352,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.996934,
+              "cos_mean": 0.99794829,
+              "cos_global": 0.99797332,
+              "norm_ratio": 0.9894375158058498,
+              "max_abs": 0.592,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.996139,
+              "cos_mean": 0.99680406,
+              "cos_global": 0.99672741,
+              "norm_ratio": 1.010978452981858,
+              "max_abs": 1.01,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.99421,
+              "cos_mean": 0.99629575,
+              "cos_global": 0.99642527,
+              "norm_ratio": 0.9942919833923425,
+              "max_abs": 1.93,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.990559,
+              "cos_mean": 0.99379545,
+              "cos_global": 0.99393523,
+              "norm_ratio": 0.9976578918559138,
+              "max_abs": 1.85,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.985933,
+              "cos_mean": 0.99351722,
+              "cos_global": 0.99980855,
+              "norm_ratio": 0.9781493441597802,
+              "max_abs": 29.2,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.985166,
+              "cos_mean": 0.99312145,
+              "cos_global": 0.99948543,
+              "norm_ratio": 0.978245505231462,
+              "max_abs": 29.3,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.981102,
+              "cos_mean": 0.99053001,
+              "cos_global": 0.99913222,
+              "norm_ratio": 0.9780588570668513,
+              "max_abs": 29.6,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.989502,
+              "cos_mean": 0.99574918,
+              "cos_global": 0.99845386,
+              "norm_ratio": 0.981246465167072,
+              "max_abs": 28.5,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.901367,
+              "cos_mean": 0.98016268,
+              "cos_global": 0.99104625,
+              "norm_ratio": 0.9466398183201098,
+              "max_abs": 76.9,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.9674,
+              "cos_mean": 0.97844017,
+              "cos_global": 0.97110569,
+              "norm_ratio": 1.1138997457373827,
+              "max_abs": 4.19,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.97145,
+              "cos_mean": 0.97144961,
+              "cos_global": 0.97144961,
+              "norm_ratio": 1.0861927892067949,
+              "max_abs": 2.25,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.97145,
+              "cos_mean": 0.97144961,
+              "cos_global": 0.97144961,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0297,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.9674,
+              "cos_mean": 0.97844017,
+              "cos_global": 0.97110569,
+              "norm_ratio": 1.1138997457373827,
+              "max_abs": 4.19,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.993058,
+              "cos_mean": 0.99305844,
+              "cos_global": 0.99305844,
+              "norm_ratio": 0.9989562576257301,
+              "max_abs": 2.1,
+              "passes_cos_0_999": false
+            }
+          ]
+        },
+        {
+          "case": 9,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99997407,
+              "cos_global": 0.99998057,
+              "norm_ratio": 1.0000186758863665,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.998562,
+              "cos_mean": 0.99924201,
+              "cos_global": 0.99917185,
+              "norm_ratio": 1.0004213657062497,
+              "max_abs": 0.242,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.998739,
+              "cos_mean": 0.9992258,
+              "cos_global": 0.99921566,
+              "norm_ratio": 1.00278020677417,
+              "max_abs": 0.195,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.998486,
+              "cos_mean": 0.99881375,
+              "cos_global": 0.99879867,
+              "norm_ratio": 0.9987220818816716,
+              "max_abs": 0.148,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.997615,
+              "cos_mean": 0.99855399,
+              "cos_global": 0.9985289,
+              "norm_ratio": 0.9833220528903737,
+              "max_abs": 0.572,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.997005,
+              "cos_mean": 0.99787879,
+              "cos_global": 0.99782771,
+              "norm_ratio": 0.991318375099464,
+              "max_abs": 0.559,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.997436,
+              "cos_mean": 0.99807042,
+              "cos_global": 0.99809963,
+              "norm_ratio": 0.9783679445459315,
+              "max_abs": 1.83,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.99606,
+              "cos_mean": 0.99706936,
+              "cos_global": 0.99700963,
+              "norm_ratio": 0.9959563206550347,
+              "max_abs": 1.85,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.992347,
+              "cos_mean": 0.99511677,
+              "cos_global": 0.99523264,
+              "norm_ratio": 0.9798429146145898,
+              "max_abs": 2.74,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.991455,
+              "cos_mean": 0.99402201,
+              "cos_global": 0.99400681,
+              "norm_ratio": 0.9868483901450952,
+              "max_abs": 2.37,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.986564,
+              "cos_mean": 0.9928636,
+              "cos_global": 0.99971503,
+              "norm_ratio": 1.0542575744432274,
+              "max_abs": 81.2,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.984223,
+              "cos_mean": 0.99348068,
+              "cos_global": 0.99914777,
+              "norm_ratio": 1.0486745842199428,
+              "max_abs": 80.8,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.980929,
+              "cos_mean": 0.99245077,
+              "cos_global": 0.99876815,
+              "norm_ratio": 1.0444901145785193,
+              "max_abs": 80.6,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.991294,
+              "cos_mean": 0.99621105,
+              "cos_global": 0.99752176,
+              "norm_ratio": 1.0190029636344877,
+              "max_abs": 81.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.982506,
+              "cos_mean": 0.9905417,
+              "cos_global": 0.98863232,
+              "norm_ratio": 0.98507705918562,
+              "max_abs": 70.2,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.982626,
+              "cos_mean": 0.99081129,
+              "cos_global": 0.99076688,
+              "norm_ratio": 0.999407275165132,
+              "max_abs": 1.66,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.986052,
+              "cos_mean": 0.9860521,
+              "cos_global": 0.9860521,
+              "norm_ratio": 0.9844189666077524,
+              "max_abs": 1.37,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.986052,
+              "cos_mean": 0.9860521,
+              "cos_global": 0.9860521,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0169,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.982626,
+              "cos_mean": 0.99081129,
+              "cos_global": 0.99076688,
+              "norm_ratio": 0.999407275165132,
+              "max_abs": 1.66,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.988209,
+              "cos_mean": 0.99054086,
+              "cos_global": 0.99058312,
+              "norm_ratio": 1.0279743656492784,
+              "max_abs": 5.53,
+              "passes_cos_0_999": false
+            }
+          ]
+        },
+        {
+          "case": 14,
+          "stages": [
+            {
+              "name": "post_embed",
+              "cos_min": 0.999911,
+              "cos_mean": 0.99998665,
+              "cos_global": 0.99998659,
+              "norm_ratio": 1.0000234333803808,
+              "max_abs": 0.00448,
+              "passes_cos_0_999": true
+            },
+            {
+              "name": "layer_0",
+              "cos_min": 0.998555,
+              "cos_mean": 0.99910516,
+              "cos_global": 0.99906796,
+              "norm_ratio": 1.0004227025244599,
+              "max_abs": 0.219,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_1",
+              "cos_min": 0.998196,
+              "cos_mean": 0.99895352,
+              "cos_global": 0.99889529,
+              "norm_ratio": 0.9982126549129552,
+              "max_abs": 0.286,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_2",
+              "cos_min": 0.998118,
+              "cos_mean": 0.99868804,
+              "cos_global": 0.99861175,
+              "norm_ratio": 1.0033027217630022,
+              "max_abs": 0.369,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_3",
+              "cos_min": 0.99747,
+              "cos_mean": 0.99837732,
+              "cos_global": 0.9983077,
+              "norm_ratio": 0.9932124749505573,
+              "max_abs": 0.398,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_4",
+              "cos_min": 0.997187,
+              "cos_mean": 0.99779195,
+              "cos_global": 0.99770719,
+              "norm_ratio": 0.9956694866780066,
+              "max_abs": 0.549,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_5",
+              "cos_min": 0.980924,
+              "cos_mean": 0.99699759,
+              "cos_global": 0.99663842,
+              "norm_ratio": 0.9819600995999583,
+              "max_abs": 11.6,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_6",
+              "cos_min": 0.962183,
+              "cos_mean": 0.99535328,
+              "cos_global": 0.99537164,
+              "norm_ratio": 1.021384289315515,
+              "max_abs": 10.7,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_7",
+              "cos_min": 0.966409,
+              "cos_mean": 0.99386775,
+              "cos_global": 0.99394363,
+              "norm_ratio": 0.9985629668745072,
+              "max_abs": 11.6,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_8",
+              "cos_min": 0.969161,
+              "cos_mean": 0.99153399,
+              "cos_global": 0.99157959,
+              "norm_ratio": 0.9925381647185336,
+              "max_abs": 7.94,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_9",
+              "cos_min": 0.882848,
+              "cos_mean": 0.98908299,
+              "cos_global": 0.98511827,
+              "norm_ratio": 1.0195768676609336,
+              "max_abs": 523.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_10",
+              "cos_min": 0.844554,
+              "cos_mean": 0.9895401,
+              "cos_global": 0.98572725,
+              "norm_ratio": 1.0050821630527884,
+              "max_abs": 523.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_11",
+              "cos_min": 0.916618,
+              "cos_mean": 0.98081422,
+              "cos_global": 0.9851656,
+              "norm_ratio": 1.0156627243357366,
+              "max_abs": 522.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_12",
+              "cos_min": 0.948877,
+              "cos_mean": 0.99003881,
+              "cos_global": 0.98757458,
+              "norm_ratio": 0.9523506184264329,
+              "max_abs": 518.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "layer_13",
+              "cos_min": 0.537307,
+              "cos_mean": 0.98399436,
+              "cos_global": 0.98434442,
+              "norm_ratio": 0.9807335444767323,
+              "max_abs": 225.0,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "final_norm",
+              "cos_min": 0.752907,
+              "cos_mean": 0.96542448,
+              "cos_global": 0.96062565,
+              "norm_ratio": 1.0100726730696936,
+              "max_abs": 14.4,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_raw",
+              "cos_min": 0.970741,
+              "cos_mean": 0.97074062,
+              "cos_global": 0.97074062,
+              "norm_ratio": 1.0343965336802479,
+              "max_abs": 1.04,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "cls_norm",
+              "cos_min": 0.970741,
+              "cos_mean": 0.97074062,
+              "cos_global": 0.97074062,
+              "norm_ratio": 1.0,
+              "max_abs": 0.0255,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "native raw features",
+              "cos_min": 0.752907,
+              "cos_mean": 0.96542448,
+              "cos_global": 0.96062565,
+              "norm_ratio": 1.0100726730696936,
+              "max_abs": 14.4,
+              "passes_cos_0_999": false
+            },
+            {
+              "name": "masked_logits",
+              "cos_min": 0.992478,
+              "cos_mean": 0.99247825,
+              "cos_global": 0.99247825,
+              "norm_ratio": 1.0754393756677878,
+              "max_abs": 2.43,
+              "passes_cos_0_999": false
+            }
+          ]
+        }
+      ],
+      "tensor_types": {
+        "Q8_0": 1,
+        "F32": 49,
+        "Q4_K": 82
+      }
+    }
+  },
+  "native": {
+    "backend": "CPU",
+    "python_threads": 4,
+    "engine_commit": "209d46a421912aa82db6eeed26c7555bd236f6de",
+    "ggml_commit": "890278a8342c620197c90e702e1188bcab94f510",
+    "date": "2026-10-03"
+  }
+}

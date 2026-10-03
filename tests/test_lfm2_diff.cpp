@@ -98,6 +98,7 @@ static int crispembed_test_main(int argc, char ** argv) {
         const char * threshold = std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD");
         const float thresh = threshold ? std::strtof(threshold, nullptr) : 0.999f;
         check_cos(e.name.c_str(), r.cos_min, thresh);
+        printf("        cos_mean=%.8f cos_global=%.8f\n", r.cos_mean, r.cos_global);
         printf("        |mine|=%.6f |ref|=%.6f max_abs=%.2e mean_abs=%.2e\n", r.mine_norm, r.ref_norm, r.max_abs,
                r.mean_abs);
         if (r.ref_norm > 0 && std::fabs(r.mine_norm / r.ref_norm - 1.0f) > 0.05f) ++n_fail;
@@ -127,6 +128,7 @@ static int crispembed_test_main(int argc, char ** argv) {
                   std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD")
                       ? std::strtof(std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD"), nullptr)
                       : 0.999f);
+        printf("        cos_mean=%.8f cos_global=%.8f\n", r.cos_mean, r.cos_global);
         printf("        |mine|=%.6f |ref|=%.6f max_abs=%.2e\n", r.mine_norm, r.ref_norm, r.max_abs);
         if (r.ref_norm > 0 && std::fabs(r.mine_norm / r.ref_norm - 1.0f) > 0.05f) ++n_fail;
     } else if (lfm2_embed_has_masked_lm(ctx)) {
@@ -141,6 +143,7 @@ static int crispembed_test_main(int argc, char ** argv) {
                                         ? std::strtof(std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD"), nullptr)
                                         : 0.999f;
             check_cos("masked_logits", r.found ? r.cos_min : 0, threshold);
+            printf("        cos_mean=%.8f cos_global=%.8f\n", r.cos_mean, r.cos_global);
             printf("        |mine|=%.6f |ref|=%.6f max_abs=%.2e mean_abs=%.2e\n", r.mine_norm, r.ref_norm, r.max_abs,
                    r.mean_abs);
             if (r.ref_norm > 0 && std::fabs(r.mine_norm / r.ref_norm - 1.0f) > 0.05f) ++n_fail;

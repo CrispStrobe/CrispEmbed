@@ -1,5 +1,20 @@
 # CrispEmbed — Technical Learnings
 
+## A K-quant name alone does not establish encoder parity (2026-10-03)
+
+For LFM2.5-Encoder-230M, plain CrispEmbed Q4_K improves worst CLS cosine over
+upstream Q4_0 (0.935851 vs 0.854029), yet its worst long-input token cosine is
+lower (0.556311 vs 0.736032). Whole-tensor cosine and decoded agreement tell a
+different part of the story: per-row minima expose fragile tokens while pooled
+vectors hide them. Always report CLS, mean/global and minimum-row cosine, norms
+and decoded predictions together. Port precision F16 stays clean (297 checks;
+lowest intermediate cosine 0.999985), separating quantized-weight drift from the
+backbone implementation. Separate-corpus imatrix calibration improves Q4_K to
+CLS 0.970741/token 0.752907/11 of 15 mask predictions, but does not restore parity.
+The official Q4_0 tied embedding/head is Q6_K, while CrispEmbed Q4_K holds it Q8_0;
+compare actual tensor types and bytes, not just the artifact label. Use a fresh
+importance file: the native collector merges prior statistics at flush time.
+
 ## Masked encoder support needs raw features and exact special tokens (2026-10-03)
 
 LFM2.5-Encoder shares the embedding backbone but needs an unnormalized final

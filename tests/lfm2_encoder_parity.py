@@ -54,11 +54,16 @@ def main():
         cosine = np.sum(rows_a * rows_b, axis=1) / (np.linalg.norm(rows_a, axis=1) * np.linalg.norm(rows_b, axis=1))
         relative = float(np.linalg.norm(a - b) / np.linalg.norm(b))
         norms = (float(np.linalg.norm(a)), float(np.linalg.norm(b)))
-        print(f"{label}: cos_min={cosine.min():.8f} relative_error={relative:.6f} |mine|={norms[0]:.6f} |ref|={norms[1]:.6f}")
+        global_cosine = float(np.sum(a * b) / (norms[0] * norms[1]))
+        print(f"{label}: cos_min={cosine.min():.8f} cos_mean={cosine.mean():.8f} "
+              f"cos_global={global_cosine:.8f} relative_error={relative:.6f} "
+              f"|mine|={norms[0]:.6f} |ref|={norms[1]:.6f}")
         if not args.measure_only:
             assert cosine.min() >= args.min_cos, label
             assert relative <= args.max_relative_error, label
-        return {"cos_min": float(cosine.min()), "relative_error": relative, "mine_norm": norms[0], "ref_norm": norms[1]}
+        return {"cos_min": float(cosine.min()), "cos_mean": float(cosine.mean()),
+                "cos_global": global_cosine, "relative_error": relative,
+                "mine_norm": norms[0], "ref_norm": norms[1]}
 
     for case, text in enumerate(texts):
         ref = GGUFReader(args.refs / f"{case:03d}.gguf")
@@ -67,6 +72,7 @@ def main():
         ids, raw = model.encode_tokens(text, normalize=False)
         np.testing.assert_array_equal(ids, expected_ids)
         entry = {"text": text, "tokens": len(ids), "hidden": compare(f"case {case} hidden", raw, tensors["final_norm"])}
+        entry["cls"] = compare(f"case {case} CLS", raw[0], tensors["cls_raw"])
         ids2, normalized = model.encode_tokens(text)
         np.testing.assert_array_equal(ids, ids2)
         np.testing.assert_allclose(normalized, raw / np.linalg.norm(raw, axis=1, keepdims=True), atol=2e-6, rtol=2e-5)
@@ -83,6 +89,9 @@ def main():
             masks_total += len(positions)
             entry["top1_matches"] = matches
             entry["masks"] = len(positions)
+            entry["predictions"] = [{"token_id": int(p), "token": decoded[int(p)],
+                                      "reference_id": int(e), "reference_token": decoded[int(e)]}
+                                     for p, e in zip(predicted, expected)]
             if args.require_top1:
                 np.testing.assert_array_equal(predicted, expected)
             filled = model.fill_mask(text.replace("<|mask|>", "[MASK]"))

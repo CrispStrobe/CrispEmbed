@@ -4,6 +4,15 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## October 3, 2026 — encoder quantization measured
+
+Quantized official F16 with crispembed-quantize into plain and importance-weighted
+Q4_K, preserving the tied embedding matrix at Q8_0. Replayed all 15 reference cases
+for five artifacts and per-layer probes on English, Japanese/Chinese and long text.
+Plain Q4_K matches 10/15 masks; calibrated Q4_K 11/15, versus official Q4_0 9/15.
+Calibration raises worst CLS cosine from 0.935851 to 0.970741 but is still approximate;
+F16 remains the default. Added a reproducible calibration helper and result manifest.
+
 ## October 3, 2026 — LFM2.5-Encoder-230M
 
 Added native raw/normalized token features, tied masked-LM logits and decoded

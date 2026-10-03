@@ -4,6 +4,16 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## DONE 2026-10-03 — LFM2 encoder Q4_K comparison
+
+Measured official F16/Q8_0/Q4_0 plus CrispEmbed Q4_K and calibrated Q4_K on the
+same 15 FP32-reference cases. Added CLS, whole-tensor and mean-row cosine,
+decoded prediction changes, and detailed per-layer probe metrics. Calibration:
+134 separate corpus sentences + groups, 6711 tokens, all 82 backbone matrices.
+Calibrated Q4_K (165 MB) improves on official Q4_0 but retains substantial drift:
+CLS min 0.970741, token min 0.752907, 11/15 mask predictions. F16 remains default.
+Reproduction: docs/lfm2-encoder.md; full results: tests/results/lfm2-encoder/quantization.json.
+
 ## DONE 2026-10-03 — LFM2.5-Encoder-230M
 
 Official F16/Q8_0/Q4_0 GGUFs registered and hash-pinned; raw/normalized token
