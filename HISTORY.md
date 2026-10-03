@@ -4,6 +4,17 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## October 3, 2026 — encoder calibration and mixed precision
+
+Added repeatable `crispembed-quantize --tensor-type GLOB=TYPE` matrix overrides,
+preservation/dimension guards, a real GGUF integration test and green CPU CI.
+Expanded independent calibration to 174 records / 12065 tokens from an FP32
+source and screened 26 profiles. Selected compact Q4_K+Q8 operators/down (210 MB,
+token cosine 0.881376, 13/15 masks) and Q8_0+F16 operators/down (330 MB,
+0.987746, 14/15). Higher precision helps but does not restore strict parity;
+F16 remains default. Commands and measured profiles are in docs/lfm2-encoder.md
+and tests/results/lfm2-encoder/mixed_precision.json.
+
 ## October 3, 2026 — encoder quantization measured
 
 Quantized official F16 with crispembed-quantize into plain and importance-weighted

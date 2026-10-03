@@ -1,5 +1,24 @@
 # CrispEmbed — Technical Learnings
 
+## Precision overrides improve encoder features, with nonmonotonic interactions (2026-10-03)
+
+LFM2 encoder group ablations identified attention as the strongest single-group
+F16 upgrade for mask agreement. Upgrading attention, ShortConv projections and
+FFN down together improves the minimum token cosine much more: Q4_K+Q8 groups
+0.881376 at 210 MB; Q8_0+F16 groups 0.987746 at 330 MB. More F16 groups can worsen
+individual probes: precision errors can cancel, and low-margin argmax predictions
+can flip independently of pooled/global cosine. Do not infer decoded parity
+from a global cosine of 0.999588 (the 330 MB model still changes one mask).
+
+This CPU fork's F16 matrix weights consume F32 activations; K-quant weights
+consume Q8_K temporaries and Q8_0 weights consume Q8_0 temporaries. A storage
+upgrade therefore also changes activation arithmetic. Q8_0 ignores importance
+vectors; only the remaining K-quant matrices are importance-weighted. Validate
+importance names/dimensions against the exact source, actual stored tensor types,
+unchanged norm/kernel bytes, raw norms and decoded output. The generic quantizer
+now has repeatable glob overrides, guarded for preserved tensors, with integration
+coverage for last-match precedence, unmatched patterns and dimension fallback.
+
 ## A K-quant name alone does not establish encoder parity (2026-10-03)
 
 For LFM2.5-Encoder-230M, plain CrispEmbed Q4_K improves worst CLS cosine over

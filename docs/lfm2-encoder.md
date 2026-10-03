@@ -198,3 +198,105 @@ cosine/norm/prediction checks are expected measurements, not a successful parity
 claim. Use the mean/global cosine, norm error and decoded agreement together.
 Local Q4_K files load directly through the same APIs and CLI as official GGUFs;
 no download alias or default model selection was changed by this experiment.
+
+
+## Calibrated mixed precision
+
+`crispembed-quantize` accepts repeated `--tensor-type GLOB=TYPE` overrides
+(`f32`, `f16`, `q8_0`, `q6_k`, `q5_k`). Patterns use `*` and `?`; the last
+matching override wins for eligible matrices. Norms, biases and ShortConv
+kernels retain their preservation rules. A pattern matching no tensor is rejected
+before opening the output file. Tensor dimensions can require a quantization
+fallback, so inspect actual stored types rather than assuming the requested type.
+The small GGUF integration test and CPU CI verify these behaviors.
+
+For this experiment we converted the original checkpoint to FP32 GGUF, then
+collected fresh statistics over 174 separate corpus records and 11 groups:
+185 samples, 12065 tokens, longest sample 1149 tokens. The supplemental corpus
+includes multilingual, masked, code, structured and Unicode inputs. All 82
+backbone importance vectors match this source's tensor names and dimensions.
+No exact evaluation input occurs in calibration; the reference suite was used
+to select precision policies, so these scores are not an independent task benchmark.
+The FP32 conversion uses `lfm.*` tensor names; importance vectors from the official
+`blk.*` GGUF cannot be reused with it.
+
+```sh
+USE_TF=0 python models/convert-lfm2-embed-to-gguf.py \
+  --model "$LFM2_HF_DIR" --output "$LFM2_F32" --dtype f32
+python tools/calibrate_lfm2_encoder.py --model "$LFM2_F32" \
+  --corpus tools/kaggle/crispembed-imatrix-quant/calib_corpus.jsonl \
+  --extra-corpus tools/lfm2_encoder_calibration_extra.jsonl \
+  --group-size 16 --threads 4 --lib build/libcrispembed.so \
+  --output "$LFM2_EXPANDED_IMATRIX"
+# Compact mixed Q4_K: upgrade attention, ShortConv projections and FFN down.
+build/crispembed-quantize "$LFM2_F32" "$LFM2_MIXED_Q4" q4_k \
+  --imatrix "$LFM2_EXPANDED_IMATRIX" \
+  --tensor-type '*.attn*weight=q8_0' \
+  --tensor-type '*conv.*_proj.weight=q8_0' \
+  --tensor-type '*.ff.w2.weight=q8_0'
+```
+
+Attention was the strongest single-group F16 upgrade for masked prediction
+agreement in the original Q4_K ablation. Combining attention, ShortConv input/output
+projections and FFN down projections gives a stronger feature approximation.
+Keeping the tied embedding/head in F16 costs approximately 63 MB over Q8_0 and
+does not consistently improve token minima or decoded agreement.
+
+The local CPU F16 matrix kernel uses F32 activations. K-quant matrix kernels
+use Q8_K temporary activations, and Q8_0 kernels use Q8_0 temporaries.
+Consequently, these upgrades change both weight storage precision and the
+activation arithmetic. Quality is not monotonic as individual groups change.
+Importance weighting applies to remaining K-quant weights; Q8_0 quantization
+ignores importance vectors.
+
+Across 26 screened profiles, the two useful size/precision choices are:
+
+| Profile | Size (MB) | CLS min cosine | Token min cosine | Hidden min global cosine | Hidden max relative error | Mask agreement |
+|---|---:|---:|---:|---:|---:|---:|
+| Expanded-calibration Q4_K | 165.3 | 0.968517 | 0.756988 | 0.965374 | 29.95% | 11/15 |
+| Mixed Q4_K, selected operators Q8_0 | 209.9 | 0.980123 | 0.881376 | 0.987888 | 15.64% | 13/15 |
+| Mixed Q8_0, selected operators F16 | 330.2 | 0.998998 | 0.987746 | 0.999588 | 2.90% | 14/15 |
+| Official F16 | 461.9 | 0.999999 | 0.999989 | 0.999998 | 0.18% | 15/15 |
+
+The selected operators are all attention matrices, ShortConv input/output
+projections and FFN down projections. The compact model stores 54 such matrices
+in Q8_0, 28 FFN gate/up matrices in calibrated Q4_K, and the tied embedding/head
+in Q8_0. The higher-fidelity model stores those 54 matrices in F16, the remaining
+28 gate/up matrices and tied embedding/head in Q8_0. Both preserve all 49 F32
+norm/kernel tensors byte-for-byte from the source.
+
+Generate the 330 MB profile with:
+
+```sh
+build/crispembed-quantize "$LFM2_F32" "$LFM2_MIXED_Q8" q8_0 \
+  --tensor-type '*.attn*weight=f16' \
+  --tensor-type '*conv.*_proj.weight=f16' \
+  --tensor-type '*.ff.w2.weight=f16'
+python tests/lfm2_encoder_parity.py --model "$LFM2_MIXED_Q8" \
+  --refs "$LFM2_REF_DIR" --lib build/libcrispembed.so --threads 4 \
+  --measure-only
+```
+
+Upgrading gate/up matrices in layers 8, 9, 10 and 13 adds about 20 MB to the
+330 MB profile without improving its worst token cosine or mask agreement.
+The compact model changes the second adjacent-mask prediction and the second
+Japanese/Chinese mask. The higher-fidelity model changes only the latter:
+Python predicts `京都`, while this mixed model predicts `東京`. These are model
+predictions on stress probes, not labeled factual answers.
+
+All screened profiles, source/calibration provenance, selected artifact hashes,
+full API contract measurements and layer probes are recorded in
+[the mixed-precision manifest](../tests/results/lfm2-encoder/mixed_precision.json).
+These mixed models improve approximation but do not pass the strict 0.999
+worst-row port gate; F16 remains the default when Python parity is required.
+
+
+The full 15-case replay passes exact IDs, all 65536 decoded vocabulary entries,
+normalized/pooled consistency, repeated calls and cleared failure contracts for
+both selected models. With the strict per-layer threshold unchanged, the 330 MB
+model's English probe passes 20/20 checks; Japanese/Chinese passes all numerical
+checks but fails decoded top-1 agreement (20 pass / 1 fail). The long probe reports
+12 pass / 8 fail, with final token cosine 0.987746: gate/up drift first crosses
+0.999 at layer 8 and grows further at layers 9 and 13. The compact model's strict
+diff reports 6/17, 7/14 and 5/15 pass/fail respectively. Counts include norm and
+decoded-output failures, not only cosine checks.

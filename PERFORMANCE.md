@@ -1,5 +1,38 @@
 # CrispEmbed Performance
 
+## LFM2 encoder calibration and selective precision (2026-10-03)
+
+Screened 26 policies against the same 15 FP32 Python reference cases. Expanded
+calibration uses 174 separate multilingual/code/structured records, 185 samples,
+12065 tokens (max 1149), and all 82 matching backbone importance vectors. The
+source is a fresh FP32 GGUF conversion; official `blk.*` importance statistics
+cannot be applied to the converter's `lfm.*` tensor names.
+
+| Profile | MB | CLS min cosine | Token min cosine | Hidden min global cosine | Raw max relative error | Mask agreement |
+|---|---:|---:|---:|---:|---:|---:|
+| Expanded-calibration Q4_K | 165.3 | 0.968517 | 0.756988 | 0.965374 | 29.95% | 11/15 |
+| Mixed Q4_K with Q8 operators/down | 209.9 | 0.980123 | 0.881376 | 0.987888 | 15.64% | 13/15 |
+| Mixed Q8_0 with F16 operators/down | 330.2 | 0.998998 | 0.987746 | 0.999588 | 2.90% | 14/15 |
+| Official F16 | 461.9 | 0.999999 | 0.999989 | 0.999998 | 0.18% | 15/15 |
+
+Upgrade all attention matrices, ShortConv projections, and FFN down matrices
+(54 matrices). Leave 28 gate/up matrices at the base quantization and the tied
+embedding/head Q8_0. All 49 F32 norm/kernel tensors remain unchanged. Raising
+the head to F16 adds about 63 MB but is not consistently better. Raising gate/up
+in layers 8/9/10/13 adds about 20 MB to the 330 MB profile without improving
+minimum token cosine or decoded agreement. The remaining higher-fidelity mask
+change is Japanese/Chinese: reference `京都`, native `東京`.
+
+Both selected models pass the full 15-case API/tokenizer/vocabulary/normalization/
+repeat/failure contracts. Strict diff for the 330 MB model: English 20 pass/0 fail;
+Japanese/Chinese 20 pass/1 fail (decoded mask); long 12 pass/8 fail (cosine drift).
+
+Quality measurements are CPU only; profiles were selected using these reference
+probes, so this is not an independent task benchmark. Mixed precision remains
+approximate and F16 stays default. Reproduction and complete measurements:
+[encoder documentation](docs/lfm2-encoder.md),
+[mixed-precision manifest](tests/results/lfm2-encoder/mixed_precision.json).
+
 ## LFM2.5-Encoder-230M CPU parity (2026-10-03)
 
 CPU results (2026-10-03), against Torch 2.11.0 / Transformers 5.13.0.dev0,
