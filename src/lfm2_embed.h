@@ -18,6 +18,7 @@
 #include <string>
 
 struct lfm2_embed_ctx;
+struct crispembed_hparams;
 
 // Load LFM2 embedding model from GGUF.  backend must already be initialised
 // (reuses the crispembed Metal/CPU backend).  Returns nullptr on failure.
@@ -35,6 +36,21 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out);
 
 // Output dimension (hidden_size = 1024).
 int lfm2_embed_n_embd(const lfm2_embed_ctx * ctx);
+void lfm2_embed_get_hparams(const lfm2_embed_ctx * ctx, crispembed_hparams * out);
+
+// Native encoder features: no pooling/projection/L2 normalization. IDs include
+// tokenizer-added BOS/EOS. All outputs are cleared on failure.
+bool lfm2_embed_encode_tokens(lfm2_embed_ctx * ctx, const char * text, std::vector<int32_t> & ids,
+                              std::vector<float> & out);
+// Tied masked-LM head, evaluated only at <|mask|> positions. Output is
+// [positions.size(), vocab_size], unnormalized logits. No text substitution.
+bool lfm2_embed_masked_logits(lfm2_embed_ctx * ctx, const char * text, std::vector<int32_t> & positions,
+                              std::vector<float> & out);
+int lfm2_embed_vocab_size(const lfm2_embed_ctx * ctx);
+bool lfm2_embed_has_masked_lm(const lfm2_embed_ctx * ctx);
+const char * lfm2_embed_token_str(const lfm2_embed_ctx * ctx, int32_t id);
+// Decoded byte-level piece, with explicit length (a piece may contain NUL).
+const char * lfm2_embed_token_bytes(const lfm2_embed_ctx * ctx, int32_t id, int * size);
 
 // ColBERT multi-vector output: per-token embeddings projected to colbert_dim.
 // Returns n_tokens (0 on error). Output: [n_tokens * colbert_dim] L2-normalised.

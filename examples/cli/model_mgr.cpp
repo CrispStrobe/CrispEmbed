@@ -1617,8 +1617,8 @@ static const ModelEntry k_registry[] = {
       "jina-ocr-v1 (DeepSeek-OCR MoE 3.4B / 570M active, doc OCR -> Markdown, Q4_K)", "2.3 GB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-ocr-v1" },
     { "jina-ocr-v1-q8", "jina-ocr-v1-q8_0.gguf",
-      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q8_0.gguf",
-      "jina-ocr-v1 (Q8_0)", "3.6 GB", "cc-by-nc-4.0", "https://huggingface.co/jinaai/jina-ocr-v1" },
+      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q8_0.gguf", "jina-ocr-v1 (Q8_0)", "3.6 GB",
+      "cc-by-nc-4.0", "https://huggingface.co/jinaai/jina-ocr-v1" },
 
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
     // License: Apache-2.0
@@ -1642,6 +1642,27 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q4_k.gguf",
       "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
       "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6" },
+
+    // General-purpose masked encoder; raw features + tied LM head, no trained
+    // retrieval projection or query/document prefixes.
+    // F16 is the default: quantized variants can change masked predictions and
+    // fragile per-token features even where their aggregate cosine stays high.
+    { "lfm2-encoder-230m", "LFM2.5-Encoder-230M-F16.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-F16.gguf",
+      "LFM2.5 Encoder 230M 1024d 15-language masked LM (F16)", "462 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M" },
+    { "lfm2-encoder-230m-q8", "LFM2.5-Encoder-230M-Q8_0.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-Q8_0.gguf",
+      "LFM2.5 Encoder 230M masked LM (Q8_0)", "247 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M" },
+    { "lfm2-encoder-230m-f16", "LFM2.5-Encoder-230M-F16.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-F16.gguf",
+      "LFM2.5 Encoder 230M masked LM (F16)", "462 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M" },
+    { "lfm2-encoder-230m-q4", "LFM2.5-Encoder-230M-Q4_0.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M-GGUF/resolve/main/LFM2.5-Encoder-230M-Q4_0.gguf",
+      "LFM2.5 Encoder 230M masked LM (Q4_0)", "149 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M" },
 
     // LFM2.5-Embedding-350M — LiquidAI bidirectional hybrid (10 ShortConv + 6 GQA)
     // 1024-dim CLS pooling, 11 languages (EN/ES/DE/FR/IT/PT/AR/SV/NO/JA/KO)

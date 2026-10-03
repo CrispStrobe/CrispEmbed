@@ -2,6 +2,7 @@
 // Usage: ./build/test-lfm2-diff lfm2-embed-q8_0.gguf /tmp/lfm2-ref.gguf ["text"]
 
 #include "lfm2_embed.h"
+#include "crispembed.h"
 #include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include "ggml-backend.h"
@@ -11,6 +12,7 @@
 #endif
 
 #include <cstdio>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -89,11 +91,16 @@ static int crispembed_test_main(int argc, char ** argv) {
         int rd = (e.T > 1) ? 0 : -1;
         auto r = ref.compare(e.name.c_str(), e.data.data(), e.data.size(), rd);
         if (!r.found) {
-            printf("  %-44s [not in ref — skip]\n", e.name.c_str());
+            printf("  %-44s [missing reference]\n", e.name.c_str());
+            ++n_fail;
             continue;
         }
-        const float thresh = (e.name == "cls_norm") ? 0.99f : 0.999f;
+        const char * threshold = std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD");
+        const float thresh = threshold ? std::strtof(threshold, nullptr) : 0.999f;
         check_cos(e.name.c_str(), r.cos_min, thresh);
+        printf("        |mine|=%.6f |ref|=%.6f max_abs=%.2e mean_abs=%.2e\n", r.mine_norm, r.ref_norm, r.max_abs,
+               r.mean_abs);
+        if (r.ref_norm > 0 && std::fabs(r.mine_norm / r.ref_norm - 1.0f) > 0.05f) ++n_fail;
         if (r.cos_min < thresh) {
             printf("        max_abs=%.2e  mean_abs=%.2e\n", r.max_abs, r.mean_abs);
             // Print first few C++ values for manual inspection
@@ -110,12 +117,59 @@ static int crispembed_test_main(int argc, char ** argv) {
         }
     }
 
+    // The real scheduler path must agree with the dump path (marking every
+    // intermediate can hide scheduler errors). Also test the masked-LM head.
+    std::vector<int32_t> ids, positions;
+    std::vector<float> raw, logits;
+    if (lfm2_embed_encode_tokens(ctx, text, ids, raw)) {
+        auto r = ref.compare("final_norm", raw.data(), raw.size(), 0);
+        check_cos("native raw features", r.found ? r.cos_min : 0,
+                  std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD")
+                      ? std::strtof(std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD"), nullptr)
+                      : 0.999f);
+        printf("        |mine|=%.6f |ref|=%.6f max_abs=%.2e\n", r.mine_norm, r.ref_norm, r.max_abs);
+        if (r.ref_norm > 0 && std::fabs(r.mine_norm / r.ref_norm - 1.0f) > 0.05f) ++n_fail;
+    } else if (lfm2_embed_has_masked_lm(ctx)) {
+        ++n_fail;
+    }
+    if (ref.has("masked_logits")) {
+        if (!lfm2_embed_masked_logits(ctx, text, positions, logits)) {
+            ++n_fail;
+        } else {
+            auto r = ref.compare("masked_logits", logits.data(), logits.size(), 0);
+            const float threshold = std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD")
+                                        ? std::strtof(std::getenv("CRISPEMBED_DIFF_COS_THRESHOLD"), nullptr)
+                                        : 0.999f;
+            check_cos("masked_logits", r.found ? r.cos_min : 0, threshold);
+            printf("        |mine|=%.6f |ref|=%.6f max_abs=%.2e mean_abs=%.2e\n", r.mine_norm, r.ref_norm, r.max_abs,
+                   r.mean_abs);
+            if (r.ref_norm > 0 && std::fabs(r.mine_norm / r.ref_norm - 1.0f) > 0.05f) ++n_fail;
+            const int vocab = lfm2_embed_vocab_size(ctx);
+            auto reference = ref.get_f32("masked_logits");
+            if (!reference.first || reference.second != logits.size()) {
+                fprintf(stderr, "Masked-logit reference shape mismatch\n");
+                lfm2_embed_free(ctx);
+                ggml_backend_free(backend);
+                return 1;
+            }
+            for (size_t i = 0; i < positions.size(); ++i) {
+                const auto first = logits.begin() + i * vocab;
+                const int predicted = (int)(std::max_element(first, first + vocab) - first);
+                const float * row = reference.first + i * vocab;
+                const int expected = (int)(std::max_element(row, row + vocab) - row);
+                printf("        mask %d: predicted=%d reference=%d (%s)\n", positions[i], predicted, expected,
+                       lfm2_embed_token_str(ctx, predicted));
+                if (predicted != expected) ++n_fail;
+            }
+        }
+    }
+
     printf("\n--- Summary ---\n");
     printf("  PASS: %d   FAIL: %d\n", n_pass, n_fail);
 
     lfm2_embed_free(ctx);
     ggml_backend_free(backend);
-    return n_fail > 0 ? 1 : 0;
+    return n_fail > 0 || n_pass == 0 ? 1 : 0;
 }
 
 int main(int argc, char ** argv) {

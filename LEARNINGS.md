@@ -1,5 +1,23 @@
 # CrispEmbed — Technical Learnings
 
+## Masked encoder support needs raw features and exact special tokens (2026-10-03)
+
+LFM2.5-Encoder shares the embedding backbone but needs an unnormalized final
+hidden state for its tied MLM projection. Normalizing before the head changes
+logits and softmax even when feature cosine looks perfect. Compare raw norms,
+relative errors, full-vocabulary probabilities and decoded mask predictions.
+Recognize special tokens before byte BPE, preserving whitespace on both sides.
+The official embedding matrix has 65536 rows while the tokenizer has only 64402
+real entries: decode the 1134 unused padding slots to empty strings, and keep
+length-aware token bytes for NUL and partial UTF-8 tokens. Vocabulary-wide
+checks caught issues missed by an ordinary-text tokenizer smoke test.
+
+F16 passes all 15 mask predictions against FP32. Q8_0 changes two and Q4_0 six;
+quantization can preserve pooled cosine while damaging per-token features.
+Keep port parity separate from quantization-quality measurements. Live binding
+checks also exposed an obsolete Rust raw-token FFI declaration with the wrong
+argument type; declarations must match the actual C ABI, not a historical stub.
+
 ## When the control arm fails like the test arm, fix the instrument first (2026-09-29, Qwen3-VL)
 
 The first transformers stage diff failed every stage on `fox.png` too — whose OCR

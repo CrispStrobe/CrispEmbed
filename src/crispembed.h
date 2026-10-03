@@ -217,6 +217,20 @@ CRISPEMBED_API const char * crispembed_token_str(const crispembed_context * ctx,
 //   0 = unknown
 CRISPEMBED_API int crispembed_tokenizer_kind(const crispembed_context * ctx);
 
+// LFM2 bidirectional masked encoder. Enabled by default for official masked encoders on CPU; GPU requires
+// CRISPEMBED_LFM2_ENCODER=1 until GPU reference parity is validated.
+CRISPEMBED_API int crispembed_has_masked_lm(const crispembed_context * ctx);
+// Project only <|mask|> rows through the tied LM head; no prefix is applied.
+// Returns [*out_n_masks, *out_vocab] RAW logits and token positions (including
+// BOS), owned by ctx until the next call. Multiple masks are evaluated jointly
+// in one forward, not filled sequentially. NULL on unsupported/no-mask input;
+// output counts and positions are cleared on failure.
+CRISPEMBED_API const float * crispembed_masked_logits(crispembed_context * ctx, const char * text, int * out_n_masks,
+                                                      int * out_vocab, const int32_t ** out_positions);
+// Decoded LFM2 token bytes. Explicit length preserves embedded NUL and partial
+// UTF-8 pieces. Owned by ctx for its lifetime; NULL for unsupported models/IDs.
+CRISPEMBED_API const char * crispembed_token_bytes(const crispembed_context * ctx, int32_t id, int * out_size);
+
 // ---------------------------------------------------------------------------
 // Reranker / cross-encoder
 // ---------------------------------------------------------------------------

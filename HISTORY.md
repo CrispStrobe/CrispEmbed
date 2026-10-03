@@ -4,6 +4,17 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## October 3, 2026 — LFM2.5-Encoder-230M
+
+Added native raw/normalized token features, tied masked-LM logits and decoded
+fill-mask predictions for official LiquidAI F16/Q8_0/Q4_0 GGUFs. C, CLI, Python,
+Rust and Dart expose the encoder; model registry pins all three downloads.
+Special-token recognition, byte-safe vocabulary decoding and padded unused
+slots match the official tokenizer. The converter handles the masked encoder's
+weight names, vocabulary padding and FF dimensions. F16 passes the 15-case
+Python FP32 reference suite and every-layer replay; Q8_0 preserves 13/15 mask
+predictions and Q4_0 9/15, so F16 is the default. CPU enabled; GPU opt-in.
+
 ## September 30, 2026 — PLAN compaction: finished sections moved out of PLAN.md
 
 Verbatim as they stood in PLAN.md: the landed active-work board rows, the consumed

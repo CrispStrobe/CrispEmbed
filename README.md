@@ -321,6 +321,15 @@ supported — including the full Ettin family (17M–1B, ModernBERT-based).
 Sparse/ColBERT heads are written into the GGUF by the converter and detected
 via `has_sparse` / `has_colbert`.
 
+**LFM2.5-Encoder-230M** loads LiquidAI's official GGUFs and exposes raw or
+normalized token features plus tied masked-LM predictions. Use
+`crispembed -m lfm2-encoder-230m --fill-mask "The capital of France is [MASK]."`
+or Python `model.fill_mask(...)` / `model.encode_tokens(..., normalize=False)`.
+F16 is the default; CPU inference is validated against the official Python
+model. GPU encoder APIs require `CRISPEMBED_LFM2_ENCODER=1` pending GPU parity.
+This is a general-purpose masked encoder; retrieval needs task-specific
+fine-tuning. See [usage and parity results](docs/lfm2-encoder.md).
+
 **Byte-level BPE tokenizers transcribe the pre-tokenizer regex the checkpoint
 declares** (`src/core/bpe.h`), one per family — Qwen2/Qwen3, LFM2.5, and the
 DeepSeek-OCR-2 / Unlimited-OCR Split sequence — validated against HuggingFace's

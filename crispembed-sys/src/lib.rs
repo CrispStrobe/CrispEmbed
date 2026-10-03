@@ -336,6 +336,30 @@ extern "C" {
         out_dim: *mut c_int,
     ) -> *const c_float;
 
+    pub fn crispembed_encode_tokens_raw(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_tokens: *mut c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Enabled tied masked-LM head (LFM2 encoder).
+    pub fn crispembed_has_masked_lm(ctx: *const CrispembedContext) -> c_int;
+    /// Raw logits [n_masks, vocabulary], with BOS-inclusive mask positions.
+    pub fn crispembed_masked_logits(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_masks: *mut c_int,
+        out_vocab: *mut c_int,
+        out_positions: *mut *const i32,
+    ) -> *const c_float;
+    /// Decoded bytes (possibly partial UTF-8 or containing NUL).
+    pub fn crispembed_token_bytes(
+        ctx: *const CrispembedContext,
+        id: i32,
+        out_size: *mut c_int,
+    ) -> *const c_char;
+
     /// Pointer to the token IDs from the most recent `encode_tokens` call.
     /// `NULL` if `encode_tokens` has not been called or failed.
     pub fn crispembed_last_token_ids(ctx: *const CrispembedContext) -> *const i32;
@@ -1386,14 +1410,6 @@ extern "C" {
         dim: c_int,
         out_scores: *mut c_float,
     ) -> c_int;
-
-    // ── Raw token encoding ──
-    pub fn crispembed_encode_tokens_raw(
-        ctx: *mut CrispembedContext,
-        tokens: *const c_int,
-        n_tokens: c_int,
-        out_n: *mut c_int,
-    ) -> *const c_float;
 
     // ── OCR pipeline detected language ──
     pub fn crispembed_ocr_pipeline_detected_lang(

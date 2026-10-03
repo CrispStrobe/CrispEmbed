@@ -43,6 +43,36 @@
 // server's, left \b \f and other control chars raw — invalid JSON in OCR output).
 using core_json::json_escape;
 
+// A single byte-BPE token can end in a partial UTF-8 character. Match the
+// tokenizer's replacement decoding before printing it in UTF-8 JSON.
+static std::string token_utf8_lossy(const char * bytes, int size) {
+    std::string out;
+    for (int i = 0; i < size;) {
+        const unsigned char c = (unsigned char)bytes[i];
+        if (c < 0x80) {
+            out += bytes[i++];
+            continue;
+        }
+        const int n = c >= 0xc2 && c <= 0xdf ? 2 : c >= 0xe0 && c <= 0xef ? 3 : c >= 0xf0 && c <= 0xf4 ? 4 : 0;
+        int j = 1;
+        for (; n && j < n && i + j < size; ++j) {
+            const unsigned char b = (unsigned char)bytes[i + j];
+            if (b < 0x80 || b > 0xbf ||
+                (j == 1 && ((c == 0xe0 && b < 0xa0) || (c == 0xed && b > 0x9f) || (c == 0xf0 && b < 0x90) ||
+                            (c == 0xf4 && b > 0x8f))))
+                break;
+        }
+        if (n && j == n) {
+            out.append(bytes + i, n);
+            i += n;
+        } else {
+            out += "\xef\xbf\xbd";
+            i += j;
+        }
+    }
+    return out;
+}
+
 static float dot_product(const float * a, const float * b, int n) {
     float sum = 0.0f;
     for (int i = 0; i < n; ++i) {
@@ -104,6 +134,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --capabilities   print model capability flags and exit\n");
     fprintf(stderr, "  --sparse         encode sparse term-weight vectors\n");
     fprintf(stderr, "  --colbert        encode ColBERT per-token vectors\n");
+    fprintf(stderr, "  --tokens-raw     encode unnormalized per-token encoder features\n");
+    fprintf(stderr, "  --fill-mask      predict [MASK] / <|mask|> tokens (LFM2 encoder)\n");
+    fprintf(stderr, "  --top-k N        predictions per mask (default: 5)\n");
     fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
     fprintf(stderr, "  --image-raw FILE encode preprocessed image patches as float32 rows\n");
     fprintf(stderr, "  --grid-thw T,H,W image patch grid for --image-raw\n");
@@ -249,6 +282,9 @@ static int cli_main(int argc, char ** argv) {
     std::string accepted_license; // for cc-by-nc-*, gemma, etc.
     bool sparse_mode = false;
     bool colbert_mode = false;
+    bool tokens_raw_mode = false;
+    bool fill_mask_mode = false;
+    int mask_top_k = 5;
     std::string audio_path;     // .raw float32 16 kHz mono PCM
     std::string image_raw_path; // preprocessed float32 patches, n_patches x 1536
     std::string grid_thw_arg;
@@ -363,6 +399,16 @@ static int cli_main(int argc, char ** argv) {
             sparse_mode = true;
         } else if (strcmp(argv[i], "--colbert") == 0) {
             colbert_mode = true;
+        } else if (strcmp(argv[i], "--tokens-raw") == 0) {
+            tokens_raw_mode = true;
+        } else if (strcmp(argv[i], "--fill-mask") == 0) {
+            fill_mask_mode = true;
+        } else if (strcmp(argv[i], "--top-k") == 0 && i + 1 < argc) {
+            mask_top_k = atoi(argv[++i]);
+            if (mask_top_k <= 0 || mask_top_k > 65536) {
+                fprintf(stderr, "error: --top-k must be between 1 and 65536\n");
+                return 1;
+            }
         } else if (strcmp(argv[i], "--rerank") == 0 && i + 1 < argc) {
             rerank_query = argv[++i];
         } else if (strcmp(argv[i], "--biencoder") == 0 && i + 1 < argc) {
@@ -1126,15 +1172,17 @@ static int cli_main(int argc, char ** argv) {
     int mode_count = 0;
     mode_count += sparse_mode ? 1 : 0;
     mode_count += colbert_mode ? 1 : 0;
+    mode_count += tokens_raw_mode ? 1 : 0;
+    mode_count += fill_mask_mode ? 1 : 0;
     mode_count += !rerank_query.empty() ? 1 : 0;
     mode_count += !biencoder_query.empty() ? 1 : 0;
     mode_count += !audio_path.empty() ? 1 : 0;
     mode_count += !image_raw_path.empty() ? 1 : 0;
     mode_count += !image_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(
-            stderr,
-            "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, --image, or --image-raw\n");
+        fprintf(stderr,
+                "error: choose only one encoding mode "
+                "(--sparse/--colbert/--tokens-raw/--fill-mask/--rerank/--biencoder/--audio/--image/--image-raw)\n");
         return 1;
     }
 
@@ -2322,13 +2370,14 @@ static int cli_main(int argc, char ** argv) {
         const int dim = hp->n_output > 0 ? hp->n_output : hp->n_embd;
         if (json_output) {
             printf("{\"dim\": %d, \"prefix\": \"%s\", \"has_sparse\": %s, "
-                   "\"has_colbert\": %s, \"is_reranker\": %s}\n",
+                   "\"has_colbert\": %s, \"is_reranker\": %s, \"has_masked_lm\": %s}\n",
                    dim, json_escape(crispembed_get_prefix(ctx)).c_str(), crispembed_has_sparse(ctx) ? "true" : "false",
-                   crispembed_has_colbert(ctx) ? "true" : "false", crispembed_is_reranker(ctx) ? "true" : "false");
+                   crispembed_has_colbert(ctx) ? "true" : "false", crispembed_is_reranker(ctx) ? "true" : "false",
+                   crispembed_has_masked_lm(ctx) ? "true" : "false");
         } else {
-            printf("dim=%d prefix=\"%s\" has_sparse=%d has_colbert=%d is_reranker=%d\n", dim,
+            printf("dim=%d prefix=\"%s\" has_sparse=%d has_colbert=%d is_reranker=%d has_masked_lm=%d\n", dim,
                    crispembed_get_prefix(ctx), crispembed_has_sparse(ctx), crispembed_has_colbert(ctx),
-                   crispembed_is_reranker(ctx));
+                   crispembed_is_reranker(ctx), crispembed_has_masked_lm(ctx));
         }
         crispembed_free(ctx);
         return 0;
@@ -2484,6 +2533,91 @@ static int cli_main(int argc, char ** argv) {
         fprintf(stderr, "error: no texts provided\n");
         crispembed_free(ctx);
         return 1;
+    }
+
+    if (tokens_raw_mode || fill_mask_mode) {
+        if (fill_mask_mode && !crispembed_has_masked_lm(ctx)) {
+            fprintf(stderr, "error: model has no enabled masked-LM head (CRISPEMBED_LFM2_ENCODER=1)\n");
+            crispembed_free(ctx);
+            return 1;
+        }
+        if (json_output) printf("[\n");
+        for (size_t i = 0; i < texts.size(); ++i) {
+            std::string input = texts[i];
+            if (fill_mask_mode) {
+                size_t at = 0;
+                while ((at = input.find("[MASK]", at)) != std::string::npos) {
+                    input.replace(at, 6, "<|mask|>");
+                    at += 8;
+                }
+            }
+            int rows = 0, dim = 0;
+            const int32_t * positions = nullptr;
+            const float * data = fill_mask_mode ? crispembed_masked_logits(ctx, input.c_str(), &rows, &dim, &positions)
+                                                : crispembed_encode_tokens_raw(ctx, input.c_str(), &rows, &dim);
+            if (!data || rows <= 0 || dim <= 0) {
+                fprintf(stderr, "error: %s failed for text %zu (fill-mask requires a mask token)\n",
+                        fill_mask_mode ? "fill-mask" : "token encoding", i);
+                crispembed_free(ctx);
+                return 1;
+            }
+            if (json_output) printf("  {\"text\":\"%s\",", json_escape(texts[i]).c_str());
+            if (fill_mask_mode) {
+                if (json_output) printf("\"masks\":[");
+                for (int m = 0; m < rows; ++m) {
+                    const float * logits = data + (size_t)m * dim;
+                    std::vector<int> order(dim);
+                    for (int j = 0; j < dim; ++j) order[j] = j;
+                    const int k = std::min(mask_top_k, dim);
+                    std::partial_sort(order.begin(), order.begin() + k, order.end(), [&](int a, int b) {
+                        return logits[a] == logits[b] ? a < b : logits[a] > logits[b];
+                    });
+                    double denominator = 0.0;
+                    const double maximum = logits[order[0]];
+                    for (int j = 0; j < dim; ++j) denominator += std::exp((double)logits[j] - maximum);
+                    if (json_output)
+                        printf("%s{\"position\":%d,\"predictions\":[", m ? "," : "", positions[m]);
+                    else
+                        printf("mask %d:\n", positions[m]);
+                    for (int j = 0; j < k; ++j) {
+                        const int id = order[j];
+                        int size = 0;
+                        const char * bytes = crispembed_token_bytes(ctx, id, &size);
+                        const std::string token = token_utf8_lossy(bytes ? bytes : "", size);
+                        if (json_output)
+                            printf("%s{\"token_id\":%d,\"token\":\"%s\",\"logit\":%.9g,\"score\":%.12g}", j ? "," : "",
+                                   id, json_escape(token).c_str(), logits[id],
+                                   std::exp((double)logits[id] - maximum) / denominator);
+                        else {
+                            printf("  %d %.6f '%s'\n", id, logits[id], token.c_str());
+                        }
+                    }
+                    if (json_output) printf("]}");
+                }
+                if (json_output) printf("]");
+            } else {
+                const int32_t * ids = crispembed_last_token_ids(ctx);
+                if (json_output) {
+                    printf("\"dim\":%d,\"token_ids\":[", dim);
+                    for (int t = 0; t < rows; ++t) printf("%s%d", t ? "," : "", ids[t]);
+                    printf("],\"vectors\":[");
+                }
+                for (int t = 0; t < rows; ++t) {
+                    if (json_output)
+                        printf("%s[", t ? "," : "");
+                    else
+                        printf("token %d (%d):", t, ids[t]);
+                    for (int d = 0; d < dim; ++d)
+                        printf("%s%.9g", d ? (json_output ? "," : " ") : "", data[(size_t)t * dim + d]);
+                    printf(json_output ? "]" : "\n");
+                }
+                if (json_output) printf("]");
+            }
+            if (json_output) printf("}%s\n", i + 1 < texts.size() ? "," : "");
+        }
+        if (json_output) printf("]\n");
+        crispembed_free(ctx);
+        return 0;
     }
 
     if (sparse_mode) {

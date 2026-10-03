@@ -260,6 +260,8 @@ struct crispembed_context {
     // LFM2.5 bidirectional embedding (arch="lfm2")
     lfm2_embed_ctx * lfm2_ctx = nullptr;
     bool is_lfm2 = false;
+    std::vector<float> last_masked_logits;
+    std::vector<int32_t> last_mask_positions;
     WordPieceTokenizer wp_tokenizer;
     SentencePieceTokenizer sp_tokenizer;
     BPETokenizer bpe_tokenizer;
@@ -2442,8 +2444,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
             delete ctx;
             return nullptr;
         }
-        ctx->model.hparams.n_embd = (uint32_t)lfm2_embed_n_embd(ctx->lfm2_ctx);
-        ctx->model.hparams.n_output = ctx->model.hparams.n_embd;
+        lfm2_embed_get_hparams(ctx->lfm2_ctx, &ctx->model.hparams);
         // ColBERT multi-vector support
         if (lfm2_embed_has_colbert(ctx->lfm2_ctx)) {
             ctx->model.has_colbert = true;
@@ -3278,7 +3279,27 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx, co
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx, const char * text, int * out_n_tokens,
                                                   int * out_dim) {
+    if (out_n_tokens) *out_n_tokens = 0;
+    if (out_dim) *out_dim = 0;
+    if (ctx) {
+        ctx->last_token_n = ctx->last_token_dim = 0;
+        ctx->last_token_ids.clear();
+        ctx->last_token_embeddings.clear();
+    }
     if (!ctx || !text || ctx->is_decoder) return nullptr;
+    if (ctx->is_lfm2) {
+        const float * raw = crispembed_encode_tokens_raw(ctx, text, out_n_tokens, out_dim);
+        if (!raw) return nullptr;
+        const int dim = ctx->last_token_dim;
+        for (int t = 0; t < ctx->last_token_n; ++t) {
+            float * row = ctx->last_token_embeddings.data() + (size_t)t * dim;
+            float norm = 0.0f;
+            for (int d = 0; d < dim; ++d) norm += row[d] * row[d];
+            norm = std::sqrt(std::max(norm, 1e-12f));
+            for (int d = 0; d < dim; ++d) row[d] /= norm;
+        }
+        return ctx->last_token_embeddings.data();
+    }
     auto t_tokens_start = std::chrono::steady_clock::now();
 
     // Apply the configured prefix (e.g. "query: ") for consistency with
@@ -3337,9 +3358,25 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx, cons
 
 extern "C" const float * crispembed_encode_tokens_raw(crispembed_context * ctx, const char * text, int * out_n_tokens,
                                                       int * out_dim) {
+    if (out_n_tokens) *out_n_tokens = 0;
+    if (out_dim) *out_dim = 0;
+    if (ctx) {
+        ctx->last_token_n = ctx->last_token_dim = 0;
+        ctx->last_token_ids.clear();
+        ctx->last_token_embeddings.clear();
+    }
     if (!ctx || !text || ctx->is_decoder) return nullptr;
 
     std::string enc_text = ctx->prefix.empty() ? std::string(text) : ctx->prefix + text;
+    if (ctx->is_lfm2) {
+        if (!lfm2_embed_encode_tokens(ctx->lfm2_ctx, enc_text.c_str(), ctx->last_token_ids, ctx->last_token_embeddings))
+            return nullptr;
+        ctx->last_token_n = (int)ctx->last_token_ids.size();
+        ctx->last_token_dim = lfm2_embed_n_embd(ctx->lfm2_ctx);
+        if (out_n_tokens) *out_n_tokens = ctx->last_token_n;
+        if (out_dim) *out_dim = ctx->last_token_dim;
+        return ctx->last_token_embeddings.data();
+    }
 
     embed_tokens tokens;
     if (ctx->use_bpe)
@@ -3386,6 +3423,7 @@ extern "C" const int32_t * crispembed_last_token_ids(const crispembed_context * 
 
 extern "C" const char * crispembed_token_str(const crispembed_context * ctx, int32_t id) {
     if (!ctx || ctx->is_decoder) return nullptr;
+    if (ctx->is_lfm2) return lfm2_embed_token_str(ctx->lfm2_ctx, id);
     const std::string & s =
         ctx->use_sentencepiece ? ctx->sp_tokenizer.token_str((int)id) : ctx->wp_tokenizer.token_str((int)id);
     return s.c_str();
@@ -3395,9 +3433,37 @@ extern "C" int crispembed_tokenizer_kind(const crispembed_context * ctx) {
     // 0 = unknown, 1 = WordPiece (## continuation marker),
     // 2 = SentencePiece (▁ word-start marker), 3 = BPE.
     if (!ctx) return 0;
+    if (ctx->is_lfm2) return 3;
     if (ctx->use_bpe) return 3;
     if (ctx->use_sentencepiece) return 2;
     return 1;
+}
+
+extern "C" int crispembed_has_masked_lm(const crispembed_context * ctx) {
+    return ctx && ctx->is_lfm2 && lfm2_embed_has_masked_lm(ctx->lfm2_ctx);
+}
+
+extern "C" const float * crispembed_masked_logits(crispembed_context * ctx, const char * text, int * out_n_masks,
+                                                  int * out_vocab, const int32_t ** out_positions) {
+    if (out_n_masks) *out_n_masks = 0;
+    if (out_vocab) *out_vocab = 0;
+    if (out_positions) *out_positions = nullptr;
+    if (!ctx) return nullptr;
+    ctx->last_mask_positions.clear();
+    ctx->last_masked_logits.clear();
+    if (!text || !crispembed_has_masked_lm(ctx) ||
+        !lfm2_embed_masked_logits(ctx->lfm2_ctx, text, ctx->last_mask_positions, ctx->last_masked_logits))
+        return nullptr;
+    if (out_n_masks) *out_n_masks = (int)ctx->last_mask_positions.size();
+    if (out_vocab) *out_vocab = lfm2_embed_vocab_size(ctx->lfm2_ctx);
+    if (out_positions) *out_positions = ctx->last_mask_positions.data();
+    return ctx->last_masked_logits.data();
+}
+
+extern "C" const char * crispembed_token_bytes(const crispembed_context * ctx, int32_t id, int * out_size) {
+    if (out_size) *out_size = 0;
+    if (!ctx || !ctx->is_lfm2 || id < 0 || id >= lfm2_embed_vocab_size(ctx->lfm2_ctx)) return nullptr;
+    return lfm2_embed_token_bytes(ctx->lfm2_ctx, id, out_size);
 }
 
 // ---------------------------------------------------------------------------

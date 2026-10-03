@@ -248,6 +248,25 @@ class CrispEmbed:
         ]
         lib.crispembed_encode_multivec.restype = ctypes.POINTER(ctypes.c_float)
 
+        for name in ("crispembed_encode_tokens", "crispembed_encode_tokens_raw"):
+            if hasattr(lib, name):
+                fn = getattr(lib, name)
+                fn.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
+                               ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int)]
+                fn.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_last_token_ids"):
+            lib.crispembed_last_token_ids.argtypes = [ctypes.c_void_p]
+            lib.crispembed_last_token_ids.restype = ctypes.POINTER(ctypes.c_int32)
+        if hasattr(lib, "crispembed_has_masked_lm"):
+            lib.crispembed_has_masked_lm.argtypes = [ctypes.c_void_p]
+            lib.crispembed_has_masked_lm.restype = ctypes.c_int
+            lib.crispembed_masked_logits.argtypes = [ctypes.c_void_p, ctypes.c_char_p,
+                ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+                ctypes.POINTER(ctypes.POINTER(ctypes.c_int32))]
+            lib.crispembed_masked_logits.restype = ctypes.POINTER(ctypes.c_float)
+            lib.crispembed_token_bytes.argtypes = [ctypes.c_void_p, ctypes.c_int32, ctypes.POINTER(ctypes.c_int)]
+            lib.crispembed_token_bytes.restype = ctypes.c_void_p
+
         # --- Reranker ---
         lib.crispembed_rerank.argtypes = [
             ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p
@@ -460,6 +479,80 @@ class CrispEmbed:
     # ------------------------------------------------------------------
     # Sparse retrieval (BGE-M3 / SPLADE)
     # ------------------------------------------------------------------
+
+    def encode_tokens(self, text: str, *, normalize: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+        """Return (token_ids, features), including BOS/EOS, copied from the model.
+
+        Features have shape (tokens, hidden_size). normalize=False preserves
+        native hidden-state magnitudes for classification or a tied LM head.
+        LFM2 masked encoders default on for CPU; GPU requires
+        CRISPEMBED_LFM2_ENCODER=1 until GPU parity is validated.
+        """
+        name = "crispembed_encode_tokens" if normalize else "crispembed_encode_tokens_raw"
+        if not hasattr(self._lib, name):
+            raise RuntimeError("This library has no per-token encoder API")
+        n, dim = ctypes.c_int(), ctypes.c_int()
+        ptr = getattr(self._lib, name)(self._ctx, text.encode("utf-8"), ctypes.byref(n), ctypes.byref(dim))
+        if not ptr or n.value <= 0 or dim.value <= 0:
+            raise RuntimeError("Per-token encoding failed or is unsupported")
+        features = np.ctypeslib.as_array(ptr, shape=(n.value * dim.value,)).copy().reshape(n.value, dim.value)
+        ids_ptr = self._lib.crispembed_last_token_ids(self._ctx)
+        if not ids_ptr:
+            raise RuntimeError("Per-token encoding returned no token IDs")
+        ids = np.ctypeslib.as_array(ids_ptr, shape=(n.value,)).copy()
+        return ids, features
+
+    @property
+    def has_masked_lm(self) -> bool:
+        return hasattr(self._lib, "crispembed_has_masked_lm") and bool(self._lib.crispembed_has_masked_lm(self._ctx))
+
+    def masked_logits(self, text: str) -> Tuple[np.ndarray, np.ndarray]:
+        """Return (mask_positions, raw_logits) for literal <|mask|> tokens.
+
+        Each row contains the full vocabulary distribution before softmax.
+        Masks are evaluated jointly. No query/document prefix is applied.
+        """
+        if not self.has_masked_lm:
+            raise RuntimeError("Model has no enabled masked-LM head")
+        n, vocab = ctypes.c_int(), ctypes.c_int()
+        positions = ctypes.POINTER(ctypes.c_int32)()
+        ptr = self._lib.crispembed_masked_logits(self._ctx, text.encode("utf-8"),
+            ctypes.byref(n), ctypes.byref(vocab), ctypes.byref(positions))
+        if not ptr or n.value <= 0 or vocab.value <= 0 or not positions:
+            raise ValueError("Masked prediction requires at least one <|mask|> token")
+        logits = np.ctypeslib.as_array(ptr, shape=(n.value * vocab.value,)).copy().reshape(n.value, vocab.value)
+        return np.ctypeslib.as_array(positions, shape=(n.value,)).copy(), logits
+
+    def token_bytes(self, token_id: int) -> bytes:
+        """Decode one LFM2 vocabulary piece; bytes may be partial UTF-8."""
+        if not hasattr(self._lib, "crispembed_token_bytes"):
+            raise RuntimeError("This library has no token-byte API")
+        size = ctypes.c_int()
+        ptr = self._lib.crispembed_token_bytes(self._ctx, token_id, ctypes.byref(size))
+        if not ptr:
+            raise ValueError("Token ID is out of range or decoding is unsupported")
+        return ctypes.string_at(ptr, size.value)
+
+    def fill_mask(self, text: str, top_k: int = 5) -> List[dict]:
+        """Top predictions for each [MASK] or <|mask|>, evaluated jointly.
+
+        Returns mask positions and predictions with token_id, decoded token,
+        raw logit, and probability over the full vocabulary.
+        """
+        if not isinstance(top_k, int) or isinstance(top_k, bool) or top_k < 1:
+            raise ValueError("top_k must be a positive integer")
+        positions, logits = self.masked_logits(text.replace("[MASK]", "<|mask|>"))
+        if top_k > logits.shape[1]:
+            raise ValueError("top_k exceeds the vocabulary size")
+        result = []
+        for position, row in zip(positions, logits):
+            ids = np.argsort(-row, kind="stable")[:top_k]
+            probabilities = np.exp(row.astype(np.float64) - float(row.max()))
+            probabilities /= probabilities.sum()
+            predictions = [{"token_id": int(i), "token": self.token_bytes(int(i)).decode("utf-8", errors="replace"),
+                            "logit": float(row[i]), "score": float(probabilities[i])} for i in ids]
+            result.append({"position": int(position), "predictions": predictions})
+        return result
 
     def encode_sparse(self, text: str) -> Dict[int, float]:
         """Encode text to sparse term-weight vector.

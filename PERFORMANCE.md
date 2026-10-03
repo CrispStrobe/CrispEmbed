@@ -1,5 +1,26 @@
 # CrispEmbed Performance
 
+## LFM2.5-Encoder-230M CPU parity (2026-10-03)
+
+CPU results (2026-10-03), against Torch 2.11.0 / Transformers 5.13.0.dev0,
+FP32 eager reference. Relative error is `||native-reference||₂ / ||reference||₂`,
+taking the worst case; cosine is the worst token/mask row across the suite.
+
+| GGUF | Hidden min cosine | Hidden max relative error | Logits min cosine | Logits max relative error | Mask top-1 matches |
+|---|---:|---:|---:|---:|---:|
+| F16 | 0.99998947 | 0.1813% | 0.99999957 | 0.0976% | 15/15 |
+| Q8_0 | 0.94665218 | 7.2592% | 0.99934877 | 3.6796% | 13/15 |
+| Q4_0 | 0.73603180 | 79.9290% | 0.93175417 | 56.8220% | 9/15 |
+
+F16 is the default because it passes the port-correctness gate and preserves all
+15 decoded mask predictions. Q8_0 and Q4_0 execute correctly but their quantized
+weights change predictions; Q4_0 also shows substantial hidden-feature drift.
+All three match the reference token IDs and decode all 65536 vocabulary slots.
+The F16 per-layer replay passes all 297 checks over 15 inputs, including the
+production scheduler path. Live Rust and Dart examples exercise the same C ABI as Python.
+
+Reproduction and API details: [docs/lfm2-encoder.md](docs/lfm2-encoder.md).
+
 ## Parity vs transformers — Qwen3-VL, Uni-MuMER, Nomic vision, jina-ocr-v1, most-embed-de (2026-09-29/30)
 
 All on GitHub runners (CPU) via `tools/ci-heavy/`; C++ = crispembed on the GGUF named.

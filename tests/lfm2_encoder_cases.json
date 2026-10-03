@@ -1,0 +1,16 @@
+[
+  "The capital of France is <|mask|>.",
+  "Die Hauptstadt von Deutschland ist <|mask|>.",
+  "La capitale de la France est <|mask|>.",
+  "The capital of France is <|mask|> and the capital of Germany is <|mask|>.",
+  "<|mask|>",
+  "<|mask|><|mask|>",
+  "",
+  "hello world",
+  "  tabs\tand\nnewlines\r\n123456789!  ",
+  "日本の首都は<|mask|>です。中国的首都是<|mask|>。",
+  "عاصمة فرنسا هي <|mask|>.",
+  "<|startoftext|>literal special tokens<|im_end|><|mask|>.",
+  "<|pad|>a<|reserved_7|>b<|mask|><|endoftext|>",
+  "Emoji 🙂 café Straße русский १२३\n\t <|mask|>!"
+]

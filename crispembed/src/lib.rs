@@ -36,6 +36,20 @@ pub struct ModelInfo {
     pub model_card_url: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct MaskPrediction {
+    pub token_id: i32,
+    pub token: String,
+    pub logit: f32,
+    pub score: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct MaskResult {
+    pub position: i32,
+    pub predictions: Vec<MaskPrediction>,
+}
+
 /// A loaded crispembed model.
 ///
 /// Not `Sync` — do not share between threads. Each thread should hold its
@@ -554,6 +568,104 @@ impl CrispEmbed {
             out.push((tok, vec.to_vec()));
         }
         out
+    }
+
+    /// Native hidden states, with vocabulary IDs including BOS/EOS. No L2
+    /// normalization. LFM2 masked encoders default on for CPU; GPU requires CRISPEMBED_LFM2_ENCODER=1.
+    pub fn encode_tokens_raw(&mut self, text: &str) -> Result<(Vec<i32>, Vec<Vec<f32>>), String> {
+        let text = CString::new(text).map_err(|e| e.to_string())?;
+        let (mut n, mut dim) = (0, 0);
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_tokens_raw(self.ctx, text.as_ptr(), &mut n, &mut dim)
+        };
+        if ptr.is_null() || n <= 0 || dim <= 0 {
+            return Err("Raw token encoding failed or is unsupported".into());
+        }
+        let ids = unsafe { crispembed_sys::crispembed_last_token_ids(self.ctx) };
+        if ids.is_null() {
+            return Err("Token encoding returned no IDs".into());
+        }
+        let features = unsafe { std::slice::from_raw_parts(ptr, n as usize * dim as usize) }
+            .chunks(dim as usize)
+            .map(|row| row.to_vec())
+            .collect();
+        Ok((
+            unsafe { std::slice::from_raw_parts(ids, n as usize) }.to_vec(),
+            features,
+        ))
+    }
+
+    pub fn has_masked_lm(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_masked_lm(self.ctx) != 0 }
+    }
+
+    /// Raw vocabulary logits for each literal <|mask|>, evaluated jointly.
+    /// No query/document prefix is applied.
+    pub fn masked_logits(&mut self, text: &str) -> Result<(Vec<i32>, Vec<Vec<f32>>), String> {
+        let text = CString::new(text).map_err(|e| e.to_string())?;
+        let (mut n, mut vocab) = (0, 0);
+        let mut positions = std::ptr::null();
+        let ptr = unsafe {
+            crispembed_sys::crispembed_masked_logits(
+                self.ctx,
+                text.as_ptr(),
+                &mut n,
+                &mut vocab,
+                &mut positions,
+            )
+        };
+        if ptr.is_null() || positions.is_null() || n <= 0 || vocab <= 0 {
+            return Err("Masked prediction requires an enabled encoder and <|mask|> token".into());
+        }
+        let logits = unsafe { std::slice::from_raw_parts(ptr, n as usize * vocab as usize) }
+            .chunks(vocab as usize)
+            .map(|row| row.to_vec())
+            .collect();
+        Ok((
+            unsafe { std::slice::from_raw_parts(positions, n as usize) }.to_vec(),
+            logits,
+        ))
+    }
+
+    pub fn token_bytes(&self, token_id: i32) -> Result<Vec<u8>, String> {
+        let mut size = 0;
+        let ptr = unsafe { crispembed_sys::crispembed_token_bytes(self.ctx, token_id, &mut size) };
+        if ptr.is_null() || size < 0 {
+            return Err("Invalid token ID or unsupported decoder".into());
+        }
+        Ok(unsafe { std::slice::from_raw_parts(ptr.cast::<u8>(), size as usize) }.to_vec())
+    }
+
+    /// Top predictions per [MASK]/<|mask|>, with full-vocabulary probabilities.
+    pub fn fill_mask(&mut self, text: &str, top_k: usize) -> Result<Vec<MaskResult>, String> {
+        if top_k == 0 {
+            return Err("top_k must be positive".into());
+        }
+        let (positions, logits) = self.masked_logits(&text.replace("[MASK]", "<|mask|>"))?;
+        let mut result = Vec::with_capacity(positions.len());
+        for (position, row) in positions.into_iter().zip(logits) {
+            if top_k > row.len() {
+                return Err("top_k exceeds vocabulary size".into());
+            }
+            let mut ids: Vec<usize> = (0..row.len()).collect();
+            ids.sort_by(|&a, &b| row[b].total_cmp(&row[a]).then(a.cmp(&b)));
+            let maximum = row[ids[0]] as f64;
+            let denominator: f64 = row.iter().map(|&v| (v as f64 - maximum).exp()).sum();
+            let mut predictions = Vec::with_capacity(top_k);
+            for &id in &ids[..top_k] {
+                predictions.push(MaskPrediction {
+                    token_id: id as i32,
+                    token: String::from_utf8_lossy(&self.token_bytes(id as i32)?).into_owned(),
+                    logit: row[id],
+                    score: (row[id] as f64 - maximum).exp() / denominator,
+                });
+            }
+            result.push(MaskResult {
+                position,
+                predictions,
+            });
+        }
+        Ok(result)
     }
 
     // ------------------------------------------------------------------

@@ -80,6 +80,19 @@ typedef CrispembedHasColbertNative = Int32 Function(
     Pointer<CrispembedContext> ctx);
 typedef CrispembedHasColbert = int Function(Pointer<CrispembedContext> ctx);
 
+typedef CrispembedEncodeTokensNative = Pointer<Float> Function(
+    Pointer<CrispembedContext>, Pointer<Utf8>, Pointer<Int32>, Pointer<Int32>);
+typedef CrispembedEncodeTokens = Pointer<Float> Function(
+    Pointer<CrispembedContext>, Pointer<Utf8>, Pointer<Int32>, Pointer<Int32>);
+typedef CrispembedTokenIdsNative = Pointer<Int32> Function(Pointer<CrispembedContext>);
+typedef CrispembedTokenIds = Pointer<Int32> Function(Pointer<CrispembedContext>);
+typedef CrispembedMaskedLogitsNative = Pointer<Float> Function(
+    Pointer<CrispembedContext>, Pointer<Utf8>, Pointer<Int32>, Pointer<Int32>, Pointer<Pointer<Int32>>);
+typedef CrispembedMaskedLogits = Pointer<Float> Function(
+    Pointer<CrispembedContext>, Pointer<Utf8>, Pointer<Int32>, Pointer<Int32>, Pointer<Pointer<Int32>>);
+typedef CrispembedTokenBytesNative = Pointer<Uint8> Function(Pointer<CrispembedContext>, Int32, Pointer<Int32>);
+typedef CrispembedTokenBytes = Pointer<Uint8> Function(Pointer<CrispembedContext>, int, Pointer<Int32>);
+
 typedef CrispembedIsRerankerNative = Int32 Function(
     Pointer<CrispembedContext> ctx);
 typedef CrispembedIsReranker = int Function(Pointer<CrispembedContext> ctx);

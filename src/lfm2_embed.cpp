@@ -5,6 +5,7 @@
 // (consistent with the GLiNER usage), extracts position-0 (CLS), L2-normalises.
 
 #include "lfm2_embed.h"
+#include "crispembed.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -45,6 +46,7 @@ struct lfm2_hparams {
     float norm_eps = 1e-5f;
     std::string layer_types; // e.g. "ccaccaccacacacac"
     uint32_t vocab_size = 65536;
+    uint32_t max_context = 8192;
     uint32_t bos_id = 1;
     uint32_t eos_id = 7;
     // C2 behavior flags; defaults = the historical hardcoded LFM2 rule
@@ -97,6 +99,11 @@ struct lfm2_embed_model {
     // BPE tokenizer
     std::unordered_map<std::string, int32_t> token_to_id;
     std::unordered_map<std::string, int32_t> merge_rank;
+    std::vector<std::string> vocab;
+    std::vector<std::string> decoded_vocab;
+    std::vector<std::pair<std::string, int32_t>> special_tokens;
+    int32_t mask_id = -1;
+    bool masked_lm = false;
 };
 
 // ============================================================================
@@ -125,6 +132,13 @@ struct lfm2_embed_ctx {
     std::vector<int32_t> pos_cache;
     bool bench = false;
 };
+
+// CPU default follows the official Encoder parity gate. GPU graph scheduling
+// remains opt-in until the same reference suite is run on that backend.
+static bool lfm2_encoder_enabled(const lfm2_embed_ctx * ctx) {
+    if (!ctx || core_env::explicitly_off("CRISPEMBED_LFM2_ENCODER")) return false;
+    return core_env::on("CRISPEMBED_LFM2_ENCODER") || (ctx->model.masked_lm && ggml_backend_is_cpu(ctx->backend));
+}
 
 // ============================================================================
 // Load
@@ -187,6 +201,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     // here → derived from tensor presence after weights load (below).
     hp.layer_types = core_gguf::kv_str(gctx, "lfm2.layer_types", "");
     hp.vocab_size = core_gguf::kv_u32(gctx, "lfm2.vocab_size", 65536);
+    hp.max_context = core_gguf::kv_u32(gctx, "lfm2.context_length", 8192);
     hp.bos_id = core_gguf::kv_u32(gctx, "tokenizer.ggml.bos_token_id", 1);
     hp.eos_id = core_gguf::kv_u32(gctx, "tokenizer.ggml.eos_token_id", 7);
     // C2: honor explicit add_bos/add_eos metadata; absent → the historical
@@ -203,6 +218,31 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
         return nullptr;
     }
     for (size_t i = 0; i < tokens_vec.size(); i++) ctx->model.token_to_id[tokens_vec[i]] = (int32_t)i;
+    ctx->model.vocab = tokens_vec;
+    hp.vocab_size = (uint32_t)tokens_vec.size();
+    ctx->model.decoded_vocab.reserve(tokens_vec.size());
+    const int64_t ti = gguf_find_key(gctx, "tokenizer.ggml.token_type");
+    const int32_t * types = ti >= 0 && gguf_get_kv_type(gctx, ti) == GGUF_TYPE_ARRAY &&
+                                    gguf_get_arr_type(gctx, ti) == GGUF_TYPE_INT32 &&
+                                    gguf_get_arr_n(gctx, ti) == tokens_vec.size()
+                                ? (const int32_t *)gguf_get_arr_data(gctx, ti)
+                                : nullptr;
+    for (size_t i = 0; i < tokens_vec.size(); ++i) {
+        const bool special = types && (types[i] == 3 || types[i] == 4);
+        if (special && !tokens_vec[i].empty()) ctx->model.special_tokens.emplace_back(tokens_vec[i], (int32_t)i);
+        // llama.cpp pads the vocabulary with UNUSED [PADnnn] names. Those
+        // indices have no tokenizer piece; HF decode returns an empty string.
+        ctx->model.decoded_vocab.push_back(types && types[i] == 5 ? ""
+                                           : special              ? tokens_vec[i]
+                                                                  : core_bpe::unicode_to_bytes(tokens_vec[i]));
+    }
+    const auto mask = ctx->model.token_to_id.find("<|mask|>");
+    if (mask != ctx->model.token_to_id.end()) ctx->model.mask_id = mask->second;
+    ctx->model.masked_lm = gguf_find_key(gctx, "tokenizer.ggml.mask_token_id") >= 0 &&
+                           !core_gguf::kv_bool(gctx, "lfm2.attention.causal", true);
+    if (ctx->model.masked_lm) {
+        ctx->model.mask_id = (int32_t)core_gguf::kv_u32(gctx, "tokenizer.ggml.mask_token_id", 16);
+    }
 
     // Merges: try array key first, then blob key
     {
@@ -274,6 +314,12 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 
     ctx->model.embed_tokens_w = R2("lfm.embed_tokens.weight", "token_embd.weight");
     ctx->model.embedding_norm_w = R2("lfm.embedding_norm.weight", "token_embd_norm.weight");
+    // Older CrispEmbed converters wrote only the tokenizer's defined pieces,
+    // while the matrix includes padded rows. Keep the LM output dimension tied
+    // to the matrix and decode those missing pieces to empty strings.
+    hp.vocab_size = (uint32_t)ctx->model.embed_tokens_w->ne[1];
+    ctx->model.vocab.resize(hp.vocab_size);
+    ctx->model.decoded_vocab.resize(hp.vocab_size);
 
     ctx->model.layers.resize(hp.n_layers);
     for (uint32_t i = 0; i < hp.n_layers; i++) {
@@ -363,6 +409,19 @@ int lfm2_embed_n_embd(const lfm2_embed_ctx * ctx) {
     return ctx ? (int)ctx->model.hparams.hidden_size : 0;
 }
 
+void lfm2_embed_get_hparams(const lfm2_embed_ctx * ctx, crispembed_hparams * out) {
+    if (!ctx || !out) return;
+    const auto & hp = ctx->model.hparams;
+    *out = {};
+    out->n_vocab = (int32_t)hp.vocab_size;
+    out->n_max_tokens = (int32_t)hp.max_context;
+    out->n_embd = out->n_output = (int32_t)hp.hidden_size;
+    out->n_head = (int32_t)hp.n_heads;
+    out->n_layer = (int32_t)hp.n_layers;
+    out->n_intermediate = (int32_t)hp.ff_dim;
+    out->layer_norm_eps = hp.norm_eps;
+}
+
 // ============================================================================
 // Tokenizer
 // ============================================================================
@@ -377,9 +436,34 @@ static std::vector<int32_t> lfm2_tokenize(const lfm2_embed_model & m, const char
     // newline of any multi-line document. This is arbitrary user text, so the
     // defect was live, not latent.
     // CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior.
-    std::vector<int32_t> ids = core_bpe::legacy_whitespace()
-                                   ? core_bpe::tokenize_simple(m.token_to_id, m.merge_rank, std::string(text))
-                                   : core_bpe::tokenize_lfm2(m.token_to_id, m.merge_rank, std::string(text));
+    std::vector<int32_t> ids;
+    // Added special tokens bypass byte-level pre-tokenization, exactly as in
+    // HF tokenizer.json. Split ordinary spans before BPE, preserving spaces.
+    if ((m.masked_lm || core_env::on("CRISPEMBED_LFM2_ENCODER")) &&
+        !core_env::explicitly_off("CRISPEMBED_LFM2_ENCODER") && !core_bpe::legacy_whitespace()) {
+        const std::string input(text);
+        size_t start = 0;
+        while (start < input.size()) {
+            size_t next = std::string::npos;
+            const std::pair<std::string, int32_t> * match = nullptr;
+            for (const auto & token : m.special_tokens) {
+                const size_t at = input.find(token.first, start);
+                if (at != std::string::npos &&
+                    (at < next || (at == next && match && token.first.size() > match->first.size()))) {
+                    next = at;
+                    match = &token;
+                }
+            }
+            auto span = core_bpe::tokenize_lfm2(m.token_to_id, m.merge_rank, input.substr(start, next - start));
+            ids.insert(ids.end(), span.begin(), span.end());
+            if (!match) break;
+            ids.push_back(match->second);
+            start = next + match->first.size();
+        }
+    } else {
+        ids = core_bpe::legacy_whitespace() ? core_bpe::tokenize_simple(m.token_to_id, m.merge_rank, std::string(text))
+                                            : core_bpe::tokenize_lfm2(m.token_to_id, m.merge_rank, std::string(text));
+    }
 
     // Wrap per the C2 behavior flags (LFM2.5 ships BOS-only:
     // add_bos_token=true, add_eos_token=false)
@@ -479,6 +563,112 @@ static ggml_tensor * lfm2_layer_fwd(ggml_context * g, ggml_tensor * x, const lfm
 // ============================================================================
 // Encode
 // ============================================================================
+
+static bool lfm2_encoder_forward(lfm2_embed_ctx * ctx, const std::vector<int32_t> & ids,
+                                 const std::vector<int32_t> * masks, std::vector<float> & out) {
+    out.clear();
+    if (!lfm2_encoder_enabled(ctx) || ids.empty()) return false;
+    const auto & hp = ctx->model.hparams;
+    if (ids.size() > hp.max_context) return false;
+    const int T = (int)ids.size(), H = (int)hp.hidden_size;
+    const int max_nodes = 1024 + (int)hp.n_layers * 120;
+    const size_t meta_size = ggml_tensor_overhead() * (size_t)max_nodes + ggml_graph_overhead_custom(max_nodes, false);
+    ggml_init_params ip = { meta_size, nullptr, true };
+    ggml_context * g = ggml_init(ip);
+    if (!g) return false;
+    ggml_tensor * input = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_input(input);
+    ggml_tensor * pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_input(pos);
+    ggml_tensor * cur = ggml_get_rows(g, ctx->model.embed_tokens_w, input);
+    for (uint32_t i = 0; i < hp.n_layers; ++i) {
+        cur = lfm2_layer_fwd(g, cur, ctx->model.layers[i], H, (int)hp.n_heads, (int)hp.n_kv_heads, (int)hp.head_dim, T,
+                             hp.norm_eps, hp.rope_theta, pos);
+    }
+    cur = lfm2_rms_norm(g, cur, ctx->model.embedding_norm_w, hp.norm_eps);
+    ggml_tensor * mask_indices = nullptr;
+    if (masks) {
+        mask_indices = ggml_new_tensor_1d(g, GGML_TYPE_I32, (int64_t)masks->size());
+        ggml_set_input(mask_indices);
+        // MLM weights are tied to the input embedding matrix. Retain RAW hidden
+        // magnitudes; normalization would alter logits and softmax probabilities.
+        cur = ggml_mul_mat(g, ctx->model.embed_tokens_w, ggml_get_rows(g, cur, mask_indices));
+    }
+    ggml_set_output(cur);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_build_forward_expand(gf, cur);
+    // Direct allocation: do not reuse a graph after scheduler reserve. Invalidate
+    // the existing dense/ColBERT reservations because they share this scheduler.
+    ctx->reserved_T = ctx->reserved_T_colbert = 0;
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        ggml_free(g);
+        return false;
+    }
+    ggml_backend_tensor_set(input, ids.data(), 0, ids.size() * sizeof(int32_t));
+    ctx->pos_cache.resize(ids.size());
+    for (int i = 0; i < T; ++i) ctx->pos_cache[i] = i;
+    ggml_backend_tensor_set(pos, ctx->pos_cache.data(), 0, ids.size() * sizeof(int32_t));
+    if (mask_indices) ggml_backend_tensor_set(mask_indices, masks->data(), 0, masks->size() * sizeof(int32_t));
+    const bool ok = ggml_backend_sched_graph_compute(ctx->sched, gf) == GGML_STATUS_SUCCESS;
+    if (ok) {
+        out.resize((size_t)ggml_nelements(cur));
+        ggml_backend_tensor_get(cur, out.data(), 0, out.size() * sizeof(float));
+    }
+    ggml_backend_sched_reset(ctx->sched);
+    ggml_free(g);
+    return ok;
+}
+
+bool lfm2_embed_encode_tokens(lfm2_embed_ctx * ctx, const char * text, std::vector<int32_t> & ids,
+                              std::vector<float> & out) {
+    ids.clear();
+    out.clear();
+    if (!text || !lfm2_encoder_enabled(ctx)) return false;
+    ids = lfm2_tokenize(ctx->model, text);
+    if (!lfm2_encoder_forward(ctx, ids, nullptr, out)) {
+        ids.clear();
+        return false;
+    }
+    return true;
+}
+
+bool lfm2_embed_has_masked_lm(const lfm2_embed_ctx * ctx) {
+    return ctx && ctx->model.masked_lm && ctx->model.mask_id >= 0 &&
+           (uint32_t)ctx->model.mask_id < ctx->model.hparams.vocab_size && lfm2_encoder_enabled(ctx);
+}
+
+bool lfm2_embed_masked_logits(lfm2_embed_ctx * ctx, const char * text, std::vector<int32_t> & positions,
+                              std::vector<float> & out) {
+    positions.clear();
+    out.clear();
+    if (!text || !lfm2_embed_has_masked_lm(ctx)) return false;
+    auto ids = lfm2_tokenize(ctx->model, text);
+    for (size_t i = 0; i < ids.size(); ++i) {
+        if (ids[i] == ctx->model.mask_id) positions.push_back((int32_t)i);
+    }
+    if (positions.empty() || !lfm2_encoder_forward(ctx, ids, &positions, out)) {
+        positions.clear();
+        return false;
+    }
+    return true;
+}
+
+int lfm2_embed_vocab_size(const lfm2_embed_ctx * ctx) {
+    return ctx ? (int)ctx->model.hparams.vocab_size : 0;
+}
+
+const char * lfm2_embed_token_str(const lfm2_embed_ctx * ctx, int32_t id) {
+    return ctx && id >= 0 && (size_t)id < ctx->model.vocab.size() ? ctx->model.vocab[id].c_str() : "";
+}
+
+const char * lfm2_embed_token_bytes(const lfm2_embed_ctx * ctx, int32_t id, int * size) {
+    if (size) *size = 0;
+    if (!ctx || id < 0 || (size_t)id >= ctx->model.decoded_vocab.size()) return "";
+    const auto & s = ctx->model.decoded_vocab[id];
+    if (size) *size = (int)s.size();
+    return s.data();
+}
 
 bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) {
     if (!ctx || !text || !out) return false;

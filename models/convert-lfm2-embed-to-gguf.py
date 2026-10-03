@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert LiquidAI/LFM2.5-Embedding-350M → GGUF for CrispEmbed.
+"""Convert LiquidAI LFM2.5 embedding / bidirectional masked encoders to GGUF.
 
 Architecture:
   LFM2.5-350M bidirectional backbone (16 layers: 10 ShortConv + 6 GQA)
@@ -51,8 +51,11 @@ def remap_tensor_name(hf_name: str) -> str | None:
         return "colbert.projection.weight"
 
     # Strip optional "model." prefix (some checkpoints include it, some don't)
-    prefix = "model."
-    rest = n[len(prefix):] if n.startswith(prefix) else n
+    rest = n
+    for prefix in ("model.", "lfm2."):
+        if rest.startswith(prefix):
+            rest = rest[len(prefix):]
+            break
 
     if rest == "embed_tokens.weight":
         return "lfm.embed_tokens.weight"
@@ -131,8 +134,12 @@ def main():
     intermediate_size  = config.get("intermediate_size", config.get("block_ff_dim", 6656))
     ff_multiplier      = config.get("block_ffn_dim_multiplier", 1.0)
     block_multiple     = config.get("block_multiple_of", 256)
-    ff_dim = int(2 * intermediate_size / 3 * ff_multiplier)
-    ff_dim = ((ff_dim + block_multiple - 1) // block_multiple) * block_multiple
+    ff_dim = intermediate_size
+    if config.get("block_auto_adjust_ff_dim", True):
+        ff_dim = int(2 * intermediate_size / 3)
+        if ff_multiplier is not None:
+            ff_dim = int(ff_dim * ff_multiplier)
+            ff_dim = ((ff_dim + block_multiple - 1) // block_multiple) * block_multiple
 
     # Layer types string (c=conv, a=attention)
     layer_types_list = config.get("layer_types", [])
@@ -167,10 +174,12 @@ def main():
     # --- GGUF writer ---
     writer = gguf.GGUFWriter(args.output, arch="lfm2")
 
-    writer.add_string("general.architecture", "lfm2")
-    writer.add_string("general.name", "LFM2.5-Embedding-350M")
+    # GGUFWriter already writes general.architecture.
+    writer.add_string("general.name", Path(args.model).name)
     writer.add_string("general.license", "lfm1.0")
-    writer.add_string("general.source", "LiquidAI/LFM2.5-Embedding-350M")
+    writer.add_string("general.source", args.model)
+    writer.add_bool("lfm2.attention.causal", False)
+    writer.add_uint32("lfm2.context_length", config.get("max_position_embeddings", 8192))
 
     # Hyperparameters
     writer.add_uint32("lfm2.hidden_size",  hidden_size)
@@ -198,14 +207,30 @@ def main():
     max_id = max(vocab_dict.values()) if vocab_dict else 0
     for at in added_toks:
         max_id = max(max_id, at["id"])
+    # The LM head includes UNUSED padded rows beyond tokenizer length.
+    max_id = max(max_id, vocab_size - 1)
     tokens_list = [""] * (max_id + 1)
     for tok, tid in vocab_dict.items():
         tokens_list[tid] = tok
     for at in added_toks:
         tokens_list[at["id"]] = at["content"]
 
+    types = [1 if token else 5 for token in tokens_list]
+    for i, token in enumerate(tokens_list):
+        if not token:
+            tokens_list[i] = f"[PAD{i}]"
     writer.add_array("tokenizer.ggml.tokens", tokens_list)
-    writer.add_uint32("tokenizer.ggml.model", 0)  # 0 = GPT-2 BPE style
+    writer.add_string("tokenizer.ggml.model", "gpt2")
+    for at in added_toks:
+        if at.get("special"):
+            types[at["id"]] = 3
+    writer.add_key_value("tokenizer.ggml.token_type", types,
+                         gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    if "Lfm2BidirectionalForMaskedLM" in config.get("architectures", []):
+        masks = [at for at in added_toks if at["content"] == "<|mask|>"]
+        if len(masks) != 1:
+            raise ValueError("Masked encoder must declare exactly one <|mask|> token")
+        writer.add_uint32("tokenizer.ggml.mask_token_id", masks[0]["id"])
 
     # Store merges as array (standard GGUF format)
     merge_strs = []
@@ -220,6 +245,8 @@ def main():
     writer.add_uint32("tokenizer.ggml.bos_token_id",     bos_id)
     writer.add_uint32("tokenizer.ggml.eos_token_id",     eos_id)
     writer.add_uint32("tokenizer.ggml.padding_token_id", pad_id)
+    writer.add_bool("tokenizer.ggml.add_bos_token", True)
+    writer.add_bool("tokenizer.ggml.add_eos_token", False)
 
     print(f"  tokenizer: {len(tokens_list)} tokens, {len(merge_strs)} merges")
 
@@ -271,9 +298,12 @@ def main():
             continue
 
         tensor = state_dict[hf_name]
-        data = tensor.float().numpy().astype(np_dtype)
+        # Preserve masked-encoder norm scales at F32, as the official GGUF
+        # exporter does; the large matrices retain the requested storage dtype.
+        keep_f32 = "Lfm2BidirectionalForMaskedLM" in config.get("architectures", []) and tensor.ndim == 1
+        data = tensor.float().numpy().astype(np.float32 if keep_f32 else np_dtype)
 
-        writer.add_tensor(gguf_name, data, raw_dtype=gguf_dtype)
+        writer.add_tensor(gguf_name, data, raw_dtype=gguf.GGMLQuantizationType.F32 if keep_f32 else gguf_dtype)
         n_written += 1
         if n_written % 20 == 0:
             print(f"  [{n_written}] {gguf_name} {list(data.shape)}")

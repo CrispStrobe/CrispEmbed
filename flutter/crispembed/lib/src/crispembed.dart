@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
@@ -88,6 +89,12 @@ class CrispEmbed {
   late final CrispembedEncodeSparse _encodeSparse;
   late final CrispembedEncodeMultivec _encodeMultivec;
   late final CrispembedRerank _rerankFn;
+  CrispembedEncodeTokens? _encodeTokensFn;
+  CrispembedEncodeTokens? _encodeTokensRawFn;
+  CrispembedTokenIds? _tokenIdsFn;
+  CrispembedHasColbert? _hasMaskedLmFn;
+  CrispembedMaskedLogits? _maskedLogitsFn;
+  CrispembedTokenBytes? _tokenBytesFn;
   // Ctx prefix (GGUF metadata) — optional, missing on older builds.
   CrispembedCtxQueryPrefixDart? _ctxQueryPrefixFn;
   CrispembedCtxPassagePrefixDart? _ctxPassagePrefixFn;
@@ -155,6 +162,16 @@ class CrispEmbed {
         CrispembedEncodeSparse>('crispembed_encode_sparse');
     _encodeMultivec = _lib.lookupFunction<CrispembedEncodeMultivecNative,
         CrispembedEncodeMultivec>('crispembed_encode_multivec');
+    if (_lib.providesSymbol('crispembed_encode_tokens_raw')) {
+      _encodeTokensFn = _lib.lookupFunction<CrispembedEncodeTokensNative, CrispembedEncodeTokens>('crispembed_encode_tokens');
+      _encodeTokensRawFn = _lib.lookupFunction<CrispembedEncodeTokensNative, CrispembedEncodeTokens>('crispembed_encode_tokens_raw');
+      _tokenIdsFn = _lib.lookupFunction<CrispembedTokenIdsNative, CrispembedTokenIds>('crispembed_last_token_ids');
+    }
+    if (_lib.providesSymbol('crispembed_has_masked_lm')) {
+      _hasMaskedLmFn = _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>('crispembed_has_masked_lm');
+      _maskedLogitsFn = _lib.lookupFunction<CrispembedMaskedLogitsNative, CrispembedMaskedLogits>('crispembed_masked_logits');
+      _tokenBytesFn = _lib.lookupFunction<CrispembedTokenBytesNative, CrispembedTokenBytes>('crispembed_token_bytes');
+    }
     _rerankFn = _lib.lookupFunction<CrispembedRerankNative, CrispembedRerank>(
         'crispembed_rerank');
     // Ctx prefix symbols — optional, missing on older builds.
@@ -460,9 +477,83 @@ class CrispEmbed {
   // ColBERT multi-vector
   // ------------------------------------------------------------------
 
-  /// Encode text to per-token L2-normalized embeddings (ColBERT).
-  ///
-  /// Returns a list of token embeddings, each of length [colbertDim].
+  /// Native encoder features including BOS/EOS. All buffers are copied.
+  /// LFM2 masked encoders default on for CPU; GPU requires CRISPEMBED_LFM2_ENCODER=1.
+  ({Int32List tokenIds, List<Float32List> features}) encodeTokens(String text, {bool normalize = true}) {
+    _checkDisposed();
+    final fn = normalize ? _encodeTokensFn : _encodeTokensRawFn;
+    if (fn == null || _tokenIdsFn == null) throw StateError('Per-token encoding is unavailable');
+    final input = text.toNativeUtf8();
+    final rows = calloc<Int32>();
+    final dim = calloc<Int32>();
+    try {
+      final ptr = fn(_ctx, input, rows, dim);
+      if (ptr == nullptr || rows.value <= 0 || dim.value <= 0) throw StateError('Per-token encoding failed');
+      final ids = _tokenIdsFn!(_ctx);
+      if (ids == nullptr) throw StateError('Per-token encoding returned no IDs');
+      return (tokenIds: Int32List.fromList(ids.asTypedList(rows.value)),
+        features: List.generate(rows.value, (i) => Float32List.fromList((ptr + i * dim.value).asTypedList(dim.value))));
+    } finally {
+      calloc.free(input); calloc.free(rows); calloc.free(dim);
+    }
+  }
+
+  bool get hasMaskedLm {
+    _checkDisposed();
+    return _hasMaskedLmFn != null && _hasMaskedLmFn!(_ctx) != 0;
+  }
+
+  /// Raw logits for literal <|mask|> tokens, evaluated jointly without a prefix.
+  ({Int32List positions, List<Float32List> logits}) maskedLogits(String text) {
+    _checkDisposed();
+    if (!hasMaskedLm || _maskedLogitsFn == null) throw StateError('Masked LM is unavailable');
+    final input = text.toNativeUtf8();
+    final rows = calloc<Int32>();
+    final vocab = calloc<Int32>();
+    final positions = calloc<Pointer<Int32>>();
+    try {
+      final ptr = _maskedLogitsFn!(_ctx, input, rows, vocab, positions);
+      if (ptr == nullptr || positions.value == nullptr || rows.value <= 0 || vocab.value <= 0) {
+        throw ArgumentError('Masked prediction requires at least one <|mask|> token');
+      }
+      return (positions: Int32List.fromList(positions.value.asTypedList(rows.value)),
+        logits: List.generate(rows.value, (i) => Float32List.fromList((ptr + i * vocab.value).asTypedList(vocab.value))));
+    } finally {
+      calloc.free(input); calloc.free(rows); calloc.free(vocab); calloc.free(positions);
+    }
+  }
+
+  Uint8List tokenBytes(int tokenId) {
+    _checkDisposed();
+    if (_tokenBytesFn == null) throw StateError('Token decoder is unavailable');
+    final size = calloc<Int32>();
+    try {
+      final ptr = _tokenBytesFn!(_ctx, tokenId, size);
+      if (ptr == nullptr) throw ArgumentError('Invalid token ID or unsupported decoder');
+      return Uint8List.fromList(ptr.asTypedList(size.value));
+    } finally { calloc.free(size); }
+  }
+
+  /// Predictions for each [MASK]/<|mask|>, with full-vocabulary probabilities.
+  List<Map<String, Object>> fillMask(String text, {int topK = 5}) {
+    if (topK < 1) throw ArgumentError('topK must be positive');
+    final result = maskedLogits(text.replaceAll('[MASK]', '<|mask|>'));
+    return List.generate(result.positions.length, (i) {
+      final row = result.logits[i];
+      if (topK > row.length) throw ArgumentError('topK exceeds vocabulary size');
+      final ids = List.generate(row.length, (j) => j);
+      ids.sort((a, b) { final c = row[b].compareTo(row[a]); return c == 0 ? a.compareTo(b) : c; });
+      final maximum = row[ids.first];
+      final denominator = row.fold<double>(0, (s, v) => s + exp(v - maximum));
+      return <String, Object>{'position': result.positions[i], 'predictions':
+        ids.take(topK).map((id) => <String, Object>{'token_id': id,
+          'token': utf8.decode(tokenBytes(id), allowMalformed: true), 'logit': row[id],
+          'score': exp(row[id] - maximum) / denominator}).toList()};
+    });
+  }
+
+  /// Encode text to per-token L2-normalized ColBERT embeddings.
+  /// Encode text to per-token L2-normalized ColBERT embeddings.
   List<Float32List> encodeMultivec(String text) {
     _checkDisposed();
     final textPtr = text.toNativeUtf8();

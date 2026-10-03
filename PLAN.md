@@ -4,16 +4,14 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
-## NOW 2026-10-03 — LFM2.5-Encoder-230M
+## DONE 2026-10-03 — LFM2.5-Encoder-230M
 
-- Work: `feat/lfm2-encoder-230m`, based on `5981b10e` (origin/main).
-- Official Q8_0 loads with the existing LFM2 backend; pooled CLI smoke succeeds.
-- In flight: Python per-layer reference; LFM2 dispatch for raw/normalized token
-  features; tied masked-LM logits and fill-mask CLI/bindings; registry pins.
-- New encoder APIs remain opt-in via `CRISPEMBED_LFM2_ENCODER=1` until parity
-  is measured. Existing pooled/ColBERT behavior stays available.
-- Next: F16/Q8_0/Q4_0 parity, exact tokenizer checks, decoded mask predictions,
-  invalid-input/repeated-call checks, record measured limits.
+Official F16/Q8_0/Q4_0 GGUFs registered and hash-pinned; raw/normalized token
+features and tied masked-LM logits supported through C, CLI, Python, Rust and
+Dart. F16 defaults on CPU after exact tokenizer/vocabulary checks, 15-case
+FP32 reference parity and per-layer replay. Quantized prediction changes are
+recorded in PERFORMANCE.md; F16 is the registry default. GPU encoder APIs
+remain opt-in pending backend parity. Details: [docs/lfm2-encoder.md](docs/lfm2-encoder.md).
 
 ## OPEN 2026-09-30 — follow-ups from the Qwen3-VL / jina / Nomic round
 
