@@ -1,5 +1,32 @@
 # CrispEmbed Performance
 
+## LFM2 encoder FP32 activation operands (2026-10-03)
+
+Same official GGUFs, original FP32 Python reference, 15 cases / 15 masks:
+
+| Runtime/profile | Token min cosine | Mask agreement |
+|---|---:|---:|
+| Ordinary CrispEmbed official Q8_0 | 0.946652 | 13/15 |
+| Pinned llama.cpp official Q8_0 | 0.980839 | 14/15 |
+| CrispEmbed official Q8_0, F32 row-dot | 0.995878 | 14/15 |
+| Mixed210, F32 row-dot screen | 0.928912 | 14/15 |
+| Mixed330, F32 row-dot | 0.999818 | 14/15 |
+| CrispEmbed official F16 | 0.999989 | 15/15 |
+
+Q8 row-dot versus identical dequantized GGUF weights in Python: 0.999999707
+minimum token cosine; 297/297 layer checks and full API contracts pass.
+Both F32 cast and row-dot controls pass identical-weight masks 15/15. Mixed330
+passes numerical bounds but still changes one original decoded mask.
+
+Peak RSS including model loading and warmed 9/649-token inputs: ordinary Q8
+339 MiB, whole-matrix F32 casts 569 MiB, bounded row-dot 360 MiB. Four available
+CPUs were shared (load >6); timing samples establish no general speed winner.
+The modes remain opt-in, CPU-tested. Older tables below describe ordinary
+arithmetic and must not be read as results for these modes. Complete provenance,
+per-case norms/margins and timing samples:
+[arithmetic audit](tests/results/lfm2-encoder/arithmetic_audit.json),
+[usage and upstream comparison](docs/lfm2-encoder.md).
+
 ## LFM2 encoder calibration and selective precision (2026-10-03)
 
 Screened 26 policies against the same 15 FP32 Python reference cases. Expanded

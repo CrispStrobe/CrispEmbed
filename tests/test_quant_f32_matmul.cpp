@@ -1,4 +1,5 @@
 #include "core/quant_f32_matmul.h"
+#include "core/clean_exit.h"
 #include "ggml-backend.h"
 #include <cmath>
 #include <cstdio>
@@ -52,8 +53,10 @@ static bool check(ggml_type type, int columns) {
     return ok;
 }
 
-int main() {
+static int crispembed_test_main() {
     const bool q8 = check(GGML_TYPE_Q8_0, 32);
     const bool q4 = check(GGML_TYPE_Q4_K, 256);
     return q8 && q4 ? 0 : 1;
 }
+
+int main() { core_util::clean_exit(crispembed_test_main()); }

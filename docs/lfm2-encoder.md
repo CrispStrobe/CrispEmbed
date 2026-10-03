@@ -310,13 +310,12 @@ activation operand. GGUF storage is unchanged. This costs extra temporary memory
 and repeated dequantization; it is an accuracy control, not a smaller-memory claim.
 The default remains unchanged. GPU accuracy and speed are unverified.
 
-With the official Q8_0 file, the first complete same-weight audit reaches
+With the official Q8_0 file, the complete same-weight audit reaches
 0.995881 minimum token cosine against the original FP32 checkpoint, compared
 with 0.946652 on the ordinary quantized CPU path. Against official Python loaded
 with exactly dequantized Q8 weights, this path reaches 0.999999707 and matches all
 15 mask predictions. The remaining checkpoint comparison changes one low-margin
-mask prediction (FP32 top-two gap 0.02834). Full profiling and upstream comparison
-are recorded as active work in PLAN.md.
+mask prediction (FP32 top-two gap 0.02834). Complete measurements and upstream comparisons are recorded below.
 
 ```sh
 CRISPEMBED_LFM2_F32_MATMUL=1 crispembed -m LFM2.5-Encoder-230M-Q8_0.gguf \
@@ -345,3 +344,70 @@ CRISPEMBED_LFM2_F32_DOT=1 crispembed -m LFM2.5-Encoder-230M-Q8_0.gguf \
 
 Collect calibration statistics on the FP32 source, as above: the row-dot custom
 operator does not participate in the ordinary matmul importance collector.
+
+
+### What the upstream comparison establishes
+
+The publisher's [GGUF recipe](https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M-GGUF/blob/main/README.md)
+uses F16 with `llama-server --embeddings --pooling none`. Its
+[fill-mask helper](https://huggingface.co/LiquidAI/LFM2.5-Encoder-230M-GGUF/blob/main/fill-mask.py)
+projects raw per-token features with the tied table in NumPy. The helper reads
+floating-point tensors directly: using its code unchanged on quantized tensors
+produces packed-byte matrices, not dequantized weights. Our quantized comparison
+properly dequantizes that table. The server normalizes only pooled outputs, so
+`--pooling none` supplies the raw features this head requires.
+
+We built and replayed the encoder-support merge from
+[llama.cpp PR 29862](https://github.com/ggml-org/llama.cpp/pull/29862), pinned to
+`cb7934c52ca8710994b2ecc19775ebefcfdb8d01`. CPU, four threads, non-causal attention,
+2048 context/batch/ubatch, no pooling, flash attention disabled, default extra
+buffers and F16 KV storage. All 15 cases have exactly matching tokenizer IDs.
+Mask predictions below use the same proper FP32 projection as the official recipe.
+
+| GGUF and runtime | MB | Token min cosine vs original FP32 | Hidden min global cosine | Mask agreement |
+|---|---:|---:|---:|---:|
+| Official Q8_0, ordinary CrispEmbed | 246.6 | 0.946652 | 0.997376 | 13/15 |
+| Official Q8_0, pinned llama.cpp CPU | 246.6 | 0.980839 | 0.998587 | 14/15 |
+| Official Q8_0, CrispEmbed FP32 row-dot | 246.6 | 0.995878 | 0.999443 | 14/15 |
+| Mixed330, CrispEmbed FP32 row-dot | 330.2 | 0.999818 | 0.999889 | 14/15 |
+| Official F16, pinned llama.cpp CPU | 461.9 | 0.999886 | 0.999995 | 15/15 |
+| Official F16, CrispEmbed | 461.9 | 0.999989 | 0.999998 | 15/15 |
+
+Official Q4_0 stays substantially approximate in both runtimes: minimum token
+cosine 0.736032 in ordinary CrispEmbed and 0.737134 in pinned llama.cpp, with 9/15
+mask agreement. Raising arithmetic precision alone cannot repair all weight loss.
+Calibrated Q4_K with the whole-matrix FP32 control improves from 0.752907 to
+0.889690 minimum token cosine at the same 165 MB, and from 11/15 to 12/15 masks.
+The 210 MB mixed model with FP32 row-dot reaches 0.928912 minimum token cosine
+and 14/15 masks (numerical/MLM screen; its full API contracts were previously
+validated with ordinary arithmetic). The 330 MB mixed model passes the suite's numerical cosine/relative-error bounds
+with FP32 activations, but its remaining decoded mismatch prevents full checkpoint
+parity. Larger mixed393 remains 14/15; keeping more tensors is not monotonically
+better on these probes.
+
+The earlier precision sweep conflated weight precision with activation precision:
+F16 matrices in this CPU fork consume FP32 activations, whereas quantized matrices
+normally quantize activations to Q8. The same-weight control separates these effects.
+Official Q8 weights in official Python with FP32 arithmetic reach 0.995925 minimum
+token cosine against the checkpoint. The bounded-row implementation matches that
+same-weight Python at 0.999999707 and all 15 masks, including every-layer replay.
+The remaining original-checkpoint mismatch has a top-two FP32 gap of just 0.02834
+logit. This is reference agreement, not evidence of a 1/15 downstream accuracy loss.
+The publisher's task scores use supervised fine-tuned models, not this base MLM
+or our small numerical probe suite.
+
+### Memory and timing limits
+
+Measured peak process RSS, including model loading and warmed inference:
+ordinary Q8 339 MiB; Q8 whole-matrix FP32 casts 569 MiB; Q8 bounded-row FP32 dot
+360 MiB. The latter adds approximately 21 MiB over the ordinary quantized path
+on these inputs, rather than retaining a complete FP32 model or MLM table.
+The CPU was shared and load exceeded its four available CPUs. Warmup and three
+repetitions were recorded, but wall times are diagnostics and establish no general
+speed winner. Keep the precision modes opt-in and benchmark on deployment hardware
+before choosing a runtime mode.
+
+All original-weight, same-weight and cross-runtime comparisons, per-mask rank/margin
+changes, 2 x 297 passing layer checks, full API replays, settings, known artifact hashes
+and timing/RSS samples are in
+[the arithmetic audit manifest](../tests/results/lfm2-encoder/arithmetic_audit.json).

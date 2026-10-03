@@ -4,6 +4,19 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## October 3, 2026 — encoder arithmetic and upstream audit
+
+Corrected the earlier weight-only explanation: quantized GGML matmuls also round
+activations to Q8. Added opt-in FP32 casts and a bounded CPU row-dequantization
+operator. Official Q8 minimum token cosine improves from 0.946652 to 0.995878;
+Mixed330 improves from 0.987746 to 0.999818, both still 14/15 original masks.
+Same-weight Python control passes 297 layer checks and 15/15 masks in both modes.
+Pinned upstream official Q8 measures 0.980839/14 masks; official F16 recipe remains
+the precision recommendation. Row-dot peak RSS is 360 MiB vs 339 MiB ordinary
+and 569 MiB casts; contended timings establish no speed verdict. Added meaningful
+Q8_0/Q4_K outlier regression, green CPU CI, reproducible upstream/reference tools
+and complete arithmetic audit metrics. No runtime default was changed.
+
 ## October 3, 2026 — encoder calibration and mixed precision
 
 Added repeatable `crispembed-quantize --tensor-type GLOB=TYPE` matrix overrides,

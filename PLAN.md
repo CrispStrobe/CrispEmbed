@@ -4,22 +4,21 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
-## NOW 2026-10-03 — LFM2 encoder quantization audit
+## DONE 2026-10-03 — LFM2 encoder quantization audit
 
-Audit identical quantized weights in official FP32 Python and native inference
-before more precision sweeps. Compare the official GGUF path with pinned llama.cpp
-encoder support (merged cb7934c, PR 29862). Inspect the publisher's fill-mask recipe,
-activation arithmetic, calibration coverage and evaluation margins. Active branch:
-feat/lfm2-encoder-audit; artifacts remain outside Git. Same-weight Q8 control found
-activation arithmetic dominates: Python Q8/F32 token cosine 0.995925 versus native
-0.946652. New opt-in CRISPEMBED_LFM2_F32_MATMUL reaches 0.995881 versus original
-FP32 and 0.999999707 versus identical-weight Python (15/15 same-weight masks).
-Pinned upstream CPU replay completed: Q8 token cosine 0.980839, Q4 0.737134,
-F16 0.999886. All match tokenizer IDs. Both FP32 cast and bounded-row-dot paths
-pass 297 same-weight layer checks and full API contracts. Mixed330 with FP32
-activations reaches token cosine 0.999818 (14/15 original masks). Row-dot Q8/Q4
-outlier fixture passes; profiling is running. Next: record memory/latency limits,
-land regression CI and final audit provenance.
+Separated weight rounding from activation quantization with exact GGUF weights
+in official FP32 Python, and replayed pinned llama.cpp encoder support (cb7934c,
+PR 29862). Opt-in CRISPEMBED_LFM2_F32_DOT preserves FP32 activations with one
+dequantized weight row per worker; whole-matrix F32 casts remain a control.
+Q8 row-dot reaches minimum token cosine 0.995878 vs the original checkpoint and
+0.999999707 vs identical-weight Python. Both precision modes pass all 297 layer
+checks, exact IDs/vocabulary/normalization/repeat/failure contracts and 15/15
+same-weight masks. Mixed330 reaches 0.999818 but retains one original mask mismatch.
+Pinned upstream Q8/Q4/F16 reach 0.980839/0.737134/0.999886 respectively.
+Peak Q8 RSS: ordinary 339 MiB, casts 569 MiB, row-dot 360 MiB; shared CPU timings
+are diagnostic, with no speed verdict. CPU Q8_0/Q4_K outlier regression and
+quantizer CI are green. F16 remains default; artifacts stay outside Git.
+Provenance: docs/lfm2-encoder.md and tests/results/lfm2-encoder/arithmetic_audit.json.
 
 ## DONE 2026-10-03 — LFM2 encoder mixed precision
 

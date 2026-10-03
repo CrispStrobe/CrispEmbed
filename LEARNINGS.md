@@ -1,5 +1,23 @@
 # CrispEmbed — Technical Learnings
 
+## Isolate activation arithmetic before attributing quantized drift (2026-10-03)
+
+The LFM2 encoder sweep initially conflated weight and activation precision. Exact
+Q8 weights in official Python/F32 reach 0.995925 minimum token cosine against the
+original checkpoint, whereas ordinary native Q8 reaches 0.946652. Preserving F32
+activation operands with row-wise weight dequantization restores 0.995878 and
+matches same-weight Python at 0.999999707 (297 layer checks, 15/15 masks).
+Remaining original-weight drift is storage rounding; one near-tied mask still
+changes. Do not call reference agreement downstream task accuracy.
+
+The publisher's GGUF example uses F16 and a float-only NumPy tied head. Quantized
+GGUF comparison must actually dequantize that head. Use raw per-token features
+(no pooling/normalization), exact token IDs, norms and every-layer probes.
+Row scratch avoids a full F32 matrix/cache but its custom operation is outside the
+ordinary imatrix collector: calibrate on the FP32 source. CPU regression covers
+both Q8_0 and Q4_K outlier operands. Keep accuracy modes opt-in until deployment
+latency is measured on uncontended hardware; no GPU parity was established.
+
 ## Precision overrides improve encoder features, with nonmonotonic interactions (2026-10-03)
 
 LFM2 encoder group ablations identified attention as the strongest single-group
