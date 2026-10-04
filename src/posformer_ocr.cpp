@@ -294,13 +294,12 @@ static bool map_tensors(posformer_ocr_context * ctx) {
     ctx->arm.proj_w = find(m, "arm.proj.weight");
     ctx->arm.proj_b = find(m, "arm.proj.bias");
 
-    if (!ctx->stem_conv_w || !ctx->word_embed_w || !ctx->proj_w || !ctx->arm.conv_w ||
-        !ctx->input_norm_w || !ctx->input_norm_b || !ctx->pos_enc) {
+    if (!ctx->stem_conv_w || !ctx->word_embed_w || !ctx->proj_w || !ctx->arm.conv_w || !ctx->input_norm_w ||
+        !ctx->input_norm_b || !ctx->pos_enc) {
         fprintf(stderr, "posformer_ocr: missing critical tensors\n");
         return false;
     }
-    if (ggml_nelements(ctx->input_norm_w) != hp.d_model ||
-        ggml_nelements(ctx->input_norm_b) != hp.d_model ||
+    if (ggml_nelements(ctx->input_norm_w) != hp.d_model || ggml_nelements(ctx->input_norm_b) != hp.d_model ||
         ctx->pos_enc->ne[0] != hp.d_model || ctx->pos_enc->ne[1] < hp.max_len) {
         fprintf(stderr, "posformer_ocr: invalid input normalization or position shape\n");
         return false;
@@ -413,13 +412,11 @@ static ggml_tensor * pf_bn(ggml_context * g, ggml_tensor * x, ggml_tensor * scal
 // This preserves valid-sample means, including an odd bottom-right corner.
 static ggml_tensor * pf_pool_ceil(ggml_context * g, ggml_tensor * x, enum ggml_op_pool op) {
     if (x->ne[0] % 2) {
-        ggml_tensor * last = ggml_view_3d(g, x, 1, x->ne[1], x->ne[2],
-                                        x->nb[1], x->nb[2], (x->ne[0] - 1) * x->nb[0]);
+        ggml_tensor * last = ggml_view_3d(g, x, 1, x->ne[1], x->ne[2], x->nb[1], x->nb[2], (x->ne[0] - 1) * x->nb[0]);
         x = ggml_concat(g, x, last, 0);
     }
     if (x->ne[1] % 2) {
-        ggml_tensor * last = ggml_view_3d(g, x, x->ne[0], 1, x->ne[2],
-                                        x->nb[1], x->nb[2], (x->ne[1] - 1) * x->nb[1]);
+        ggml_tensor * last = ggml_view_3d(g, x, x->ne[0], 1, x->ne[2], x->nb[1], x->nb[2], (x->ne[1] - 1) * x->nb[1]);
         x = ggml_concat(g, x, last, 1);
     }
     return ggml_pool_2d(g, x, op, 2, 2, 2, 2, 0, 0);
@@ -798,10 +795,11 @@ static void ensure_dec_scratch(posformer_ocr_context * ctx, int max_seq) {
 
 // ---------------------------------------------------------------------------
 // Match the trained decoder: embedding normalization, position, then input normalization.
-static void prepare_token_input(float * x, int d, const float * word_w, const float * word_b,
-                                const float * position, const float * input_w, const float * input_b) {
+static void prepare_token_input(float * x, int d, const float * word_w, const float * word_b, const float * position,
+                                const float * input_w, const float * input_b) {
     layernorm(x, d, word_w, word_b);
-    if (position) for (int i = 0; i < d; ++i) x[i] += position[i];
+    if (position)
+        for (int i = 0; i < d; ++i) x[i] += position[i];
     layernorm(x, d, input_w, input_b);
 }
 
@@ -866,10 +864,10 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
             const float * emb = tf32(ctx, ctx->word_embed_w);
             memcpy(ds.x.data(), emb + prev_token * D, D * sizeof(float));
         }
-        const float * position = ctx->pos_enc && step < ctx->pos_enc->ne[1] ? tf32(ctx, ctx->pos_enc) + step * D : nullptr;
-        prepare_token_input(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w),
-            tf32(ctx, ctx->word_embed_ln_b), position,
-            tf32(ctx, ctx->input_norm_w), tf32(ctx, ctx->input_norm_b));
+        const float * position =
+            ctx->pos_enc && step < ctx->pos_enc->ne[1] ? tf32(ctx, ctx->pos_enc) + step * D : nullptr;
+        prepare_token_input(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w), tf32(ctx, ctx->word_embed_ln_b), position,
+                            tf32(ctx, ctx->input_norm_w), tf32(ctx, ctx->input_norm_b));
 
         memset(ds.prev_layer_ca_weights.data(), 0, nhead * n_enc * sizeof(float));
 
