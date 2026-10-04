@@ -83,6 +83,7 @@ jobs:
         run: |
           export PYTHONPATH="$GITHUB_WORKSPACE/.ci/CrispMath/tool:$GITHUB_WORKSPACE/tools"
           python3 -m unittest discover -s tools -p 'test_validate_posformer_runtime.py'
+          python3 -m unittest discover -s tools -p 'test_runtime_artifact_manifest.py'
           python3 tools/validate_posformer_runtime.py provenance --app-root .ci/CrispMath --root . --baseline-root .ci/baseline --production-library "$PRODUCTION_LIBRARY" --baseline-library "$BASELINE_LIBRARY" --output .ci/reports/production-provenance.json
       - name: Measure unchanged original-model 50 via the normal public API
         working-directory: .ci/CrispMath

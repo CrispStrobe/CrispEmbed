@@ -30,12 +30,17 @@ def manifest(root):
         members = None
         if path.name.endswith('.tar.gz'):
             with tarfile.open(path, 'r:gz') as archive:
-                members = [item.name for item in archive.getmembers() if item.isfile()]
+                entries = archive.getmembers()
+                members = [item.name for item in entries if not item.isdir()]
+                row['links'] = [{'path': item.name, 'target': item.linkname,
+                                 'kind': 'symlink' if item.issym() else 'hardlink'}
+                                for item in entries if item.issym() or item.islnk()]
         elif path.suffix == '.zip':
             with zipfile.ZipFile(path) as archive:
                 members = [item.filename for item in archive.infolist() if not item.is_dir()]
         if members is not None:
-            if any(name.lower().endswith('.gguf') for name in members):
+            link_targets = [item['target'] for item in row.get('links', [])]
+            if any(name.lower().endswith('.gguf') for name in members + link_targets):
                 raise ValueError('Model weights unexpectedly bundled in runtime artifact')
             row['members'] = members
         files.append(row)
