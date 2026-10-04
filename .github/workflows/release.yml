@@ -11,6 +11,11 @@ on:
   # made every Linux tarball exit 127) was only observable in the packaged
   # artifact, and the only way to produce one was to publish a release.
   workflow_dispatch:
+    inputs:
+      cpu_ocr_dry_run:
+        description: 'Native CPU/Apple/Android OCR dry-run; skip unrelated CUDA/Vulkan variants'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -387,6 +392,7 @@ jobs:
   # boxes that consume a -cuda tarball normally have CUDA installed
   # system-wide.
   build-linux-x86_64-cuda:
+    if: inputs.cpu_ocr_dry_run != true
     name: Build linux-x86_64-cuda
     runs-on: ubuntu-latest
     env:
@@ -627,6 +633,7 @@ jobs:
   # DLLs, so the zip is plug-and-play even if the user doesn't have CUDA
   # installed system-wide (common on Windows dev boxes).
   build-windows-x86_64-cuda:
+    if: inputs.cpu_ocr_dry_run != true
     name: Build windows-x86_64-cuda
     # Pin to windows-2022 (VS 2022 / MSVC 14.4x). `windows-latest` now ships
     # Visual Studio 18 (MSVC 14.51), which CUDA 12.8's nvcc rejects:
@@ -764,6 +771,7 @@ jobs:
   # Lighter-weight than CUDA — uses the system Vulkan loader, no CUDA
   # toolchain required. Mirrors CrispASR's libcrispasr-*-vulkan layout.
   build-windows-x86_64-vulkan:
+    if: inputs.cpu_ocr_dry_run != true
     name: Build windows-x86_64-vulkan
     runs-on: windows-latest
     steps:
@@ -946,6 +954,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist/
+
+      - name: Fingerprint actual native runtime artifacts
+        run: python3 tools/runtime_artifact_manifest.py --artifact-root dist --output runtime-artifact-manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-artifact-provenance
+          path: runtime-artifact-manifest.json
+          retention-days: 14
 
       - name: Create release
         # Tag pushes only. A workflow_dispatch dry run must never publish —
