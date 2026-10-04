@@ -83,6 +83,13 @@ jobs:
           cp build-embed-wasm/crispembed_embed.wasm crispembed-embed-wasm/
           tar czf crispembed-embed-wasm.tar.gz crispembed-embed-wasm/
 
+      - name: Fingerprint actual packaged WASM runtime artifacts
+        run: |
+          mkdir -p .ci/wasm-release-products
+          cp crispembed-ocr-wasm.tar.gz crispembed-embed-wasm.tar.gz build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm wasm/crispembed-ocr.js build-embed-wasm/crispembed_embed.js build-embed-wasm/crispembed_embed.wasm .ci/wasm-release-products/
+          python3 tools/runtime_artifact_manifest.py --artifact-root .ci/wasm-release-products --output wasm-release-artifact-manifest.json
+
+
       # ---- Upload to Release ----
       - name: Determine release tag
         id: tag
@@ -112,6 +119,7 @@ jobs:
             build-wasm/crispembed_ocr.wasm \
             build-wasm/crispembed_ocr.js \
             wasm/crispembed-ocr.js \
+            wasm-release-artifact-manifest.json \
             --clobber
 
       - name: Upload build artifacts
@@ -122,12 +130,6 @@ jobs:
             crispembed-ocr-wasm.tar.gz
             crispembed-embed-wasm.tar.gz
           retention-days: 90
-
-      - name: Fingerprint actual packaged WASM runtime artifacts
-        run: |
-          mkdir -p .ci/wasm-release-products
-          cp crispembed-ocr-wasm.tar.gz crispembed-embed-wasm.tar.gz build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm wasm/crispembed-ocr.js build-embed-wasm/crispembed_embed.js build-embed-wasm/crispembed_embed.wasm .ci/wasm-release-products/
-          python3 tools/runtime_artifact_manifest.py --artifact-root .ci/wasm-release-products --output wasm-release-artifact-manifest.json
 
       - uses: actions/upload-artifact@v4
         with:
