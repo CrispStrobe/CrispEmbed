@@ -1,26 +1,21 @@
 # Agent handoff notes
 
-## READ FIRST — the dev guide governs everything here
+## Read first: public task handoff
 
-Before any work in this repo, read **`crispasr-crispembed-dev.md`** in full and follow
-it. It holds the HARD RULES (read the Python blueprint line by line, use the diff harness
-at every boundary, decoded-output roundtrip is the only acceptance test), the mandatory
-A/B protocol, the env-gating convention, and the new-backend checklist. It outranks
-convenience and it outranks your own judgement about what is "obviously fine".
+Read the [current CrispMath/CrispEmbed state and executable lanes](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/current-state-and-next-steps.md)
+and [contribution checklist](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/contributing.md).
+The handoff gives exact source/workflow evidence, bounded tasks, dependencies and
+completion checks. Private machine setup and access references belong outside
+public repositories; do not make task execution depend on a published host path.
 
-It sits NEXT TO this repo, not inside it:
+For runtime work, read the real Python inference blueprint before changing C++.
+Compare the earliest intermediate divergence, absolute errors/magnitudes and final
+decoded output. Component cosine alone is not quality parity. Cover vocabulary,
+EOS and output processing separately. Keep probes out of production artifacts.
+Run large workloads and batches on hosted CI/authorized GPU resources; never
+occupy a constrained shared host with builds or model inference.
 
-| box | path |
-|---|---|
-| Mac dev box | `/Users/christianstrobele/code/crispasr-crispembed-dev.md` |
-| VPS | `/mnt/volume1/crispasr-crispembed-dev.md` |
-
-⚠ **`../crispasr-crispembed-dev.md` only resolves from the REPO ROOT.** If you are in a
-worktree (`.claude/worktrees/<name>/`, which is where you should be) it is four levels
-deeper and that relative path silently does not exist — no error, just a missing file and
-an agent that never read the rules. This has already happened. Use the absolute path.
-
-Two rules from it that are violated most often, repeated here so there is no excuse:
+Two runtime requirements apply to every new path:
 
 - **Env-gate every new path**, and use the shared helpers — `core_env::on()` for
   default-off gates, `core_env::explicitly_off()` for default-on ones. A bare
@@ -32,9 +27,8 @@ Two rules from it that are violated most often, repeated here so there is no exc
 
 ## Working location and repository policy
 
-- Work in the isolated backup worktree, not the original checkout that was
-  explicitly retired. Keep large GGUF artifacts outside Git under the shared
-  backup storage; never place machine-specific absolute paths in Markdown.
+- Work in an isolated git worktree and preserve unrelated work. Keep large GGUF
+  artifacts outside Git as remote artifacts; never place host paths in Markdown.
 - Before changing code, fetch and merge `origin/main` into the feature worktree.
   After a coherent change, commit and push the feature branch so the work is
   recoverable. Coordinate all implementation and benchmark work through

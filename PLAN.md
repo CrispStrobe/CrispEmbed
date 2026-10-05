@@ -1,5 +1,38 @@
 # CrispEmbed — Architecture & Roadmap
 
+## CrispMath consumer handoff — 5 October 2026
+
+Read the [public state and executable lanes](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/current-state-and-next-steps.md) for this scoped
+consumer/runtime follow-up. It is mirrored in CrispMath; unrelated vendor plans
+below remain intact and are not claimed complete by this update.
+
+Published app runtime 0.17.12 is pinned to 78493a3; native/WASM releases and all 14
+asset hashes are verified. The minimal normalization/ceil-pooling correction is
+published, but draft PR 60 is not merged into main 28d5a61. Main and release diverge
+by 64 main-side/seven release-side commits. Do not silently repin the app or merge
+unrelated vendor work while reconciling the correction.
+
+- [ ] W1: repair macOS arm64 delocate/deployment-target failure in Python-wheel
+  run 37222310629. Other three platform jobs passed; aggregate skipped. Native/
+  WASM releases are successful and unaffected. Reproduce one Python version,
+  then prove repaired-wheel load and complete matrix/aggregation.
+- [ ] V1: port/reconcile the measured runtime fixes on current main with synthetic,
+  reference and actual Linux/Mac decode evidence. Keep app pin immutable until
+  a separately validated release exists; reconcile draft PR 60 only after proof.
+- [ ] O1: extend bounded exported-weight parity to full decoded behavior;
+  preserve frozen 50 images and identify the first divergence. Original-checkpoint
+  parity needs legitimate access; bounded 270-tensor checks are not that proof.
+- [ ] O2: obtain/evaluate suitable licensed weights only after O1 and authorized
+  access/resources. Current scores remain 7/50 original and 0/50 candidate; no
+  reliable-recognition or training-progress claim is made.
+- [ ] R1: participate in atomic app dependency promotion only after the chosen
+  successor's actual native/WASM hashes, regressions and release provenance pass.
+
+See the handoff for first actions, public code entry points, gates and dependencies.
+Historical host-specific locations are kept in private operator notes; placeholders
+in older records are not runnable setup commands or public artifact promises.
+
+
 Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
@@ -85,8 +118,8 @@ remain opt-in pending backend parity. Details: [docs/lfm2-encoder.md](docs/lfm2-
 
 **Read before doing anything:** this section; the ~7 DONE board rows below
 (archive them + the round-N+3 handover to HISTORY as your first hygiene act);
-the top ~5 dated `PERFORMANCE.md` sections; `../crispasr-crispembed-dev.md`
-incl. both 2026-08-06/07 addenda; `../kaggle_usage.md` (tokens there, NEVER
+the top ~5 dated `PERFORMANCE.md` sections; `PRIVATE_OPERATOR_GUIDE`
+incl. both 2026-08-06/07 addenda; `PRIVATE_OPERATOR_GUIDE` (tokens there, NEVER
 here — and it gained a wrong-account-push warning this round: ALWAYS export
 `KAGGLE_API_TOKEN` explicitly, the default `access_token` rotated to ${KAGGLE_ACCOUNT}).
 
@@ -178,8 +211,8 @@ PP-OCRv6, layout_detect, Tesseract lane, production VLMs.
 after the R2/R4/R6/R7 session" section (items O1-O13 with their current
 DONE/OPEN states); the top ~8 dated sections of `PERFORMANCE.md` (every claim
 below carries its evidence there); the R1-R8 backlog sections (now heavily
-annotated with closures/corrections); `../crispasr-crispembed-dev.md` (hard
-rules, A/B protocol); `../kaggle_usage.md` (accounts/tokens/gotchas — tokens
+annotated with closures/corrections); `PRIVATE_OPERATOR_GUIDE` (hard
+rules, A/B protocol); `PRIVATE_OPERATOR_GUIDE` (accounts/tokens/gotchas — tokens
 live there, NEVER in this repo).
 
 ### The prime directive this round inherits
@@ -420,17 +453,17 @@ had been red since `d04f3572` under cancelled/superseded runs).
 ### Environment as left (2026-08-05, post-round-7)
 
 - Main volume ~16 GB free. Session scratchpad model caches deleted (repin
-  evidence copied into `tests/results/repin-f7/`). `/tmp/crispembed-regression`
-  untouched. `~/.cache/crispembed-local/` unchanged.
+  evidence copied into `tests/results/repin-f7/`). `PRIVATE_OPERATOR_ARCHIVE`
+  untouched. `PRIVATE_OPERATOR_ARCHIVE` unchanged.
 - **v0.17.6 is the latest tag** (16 assets verified). main = `5f756ab5`+.
   Round-7 worktrees/branches all removed; the three pre-existing IN PROGRESS
   rows (feat/ocr-engine-parity, feat/easyocr-ggml, feat/ppocr-next-20260731)
   + older .codex worktrees remain — check the board before touching.
 - No new HF artifacts this round (re-pins/aliases only point at the
   round-6 `-f7` uploads; nothing replaced).
-- HF account cstr, token `../.env`; always `HF_HOME=~/.cache/hf-<task>` or
+- HF account cstr, token `PRIVATE_OPERATOR_CREDENTIAL_REFERENCE`; always `HF_HOME=PRIVATE_OPERATOR_ARCHIVE<task>` or
   the session scratchpad. Kaggle ${KAGGLE_ACCOUNT}, one kernel at a time. Python
-  `/Users/christianstrobele/miniconda3/bin/python` — NOT for torch parity
+  `PRIVATE_OPERATOR_ARCHIVE` — NOT for torch parity
   on BERT-class forwards (ONNX Runtime instead). CrispASR unchanged this
   round (their main `057ce9f3`+; push a ## CLAIMED block before touching).
 
@@ -461,7 +494,7 @@ T18 capped the MTLBinaryArchive read for the EMBED path only
 (`core_metal_cache::apply()`), but verification is per-lane: init-time
 before/after (the `CRISPEMBED_INIT_BENCH=1` instrument exists) + decoded
 output unchanged on one fixture per lane. The 683 MB archive at
-`~/Library/Caches/ggml-metal/` is still on disk; deleting it is safe and
+`PRIVATE_OPERATOR_ARCHIVE` is still on disk; deleting it is safe and
 worth doing once the cap is everywhere. NOTE the cache's deeper problem
 (no `_exit()`ing binary can ever WRITE it — the clean_exit class) belongs to
 CrispASR PLAN #88, not this repo.
@@ -543,26 +576,26 @@ are in the Tesseract sections.
   floor-vs-excursion argument (a load excursion can only inflate) is how a
   noisy verdict gets decided.
 - **Weights storage:** big GGUFs live on the backup SSD under
-  `ai/crispembed-ggufs/` with symlinks back into `~/.cache/crispembed-local/`
+  `ai/crispembed-ggufs/` with symlinks back into `PRIVATE_OPERATOR_ARCHIVE`
   (the CLI cache dir); keep the main volume ≥10 GB free; delete f16s once
   quants are verified; one heavy (>1 GB) process at a time.
 
 ### Environment as left (2026-08-05)
 
 - Main volume ~42 GB free; backup SSD ~3 GB free (olmocr q4_k moved there).
-- `~/.cache/crispembed-local/`: e5-small q8, arctic-m-v2 q8 + iq4_xs,
+- `PRIVATE_OPERATOR_ARCHIVE`: e5-small q8, arctic-m-v2 q8 + iq4_xs,
   f2llm f16s+q8s, deepseek-ocr2 q4_k (2.2 GB), smoldocling q8 (FIXED vocab),
   granite-r2 pair, olmocr q4_k (symlink to SSD). All registry-pinned.
-- HF: account cstr, token in `../.env` (HF_TOKEN); ALWAYS `HF_HOME=~/.cache/hf-<task>`
+- HF: account cstr, token in `PRIVATE_OPERATOR_CREDENTIAL_REFERENCE` (HF_TOKEN); ALWAYS `HF_HOME=PRIVATE_OPERATOR_ARCHIVE<task>`
   (default cache symlinks to the full backup volume; uploads also need it or
   they die read-only). Kaggle: ${KAGGLE_ACCOUNT} works, one kernel at a time,
-  machine_shape "NvidiaTeslaT4", stage under /tmp, delete before re-push.
+  machine_shape "NvidiaTeslaT4", stage under PRIVATE_OPERATOR_ARCHIVE, delete before re-push.
 - All 2026-08-04/05 worktrees and branches removed; only the three
   pre-existing IN PROGRESS rows above remain claimed by other sessions.
 
 ### Next actions — scoped for a fresh session
 
-Read `../crispasr-crispembed-dev.md` first. The three HARD RULES that actually
+Read `PRIVATE_OPERATOR_GUIDE` first. The three HARD RULES that actually
 bit this codebase most recently: **#2b** (cosine is scale-blind — always read
 `|mine|`/`|ref|`), **#3** (decoded output is the only acceptance test), **#8**
 (never report green off a pipeline's exit code).
@@ -865,7 +898,7 @@ or graph topology—is the remaining quality blocker.
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** align PP-OCRv6 large-recognizer activation semantics with the recovered PaddleX source: StemBlock Conv-BN uses ReLU; LightSVTR conv branches use configured SiLU. Updated native CPU/graph and `dump_ppocrv6_reference.py`; small fox taps pass through stage4 (`0.999958`), head input (`0.999992`), logits (`0.999996`), and full graph logits (`0.999995`). Regenerated official-source-backed Arabic/receipt/German gold archives; the required small graph lane passes `0.999992–0.999997`, while native and reference still decode nonsensical `¿づE₆¿づLyi`, `上批业/|`, and `澳臻肉し企M`. | **COMPLETED — parity fixed, quality blocked** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims. The capability matrix covers all 12 required OCR families, concrete CPU seams, PP-OCRv6/PP-LCNet partial claims, and explicit Metal/CUDA build boundaries; `tests/test_ocr_backend_matrix.py` is a mandatory smoke guard. CUDA execution and per-engine performance remain separate follow-ups | **COMPLETED** |
 | 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
-| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny recognizer now runs one persistent graph through logits with CPU/Metal accepted-output parity on two fixtures, while the detector constructs an opt-in full stem/backbone/neck/head graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; corrected detector neck channel order brings graph-vs-CPU probability cosine to 0.99113 and head pre-sigmoid to 0.99898, but graph box count is still 31 vs CPU 30, so detector CPU accept-gate fallback remains. The regenerated small/medium fox references are valid (the prior small archive had `large_stem2a` length `87,768`); CPU logits parity is `0.999998` small and `0.999992` medium. The small and medium recognizers now build a persistent GGML stem+backbone graph on CPU: all six large-stem taps are `1.000000`, stage taps are `1.000000`/`0.999994` small and `1.000000`/`0.999983` medium, and the CPU SVTR decoder receives the graph backbone with end-to-end logits unchanged (`0.999998`/`0.999992`). The asymmetric stride transition is now supported. Metal reaches stage4 cosine `0.999907` small / `0.999969` medium and logits cosine `0.999982` / `0.999986`, decoding `涨RiI` in both cases. The opt-in `CRISPEMBED_PPOCRV6_SVTR_GRAPH=1` seam graphs SVTR tokenization, and `CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH=1` now graphs both SVTR attention/MLP blocks plus final norm; CPU and Metal small/medium runs preserve output parity, with Metal logits cosine `0.999982`/`0.999986` and full graph timing `214`/`512 ms` on the fox crop. Multi-fixture direct recognizer smoke now shows identical CPU fallback/CPU full-graph text on Arabic line, receipt, and German document fixtures, and Metal full-graph text matches CPU on all three. Regenerated gold archives for those fixtures are backed up under `/Volumes/backups/ai/crispembed-gguf/`; the new `tests/test_ppocrv6_graph_gold.py --require` lane passes CPU at `0.999995–0.999996` and Metal at `0.999956–0.999982` (lowest on German), with unchanged decoded text. Remaining work is detector geometry parity and wiring the artifact-backed lane into model-equipped CI; keep both graph gates opt-in until that lane is reproducible there | **IN PROGRESS** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny recognizer now runs one persistent graph through logits with CPU/Metal accepted-output parity on two fixtures, while the detector constructs an opt-in full stem/backbone/neck/head graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; corrected detector neck channel order brings graph-vs-CPU probability cosine to 0.99113 and head pre-sigmoid to 0.99898, but graph box count is still 31 vs CPU 30, so detector CPU accept-gate fallback remains. The regenerated small/medium fox references are valid (the prior small archive had `large_stem2a` length `87,768`); CPU logits parity is `0.999998` small and `0.999992` medium. The small and medium recognizers now build a persistent GGML stem+backbone graph on CPU: all six large-stem taps are `1.000000`, stage taps are `1.000000`/`0.999994` small and `1.000000`/`0.999983` medium, and the CPU SVTR decoder receives the graph backbone with end-to-end logits unchanged (`0.999998`/`0.999992`). The asymmetric stride transition is now supported. Metal reaches stage4 cosine `0.999907` small / `0.999969` medium and logits cosine `0.999982` / `0.999986`, decoding `涨RiI` in both cases. The opt-in `CRISPEMBED_PPOCRV6_SVTR_GRAPH=1` seam graphs SVTR tokenization, and `CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH=1` now graphs both SVTR attention/MLP blocks plus final norm; CPU and Metal small/medium runs preserve output parity, with Metal logits cosine `0.999982`/`0.999986` and full graph timing `214`/`512 ms` on the fox crop. Multi-fixture direct recognizer smoke now shows identical CPU fallback/CPU full-graph text on Arabic line, receipt, and German document fixtures, and Metal full-graph text matches CPU on all three. Regenerated gold archives for those fixtures are backed up under `PRIVATE_OPERATOR_ARCHIVE`; the new `tests/test_ppocrv6_graph_gold.py --require` lane passes CPU at `0.999995–0.999996` and Metal at `0.999956–0.999982` (lowest on German), with unchanged decoded text. Remaining work is detector geometry parity and wiring the artifact-backed lane into model-equipped CI; keep both graph gates opt-in until that lane is reproducible there | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation gates; canonical weight layout and `[1280,2]` linear view are implemented. Metal passes 9/10 German/Arabic/derived parity fixtures; the one uneven-illumination Arabic outlier localizes to Metal accumulation around SE block 4 (`1.0679/3.2166` final logit deltas), while CPU graph passes (`0.0046/0.0139`). Repeated standalone Metal execution passes 31/31 with required per-crop scheduler reallocation, and the explicit pipeline graph smoke remains `141/141` with 30/30 regions. The safe production behavior is complete: graph stays opt-in and automatically falls back to CPU unless explicit debug acceptance is requested. Metal SE/depthwise numerical parity remains a separate optimization TODO | **COMPLETED — safe fallback shipped** |
 | 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **COMPLETED — retain CPU geometry path** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.3 preprocessing/geometry cost split: `CRISPEMBED_PPOCRV6_DET_BENCH=1` reports detector normalize/graph/total timings and `CRISPEMBED_PPOCRV6_BENCH=1` reports routed detector, quad crop, orientation, and recognizer timings. German CC0 Metal measured detector 6.9 s, crop 3.4 ms, CPU orientation 358.6 ms, recognition 455.2 ms; explicit Metal orientation graph is safe but 1.15 s for 30 crops. Crop/warp is not the bottleneck and GPU orientation is slower, so no geometry graph promotion is justified; retain CPU preprocessing while preserving the opt-in graph for diagnostics | **COMPLETED** |
@@ -1050,7 +1083,7 @@ EasyOCR 8.9x control.
 
 The two holes named above are now measured (binary rebuilt at `main` HEAD,
 Metal ON, `tests/ocr_external_parity.py`, repeats=3; raw JSON archived as
-`parity-synth.json` / `parity-cc0.json` under `/Volumes/backups/ai/crispembed-gguf/`).
+`parity-synth.json` / `parity-cc0.json` under `PRIVATE_OPERATOR_ARCHIVE`).
 
 **Warm speed on the 20-fixture synth corpus is NOT matched.** Load-excluded
 `engine_ms`, both arms interleaved in the same window (`tesseract-cli` control
@@ -1113,18 +1146,18 @@ quality gate blocked" record and the paddleocr-2.10 arm as the parity target
 reference but is NOT the original of what we ported).
 
 **Official PP-OCRv6 now runs on this Mac, three independent ways:**
-1. `~/venvs/paddleocr3` — paddleocr 3.7.0 + paddlepaddle 3.3.1; v6 is the
+1. `PRIVATE_OPERATOR_ARCHIVE` — paddleocr 3.7.0 + paddlepaddle 3.3.1; v6 is the
    default pipeline; `PaddleOCR(text_detection_model_name="PP-OCRv6_small_det",
    text_recognition_model_name="PP-OCRv6_small_rec")`; models cached under
-   `~/.paddlex/official_models/`. (HPI/ONNX plugin is Linux-x86-only — plain
+   `PRIVATE_OPERATOR_ARCHIVE`. (HPI/ONNX plugin is Linux-x86-only — plain
    Paddle backend is the Mac path.)
-2. `~/venvs/rapidocr` — a community onnxruntime pipeline (3.9.2) with ONNX exports
+2. `PRIVATE_OPERATOR_ARCHIVE` — a community onnxruntime pipeline (3.9.2) with ONNX exports
    of PP-OCRv6 tiny/small/medium det+rec, Paddle-free, models cached in the
    venv's `rapidocr/models/`. `TextRecognition`-style single-crop runs and
    full-pipeline both work; also the ONNX graphs double as architecture ground
    truth (op histogram small rec: 13xErf-GELU, 5xSiLU, 10xReLU, 5xHardSigmoid,
    softmax in-graph).
-3. Source blueprints, freshly cloned (shallow) under `/Volumes/backups/code/`:
+3. Source blueprints, freshly cloned (shallow) under `PRIVATE_OPERATOR_ARCHIVE`:
    `PaddleOCR` (main @2661c7c — full v6 rec modeling source
    `ppocr/modeling/backbones/rec_lcnetv4.py`, neck `necks/rnn.py:242-345`
    `EncoderWithLightSVTR`, head `heads/rec_ctc_head.py`, C++ reference
@@ -1522,13 +1555,13 @@ Everything a fresh agent needs is in this section. Read **§0 Setup**,
 
 ```bash
 # 1. NEVER edit the main checkout. Make a worktree.
-cd /Users/christianstrobele/code/CrispEmbed
+cd PRIVATE_OPERATOR_ARCHIVE
 git worktree add .claude/worktrees/<your-task> -b <your-branch> main
 cd .claude/worktrees/<your-task>
 
 # 2. ggml is a gitlink placeholder in a fresh worktree; cmake needs a real tree.
 #    Symlink it TO BUILD, restore the gitlink BEFORE any git command.
-rm -rf ggml && ln -s /Users/christianstrobele/code/CrispEmbed/ggml ggml
+rm -rf ggml && ln -s PRIVATE_OPERATOR_ARCHIVE ggml
 
 # 3. Configure + build (Metal + embedded shaders; ~15 min cold, ~1 min warm)
 cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release \
@@ -1543,8 +1576,8 @@ HEAD -- ggml` → `git add`/`commit`/`push` → symlink again. If you skip the
 re-symlink, the next `cmake --build` fails with `ninja: error: rebuilding
 'build.ninja'` **and you will unknowingly measure the stale binary**.
 
-**Models** live in `~/crispembed-live-cache/` (also mirrored at
-`/Volumes/backups/ai/crispembed-gguf/`, which is often unmounted — prefer the
+**Models** live in `PRIVATE_OPERATOR_ARCHIVE` (also mirrored at
+`PRIVATE_OPERATOR_ARCHIVE`, which is often unmounted — prefer the
 home path). The five used below are all present:
 
 | lane | detector | recognizer |
@@ -1553,23 +1586,23 @@ home path). The five used below are all present:
 | easyocr | `dbnet-ic15-q8_0.gguf` | `easyocr-english-g2-f16.gguf` |
 | ppocrv6 | `PP-OCRv6_small_det-f16.gguf` | `PP-OCRv6_small_rec-q8-head.gguf` |
 
-**Python** is `~/miniconda3/bin/python` — never the system `python3`. Set
+**Python** is `PRIVATE_OPERATOR_ARCHIVE` — never the system `python3`. Set
 `USE_TF=0` for anything importing transformers.
 
 **Test corpus** — 20 fixtures that carry their own exact ground truth, so CER is
 absolute rather than cross-engine agreement. It is generated, not checked in:
 
 ```bash
-~/miniconda3/bin/python tests/ocr_synth_corpus.py --output ~/crispembed-ocr-synth
+PRIVATE_OPERATOR_ARCHIVE tests/ocr_synth_corpus.py --output PRIVATE_OPERATOR_ARCHIVE
 ```
 
-**⚠ Do not put the corpus under `/tmp`.** Verified 2026-08-02: a corpus written
-to `/tmp/ocr-synth` is readable by `build/crispembed` but **not** by the Homebrew
+**⚠ Do not put the corpus under `PRIVATE_OPERATOR_ARCHIVE`.** Verified 2026-08-02: a corpus written
+to `PRIVATE_OPERATOR_ARCHIVE` is readable by `build/crispembed` but **not** by the Homebrew
 `tesseract`, which fails with `Leptonica Error in findFileFormat: image file not
-found` — the session's `/tmp` is a private mapping the external binary cannot
-see. Since `tesseract` is the load control for every measurement below, a `/tmp`
+found` — the session's `PRIVATE_OPERATOR_ARCHIVE` is a private mapping the external binary cannot
+see. Since `tesseract` is the load control for every measurement below, a `PRIVATE_OPERATOR_ARCHIVE`
 corpus silently breaks the control while the native lanes appear to work. A home
-path works for both. (`/tmp` also gets wiped between sessions.)
+path works for both. (`PRIVATE_OPERATOR_ARCHIVE` also gets wiped between sessions.)
 
 Real scans live at `tests/regression/images/cc0/` (no ground truth; use them for
 cross-engine agreement and for many-region stress — `commons_test_ocr_document.jpg`
@@ -1578,8 +1611,8 @@ is 1920x2518 and yields 31 units, `receipt_example.png` yields 47).
 **Run one lane:**
 
 ```bash
-C=~/crispembed-live-cache
-./build/crispembed --ocr-pipeline ~/crispembed-ocr-synth/synth_00_clean.png \
+C=PRIVATE_OPERATOR_ARCHIVE
+./build/crispembed --ocr-pipeline PRIVATE_OPERATOR_ARCHIVE \
   --ocr-engine ppocrv6 --ocr-det $C/PP-OCRv6_small_det-f16.gguf \
                        --ocr-rec $C/PP-OCRv6_small_rec-q8-head.gguf
 # expected: the three-line pangram, exactly, punctuation included
@@ -1589,8 +1622,8 @@ C=~/crispembed-live-cache
 / Python PaddleOCR, reporting CER, WER and latency):
 
 ```bash
-USE_TF=0 ~/miniconda3/bin/python tests/ocr_external_parity.py \
-  --images ~/crispembed-ocr-synth --model-dir ~/crispembed-live-cache --repeats 3
+USE_TF=0 PRIVATE_OPERATOR_ARCHIVE tests/ocr_external_parity.py \
+  --images PRIVATE_OPERATOR_ARCHIVE --model-dir PRIVATE_OPERATOR_ARCHIVE --repeats 3
 ```
 
 #### §1 How to measure on this box — read this or your numbers will be wrong
@@ -1630,7 +1663,7 @@ median as a win.
 **Where to run.** Do not saturate the Mac; it hosts 3-6 agent sessions and sits
 at load 15-110. Anything needing more than a handful of runs goes to the **VPS**
 (CPU-only, 4 cores, usually idle — the right target for CPU kernel work) or
-**Kaggle** (see `../kaggle_usage.md`). Caveat: the VPS/Kaggle are x86/AVX2 and
+**Kaggle** (see `PRIVATE_OPERATOR_GUIDE`). Caveat: the VPS/Kaggle are x86/AVX2 and
 the Mac is ARM/NEON, and `core_cpu::dot_product` has separate arms for each, so
 report both rather than substituting one for the other.
 
@@ -1649,8 +1682,8 @@ the timing.
 fixtures (20 synthetic + 14 CC0):
 
 ```bash
-C=~/crispembed-live-cache; same=0; diff=0
-for f in ~/crispembed-ocr-synth/*.png tests/regression/images/cc0/*.png tests/regression/images/cc0/*.jpg; do
+C=PRIVATE_OPERATOR_ARCHIVE; same=0; diff=0
+for f in PRIVATE_OPERATOR_ARCHIVE tests/regression/images/cc0/*.png tests/regression/images/cc0/*.jpg; do
   [ -f "$f" ] || continue
   a=$(./build/test-ppocrv6-direct $C/PP-OCRv6_small_det-f16.gguf $C/PP-OCRv6_small_rec-q8-head.gguf "$f" 2>/dev/null | grep -o 'text=.*' | tr '\n' '|')
   b=$(MYGATE=1 ./build/test-ppocrv6-direct $C/PP-OCRv6_small_det-f16.gguf $C/PP-OCRv6_small_rec-q8-head.gguf "$f" 2>/dev/null | grep -o 'text=.*' | tr '\n' '|')
@@ -1773,9 +1806,9 @@ net-of-load or split like `[easyocr-stage-bench]`.
 ### Engine-portfolio round — self-contained agent briefs (delegable as written)
 
 Each brief is executable by a fresh agent without this session's context.
-**Shared rules for every brief:** read `../crispasr-crispembed-dev.md` HARD
+**Shared rules for every brief:** read `PRIVATE_OPERATOR_GUIDE` HARD
 RULES first. One heavy process at a time (16 GB shared Mac); new Python envs
-under `~/venvs/<name>` — NEVER touch miniconda's pinned paddleocr 2.10.0 (it
+under `PRIVATE_OPERATOR_ARCHIVE<name>` — NEVER touch miniconda's pinned paddleocr 2.10.0 (it
 is a recorded baseline arm). Timing claims need a same-window control
 (`tesseract-cli` on the same fixture) or CPU-seconds; `proc_ms` and
 `engine_ms` are never comparable to each other. Record negative results in
@@ -1789,14 +1822,14 @@ as-printed hyphenation, column reading order, provenance + per-fixture
 confidence).
 
 **A1 — parity arm: pip document-parser reference (Docling).** `python -m venv
-~/venvs/docling && pip install docling`. Add an `Engine` subclass that runs
+PRIVATE_OPERATOR_ARCHIVE && pip install docling`. Add an `Engine` subclass that runs
 the full document parse in-process (warm ⇒ `proc_ms == engine_ms`), extracts
 plain text for CER and keeps the markdown for later structure gates. Run on
-`~/crispembed-ocr-synth` and the labelled CC0 dir; **acceptance:** a harness
+`PRIVATE_OPERATOR_ARCHIVE` and the labelled CC0 dir; **acceptance:** a harness
 row (CER/WER/engine_ms) for both corpora in a JSON artifact + PLAN table.
 Trap: its OCR backend choice matters — record which backend it selected.
 
-**A2 — parity arm: transformers Qwen2.5-VL.** venv `~/venvs/qwenvl`
+**A2 — parity arm: transformers Qwen2.5-VL.** venv `PRIVATE_OPERATOR_ARCHIVE`
 (torch + transformers, MPS). Reference = **7B** (Apache); the 3B may be used
 for local smoke ONLY (Qwen Research License — never publish 3B numbers as
 the reference). Prompt must match our lane's transcription prompt (see
@@ -1804,7 +1837,7 @@ the reference). Prompt must match our lane's transcription prompt (see
 min/page, run a documented fixture subset. **Acceptance:** harness row +
 saved per-fixture transcripts (they become the gold for our lane's CER gate).
 
-**A3 — parity arm + gold: olmOCR toolkit.** venv `~/venvs/olmocr`
+**A3 — parity arm + gold: olmOCR toolkit.** venv `PRIVATE_OPERATOR_ARCHIVE`
 (`pip install olmocr`). It consumes PDFs: wrap the image fixtures into
 single-page PDFs (img2pdf) and record that recipe. Save (a) its transcripts
 as document-level gold, (b) the exact anchored prompts it builds per page —
@@ -1812,9 +1845,9 @@ those are the T13 prompt contract. **Acceptance:** harness row + a
 `tests/regression/gold/olmocr/` gold set + the prompt-contract notes in PLAN.
 
 **A4 — parity arm + gold: HF DeepSeek-OCR reference.** venv
-`~/venvs/deepseekocr` (transformers per the model card — read the card's
+`PRIVATE_OPERATOR_ARCHIVE` (transformers per the model card — read the card's
 exact `infer()` call, do not guess prompts). 16 GB caution: if the reference
-OOMs locally, run it on Kaggle per `../kaggle_usage.md` and bring back
+OOMs locally, run it on Kaggle per `PRIVATE_OPERATOR_GUIDE` and bring back
 transcripts only. **Acceptance:** harness row + saved reference transcripts
 for the fixtures — these are the CER gate T14 requires before its perf work.
 
@@ -1858,7 +1891,7 @@ chars (CER 1.0) as two PICTURE clusters while recognized items score 0.1862;
 `force_full_page_ocr` does not help; adapter records both views. (d)
 `receipt_historical.png` total failure: CER 0.9974 at 19.7 s (slowest).
 (e) 12-24x slower than the load-inclusive tesseract control. (f) Environment:
-`~/.cache/huggingface` symlinks to the backups volume which is 100% FULL —
+`PRIVATE_OPERATOR_ARCHIVE` symlinks to the backups volume which is 100% FULL —
 every HF download needs `HF_HOME=$HOME/.cache/hf-docling` until cleared.
 
 **A4 status [DONE 2026-08-04, merged]:** BOTH checkpoints run (the brief
@@ -2095,7 +2128,7 @@ Start with PP-OCRv6, whose graph is already default and shape-keyed via
 `pp_graph_build(c, width)`. A bounded fused batch exists behind
 `CRISPEMBED_PPOCRV6_BATCH_GRAPH` (CPU-only; Metal hit a pooling shape assertion).
 
-**Reference design (an MIT-licensed C++ onnxruntime pipeline of v6, cloned under `/Volumes/backups/code/`) — its
+**Reference design (an MIT-licensed C++ onnxruntime pipeline of v6, cloned under `PRIVATE_OPERATOR_ARCHIVE`) — its
 onnxruntime CPU path does the 47-region receipt in 2.2 s where we take 6.2 s,
 and its rec pipeline (`src/recognition/cpu_paddle_rec.cpp`) is the design to
 steal from:** width bucketing with a fine step (`ceil(w/16)*16`, batch only
@@ -2404,7 +2437,7 @@ cannot be zipped as equivalent lines. Python recognition confidence was
 `0.8541` versus native `0.4472` on that first record. Detector confidence is
 explicitly unavailable from EasyOCR's public tuple and is not fabricated;
 the comparator has `--ignore-detector-confidence` for this case. The manifests
-are backed up under `/Volumes/backups/ai/crispembed-gguf/`. Page text/geometry
+are backed up under `PRIVATE_OPERATOR_ARCHIVE`. Page text/geometry
 parity is failed and remains a quality TODO; this is evidence, not a claim
 that either detector is universally better.
 
@@ -4293,7 +4326,7 @@ All deepseek perf paths are env-gated with validated CPU fallbacks
 Each needs a target GGUF (q8_0 preferred, to isolate from q4_k noise) and a
 before/after parity + latency measurement — never land a "perf" change on a
 compile-only check. A/B every change against ground truth and gate behind an env
-var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
+var (see `PRIVATE_OPERATOR_GUIDE` "A/B every perf optimization").
 
 - **ENCODER (embedding) path — the domain the 2026-07-16 community-GGUF work
   landed in, and NOT otherwise in this backlog (encoders are fast: 6–22 layers,
@@ -4578,7 +4611,7 @@ the pattern first.
 - **Tesseract seeded-artifact regeneration (2026-08-01).** The 12 installed
   canonical `.traineddata` sources were SHA-256 matched to the existing GGUFs.
   Fresh Miniconda F32/F16 conversions and metadata-repaired Q8_0/Q4_K
-  companions are now in `/Volumes/backups/ai/crispembed-gguf/` as `*-seeded.gguf`.
+  companions are now in `PRIVATE_OPERATOR_ARCHIVE` as `*-seeded.gguf`.
   Forty-two companions are readable and carry nonzero `sample_iteration`; old
   files remain available for rollback. The old Fraktur `mixed-lstm0ih` candidate
   is truncated and was excluded. Per-language diff and decoded-output gates are
