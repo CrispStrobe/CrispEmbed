@@ -1082,6 +1082,35 @@ CRISPEMBED_API int crispembed_pan_sr_process(void * ctx, const uint8_t * pixels,
 CRISPEMBED_API void crispembed_pan_sr_free_image(uint8_t * pixels);
 
 // ---------------------------------------------------------------------------
+// SAM 2.1 image segmentation — Meta SAM 2 (Apache-2.0), image mode (src/sam2.cpp).
+// Hiera encoder + prompt encoder + two-way mask decoder; ~31M params (Hiera-tiny).
+// One image, then any number of prompts. Gates: SAM2_FORCE_CPU, CRISPEMBED_SAM2_BENCH.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_sam2_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_sam2_free(void * ctx);
+// Side of the network input (1024) and of the mask logits (256); backend name ("CPU", "MTL0").
+CRISPEMBED_API int crispembed_sam2_image_size(const void * ctx);
+CRISPEMBED_API int crispembed_sam2_mask_size(const void * ctx);
+CRISPEMBED_API const char * crispembed_sam2_backend(const void * ctx);
+// Encodes an 8-bit RGB image (resized and normalised inside), or an already prepared one:
+// 3 x size x size planar floats, antialiased-bilinear resized, ImageNet-normalised. 0 on success.
+CRISPEMBED_API int crispembed_sam2_set_image(void * ctx, const uint8_t * rgb, int width, int height);
+CRISPEMBED_API int crispembed_sam2_set_image_f32(void * ctx, const float * chw);
+// Raw decoder for the current image: points in the network frame (box corners first, labels 2 and 3;
+// 1 object, 0 background) -> 4 x mask_size^2 logits (token 0 single mask, 1..3 alternatives), 4 scores.
+CRISPEMBED_API int crispembed_sam2_predict(void * ctx, const float * points_xy, const int * labels, int n_points,
+                                           float * mask_logits, float * scores);
+// Image + points/box -> masks at the image's size (0/255, out_count x width x height, free with
+// crispembed_sam2_free_masks). Points and box in image pixels; box may be NULL; multimask != 0 gives
+// the three alternatives, else one mask (token 0, or the best alternative when token 0 is unstable).
+CRISPEMBED_API int crispembed_sam2_process(void * ctx, const uint8_t * rgb, int width, int height,
+                                           const float * points_xy, const int * labels, int n_points,
+                                           const float * box_xyxy, int multimask, uint8_t ** out_masks,
+                                           float * out_scores, int * out_count);
+CRISPEMBED_API void crispembed_sam2_free_masks(uint8_t * masks);
+
+// ---------------------------------------------------------------------------
 // DAT (Dual Aggregation Transformer) Super-Resolution — ICCV 2023 (Apache-2.0).
 // DAT-light x2: ~830K params, dual spatial+channel attention with AIM.
 // ---------------------------------------------------------------------------
