@@ -1431,9 +1431,15 @@ static const ModelEntry k_registry[] = {
 
     // --- Image segmentation ---
 
-    { "sam2.1-hiera-tiny", "sam2.1-hiera-tiny-f32.gguf",
+    // F16 matches F32 at every stage (docs/sam2.md); Q8_0 is not published (mask IoU down to 0.9895).
+    { "sam2.1-hiera-tiny", "sam2.1-hiera-tiny-f16.gguf",
+      "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF/resolve/main/sam2.1-hiera-tiny-f16.gguf",
+      "SAM 2.1 Hiera-tiny image segmentation with point/box prompts (31M params, image mode, F16)", "63 MB",
+      "apache-2.0", "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF" },
+
+    { "sam2.1-hiera-tiny-f32", "sam2.1-hiera-tiny-f32.gguf",
       "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF/resolve/main/sam2.1-hiera-tiny-f32.gguf",
-      "SAM 2.1 Hiera-tiny image segmentation with point/box prompts (31M params, image mode)", "125 MB", "apache-2.0",
+      "SAM 2.1 Hiera-tiny image segmentation, F32 reference weights (31M params, image mode)", "125 MB", "apache-2.0",
       "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF" },
 
     { "tps-loc", "tps-loc-f32.gguf", "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
