@@ -1,0 +1,150 @@
+name: PosFormer runtime validation
+on:
+  push:
+    branches: ['fix/posformer-reference-forward']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: posformer-runtime-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    name: Original model and reference (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 65
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CRISPMATH_REFERENCE_NUMERIC_CONTROLS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: CrispStrobe/CrispEmbed
+          ref: 11e6d598521976f38081934106b55095b46b40e3
+          path: .ci/baseline
+          submodules: recursive
+      - uses: actions/checkout@v4
+        with:
+          repository: CrispStrobe/CrispMath
+          ref: 23f1470df0a0853234880ac7e0c6135fd4c02f59
+          path: .ci/CrispMath
+      - uses: actions/checkout@v4
+        if: runner.os == 'Linux'
+        with:
+          repository: SJTU-DeepVisionLab/PosFormer
+          ref: 802019a0533639f3b0bf18d44e93be073945cac5
+          path: .ci/PosFormer
+          sparse-checkout: Pos_Former
+          filter: blob:none
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Resolve pinned app bridge and unchanged corpus
+        working-directory: .ci/CrispMath
+        run: |
+          cat > pubspec_overrides.yaml <<YAML
+          dependency_overrides:
+            crispembed:
+              path: $GITHUB_WORKSPACE/flutter/crispembed
+          YAML
+          flutter pub get
+          python3 -m pip install -r tool/inference-requirements.txt
+          python3 tool/provision_handwriting_quality.py
+          python3 tool/provision_ocr_quality.py
+          curl --fail --location --retry 3 https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/230657859144cc43a88605a4e737b47929181d4c/posformer-crohme-q8_0.gguf --output posformer-q8.gguf
+          echo '450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4  posformer-q8.gguf' | shasum -a 256 --check
+          curl --fail --location --retry 3 https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf --output pix2tex-mfr-q4_k.gguf
+          echo '8957d1ec5d1f5983fbdd5f6e819203d7c32079f379563eb61f518221c8c5bdd6  pix2tex-mfr-q4_k.gguf' | shasum -a 256 --check
+      - name: Build actual probe-free production and baseline libraries
+        run: |
+          cmake -S . -B .ci/production-build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_NATIVE=OFF -DGGML_BLAS=OFF
+          cmake --build .ci/production-build --target crispembed-shared --parallel 2
+          cmake -S .ci/baseline -B .ci/baseline-build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_NATIVE=OFF -DGGML_BLAS=OFF
+          cmake --build .ci/baseline-build --target crispembed-shared --parallel 2
+          extension=so
+          if [ "$RUNNER_OS" = macOS ]; then extension=dylib; fi
+          echo "PRODUCTION_LIBRARY=$GITHUB_WORKSPACE/.ci/production-build/libcrispembed.$extension" >> "$GITHUB_ENV"
+          echo "BASELINE_LIBRARY=$GITHUB_WORKSPACE/.ci/baseline-build/libcrispembed.$extension" >> "$GITHUB_ENV"
+      - name: Reject malformed paired evidence and fingerprint production source
+        run: |
+          export PYTHONPATH="$GITHUB_WORKSPACE/.ci/CrispMath/tool:$GITHUB_WORKSPACE/tools"
+          python3 -m unittest discover -s tools -p 'test_validate_posformer_runtime.py'
+          python3 -m unittest discover -s tools -p 'test_runtime_artifact_manifest.py'
+          python3 tools/validate_posformer_runtime.py provenance --app-root .ci/CrispMath --root . --baseline-root .ci/baseline --production-library "$PRODUCTION_LIBRARY" --baseline-library "$BASELINE_LIBRARY" --output .ci/reports/production-provenance.json
+      - name: Measure unchanged original-model 50 via the normal public API
+        working-directory: .ci/CrispMath
+        run: |
+          unset POSFORMER_SCALAR_ENCODER
+          export CRISPMATH_HANDWRITING_ENCODER=default
+          export CRISPMATH_OCR_MODEL="$PWD/posformer-q8.gguf"
+          export CRISPMATH_OCR_SHA256=450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4
+          export CRISPMATH_OCR_BRIDGE_SOURCE=11e6d598521976f38081934106b55095b46b40e3
+          export CRISPMATH_OCR_LIBRARY="$BASELINE_LIBRARY"
+          export CRISPMATH_HANDWRITING_REPORT="$GITHUB_WORKSPACE/.ci/reports/original-baseline.json"
+          flutter test --reporter expanded native_test/handwriting_quality_test.dart
+          export CRISPMATH_OCR_BRIDGE_SOURCE="$GITHUB_SHA"
+          export CRISPMATH_OCR_LIBRARY="$PRODUCTION_LIBRARY"
+          export CRISPMATH_HANDWRITING_REPORT="$GITHUB_WORKSPACE/.ci/reports/original-corrected.json"
+          flutter test --reporter expanded native_test/handwriting_quality_test.dart
+          python3 "$GITHUB_WORKSPACE/tools/validate_posformer_runtime.py" compare --app-root . --baseline "$GITHUB_WORKSPACE/.ci/reports/original-baseline.json" --corrected "$GITHUB_WORKSPACE/.ci/reports/original-corrected.json" --provenance "$GITHUB_WORKSPACE/.ci/reports/production-provenance.json" --output "$GITHUB_WORKSPACE/.ci/reports/original-paired.json"
+      - name: Printed OCR and calculator handoff regression
+        working-directory: .ci/CrispMath
+        env:
+          CRISPMATH_OCR_SHA256: 8957d1ec5d1f5983fbdd5f6e819203d7c32079f379563eb61f518221c8c5bdd6
+        run: |
+          export CRISPMATH_OCR_LIBRARY="$PRODUCTION_LIBRARY"
+          export CRISPMATH_OCR_MODEL="$PWD/pix2tex-mfr-q4_k.gguf"
+          flutter test --reporter expanded native_test/ocr_native_test.dart native_test/ocr_quality_test.dart
+          cp .dart_tool/inference/ocr-quality.json "$GITHUB_WORKSPACE/.ci/reports/printed-quality.json"
+      - name: Build separate test-only probes and reference traces
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m pip install 'torch==2.6.0' --index-url https://download.pytorch.org/whl/cpu
+          python3 -m pip install 'einops==0.8.1' 'gguf==0.19.0'
+          python3 tools/validate_posformer_runtime.py prepare --app-root .ci/CrispMath --root . --provenance .ci/reports/production-provenance.json --output .ci/reports/reference-provenance.json
+          cmake -S . -B .ci/test-only-build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_NATIVE=OFF -DGGML_BLAS=OFF
+          cmake --build .ci/test-only-build --target crispembed-shared --parallel 2
+          python3 .ci/CrispMath/tool/check_posformer_input_norm.py --library .ci/test-only-build/libcrispembed.so --output .ci/reports/normalization-controls.json
+          python3 .ci/CrispMath/tool/check_posformer_pooling.py --library .ci/test-only-build/libcrispembed.so --output .ci/reports/pooling-controls.json
+          curl --fail --location --retry 3 https://huggingface.co/cstr/posformer-mathwriting-GGUF/resolve/45eb7de7d8ae26708701f06cae68d96f1abb0ef7/posformer-mathwriting_v2-f32.gguf --output .ci/reference-fixture-f32.gguf
+          echo '12060161fc6dc3c3fde146532ffade00f8f2286dd5a53e1f8777215afa9193c0  .ci/reference-fixture-f32.gguf' | sha256sum --check
+          for encoder in default scalar; do
+            python3 tools/validate_posformer_runtime.py reference --app-root .ci/CrispMath --root . --library .ci/test-only-build/libcrispembed.so --model .ci/reference-fixture-f32.gguf --manifest .ci/CrispMath/.dart_tool/inference/handwriting-corpus/manifest.json --reference .ci/PosFormer --provenance .ci/reports/reference-provenance.json --encoder "$encoder" --output ".ci/reports/reference-$encoder.json"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: posformer-runtime-reports-${{ runner.os }}
+          path: .ci/reports/*.json
+          if-no-files-found: error
+          retention-days: 14
+  formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format changed C++ with the required clang-format 18
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-format-18
+          clang-format-18 -i src/posformer_ocr.cpp
+          git diff --exit-code -- src/posformer_ocr.cpp
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: formatted-posformer-source
+          path: src/posformer_ocr.cpp
+          retention-days: 3
