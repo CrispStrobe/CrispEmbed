@@ -2840,6 +2840,131 @@ class CrispPanSr {
 }
 
 // ---------------------------------------------------------------------------
+// SAM 2.1 image segmentation (image mode)
+// ---------------------------------------------------------------------------
+
+/// Masks from SAM 2.1: [count] masks of width * height bytes (0/255), one after another.
+class Sam2Result {
+  final Uint8List masks;
+  final List<double> scores;
+  final int width;
+  final int height;
+
+  const Sam2Result({
+    required this.masks,
+    required this.scores,
+    required this.width,
+    required this.height,
+  });
+
+  int get count => scores.length;
+
+  /// The mask at [index] as a view into [masks].
+  Uint8List mask(int index) =>
+      Uint8List.sublistView(masks, index * width * height, (index + 1) * width * height);
+}
+
+/// SAM 2.1 segmentation with point and box prompts.
+class CrispSam2 {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedSam2FreeDart _freeFn;
+  late final CrispembedSam2ProcessDart _processFn;
+  late final CrispembedSam2FreeMasksDart _freeMasksFn;
+
+  CrispSam2(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _freeFn = _lib.lookupFunction<CrispembedSam2FreeNative, CrispembedSam2FreeDart>(
+        'crispembed_sam2_free');
+    _processFn = _lib.lookupFunction<CrispembedSam2ProcessNative,
+        CrispembedSam2ProcessDart>('crispembed_sam2_process');
+    _freeMasksFn = _lib.lookupFunction<CrispembedSam2FreeMasksNative,
+        CrispembedSam2FreeMasksDart>('crispembed_sam2_free_masks');
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedSam2InitNative, CrispembedSam2InitDart>(
+            'crispembed_sam2_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load SAM 2 model: $modelPath');
+    }
+  }
+
+  /// Masks for points (x, y, label: 1 object, 0 background) and/or a box (x0, y0, x1, y1), in
+  /// image pixels. One mask, or SAM's three alternatives with [multimask].
+  Sam2Result segment(
+    Uint8List rgb,
+    int width,
+    int height, {
+    List<(double, double, int)> points = const [],
+    List<double>? box,
+    bool multimask = false,
+  }) {
+    _checkDisposed();
+    if (rgb.length != width * height * 3) {
+      throw ArgumentError('rgb.length (${rgb.length}) must equal width * height * 3');
+    }
+    if (points.isEmpty && box == null) throw ArgumentError('give points and/or a box');
+    if (box != null && box.length != 4) throw ArgumentError('box needs four numbers');
+    final rgbNative = calloc<Uint8>(rgb.length);
+    rgbNative.asTypedList(rgb.length).setAll(0, rgb);
+    final xy = calloc<Float>(points.length * 2 + 1);
+    final labels = calloc<Int32>(points.length + 1);
+    for (var i = 0; i < points.length; i++) {
+      xy[2 * i] = points[i].$1;
+      xy[2 * i + 1] = points[i].$2;
+      labels[i] = points[i].$3;
+    }
+    final boxNative = calloc<Float>(4);
+    if (box != null) {
+      for (var i = 0; i < 4; i++) {
+        boxNative[i] = box[i];
+      }
+    }
+    final outMasks = calloc<Pointer<Uint8>>();
+    final outScores = calloc<Float>(3);
+    final outCount = calloc<Int32>();
+    try {
+      final rc = _processFn(_ctx, rgbNative, width, height, xy, labels, points.length,
+          box == null ? nullptr : boxNative, multimask ? 1 : 0, outMasks, outScores, outCount);
+      if (rc != 0 || outMasks.value.address == 0) {
+        throw Exception('SAM 2 segmentation failed (rc=$rc)');
+      }
+      final count = outCount.value;
+      final masks = Uint8List.fromList(outMasks.value.asTypedList(count * width * height));
+      _freeMasksFn(outMasks.value);
+      return Sam2Result(
+          masks: masks,
+          scores: List<double>.generate(count, (i) => outScores[i]),
+          width: width,
+          height: height);
+    } finally {
+      calloc.free(rgbNative);
+      calloc.free(xy);
+      calloc.free(labels);
+      calloc.free(boxNative);
+      calloc.free(outMasks);
+      calloc.free(outScores);
+      calloc.free(outCount);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispSam2 has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // HAT Super-Resolution (Hybrid Attention Transformer, CVPR 2023)
 // ---------------------------------------------------------------------------
 

@@ -2111,6 +2111,158 @@ impl Drop for CrispPanSr {
 }
 
 // ---------------------------------------------------------------------------
+// SAM 2.1 image segmentation (Meta, Apache-2.0; image mode)
+// ---------------------------------------------------------------------------
+
+/// SAM 2.1 segmentation with point and box prompts.
+///
+/// ```no_run
+/// let sam = crispembed::CrispSam2::new("sam2.1-hiera-tiny-f32.gguf", 4).unwrap();
+/// // One mask for an object point and a box, in image pixels.
+/// let (masks, scores) = sam.segment(&rgb_bytes, 1749, 1155, &[(888.0, 884.0, 1)], Some([453.0, 288.0, 1305.0, 1132.0]), false).unwrap();
+/// ```
+pub struct CrispSam2 {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispSam2 {}
+
+impl CrispSam2 {
+    /// Load a SAM 2.1 GGUF model (`n_threads` 0: automatic).
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_sam2_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_sam2_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Side of the network input (1024).
+    pub fn image_size(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_sam2_image_size(self.ctx) }
+    }
+
+    /// Side of the low-resolution mask logits (256).
+    pub fn mask_size(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_sam2_mask_size(self.ctx) }
+    }
+
+    /// Masks for `(x, y, label)` points (label 1 object, 0 background) and/or a box, in image pixels.
+    /// Returns `count` masks of `width * height` bytes (0/255) one after another, and their scores:
+    /// one mask, or SAM's three alternatives with `multimask`.
+    pub fn segment(
+        &self,
+        rgb: &[u8],
+        width: i32,
+        height: i32,
+        points: &[(f32, f32, i32)],
+        box_xyxy: Option<[f32; 4]>,
+        multimask: bool,
+    ) -> Result<(Vec<u8>, Vec<f32>), String> {
+        if rgb.len() != (width * height * 3) as usize {
+            return Err("rgb must hold width * height * 3 bytes".into());
+        }
+        let xy: Vec<f32> = points.iter().flat_map(|p| [p.0, p.1]).collect();
+        let labels: Vec<i32> = points.iter().map(|p| p.2).collect();
+        let mut out: *mut u8 = std::ptr::null_mut();
+        let mut scores = [0f32; 3];
+        let mut count: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_sam2_process(
+                self.ctx,
+                rgb.as_ptr(),
+                width,
+                height,
+                if xy.is_empty() {
+                    std::ptr::null()
+                } else {
+                    xy.as_ptr()
+                },
+                if labels.is_empty() {
+                    std::ptr::null()
+                } else {
+                    labels.as_ptr()
+                },
+                labels.len() as i32,
+                box_xyxy.as_ref().map_or(std::ptr::null(), |b| b.as_ptr()),
+                multimask as i32,
+                &mut out,
+                scores.as_mut_ptr(),
+                &mut count,
+            )
+        };
+        if rc != 0 || out.is_null() {
+            return Err("SAM 2 segmentation failed".into());
+        }
+        let len = count as usize * (width * height) as usize;
+        let masks = unsafe { std::slice::from_raw_parts(out, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_sam2_free_masks(out) };
+        Ok((masks, scores[..count as usize].to_vec()))
+    }
+
+    /// Encodes an image already resized to `image_size` square, planar RGB, ImageNet-normalised.
+    pub fn set_image_f32(&mut self, chw: &[f32]) -> Result<(), String> {
+        let side = self.image_size() as usize;
+        if chw.len() != 3 * side * side {
+            return Err(format!("expected 3 x {side} x {side} floats"));
+        }
+        match unsafe { crispembed_sys::crispembed_sam2_set_image_f32(self.ctx, chw.as_ptr()) } {
+            0 => Ok(()),
+            rc => Err(format!("SAM 2 image encoding failed ({rc})")),
+        }
+    }
+
+    /// Encodes an 8-bit RGB image (resized and normalised inside).
+    pub fn set_image(&mut self, rgb: &[u8], width: i32, height: i32) -> Result<(), String> {
+        if rgb.len() != (width * height * 3) as usize {
+            return Err("rgb must hold width * height * 3 bytes".into());
+        }
+        match unsafe {
+            crispembed_sys::crispembed_sam2_set_image(self.ctx, rgb.as_ptr(), width, height)
+        } {
+            0 => Ok(()),
+            rc => Err(format!("SAM 2 image encoding failed ({rc})")),
+        }
+    }
+
+    /// Raw decoder output for the current image: points in the network frame (box corners first,
+    /// labels 2 and 3). Returns 4 logit maps of `mask_size` squared (token 0 single mask) and 4 scores.
+    pub fn predict(
+        &mut self,
+        points_xy: &[[f32; 2]],
+        labels: &[i32],
+    ) -> Result<(Vec<f32>, [f32; 4]), String> {
+        if points_xy.is_empty() || points_xy.len() != labels.len() {
+            return Err("one label per point".into());
+        }
+        let side = self.mask_size() as usize;
+        let mut logits = vec![0f32; 4 * side * side];
+        let mut scores = [0f32; 4];
+        let rc = unsafe {
+            crispembed_sys::crispembed_sam2_predict(
+                self.ctx,
+                points_xy.as_ptr() as *const f32,
+                labels.as_ptr(),
+                labels.len() as i32,
+                logits.as_mut_ptr(),
+                scores.as_mut_ptr(),
+            )
+        };
+        if rc != 0 {
+            return Err(format!("SAM 2 prediction failed ({rc})"));
+        }
+        Ok((logits, scores))
+    }
+}
+
+impl Drop for CrispSam2 {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_sam2_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // HAT super-resolution (Hybrid Attention Transformer, CVPR 2023)
 // ---------------------------------------------------------------------------
 

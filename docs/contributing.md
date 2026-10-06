@@ -468,6 +468,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | AdaIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | Text LID (standalone) | ✓ | — | ✓ | ✓ | — | ✓ | — |
 | Table structure recognition | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| SAM 2.1 image segmentation (`docs/sam2.md`) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | BERT NER token classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | LiLT layout-aware KIE | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | Pix2Struct document understanding | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |

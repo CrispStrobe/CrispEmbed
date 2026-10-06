@@ -1053,6 +1053,43 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_pan_sr_free_image(pixels: *mut u8);
 
+    // ── SAM 2.1 image segmentation (image mode) ──
+    pub fn crispembed_sam2_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_sam2_free(ctx: *mut c_void);
+    pub fn crispembed_sam2_image_size(ctx: *const c_void) -> c_int;
+    pub fn crispembed_sam2_mask_size(ctx: *const c_void) -> c_int;
+    pub fn crispembed_sam2_backend(ctx: *const c_void) -> *const c_char;
+    pub fn crispembed_sam2_set_image(
+        ctx: *mut c_void,
+        rgb: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> c_int;
+    pub fn crispembed_sam2_set_image_f32(ctx: *mut c_void, chw: *const f32) -> c_int;
+    pub fn crispembed_sam2_predict(
+        ctx: *mut c_void,
+        points_xy: *const f32,
+        labels: *const c_int,
+        n_points: c_int,
+        mask_logits: *mut f32,
+        scores: *mut f32,
+    ) -> c_int;
+    pub fn crispembed_sam2_process(
+        ctx: *mut c_void,
+        rgb: *const u8,
+        width: c_int,
+        height: c_int,
+        points_xy: *const f32,
+        labels: *const c_int,
+        n_points: c_int,
+        box_xyxy: *const f32,
+        multimask: c_int,
+        out_masks: *mut *mut u8,
+        out_scores: *mut f32,
+        out_count: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_sam2_free_masks(masks: *mut u8);
+
     // ── HAT super-resolution (Hybrid Attention Transformer, CVPR 2023) ──
     // FFI for the safe CrispHatSr wrapper. The C header (crispembed.h) and
     // safe wrapper landed without these extern decls — same omission class as

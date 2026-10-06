@@ -438,6 +438,20 @@ static int crispembed_test_main() {
         check("R8 skip_value: number stops at the delimiter", json_skip_value(S("42,"), 0) == 2);
     }
     {
+        // Number arrays (SAM 2 prompts): nesting flattened in order, strings skipped, non-arrays refused.
+        std::vector<double> v;
+        check("R11 numbers nested",
+              core_json::json_extract_numbers(S("{\"points\": [[10, 20.5, 1], [-3, 4e1, 0]]}"), "points", v) == 6 &&
+                  v[1] == 20.5 && v[3] == -3 && v[4] == 40);
+        v.clear();
+        check("R11 numbers stop at the array's end",
+              core_json::json_extract_numbers(S("{\"box\": [1,2,3,4], \"n\": 9}"), "box", v) == 4 && v[3] == 4);
+        v.clear();
+        check("R11 numbers skip strings",
+              core_json::json_extract_numbers(S("{\"a\": [\"7]\", 8]}"), "a", v) == 1 && v[0] == 8);
+        check("R11 numbers refuse a scalar", core_json::json_extract_numbers(S("{\"a\": 5}"), "a", v) == 0);
+    }
+    {
         // return_documents — structural, so a nested decoy cannot flip it, and a
         // string value equal to the key name cannot be mistaken for the key.
         check("R9 bool true", json_extract_bool(S("{\"return_documents\":true}"), "return_documents", false));

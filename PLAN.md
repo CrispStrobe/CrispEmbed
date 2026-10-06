@@ -366,7 +366,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation: `src/sam2.cpp`, `models/convert-sam2-to-gguf.py`, `tools/dump_sam2_reference.py`, `tests/test_sam2_diff.cpp`, C API `crispembed_sam2_*`, standalone target `crispembed-sam2` | Encoder and decoder parity with PyTorch on the CPU on one Bunny photo: all 19 encoder stages and the logits cos 1.000000, max abs 2.6e-5 (blocks) / 3.6e-5 (logits), the 4 masks identical. Not yet: 73-photo end-to-end check, Metal, timing on an idle machine, WASM build |
+| 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F32, pinned) | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst), Q4_K not usable. Not yet: F16 upload + registry entry, 73-photo end-to-end check, Metal timing, WASM size note |
 
 
 ## HANDOVER — round 8 (written 2026-08-05, after the round-7 session)

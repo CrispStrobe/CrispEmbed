@@ -434,6 +434,8 @@ static const ModelHash k_model_hashes[] = {
       "1d7856477d475ddb5dc5184771ee10ab67ede5e09299602578b70123808774fc" },
     { "https://huggingface.co/cstr/esrgan-sr-GGUF/resolve/main/esrgan-x4-f32.gguf",
       "3220790ee1babe80ac58813f2617c174af344e201d79130368f0ba4e24bc5751" },
+    { "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF/resolve/main/sam2.1-hiera-tiny-f32.gguf",
+      "02ac9814abfe82ab5584b881f9137af39a1d364c855c1143f587f8dd5d73d901" },
     { "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
       "daa821ced69b1c2ae54c645c80381a00b8a4a766ebc70de17ad6790d8bbd88ae" },
     { "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/tbsrn-telescope-f16.gguf",

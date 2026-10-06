@@ -176,6 +176,11 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
     fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
+    fprintf(stderr, "  --sam2 FILE      SAM 2.1 segmentation: object mask of FILE (0/255 image) on stdout\n");
+    fprintf(stderr, "                   (needs --sam2-model M: GGUF path or registry name, e.g. sam2.1-hiera-tiny;\n");
+    fprintf(stderr, "                   prompts: --sam2-point X,Y[:LABEL] (repeat; label 1 object, 0 background)\n");
+    fprintf(stderr, "                   and/or --sam2-box X0,Y0,X1,Y1, in image pixels; --sam2-multimask writes\n");
+    fprintf(stderr, "                   the best-scored of SAM's three alternatives instead of its single mask)\n");
     fprintf(stderr, "  --dat-sr FILE    standalone DAT super-resolution: upscale image, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --dat-model PATH: DAT GGUF, Dual Aggregation Transformer, 2x)\n");
     fprintf(stderr, "  --dat-model PATH DAT super-resolution GGUF (used with --dat-sr)\n");
@@ -296,6 +301,12 @@ static int cli_main(int argc, char ** argv) {
     std::string sr_model;            // --sr-model: text super-resolution GGUF
     std::string pan_model;           // --pan-model: PAN super-resolution GGUF
     std::string pan_sr_path;         // --pan-sr FILE: standalone PAN upscaling
+    std::string sam2_model;          // --sam2-model: SAM 2.1 GGUF or registry name
+    std::string sam2_path;           // --sam2 FILE: SAM 2.1 segmentation
+    std::vector<float> sam2_points;  // --sam2-point X,Y[:LABEL] (repeatable), image pixels
+    std::vector<int> sam2_labels;
+    std::vector<float> sam2_box;     // --sam2-box X0,Y0,X1,Y1
+    bool sam2_multimask = false;     // --sam2-multimask
     std::string dat_model;           // --dat-model: DAT super-resolution GGUF
     std::string dat_sr_path;         // --dat-sr FILE: standalone DAT upscaling
     std::string hat_model;           // --hat-model: HAT super-resolution GGUF
@@ -493,6 +504,28 @@ static int cli_main(int argc, char ** argv) {
             sr_model = argv[++i];
         } else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) {
             pan_model = argv[++i];
+        } else if (strcmp(argv[i], "--sam2-model") == 0 && i + 1 < argc) {
+            sam2_model = argv[++i];
+        } else if (strcmp(argv[i], "--sam2") == 0 && i + 1 < argc) {
+            sam2_path = argv[++i];
+        } else if (strcmp(argv[i], "--sam2-point") == 0 && i + 1 < argc) {
+            float x = 0, y = 0;
+            int label = 1;
+            if (sscanf(argv[++i], "%f,%f:%d", &x, &y, &label) < 2) {
+                fprintf(stderr, "error: --sam2-point expects X,Y or X,Y:LABEL\n");
+                return 1;
+            }
+            sam2_points.insert(sam2_points.end(), { x, y });
+            sam2_labels.push_back(label);
+        } else if (strcmp(argv[i], "--sam2-box") == 0 && i + 1 < argc) {
+            float b[4];
+            if (sscanf(argv[++i], "%f,%f,%f,%f", &b[0], &b[1], &b[2], &b[3]) != 4) {
+                fprintf(stderr, "error: --sam2-box expects X0,Y0,X1,Y1\n");
+                return 1;
+            }
+            sam2_box.assign(b, b + 4);
+        } else if (strcmp(argv[i], "--sam2-multimask") == 0) {
+            sam2_multimask = true;
         } else if (strcmp(argv[i], "--dat-model") == 0 && i + 1 < argc) {
             dat_model = argv[++i];
         } else if (strcmp(argv[i], "--dat-sr") == 0 && i + 1 < argc) {
@@ -717,6 +750,48 @@ static int cli_main(int argc, char ** argv) {
                 printf("  [%d] (%.0f, %.0f) %.0fx%.0f\n", i, regions[i].x, regions[i].y, regions[i].w, regions[i].h);
         }
         if (regions) free(regions);
+        return 0;
+    }
+    if (!sam2_path.empty()) {
+        if (sam2_model.empty() || (sam2_labels.empty() && sam2_box.empty())) {
+            fprintf(stderr, "error: --sam2 requires --sam2-model <model> and --sam2-point and/or --sam2-box\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(sam2_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", sam2_path.c_str());
+            return 1;
+        }
+        sam2_model = crispembed_mgr::resolve_model(sam2_model, auto_download, accepted_license);
+        if (sam2_model.empty()) {
+            stbi_image_free(data);
+            return 1;
+        }
+        void * sctx = crispembed_sam2_init(sam2_model.c_str(), n_threads);
+        if (!sctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load SAM 2 model '%s'\n", sam2_model.c_str());
+            return 1;
+        }
+        uint8_t * masks = nullptr;
+        float scores[3] = { 0, 0, 0 };
+        int count = 0;
+        int rc = crispembed_sam2_process(sctx, data, w, h, sam2_points.data(), sam2_labels.data(),
+                                         (int)sam2_labels.size(), sam2_box.empty() ? nullptr : sam2_box.data(),
+                                         sam2_multimask ? 1 : 0, &masks, scores, &count);
+        stbi_image_free(data);
+        crispembed_sam2_free(sctx);
+        if (rc != 0 || !masks || count < 1) {
+            fprintf(stderr, "error: SAM 2 segmentation failed\n");
+            return 1;
+        }
+        int best = 0;
+        for (int i = 1; i < count; i++)
+            if (scores[i] > scores[best]) best = i;
+        fprintf(stderr, "sam2: mask %d of %d, predicted IoU %.4f\n", best, count, scores[best]);
+        core_imgout::emit(stdout, masks + (size_t)best * w * h, w, h, 1, "sam2");
+        crispembed_sam2_free_masks(masks);
         return 0;
     }
     if (!pan_sr_path.empty()) {

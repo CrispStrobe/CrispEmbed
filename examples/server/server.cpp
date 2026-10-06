@@ -502,6 +502,7 @@ int main(int argc, char ** argv) {
     std::string punct_model_path;      // punct restoration model for orchestrator
     std::string sr_model_path;         // text super-resolution model (--sr-model)
     std::string pan_model_path;        // PAN super-resolution model (--pan-model)
+    std::string sam2_model_path;       // SAM 2.1 segmentation model (--sam2-model)
     std::string hat_model_path;        // HAT super-resolution model (--hat-model)
     std::string dat_model_path;        // DAT super-resolution model (--dat-model)
     std::string safmn_model_path;      // SAFMN super-resolution model (--safmn-model)
@@ -592,6 +593,8 @@ int main(int argc, char ** argv) {
             sr_model_path = argv[++i];
         else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc)
             pan_model_path = argv[++i];
+        else if (strcmp(argv[i], "--sam2-model") == 0 && i + 1 < argc)
+            sam2_model_path = argv[++i];
         else if (strcmp(argv[i], "--hat-model") == 0 && i + 1 < argc)
             hat_model_path = argv[++i];
         else if (strcmp(argv[i], "--dat-model") == 0 && i + 1 < argc)
@@ -628,7 +631,7 @@ int main(int argc, char ** argv) {
         sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() &&
         safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
         tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() &&
-        instructir_model_path.empty() && adair_model_path.empty()) {
+        instructir_model_path.empty() && adair_model_path.empty() && sam2_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -686,6 +689,9 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --sr-model MODEL  text SR GGUF (NAFNet+PixelShuffle, 2x or 4x); enables POST /text/sr\n");
         fprintf(stderr, "\nPAN super-resolution (whole-image upscaling):\n");
         fprintf(stderr, "  --pan-model MODEL PAN SR GGUF (Pixel Attention Network, 2x or 4x); enables POST /pan/sr\n");
+        fprintf(stderr, "\nSAM 2.1 image segmentation (point/box prompts):\n");
+        fprintf(stderr,
+                "  --sam2-model MODEL SAM 2.1 GGUF or registry name (sam2.1-hiera-tiny); enables POST /sam2/segment\n");
         fprintf(stderr, "\nHAT super-resolution (Hybrid Attention Transformer, 4x):\n");
         fprintf(stderr, "  --hat-model MODEL   HAT GGUF (21M params, CVPR 2023 SOTA); enables POST /hat/sr\n");
         fprintf(stderr, "\nDAT super-resolution (Dual Aggregation Transformer, 2x):\n");
@@ -1590,6 +1596,15 @@ int main(int argc, char ** argv) {
     if (!pan_model_path.empty()) {
         pan_sr_ctx = crispembed_pan_sr_init(pan_model_path.c_str(), n_threads);
         if (!pan_sr_ctx) fprintf(stderr, "Warning: failed to load PAN SR model '%s'\n", pan_model_path.c_str());
+    }
+
+    // ── SAM 2.1 segmentation ──
+    void * sam2_ctx = nullptr;
+    std::mutex sam2_mutex;
+    if (!sam2_model_path.empty()) {
+        const std::string resolved = crispembed_mgr::resolve_model(sam2_model_path, true);
+        if (!resolved.empty()) sam2_ctx = crispembed_sam2_init(resolved.c_str(), n_threads);
+        if (!sam2_ctx) fprintf(stderr, "Warning: failed to load SAM 2 model '%s'\n", sam2_model_path.c_str());
     }
 
     // ── HAT Super-Resolution ──
@@ -3005,6 +3020,74 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /sam2/segment — SAM 2.1 masks for point/box prompts.
+    // {"image": "photo.png", "points": [[x, y, label], ...], "box": [x0, y0, x1, y1], "multimask": false}
+    // Points and box in image pixels; label 1 object, 0 background. Returns one mask (or SAM's three
+    // alternatives with "multimask": true) as images (0/255) with their predicted IoU.
+    svr.Post("/sam2/segment", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!sam2_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no SAM 2 model loaded (use --sam2-model)\"}", "application/json");
+            return;
+        }
+        const std::string image_path = extract_image_path(req.body);
+        std::vector<double> flat_points, flat_box;
+        core_json::json_extract_numbers(req.body, "points", flat_points);
+        core_json::json_extract_numbers(req.body, "box", flat_box);
+        const bool multimask = core_json::json_extract_bool(req.body, "multimask", false);
+        if (image_path.empty() || flat_points.size() % 3 != 0 || (flat_box.size() != 0 && flat_box.size() != 4) ||
+            (flat_points.empty() && flat_box.empty())) {
+            res.status = 400;
+            res.set_content(
+                "{\"error\": \"need 'image' and 'points' ([[x, y, label], ...]) and/or 'box' ([x0, y0, x1, y1])\"}",
+                "application/json");
+            return;
+        }
+        std::vector<float> points;
+        std::vector<int> labels;
+        for (size_t i = 0; i < flat_points.size(); i += 3) {
+            points.push_back((float)flat_points[i]);
+            points.push_back((float)flat_points[i + 1]);
+            labels.push_back((int)flat_points[i + 2]);
+        }
+        const std::vector<float> box(flat_box.begin(), flat_box.end());
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        std::lock_guard<std::mutex> lock(sam2_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+        uint8_t * masks = nullptr;
+        float scores[3] = { 0, 0, 0 };
+        int count = 0;
+        const int rc =
+            crispembed_sam2_process(sam2_ctx, data, w, h, points.data(), labels.data(), (int)labels.size(),
+                                    box.empty() ? nullptr : box.data(), multimask ? 1 : 0, &masks, scores, &count);
+        stbi_image_free(data);
+        const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        if (rc != 0 || !masks) {
+            res.status = 500;
+            res.set_content("{\"error\": \"SAM 2 segmentation failed\"}", "application/json");
+            return;
+        }
+        std::ostringstream js;
+        js << "{\"masks\": [";
+        for (int i = 0; i < count; i++) {
+            std::string img_format;
+            const std::string b64 = encode_image_b64(masks + (size_t)i * w * h, w, h, 1, "sam2", img_format);
+            js << (i ? ", " : "") << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format
+               << "\", \"score\": " << std::fixed << std::setprecision(4) << scores[i] << "}";
+        }
+        crispembed_sam2_free_masks(masks);
+        js << "], \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
+           << "}";
+        fprintf(stderr, "crispembed-server: /sam2/segment in %.1f ms (%dx%d, %d masks)\n", ms, w, h, count);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /hat/sr — HAT whole-image super-resolution (Hybrid Attention Transformer)
     svr.Post("/hat/sr", [&](const httplib::Request & req, httplib::Response & res) {
         if (!hat_sr_ctx) {
@@ -3847,6 +3930,7 @@ int main(int argc, char ** argv) {
         if (text_sr_ctx)
             js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
+        if (sam2_ctx) js << ", \"sam2\": true";
         if (hat_sr_ctx) js << ", \"hat_sr\": true, \"hat_sr_upscale\": " << crispembed_hat_sr_scale(hat_sr_ctx);
         if (dat_sr_ctx) js << ", \"dat_sr\": true";
         if (safmn_sr_ctx)
@@ -3939,6 +4023,9 @@ int main(int argc, char ** argv) {
     if (pan_sr_ctx)
         fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n",
                 crispembed_pan_sr_scale(pan_sr_ctx));
+    if (sam2_ctx)
+        fprintf(stderr, "  POST /sam2/segment    — {\"image\": \"photo.png\", \"points\": [[x, y, 1]], \"box\": [x0, "
+                        "y0, x1, y1]}\n");
     if (hat_sr_ctx)
         fprintf(stderr, "  POST /hat/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n",
                 crispembed_hat_sr_scale(hat_sr_ctx));
@@ -3989,6 +4076,7 @@ int main(int argc, char ** argv) {
     if (kie_ctx) crispembed_kie_free(kie_ctx);
     if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
     if (pan_sr_ctx) crispembed_pan_sr_free(pan_sr_ctx);
+    if (sam2_ctx) crispembed_sam2_free(sam2_ctx);
     if (hat_sr_ctx) crispembed_hat_sr_free(hat_sr_ctx);
     if (dat_sr_ctx) crispembed_dat_sr_free(dat_sr_ctx);
     if (safmn_sr_ctx) crispembed_safmn_sr_free(safmn_sr_ctx);

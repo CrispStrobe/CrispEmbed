@@ -438,6 +438,34 @@ inline double json_extract_number(const std::string & body, const char * key, do
                                  : json_extract_number_structural(body, key, def);
 }
 
+// Every number inside the array value of `key`, nested arrays flattened in order
+// ("points": [[10, 20, 1], [30, 40, 0]] -> 10 20 1 30 40 0). Appends to `out`; returns how many
+// were appended, 0 when the key is missing or its value is not an array. Strings inside are skipped.
+inline size_t json_extract_numbers(const std::string & body, const char * key, std::vector<double> & out) {
+    const size_t p = json_find_key_value(body, key);
+    if (p == std::string::npos || body[p] != '[') return 0;
+    const size_t before = out.size();
+    int depth = 0;
+    for (size_t i = p; i < body.size(); i++) {
+        const char c = body[i];
+        if (c == '[') {
+            depth++;
+        } else if (c == ']') {
+            if (--depth == 0) break;
+        } else if (c == '"') {
+            for (i++; i < body.size() && body[i] != '"'; i++)
+                if (body[i] == '\\') i++;
+        } else if (c == '-' || c == '+' || c == '.' || (c >= '0' && c <= '9')) {
+            char * end = nullptr;
+            const double v = std::strtod(body.c_str() + i, &end);
+            if (end == body.c_str() + i) continue;
+            out.push_back(v);
+            i = (size_t)(end - body.c_str()) - 1;
+        }
+    }
+    return out.size() - before;
+}
+
 // ---------------------------------------------------------------------------
 // Output escaping — the symmetric half of the input parser.
 //

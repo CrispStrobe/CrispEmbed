@@ -629,6 +629,45 @@ typedef CrispembedPanSrProcessDart = int Function(
 typedef CrispembedPanSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedPanSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
+// --- SAM 2.1 image segmentation (sam2) ---
+typedef CrispembedSam2InitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedSam2InitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedSam2FreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedSam2FreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedSam2ProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> rgb,
+    Int32 width,
+    Int32 height,
+    Pointer<Float> pointsXy,
+    Pointer<Int32> labels,
+    Int32 nPoints,
+    Pointer<Float> boxXyxy,
+    Int32 multimask,
+    Pointer<Pointer<Uint8>> outMasks,
+    Pointer<Float> outScores,
+    Pointer<Int32> outCount);
+typedef CrispembedSam2ProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> rgb,
+    int width,
+    int height,
+    Pointer<Float> pointsXy,
+    Pointer<Int32> labels,
+    int nPoints,
+    Pointer<Float> boxXyxy,
+    int multimask,
+    Pointer<Pointer<Uint8>> outMasks,
+    Pointer<Float> outScores,
+    Pointer<Int32> outCount);
+
+typedef CrispembedSam2FreeMasksNative = Void Function(Pointer<Uint8> masks);
+typedef CrispembedSam2FreeMasksDart = void Function(Pointer<Uint8> masks);
+
 // --- HAT Super-Resolution (hat_sr) ---
 typedef CrispembedHatSrInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

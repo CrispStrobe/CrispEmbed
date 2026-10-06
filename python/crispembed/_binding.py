@@ -3105,6 +3105,145 @@ class CrispPanSr:
 
 
 # ---------------------------------------------------------------------------
+# SAM 2.1 image segmentation (Meta, Apache-2.0; image mode)
+# ---------------------------------------------------------------------------
+
+def _setup_sam2_signatures(lib):
+    lib.crispembed_sam2_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_sam2_init.restype = ctypes.c_void_p
+    lib.crispembed_sam2_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_sam2_free.restype = None
+    for name in ("crispembed_sam2_image_size", "crispembed_sam2_mask_size"):
+        getattr(lib, name).argtypes = [ctypes.c_void_p]
+        getattr(lib, name).restype = ctypes.c_int
+    lib.crispembed_sam2_backend.argtypes = [ctypes.c_void_p]
+    lib.crispembed_sam2_backend.restype = ctypes.c_char_p
+    lib.crispembed_sam2_set_image.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int]
+    lib.crispembed_sam2_set_image.restype = ctypes.c_int
+    lib.crispembed_sam2_set_image_f32.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float)]
+    lib.crispembed_sam2_set_image_f32.restype = ctypes.c_int
+    lib.crispembed_sam2_predict.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int), ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+    lib.crispembed_sam2_predict.restype = ctypes.c_int
+    lib.crispembed_sam2_process.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int), ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float), ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)), ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_sam2_process.restype = ctypes.c_int
+    lib.crispembed_sam2_free_masks.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_sam2_free_masks.restype = None
+
+
+class CrispSam2:
+    """SAM 2.1 image segmentation with point and box prompts (image mode).
+
+    Usage::
+
+        sam = CrispSam2("sam2.1-hiera-tiny-f32.gguf")
+        masks, scores = sam.segment(rgb, points=[(888, 884, 1)], box=(453, 288, 1305, 1132))
+        # masks: uint8 (n, H, W), 0/255; one mask, or SAM's three alternatives with multimask=True
+
+        sam.set_image(rgb)                         # once per image ...
+        logits, scores = sam.predict([(520, 784, 1)])  # ... raw 4 x 256 x 256 logits per prompt set
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_sam2_signatures(self._lib)
+        self._ctx = self._lib.crispembed_sam2_init(model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load SAM 2 model: {model_path}")
+
+    @property
+    def image_size(self) -> int:
+        return self._lib.crispembed_sam2_image_size(self._ctx)
+
+    @property
+    def mask_size(self) -> int:
+        return self._lib.crispembed_sam2_mask_size(self._ctx)
+
+    @property
+    def backend(self) -> str:
+        return self._lib.crispembed_sam2_backend(self._ctx).decode("utf-8")
+
+    @staticmethod
+    def _rgb(pixels: np.ndarray) -> Tuple[np.ndarray, int, int]:
+        array = np.ascontiguousarray(pixels, dtype=np.uint8)
+        if array.ndim != 3 or array.shape[2] != 3:
+            raise ValueError("expected an RGB image of shape (H, W, 3)")
+        return array, array.shape[1], array.shape[0]
+
+    def segment(self, pixels: np.ndarray, points=(), box=None, multimask: bool = False
+                ) -> Tuple[np.ndarray, np.ndarray]:
+        """Masks for (x, y, label) points and/or an (x0, y0, x1, y1) box, in image pixels.
+
+        Returns (masks uint8 of shape (n, H, W) with values 0/255, scores float32 of shape (n,)).
+        """
+        rgb, width, height = self._rgb(pixels)
+        pts = np.asarray([(p[0], p[1]) for p in points], dtype=np.float32).reshape(-1)
+        labels = np.asarray([int(p[2]) if len(p) > 2 else 1 for p in points], dtype=np.int32)
+        box_arr = None if box is None else np.asarray(box, dtype=np.float32)
+        if len(labels) == 0 and box_arr is None:
+            raise ValueError("give points and/or a box")
+        out = ctypes.POINTER(ctypes.c_uint8)()
+        scores = (ctypes.c_float * 3)()
+        count = ctypes.c_int(0)
+        rc = self._lib.crispembed_sam2_process(
+            self._ctx, rgb.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)), width, height,
+            pts.ctypes.data_as(ctypes.POINTER(ctypes.c_float)) if len(labels) else None,
+            labels.ctypes.data_as(ctypes.POINTER(ctypes.c_int)) if len(labels) else None, len(labels),
+            box_arr.ctypes.data_as(ctypes.POINTER(ctypes.c_float)) if box_arr is not None else None,
+            1 if multimask else 0, ctypes.byref(out), scores, ctypes.byref(count))
+        if rc != 0 or not out:
+            raise RuntimeError("SAM 2 segmentation failed")
+        n = count.value
+        masks = np.ctypeslib.as_array(out, shape=(n * height * width,)).copy().reshape(n, height, width)
+        self._lib.crispembed_sam2_free_masks(out)
+        return masks, np.array(scores[:n], dtype=np.float32)
+
+    def set_image(self, pixels: np.ndarray) -> None:
+        """Encode an RGB image (H, W, 3) once; predict() then runs only the decoder."""
+        rgb, width, height = self._rgb(pixels)
+        if self._lib.crispembed_sam2_set_image(
+                self._ctx, rgb.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)), width, height) != 0:
+            raise RuntimeError("SAM 2 image encoding failed")
+        self._size = (width, height)
+
+    def predict(self, points, in_image_pixels: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+        """Raw decoder output for (x, y, label) points (labels 2/3: box corners, given first).
+
+        Returns (logits float32 (4, mask_size, mask_size), scores float32 (4,)); token 0 is the single
+        mask, 1..3 the alternatives.
+        """
+        if not hasattr(self, "_size"):
+            raise RuntimeError("call set_image() first")
+        size, m = self.image_size, self.mask_size
+        sx, sy = (size / self._size[0], size / self._size[1]) if in_image_pixels else (1.0, 1.0)
+        pts = np.asarray([(p[0] * sx, p[1] * sy) for p in points], dtype=np.float32).reshape(-1)
+        labels = np.asarray([int(p[2]) for p in points], dtype=np.int32)
+        logits = np.zeros(4 * m * m, dtype=np.float32)
+        scores = np.zeros(4, dtype=np.float32)
+        rc = self._lib.crispembed_sam2_predict(
+            self._ctx, pts.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            labels.ctypes.data_as(ctypes.POINTER(ctypes.c_int)), len(labels),
+            logits.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            scores.ctypes.data_as(ctypes.POINTER(ctypes.c_float)))
+        if rc != 0:
+            raise RuntimeError("SAM 2 prediction failed")
+        return logits.reshape(4, m, m), scores
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_sam2_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # HAT Super-Resolution (Hybrid Attention Transformer, CVPR 2023)
 # ---------------------------------------------------------------------------
 

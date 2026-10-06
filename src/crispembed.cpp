@@ -6345,6 +6345,12 @@ extern "C" void crispembed_pan_sr_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// SAM 2.1 image segmentation: the crispembed_sam2_* wrappers live in src/sam2_capi.cpp
+// (part of this library's sources) so that the engine also builds alone as the small
+// crispembed-sam2 library for applications that only segment.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // DAT (Dual Aggregation Transformer) super-resolution
 // ---------------------------------------------------------------------------
 

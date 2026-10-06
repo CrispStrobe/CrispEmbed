@@ -1429,6 +1429,13 @@ static const ModelEntry k_registry[] = {
       "Real-ESRGAN 4x SR (SRVGGNetCompact, 620K params, BSD-3)", "2.4 MB", "bsd-3-clause",
       "https://huggingface.co/cstr/esrgan-sr-GGUF" },
 
+    // --- Image segmentation ---
+
+    { "sam2.1-hiera-tiny", "sam2.1-hiera-tiny-f32.gguf",
+      "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF/resolve/main/sam2.1-hiera-tiny-f32.gguf",
+      "SAM 2.1 Hiera-tiny image segmentation with point/box prompts (31M params, image mode)", "125 MB", "apache-2.0",
+      "https://huggingface.co/cstr/sam2.1-hiera-tiny-GGUF" },
+
     { "tps-loc", "tps-loc-f32.gguf", "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
       "TPS localization CNN for document dewarping (108K params, 20 control points)", "0.4 MB", "apache-2.0",
       "https://huggingface.co/cstr/tps-loc-GGUF" },
