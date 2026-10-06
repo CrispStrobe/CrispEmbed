@@ -97,6 +97,15 @@ struct sam2_context {
 
     ggml_tensor * w(const std::string & name) const {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
+        if (!t) {
+            // Names of the first published GGUF (before the host-read tables were renamed for tools/quantize).
+            static const char * older[][2] = { { "hiera.positional.small", "hiera.pos_small" },
+                                               { "hiera.positional.window", "hiera.pos_window" },
+                                               { "hiera.positional.interp", "hiera.pos_interp" },
+                                               { "prompt.positional.gauss", "prompt.gauss" } };
+            for (auto & pair : older)
+                if (name == pair[0]) t = core_gguf::try_get(wl.tensors, pair[1]);
+        }
         if (!t) fprintf(stderr, "sam2: missing tensor %s\n", name.c_str());
         return t;
     }
@@ -260,8 +269,11 @@ int sam2_set_image_f32(sam2_context * ctx, const float * chw) {
     ggml_set_name(image, "image");
     ggml_set_input(image);
 
-    ggml_tensor * x =
-        ggml_conv_2d(g, ctx->w("hiera.patch_embed.proj.weight"), image, 4, 4, 3, 3, 1, 1); // [256,256,96,1]
+    // tools/quantize stores 4D kernels flattened to [KW*KH*IC, OC] (bytes unchanged): restore [7, 7, 3, C].
+    ggml_tensor * kernel = ctx->w("hiera.patch_embed.proj.weight");
+    if (kernel->type != GGML_TYPE_F32) kernel = ggml_cast(g, kernel, GGML_TYPE_F32);
+    if (ggml_n_dims(kernel) <= 2) kernel = ggml_reshape_4d(g, kernel, 7, 7, 3, ctx->hp.embed_dim);
+    ggml_tensor * x = ggml_conv_2d(g, kernel, image, 4, 4, 3, 3, 1, 1); // [256,256,96,1]
     x = ggml_add(g, x, ggml_reshape_4d(g, ctx->w("hiera.patch_embed.proj.bias"), 1, 1, ctx->hp.embed_dim, 1));
     x = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3)); // [96, 256, 256, 1]
     x = ggml_reshape_3d(g, x, x->ne[0], x->ne[1], x->ne[2]);
@@ -420,13 +432,15 @@ static ggml_tensor * mlp(sam2_context * ctx, ggml_context * g, const std::string
     return x;
 }
 
-// ConvTranspose2d(kernel 2, stride 2) of channel-last [Cin, W, H] with weight ne [Cin, Cout, 2, 2] -> [Cout, 2W, 2H].
+// ConvTranspose2d(kernel 2, stride 2) of channel-last [Cin, W, H] -> [Cout, 2W, 2H]. The weight is a matrix
+// ne [Cin, Cout*kw*kh] (Cout fastest), or ne [Cin, Cout, 2, 2] as the first published GGUF stores it.
 static ggml_tensor * conv_transpose_2x2(ggml_context * g, ggml_tensor * x, ggml_tensor * weight, ggml_tensor * bias) {
-    const int64_t Cin = x->ne[0], W = x->ne[1], H = x->ne[2], Cout = weight->ne[1];
-    ggml_tensor * r = ggml_mul_mat(g, ggml_reshape_2d(g, weight, Cin, Cout * 4),
-                                   ggml_reshape_2d(g, x, Cin, W * H)); // [Cout*kw*kh, W*H]
-    r = ggml_reshape_4d(g, r, Cout * 2, 2, W, H);                      // [Cout*kw, kh, W, H]
-    r = ggml_cont(g, ggml_permute(g, r, 0, 2, 1, 3));                  // [Cout*kw, W, kh, H]
+    const int64_t Cin = x->ne[0], W = x->ne[1], H = x->ne[2];
+    const int64_t Cout = ggml_n_dims(weight) <= 2 ? weight->ne[1] / 4 : weight->ne[1];
+    if (ggml_n_dims(weight) > 2) weight = ggml_reshape_2d(g, weight, Cin, Cout * 4);
+    ggml_tensor * r = ggml_mul_mat(g, weight, ggml_reshape_2d(g, x, Cin, W * H)); // [Cout*kw*kh, W*H]
+    r = ggml_reshape_4d(g, r, Cout * 2, 2, W, H);                                 // [Cout*kw, kh, W, H]
+    r = ggml_cont(g, ggml_permute(g, r, 0, 2, 1, 3));                             // [Cout*kw, W, kh, H]
     r = ggml_reshape_3d(g, r, Cout, 2 * W, 2 * H);
     return ggml_add(g, r, bias);
 }
@@ -563,10 +577,10 @@ static std::vector<int> int_array(gguf_context * meta, const char * key, const s
 // The trunk's position embedding at the token grid: interp @ small @ interp^T + tiled window, channel-last.
 static std::vector<float> position_embedding(sam2_context * ctx, int grid) {
     const int C = ctx->hp.embed_dim;
-    const std::vector<float> small = core_cpu::to_f32(ctx->w("hiera.pos_small"));   // [7(y)][7(x)][C]
-    const std::vector<float> window = core_cpu::to_f32(ctx->w("hiera.pos_window")); // [8(y)][8(x)][C]
-    const std::vector<float> interp = core_cpu::to_f32(ctx->w("hiera.pos_interp")); // [grid][7]
-    const int s = (int)ctx->w("hiera.pos_small")->ne[1], ws = (int)ctx->w("hiera.pos_window")->ne[1];
+    const std::vector<float> small = core_cpu::to_f32(ctx->w("hiera.positional.small"));   // [7(y)][7(x)][C]
+    const std::vector<float> window = core_cpu::to_f32(ctx->w("hiera.positional.window")); // [8(y)][8(x)][C]
+    const std::vector<float> interp = core_cpu::to_f32(ctx->w("hiera.positional.interp")); // [grid][7]
+    const int s = (int)ctx->w("hiera.positional.small")->ne[1], ws = (int)ctx->w("hiera.positional.window")->ne[1];
     std::vector<double> rows((size_t)s * grid * C, 0.0); // [i(y source)][x][C]
     for (int i = 0; i < s; i++)
         for (int x = 0; x < grid; x++)
@@ -657,15 +671,15 @@ sam2_context * sam2_init(const char * model_path, int n_threads) {
     // Prompt-encoder weights on the host.
     auto host = [&](const char * name) { return core_cpu::to_f32(ctx->w(name)); };
     for (const char * name :
-         { "hiera.pos_small", "hiera.pos_window", "hiera.pos_interp", "prompt.gauss", "prompt.not_a_point_embed.weight",
-           "prompt.no_mask_embed.weight", "dec.obj_score_token.weight", "dec.iou_token.weight",
-           "dec.mask_tokens.weight", "no_mem_embed" }) {
+         { "hiera.positional.small", "hiera.positional.window", "hiera.positional.interp", "prompt.positional.gauss",
+           "prompt.not_a_point_embed.weight", "prompt.no_mask_embed.weight", "dec.obj_score_token.weight",
+           "dec.iou_token.weight", "dec.mask_tokens.weight", "no_mem_embed" }) {
         if (!ctx->w(name)) {
             sam2_free(ctx);
             return nullptr;
         }
     }
-    ctx->gauss = host("prompt.gauss");
+    ctx->gauss = host("prompt.positional.gauss");
     for (int i = 0; i < 4; i++)
         ctx->point_embed[i] = host(("prompt.point_embeddings." + std::to_string(i) + ".weight").c_str());
     ctx->not_a_point = host("prompt.not_a_point_embed.weight");

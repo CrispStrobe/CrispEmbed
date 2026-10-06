@@ -15,8 +15,8 @@ Tensor layout (ggml ne, i.e. the numpy shape reversed):
   linear weights      [in, out]                 (torch [out, in] unchanged)
   1x1 convolutions    [in, out]                 (torch [out, in, 1, 1] squeezed)
   patch embedding     [7, 7, 3, 96]             (torch [out, in, kh, kw] unchanged; ggml_conv_2d layout)
-  transposed convs    [in, out, kw, kh]         (torch [in, out, kh, kw] permuted to [kh, kw, out, in])
-  position embedding  hiera.pos_small [7, 7, 96], hiera.pos_window [8, 8, 96], hiera.pos_interp [7, 256]:
+  transposed convs    [in, out*kw*kh]           (torch [in, out, kh, kw] permuted to [kh, kw, out, in], flattened)
+  position embedding  hiera.positional.small [96, 7, 7], .window [96, 8, 8], .interp [7, 256]:
                       the trunk's bicubic resize to the 256 x 256 token grid as a matrix, so the runtime
                       computes the embedding as interp @ small @ interp^T + tiled window, without bicubic code.
 """
@@ -125,19 +125,24 @@ def main():
             continue
         name = rename(key)
         t = tensor.detach().float()
+        # Host-read tables carry "positional" in their names: tools/quantize.cpp then copies them as they are.
         if name == "hiera.pos_embed":
-            writer.add_tensor("hiera.pos_small", t[0].permute(1, 2, 0).contiguous().numpy())  # [7,7,96] -> ne [96,7,7]
-            writer.add_tensor("hiera.pos_interp", bicubic_matrix(t.shape[-1], grid).numpy())  # ne [7, 256]
+            writer.add_tensor("hiera.positional.small", t[0].permute(1, 2, 0).contiguous().numpy())  # ne [96,7,7]
+            writer.add_tensor("hiera.positional.interp", bicubic_matrix(t.shape[-1], grid).numpy())  # ne [7, 256]
             count += 2
             continue
         if name == "hiera.pos_embed_window":
-            writer.add_tensor("hiera.pos_window", t[0].permute(1, 2, 0).contiguous().numpy())  # ne [96, 8, 8]
+            writer.add_tensor("hiera.positional.window", t[0].permute(1, 2, 0).contiguous().numpy())  # ne [96, 8, 8]
             count += 1
             continue
+        if name == "prompt.gauss":
+            name = "prompt.positional.gauss"
         if t.dim() == 4 and t.shape[-2:] == (1, 1):
             t = t[:, :, 0, 0]
         elif name.startswith("dec.output_upscaling.") and t.dim() == 4:
-            t = t.permute(2, 3, 1, 0)  # [in, out, kh, kw] -> [kh, kw, out, in]: ne [in, out, kw, kh]
+            # [in, out, kh, kw] -> [kh, kw, out, in] -> 2D (kh*kw*out, in): ne [in, out*kw*kh], an ordinary matrix
+            # (out fastest, then kw, then kh), so the quantizer treats it like any other weight.
+            t = t.permute(2, 3, 1, 0).reshape(-1, t.shape[0])
         elif t.dim() == 3 and t.shape[0] == 1:
             t = t[0]
         array = t.contiguous().numpy()
