@@ -123,7 +123,15 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                 save(f"{label}.cache.{index}.{name}", getattr(layer, name, None))
 
     with torch.inference_mode():
-        prefill = model(**inputs, use_cache=True, logits_to_keep=1)
+        # Use the same official positional-input preparation as generate(). A
+        # raw cached forward with a full attention mask produces full-length
+        # rotary positions for a one-token query in this pinned implementation.
+        prefill_positions = model._prepare_position_ids_for_generation(inputs["input_ids"], dict(inputs))
+        prefill_inputs = model.prepare_inputs_for_generation(
+            **inputs, position_ids=prefill_positions, use_cache=True,
+            is_first_iteration=True, logits_to_keep=1
+        )
+        prefill = model(**prefill_inputs)
         save("prefill.logits", prefill.logits[:, -1])
         save_cache(prefill.past_key_values, "prefill")
         first_id = prefill.logits[:, -1].argmax(-1, keepdim=True)
@@ -131,9 +139,14 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         # forward of the same token. Retain both logits even if this check fails.
         phase[0] = "cached"
         continued_mask = torch.cat([inputs["attention_mask"], torch.ones_like(first_id)], dim=-1)
-        cached = model(input_ids=first_id, attention_mask=continued_mask,
-                       past_key_values=prefill.past_key_values, use_cache=True,
-                       logits_to_keep=1)
+        cached_kwargs = dict(input_ids=first_id, attention_mask=continued_mask,
+                             past_key_values=prefill.past_key_values, use_cache=True)
+        cached_positions = model._prepare_position_ids_for_generation(first_id, cached_kwargs)
+        cached_inputs = model.prepare_inputs_for_generation(
+            **cached_kwargs, position_ids=cached_positions,
+            is_first_iteration=False, logits_to_keep=1
+        )
+        cached = model(**cached_inputs)
         save("cached.logits", cached.logits[:, -1])
         save_cache(cached.past_key_values, "cached")
         phase[0] = "full_prefix"
@@ -143,7 +156,12 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         complete["mm_token_type_ids"] = torch.cat(
             [inputs["mm_token_type_ids"], torch.zeros_like(first_id)], dim=-1
         )
-        full = model(**complete, use_cache=False, logits_to_keep=1)
+        full_positions = model._prepare_position_ids_for_generation(complete["input_ids"], complete)
+        full_inputs = model.prepare_inputs_for_generation(
+            **complete, position_ids=full_positions, use_cache=False,
+            is_first_iteration=True, logits_to_keep=1
+        )
+        full = model(**full_inputs)
         save("full_prefix.logits", full.logits[:, -1])
         delta = (cached.logits[:, -1] - full.logits[:, -1]).abs()
         max_error = delta.max().item()
@@ -154,7 +172,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         ids = generated.sequences[:, inputs["input_ids"].shape[1]:]
         save("generated.ids", ids)
         for index, score in enumerate(generated.scores):
-            save(f"generated.logits.{index}", score)
+            save(f"generated.scores.{index}", score)
     for handle in handles:
         handle.remove()
     for name, original in originals.items():
