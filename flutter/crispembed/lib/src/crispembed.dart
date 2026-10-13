@@ -138,38 +138,73 @@ class CrispEmbed {
   }
 
   /// Whether the loaded model supports calibrated typed decisions.
-  bool get hasDecision => !_disposed && _hasDecisionFn != null && _hasDecisionFn!(_ctx) != 0;
+  bool get hasDecision =>
+      !_disposed && _hasDecisionFn != null && _hasDecisionFn!(_ctx) != 0;
 
   /// Score normalized 768-dimensional embeddings using the calibrated head.
-  Map<String, List<double>> decisionScores(List<double> state, List<double> question, List<List<double>> options, {int typeId = 0}) {
+  Map<String, List<double>> decisionScores(
+      List<double> state, List<double> question, List<List<double>> options,
+      {int typeId = 0}) {
     if (!hasDecision) throw StateError('Model has no typed-decision head');
-    if (state.length != 768 || question.length != 768 || options.isEmpty || options.length > 4096 || options.any((v) => v.length != 768) || typeId < 0 || typeId > 2) {
-      throw ArgumentError('Expected state/question [768], options [1..4096,768], typeId 0..2');
+    if (state.length != 768 ||
+        question.length != 768 ||
+        options.isEmpty ||
+        options.length > 4096 ||
+        options.any((v) => v.length != 768) ||
+        typeId < 0 ||
+        typeId > 2) {
+      throw ArgumentError(
+          'Expected state/question [768], options [1..4096,768], typeId 0..2');
     }
-    if (state.any((v) => !v.isFinite) || question.any((v) => !v.isFinite) || options.any((row) => row.any((v) => !v.isFinite))) throw ArgumentError('Embeddings must be finite');
-    final s = calloc<Float>(768), q = calloc<Float>(768), o = calloc<Float>(options.length * 768);
-    final logits = calloc<Float>(options.length), probabilities = calloc<Float>(options.length);
+    if (state.any((v) => !v.isFinite) ||
+        question.any((v) => !v.isFinite) ||
+        options.any((row) => row.any((v) => !v.isFinite)))
+      throw ArgumentError('Embeddings must be finite');
+    final s = calloc<Float>(768),
+        q = calloc<Float>(768),
+        o = calloc<Float>(options.length * 768);
+    final logits = calloc<Float>(options.length),
+        probabilities = calloc<Float>(options.length);
     try {
-      s.asTypedList(768).setAll(0, state); q.asTypedList(768).setAll(0, question);
+      s.asTypedList(768).setAll(0, state);
+      q.asTypedList(768).setAll(0, question);
       final flat = o.asTypedList(options.length * 768);
       for (var i = 0; i < options.length; ++i) flat.setAll(i * 768, options[i]);
-      if (_decisionScoresFn!(_ctx, s, q, o, options.length, typeId, logits, probabilities) == 0) throw StateError('Decision scoring failed');
-      return {'logits': List<double>.from(logits.asTypedList(options.length)), 'probabilities': List<double>.from(probabilities.asTypedList(options.length))};
-    } finally { calloc.free(s); calloc.free(q); calloc.free(o); calloc.free(logits); calloc.free(probabilities); }
+      if (_decisionScoresFn!(
+              _ctx, s, q, o, options.length, typeId, logits, probabilities) ==
+          0) throw StateError('Decision scoring failed');
+      return {
+        'logits': List<double>.from(logits.asTypedList(options.length)),
+        'probabilities':
+            List<double>.from(probabilities.asTypedList(options.length))
+      };
+    } finally {
+      calloc.free(s);
+      calloc.free(q);
+      calloc.free(o);
+      calloc.free(logits);
+      calloc.free(probabilities);
+    }
   }
 
   /// Return typed answers (string choice, integer score, boolean noul).
-  Map<String, dynamic> decide(Object? state, Object questions, {String workflow = ''}) {
+  Map<String, dynamic> decide(Object? state, Object questions,
+      {String workflow = ''}) {
     if (!hasDecision) throw StateError('Model has no typed-decision head');
-    final request = jsonEncode({'state': state, 'questions': questions, 'workflow': workflow}).toNativeUtf8();
+    final request = jsonEncode(
+            {'state': state, 'questions': questions, 'workflow': workflow})
+        .toNativeUtf8();
     try {
       final result = _decideJsonFn!(_ctx, request);
       if (result == nullptr) {
         final error = _decisionErrorFn!(_ctx);
-        throw StateError(error == nullptr ? 'Typed decision failed' : error.toDartString());
+        throw StateError(
+            error == nullptr ? 'Typed decision failed' : error.toDartString());
       }
       return jsonDecode(result.toDartString()) as Map<String, dynamic>;
-    } finally { calloc.free(request); }
+    } finally {
+      calloc.free(request);
+    }
   }
 
   void _bindFunctions() {
@@ -207,10 +242,17 @@ class CrispEmbed {
       _tokenIdsFn = _lib.lookupFunction<CrispembedTokenIdsNative, CrispembedTokenIds>('crispembed_last_token_ids');
     }
     if (_lib.providesSymbol('crispembed_has_decision')) {
-      _hasDecisionFn = _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>('crispembed_has_decision');
-      _decideJsonFn = _lib.lookupFunction<CrispembedDecideJsonNative, CrispembedDecideJson>('crispembed_decide_json');
-      _decisionScoresFn = _lib.lookupFunction<CrispembedDecisionScoresNative, CrispembedDecisionScores>('crispembed_decision_scores');
-      _decisionErrorFn = _lib.lookupFunction<CrispembedGetPrefixNative, CrispembedGetPrefix>('crispembed_decision_error');
+      _hasDecisionFn =
+          _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>(
+              'crispembed_has_decision');
+      _decideJsonFn =
+          _lib.lookupFunction<CrispembedDecideJsonNative, CrispembedDecideJson>(
+              'crispembed_decide_json');
+      _decisionScoresFn = _lib.lookupFunction<CrispembedDecisionScoresNative,
+          CrispembedDecisionScores>('crispembed_decision_scores');
+      _decisionErrorFn =
+          _lib.lookupFunction<CrispembedGetPrefixNative, CrispembedGetPrefix>(
+              'crispembed_decision_error');
     }
     if (_lib.providesSymbol('crispembed_has_masked_lm')) {
       _hasMaskedLmFn = _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>('crispembed_has_masked_lm');

@@ -7,11 +7,11 @@
         "kind": "choice",
         "label": "review",
         "value": "review",
-        "confidence": 0.57684654,
+        "confidence": 0.576846123,
         "probabilities": {
-          "continue": 0.175612122,
-          "review": 0.57684654,
-          "stop": 0.247541323
+          "continue": 0.175612301,
+          "review": 0.576846123,
+          "stop": 0.247541592
         },
         "expected_level": null
       },
@@ -27,7 +27,7 @@
         },
         "expected_level": null
       },
-      "max_probability_error": 0.0026586803855438157
+      "max_probability_error": 0.0026584113855438185
     },
     {
       "question": "risk",
@@ -35,14 +35,14 @@
         "kind": "score",
         "label": "3",
         "value": 3,
-        "confidence": 0.461864769,
+        "confidence": 0.461865336,
         "probabilities": {
-          "0": 0.0233924314,
-          "1": 0.129285425,
-          "2": 0.385457397,
-          "3": 0.461864769
+          "0": 0.0233924612,
+          "1": 0.129285082,
+          "2": 0.385457128,
+          "3": 0.461865336
         },
-        "expected_level": 2.28579453
+        "expected_level": 2.28579535
       },
       "reference": {
         "kind": "score",
@@ -57,7 +57,7 @@
         },
         "expected_level": 2.285400912165642
       },
-      "max_probability_error": 0.0002516503175049034
+      "max_probability_error": 0.0002519193175049006
     },
     {
       "question": "needs_review",
@@ -65,10 +65,10 @@
         "kind": "noul",
         "label": "true",
         "value": true,
-        "confidence": 0.683820903,
+        "confidence": 0.683820486,
         "probabilities": {
-          "false": 0.316179127,
-          "true": 0.683820903
+          "false": 0.316179544,
+          "true": 0.683820486
         },
         "expected_level": null
       },
@@ -83,7 +83,7 @@
         },
         "expected_level": null
       },
-      "max_probability_error": 0.0016341206399230757
+      "max_probability_error": 0.0016337036399231009
     },
     {
       "question": "accion",
@@ -91,10 +91,10 @@
         "kind": "choice",
         "label": "escalar",
         "value": "escalar",
-        "confidence": 0.50165987,
+        "confidence": 0.501659393,
         "probabilities": {
-          "ayudar": 0.49834013,
-          "escalar": 0.50165987
+          "ayudar": 0.498340607,
+          "escalar": 0.501659393
         },
         "expected_level": null
       },
@@ -109,7 +109,7 @@
         },
         "expected_level": null
       },
-      "max_probability_error": 0.0011219979809570235
+      "max_probability_error": 0.0011224749809570223
     },
     {
       "question": "nivel",
@@ -117,13 +117,13 @@
         "kind": "score",
         "label": "1",
         "value": 1,
-        "confidence": 0.53460896,
+        "confidence": 0.534609675,
         "probabilities": {
-          "-2": 0.207977608,
-          "1": 0.53460896,
-          "10": 0.257413417
+          "-2": 0.207977086,
+          "1": 0.534609675,
+          "10": 0.257413268
         },
-        "expected_level": 2.69278792
+        "expected_level": 2.69278818
       },
       "reference": {
         "kind": "score",
@@ -137,7 +137,7 @@
         },
         "expected_level": 2.661697745323181
       },
-      "max_probability_error": 0.0028249322359008566
+      "max_probability_error": 0.002824783235900852
     },
     {
       "question": "named",
@@ -195,10 +195,10 @@
         "kind": "noul",
         "label": "false",
         "value": false,
-        "confidence": 0.869546771,
+        "confidence": 0.869547009,
         "probabilities": {
-          "false": 0.869546771,
-          "true": 0.130453214
+          "false": 0.869547009,
+          "true": 0.130453005
         },
         "expected_level": null
       },
@@ -213,8 +213,91 @@
         },
         "expected_level": null
       },
-      "max_probability_error": 0.00011593108358765036
+      "max_probability_error": 0.00011570708358765724
     }
   ],
-  "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS"
+  "embeddings": [
+    {
+      "scenario": 0,
+      "texts": 13,
+      "cosine_min": 0.9999668598175049,
+      "relative_l2_error": 0.006827881094068289,
+      "max_absolute_error": 0.0010825181379914284,
+      "native_norm_min": 0.9999999403953552,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 1,
+      "texts": 11,
+      "cosine_min": 0.9999564290046692,
+      "relative_l2_error": 0.007368369959294796,
+      "max_absolute_error": 0.0011576898396015167,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 2,
+      "texts": 6,
+      "cosine_min": 0.9999722242355347,
+      "relative_l2_error": 0.006773179396986961,
+      "max_absolute_error": 0.0010066342074424028,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    }
+  ],
+  "head_on_reference_embeddings": [
+    {
+      "scenario": 0,
+      "question": "action",
+      "max_logit_error": 5.7220458984375e-06,
+      "max_probability_error": 1.1622905731201172e-06
+    },
+    {
+      "scenario": 0,
+      "question": "risk",
+      "max_logit_error": 9.5367431640625e-06,
+      "max_probability_error": 1.6838312149047852e-06
+    },
+    {
+      "scenario": 0,
+      "question": "needs_review",
+      "max_logit_error": 1.33514404296875e-05,
+      "max_probability_error": 2.9206275939941406e-06
+    },
+    {
+      "scenario": 1,
+      "question": "accion",
+      "max_logit_error": 9.5367431640625e-06,
+      "max_probability_error": 3.3974647521972656e-06
+    },
+    {
+      "scenario": 1,
+      "question": "nivel",
+      "max_logit_error": 1.1444091796875e-05,
+      "max_probability_error": 1.4901161193847656e-06
+    },
+    {
+      "scenario": 1,
+      "question": "named",
+      "max_logit_error": 1.1444091796875e-05,
+      "max_probability_error": 1.7881393432617188e-07
+    },
+    {
+      "scenario": 2,
+      "question": "one",
+      "max_logit_error": 5.7220458984375e-06,
+      "max_probability_error": 0.0
+    },
+    {
+      "scenario": 2,
+      "question": "no",
+      "max_logit_error": 1.33514404296875e-05,
+      "max_probability_error": 1.7285346984863281e-06
+    }
+  ],
+  "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133",
+  "native_commit": "1d5b42f7",
+  "platform": "Linux ARM64 CPU",
+  "ggml_native": false
 }

@@ -1,0 +1,8 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133",
+  "platform": "Linux ARM64 CPU",
+  "native_commit": "1d5b42f7",
+  "result": "PASS Python renderer: 5537 finite doubles, scientific boundaries, subnormals, signed zero and string/list repr",
+  "unicode": "15.0.0",
+  "empty_whitespace_state_failures": "PASS"
+}

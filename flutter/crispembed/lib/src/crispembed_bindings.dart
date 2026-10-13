@@ -1176,8 +1176,26 @@ typedef CrispembedListLoraDart = int Function(Pointer<CrispembedContext> ctx,
     Pointer<Pointer<Pointer<Utf8>>> outNames, Pointer<Int32> outCount);
 
 // Typed schema decisions: context-owned UTF-8 JSON or null on failure.
-typedef CrispembedDecideJsonNative = Pointer<Utf8> Function(Pointer<CrispembedContext>, Pointer<Utf8>);
-typedef CrispembedDecideJson = Pointer<Utf8> Function(Pointer<CrispembedContext>, Pointer<Utf8>);
+typedef CrispembedDecideJsonNative = Pointer<Utf8> Function(
+    Pointer<CrispembedContext>, Pointer<Utf8>);
+typedef CrispembedDecideJson = Pointer<Utf8> Function(
+    Pointer<CrispembedContext>, Pointer<Utf8>);
 
-typedef CrispembedDecisionScoresNative = Int32 Function(Pointer<CrispembedContext>, Pointer<Float>, Pointer<Float>, Pointer<Float>, Int32, Int32, Pointer<Float>, Pointer<Float>);
-typedef CrispembedDecisionScores = int Function(Pointer<CrispembedContext>, Pointer<Float>, Pointer<Float>, Pointer<Float>, int, int, Pointer<Float>, Pointer<Float>);
+typedef CrispembedDecisionScoresNative = Int32 Function(
+    Pointer<CrispembedContext>,
+    Pointer<Float>,
+    Pointer<Float>,
+    Pointer<Float>,
+    Int32,
+    Int32,
+    Pointer<Float>,
+    Pointer<Float>);
+typedef CrispembedDecisionScores = int Function(
+    Pointer<CrispembedContext>,
+    Pointer<Float>,
+    Pointer<Float>,
+    Pointer<Float>,
+    int,
+    int,
+    Pointer<Float>,
+    Pointer<Float>);

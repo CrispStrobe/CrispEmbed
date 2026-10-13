@@ -296,7 +296,8 @@
     }
   ],
   "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
-  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352829721",
-  "native_commit": "9f2ab14a844e0104358be198e8ebda5d41b11047",
-  "platform": "macOS ARM64 CPU"
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359820734",
+  "native_commit": "1d5b42f7",
+  "platform": "macOS ARM64 CPU, deployment target 12.0",
+  "ggml_native": false
 }

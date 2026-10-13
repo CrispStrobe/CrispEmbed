@@ -65,10 +65,10 @@
         "kind": "noul",
         "label": "true",
         "value": true,
-        "confidence": 0.682183921,
+        "confidence": 0.682184756,
         "probabilities": {
-          "false": 0.317816108,
-          "true": 0.682183921
+          "false": 0.317815274,
+          "true": 0.682184756
         },
         "expected_level": null
       },
@@ -83,7 +83,7 @@
         },
         "expected_level": null
       },
-      "max_probability_error": 2.920162399278059e-06
+      "max_probability_error": 2.0861623992729506e-06
     },
     {
       "question": "accion",
@@ -145,12 +145,12 @@
         "kind": "score",
         "label": "1",
         "value": 1,
-        "confidence": 0.753257394,
+        "confidence": 0.753257036,
         "probabilities": {
-          "0": 0.246742621,
-          "1": 0.753257394
+          "0": 0.246742979,
+          "1": 0.753257036
         },
-        "expected_level": 0.753257394
+        "expected_level": 0.753257036
       },
       "reference": {
         "kind": "score",
@@ -163,7 +163,7 @@
         },
         "expected_level": 0.7532588243484497
       },
-      "max_probability_error": 1.4303484496824836e-06
+      "max_probability_error": 1.7883484496605817e-06
     },
     {
       "question": "one",
@@ -195,10 +195,10 @@
         "kind": "noul",
         "label": "false",
         "value": false,
-        "confidence": 0.869661212,
+        "confidence": 0.869661391,
         "probabilities": {
-          "false": 0.869661212,
-          "true": 0.130338818
+          "false": 0.869661391,
+          "true": 0.130338594
         },
         "expected_level": null
       },
@@ -213,8 +213,91 @@
         },
         "expected_level": null
       },
-      "max_probability_error": 1.520083587641663e-06
+      "max_probability_error": 1.3110835876961602e-06
     }
   ],
-  "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS"
+  "embeddings": [
+    {
+      "scenario": 0,
+      "texts": 13,
+      "cosine_min": 0.9999999403953552,
+      "relative_l2_error": 6.886171490805282e-07,
+      "max_absolute_error": 1.1920928955078125e-07,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 1,
+      "texts": 11,
+      "cosine_min": 1.0,
+      "relative_l2_error": 1.305256773775909e-06,
+      "max_absolute_error": 4.507601261138916e-07,
+      "native_norm_min": 0.9999999403953552,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 2,
+      "texts": 6,
+      "cosine_min": 0.9999999403953552,
+      "relative_l2_error": 7.52322250718862e-07,
+      "max_absolute_error": 1.4901161193847656e-07,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    }
+  ],
+  "head_on_reference_embeddings": [
+    {
+      "scenario": 0,
+      "question": "action",
+      "max_logit_error": 5.7220458984375e-06,
+      "max_probability_error": 1.1622905731201172e-06
+    },
+    {
+      "scenario": 0,
+      "question": "risk",
+      "max_logit_error": 9.5367431640625e-06,
+      "max_probability_error": 1.6838312149047852e-06
+    },
+    {
+      "scenario": 0,
+      "question": "needs_review",
+      "max_logit_error": 1.33514404296875e-05,
+      "max_probability_error": 2.9206275939941406e-06
+    },
+    {
+      "scenario": 1,
+      "question": "accion",
+      "max_logit_error": 9.5367431640625e-06,
+      "max_probability_error": 3.3974647521972656e-06
+    },
+    {
+      "scenario": 1,
+      "question": "nivel",
+      "max_logit_error": 1.1444091796875e-05,
+      "max_probability_error": 1.4901161193847656e-06
+    },
+    {
+      "scenario": 1,
+      "question": "named",
+      "max_logit_error": 1.1444091796875e-05,
+      "max_probability_error": 1.7881393432617188e-07
+    },
+    {
+      "scenario": 2,
+      "question": "one",
+      "max_logit_error": 5.7220458984375e-06,
+      "max_probability_error": 0.0
+    },
+    {
+      "scenario": 2,
+      "question": "no",
+      "max_logit_error": 1.33514404296875e-05,
+      "max_probability_error": 1.7285346984863281e-06
+    }
+  ],
+  "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133",
+  "native_commit": "1d5b42f7",
+  "platform": "Linux ARM64 CPU",
+  "ggml_native": false
 }
