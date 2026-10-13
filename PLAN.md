@@ -24,12 +24,13 @@ Tokenizer defaults and other model inference paths remain intact. Stored fitted
 temperatures retained; reference agreement is not independent task accuracy.
 No GPU/speed or new runtime release claim. Local builds/model inference deferred.
 
-HF repository created with existing publisher credentials; reviewed card/license,
-source README and validation reports uploaded. Model files remain pending. A
-bounded CI probe checks write permission on the now-created repo; permission to
-copy the local credential into a temporary encrypted Actions secret is pending
-only if the existing token cannot write. Never register unavailable URLs: add
-aliases/generated SHA-256 pins only after remote model hashes/bytes verify.
+HF metadata repository created; model files pending hosted staging/owner acceptance.
+The changed-commit probe38368064611 confirms direct-write403. Use the existing CI
+contributor token to stage artifacts and accept with the existing local publisher
+credential; no new credential transferred. Add aliases/pins after remote verification.
+Build38366112891 found a Unicode-header mirror mismatch; the Python15 renderer
+table now lives in a separate header, keeping the shared tokenizer byte-identical.
+Rust ARM, WASM, lint and quantizer checks pass. Hosted publication reruns full parity.
 
 ## CrispMath consumer handoff — 5 October 2026
 

@@ -5,6 +5,7 @@ regex pre-tokenizers in src/core/bpe.h branch on.
     python tools/gen_unicode_categ.py > src/core/unicode_categ.h
     tools/format.sh --fix src/core/unicode_categ.h
 """
+
 import sys
 import unicodedata
 
@@ -13,7 +14,7 @@ def python_printability_definition(path=None):
     """Separate printable predicate for the blueprint's CPython 3.12 / UCD 15.0.
 
     Do not change the existing regex categories or their fallback semantics.
-    --python-printable-only [UnicodeData.txt] emits this addition alone.
+    --python-printable-only [UnicodeData.txt] generates core/python_printable.h.
     """
     import hashlib
     from pathlib import Path
@@ -50,7 +51,11 @@ def python_printability_definition(path=None):
             lo = None
     rows = "\n".join(f"    {{ 0x{lo:04X}, 0x{hi:04X} }}," for lo, hi in ranges)
     return (
-        """
+        """#pragma once
+#include "unicode_categ.h"
+
+// CPython rendering uses a different Unicode version from the shared tokenizer.
+namespace core_unicode {
 // Python str/repr printability, Unicode 15.0.0 (CPython 3.12 reference).
 // Generated from pinned UnicodeData.txt by tools/gen_unicode_categ.py.
 // Unicode data license: src/core/third_party/unicode/LICENSE.
@@ -70,6 +75,7 @@ inline bool python_is_printable15(uint32_t cp) {
     }
     return false;
 }
+} // namespace core_unicode
 """
     )
 
@@ -305,10 +311,6 @@ def main():
         "    { 0x%04X, 0x%04X, %s }," % (lo, hi, NAMES[c]) for lo, hi, c in rs
     )
     pbody = "\n".join("    { 0x%04X, 0x%04X }," % (lo, hi) for lo, hi in ps)
-    footer = FOOTER.replace(
-        "} // namespace core_unicode",
-        python_printability_definition() + "\n} // namespace core_unicode",
-    )
     sys.stdout.write(
         HEADER % unicodedata.unidata_version
         + body
@@ -316,7 +318,7 @@ def main():
         + MID
         + pbody
         + "\n"
-        + footer
+        + FOOTER
         + "\n"
     )
 
