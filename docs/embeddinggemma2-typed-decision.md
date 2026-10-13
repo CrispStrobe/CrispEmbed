@@ -114,7 +114,7 @@ Decision-bank embeddings and complete typed answers give:
 | Artifact | Bytes | Minimum bank cosine | Answers matching Python | Maximum probability error |
 |---|---:|---:|---:|---:|
 | FP32 | 1,102,182,464 | 0.999999940 | 8/8 | 0.00000482762 |
-| Q8_0, FP32 activation operands | 307,492,928 | 0.999956489 | 8/8 | 0.00282493224 |
+| Q8_0, FP32 activation operands (portable CPU baseline) | 307,492,928 | 0.999956429 | 8/8 | 0.00282478324 |
 
 These eight questions cover choice, score and boolean schemas; they are a
 numerical reference suite, not an independent accuracy benchmark or calibration
@@ -124,6 +124,13 @@ repeat calls pass. Independent
 [macOS run 38352829721](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352829721)
 also passes all 145 stages and eight questions: the same minimum bank cosines,
 maximum FP32 probability error 3.87479e-6 and Q8 error 0.00282531946.
+The updated [macOS 12 run 38359820734](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359820734)
+passes the same model checks plus exact Python rendering for 5,537 finite doubles,
+Unicode/list representations and empty/whitespace state failures. Both updated
+platform runs configure `GGML_NATIVE=OFF`; Linux's corresponding portable-baseline
+metrics above come from [38359818133](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133).
+That run's later failure was the isolated Rust consumer's library search path;
+its native/reference checks passed. The publication retry sets the loader path.
 [Recorded measurements](../tests/results/gemma-decision/arm-validation.json)
 and [decoded FP32 answers](../tests/results/gemma-decision/arm-f32-decisions.json)
 retain the original/native results. Publishing and SHA-256 registry pins follow

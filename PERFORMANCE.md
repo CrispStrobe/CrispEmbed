@@ -27,6 +27,11 @@ passes all 145 stages and the same eight answers, with identical minimum bank
 cosines; maximum probability error is 3.87479e-6 FP32 and 0.00282531946 Q8.
 [macOS reports](tests/results/gemma-decision/macos-f32-decisions.json) include
 head-only errors and embedding magnitudes. Stored calibration remains unchanged.
+Portable `GGML_NATIVE=OFF` Linux replay 38359818133 retains FP32 numbers; Q8
+minimum cosine is 0.999956429 and maximum probability error 0.00282478324.
+Updated macOS deployment-target-12 replay 38359820734 retains its recorded model
+metrics and passes the 5,537-double / Unicode renderer checks. These small CPU
+rounding changes do not alter any of the eight decoded labels.
 
 ## LFM2 encoder FP32 activation operands (2026-10-03)
 
