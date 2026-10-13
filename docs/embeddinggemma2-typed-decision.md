@@ -69,6 +69,11 @@ calibrated probabilities. Rendering preserves JSON object order and the Python
 state formatting used in training. Request bounds: 1 MiB JSON, nesting depth 64,
 1–128 questions, 1–4096 options per question. Invalid requests fail rather than
 returning stale answers. Per-context use is not thread-safe outside server locking.
+Floating JSON values must be finite. Integer state text supports Python's default
+4300-digit bound; numeric score labels fit a signed 64-bit integer. Float spelling
+uses pinned Ryu conversion, retaining the project's macOS 12 / iOS 15 build
+targets. List/dict string representations use CPython 3.12 / Unicode 15.0
+printability; the existing tokenizer category tables remain unchanged.
 
 ## Precision and validation
 
