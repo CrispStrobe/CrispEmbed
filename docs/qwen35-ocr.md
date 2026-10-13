@@ -89,7 +89,7 @@ Launch through the existing workflow:
 ```sh
 gh workflow run heavy-cpu.yml --ref ocr-permissive-roadmap \
   -f script=tools/ci-heavy/qwen35_ocr_bootstrap.py \
-  -f 'pip=torch==2.10.0 transformers==5.5.4 gguf==0.19.0 huggingface_hub safetensors pillow numpy' \
+  -f 'pip=torch==2.10.0 torchvision==0.25.0 transformers==5.5.4 gguf==0.19.0 huggingface_hub safetensors pillow numpy' \
   -f timeout_minutes=60
 ```
 
