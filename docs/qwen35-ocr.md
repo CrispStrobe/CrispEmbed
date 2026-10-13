@@ -130,3 +130,26 @@ Next action: collect this run's full conclusion and small `bootstrap.json`,
 `export-manifest.json` and official-reference JSON reports. Fix its first failing
 stage before native implementation. Keep the implementation branch/worktree
 until this model-backed gate completes; the public roadmap/blueprint are on main.
+
+## First hosted result and native recurrence checkpoint — 2026-10-13
+
+[Initial ARM run 38459422250](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38459422250)
+at `aea235b7` validates **473 tensor byte/shape roundtrips**, F16 export
+**1,717,205,376 bytes**, and rejection of malformed embedding shape and unknown
+adapter weights. It fails before official inference because the processor's
+video component imports torchvision even for still images. Add matching
+`torchvision==0.25.0` to the pinned Torch 2.10 reference environment.
+[Initial report](../tests/results/qwen35-ocr/bootstrap-initial.json) is retained;
+this is export/schema evidence, not output parity.
+
+The implementation branch now contains a CPU ggml delta boundary gated by
+`core_env::on("CRISPEMBED_QWEN35_OCR")`. It applies official Q/K sum-based L2
+normalization, preserves ggml's internal query scale and transposes HF recurrent
+state to/from ggml's layout. The comparator checks exact element counts, cosine,
+absolute error and norms for output and state, then feeds **native** prefill
+state into continuation and checks a fresh reset. Disabled/invalid calls and
+a deliberately corrupted output are controls. No production OCR API exists.
+
+Pending checks: [full official reference plus real-checkpoint delta boundary](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38462297091),
+and [independent official single-token/multi-batch 65-token chunk cases](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38462494620).
+Do not claim native recurrence parity until their assertion logs are collected.

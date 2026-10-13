@@ -1,0 +1,28 @@
+{
+  "native_parity": "not implemented",
+  "publication": "none",
+  "source_commit": "aea235b74bf26c3679ce93dc1785d61c17496ce8",
+  "provenance": [
+    {
+      "model": "lightonai/LightOnOCR-3-0.8B",
+      "revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+      "license": "apache-2.0",
+      "readme_sha256": "0df44eab78278bad416d8974e96a6a181d59bae8416fa54877bd5b022e76aaf2"
+    },
+    {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "license": "apache-2.0",
+      "readme_sha256": "87a163af54f32fa608a0f8d3ac67945c53dd2b4a7c96740b3d7fdc28e8458864",
+      "license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+    }
+  ],
+  "roundtrip_tensors": 473,
+  "export_bytes": 1717205376,
+  "rejected_checkpoint_controls": [
+    "model.language_model.embed_tokens.weight",
+    "unexpected.adapter.weight"
+  ],
+  "result": "failed",
+  "error": "ImportError: \nQwen3VLVideoProcessor requires the Torchvision library but it was not found in your environment. Check out the instructions on the\ninstallation page: https://pytorch.org/get-started/locally/ and follow the ones that match your environment.\nPlease note that you may need to restart your runtime after installation.\n"
+}
