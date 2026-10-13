@@ -127,8 +127,6 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                 fields = ["conv_states", "recurrent_states"] if kind == "linear_attention" else ["keys", "values"]
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
     missing = sorted(set(required) - set(arrays))
-    if missing:
-        raise ValueError(f"Missing reference stages: {missing}")
     np.savez(output, **arrays)
     report = {
         "transformers": transformers.__version__, "torch": torch.__version__,
@@ -141,8 +139,11 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         "decoded": processor.batch_decode(ids, skip_special_tokens=True),
         "cached_vs_full_prefix_max_abs": max_error, "cached_vs_full_prefix_same_argmax": same_argmax,
         "native_parity": "not implemented", "transcription_accuracy": "unscored",
+        "missing_stages": missing,
     }
     output.with_suffix(".json").write_text(json.dumps(report, indent=2) + "\n")
+    if missing:
+        raise ValueError(f"Missing reference stages: {missing}")
     if not same_argmax or max_error > 0.002:
         raise ValueError(f"Official cache/full-prefix inconsistency: abs={max_error}, argmax={same_argmax}")
     return report
