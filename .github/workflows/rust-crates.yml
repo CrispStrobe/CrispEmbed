@@ -27,6 +27,25 @@ on:
       - 'CMakeLists.txt'
 
 jobs:
+  arm-types:
+    name: ARM64 wrapper C ABI types
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95.0
+      # cargo check needs no linkable model runtime. Mark the prebuilt path so
+      # build.rs emits metadata without starting an unrelated native build.
+      # Linux ARM64 c_char is unsigned; signed i8 annotations compile on x64
+      # but fail here, preventing every model from loading through Rust.
+      - name: Check platform C-char signatures without a native source build
+        run: |
+          mkdir -p "$RUNNER_TEMP/typecheck-lib"
+          touch "$RUNNER_TEMP/typecheck-lib/libcrispembed.so"
+          CRISPEMBED_SYS_LIB_DIR="$RUNNER_TEMP/typecheck-lib" cargo check --workspace
+
   package:
     runs-on: ubuntu-latest
     timeout-minutes: 90   # compiles ggml + crispembed from the vendored sources

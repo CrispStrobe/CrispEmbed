@@ -25,6 +25,12 @@ eight typed answers match. Q8 with FP32 activation operands preserves the same
 eight labels but changes probabilities by up to 0.00282493224. That small suite
 does not establish downstream accuracy or justify refitting calibration.
 
+The real ARM Rust consumer then exposed three older wrapper annotations using
+`*const i8` for C strings. Linux ARM64 has unsigned `c_char`; registry getters,
+batch text pointers and NER label pointers now use `std::ffi::c_char`, matching
+the FFI declarations on each target. A model-free ARM cargo type-check joins CI;
+the publication gate separately exercises actual shared-library inference.
+
 ## Isolate activation arithmetic before attributing quantized drift (2026-10-03)
 
 The LFM2 encoder sweep initially conflated weight and activation precision. Exact
