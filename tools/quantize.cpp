@@ -222,6 +222,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         }
     }
     const int arch_key = gguf_find_key(ctx_in, "general.architecture");
+    const bool is_gemma_decision = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "gemma_decision";
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
@@ -515,6 +516,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                               sname.find(".beta") != std::string::npos || sname.find(".gamma") != std::string::npos;
         if (is_add_operand) {
             is_tiny_embd = true; // force copy-as-is
+        }
+        if (is_gemma_decision && (sname.rfind("head.", 0) == 0 || sname == "temperatures" ||
+                                  sname == "encoder.language_model.embedding_projection.weight")) {
+            is_tiny_embd = true;
         }
         // SentenceTransformer Dense / Matryoshka projection heads (dense.0/dense.1):
         // the decoder_embed loader reads these as F32, so quantizing them makes the

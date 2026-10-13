@@ -61,6 +61,7 @@ def main():
             "crispembed-shared",
             "crispembed-cli",
             "crispembed-server",
+            "crispembed-quantize",
             "-j2",
         ],
         "build",
@@ -119,6 +120,43 @@ def main():
             str(out / "parity-f32.json"),
         ],
         "contracts-f32",
+    )
+    quant = scratch / "gemma-decision-q8_0.gguf"
+    run(
+        [
+            sys.executable,
+            "models/convert-gemma-decision-to-gguf.py",
+            "--model",
+            str(model),
+            "--output",
+            str(quant),
+            "--dtype",
+            "q8_0",
+        ],
+        "convert-q8",
+    )
+    env["CRISPEMBED_GEMMA_DECISION_F32_DOT"] = "1"
+    run(
+        [
+            sys.executable,
+            "tests/gemma_decision_parity.py",
+            "--model",
+            str(quant),
+            "--refs",
+            str(refs),
+            "--lib",
+            str(scratch / "build/libcrispembed.so"),
+            "--cli",
+            str(scratch / "build/crispembed"),
+            "--server",
+            str(scratch / "build/crispembed-server"),
+            "--schema",
+            str(scratch / "build/test-gemma-decision-schema"),
+            "--output",
+            str(out / "parity-q8.json"),
+            "--measure-only",
+        ],
+        "contracts-q8",
     )
     (out / "versions.json").write_bytes((refs / "versions.json").read_bytes())
     (out / "decisions.json").write_bytes((refs / "decisions.json").read_bytes())

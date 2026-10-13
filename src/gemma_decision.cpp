@@ -5,6 +5,7 @@
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
+#include "core/quant_f32_matmul.h"
 #include "tokenizer.h"
 #include "ggml-cpu.h"
 #include "gguf.h"
@@ -231,6 +232,11 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
             }
             return t;
         };
+        auto matmul = [&](ggml_tensor * weight, ggml_tensor * input) {
+            if (ggml_is_quantized(weight->type) && core_env::on("CRISPEMBED_GEMMA_DECISION_F32_DOT"))
+                return core_cpu::quant_f32_matmul(g, weight, input);
+            return ggml_mul_mat(g, weight, input);
+        };
         auto rms = [&](ggml_tensor * x, const std::string & w) {
             return ggml_mul(g, ggml_rms_norm(g, x, c->eps), c->tensor(w));
         };
@@ -238,7 +244,7 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
         auto * cur =
             snapshot(ggml_scale(g, ggml_get_rows(g, c->tensor(root + "embed_tokens.weight"), tok), std::sqrt((float)H)),
                      "post_embed");
-        auto * ple = ggml_scale(g, ggml_mul_mat(g, c->tensor(root + "ple.per_layer_model_projection.weight"), cur),
+        auto * ple = ggml_scale(g, matmul(c->tensor(root + "ple.per_layer_model_projection.weight"), cur),
                                 1 / std::sqrt((float)H));
         ple = rms(ggml_reshape_3d(g, ple, H, c->L, T), root + "ple.per_layer_projection_norm.weight");
         snapshot(ple, "ple");
@@ -247,10 +253,9 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
             const int hd = c->head_dims[i], kv = c->kv_heads[i];
             auto * residual = cur;
             auto * x = rms(cur, p + "input_layernorm.weight");
-            auto * Q =
-                ggml_reshape_3d(g, ggml_mul_mat(g, c->tensor(p + "self_attn.q_proj.weight"), x), hd, c->heads, T);
-            auto * K = ggml_reshape_3d(g, ggml_mul_mat(g, c->tensor(p + "self_attn.k_proj.weight"), x), hd, kv, T);
-            auto * V = ggml_reshape_3d(g, ggml_mul_mat(g, c->tensor(p + "self_attn.v_proj.weight"), x), hd, kv, T);
+            auto * Q = ggml_reshape_3d(g, matmul(c->tensor(p + "self_attn.q_proj.weight"), x), hd, c->heads, T);
+            auto * K = ggml_reshape_3d(g, matmul(c->tensor(p + "self_attn.k_proj.weight"), x), hd, kv, T);
+            auto * V = ggml_reshape_3d(g, matmul(c->tensor(p + "self_attn.v_proj.weight"), x), hd, kv, T);
             Q = rms(Q, p + "self_attn.q_norm.weight");
             K = rms(K, p + "self_attn.k_norm.weight");
             V = ggml_rms_norm(g, V, c->eps);
@@ -273,27 +278,26 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
             V = ggml_cont(g, ggml_transpose(g, ggml_permute(g, V, 0, 2, 1, 3)));
             auto * attn = ggml_mul_mat(g, V, scores);
             attn = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3)), hd * c->heads, T);
-            attn = rms(ggml_mul_mat(g, c->tensor(p + "self_attn.o_proj.weight"), attn),
-                       p + "post_attention_layernorm.weight");
+            attn = rms(matmul(c->tensor(p + "self_attn.o_proj.weight"), attn), p + "post_attention_layernorm.weight");
             cur = ggml_add(g, residual, attn);
             residual = cur;
             x = rms(cur, p + "pre_feedforward_layernorm.weight");
-            auto * gate = ggml_gelu(g, ggml_mul_mat(g, c->tensor(p + "mlp.gate_proj.weight"), x));
-            auto * up = ggml_mul_mat(g, c->tensor(p + "mlp.up_proj.weight"), x);
-            x = rms(ggml_mul_mat(g, c->tensor(p + "mlp.down_proj.weight"), ggml_mul(g, gate, up)),
+            auto * gate = ggml_gelu(g, matmul(c->tensor(p + "mlp.gate_proj.weight"), x));
+            auto * up = matmul(c->tensor(p + "mlp.up_proj.weight"), x);
+            x = rms(matmul(c->tensor(p + "mlp.down_proj.weight"), ggml_mul(g, gate, up)),
                     p + "post_feedforward_layernorm.weight");
             cur = ggml_add(g, residual, x);
             residual = cur;
-            x = ggml_gelu(g, ggml_mul_mat(g, c->tensor(p + "ple_block.per_layer_input_gate.weight"), cur));
+            x = ggml_gelu(g, matmul(c->tensor(p + "ple_block.per_layer_input_gate.weight"), cur));
             auto * slice = ggml_view_2d(g, ple, H, T, ple->nb[2], (size_t)i * ple->nb[1]);
             x = ggml_mul(g, x, slice);
-            x = rms(ggml_mul_mat(g, c->tensor(p + "ple_block.per_layer_projection.weight"), x),
+            x = rms(matmul(c->tensor(p + "ple_block.per_layer_projection.weight"), x),
                     p + "ple_block.post_per_layer_input_norm.weight");
             cur = snapshot(ggml_mul(g, ggml_add(g, residual, x), c->tensor(p + "layer_scalar")),
                            "layer_" + std::to_string(i));
         }
         cur = snapshot(rms(cur, root + "norm.weight"), "final_norm");
-        cur = snapshot(ggml_mul_mat(g, c->tensor(root + "embedding_projection.weight"), cur), "tokens");
+        cur = snapshot(matmul(c->tensor(root + "embedding_projection.weight"), cur), "tokens");
         ggml_set_output(cur);
         ggml_build_forward_expand(graph, cur);
         ggml_backend_sched_reset(c->sched);

@@ -10,8 +10,8 @@ read. Gated CPU encoder/head, ordered JSON rendering and C/CLI/HTTP/Python/Rust/
 surfaces implemented. Hosted validation script converts the pinned source, dumps
 five 29-stage original-Python probes (including >512-token sliding-window coverage),
 and checks head-only scores plus full typed values/CLI/HTTP/error contracts.
-Initial hosted run 38348507559 is queued; replacing it with the complete surface
-validation. Local model inference/builds are intentionally not run under current
+Initial hosted run 38348507559 was replaced by complete surface validation
+38349031959, queued without a runner. Trying the alternate hosted ARM CPU pool. Local model inference/builds are intentionally not run under current
 shared-host instructions. Next: fix earliest parity divergence, validate quantized
 variant separately, then publish/register only proven artifacts. No parity claim yet.
 
