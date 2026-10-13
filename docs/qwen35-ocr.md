@@ -193,3 +193,43 @@ convolution/recurrent state carried into the cached arm. Each block still receiv
 its input from the official capture: this is component coverage, not a complete
 native decoder or transcript. Full attention, residual/norm/FFN depth composition,
 vision/tokenizer/positions and actual C ABI decoding remain necessary.
+
+## Verified all trained linear-attention blocks — 2026-10-13
+
+[ARM run 38468659301](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38468659301)
+at `25169f68` passes **288 comparisons**: eight stages for each of eighteen
+linear-attention blocks, both prefill and native-state cached continuation.
+Actual checkpoint projection weights are loaded from the exported GGUF,
+materialized as F32 and computed through ggml. Each block receives its normalized
+input from the official reference; native outputs are **not yet composed into
+a complete decoder**, and this is not native transcript parity.
+
+| Compared stage | Maximum absolute error | Reported minimum cosine |
+|---|---:|---:|
+| QKV projection | 5.3406e-5 | 1.000000000 |
+| Z projection | 2.2888e-5 | 1.000000000 |
+| A / B projections | 1.8120e-5 / 2.4796e-5 | 1.000000000 |
+| Gated normalization | 1.5259e-5 | 1.000000000 |
+| Output projection | 5.2452e-6 | 1.000000000 |
+| Convolution history | 2.8610e-5 | 1.000000000 |
+| Recurrent state | 5.0068e-6 | 1.000000000 |
+
+[Full stage errors/magnitudes](../tests/results/qwen35-ocr/trained-linear-parity.json)
+and [complete bootstrap result](../tests/results/qwen35-ocr/trained-linear-bootstrap.json)
+are retained. Expanding the dumper initially used the moving implementation's
+`block_type` attribute; pinned 5.5.4 uses `layer_type`. The corrected selection
+uses `text_config.layer_types` directly, with required per-block stage coverage.
+
+The experimental native library now has `linear_cpu` and `linear_core_cpu`,
+covering projections, causal convolution, A/B controls, normalized ggml delta
+recurrence, gated RMSNorm and output projection. Scope is equal K/V head counts
+and widths (the first checkpoint's geometry); reject incompatible dimensions
+before adapting larger variants. This CPU path materializes F16/F32 weights as
+F32 for structural proof; it is not a tuned deployment or quantized path.
+
+Next: implement full-attention query gating, zero-centered Q/K RMSNorm and partial
+interleaved MRoPE; then residual/norm/FFN depth composition, vision and exact
+frontend/tokenizer/prompt/positions, full native logits/IDs/transcript and public
+C ABI/orchestrator/bindings. A supplementary original-module batch-2 weighted
+projection/cache test is queued at [38469337004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38469337004).
+No new OCR registry alias, HF weight publication or runtime release.

@@ -4880,3 +4880,17 @@ transcript, quantization quality, latency, throughput or GPU claim. Scope and
 [stage errors/magnitudes](tests/results/qwen35-ocr/native-core-parity.json) are
 recorded in [the port blueprint](docs/qwen35-ocr.md); all trained projection
 weights and depth/frontend composition remain subsequent checks.
+
+### Qwen3.5 all 18 trained linear-attention blocks — 2026-10-13
+
+[ARM 38468659301](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38468659301),
+source `25169f68`: all **288** comparisons pass using actual GGUF F16/F32
+checkpoint weights with F32 projection arithmetic. Each block gets official
+normalized input, then computes its projections/core/output and carries **native**
+convolution and recurrent states into its cached step. Reported cos_min
+1.000000000; max abs 5.3406e-5 (QKV), gated norm 1.5259e-5, output projection
+5.2452e-6, convolution history 2.8610e-5, recurrent state 5.0068e-6.
+[Per-stage errors and magnitudes](tests/results/qwen35-ocr/trained-linear-parity.json)
+preserve the actual limits. This is component parity: full-attention,
+residual/FFN depth composition, native vision/frontend, logits and decoded
+transcription remain open. No latency, GPU, Q4 quality or whole-model claim.
