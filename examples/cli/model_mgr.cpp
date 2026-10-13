@@ -1173,6 +1173,18 @@ static const ModelEntry k_registry[] = {
       "ModernBERT 768d English CLS, alternating global/local SWA + per-layer RoPE 149M (IQ4_XS+imatrix)", "102 MB",
       "apache-2.0", "https://huggingface.co/Alibaba-NLP/gte-modernbert-base" },
 
+    { "embeddinggemma-2-ft-typed-decision", "embeddinggemma-2-ft-typed-decision-f32.gguf",
+      "https://huggingface.co/cstr/embeddinggemma-2-ft-typed-decision-GGUF/resolve/main/"
+      "embeddinggemma-2-ft-typed-decision-f32.gguf",
+      "EmbeddingGemma2 768d + calibrated typed head (FP32, CPU opt-in)", "1102 MB", "apache-2.0",
+      "https://huggingface.co/mrm8488/embeddinggemma-2-ft-typed-decision" },
+
+    { "embeddinggemma-2-ft-typed-decision-q8", "embeddinggemma-2-ft-typed-decision-q8_0.gguf",
+      "https://huggingface.co/cstr/embeddinggemma-2-ft-typed-decision-GGUF/resolve/main/"
+      "embeddinggemma-2-ft-typed-decision-q8_0.gguf",
+      "EmbeddingGemma2 768d + calibrated typed head (Q8_0, CPU opt-in)", "307 MB", "apache-2.0",
+      "https://huggingface.co/mrm8488/embeddinggemma-2-ft-typed-decision" },
+
     { "embeddinggemma-300m", "embeddinggemma-300m-iq4_xs.gguf",
       "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-iq4_xs.gguf",
       "Gemma3 768d 24-layer mean-pool (IQ4_XS+imatrix)", "303 MB", "gemma",

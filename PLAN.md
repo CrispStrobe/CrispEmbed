@@ -1,38 +1,31 @@
 # CrispEmbed — Architecture & Roadmap
 
-## DONE native support / pending HF upload — 2026-10-13
+## DONE support and HF publication / final alias smoke — 2026-10-13
 
 Complete gated CPU support for mrm8488/embeddinggemma-2-ft-typed-decision at
-fcc165b7d7d97827e241e09752e83fd11165a74b. Encoder, trained head, original state/schema
-rendering, pooling/prompt and stored calibration are wired through C, CLI, HTTP,
-Python, Rust and Dart. FP32/Q8 export, full original-Python dumper, every-layer diff,
-publisher metadata/allowlist, precise activation and model-free renderer guards.
+fcc165b7d7d97827e241e09752e83fd11165a74b. Complete encoder, trained head, exact
+state/schema rendering, classification prompt/pooling and fitted calibration expose
+C, CLI, HTTP, Python, Rust and Dart. FP32/Q8 exporter and original-Python layer dumper.
 
-Linux ARM64 and macOS 12 runs pass 145 stage checks each, exact IDs (including
-549-token attention-window coverage), head scores, probabilities, eight typed
-answers, API/CLI/HTTP/error/repeat contracts. FP32 minimum bank cosine0.999999940,
-maximum probability error4.82762e-6; portable Q8/F32-dot cosine0.999956429,
-error0.00282478324,8/8 labels. Model-free checks match5,537 doubles and Unicode/list
-repr. Run38361916083 additionally passes actual Rust/Dart FFI and clean Dart
-analysis; its final failure is HF403 on repository creation with the CI token.
-See docs/embeddinggemma2-typed-decision.md and tests/results/gemma-decision/.
+Hosted publication38374087175 at17c08b3c passes all145 stage checks with exact IDs,
+including549-token local-window coverage,5537-double/Unicode rendering, head scores,
+probabilities, eight typed answers and actual Rust/Dart FFI/error/repeat contracts.
+FP32 minimum bank cosine0.999999940, maximum probability error4.82762e-6;
+Q8/F32-dot cosine0.999956429, error0.00282478324,8/8 reference labels.
+Mac deployment12 separately passes all native checks; updated Mac/iOS/Windows
+builds pass. Stored calibration retained; no independent task-accuracy/GPU/speed
+or new runtime release claim. All builds/model inference stayed on hosted runners.
 
-Resolved long GGUF names with short enc.* aliases, CPU GELU FP16 LUT with scoped
-FP32 tanh arithmetic (legacy A/B gate retained), baseline Apple float formatting
-with pinned licensed Ryu, and three old Rust signed-char annotations with c_char.
-Tokenizer defaults and other model inference paths remain intact. Stored fitted
-temperatures retained; reference agreement is not independent task accuracy.
-No GPU/speed or new runtime release claim. Local builds/model inference deferred.
+FP32/Q8 published to cstr/embeddinggemma-2-ft-typed-decision-GGUF;
+model revisiond8427e48a0c20bc63216d332ec0b5e8ec43430c9, metadata50bc9528.
+Original-Python fixtures published at dataset revision508188c36d0550b12a6a467f5d394c10aa33e04c.
+Both remote file hashes/bytes verified, two aliases and generated pins added;
+all existing pins retained. See tests/results/gemma-decision/publication.json.
+Finish the hosted empty-cache alias/CLI check, then retire the feature branch.
 
-HF metadata repository created; model files pending hosted staging/owner acceptance.
-The changed-commit probe38368064611 confirms direct-write403. Use the existing CI
-contributor token to stage artifacts and accept with the existing local publisher
-credential; no new credential transferred. Add aliases/pins after remote verification.
-Build38366112891 found a Unicode-header mirror mismatch; the Python15 renderer
-table now lives in a separate header, keeping the shared tokenizer byte-identical.
-Rust ARM, WASM, lint and quantizer checks pass. Hosted publication38374087175 at17c08b3c reruns full parity before staging.
-Previous38372222687 built native and passed model-free guards, then stopped before
-conversion because its dispatch omitted gguf; the corrected dispatch includes it.
+Resolved GGUF tensor-name length, scoped CPU FP16 GELU LUT drift, Apple12 float
+formatting with licensed Ryu and Rust signed-char annotations. Python15 printable
+predicate lives separately from the unchanged mirrored Unicode14 tokenizer table.
 
 ## CrispMath consumer handoff — 5 October 2026
 
@@ -400,7 +393,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-13 | `main` / `feat/embeddinggemma2-typed-decision` | Complete encoder/head and all interfaces validated; finish HF artifact publication and pinned aliases | Native, Python/CLI/HTTP/Rust/Dart pass; macOS12 and5537-double/Unicode checks pass. HF creation failed in CI403; local publisher created repo and uploaded reviewed metadata. Changed-commit probe38368064611 confirmed direct-write403. Stage validated artifacts via HF contribution API, then accept using the local publisher credential; no new credential copied to CI. No model-file upload or alias claim yet. |
+| 2026-10-13 | `main` / `feat/embeddinggemma2-typed-decision` | Complete encoder/head and all interfaces validated; finish HF artifact publication and pinned aliases | Publication38374087175 passes all checks; model/fixture uploads accepted and remote hashes verified. Both aliases/pins added; final hosted empty-cache CLI validation pending. No release change. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 

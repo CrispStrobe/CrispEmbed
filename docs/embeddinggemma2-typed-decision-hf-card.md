@@ -8,10 +8,6 @@ tags: [gguf, crispembed, embeddinggemma, typed-decisions, calibration]
 
 # EmbeddingGemma 2 fine-tuned for typed decisions — CrispEmbed GGUF
 
-Status: all numerical and native/binding contracts pass. Model files are pending
-upload; the CI credential lacks repository-creation permission. The hashes below
-identify the validated artifacts, not completed public uploads.
-
 Complete encoder plus schema-conditioned head from
 [mrm8488/embeddinggemma-2-ft-typed-decision](https://huggingface.co/mrm8488/embeddinggemma-2-ft-typed-decision),
 pinned to fcc165b7d7d97827e241e09752e83fd11165a74b. Both this fine-tune and its
@@ -34,7 +30,7 @@ its measured probability changes are in results/parity-q8.json. This is a small
 numerical reference suite, not an independent task accuracy benchmark. No GPU or speed claim.
 The exporter does not offer FP16 because the publisher reports overflow in that dtype.
 
-Build CrispEmbed at 5773ef584c7d12e465a6be649b4bdd24fe2c79fa or a later commit including this backend, enable the CPU reference path,
+Build CrispEmbed at 17c08b3c25da81940ddb3d1a6634cf54c6dd50f6 or a later commit including this backend, enable the CPU reference path,
 and use your downloaded GGUF path:
 
 ```sh

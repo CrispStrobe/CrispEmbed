@@ -1,8 +1,8 @@
 {
   "source_model": "mrm8488/embeddinggemma-2-ft-typed-decision",
   "source_revision": "fcc165b7d7d97827e241e09752e83fd11165a74b",
-  "native_commit": "5773ef584c7d12e465a6be649b4bdd24fe2c79fa",
-  "workflow_run": "38361916083",
+  "native_commit": "17c08b3c25da81940ddb3d1a6634cf54c6dd50f6",
+  "workflow_run": "38374087175",
   "artifacts": {
     "embeddinggemma-2-ft-typed-decision-f32.gguf": {
       "bytes": 1102182464,
@@ -83,6 +83,15 @@
     "rust": "rustc 1.99.0 (b940084d7 2026-09-28)"
   },
   "note": "Reference agreement on these probes, not downstream task accuracy. CPU only.",
-  "publication_state": "validated, upload pending CI credential permission",
-  "model_repo": "cstr/embeddinggemma-2-ft-typed-decision-GGUF"
+  "model_repo": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+  "model_revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+  "fixture_repo": "cstr/crispembed-regression-fixtures",
+  "fixture_revision": "508188c36d0550b12a6a467f5d394c10aa33e04c",
+  "fixture_path": "gemma-decision/original-fp32",
+  "publication_state": "published_and_remote_hashes_verified",
+  "model_pr": "https://huggingface.co/cstr/embeddinggemma-2-ft-typed-decision-GGUF/discussions/1",
+  "model_pr_revision": "refs/pr/1",
+  "fixture_pr": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/discussions/1",
+  "fixture_pr_revision": "refs/pr/1",
+  "metadata_revision": "50bc95288ec868e20a282f23ebc77dcc61a84331"
 }

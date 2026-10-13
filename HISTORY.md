@@ -13,9 +13,13 @@ Fixed GGUF tensor-name length, scoped CPU FP16 GELU lookup drift, baseline Apple
 float-format availability, and existing Rust C-char signedness assumptions.
 Head, output projection, norms/scalars/biases and fitted temperatures remain
 FP32 under Q8. No training/calibration refit, GPU claim or release/version change.
-HF upload is pending credential permission: code/validation pass, but CI received
-403 on repository creation. The repository contains reviewed metadata/reports;
-weights and download aliases are not falsely advertised as available.
+Published FP32/Q8 to cstr/embeddinggemma-2-ft-typed-decision-GGUF and all original
+Python layer/answer fixtures to cstr/crispembed-regression-fixtures. Publication
+run38374087175 passes full native/reference and binding checks; remote bytes and
+SHA-256 identities verified. Added two pinned aliases and repaired license-registry
+parsing of adjacent C++ URL literals. The Python15 printability table has its own
+header, preserving the mirrored tokenizer Unicode table byte-for-byte.
+Fresh-download alias validation follows the published fixtures.
 
 ## 2026-10-05 — CrispMath consumer/runtime public handoff
 

@@ -2,8 +2,8 @@
 
 Status: complete opt-in CPU encoder/head support passes original-Python checks
 on Linux ARM64 and macOS 12, including actual Python, CLI/HTTP, Rust and Dart
-contracts. Model-file upload is pending HF credential permission; no download
-alias is registered. Reference agreement is measured separately from task accuracy.
+contracts. FP32 and Q8 artifacts are published with verified SHA-256 pins.
+Reference agreement is measured separately from task accuracy.
 
 Source: [mrm8488/embeddinggemma-2-ft-typed-decision](https://huggingface.co/mrm8488/embeddinggemma-2-ft-typed-decision)
 at `fcc165b7d7d97827e241e09752e83fd11165a74b`. Both its card and
@@ -101,9 +101,10 @@ embeddings, calibrated probabilities, typed values, API/CLI/HTTP calls, invalid
 inputs and repeats. Q8 is measured with explicit approximation reporting.
 
 ```sh
-gh workflow run heavy-cpu.yml --ref feat/embeddinggemma2-typed-decision \
+gh workflow run heavy-cpu.yml --ref main \
   -f script=tools/ci-heavy/gemma_decision_validate.py \
-  -f 'pip=torch transformers==5.19.0 gguf safetensors numpy sentencepiece'
+  -f runner=ubuntu-24.04-arm \
+  -f 'pip=torch==2.14.1 transformers==5.19.0 gguf safetensors numpy sentencepiece'
 ```
 
 [Linux ARM64 run 38352165925](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352165925)
@@ -130,18 +131,30 @@ passes the same model checks plus exact Python rendering for 5,537 finite double
 Unicode/list representations and empty/whitespace state failures. Both updated
 platform runs configure `GGML_NATIVE=OFF`; Linux's corresponding portable-baseline
 metrics above come from [38359818133](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133).
-That run's later failure was the isolated Rust consumer's library search path;
-its native/reference checks passed. The corrected
-[run 38361916083](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38361916083)
-passes all native/reference checks and actual Rust/Dart shared-library scores,
-all eight typed answers, invalid requests and repeat calls. Dart analysis is
-clean. Its final failure is HF HTTP 403 on repository creation with the CI token.
+The final [publication run 38374087175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38374087175)
+at `17c08b3c` passes all native/reference checks, the separate Python15 renderer,
+actual Rust/Dart shared-library scores, all eight typed answers, invalid requests
+and repeat calls. Dart analysis is clean. The published GGUFs and original-Python
+fixtures were accepted into their public repositories and their remote hashes verified.
 [Recorded measurements](../tests/results/gemma-decision/arm-validation.json)
 and [decoded FP32 answers](../tests/results/gemma-decision/arm-f32-decisions.json)
 retain the original/native results. The
 [HF repository](https://huggingface.co/cstr/embeddinggemma-2-ft-typed-decision-GGUF)
-contains reviewed metadata and reports; model files are not uploaded yet.
+contains both validated model files, the source license/card and full reports.
 [Validated artifact identities](../tests/results/gemma-decision/validated-artifacts.json)
-record both exact file hashes/sizes. SHA-256 registry aliases follow verified
-remote uploads, never nonexistent file URLs. This text-only model does not belong in the OCR
+record both exact file hashes/sizes. The default alias
+`embeddinggemma-2-ft-typed-decision` downloads FP32 (1,102 MB);
+`embeddinggemma-2-ft-typed-decision-q8` downloads Q8 (307 MB).
+Both downloads enforce the recorded SHA-256 pins. This text-only model does not belong in the OCR
 orchestrator or CrispCalc OCR catalog.
+
+Published alias example (build current main; existing releases predate this backend):
+
+```sh
+CRISPEMBED_GEMMA_DECISION=1 crispembed -m embeddinggemma-2-ft-typed-decision \
+  --decide '{"state":{"task":"Delete old branches","constraint_violations":1},"questions":{"review":{"type":"noul","instructions":"Does this require human review?"}}}'
+```
+
+For the Q8 alias also set `CRISPEMBED_GEMMA_DECISION_F32_DOT=1` to reproduce
+the measured arithmetic. [Publication provenance](../tests/results/gemma-decision/publication.json)
+records model/fixture revisions, workflow, source commit and both file identities.

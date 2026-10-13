@@ -50,7 +50,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 def parse_cpp_registry(path: Path) -> List[Tuple[str, str, str]]:
     """Return [(name, gguf_url, gguf_filename), ...]."""
-    text = path.read_text()
+    text = re.sub(r'"\s*"', "", path.read_text())
     pattern = re.compile(
         r'\{\s*"([^"]+)"\s*,\s*"([^"]+\.gguf)"\s*,\s*"(https?://[^"]+)"',
         re.MULTILINE,
