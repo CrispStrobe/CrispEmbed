@@ -80,7 +80,9 @@ gemma_decision_context * gemma_decision_init(const char * path, int threads) {
         if (arch != "gemma_decision" || c->H != 512 || c->D != 768 || c->L != 24 || c->heads != 4 || c->width != 256 ||
             c->max_length < 2 || c->max_length > 8192 || c->vocab.size() != 262144 || c->window != 512 ||
             c->head_dims.size() != (size_t)c->L || c->kv_heads.size() != (size_t)c->L ||
-            c->layer_types.size() != (size_t)c->L || c->special.size() != c->special_ids.size())
+            c->layer_types.size() != (size_t)c->L || c->special.size() != c->special_ids.size() ||
+            !std::isfinite(c->eps) || c->eps <= 0 || !std::isfinite(c->global_rope) || c->global_rope <= 0 ||
+            !std::isfinite(c->local_rope) || c->local_rope <= 0)
             throw std::runtime_error("unsupported/incomplete GemmaDecision configuration");
         c->tokenizer.load(c->vocab, merges, -1, 0, -1, -1, true, c->max_length - 2);
         c->tokenizer.set_stable_spm_ties(true);
@@ -168,13 +170,14 @@ const char * gemma_decision_token(const gemma_decision_context * c, int id) {
 }
 void gemma_decision_hparams(const gemma_decision_context * c, crispembed_hparams * out) {
     *out = {};
-    out->n_embd = c->D;
+    out->n_embd = c->H;
     out->n_output = c->D;
     out->n_layer = c->L;
     out->n_head = c->heads;
     out->n_vocab = (int)c->vocab.size();
     out->n_max_tokens = c->max_length;
     out->n_intermediate = 2048;
+    out->layer_norm_eps = c->eps;
 }
 
 static std::vector<int32_t> tokenize(gemma_decision_context * c, const std::string & text) {
@@ -340,7 +343,8 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
         }
         embedding.assign(c->D, 0);
         for (int t = 0; t < T; ++t)
-            for (int d = 0; d < c->D; ++d) embedding[d] += hidden[(size_t)t * c->D + d] / T;
+            for (int d = 0; d < c->D; ++d) embedding[d] += hidden[(size_t)t * c->D + d];
+        for (float & f : embedding) f /= T;
         double norm = 0;
         for (float f : embedding) norm += double(f) * f;
         norm = std::max(std::sqrt(norm), 1e-12);
@@ -364,9 +368,13 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
 
 bool gemma_decision_scores(gemma_decision_context * c, const float * state, const float * question,
                            const float * options, int count, int kind, float * logits, float * probabilities) {
-    if (!c || !state || !question || !options || !logits || !probabilities || count < 1 || count > 4096 || kind < 0 ||
-        kind > 2)
+    if (!c) return false;
+    c->error.clear();
+    if (!state || !question || !options || !logits || !probabilities || count < 1 || count > 4096 || kind < 0 ||
+        kind > 2) {
+        c->error = "invalid decision embedding arguments";
         return false;
+    }
     try {
         const int W = c->width, D = c->D;
         auto linear = [&](const std::string & n, const std::vector<float> & x) {
@@ -438,6 +446,7 @@ bool gemma_decision_scores(gemma_decision_context * c, const float * state, cons
             probabilities[i] = std::exp(logits[i] / temperature - maximum);
             denom += probabilities[i];
         }
+        if (!std::isfinite(denom) || denom <= 0) throw std::runtime_error("nonfinite decision probabilities");
         for (int i = 0; i < count; ++i) probabilities[i] = (float)(probabilities[i] / denom);
         return true;
     } catch (const std::exception & e) {
@@ -465,6 +474,8 @@ std::string gemma_decision_run(gemma_decision_context * c, const std::string & r
             throw std::runtime_error("questions must be an object with 1 to 128 entries");
         const std::string workflow =
             root.get("workflow").kind == Value::null_value ? "" : python_str(root.get("workflow"));
+        std::vector<core_decision::Question> specs;
+        for (const auto & item : questions.fields) specs.push_back(question(item.first, item.second));
         std::map<std::string, std::vector<float>> bank;
         auto encode = [&](const std::string & text) -> const std::vector<float> & {
             auto it = bank.find(text);
@@ -477,10 +488,9 @@ std::string gemma_decision_run(gemma_decision_context * c, const std::string & r
         };
         const auto state = encode(state_text(workflow, root.get("state")));
         std::ostringstream out;
-        out << std::setprecision(9) << "{";
+        out << std::setprecision(9) << std::showpoint << "{";
         size_t n = 0;
-        for (const auto & item : questions.fields) {
-            const auto q = question(item.first, item.second);
+        for (const auto & q : specs) {
             const auto question_embedding = encode(question_text(q));
             std::vector<float> options;
             for (size_t i = 0; i < q.options.size(); ++i) {

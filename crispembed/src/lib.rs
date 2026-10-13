@@ -642,6 +642,54 @@ impl CrispEmbed {
         unsafe { crispembed_sys::crispembed_has_decision(self.ctx) != 0 }
     }
 
+    /// Score normalized embeddings through the calibrated head. type_id is
+    /// 0=choice, 1=score, 2=noul; each input vector has 768 coordinates.
+    pub fn decision_scores(
+        &mut self,
+        state: &[f32],
+        question: &[f32],
+        options: &[Vec<f32>],
+        type_id: i32,
+    ) -> Result<(Vec<f32>, Vec<f32>), String> {
+        if !self.has_decision()
+            || state.len() != 768
+            || question.len() != 768
+            || options.is_empty()
+            || options.len() > 4096
+            || !(0..=2).contains(&type_id)
+            || options.iter().any(|v| v.len() != 768)
+        {
+            return Err("Invalid decision embedding dimensions/type or unsupported model".into());
+        }
+        let flat: Vec<f32> = options.iter().flatten().copied().collect();
+        if state
+            .iter()
+            .chain(question)
+            .chain(&flat)
+            .any(|v| !v.is_finite())
+        {
+            return Err("Embeddings must be finite".into());
+        }
+        let mut logits = vec![0.; options.len()];
+        let mut probabilities = vec![0.; options.len()];
+        let ok = unsafe {
+            crispembed_sys::crispembed_decision_scores(
+                self.ctx,
+                state.as_ptr(),
+                question.as_ptr(),
+                flat.as_ptr(),
+                options.len() as i32,
+                type_id,
+                logits.as_mut_ptr(),
+                probabilities.as_mut_ptr(),
+            )
+        };
+        if ok == 0 {
+            return Err("Decision scoring failed".into());
+        }
+        Ok((logits, probabilities))
+    }
+
     /// Submit {state, questions, workflow?} JSON and return typed-answer JSON.
     /// Values retain their string/integer/boolean types. Requires the opt-in
     /// CPU GemmaDecision backend; returned data is copied before reuse.

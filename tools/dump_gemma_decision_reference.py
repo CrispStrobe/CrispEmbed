@@ -111,6 +111,10 @@ def main():
                 "problema": "No puedo entrar en mi cuenta",
                 "urgente": True,
                 "precio": 12.5,
+                "large_float": 1e7,
+                "tiny_float": 1e-5,
+                "negative_zero": -0.0,
+                "list": ["a'b", "c\\d", True, None],
                 "detalle": None,
             },
             "questions": {

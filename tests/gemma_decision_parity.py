@@ -2,7 +2,6 @@
 """Replay hosted original-Python typed decisions through native API/CLI/HTTP."""
 
 import argparse
-import ctypes
 import json
 import os
 from pathlib import Path
@@ -34,19 +33,8 @@ def main():
     os.environ["CRISPEMBED_GEMMA_DECISION"] = "1"
     model = CrispEmbed(args.model, n_threads=2, lib_path=args.lib)
     assert model.has_decision and model.dim == 768
-    pointer = ctypes.POINTER(ctypes.c_float)
-    score = model._lib.crispembed_decision_scores
-    score.argtypes = [
-        ctypes.c_void_p,
-        pointer,
-        pointer,
-        pointer,
-        ctypes.c_int,
-        ctypes.c_int,
-        pointer,
-        pointer,
-    ]
-    score.restype = ctypes.c_int
+    hp = model._lib.crispembed_get_hparams(model._ctx).contents
+    assert hp.n_embd == 512 and hp.n_output == 768 and hp.n_layer == 24
     reports = []
     native_answers = []
 
@@ -108,16 +96,13 @@ def main():
             s = np.ascontiguousarray(reference[fixture["indices"]["state_index"][i]])
             q = np.ascontiguousarray(reference[fixture["indices"]["question_index"][i]])
             o = np.ascontiguousarray(reference[np.array(options[:n])])
-            logits, probabilities = np.zeros(n, np.float32), np.zeros(n, np.float32)
-            assert score(
-                model._ctx,
-                s.ctypes.data_as(pointer),
-                q.ctypes.data_as(pointer),
-                o.ctypes.data_as(pointer),
-                n,
-                fixture["indices"]["question_type"][i],
-                logits.ctypes.data_as(pointer),
-                probabilities.ctypes.data_as(pointer),
+            logits, probabilities = model.decision_scores(
+                s,
+                q,
+                o,
+                kind=("choice", "score", "noul")[
+                    fixture["indices"]["question_type"][i]
+                ],
             )
             np.testing.assert_allclose(
                 logits, fixture["logits"][i][:n], atol=3e-5, rtol=3e-5

@@ -47,6 +47,8 @@ def main():
             str(scratch / "build"),
             "-DCMAKE_BUILD_TYPE=Release",
             "-DCRISPEMBED_NATIVE=OFF",
+            "-DGGML_METAL=OFF",
+            "-DGGML_BLAS=OFF",
         ],
         "configure",
     )
@@ -109,7 +111,14 @@ def main():
             "--refs",
             str(refs),
             "--lib",
-            str(scratch / "build/libcrispembed.so"),
+            str(
+                scratch
+                / (
+                    "build/libcrispembed.dylib"
+                    if sys.platform == "darwin"
+                    else "build/libcrispembed.so"
+                )
+            ),
             "--cli",
             str(scratch / "build/crispembed"),
             "--server",
@@ -145,7 +154,14 @@ def main():
             "--refs",
             str(refs),
             "--lib",
-            str(scratch / "build/libcrispembed.so"),
+            str(
+                scratch
+                / (
+                    "build/libcrispembed.dylib"
+                    if sys.platform == "darwin"
+                    else "build/libcrispembed.so"
+                )
+            ),
             "--cli",
             str(scratch / "build/crispembed"),
             "--server",

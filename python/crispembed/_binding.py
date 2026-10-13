@@ -253,6 +253,10 @@ class CrispEmbed:
             lib.crispembed_has_decision.restype = ctypes.c_int
             lib.crispembed_decide_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
             lib.crispembed_decide_json.restype = ctypes.c_char_p
+            lib.crispembed_decision_scores.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_float),
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float), ctypes.c_int, ctypes.c_int,
+                ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+            lib.crispembed_decision_scores.restype = ctypes.c_int
             lib.crispembed_decision_error.argtypes = [ctypes.c_void_p]
             lib.crispembed_decision_error.restype = ctypes.c_char_p
 
@@ -545,6 +549,25 @@ class CrispEmbed:
     def has_decision(self) -> bool:
         """Whether this model has the calibrated typed-decision head."""
         return hasattr(self._lib, "crispembed_has_decision") and bool(self._lib.crispembed_has_decision(self._ctx))
+
+    def decision_scores(self, state, question, options, *, kind: str = "choice"):
+        """Score normalized 768-dimensional embeddings; return logits/probabilities."""
+        if not self.has_decision:
+            raise ValueError("Model has no typed-decision head")
+        kinds = {"choice": 0, "score": 1, "noul": 2}
+        if kind not in kinds:
+            raise ValueError("kind must be choice, score or noul")
+        s, q, o = [np.ascontiguousarray(v, dtype=np.float32) for v in (state, question, options)]
+        if s.shape != (768,) or q.shape != (768,) or o.ndim != 2 or o.shape[1] != 768 or not 1 <= len(o) <= 4096:
+            raise ValueError("Expected state/question [768] and options [1..4096,768]")
+        if not all(np.isfinite(v).all() for v in (s, q, o)):
+            raise ValueError("Embeddings must be finite")
+        logits, probabilities = np.zeros(len(o), np.float32), np.zeros(len(o), np.float32)
+        pointer = ctypes.POINTER(ctypes.c_float)
+        if not self._lib.crispembed_decision_scores(self._ctx, s.ctypes.data_as(pointer), q.ctypes.data_as(pointer),
+            o.ctypes.data_as(pointer), len(o), kinds[kind], logits.ctypes.data_as(pointer), probabilities.ctypes.data_as(pointer)):
+            raise ValueError("Decision scoring failed")
+        return logits, probabilities
 
     def decide(self, state, questions, *, workflow: str = "") -> dict:
         """Return typed choice/score/noul answers with calibrated probabilities.
