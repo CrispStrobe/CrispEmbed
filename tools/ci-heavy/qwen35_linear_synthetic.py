@@ -42,7 +42,7 @@ def main():
             def hook(field):
                 def capture(module, args, value):
                     reference.add_tensor(f"{phase[0]}.linear.{index}.{field}",
-                                         np.ascontiguousarray(value.detach().float().numpy()))
+                                         np.ascontiguousarray(value.detach().float().numpy()).copy())
                 return capture
             for attr, field in [("in_proj_qkv", "qkv"), ("in_proj_z", "z"),
                                 ("in_proj_a", "a"), ("in_proj_b", "b"), ("norm", "norm")]:
@@ -57,7 +57,7 @@ def main():
                     layer = cache.layers[index]
                     for name in ["conv_states", "recurrent_states"]:
                         reference.add_tensor(f"{label}.cache.{index}.{name}",
-                                             np.ascontiguousarray(getattr(layer, name).numpy()))
+                                             np.ascontiguousarray(getattr(layer, name).numpy()).copy())
             for handle in handles:
                 handle.remove()
         for writer in [weights, reference]:

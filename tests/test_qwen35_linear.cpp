@@ -84,7 +84,7 @@ int main(int argc, char ** argv) {
     }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("%s actual-checkpoint Qwen3.5 all 18 linear-attention blocks; full OCR remains pending\n",
+    std::printf("%s GGUF-weighted Qwen3.5 all 18 linear-attention blocks; full OCR remains pending\n",
                 ok ? "PASS" : "FAIL");
     return ok ? 0 : 1;
 }
