@@ -125,8 +125,17 @@ Once eligible weight use is established, the bounded implementation sequence is:
    generated download pins, catalogs and redistribution follow verified artifacts
    and license eligibility; no placeholder URLs or permissive-license labels.
 
-An optional ONNX Runtime adapter would add a dependency and a separate backend
-contract. It would not establish a dependency-free native GGUF port or its speed.
+The user selected a native ONNX-to-ggml port. The production artifact should
+contain converted GGUF tensors and explicit ggml graph construction, with native
+pre/post-processing. ONNX tooling belongs to graph inspection/conversion, and
+ONNX Runtime to the independent reference harness. They are build/validation
+tools rather than production execution dependencies.
+
+The competing-product term is undefined; this audit has not determined that
+CrispEmbed or a particular integrator falls under it. Architecture implementation
+code and weight conversion/use/distribution have different license scopes. The
+output clause concerns outputs produced by the licensed model; it does not by
+itself relicense this repository or the original input documents.
 
 ## Independent validation gates
 
