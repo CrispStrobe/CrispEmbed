@@ -18,6 +18,24 @@ from huggingface_hub import HfApi, create_repo
 
 # Model registry: maps GGUF base name -> metadata
 MODELS = {
+    "embeddinggemma-2-ft-typed-decision": {
+        "base_model": "mrm8488/embeddinggemma-2-ft-typed-decision",
+        "arch": "EmbeddingGemma 2 encoder plus GemmaDecision head",
+        "dim": 768,
+        "layers": 24,
+        "params": "272M",
+        "pooling": "mean including classification prompt/BOS/EOS",
+        "tokenizer": "SentencePiece-style BPE",
+        "license": "apache-2.0",
+        "langs": ["en"],
+        "desc": "Complete fine-tuned text encoder and calibrated choice/score/boolean head. CPU opt-in; multilingual backbone, English schemas.",
+        "card_file": "docs/embeddinggemma2-typed-decision-hf-card.md",
+        "license_files": ["models/licenses/apache-2.0/LICENSE"],
+        "publish_files": [
+            "embeddinggemma-2-ft-typed-decision-f32.gguf",
+            "embeddinggemma-2-ft-typed-decision-q8_0.gguf",
+        ],
+    },
     "all-MiniLM-L6-v2": {
         "base_model": "sentence-transformers/all-MiniLM-L6-v2",
         "arch": "BERT",
