@@ -114,13 +114,20 @@ def main():
         subprocess.run(["cmake", "-S", str(repo), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
                         "-DCRISPEMBED_BUILD_SHARED=OFF"], check=True)
-        subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta", "-j", "4"], check=True)
+        subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta",
+                        "test-qwen35-linear", "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
         (out / "native-delta.log").write_text(native.stdout + native.stderr)
         print(native.stdout + native.stderr)
         native.check_returncode()
         report["native_delta"] = "passed official recurrence output/state comparisons and controls"
+        weighted = subprocess.run([str(build / "test-qwen35-linear"), str(export), str(out / "official-delta.gguf")],
+                                  capture_output=True, text=True)
+        (out / "native-linear.log").write_text(weighted.stdout + weighted.stderr)
+        print(weighted.stdout + weighted.stderr)
+        weighted.check_returncode()
+        report["native_linear"] = "passed first checkpoint linear-attention block projections/core/output and native carried states"
         report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
     except BaseException as error:
         report["result"] = "failed"

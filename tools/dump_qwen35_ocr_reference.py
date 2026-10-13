@@ -82,6 +82,11 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     for name, field in [("in_proj_qkv", "qkv"), ("in_proj_z", "z"),
                         ("in_proj_a", "a"), ("in_proj_b", "b"), ("norm", "norm")]:
         handles.append(getattr(delta_layer, name).register_forward_hook(hook("linear." + field)))
+    def projection_input(module, args):
+        if phase[0] is not None:
+            save(f"{phase[0]}.linear.input", args[0])
+    handles.append(delta_layer.in_proj_qkv.register_forward_pre_hook(projection_input))
+    handles.append(delta_layer.register_forward_hook(hook("linear.output")))
     originals = {}
     for method_name in ["chunk_gated_delta_rule", "recurrent_gated_delta_rule"]:
         original = getattr(delta_layer, method_name)

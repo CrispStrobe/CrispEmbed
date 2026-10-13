@@ -1,0 +1,104 @@
+#include "qwen35_linear.h"
+#include "core/env_gate.h"
+#include "ggml-backend.h"
+#include "ggml-cpu.h"
+#include "ggml.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstring>
+#include <memory>
+
+namespace qwen35_ocr {
+static bool shape(ggml_tensor * tensor, int64_t columns, int64_t rows) {
+    return tensor && tensor->ne[0] == columns && tensor->ne[1] == rows && tensor->ne[2] == 1 && tensor->ne[3] == 1;
+}
+
+static bool floats(ggml_tensor * source, float * target) {
+    if (!source || (source->type != GGML_TYPE_F32 && source->type != GGML_TYPE_F16)) return false;
+    std::vector<uint8_t> raw(ggml_nbytes(source));
+    ggml_backend_tensor_get(source, raw.data(), 0, raw.size());
+    const size_t count = size_t(ggml_nelements(source));
+    if (source->type == GGML_TYPE_F32)
+        std::memcpy(target, raw.data(), count * sizeof(float));
+    else
+        ggml_get_type_traits(source->type)->to_float(raw.data(), target, count);
+    return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
+}
+
+static bool project(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens,
+                    int threads, std::vector<std::vector<float>> & output) {
+    size_t elements = size_t(width) * tokens;
+    for (auto * matrix : matrices) elements += size_t(ggml_nelements(matrix)) + size_t(matrix->ne[1]) * tokens;
+    const size_t memory = 1024 * 1024 + elements * sizeof(float);
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ memory, nullptr, false }), ggml_free);
+    std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+    if (!ctx || !backend) return false;
+    ggml_backend_cpu_set_n_threads(backend.get(), threads);
+    auto * input = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, width, tokens);
+    std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
+    auto * graph = ggml_new_graph(ctx.get());
+    std::vector<ggml_tensor *> results;
+    for (auto * matrix : matrices) {
+        auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
+        if (!floats(matrix, static_cast<float *>(weight->data))) return false;
+        auto * result = ggml_mul_mat(ctx.get(), weight, input);
+        ggml_mul_mat_set_prec(result, GGML_PREC_F32);
+        ggml_build_forward_expand(graph, result);
+        results.push_back(result);
+    }
+    if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    for (auto * result : results) {
+        auto * values = static_cast<float *>(result->data);
+        const size_t count = size_t(ggml_nelements(result));
+        if (!std::all_of(values, values + count, [](float x) { return std::isfinite(x); })) return false;
+        output.emplace_back(values, values + count);
+    }
+    return true;
+}
+
+bool linear_cpu(const linear_weights & weights, const float * hidden, int batch, int tokens, int threads,
+                const float * conv_history, const float * state, projected_linear_outputs & output) {
+    output = {};
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 ||
+        threads < 1 || threads > 256 || !weights.a_log || !weights.norm || !weights.qkv || !weights.conv)
+        return false;
+    const int64_t heads = weights.a_log->ne[0], width = weights.norm->ne[0], hidden_width = weights.qkv->ne[0];
+    const int64_t kernel = weights.conv->ne[0];
+    if (heads < 1 || heads > 128 || width < 1 || width > 256 || hidden_width < 1 || hidden_width > 8192 || kernel < 1 ||
+        kernel > 16)
+        return false;
+    const int64_t group = heads * width;
+    if (!shape(weights.a_log, heads, 1) || !shape(weights.dt_bias, heads, 1) || !shape(weights.norm, width, 1) ||
+        !shape(weights.qkv, hidden_width, 3 * group) || !shape(weights.z, hidden_width, group) ||
+        !shape(weights.a, hidden_width, heads) || !shape(weights.b, hidden_width, heads) ||
+        !shape(weights.out, group, hidden_width) || weights.conv->ne[1] != 1 || weights.conv->ne[2] != 3 * group ||
+        weights.conv->ne[3] != 1)
+        return false;
+    std::vector<std::vector<float>> projections;
+    if (!project({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens, threads,
+                 projections))
+        return false;
+    output.qkv = std::move(projections[0]);
+    output.z = std::move(projections[1]);
+    output.a = std::move(projections[2]);
+    output.b = std::move(projections[3]);
+    std::vector<float> conv(size_t(3 * group * kernel)), a_log(size_t(heads), 0.0f), dt_bias(size_t(heads), 0.0f),
+        norm(size_t(width), 0.0f);
+    if (!floats(weights.conv, conv.data()) || !floats(weights.a_log, a_log.data()) ||
+        !floats(weights.dt_bias, dt_bias.data()) || !floats(weights.norm, norm.data()))
+        return false;
+    const linear_inputs input{
+        batch,           tokens,      int(heads),        int(width),      int(kernel),
+        threads,         1e-6f,       output.qkv.data(), output.z.data(), output.a.data(),
+        output.b.data(), conv.data(), a_log.data(),      dt_bias.data(),  norm.data(),
+        conv_history,    state,
+    };
+    if (!linear_core_cpu(input, output.core)) return false;
+    projections.clear();
+    if (!project({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections))
+        return false;
+    output.attention = std::move(projections[0]);
+    return true;
+}
+} // namespace qwen35_ocr
