@@ -74,10 +74,10 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     language = model.model.language_model
     # Capture the official recurrence boundary after projection/convolution,
     # before Q/K normalization. Keep the original upstream functions intact.
-    delta = language.layers[0].linear_attn
+    delta_layer = language.layers[0].linear_attn
     originals = {}
     for method_name in ["chunk_gated_delta_rule", "recurrent_gated_delta_rule"]:
-        original = getattr(delta, method_name)
+        original = getattr(delta_layer, method_name)
         originals[method_name] = original
 
         def wrap(fn):
@@ -98,7 +98,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                     save(f"{phase[0]}.delta.final_state", result[1])
                 return result
             return capture
-        setattr(delta, method_name, wrap(original))
+        setattr(delta_layer, method_name, wrap(original))
     for index, block in enumerate(language.layers):
         handles.append(block.register_forward_hook(hook(f"decoder.layer.{index}")))
     handles.append(language.norm.register_forward_hook(hook("decoder.norm")))
@@ -151,7 +151,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     for handle in handles:
         handle.remove()
     for name, original in originals.items():
-        setattr(delta, name, original)
+        setattr(delta_layer, name, original)
     vision_depth = model.config.vision_config.depth
     decoder_depth = model.config.text_config.num_hidden_layers
     required = [f"prefill.vision.layer.{index}" for index in range(vision_depth)]
