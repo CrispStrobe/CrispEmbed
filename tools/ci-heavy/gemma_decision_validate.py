@@ -60,6 +60,7 @@ def main():
             "--target",
             "test-gemma-decision-diff",
             "test-gemma-decision-schema",
+            "test-gemma-decision-activation",
             "crispembed-shared",
             "crispembed-cli",
             "crispembed-server",
@@ -67,6 +68,9 @@ def main():
             "-j2",
         ],
         "build",
+    )
+    run(
+        [str(scratch / "build/test-gemma-decision-activation")], "activation-regression"
     )
     gguf = scratch / "gemma-decision-f32.gguf"
     run(

@@ -6,6 +6,7 @@
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
 #include "core/quant_f32_matmul.h"
+#include "core/gelu_tanh_f32.h"
 #include "tokenizer.h"
 #include "ggml-cpu.h"
 #include "gguf.h"
@@ -240,6 +241,10 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
                 return core_cpu::quant_f32_matmul(g, weight, input);
             return ggml_mul_mat(g, weight, input);
         };
+        auto gelu = [&](ggml_tensor * x) {
+            return core_env::on("CRISPEMBED_GEMMA_DECISION_LEGACY_GELU") ? ggml_gelu(g, x)
+                                                                         : core_cpu::gelu_tanh_f32(g, x);
+        };
         auto rms = [&](ggml_tensor * x, const std::string & w) {
             return ggml_mul(g, ggml_rms_norm(g, x, c->eps), c->tensor(w));
         };
@@ -285,13 +290,13 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
             cur = ggml_add(g, residual, attn);
             residual = cur;
             x = rms(cur, p + "pre_feedforward_layernorm.weight");
-            auto * gate = ggml_gelu(g, matmul(c->tensor(p + "mlp.gate_proj.weight"), x));
+            auto * gate = gelu(matmul(c->tensor(p + "mlp.gate_proj.weight"), x));
             auto * up = matmul(c->tensor(p + "mlp.up_proj.weight"), x);
             x = rms(matmul(c->tensor(p + "mlp.down_proj.weight"), ggml_mul(g, gate, up)),
                     p + "post_feedforward_layernorm.weight");
             cur = ggml_add(g, residual, x);
             residual = cur;
-            x = ggml_gelu(g, matmul(c->tensor(p + "ple_block.per_layer_input_gate.weight"), cur));
+            x = gelu(matmul(c->tensor(p + "ple_block.per_layer_input_gate.weight"), cur));
             auto * slice = ggml_view_2d(g, ple, H, T, ple->nb[2], (size_t)i * ple->nb[1]);
             x = ggml_mul(g, x, slice);
             x = rms(matmul(c->tensor(p + "ple_block.per_layer_projection.weight"), x),

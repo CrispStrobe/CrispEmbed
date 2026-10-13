@@ -69,6 +69,12 @@ returning stale answers. Per-context use is not thread-safe outside server locki
 
 ## Precision and validation
 
+The backend uses FP32 tanh-GELU rather than GGML's CPU FP16 lookup table.
+`CRISPEMBED_GEMMA_DECISION_LEGACY_GELU=1` selects the table as an A/B control.
+An activation regression uses nearby FP32 inputs that the table collapses, checks
+the precise values against independent double-precision arithmetic and keeps
+other model backends unchanged.
+
 FP32 is the reference artifact. The exporter does not offer FP16: the publisher
 reports overflows for this model in that dtype. Q8_0 conversion preserves the
 head, output projection, scalar/norm/bias tensors and calibration in FP32.
