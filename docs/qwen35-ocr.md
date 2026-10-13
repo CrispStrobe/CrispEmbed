@@ -153,3 +153,43 @@ a deliberately corrupted output are controls. No production OCR API exists.
 Pending checks: [full official reference plus real-checkpoint delta boundary](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38462297091),
 and [independent official single-token/multi-batch 65-token chunk cases](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38462494620).
 Do not claim native recurrence parity until their assertion logs are collected.
+
+## Verified native foundation — 2026-10-13
+
+[ARM actual-checkpoint run 38463754247](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38463754247)
+and [Mac CPU single-token/multi-batch run 38464514789](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38464514789)
+pass at `63b46720`. The earlier raw cached-forward harness passed a full-length
+position sequence to a one-token query and failed in partial RoPE. The corrected
+reference uses the actual Transformers generation position/input preparation,
+including its slicing, for prefill and continuation.
+
+- Export: all 473 tensors byte/shape-exact through GGUF; both malformed controls
+  rejected. F16 export 1,717,205,376 bytes, with small/critical vectors and convs F32.
+- Official reference: 267 recorded stages; every required stage present, including
+  12 vision layers and 24 decoder layers for prefill/cached/full-prefix arms.
+  Actual positions are `[4,1,78]`, `[1,1,1]` and `[4,1,79]` respectively.
+  Cached/full-prefix logits max absolute difference **2.3365e-5**, argmax identical.
+- Actual-checkpoint native recurrence/core: reported minimum cosine **1.000000000**
+  throughout; recurrence output max abs **7.45e-8**, carried state max abs
+  **1.61e-6**, gated normalization max abs **7.15e-7**, convolution history
+  byte-identical. Prefill, native-state continuation and fresh reset pass, as do
+  explicitly disabled, invalid-input and corruption controls.
+- Independent official-function cases: batch 1/token 1 and batch 2/tokens 65,
+  sixteen 128-wide heads, cached continuation and fresh reset. Reported cosine
+  **1.000000000**, maximum state error **6.26e-7**.
+- Python emits `Hello OCR  \n12345` and stops at EOS **248046**, with nine
+  generated IDs. This is a synthetic Python transcript, not native OCR output.
+
+[Initial cached-input failure](../tests/results/qwen35-ocr/cached-input-initial-failure.json),
+[passed bootstrap](../tests/results/qwen35-ocr/bootstrap-passed.json) and
+[per-stage errors/magnitudes](../tests/results/qwen35-ocr/native-core-parity.json)
+are retained. Printed cosine 1 does not mean bit equality; absolute errors above
+state the actual limits. Full native model parity remains unimplemented.
+
+The next feature checkpoint materializes actual GGUF projection weights as F32
+for structural parity (avoiding FP16 activation-dot rounding), and compares all
+18 trained linear-attention blocks through their output projections with native
+convolution/recurrent state carried into the cached arm. Each block still receives
+its input from the official capture: this is component coverage, not a complete
+native decoder or transcript. Full attention, residual/norm/FFN depth composition,
+vision/tokenizer/positions and actual C ABI decoding remain necessary.

@@ -1,0 +1,265 @@
+{
+  "scope": "Native recurrence/core only; full native OCR remains pending",
+  "reference_stages": 267,
+  "reference_missing_stages": [],
+  "reference_positions": {
+    "prefill.decoder.position_ids": [
+      4,
+      1,
+      78
+    ],
+    "cached.decoder.position_ids": [
+      1,
+      1,
+      1
+    ],
+    "full_prefix.decoder.position_ids": [
+      4,
+      1,
+      79
+    ]
+  },
+  "source_commit": "63b4672095158e9d9d4de540a02c0c0516616212",
+  "checks": [
+    {
+      "run": "38463754247",
+      "stage": "prefill.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.4505806e-08,
+      "mean_abs": 1.25737809e-10,
+      "native_norm": 1.83763063,
+      "reference_norm": 1.83763051
+    },
+    {
+      "run": "38463754247",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 9.23429888e-10,
+      "native_norm": 14.5173378,
+      "reference_norm": 14.5173368
+    },
+    {
+      "run": "38463754247",
+      "stage": "prefill.linear.norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.15255737e-07,
+      "mean_abs": 4.18423873e-09,
+      "native_norm": 37.3617973,
+      "reference_norm": 37.3617973
+    },
+    {
+      "run": "38463754247",
+      "stage": "prefill.cache.0.conv_states",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "native_norm": 241.263702,
+      "reference_norm": 241.263702
+    },
+    {
+      "run": "38463754247",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.60932541e-06,
+      "mean_abs": 9.94342719e-10,
+      "native_norm": 14.5173378,
+      "reference_norm": 14.5173368
+    },
+    {
+      "run": "38463754247",
+      "stage": "cached.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.98023224e-08,
+      "mean_abs": 1.32218736e-10,
+      "native_norm": 0.333942086,
+      "reference_norm": 0.333942086
+    },
+    {
+      "run": "38463754247",
+      "stage": "cached.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 9.11432207e-10,
+      "native_norm": 14.7469873,
+      "reference_norm": 14.7469873
+    },
+    {
+      "run": "38463754247",
+      "stage": "cached.linear.norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 5.26475796e-09,
+      "native_norm": 5.28368044,
+      "reference_norm": 5.28368044
+    },
+    {
+      "run": "38463754247",
+      "stage": "cached.cache.0.conv_states",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "native_norm": 237.527573,
+      "reference_norm": 237.527573
+    },
+    {
+      "run": "38463754247",
+      "stage": "cached.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.60932541e-06,
+      "mean_abs": 9.97728011e-10,
+      "native_norm": 14.7469883,
+      "reference_norm": 14.7469873
+    },
+    {
+      "run": "38463754247",
+      "stage": "prefill.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.4505806e-08,
+      "mean_abs": 1.25737809e-10,
+      "native_norm": 1.83763063,
+      "reference_norm": 1.83763051
+    },
+    {
+      "run": "38463754247",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 9.23429888e-10,
+      "native_norm": 14.5173378,
+      "reference_norm": 14.5173368
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.4505806e-09,
+      "mean_abs": 6.11230566e-10,
+      "native_norm": 0.139106914,
+      "reference_norm": 0.139106914
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 1.24707844e-09,
+      "native_norm": 23.4059772,
+      "reference_norm": 23.4059772
+    },
+    {
+      "run": "38464514789",
+      "stage": "cached.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.58793545e-09,
+      "mean_abs": 4.7933274e-10,
+      "native_norm": 0.202068046,
+      "reference_norm": 0.202068046
+    },
+    {
+      "run": "38464514789",
+      "stage": "cached.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 8.94069672e-08,
+      "mean_abs": 2.33549713e-09,
+      "native_norm": 28.4817276,
+      "reference_norm": 28.4817276
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.4505806e-09,
+      "mean_abs": 6.11230566e-10,
+      "native_norm": 0.139106914,
+      "reference_norm": 0.139106914
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 1.24707844e-09,
+      "native_norm": 23.4059772,
+      "reference_norm": 23.4059772
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.63684511e-08,
+      "mean_abs": 1.63127756e-09,
+      "native_norm": 2.57527542,
+      "reference_norm": 2.57527566
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.2584877e-07,
+      "mean_abs": 1.61153331e-08,
+      "native_norm": 44.0772781,
+      "reference_norm": 44.0772781
+    },
+    {
+      "run": "38464514789",
+      "stage": "cached.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.07102096e-08,
+      "mean_abs": 8.18837442e-10,
+      "native_norm": 0.290676206,
+      "reference_norm": 0.290676206
+    },
+    {
+      "run": "38464514789",
+      "stage": "cached.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.47034836e-07,
+      "mean_abs": 9.17116605e-09,
+      "native_norm": 40.8691673,
+      "reference_norm": 40.8691635
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.63684511e-08,
+      "mean_abs": 1.63127756e-09,
+      "native_norm": 2.57527542,
+      "reference_norm": 2.57527566
+    },
+    {
+      "run": "38464514789",
+      "stage": "prefill.delta.final_state",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.2584877e-07,
+      "mean_abs": 1.61153331e-08,
+      "native_norm": 44.0772781,
+      "reference_norm": 44.0772781
+    }
+  ]
+}

@@ -4865,3 +4865,18 @@ matches/beats the reference implementation on every GT-labelled page, with
 one documented CPU-vs-Metal trajectory divergence (receipt_historical,
 stripped CER 0.238 CPU vs 0.372 Metal, both better than the reference's
 0.493 — Metal F16 activation rounding, same class as deepseek T14/G2).
+
+## Qwen3.5 OCR native recurrence correctness — 2026-10-13
+
+LightOnOCR-3-0.8B native foundation at `63b46720`, actual original Transformers
+5.5.4 reference, all work hosted. [ARM checkpoint](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38463754247)
+and [Mac CPU multi-batch/chunk boundary](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38464514789) pass.
+Reported minimum cosine 1.000000000; actual-checkpoint recurrence output max abs
+7.45e-8, native-carried state max abs 1.61e-6, gated norm max abs 7.15e-7;
+convolution history exact. Mac synthetic batch-2/65-token state max abs 6.26e-7.
+Official cached/full-prefix logits max abs 2.3365e-5 and same argmax after the
+reference harness uses actual generation position preparation. No native model
+transcript, quantization quality, latency, throughput or GPU claim. Scope and
+[stage errors/magnitudes](tests/results/qwen35-ocr/native-core-parity.json) are
+recorded in [the port blueprint](docs/qwen35-ocr.md); all trained projection
+weights and depth/frontend composition remain subsequent checks.
