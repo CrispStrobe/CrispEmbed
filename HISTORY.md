@@ -1,3 +1,22 @@
+## 2026-10-13 — EmbeddingGemma 2 typed-decision native support
+
+Added the complete fine-tuned encoder and schema-conditioned calibrated head for
+mrm8488/embeddinggemma-2-ft-typed-decision, pinned to fcc165b7d7d97827e241e09752e83fd11165a74b.
+Standalone opt-in CPU implementation, FP32/Q8 converter, full original-Python
+reference dumper, C/CLI/HTTP/Python/Rust/Dart interfaces and publisher metadata.
+Linux ARM64 and macOS deployment-target-12 validation passes 145 stage checks,
+exact IDs, head scores, probabilities, all eight typed answers and error/repeat
+contracts. Real Rust/Dart inference passes; Dart analysis is clean. Model-free
+rendering matches Python over 5,537 finite doubles and Unicode/list cases.
+
+Fixed GGUF tensor-name length, scoped CPU FP16 GELU lookup drift, baseline Apple
+float-format availability, and existing Rust C-char signedness assumptions.
+Head, output projection, norms/scalars/biases and fitted temperatures remain
+FP32 under Q8. No training/calibration refit, GPU claim or release/version change.
+HF upload is pending credential permission: code/validation pass, but CI received
+403 on repository creation. The repository contains reviewed metadata/reports;
+weights and download aliases are not falsely advertised as available.
+
 ## 2026-10-05 — CrispMath consumer/runtime public handoff
 
 Publish the current state and executable follow-up lanes with public source and

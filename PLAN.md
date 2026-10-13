@@ -1,49 +1,35 @@
 # CrispEmbed — Architecture & Roadmap
 
-## NOW 2026-10-13 — EmbeddingGemma 2 typed decisions
+## DONE native support / pending HF upload — 2026-10-13
 
-Branch feat/embeddinggemma2-typed-decision from 9b3c8234. Source pinned to
-mrm8488/embeddinggemma-2-ft-typed-decision at fcc165b7d7d97827e241e09752e83fd11165a74b.
-Read full custom configuration/model and driving decide/encode rendering pipeline.
-Checkpoint 1.089 GB FP32; full custom source and Transformers 5.19.0 backbone
-read. Gated CPU encoder/head, ordered JSON rendering and C/CLI/HTTP/Python/Rust/Dart
-surfaces implemented. Hosted validation script converts the pinned source, dumps
-five 29-stage original-Python probes (including >512-token sliding-window coverage),
-and checks head-only scores plus full typed values/CLI/HTTP/error contracts.
-ARM run 38349285209 built all native targets and generated five original-Python
-references plus all typed scenarios. First runtime failure: HF tensor names exceed
-GGML_MAX_NAME=64. Exporter/loader now use short enc.* aliases without altering
-weights. Source review also found GGML's CPU GELU FP16 LUT; added a scoped FP32
-operator and collapse regression, with legacy A/B gate. ARM run 38352165925 at
-82383e3e now passes all 145 stage comparisons and exact token IDs, including 549
-tokens across the local attention radius. FP32 bank min cosine 0.999999940,
-maximum probability error 4.82762e-6, 8/8 typed answers; Q8/F32-dot min cosine
-0.999956489, probability error 0.00282493224, 8/8 answers. API/CLI/HTTP/schema/head,
-invalid/repeat contracts and generic tokenizer/server regressions pass. Five
-probes/eight questions establish reference agreement, not independent task
-accuracy. Local builds/model inference remain deferred under shared-host rules.
-Independent macOS run 38352829721 also passes all 145 stages and eight answers.
-Next: finish real Rust/Dart checks, then publish/register artifacts.
-Publication run 38352827403 repeated native/reference checks successfully, then
-stopped before upload because three existing Rust wrapper annotations hard-coded
-signed i8 C-string pointers. Linux ARM64 uses unsigned c_char; all three now use
-std::ffi::c_char. Repeat the complete gated publication with the portability fix.
-Run 38355575721 proves the Rust crate now compiles, then stopped before upload
-on an unsupported Dart analyzer CLI flag; removed the flag (infos already
-default nonfatal). Source audit also caught floating std::to_chars availability
-above the project's macOS 12 / iOS 15 targets. Vendored pinned Apache-2.0 Ryu
-double conversion with private symbols, retained licenses, and added model-free
-Python comparisons over thousands of finite doubles and Unicode/list repr.
-Printability follows the CPython 3.12 / Unicode 15 reference separately from
-existing tokenizer tables. Preserve source failures for empty/whitespace state
-strings, and integer text up to Python's default 4300-digit limit. Re-run both
-platforms, configuring macOS deployment target 12, and the full publication gate.
-Added machine-readable
-embedding/head errors and hosted Rust/Dart real shared-library contracts. The
-publication driver re-runs all numerical/contracts gates before creating public
-model artifacts, records exact provenance and verifies remote hashes/bytes.
-FP32 remains the reference; Q8 measurements cannot weaken FP32 checks. The scoped
-activation regression now joins the model-free arithmetic workflow.
+Complete gated CPU support for mrm8488/embeddinggemma-2-ft-typed-decision at
+fcc165b7d7d97827e241e09752e83fd11165a74b. Encoder, trained head, original state/schema
+rendering, pooling/prompt and stored calibration are wired through C, CLI, HTTP,
+Python, Rust and Dart. FP32/Q8 export, full original-Python dumper, every-layer diff,
+publisher metadata/allowlist, precise activation and model-free renderer guards.
+
+Linux ARM64 and macOS 12 runs pass 145 stage checks each, exact IDs (including
+549-token attention-window coverage), head scores, probabilities, eight typed
+answers, API/CLI/HTTP/error/repeat contracts. FP32 minimum bank cosine0.999999940,
+maximum probability error4.82762e-6; portable Q8/F32-dot cosine0.999956429,
+error0.00282478324,8/8 labels. Model-free checks match5,537 doubles and Unicode/list
+repr. Run38361916083 additionally passes actual Rust/Dart FFI and clean Dart
+analysis; its final failure is HF403 on repository creation with the CI token.
+See docs/embeddinggemma2-typed-decision.md and tests/results/gemma-decision/.
+
+Resolved long GGUF names with short enc.* aliases, CPU GELU FP16 LUT with scoped
+FP32 tanh arithmetic (legacy A/B gate retained), baseline Apple float formatting
+with pinned licensed Ryu, and three old Rust signed-char annotations with c_char.
+Tokenizer defaults and other model inference paths remain intact. Stored fitted
+temperatures retained; reference agreement is not independent task accuracy.
+No GPU/speed or new runtime release claim. Local builds/model inference deferred.
+
+HF repository created with existing publisher credentials; reviewed card/license,
+source README and validation reports uploaded. Model files remain pending. A
+bounded CI probe checks write permission on the now-created repo; permission to
+copy the local credential into a temporary encrypted Actions secret is pending
+only if the existing token cannot write. Never register unavailable URLs: add
+aliases/generated SHA-256 pins only after remote model hashes/bytes verify.
 
 ## CrispMath consumer handoff — 5 October 2026
 
@@ -411,7 +397,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-13 | `feat/embeddinggemma2-typed-decision` | Complete encoder and calibrated typed-decision head for `mrm8488/embeddinggemma-2-ft-typed-decision`; C/CLI/HTTP/Python/Rust/Dart, converter, original-Python comparisons and publication | ARM run [38352165925](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352165925) passes 145 stage checks and exact IDs. FP32 bank cosine >=0.99999994, max probability error 4.83e-6; Q8 cosine >=0.99995649, 8/8 labels, max probability error 0.002825. Independent macOS run 38352829721 also passes all 145 stages and eight answers. Rust ARM compilation fixed/proved. Portable Ryu and Python 3.12 Unicode rendering preserve baseline Apple targets; macOS 12 library builds. Schema probe link corrected. Runs 38359818133 (ARM publication/real Rust+Dart) and 38359820734 (macOS 12 parity) queued; no artifact uploaded yet. CPU remains opt-in; no GPU/speed claim. |
+| 2026-10-13 | `main` / `feat/embeddinggemma2-typed-decision` | Complete encoder/head and all interfaces validated; finish HF artifact publication and pinned aliases | Native, Python/CLI/HTTP/Rust/Dart pass; macOS12 and5537-double/Unicode checks pass. HF creation failed in CI403; local publisher created repo and uploaded reviewed metadata. Existing-token write probe38365516654 queued; temporary-secret approval pending if needed. No model-file upload or alias claim yet. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 

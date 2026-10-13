@@ -1,8 +1,9 @@
 # EmbeddingGemma 2 typed decisions
 
-Status: opt-in CPU implementation passes original-Python validation on Linux
-ARM64 and macOS. Publication checks are running; download aliases are not yet
-registered. Reference agreement is measured separately from task accuracy.
+Status: complete opt-in CPU encoder/head support passes original-Python checks
+on Linux ARM64 and macOS 12, including actual Python, CLI/HTTP, Rust and Dart
+contracts. Model-file upload is pending HF credential permission; no download
+alias is registered. Reference agreement is measured separately from task accuracy.
 
 Source: [mrm8488/embeddinggemma-2-ft-typed-decision](https://huggingface.co/mrm8488/embeddinggemma-2-ft-typed-decision)
 at `fcc165b7d7d97827e241e09752e83fd11165a74b`. Both its card and
@@ -27,7 +28,7 @@ changes decisions. This is inference support, not a training/collation API.
 ## Interfaces
 
 The CPU reference backend currently requires `CRISPEMBED_GEMMA_DECISION=1`.
-Build from the feature branch while integration is pending. Convert a locally
+Build current source including this backend. Convert a locally
 available pinned source snapshot to GGUF:
 
 ```sh
@@ -130,9 +131,17 @@ Unicode/list representations and empty/whitespace state failures. Both updated
 platform runs configure `GGML_NATIVE=OFF`; Linux's corresponding portable-baseline
 metrics above come from [38359818133](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133).
 That run's later failure was the isolated Rust consumer's library search path;
-its native/reference checks passed. The publication retry sets the loader path.
+its native/reference checks passed. The corrected
+[run 38361916083](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38361916083)
+passes all native/reference checks and actual Rust/Dart shared-library scores,
+all eight typed answers, invalid requests and repeat calls. Dart analysis is
+clean. Its final failure is HF HTTP 403 on repository creation with the CI token.
 [Recorded measurements](../tests/results/gemma-decision/arm-validation.json)
 and [decoded FP32 answers](../tests/results/gemma-decision/arm-f32-decisions.json)
-retain the original/native results. Publishing and SHA-256 registry pins follow
-the remaining checks. This text-only model does not belong in the OCR
+retain the original/native results. The
+[HF repository](https://huggingface.co/cstr/embeddinggemma-2-ft-typed-decision-GGUF)
+contains reviewed metadata and reports; model files are not uploaded yet.
+[Validated artifact identities](../tests/results/gemma-decision/validated-artifacts.json)
+record both exact file hashes/sizes. SHA-256 registry aliases follow verified
+remote uploads, never nonexistent file URLs. This text-only model does not belong in the OCR
 orchestrator or CrispCalc OCR catalog.
