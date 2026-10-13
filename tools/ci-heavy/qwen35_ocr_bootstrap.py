@@ -110,7 +110,18 @@ def main():
         ref = reference.dump_reference(local, image_path, out / "official-reference.npz")
         report["reference"] = {key: ref[key] for key in ["vision_layers", "decoder_layers", "decoded",
                                                        "cached_vs_full_prefix_max_abs", "cached_vs_full_prefix_same_argmax"]}
-        report["result"] = "export and official reference checks passed; native support pending"
+        build = scratch / "qwen35-native-build"
+        subprocess.run(["cmake", "-S", str(repo), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
+                        "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
+                        "-DCRISPEMBED_BUILD_SHARED=OFF"], check=True)
+        subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta", "-j", "4"], check=True)
+        native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
+                                capture_output=True, text=True)
+        (out / "native-delta.log").write_text(native.stdout + native.stderr)
+        print(native.stdout + native.stderr)
+        native.check_returncode()
+        report["native_delta"] = "passed official recurrence output/state comparisons and controls"
+        report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
     except BaseException as error:
         report["result"] = "failed"
         report["error"] = f"{type(error).__name__}: {error}"

@@ -16,6 +16,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     import numpy as np
     import torch
     import transformers
+    import gguf
     from PIL import Image
     from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
 
@@ -71,6 +72,33 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         handles.append(getattr(visual, name).register_forward_hook(hook("vision." + name)))
     handles.append(visual.register_forward_hook(hook("vision.output")))
     language = model.model.language_model
+    # Capture the official recurrence boundary after projection/convolution,
+    # before Q/K normalization. Keep the original upstream functions intact.
+    delta = language.layers[0].linear_attn
+    originals = {}
+    for method_name in ["chunk_gated_delta_rule", "recurrent_gated_delta_rule"]:
+        original = getattr(delta, method_name)
+        originals[method_name] = original
+
+        def wrap(fn):
+            def capture(query, key, value, *args, **kwargs):
+                if phase[0] is not None:
+                    if args or not kwargs.get("use_qk_l2norm_in_kernel", False):
+                        raise ValueError("Unaudited official delta call convention")
+                    for field, tensor in [("q", query), ("k", key), ("v", value),
+                                          ("g", kwargs["g"]), ("beta", kwargs["beta"])]:
+                        save(f"{phase[0]}.delta.{field}", tensor)
+                    initial = kwargs.get("initial_state")
+                    if initial is None:
+                        initial = torch.zeros(query.shape[0], value.shape[2], query.shape[-1], value.shape[-1])
+                    save(f"{phase[0]}.delta.initial_state", initial)
+                result = fn(query, key, value, *args, **kwargs)
+                if phase[0] is not None:
+                    save(f"{phase[0]}.delta.output", result[0])
+                    save(f"{phase[0]}.delta.final_state", result[1])
+                return result
+            return capture
+        setattr(delta, method_name, wrap(original))
     for index, block in enumerate(language.layers):
         handles.append(block.register_forward_hook(hook(f"decoder.layer.{index}")))
     handles.append(language.norm.register_forward_hook(hook("decoder.norm")))
@@ -122,6 +150,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             save(f"generated.logits.{index}", score)
     for handle in handles:
         handle.remove()
+    for name, original in originals.items():
+        setattr(delta, name, original)
     vision_depth = model.config.vision_config.depth
     decoder_depth = model.config.text_config.num_hidden_layers
     required = [f"prefill.vision.layer.{index}" for index in range(vision_depth)]
@@ -134,6 +164,15 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
     missing = sorted(set(required) - set(arrays))
     np.savez(output, **arrays)
+    # Small standalone native-op probe; never part of exported model weights.
+    probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
+    for name, value in arrays.items():
+        if ".delta." in name and name.startswith(("prefill.", "cached.")):
+            probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
+    probe.write_header_to_file()
+    probe.write_kv_data_to_file()
+    probe.write_tensors_to_file()
+    probe.close()
     report = {
         "transformers": transformers.__version__, "torch": torch.__version__,
         "image_sha256": hashlib.sha256(Path(image_path).read_bytes()).hexdigest(),
