@@ -75,6 +75,13 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     # Capture the official recurrence boundary after projection/convolution,
     # before Q/K normalization. Keep the original upstream functions intact.
     delta_layer = language.layers[0].linear_attn
+    for name, value in [("conv_weights", delta_layer.conv1d.weight),
+                        ("a_log", delta_layer.A_log), ("dt_bias", delta_layer.dt_bias),
+                        ("norm_weights", delta_layer.norm.weight)]:
+        save("linear." + name, value)
+    for name, field in [("in_proj_qkv", "qkv"), ("in_proj_z", "z"),
+                        ("in_proj_a", "a"), ("in_proj_b", "b"), ("norm", "norm")]:
+        handles.append(getattr(delta_layer, name).register_forward_hook(hook("linear." + field)))
     originals = {}
     for method_name in ["chunk_gated_delta_rule", "recurrent_gated_delta_rule"]:
         original = getattr(delta_layer, method_name)
@@ -167,7 +174,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     # Small standalone native-op probe; never part of exported model weights.
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
     for name, value in arrays.items():
-        if ".delta." in name and name.startswith(("prefill.", "cached.")):
+        if ((".delta." in name or ".linear." in name or ".cache.0." in name)
+                and name.startswith(("prefill.", "cached."))) or name.startswith("linear."):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()

@@ -10,6 +10,84 @@
 #include <memory>
 
 namespace qwen35_ocr {
+static float sigmoid(float x) {
+    if (x >= 0) return 1.0f / (1.0f + std::exp(-x));
+    const float exp = std::exp(x);
+    return exp / (1.0f + exp);
+}
+
+bool linear_core_cpu(const linear_inputs & in, linear_outputs & out) {
+    out = {};
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !in.qkv || !in.z || !in.a || !in.b || !in.conv_weights || !in.a_log ||
+        !in.dt_bias || !in.norm_weights || in.batch < 1 || in.batch > 4 || in.tokens < 1 || in.tokens > 4096 ||
+        in.heads < 1 || in.heads > 128 || in.width < 1 || in.width > 256 || in.conv_kernel < 1 || in.conv_kernel > 16 ||
+        in.threads < 1 || in.threads > 256 || !std::isfinite(in.norm_eps) || in.norm_eps <= 0)
+        return false;
+    const size_t heads = size_t(in.heads), width = size_t(in.width);
+    const size_t group = heads * width, channels = 3 * group;
+    const size_t rows = size_t(in.batch) * in.tokens * heads;
+    const size_t elements = rows * width;
+    if (elements > 16 * 1024 * 1024 || size_t(in.batch) * heads * width * width > 16 * 1024 * 1024) return false;
+    std::vector<float> q(elements), k(elements), v(elements), g(rows), beta(rows), delta;
+    out.conv_history.resize(size_t(in.batch) * channels * in.conv_kernel);
+    auto history = [&](int batch, size_t channel, int token) {
+        if (token >= 0) return in.qkv[(size_t(batch) * in.tokens + token) * channels + channel];
+        return in.conv_history
+                   ? in.conv_history[(size_t(batch) * channels + channel) * in.conv_kernel + in.conv_kernel + token]
+                   : 0.0f;
+    };
+    for (int batch = 0; batch < in.batch; ++batch) {
+        for (int token = 0; token < in.tokens; ++token) {
+            for (size_t channel = 0; channel < channels; ++channel) {
+                float sum = 0;
+                for (int tap = 0; tap < in.conv_kernel; ++tap) {
+                    sum += history(batch, channel, token - in.conv_kernel + 1 + tap) *
+                           in.conv_weights[channel * in.conv_kernel + tap];
+                }
+                const size_t index = (size_t(batch) * in.tokens + token) * group + channel % group;
+                auto & destination = channel < group ? q : channel < 2 * group ? k : v;
+                destination[index] = sum * sigmoid(sum);
+            }
+            for (size_t head = 0; head < heads; ++head) {
+                const size_t index = (size_t(batch) * in.tokens + token) * heads + head;
+                const float time = in.a[index] + in.dt_bias[head];
+                const float softplus = time > 20.0f ? time : std::log1p(std::exp(time));
+                g[index] = -std::exp(in.a_log[head]) * softplus;
+                beta[index] = sigmoid(in.b[index]);
+            }
+        }
+        for (size_t channel = 0; channel < channels; ++channel) {
+            for (int tap = 0; tap < in.conv_kernel; ++tap) {
+                out.conv_history[(size_t(batch) * channels + channel) * in.conv_kernel + tap] =
+                    history(batch, channel, in.tokens - in.conv_kernel + tap);
+            }
+        }
+    }
+    if (!delta_cpu(q.data(), k.data(), v.data(), g.data(), beta.data(), in.state, in.batch, in.tokens, in.heads,
+                   in.width, in.threads, delta, out.state)) {
+        out = {};
+        return false;
+    }
+    out.values.resize(elements);
+    for (size_t row = 0; row < rows; ++row) {
+        double square = 0;
+        for (size_t column = 0; column < width; ++column) {
+            const float value = delta[row * width + column];
+            square += double(value) * value;
+        }
+        const float scale = 1.0f / std::sqrt(float(square / width) + in.norm_eps);
+        for (size_t column = 0; column < width; ++column) {
+            const size_t index = row * width + column;
+            out.values[index] = delta[index] * scale * in.norm_weights[column] * in.z[index] * sigmoid(in.z[index]);
+            if (!std::isfinite(out.values[index])) {
+                out = {};
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool delta_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
                const float * initial_state, int batch, int tokens, int heads, int width, int threads,
                std::vector<float> & output, std::vector<float> & final_state) {

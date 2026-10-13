@@ -31,6 +31,7 @@ int main(int argc, char ** argv) {
     crispembed_diff::Ref ref;
     if (!ref.load(argv[1])) return 2;
     std::vector<float> previous_state, output, state;
+    qwen35_ocr::linear_outputs previous_linear;
     bool ok = true;
     for (const std::string phase : { "prefill", "cached" }) {
         auto tensor = [&](const char * field) { return ref.get_f32(phase + ".delta." + field); };
@@ -55,6 +56,45 @@ int main(int argc, char ** argv) {
         ok &= compare(ref, phase + ".delta.output", output);
         ok &= compare(ref, phase + ".delta.final_state", state);
         previous_state = state;
+        if (ref.has(phase + ".linear.qkv")) {
+            auto field = [&](const std::string & name) { return ref.get_f32(name).first; };
+            const auto conv_shape = ref.shape("linear.conv_weights");
+            if (conv_shape.size() != 3 || conv_shape[1] != 1 || conv_shape[2] != 3 * heads * width) return 2;
+            const int kernel = int(conv_shape[0]);
+            if (ref.get_f32(phase + ".linear.qkv").second != 3 * elements ||
+                ref.get_f32(phase + ".linear.z").second != elements ||
+                ref.get_f32(phase + ".linear.a").second != rows || ref.get_f32(phase + ".linear.b").second != rows ||
+                ref.get_f32("linear.conv_weights").second != size_t(3 * heads * width) * kernel ||
+                ref.get_f32("linear.a_log").second != size_t(heads) ||
+                ref.get_f32("linear.dt_bias").second != size_t(heads) ||
+                ref.get_f32("linear.norm_weights").second != size_t(width))
+                return 2;
+            const qwen35_ocr::linear_inputs input{
+                batch,
+                tokens,
+                heads,
+                width,
+                kernel,
+                4,
+                1e-6f,
+                field(phase + ".linear.qkv"),
+                field(phase + ".linear.z"),
+                field(phase + ".linear.a"),
+                field(phase + ".linear.b"),
+                field("linear.conv_weights"),
+                field("linear.a_log"),
+                field("linear.dt_bias"),
+                field("linear.norm_weights"),
+                previous_linear.conv_history.empty() ? nullptr : previous_linear.conv_history.data(),
+                previous_linear.state.empty() ? nullptr : previous_linear.state.data(),
+            };
+            qwen35_ocr::linear_outputs current;
+            if (!qwen35_ocr::linear_core_cpu(input, current)) return 1;
+            ok &= compare(ref, phase + ".linear.norm", current.values);
+            ok &= compare(ref, phase + ".cache.0.conv_states", current.conv_history);
+            ok &= compare(ref, phase + ".delta.final_state", current.state);
+            previous_linear = std::move(current);
+        }
     }
     // A fresh request must reset to zero state, not inherit the previous context.
     const auto q = ref.get_f32("prefill.delta.q"), k = ref.get_f32("prefill.delta.k"),
