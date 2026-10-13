@@ -1,5 +1,61 @@
 # CrispEmbed — Architecture & Roadmap
 
+## OPEN — permissive OCR expansion, 2026-10-13
+
+Scope: MIT, Apache-2.0, BSD or equivalently permissive code **and weight/base-model**
+terms only. This queue does not enable restricted registry entries or resume Indra
+weight use. Model-card tags alone are insufficient: inspect the license text,
+base checkpoint and inference dependencies before downloading/exporting a new model.
+
+Existing native coverage is retained: PP-OCRv6 tiny/small/medium (detector + CTC
+recognizer), PaddleOCR-VL-1.6, GLM-OCR, LightOnOCR-2-1B and olmOCR-2-7B-1025.
+Support is not a claim of reproducing upstream benchmark scores. GLM has measured
+HF decoded-output comparisons; Paddle has bounded E2E evidence; LightOn's earlier
+transcript smoke remains unscored. Audit quality and performance separately.
+
+New checkpoints are ordered by approximate total Q4_K weight storage, including
+vision, then parameter size for near ties. Sizes are decimal GB, not runtime RAM;
+community Q4_K_M exports are storage references, not verified CrispEmbed models.
+Keeping critical tensors at Q8/F16 can change the final export size.
+
+| Order | Model / upstream | License | Total weight budget | Work / status |
+|---|---|---|---|---|
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **STARTED**: pinned blueprint, strict converter and official-Python reference capture; missing shared native Qwen3.5 backend, no parity/support claim |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
+| 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
+| 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
+| 5 | [TeleOCR](https://huggingface.co/XingChen-AGI/TeleOCR) | Apache-2.0; base terms still to audit | ~1.3–1.8 GB | Queued: reuse Qwen2.5-VL where exact config permits; verify renamed NaviDC artifacts/provenance and structured output; estimated 1–2 weeks |
+| 6 | [LightOnOCR-3-4B](https://huggingface.co/lightonai/LightOnOCR-3-4B) | Apache-2.0; Qwen3.5 family | ~3.08–3.38 GB | Queued after small-model parity; larger memory/long-page and grounding checks |
+
+Shared Qwen3.5 estimate: 2–4 engineering weeks for the first verified model,
+then roughly 3–7 days per checkpoint. These are planning estimates. Vendored ggml
+already has GatedDeltaNet kernels; missing work is model graph/state management,
+partial/interleaved MRoPE, gated full attention, vision, tokenizer and integration.
+No ONNX Runtime dependency is proposed.
+
+Existing weight references: PaddleOCR-VL-1.6 Q4_K **1.299 GB**, GLM-OCR Q4_K
+**0.889 GB**, LightOnOCR-2 Q4_K **0.655 GB** (HF file metadata checked 2026-10-13).
+PP-OCRv6 retains its current F16 detector/F32 backbone/head-only Q8 presets:
+tiny ~0.006 GB, small ~0.025 GB, medium ~0.105 GB for detector + recognizer.
+olmOCR-2 registry lists ~5.5 GB; no new port is required for that checkpoint.
+
+Deferred from this permissive lane: Indra, Chandra-OCR-2, MinerU2.5-Pro,
+Hunyuan-OCR and dots.ocr while their restrictive/custom or supplemental terms
+fall outside this scope. Infinity-Parser2-Pro and large general-purpose OCRBench
+leaders need a separate license/base/architecture inventory before enrollment;
+benchmark placement alone is not authorization to publish weights.
+
+**Completion gates for every new checkpoint:** immutable source/license provenance;
+strict full tensor coverage; official Python inputs, image grids, positions and
+prompt IDs; all decoder layers and prefill/cached continuation states; logits,
+argmax, EOS, full transcript and CER/WER; F32/F16 first, then Q8/Q4_K with
+calibrated critical-tensor retention. Preserve first failures and inspect the earliest
+divergence using absolute errors/magnitudes as well as cosine. Add fail-closed,
+value-parsed opt-in gates, C ABI/orchestrator/CLI/server and Python/Rust/Dart wiring
+per [contributing](docs/contributing.md); publish only validated artifacts with
+license/source card, hashes, measured sizes and registry pins. Keep reference
+probes separate from production GGUF; run builds/model work on hosted runners.
+
 ## DONE public-code analysis — Indra OCR, 2026-10-13
 
 Indra is an ONNX CPU document pipeline with detection, two CTC recognizers,
@@ -412,6 +468,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-13 | `ocr-permissive-roadmap` | Permissive OCR queue; LightOnOCR-3-0.8B first, shared Qwen3.5 backend | Started source/tensor/export/reference lane; native inference and parity pending. Models remain unregistered until validated. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
