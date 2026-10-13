@@ -21,7 +21,8 @@ model revisiond8427e48a0c20bc63216d332ec0b5e8ec43430c9, metadata50bc9528.
 Original-Python fixtures published at dataset revision508188c36d0550b12a6a467f5d394c10aa33e04c.
 Both remote file hashes/bytes verified, two aliases and generated pins added;
 all existing pins retained. See tests/results/gemma-decision/publication.json.
-Finish the hosted empty-cache alias/CLI check, then retire the feature branch.
+Hosted empty-cache alias/CLI check38375586578 at9b472380 is queued.
+Finish that check, then retire the feature branch.
 
 Resolved GGUF tensor-name length, scoped CPU FP16 GELU LUT drift, Apple12 float
 formatting with licensed Ryu and Rust signed-char annotations. Python15 printable
@@ -393,7 +394,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-13 | `main` / `feat/embeddinggemma2-typed-decision` | Complete encoder/head and all interfaces validated; finish HF artifact publication and pinned aliases | Publication38374087175 passes all checks; model/fixture uploads accepted and remote hashes verified. Both aliases/pins added; final hosted empty-cache CLI validation pending. No release change. |
+| 2026-10-13 | `main` / `feat/embeddinggemma2-typed-decision` | Complete encoder/head and all interfaces validated; finish HF artifact publication and pinned aliases | Publication38374087175 passes all checks; model/fixture uploads accepted and remote hashes verified. Both aliases/pins added; hosted empty-cache CLI check38375586578 at9b472380 queued. No release change. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
