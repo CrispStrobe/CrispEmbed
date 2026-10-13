@@ -28,6 +28,16 @@ Publication run 38352827403 repeated native/reference checks successfully, then
 stopped before upload because three existing Rust wrapper annotations hard-coded
 signed i8 C-string pointers. Linux ARM64 uses unsigned c_char; all three now use
 std::ffi::c_char. Repeat the complete gated publication with the portability fix.
+Run 38355575721 proves the Rust crate now compiles, then stopped before upload
+on an unsupported Dart analyzer CLI flag; removed the flag (infos already
+default nonfatal). Source audit also caught floating std::to_chars availability
+above the project's macOS 12 / iOS 15 targets. Vendored pinned Apache-2.0 Ryu
+double conversion with private symbols, retained licenses, and added model-free
+Python comparisons over thousands of finite doubles and Unicode/list repr.
+Printability follows the CPython 3.12 / Unicode 15 reference separately from
+existing tokenizer tables. Preserve source failures for empty/whitespace state
+strings, and integer text up to Python's default 4300-digit limit. Re-run both
+platforms, configuring macOS deployment target 12, and the full publication gate.
 Added machine-readable
 embedding/head errors and hosted Rust/Dart real shared-library contracts. The
 publication driver re-runs all numerical/contracts gates before creating public

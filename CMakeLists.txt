@@ -253,6 +253,7 @@ add_library(crispembed-core STATIC
     src/core/gguf_loader.cpp
     src/core/mel.cpp
     src/core/image_out.cpp
+    src/core/shortest_double.c
 )
 crispembed_enable_c2pa(crispembed-core)
 target_include_directories(crispembed-core PUBLIC
@@ -261,6 +262,7 @@ target_include_directories(crispembed-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
 )
 target_link_libraries(crispembed-core PUBLIC ggml ggml-base)
+target_include_directories(crispembed-core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core/third_party)
 
 # Pull crisp_audio in AFTER crispembed-core is defined: crisp_audio's
 # CMakeLists picks crispembed-core as its dependency target.

@@ -64,7 +64,7 @@ def main():
     subprocess.run([str(sdk), "--disable-analytics"], check=True)
     subprocess.run([str(sdk), "pub", "get"], cwd=dart, check=True)
     subprocess.run(
-        [str(sdk), "analyze", "--no-fatal-warnings", "--no-fatal-infos"],
+        [str(sdk), "analyze", "--no-fatal-warnings"],
         cwd=dart,
         check=True,
     )

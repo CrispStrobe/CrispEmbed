@@ -9,6 +9,11 @@ on:
       - 'tests/test_quant_f32_matmul.cpp'
       - 'src/core/gelu_tanh_f32.h'
       - 'tests/test_gemma_decision_activation.cpp'
+      - 'src/core/decision_schema.h'
+      - 'src/core/unicode_categ.h'
+      - 'src/core/shortest_double.*'
+      - 'src/core/third_party/ryu/**'
+      - 'tests/gemma_decision_rendering.py'
       - 'CMakeLists.txt'
       - 'ggml'
       - '.github/workflows/lfm2-arithmetic.yml'
@@ -19,6 +24,11 @@ on:
       - 'tests/test_quant_f32_matmul.cpp'
       - 'src/core/gelu_tanh_f32.h'
       - 'tests/test_gemma_decision_activation.cpp'
+      - 'src/core/decision_schema.h'
+      - 'src/core/unicode_categ.h'
+      - 'src/core/shortest_double.*'
+      - 'src/core/third_party/ryu/**'
+      - 'tests/gemma_decision_rendering.py'
       - 'CMakeLists.txt'
       - 'ggml'
       - '.github/workflows/lfm2-arithmetic.yml'
@@ -35,11 +45,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Build CPU fixture
         run: |
           cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF
-          cmake --build build --target test-quant-f32-matmul test-gemma-decision-activation -j2
+          cmake --build build --target test-quant-f32-matmul test-gemma-decision-activation test-gemma-decision-schema -j2
       - name: Verify FP32 activations survive quantized-weight matmuls
         run: |
           build/test-quant-f32-matmul
           build/test-gemma-decision-activation
+          python3 tests/gemma_decision_rendering.py build/test-gemma-decision-schema

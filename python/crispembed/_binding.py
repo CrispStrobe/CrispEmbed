@@ -495,7 +495,9 @@ class CrispEmbed:
     def encode_tokens(self, text: str, *, normalize: bool = True) -> Tuple[np.ndarray, np.ndarray]:
         """Return (token_ids, features), including BOS/EOS, copied from the model.
 
-        Features have shape (tokens, hidden_size). normalize=False preserves
+        Features have shape (tokens, feature_dim). GemmaDecision returns its
+        768-dimensional projected outputs rather than the 512-dimensional backbone.
+        normalize=False preserves
         native hidden-state magnitudes for classification or a tied LM head.
         LFM2 masked encoders default on for CPU; GPU requires
         CRISPEMBED_LFM2_ENCODER=1 until GPU parity is validated.

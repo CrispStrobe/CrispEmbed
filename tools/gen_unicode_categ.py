@@ -8,6 +8,72 @@ regex pre-tokenizers in src/core/bpe.h branch on.
 import sys
 import unicodedata
 
+
+def python_printability_definition(path=None):
+    """Separate printable predicate for the blueprint's CPython 3.12 / UCD 15.0.
+
+    Do not change the existing regex categories or their fallback semantics.
+    --python-printable-only [UnicodeData.txt] emits this addition alone.
+    """
+    import hashlib
+    from pathlib import Path
+    from urllib.request import urlopen
+
+    data = (
+        Path(path).read_bytes()
+        if path
+        else urlopen("https://www.unicode.org/Public/15.0.0/ucd/UnicodeData.txt").read()
+    )
+    assert (
+        hashlib.sha256(data).hexdigest()
+        == "806e9aed65037197f1ec85e12be6e8cd870fc5608b4de0fffd990f689f376a73"
+    )
+    flags = bytearray(0x110000)
+    flags[0x20] = 1
+    start = None
+    for line in data.decode().splitlines():
+        fields = line.split(";")
+        cp, name, category = int(fields[0], 16), fields[1], fields[2]
+        if name.endswith(", First>"):
+            start = cp
+            continue
+        lo = start if name.endswith(", Last>") else cp
+        start = None
+        if category[0] in "LMNPS":
+            flags[lo : cp + 1] = b"\x01" * (cp - lo + 1)
+    ranges, lo = [], None
+    for cp, printable in enumerate(flags):
+        if printable and lo is None:
+            lo = cp
+        elif not printable and lo is not None:
+            ranges.append((lo, cp - 1))
+            lo = None
+    rows = "\n".join(f"    {{ 0x{lo:04X}, 0x{hi:04X} }}," for lo, hi in ranges)
+    return (
+        """
+// Python str/repr printability, Unicode 15.0.0 (CPython 3.12 reference).
+// Generated from pinned UnicodeData.txt by tools/gen_unicode_categ.py.
+// Unicode data license: src/core/third_party/unicode/LICENSE.
+// This predicate is separate from existing regex category/fallback behavior.
+static const cp_range k_python_printable15[] = {
+"""
+        + rows
+        + """
+};
+inline bool python_is_printable15(uint32_t cp) {
+    size_t lo = 0, hi = sizeof(k_python_printable15) / sizeof(k_python_printable15[0]);
+    while (lo < hi) {
+        const size_t mid = (lo + hi) / 2;
+        if (cp < k_python_printable15[mid].lo) hi = mid;
+        else if (cp > k_python_printable15[mid].hi) lo = mid + 1;
+        else return true;
+    }
+    return false;
+}
+"""
+    )
+
+
 # CAT_LO is the DEFAULT answer, so caseless letters (CJK, Hangul, Arabic, ...)
 # and unassigned codepoints cost no table rows.
 CAT_LO, CAT_LU, CAT_LL, CAT_M, CAT_N, CAT_P, CAT_WS, CAT_C = 0, 1, 2, 3, 4, 5, 6, 7
@@ -69,10 +135,17 @@ def punct_ranges():
     return [r for r in out if r[1] >= 0x80]  # ASCII has a fast path
 
 
-NAMES = {CAT_LU: "CAT_LU", CAT_LL: "CAT_LL", CAT_M: "CAT_M", CAT_N: "CAT_N",
-         CAT_P: "CAT_P", CAT_WS: "CAT_WS", CAT_C: "CAT_C"}
+NAMES = {
+    CAT_LU: "CAT_LU",
+    CAT_LL: "CAT_LL",
+    CAT_M: "CAT_M",
+    CAT_N: "CAT_N",
+    CAT_P: "CAT_P",
+    CAT_WS: "CAT_WS",
+    CAT_C: "CAT_C",
+}
 
-HEADER = '''// src/core/unicode_categ.h -- GENERATED, do not edit by hand.
+HEADER = """// src/core/unicode_categ.h -- GENERATED, do not edit by hand.
 //
 // Unicode general-category lookup for the regex pre-tokenizers in core/bpe.h.
 // Regenerate with `python tools/gen_unicode_categ.py > src/core/unicode_categ.h`
@@ -121,9 +194,9 @@ struct range {
 
 // Sorted, disjoint, non-ASCII only. Gaps mean CAT_LO.
 static const range k_ranges[] = {
-'''
+"""
 
-MID = '''};
+MID = """};
 static const size_t k_nranges = sizeof(k_ranges) / sizeof(k_ranges[0]);
 
 // Non-ASCII P* ranges (punctuation proper, NO symbols). CAT_P above collapses
@@ -138,9 +211,9 @@ struct cp_range {
 };
 
 static const cp_range k_punct_nonascii[] = {
-'''
+"""
 
-FOOTER = '''};
+FOOTER = """};
 static const size_t k_npunct = sizeof(k_punct_nonascii) / sizeof(k_punct_nonascii[0]);
 
 // True iff cp is a non-ASCII P* codepoint (symbols S* excluded). ASCII is the
@@ -216,16 +289,36 @@ inline uint32_t utf8_next(const char * s, size_t n, size_t & i) {
     return cp;
 }
 
-} // namespace core_unicode'''
+} // namespace core_unicode"""
 
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--python-printable-only":
+        sys.stdout.write(
+            python_printability_definition(sys.argv[2] if len(sys.argv) > 2 else None)
+        )
+        return
     rs = ranges()
     ps = punct_ranges()
     sys.stderr.write("ranges: %d, punct ranges: %d\n" % (len(rs), len(ps)))
-    body = "\n".join("    { 0x%04X, 0x%04X, %s }," % (lo, hi, NAMES[c]) for lo, hi, c in rs)
+    body = "\n".join(
+        "    { 0x%04X, 0x%04X, %s }," % (lo, hi, NAMES[c]) for lo, hi, c in rs
+    )
     pbody = "\n".join("    { 0x%04X, 0x%04X }," % (lo, hi) for lo, hi in ps)
-    sys.stdout.write(HEADER % unicodedata.unidata_version + body + "\n" + MID + pbody + "\n" + FOOTER + "\n")
+    footer = FOOTER.replace(
+        "} // namespace core_unicode",
+        python_printability_definition() + "\n} // namespace core_unicode",
+    )
+    sys.stdout.write(
+        HEADER % unicodedata.unidata_version
+        + body
+        + "\n"
+        + MID
+        + pbody
+        + "\n"
+        + footer
+        + "\n"
+    )
 
 
 if __name__ == "__main__":

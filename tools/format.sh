@@ -73,6 +73,7 @@ if [[ ${#files[@]} -eq 0 ]]; then
         find src examples tests \
              \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name '*.hpp' \) \
              ! -path '*/ggml/*' \
+             ! -path '*/third_party/*' \
              ! -name 'httplib.h' \
              ! -name 'miniaudio.h' \
              ! -name 'json.hpp' \
@@ -87,6 +88,7 @@ skipped=()
 for f in "${files[@]}"; do
     case "$f" in
         */ggml/*) skipped+=("$f") ;;                       # never touch the submodule
+        */third_party/*) skipped+=("$f") ;;                # keep vendored source unchanged
         *.c|*.cc|*.cpp|*.cxx|*.h|*.hh|*.hpp|*.hxx) fmt_files+=("$f") ;;
         *) skipped+=("$f") ;;
     esac

@@ -47,8 +47,14 @@ def main():
             str(scratch / "build"),
             "-DCMAKE_BUILD_TYPE=Release",
             "-DCRISPEMBED_NATIVE=OFF",
+            "-DGGML_NATIVE=OFF",
             "-DGGML_METAL=OFF",
             "-DGGML_BLAS=OFF",
+            *(
+                ["-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"]
+                if sys.platform == "darwin"
+                else []
+            ),
         ],
         "configure",
     )
@@ -71,6 +77,14 @@ def main():
     )
     run(
         [str(scratch / "build/test-gemma-decision-activation")], "activation-regression"
+    )
+    run(
+        [
+            sys.executable,
+            "tests/gemma_decision_rendering.py",
+            str(scratch / "build/test-gemma-decision-schema"),
+        ],
+        "rendering-regression",
     )
     run(
         [

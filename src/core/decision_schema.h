@@ -2,8 +2,9 @@
 // Ordered JSON and Python-compatible text rendering for the GemmaDecision
 // inference schema. No training/gold-label logic is included.
 #include "json.h"
+#include "shortest_double.h"
+#include "unicode_categ.h"
 #include <algorithm>
-#include <charconv>
 #include <cmath>
 #include <cstdlib>
 #include <stdexcept>
@@ -139,7 +140,10 @@ class Parser {
         }
         v.kind = Value::number;
         v.text = input.substr(begin, at - begin);
-        if (!std::isfinite(std::strtod(v.text.c_str(), nullptr))) bad();
+        if (v.text.find_first_of(".eE") != std::string::npos) {
+            if (!std::isfinite(std::strtod(v.text.c_str(), nullptr))) bad();
+        } else if (v.text.size() - (v.text[0] == '-') > 4300)
+            throw std::runtime_error("integer exceeds Python reference's 4300-digit bound");
         return v;
     }
 
@@ -159,7 +163,9 @@ inline std::string quote(const std::string & s) {
 inline std::string python_quote(const std::string & s) {
     const char q = s.find('\'') != std::string::npos && s.find('"') == std::string::npos ? '"' : '\'';
     std::string out(1, q);
-    for (unsigned char c : s) {
+    for (size_t i = 0; i < s.size();) {
+        const size_t start = i;
+        const uint32_t c = core_unicode::utf8_next(s.data(), s.size(), i);
         if (c == '\\' || c == (unsigned char)q) {
             out += '\\';
             out += (char)c;
@@ -169,13 +175,13 @@ inline std::string python_quote(const std::string & s) {
             out += "\\r";
         else if (c == '\t')
             out += "\\t";
-        else if (c < 32 || c == 127) {
+        else if (!core_unicode::python_is_printable15(c)) {
             const char * hex = "0123456789abcdef";
-            out += "\\x";
-            out += hex[c >> 4];
-            out += hex[c & 15];
+            const int digits = c <= 255 ? 2 : c <= 65535 ? 4 : 8;
+            out += c <= 255 ? "\\x" : c <= 65535 ? "\\u" : "\\U";
+            for (int shift = digits * 4 - 4; shift >= 0; shift -= 4) out += hex[(c >> shift) & 15];
         } else
-            out += (char)c;
+            out.append(s, start, i - start);
     }
     out += q;
     return out;
@@ -188,12 +194,15 @@ inline std::string python_str(const Value & v, bool repr = false) {
         if (v.text.find_first_of(".eE") == std::string::npos) return v.text == "-0" ? "0" : v.text;
         const double x = std::strtod(v.text.c_str(), nullptr);
         char buf[64];
-        auto result = std::to_chars(buf, buf + sizeof(buf), x, std::chars_format::scientific);
-        if (result.ec != std::errc()) throw std::runtime_error("float rendering failed");
-        std::string s(buf, result.ptr);
-        const auto marker = s.find('e');
+        const int length = crispembed_ryu_d2s_buffered_n(x, buf);
+        std::string s(buf, (size_t)length);
+        const auto marker = s.find('E');
         const int exponent = std::stoi(s.substr(marker + 1));
-        if (exponent < -4 || exponent >= 16) return s;
+        if (exponent < -4 || exponent >= 16) {
+            const int magnitude = std::abs(exponent);
+            return s.substr(0, marker) + "e" + (exponent < 0 ? "-" : "+") + (magnitude < 10 ? "0" : "") +
+                   std::to_string(magnitude);
+        }
         std::string digits = s.substr(0, marker);
         const bool negative = digits[0] == '-';
         if (negative) digits.erase(0, 1);
@@ -227,8 +236,16 @@ inline Value unpack(const Value & v) {
 }
 inline std::string state_text(const std::string & workflow, Value state) {
     if (state.kind == Value::string) {
-        auto at = state.text.find_first_not_of(" \r\n\t");
-        if (at != std::string::npos && (state.text[at] == '{' || state.text[at] == '['))
+        size_t at = 0;
+        while (at < state.text.size()) {
+            size_t next = at;
+            const auto cp = core_unicode::utf8_next(state.text.data(), state.text.size(), next);
+            if (core_unicode::category(cp) != core_unicode::CAT_WS && !(cp >= 0x1c && cp <= 0x1f)) break;
+            at = next;
+        }
+        // Python's empty stripped string also satisfies `prefix in "{["`;
+        // preserve its JSON-parse failure instead of embedding a different state.
+        if (at == state.text.size() || state.text[at] == '{' || state.text[at] == '[')
             state = Parser(state.text).parse();
     }
     if (state.kind != Value::object) return "workflow: " + workflow + " | state: " + python_str(state);
