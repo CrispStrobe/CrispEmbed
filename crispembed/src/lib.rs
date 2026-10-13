@@ -21,7 +21,7 @@
 //! }
 //! ```
 
-use std::ffi::{CStr, CString};
+use std::ffi::{c_char, CStr, CString};
 use std::path::Path;
 
 pub use crispembed_sys::CrispembedHparams;
@@ -218,7 +218,7 @@ impl CrispEmbed {
         let n = unsafe { crispembed_sys::crispembed_n_models() };
         let mut models = Vec::with_capacity(n.max(0) as usize);
         for i in 0..n {
-            let read = |ptr: *const i8| {
+            let read = |ptr: *const c_char| {
                 if ptr.is_null() {
                     String::new()
                 } else {
@@ -395,7 +395,7 @@ impl CrispEmbed {
         if cstrings.len() != texts.len() {
             return vec![];
         }
-        let ptrs: Vec<*const i8> = cstrings.iter().map(|s| s.as_ptr()).collect();
+        let ptrs: Vec<*const c_char> = cstrings.iter().map(|s| s.as_ptr()).collect();
 
         let mut n_dim: i32 = 0;
         let flat = unsafe {
@@ -1737,7 +1737,7 @@ impl CrispNER {
         if clabels.len() != labels.len() {
             return vec![];
         }
-        let label_ptrs: Vec<*const i8> = clabels.iter().map(|s| s.as_ptr()).collect();
+        let label_ptrs: Vec<*const c_char> = clabels.iter().map(|s| s.as_ptr()).collect();
 
         let mut out_entities: *mut crispembed_sys::NerEntity = std::ptr::null_mut();
         let n = unsafe {

@@ -143,6 +143,9 @@ def main():
                 "contracts": "Rust/Dart real FFI scores/typed JSON/errors/repeat PASS",
                 "scenarios": len(fixtures),
                 "dart": "3.13.5",
+                "rust": subprocess.check_output(
+                    ["rustc", "--version"], text=True
+                ).strip(),
             },
             indent=2,
         )

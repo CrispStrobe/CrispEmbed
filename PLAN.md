@@ -24,6 +24,10 @@ probes/eight questions establish reference agreement, not independent task
 accuracy. Local builds/model inference remain deferred under shared-host rules.
 Independent macOS run 38352829721 also passes all 145 stages and eight answers.
 Next: finish real Rust/Dart checks, then publish/register artifacts.
+Publication run 38352827403 repeated native/reference checks successfully, then
+stopped before upload because three existing Rust wrapper annotations hard-coded
+signed i8 C-string pointers. Linux ARM64 uses unsigned c_char; all three now use
+std::ffi::c_char. Repeat the complete gated publication with the portability fix.
 Added machine-readable
 embedding/head errors and hosted Rust/Dart real shared-library contracts. The
 publication driver re-runs all numerical/contracts gates before creating public
