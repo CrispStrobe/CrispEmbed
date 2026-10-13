@@ -26,6 +26,9 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
 | 5 | [TeleOCR](https://huggingface.co/XingChen-AGI/TeleOCR) | Apache-2.0; base terms still to audit | ~1.3–1.8 GB | Queued: reuse Qwen2.5-VL where exact config permits; verify renamed NaviDC artifacts/provenance and structured output; estimated 1–2 weeks |
 | 6 | [LightOnOCR-3-4B](https://huggingface.co/lightonai/LightOnOCR-3-4B) | Apache-2.0; Qwen3.5 family | ~3.08–3.38 GB | Queued after small-model parity; larger memory/long-page and grounding checks |
+| 7 | [Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B) | Apache-2.0; base license text to audit before weights | ~6–7 GB, estimate | Queued after small dense Qwen3.5; general VLM/OCRBench evaluation, not an OCR-specific checkpoint |
+| 8 | [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) | Apache-2.0; full dependency audit pending | ~17–20 GB, estimate | Queued after smaller models; inspect exact architecture and long-context memory; GPU reference resources required |
+| 9 | [Infinity-Parser2-Pro](https://huggingface.co/infly/Infinity-Parser2-Pro) | Apache-2.0; base/dependency audit pending | ~22–25 GB, estimate | Queued last: 35.1B total checkpoint parameters; active MoE parameters do not determine storage |
 
 Shared Qwen3.5 estimate: 2–4 engineering weeks for the first verified model,
 then roughly 3–7 days per checkpoint. These are planning estimates. Vendored ggml
@@ -41,9 +44,12 @@ olmOCR-2 registry lists ~5.5 GB; no new port is required for that checkpoint.
 
 Deferred from this permissive lane: Indra, Chandra-OCR-2, MinerU2.5-Pro,
 Hunyuan-OCR and dots.ocr while their restrictive/custom or supplemental terms
-fall outside this scope. Infinity-Parser2-Pro and large general-purpose OCRBench
-leaders need a separate license/base/architecture inventory before enrollment;
-benchmark placement alone is not authorization to publish weights.
+fall outside this scope. Larger rows remain conditional on full license/base
+and architecture inspection before weight use; benchmark placement alone is not
+authorization to publish weights. The latest benchmark shortlist is recorded;
+tau-squared-bench evaluates tool-using agents and does not add an OCR model lane.
+
+First-model engineering record: [Qwen3.5 OCR bootstrap](docs/qwen35-ocr.md).
 
 **Completion gates for every new checkpoint:** immutable source/license provenance;
 strict full tensor coverage; official Python inputs, image grids, positions and
