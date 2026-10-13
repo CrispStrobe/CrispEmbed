@@ -10,16 +10,15 @@ read. Gated CPU encoder/head, ordered JSON rendering and C/CLI/HTTP/Python/Rust/
 surfaces implemented. Hosted validation script converts the pinned source, dumps
 five 29-stage original-Python probes (including >512-token sliding-window coverage),
 and checks head-only scores plus full typed values/CLI/HTTP/error contracts.
-Runs 38348507559 and 38349031959 were superseded while queued. ARM run
-38349285209 and macOS run 38350624212 have no allocated runner yet. Review also
-found GGML's CPU GELU FP16 lookup: added scoped FP32 tanh-GELU and an outlier
-regression, retaining a legacy A/B gate. Complete score bindings and explicit
-head/encoder dimensions are implemented; JSON float rendering is included in the original-Python
-validation fixtures. See docs/embeddinggemma2-typed-decision.md for interfaces and constraints.
-Local builds/inference remain deferred under shared-host rules; an optional
-bounded local validation preference is pending. Next: run the updated validation,
-fix earliest divergence and only then publish/register proven artifacts. No
-successful build, numerical or decoded parity claim yet.
+ARM run 38349285209 built all native targets and generated five original-Python
+references plus all typed scenarios. First runtime failure: HF tensor names exceed
+GGML_MAX_NAME=64. Exporter/loader now use short enc.* aliases without altering
+weights. Source review also found GGML's CPU GELU FP16 LUT; added a scoped FP32
+operator and collapse regression, with legacy A/B gate. Updated hosted runs will
+prove the loader fix, every-layer parity and full API/CLI/HTTP contracts. No
+successful numerical or decoded parity claim yet. Local builds/model inference
+remain deferred under current shared-host rules. Next: validate current source,
+measure Q8 separately and only then publish/register validated artifacts.
 
 ## CrispMath consumer handoff — 5 October 2026
 

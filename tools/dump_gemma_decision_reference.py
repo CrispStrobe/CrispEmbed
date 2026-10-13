@@ -8,7 +8,7 @@ from pathlib import Path
 import gguf
 import numpy as np
 import torch
-from transformers import AutoModel
+from transformers import AutoModel, AutoTokenizer
 
 
 def main():
@@ -20,6 +20,7 @@ def main():
     model = AutoModel.from_pretrained(
         args.model, trust_remote_code=True, dtype=torch.float32
     ).eval()
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.encoder.language_model.config._attn_implementation = "eager"
     model.encoder.config._attn_implementation = "eager"
     args.output.mkdir(parents=True, exist_ok=True)
@@ -50,7 +51,7 @@ def main():
     ]
     for case, text in enumerate(texts):
         stages.clear()
-        features = model.tokenize([text])
+        features = model.tokenize([text], tokenizer=tokenizer)
         with torch.no_grad():
             embedding = model.embed(**features).cpu().numpy()
         writer = gguf.GGUFWriter(
@@ -144,12 +145,16 @@ def main():
     decisions = []
     for case in scenarios:
         inputs, specs, bank = model._build_inputs(
-            [(case["workflow"], case["state"], case["questions"], None)]
+            [(case["workflow"], case["state"], case["questions"], None)],
+            tokenizer=tokenizer,
         )
         with torch.no_grad():
             result = model(**inputs)
         answers = model.decide(
-            case["state"], case["questions"], workflow=case["workflow"]
+            case["state"],
+            case["questions"],
+            workflow=case["workflow"],
+            tokenizer=tokenizer,
         )
         decisions.append(
             {

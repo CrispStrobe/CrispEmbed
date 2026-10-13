@@ -72,6 +72,25 @@ def main():
     run(
         [str(scratch / "build/test-gemma-decision-activation")], "activation-regression"
     )
+    run(
+        [
+            "cmake",
+            "--build",
+            str(scratch / "build"),
+            "--target",
+            "test-bpe-pretokenize",
+            "test-qwen-pretokenize",
+            "test-server-json-input",
+            "-j2",
+        ],
+        "regression-build",
+    )
+    for target in (
+        "test-bpe-pretokenize",
+        "test-qwen-pretokenize",
+        "test-server-json-input",
+    ):
+        run([str(scratch / "build" / target)], "regression-" + target)
     gguf = scratch / "gemma-decision-f32.gguf"
     run(
         [

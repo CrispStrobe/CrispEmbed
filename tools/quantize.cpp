@@ -517,8 +517,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (is_add_operand) {
             is_tiny_embd = true; // force copy-as-is
         }
-        if (is_gemma_decision && (sname.rfind("head.", 0) == 0 || sname == "temperatures" ||
-                                  sname == "encoder.language_model.embedding_projection.weight")) {
+        if (is_gemma_decision &&
+            (sname.rfind("head.", 0) == 0 || sname == "temperatures" || sname == "enc.embedding_projection.weight")) {
             is_tiny_embd = true;
         }
         // SentenceTransformer Dense / Matryoshka projection heads (dense.0/dense.1):

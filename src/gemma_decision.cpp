@@ -96,13 +96,13 @@ gemma_decision_context * gemma_decision_init(const char * path, int threads) {
             if (t->ne[0] != cols || t->ne[1] != rows || ggml_nelements(t) != (int64_t)cols * rows)
                 throw std::runtime_error("invalid tensor shape: " + name);
         };
-        shape("encoder.language_model.embed_tokens.weight", c->H, (int)c->vocab.size());
-        shape("encoder.language_model.ple.per_layer_model_projection.weight", c->H, c->H * c->L);
-        shape("encoder.language_model.ple.per_layer_projection_norm.weight", c->H);
-        shape("encoder.language_model.norm.weight", c->H);
-        shape("encoder.language_model.embedding_projection.weight", c->H, c->D);
+        shape("enc.embed_tokens.weight", c->H, (int)c->vocab.size());
+        shape("enc.ple.per_layer_model_projection.weight", c->H, c->H * c->L);
+        shape("enc.ple.per_layer_projection_norm.weight", c->H);
+        shape("enc.norm.weight", c->H);
+        shape("enc.embedding_projection.weight", c->H, c->D);
         for (int i = 0; i < c->L; ++i) {
-            const std::string p = "encoder.language_model.layers." + std::to_string(i) + ".";
+            const std::string p = "enc.layers." + std::to_string(i) + ".";
             const int hd = c->head_dims[i], kv = c->kv_heads[i];
             if ((hd != 256 && hd != 512) || kv <= 0 || c->heads % kv ||
                 (c->layer_types[i] != "full_attention" && c->layer_types[i] != "sliding_attention"))
@@ -248,7 +248,7 @@ bool gemma_decision_encode(gemma_decision_context * c, const std::string & text,
         auto rms = [&](ggml_tensor * x, const std::string & w) {
             return ggml_mul(g, ggml_rms_norm(g, x, c->eps), c->tensor(w));
         };
-        const std::string root = "encoder.language_model.";
+        const std::string root = "enc.";
         auto * cur =
             snapshot(ggml_scale(g, ggml_get_rows(g, c->tensor(root + "embed_tokens.weight"), tok), std::sqrt((float)H)),
                      "post_embed");

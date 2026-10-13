@@ -100,6 +100,8 @@ def main():
     count = 0
     with safe_open(args.model / "model.safetensors", framework="numpy") as weights:
         for name in weights.keys():
+            stored_name = name.replace("encoder.language_model.", "enc.", 1)
+            assert len(stored_name.encode("utf-8")) < 64, stored_name
             data = weights.get_tensor(name).astype(np.float32)
             if data.ndim == 0:
                 data = data.reshape(1)
@@ -111,12 +113,12 @@ def main():
             )
             if quantize:
                 writer.add_tensor(
-                    name,
+                    stored_name,
                     gguf.quantize(data, gguf.GGMLQuantizationType.Q8_0),
                     raw_dtype=gguf.GGMLQuantizationType.Q8_0,
                 )
             else:
-                writer.add_tensor(name, data)
+                writer.add_tensor(stored_name, data)
             count += 1
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
