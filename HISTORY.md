@@ -1,3 +1,13 @@
+## 2026-10-13 — Indra OCR public-code feasibility audit
+
+Traced the Apache-2.0 client pipeline at661fb47ac332dce07f1ebc0d7b37ffe2361bd85b.
+Recorded detector/crop/CTC token-position contracts, Chinese routing, learned
+reading order/layout, optional cached math decoding, PDF text/hybrid behavior,
+CrispEmbed integration points and independent hosted reference gates in
+[docs/indra-ocr/PLAN.md](docs/indra-ocr/PLAN.md). The user selected analysis only
+pending weight-use eligibility under the modified OpenRAIL-M license. No model
+binaries downloaded, OCR executed, native support or weight publication claimed.
+
 ## 2026-10-13 — EmbeddingGemma 2 typed-decision native support
 
 Added the complete fine-tuned encoder and schema-conditioned calibrated head for
