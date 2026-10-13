@@ -30,7 +30,9 @@ contributor token to stage artifacts and accept with the existing local publishe
 credential; no new credential transferred. Add aliases/pins after remote verification.
 Build38366112891 found a Unicode-header mirror mismatch; the Python15 renderer
 table now lives in a separate header, keeping the shared tokenizer byte-identical.
-Rust ARM, WASM, lint and quantizer checks pass. Hosted publication reruns full parity.
+Rust ARM, WASM, lint and quantizer checks pass. Hosted publication38374087175 at17c08b3c reruns full parity before staging.
+Previous38372222687 built native and passed model-free guards, then stopped before
+conversion because its dispatch omitted gguf; the corrected dispatch includes it.
 
 ## CrispMath consumer handoff — 5 October 2026
 
