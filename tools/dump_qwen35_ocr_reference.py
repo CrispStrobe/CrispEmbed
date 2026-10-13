@@ -29,7 +29,10 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     if prompt:
         messages[0]["content"].append({"type": "text", "text": prompt})
     rendered = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    inputs = processor(text=[rendered], images=[image], return_tensors="pt")
+    inputs = processor(text=[rendered], images=[image], return_tensors="pt",
+                       return_mm_token_type_ids=True)
+    if "mm_token_type_ids" not in inputs or inputs["mm_token_type_ids"].shape != inputs["input_ids"].shape:
+        raise ValueError("Official processor must supply aligned multimodal token types")
     model = Qwen3_5ForConditionalGeneration.from_pretrained(
         root, local_files_only=True, trust_remote_code=False,
         dtype=torch.float32, attn_implementation="eager"
@@ -102,6 +105,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         complete = dict(inputs)
         complete["input_ids"] = torch.cat([inputs["input_ids"], first_id], dim=-1)
         complete["attention_mask"] = continued_mask
+        complete["mm_token_type_ids"] = torch.cat(
+            [inputs["mm_token_type_ids"], torch.zeros_like(first_id)], dim=-1
+        )
         full = model(**complete, use_cache=False, logits_to_keep=1)
         save("full_prefix.logits", full.logits[:, -1])
         delta = (cached.logits[:, -1] - full.logits[:, -1]).abs()
