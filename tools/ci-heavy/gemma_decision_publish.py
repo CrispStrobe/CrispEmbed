@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Publish only after the complete original-Python validation passes on this runner."""
 
+import argparse
 import hashlib
 import json
 import os
@@ -13,6 +14,13 @@ from gemma_decision_bindings import main as validate_bindings
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--stage-pr",
+        action="store_true",
+        help="Stage artifacts for HF owner acceptance without a direct-write token",
+    )
+    args = parser.parse_args()
     validate()
     validate_bindings()
     scratch, out = Path(os.environ["HEAVY_SCRATCH"]), Path(os.environ["HEAVY_OUT"])
@@ -73,15 +81,15 @@ This custom GGUF architecture requires CrispEmbed; stock llama.cpp support is no
 CPU validation: five every-layer comparisons with exact token IDs, norms and
 embedding checks against actual original Python FP32, plus API/CLI/HTTP/schema/head
 and decoded typed-value contracts. FP32 decision-bank embedding minimum cosine:
-{min(e['cosine_min'] for e in f32['embeddings']):.9f}; maximum option probability error:
-{max(q['max_probability_error'] for q in f32['questions']):.9g}.
-Q8 embedding minimum cosine: {min(e['cosine_min'] for e in q8['embeddings']):.9f}.
+{min(e["cosine_min"] for e in f32["embeddings"]):.9f}; maximum option probability error:
+{max(q["max_probability_error"] for q in f32["questions"]):.9g}.
+Q8 embedding minimum cosine: {min(e["cosine_min"] for e in q8["embeddings"]):.9f}.
 Q8 agrees on {matched}/{total} reference labels;
 its measured probability changes are in results/parity-q8.json. This is a small
 numerical reference suite, not an independent task accuracy benchmark. No GPU or speed claim.
 The exporter does not offer FP16 because the publisher reports overflow in that dtype.
 
-Build CrispEmbed at {manifest['native_commit']} or a later commit including this backend, enable the CPU reference path,
+Build CrispEmbed at {manifest["native_commit"]} or a later commit including this backend, enable the CPU reference path,
 and use your downloaded GGUF path:
 
 ```sh
@@ -108,41 +116,42 @@ trained on English schemas. Reference parity is not validation on your own tasks
     api = HfApi()
     if not api.repo_exists(repo):
         api.create_repo(repo, exist_ok=True, private=False)
-    api.create_commit(
-        repo_id=repo,
-        commit_message="Document original-Python validated typed-decision GGUFs",
-        operations=[
-            CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=card.encode()),
-            CommitOperationAdd(
-                path_in_repo="LICENSE",
-                path_or_fileobj="models/licenses/apache-2.0/LICENSE",
-            ),
-            CommitOperationAdd(
-                path_in_repo="UPSTREAM_README.md",
-                path_or_fileobj=str(scratch / "model/README.md"),
-            ),
-            *[
-                CommitOperationAdd(
-                    path_in_repo="results/" + p.name, path_or_fileobj=str(p)
-                )
-                for p in out.glob("*.json")
-            ],
-            *[
-                CommitOperationAdd(
-                    path_in_repo="results/" + p.name, path_or_fileobj=str(p)
-                )
-                for p in out.glob("diff-*.log")
-            ],
+    operations = [
+        CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=card.encode()),
+        CommitOperationAdd(
+            path_in_repo="LICENSE", path_or_fileobj="models/licenses/apache-2.0/LICENSE"
+        ),
+        CommitOperationAdd(
+            path_in_repo="UPSTREAM_README.md",
+            path_or_fileobj=str(scratch / "model/README.md"),
+        ),
+        *[
+            CommitOperationAdd(path_in_repo="results/" + p.name, path_or_fileobj=str(p))
+            for p in out.glob("*.json")
         ],
+        *[
+            CommitOperationAdd(path_in_repo="results/" + p.name, path_or_fileobj=str(p))
+            for p in out.glob("diff-*.log")
+        ],
+        *[
+            CommitOperationAdd(
+                path_in_repo=remote, path_or_fileobj=str(scratch / local)
+            )
+            for local, remote in names.items()
+        ],
+    ]
+    model_commit = api.create_commit(
+        repo_id=repo,
+        commit_message="Publish original-Python validated typed-decision GGUFs",
+        operations=operations,
+        create_pr=args.stage_pr,
     )
-    for local, remote in names.items():
-        result = api.upload_file(
-            repo_id=repo,
-            path_in_repo=remote,
-            path_or_fileobj=str(scratch / local),
-            commit_message="Publish validated " + remote,
-        )
-        print("MODEL UPLOADED", remote, result.oid, flush=True)
+    print(
+        "MODEL STAGED" if args.stage_pr else "MODEL UPLOADED",
+        model_commit.oid,
+        model_commit.pr_url,
+        flush=True,
+    )
     shutil.copy("models/licenses/apache-2.0/LICENSE", scratch / "refs/LICENSE")
     (scratch / "refs/README.md").write_text(
         "# Original FP32 typed-decision references\n\n"
@@ -158,30 +167,44 @@ trained on English schemas. Reference parity is not validation on your own tasks
         folder_path=str(scratch / "refs"),
         path_in_repo="gemma-decision/original-fp32",
         commit_message="Add complete original Python typed-decision layer and answer fixtures",
+        create_pr=args.stage_pr,
     )
-    info = api.model_info(repo, files_metadata=True)
+    info = api.model_info(
+        repo,
+        revision=model_commit.pr_revision if args.stage_pr else "main",
+        files_metadata=True,
+    )
     verified = set()
     for file in info.siblings:
         if file.rfilename in artifacts:
             assert file.lfs.sha256 == artifacts[file.rfilename]["sha256"]
             assert file.size == artifacts[file.rfilename]["bytes"]
             verified.add(file.rfilename)
-    assert verified == set(
-        artifacts
-    ), "Published artifacts missing from remote manifest"
+    assert verified == set(artifacts), (
+        "Published artifacts missing from remote manifest"
+    )
     manifest["model_repo"] = repo
     manifest["model_revision"] = info.sha
     manifest["fixture_repo"] = "cstr/crispembed-regression-fixtures"
     manifest["fixture_revision"] = fixture_commit.oid
     manifest["fixture_path"] = "gemma-decision/original-fp32"
     (out / "publication.json").write_text(json.dumps(manifest, indent=2))
-    api.upload_file(
-        repo_id=repo,
-        path_in_repo="results/publication.json",
-        path_or_fileobj=str(out / "publication.json"),
-        commit_message="Record verified artifact revision and remote hashes",
-    )
-    print("PUBLISHED", repo, info.sha, flush=True)
+    if args.stage_pr:
+        manifest["publication_state"] = "staged_pending_owner_acceptance"
+        manifest["model_pr"] = model_commit.pr_url
+        manifest["model_pr_revision"] = model_commit.pr_revision
+        manifest["fixture_pr"] = fixture_commit.pr_url
+        manifest["fixture_pr_revision"] = fixture_commit.pr_revision
+        (out / "publication.json").write_text(json.dumps(manifest, indent=2))
+        print("STAGED", model_commit.pr_url, fixture_commit.pr_url, flush=True)
+    else:
+        api.upload_file(
+            repo_id=repo,
+            path_in_repo="results/publication.json",
+            path_or_fileobj=str(out / "publication.json"),
+            commit_message="Record verified artifact revision and remote hashes",
+        )
+        print("PUBLISHED", repo, info.sha, flush=True)
 
 
 if __name__ == "__main__":
