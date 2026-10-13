@@ -7,6 +7,8 @@ on:
       - 'src/lfm2_embed.cpp'
       - 'src/core/quant_f32_matmul.h'
       - 'tests/test_quant_f32_matmul.cpp'
+      - 'src/core/gelu_tanh_f32.h'
+      - 'tests/test_gemma_decision_activation.cpp'
       - 'CMakeLists.txt'
       - 'ggml'
       - '.github/workflows/lfm2-arithmetic.yml'
@@ -15,6 +17,8 @@ on:
       - 'src/lfm2_embed.cpp'
       - 'src/core/quant_f32_matmul.h'
       - 'tests/test_quant_f32_matmul.cpp'
+      - 'src/core/gelu_tanh_f32.h'
+      - 'tests/test_gemma_decision_activation.cpp'
       - 'CMakeLists.txt'
       - 'ggml'
       - '.github/workflows/lfm2-arithmetic.yml'
@@ -34,6 +38,8 @@ jobs:
       - name: Build CPU fixture
         run: |
           cmake -G Ninja -S . -B build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF
-          cmake --build build --target test-quant-f32-matmul -j2
+          cmake --build build --target test-quant-f32-matmul test-gemma-decision-activation -j2
       - name: Verify FP32 activations survive quantized-weight matmuls
-        run: build/test-quant-f32-matmul
+        run: |
+          build/test-quant-f32-matmul
+          build/test-gemma-decision-activation

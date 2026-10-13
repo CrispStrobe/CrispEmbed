@@ -36,6 +36,8 @@ def main():
     hp = model._lib.crispembed_get_hparams(model._ctx).contents
     assert hp.n_embd == 512 and hp.n_output == 768 and hp.n_layer == 24
     reports = []
+    embedding_reports = []
+    head_reports = []
     native_answers = []
 
     def check_answers(actual, reference):
@@ -78,15 +80,28 @@ def main():
         path = args.output.with_name(f"schema-{case}.json")
         path.write_text(payload)
         rendered = subprocess.check_output([args.schema, str(path)], text=True)
-        assert json.loads(rendered) == fixture["texts"], (
-            "rendering differs from Python blueprint"
-        )
+        assert (
+            json.loads(rendered) == fixture["texts"]
+        ), "rendering differs from Python blueprint"
         embeddings = model.encode(fixture["texts"])
         reference = np.asarray(fixture["text_embeds"], dtype=np.float32)
         cosine = np.sum(embeddings * reference, axis=1) / (
             np.linalg.norm(embeddings, axis=1) * np.linalg.norm(reference, axis=1)
         )
         assert np.isfinite(embeddings).all()
+        embedding_reports.append(
+            {
+                "scenario": case,
+                "texts": len(reference),
+                "cosine_min": float(cosine.min()),
+                "relative_l2_error": float(
+                    np.linalg.norm(embeddings - reference) / np.linalg.norm(reference)
+                ),
+                "max_absolute_error": float(np.abs(embeddings - reference).max()),
+                "native_norm_min": float(np.linalg.norm(embeddings, axis=1).min()),
+                "native_norm_max": float(np.linalg.norm(embeddings, axis=1).max()),
+            }
+        )
         if not args.measure_only:
             assert cosine.min() >= 0.99999 and np.linalg.norm(
                 embeddings - reference
@@ -110,6 +125,20 @@ def main():
             np.testing.assert_allclose(
                 probabilities, fixture["probabilities"][i][:n], atol=3e-6, rtol=3e-5
             )
+            head_reports.append(
+                {
+                    "scenario": case,
+                    "question": list(fixture["answers"])[i],
+                    "max_logit_error": float(
+                        np.abs(logits - np.asarray(fixture["logits"][i][:n])).max()
+                    ),
+                    "max_probability_error": float(
+                        np.abs(
+                            probabilities - np.asarray(fixture["probabilities"][i][:n])
+                        ).max()
+                    ),
+                }
+            )
         answers = model.decide(
             request["state"], request["questions"], workflow=request["workflow"]
         )
@@ -125,9 +154,9 @@ def main():
             pass
         else:
             raise AssertionError("invalid question schema accepted")
-    assert model.decide(**fixtures[0]["request"]) == native_answers[0], (
-        "repeat changed output"
-    )
+    assert (
+        model.decide(**fixtures[0]["request"]) == native_answers[0]
+    ), "repeat changed output"
     model._lib.crispembed_free(model._ctx)
     model._ctx = None
     # All subsequent processes are serial, after freeing the binding model.
@@ -196,6 +225,8 @@ def main():
             {
                 "model": Path(args.model).name,
                 "questions": reports,
+                "embeddings": embedding_reports,
+                "head_on_reference_embeddings": head_reports,
                 "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
             },
             ensure_ascii=False,

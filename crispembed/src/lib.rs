@@ -636,7 +636,6 @@ impl CrispEmbed {
         Ok(unsafe { std::slice::from_raw_parts(ptr.cast::<u8>(), size as usize) }.to_vec())
     }
 
-    /// Top predictions per [MASK]/<|mask|>, with full-vocabulary probabilities.
     /// Whether the model exposes the calibrated typed-decision head.
     pub fn has_decision(&self) -> bool {
         unsafe { crispembed_sys::crispembed_has_decision(self.ctx) != 0 }
@@ -714,6 +713,7 @@ impl CrispEmbed {
             .into_owned())
     }
 
+    /// Top predictions per [MASK]/<|mask|>, with full-vocabulary probabilities.
     pub fn fill_mask(&mut self, text: &str, top_k: usize) -> Result<Vec<MaskResult>, String> {
         if top_k == 0 {
             return Err("top_k must be positive".into());

@@ -19,6 +19,12 @@ prove the loader fix, every-layer parity and full API/CLI/HTTP contracts. No
 successful numerical or decoded parity claim yet. Local builds/model inference
 remain deferred under current shared-host rules. Next: validate current source,
 measure Q8 separately and only then publish/register validated artifacts.
+ARM validation 38352165925 is queued at commit 82383e3e. Added machine-readable
+embedding/head errors and hosted Rust/Dart real shared-library contracts. The
+publication driver re-runs all numerical/contracts gates before creating public
+model artifacts, records exact provenance and verifies remote hashes/bytes.
+FP32 remains the reference; Q8 measurements cannot weaken FP32 checks. The scoped
+activation regression now joins the model-free arithmetic workflow.
 
 ## CrispMath consumer handoff — 5 October 2026
 
