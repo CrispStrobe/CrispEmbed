@@ -217,6 +217,8 @@ private:
 //     pre-tokenize + byte-level encoding with </w> end-of-word suffix
 class BPETokenizer {
 public:
+    void set_stable_spm_ties(bool on) { stable_spm_ties_ = on; }
+
     bool load(const std::vector<std::string> & vocab, const std::vector<std::string> & merges, int eos_id, int pad_id,
               int suffix_id,
               int bos_id = -1,        // -1 = no BOS
@@ -260,6 +262,8 @@ public:
     const std::vector<std::string> & get_vocab() const { return id_to_token_; }
 
 private:
+    bool stable_spm_ties_ = false;
+
     std::unordered_map<std::string, int32_t> token_to_id_;
     std::unordered_map<std::string, int32_t> merge_rank_;
     std::vector<std::string> id_to_token_;

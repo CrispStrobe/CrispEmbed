@@ -61,7 +61,9 @@ void BPETokenizer::merge_symbols(std::vector<std::string> & symbols) const {
         nodes[i].next = i < n - 1 ? i + 1 : -1;
     }
     using PQE = std::pair<int, int>;
-    auto cmp = [](const PQE & a, const PQE & b) { return a.first > b.first; };
+    auto cmp = [this](const PQE & a, const PQE & b) {
+        return a.first != b.first ? a.first > b.first : stable_spm_ties_ && a.second > b.second;
+    };
     std::priority_queue<PQE, std::vector<PQE>, decltype(cmp)> pq(cmp);
     auto try_add = [&](int i) {
         int j = nodes[i].next;
