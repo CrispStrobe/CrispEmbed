@@ -1174,3 +1174,7 @@ typedef CrispembedListLoraNative = Int32 Function(
     Pointer<Int32> outCount);
 typedef CrispembedListLoraDart = int Function(Pointer<CrispembedContext> ctx,
     Pointer<Pointer<Pointer<Utf8>>> outNames, Pointer<Int32> outCount);
+
+// Typed schema decisions: context-owned UTF-8 JSON or null on failure.
+typedef CrispembedDecideJsonNative = Pointer<Utf8> Function(Pointer<CrispembedContext>, Pointer<Utf8>);
+typedef CrispembedDecideJson = Pointer<Utf8> Function(Pointer<CrispembedContext>, Pointer<Utf8>);

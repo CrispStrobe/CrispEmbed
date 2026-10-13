@@ -245,6 +245,7 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
 
 #include "decoder_embed_internal.h"
 #include "lfm2_embed.h"
+#include "gemma_decision.h"
 
 struct crispembed_context {
     embed_model model;
@@ -258,6 +259,8 @@ struct crispembed_context {
     std::vector<int32_t> prev_dec_tokens;
     int prefix_cache_enabled = -1; // -1 = unresolved, 0 = off, 1 = on
     // LFM2.5 bidirectional embedding (arch="lfm2")
+    gemma_decision_context * decision_ctx = nullptr;
+    std::string last_decision;
     lfm2_embed_ctx * lfm2_ctx = nullptr;
     bool is_lfm2 = false;
     std::vector<float> last_masked_logits;
@@ -2403,6 +2406,17 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     // Encoder models (BERT/XLM-R) have bert.* keys and enc.N.* tensor names.
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(model_path, gp);
+    if (g && core_gguf::kv_str(g, "general.architecture", "") == "gemma_decision") {
+        gguf_free(g);
+        ctx->decision_ctx = gemma_decision_init(model_path, ctx->n_threads);
+        if (!ctx->decision_ctx) {
+            delete ctx;
+            return nullptr;
+        }
+        gemma_decision_hparams(ctx->decision_ctx, &ctx->model.hparams);
+        return ctx;
+    }
+
     bool is_dec = false;
     bool is_lfm2 = false;
     if (g) {
@@ -2693,6 +2707,18 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
         enc_text = prefixed.c_str();
     }
 
+    if (ctx->decision_ctx) {
+        if (!gemma_decision_encode(ctx->decision_ctx, enc_text, ctx->last_output)) return nullptr;
+        if (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < (int)ctx->last_output.size()) {
+            ctx->last_output.resize(ctx->matryoshka_dim);
+            double norm = 0;
+            for (float v : ctx->last_output) norm += double(v) * v;
+            norm = std::max(std::sqrt(norm), 1e-12);
+            for (float & v : ctx->last_output) v = (float)(v / norm);
+        }
+        if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
+        return ctx->last_output.data();
+    }
     if (ctx->is_lfm2 && ctx->lfm2_ctx) {
         const int dim = lfm2_embed_n_embd(ctx->lfm2_ctx);
         ctx->last_output.resize(dim);
@@ -2863,6 +2889,21 @@ extern "C" int crispembed_list_lora(const crispembed_context * ctx, const char *
 
 extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const char ** texts, int n_texts,
                                                  int * out_n_dim) {
+    if (ctx && ctx->decision_ctx) {
+        if (out_n_dim) *out_n_dim = 0;
+        if (!texts || n_texts <= 0) return nullptr;
+        std::vector<float> batch;
+        int dim = 0;
+        for (int i = 0; i < n_texts; ++i) {
+            const float * p = crispembed_encode(ctx, texts[i], &dim);
+            if (!p) return nullptr;
+            batch.insert(batch.end(), p, p + dim);
+        }
+        ctx->last_output = std::move(batch);
+        if (out_n_dim) *out_n_dim = dim;
+        return ctx->last_output.data();
+    }
+
     if (!ctx || !texts || n_texts <= 0) return nullptr;
     auto t_batch_start = std::chrono::steady_clock::now();
 
@@ -3279,6 +3320,31 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx, co
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx, const char * text, int * out_n_tokens,
                                                   int * out_dim) {
+    if (ctx && ctx->decision_ctx) {
+        if (out_n_tokens) *out_n_tokens = 0;
+        if (out_dim) *out_dim = 0;
+        ctx->last_token_n = 0;
+        ctx->last_token_ids.clear();
+        ctx->last_token_embeddings.clear();
+        if (!text) return nullptr;
+        std::vector<float> pooled;
+        if (!gemma_decision_encode(ctx->decision_ctx, ctx->prefix + text, pooled, &ctx->last_token_ids,
+                                   &ctx->last_token_embeddings))
+            return nullptr;
+        ctx->last_token_n = (int)ctx->last_token_ids.size();
+        ctx->last_token_dim = 768;
+        for (int t = 0; t < ctx->last_token_n; ++t) {
+            float * row = ctx->last_token_embeddings.data() + (size_t)t * 768;
+            double norm = 0;
+            for (int j = 0; j < 768; ++j) norm += double(row[j]) * row[j];
+            norm = std::max(std::sqrt(norm), 1e-12);
+            for (int j = 0; j < 768; ++j) row[j] = (float)(row[j] / norm);
+        }
+        if (out_n_tokens) *out_n_tokens = ctx->last_token_n;
+        if (out_dim) *out_dim = 768;
+        return ctx->last_token_embeddings.data();
+    }
+
     if (out_n_tokens) *out_n_tokens = 0;
     if (out_dim) *out_dim = 0;
     if (ctx) {
@@ -3358,6 +3424,24 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx, cons
 
 extern "C" const float * crispembed_encode_tokens_raw(crispembed_context * ctx, const char * text, int * out_n_tokens,
                                                       int * out_dim) {
+    if (ctx && ctx->decision_ctx) {
+        if (out_n_tokens) *out_n_tokens = 0;
+        if (out_dim) *out_dim = 0;
+        ctx->last_token_n = 0;
+        ctx->last_token_ids.clear();
+        ctx->last_token_embeddings.clear();
+        if (!text) return nullptr;
+        std::vector<float> pooled;
+        if (!gemma_decision_encode(ctx->decision_ctx, ctx->prefix + text, pooled, &ctx->last_token_ids,
+                                   &ctx->last_token_embeddings))
+            return nullptr;
+        ctx->last_token_n = (int)ctx->last_token_ids.size();
+        ctx->last_token_dim = 768;
+        if (out_n_tokens) *out_n_tokens = ctx->last_token_n;
+        if (out_dim) *out_dim = 768;
+        return ctx->last_token_embeddings.data();
+    }
+
     if (out_n_tokens) *out_n_tokens = 0;
     if (out_dim) *out_dim = 0;
     if (ctx) {
@@ -3422,6 +3506,8 @@ extern "C" const int32_t * crispembed_last_token_ids(const crispembed_context * 
 }
 
 extern "C" const char * crispembed_token_str(const crispembed_context * ctx, int32_t id) {
+    if (ctx && ctx->decision_ctx) return gemma_decision_token(ctx->decision_ctx, id);
+
     if (!ctx || ctx->is_decoder) return nullptr;
     if (ctx->is_lfm2) return lfm2_embed_token_str(ctx->lfm2_ctx, id);
     const std::string & s =
@@ -3430,6 +3516,8 @@ extern "C" const char * crispembed_token_str(const crispembed_context * ctx, int
 }
 
 extern "C" int crispembed_tokenizer_kind(const crispembed_context * ctx) {
+    if (ctx && ctx->decision_ctx) return 3;
+
     // 0 = unknown, 1 = WordPiece (## continuation marker),
     // 2 = SentencePiece (▁ word-start marker), 3 = BPE.
     if (!ctx) return 0;
@@ -5151,6 +5239,8 @@ extern "C" const char * crispembed_lightonocr_recognize(crispembed_lightonocr_co
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {
+    if (ctx && ctx->decision_ctx) gemma_decision_free(ctx->decision_ctx);
+
     if (!ctx) return;
     // Flush the importance matrix here (not just at atexit): one-shot binaries
     // exit via core_util::clean_exit() -> _exit(), which bypasses atexit handlers.
@@ -6855,4 +6945,28 @@ extern "C" int crispembed_hat_sr_process(void * ctx, const uint8_t * pixels, int
 }
 extern "C" void crispembed_hat_sr_free_image(uint8_t * pixels) {
     hat_sr_free_image(pixels);
+}
+
+extern "C" int crispembed_has_decision(const crispembed_context * ctx) {
+    return ctx && ctx->decision_ctx;
+}
+extern "C" const char * crispembed_decide_json(crispembed_context * ctx, const char * request) {
+    if (!ctx) return nullptr;
+    ctx->last_decision.clear();
+    if (!ctx->decision_ctx || !request) return nullptr;
+    ctx->last_decision = gemma_decision_run(ctx->decision_ctx, request);
+    return ctx->last_decision.empty() ? nullptr : ctx->last_decision.c_str();
+}
+extern "C" const char * crispembed_decision_error(const crispembed_context * ctx) {
+    return ctx && ctx->decision_ctx ? gemma_decision_error(ctx->decision_ctx) : "model has no typed-decision head";
+}
+
+extern "C" int crispembed_decision_scores(crispembed_context * ctx, const float * state, const float * question,
+                                          const float * options, int n_options, int kind, float * logits,
+                                          float * probabilities) {
+    return ctx && ctx->decision_ctx &&
+                   gemma_decision_scores(ctx->decision_ctx, state, question, options, n_options, kind, logits,
+                                         probabilities)
+               ? 1
+               : 0;
 }

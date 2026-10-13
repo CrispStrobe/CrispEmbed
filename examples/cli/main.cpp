@@ -108,6 +108,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --sparse         encode sparse term-weight vectors\n");
     fprintf(stderr, "  --colbert        encode ColBERT per-token vectors\n");
     fprintf(stderr, "  --tokens-raw     encode unnormalized per-token encoder features\n");
+    fprintf(stderr, "  --decide JSON    typed choices/scores/booleans: {state,questions,workflow?}\n");
     fprintf(stderr, "  --fill-mask      predict [MASK] / <|mask|> tokens (LFM2 encoder)\n");
     fprintf(stderr, "  --top-k N        predictions per mask (default: 5)\n");
     fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
@@ -262,6 +263,7 @@ static int cli_main(int argc, char ** argv) {
     bool colbert_mode = false;
     bool tokens_raw_mode = false;
     bool fill_mask_mode = false;
+    std::string decision_request;
     int mask_top_k = 5;
     std::string audio_path;     // .raw float32 16 kHz mono PCM
     std::string image_raw_path; // preprocessed float32 patches, n_patches x 1536
@@ -385,6 +387,8 @@ static int cli_main(int argc, char ** argv) {
             colbert_mode = true;
         } else if (strcmp(argv[i], "--tokens-raw") == 0) {
             tokens_raw_mode = true;
+        } else if (strcmp(argv[i], "--decide") == 0 && i + 1 < argc) {
+            decision_request = argv[++i];
         } else if (strcmp(argv[i], "--fill-mask") == 0) {
             fill_mask_mode = true;
         } else if (strcmp(argv[i], "--top-k") == 0 && i + 1 < argc) {
@@ -1217,7 +1221,7 @@ static int cli_main(int argc, char ** argv) {
         return 0;
     }
 
-    int mode_count = 0;
+    int mode_count = decision_request.empty() ? 0 : 1;
     mode_count += sparse_mode ? 1 : 0;
     mode_count += colbert_mode ? 1 : 0;
     mode_count += tokens_raw_mode ? 1 : 0;
@@ -1228,9 +1232,9 @@ static int cli_main(int argc, char ** argv) {
     mode_count += !image_raw_path.empty() ? 1 : 0;
     mode_count += !image_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(stderr,
-                "error: choose only one encoding mode "
-                "(--sparse/--colbert/--tokens-raw/--fill-mask/--rerank/--biencoder/--audio/--image/--image-raw)\n");
+        fprintf(stderr, "error: choose only one encoding mode "
+                        "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--rerank/--biencoder/--audio/--image/"
+                        "--image-raw)\n");
         return 1;
     }
 
@@ -2418,10 +2422,10 @@ static int cli_main(int argc, char ** argv) {
         const int dim = hp->n_output > 0 ? hp->n_output : hp->n_embd;
         if (json_output) {
             printf("{\"dim\": %d, \"prefix\": \"%s\", \"has_sparse\": %s, "
-                   "\"has_colbert\": %s, \"is_reranker\": %s, \"has_masked_lm\": %s}\n",
+                   "\"has_colbert\": %s, \"is_reranker\": %s, \"has_masked_lm\": %s, \"has_decision\": %s}\n",
                    dim, json_escape(crispembed_get_prefix(ctx)).c_str(), crispembed_has_sparse(ctx) ? "true" : "false",
                    crispembed_has_colbert(ctx) ? "true" : "false", crispembed_is_reranker(ctx) ? "true" : "false",
-                   crispembed_has_masked_lm(ctx) ? "true" : "false");
+                   crispembed_has_masked_lm(ctx) ? "true" : "false", crispembed_has_decision(ctx) ? "true" : "false");
         } else {
             printf("dim=%d prefix=\"%s\" has_sparse=%d has_colbert=%d is_reranker=%d has_masked_lm=%d\n", dim,
                    crispembed_get_prefix(ctx), crispembed_has_sparse(ctx), crispembed_has_colbert(ctx),
@@ -2573,6 +2577,18 @@ static int cli_main(int argc, char ** argv) {
                 printf("%.6f%s", vec[j], j + 1 < dim ? " " : "\n");
             }
         }
+        crispembed_free(ctx);
+        return 0;
+    }
+
+    if (!decision_request.empty()) {
+        const char * result = crispembed_decide_json(ctx, decision_request.c_str());
+        if (!result) {
+            fprintf(stderr, "decision error: %s\n", crispembed_decision_error(ctx));
+            crispembed_free(ctx);
+            return 1;
+        }
+        printf("%s\n", result);
         crispembed_free(ctx);
         return 0;
     }

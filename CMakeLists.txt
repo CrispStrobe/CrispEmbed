@@ -1158,3 +1158,5 @@ target_link_libraries(test-quant-f32-matmul PRIVATE ggml ggml-cpu)
 
 add_executable(test-gemma-decision-diff tests/test_gemma_decision_diff.cpp)
 target_link_libraries(test-gemma-decision-diff PRIVATE crispembed)
+add_executable(test-gemma-decision-schema tests/test_gemma_decision_schema.cpp)
+target_include_directories(test-gemma-decision-schema PRIVATE ${CMAKE_SOURCE_DIR}/src)

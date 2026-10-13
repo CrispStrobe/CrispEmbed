@@ -169,6 +169,23 @@ pub struct CrispembedFaceResult {
 }
 
 extern "C" {
+    pub fn crispembed_has_decision(ctx: *const CrispembedContext) -> c_int;
+    pub fn crispembed_decide_json(
+        ctx: *mut CrispembedContext,
+        request_json: *const c_char,
+    ) -> *const c_char;
+    pub fn crispembed_decision_scores(
+        ctx: *mut CrispembedContext,
+        state: *const c_float,
+        question: *const c_float,
+        options: *const c_float,
+        n_options: c_int,
+        question_type: c_int,
+        logits: *mut c_float,
+        probabilities: *mut c_float,
+    ) -> c_int;
+    pub fn crispembed_decision_error(ctx: *const CrispembedContext) -> *const c_char;
+
     // ------------------------------------------------------------------
     // Lifecycle
     // ------------------------------------------------------------------

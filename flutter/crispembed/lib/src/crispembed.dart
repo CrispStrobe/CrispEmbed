@@ -92,6 +92,9 @@ class CrispEmbed {
   CrispembedEncodeTokens? _encodeTokensFn;
   CrispembedEncodeTokens? _encodeTokensRawFn;
   CrispembedTokenIds? _tokenIdsFn;
+  CrispembedHasColbert? _hasDecisionFn;
+  CrispembedDecideJson? _decideJsonFn;
+  CrispembedGetPrefix? _decisionErrorFn;
   CrispembedHasColbert? _hasMaskedLmFn;
   CrispembedMaskedLogits? _maskedLogitsFn;
   CrispembedTokenBytes? _tokenBytesFn;
@@ -133,6 +136,23 @@ class CrispEmbed {
     }
   }
 
+  /// Whether the loaded model supports calibrated typed decisions.
+  bool get hasDecision => !_disposed && _hasDecisionFn != null && _hasDecisionFn!(_ctx) != 0;
+
+  /// Return typed answers (string choice, integer score, boolean noul).
+  Map<String, dynamic> decide(Object? state, Object questions, {String workflow = ''}) {
+    if (!hasDecision) throw StateError('Model has no typed-decision head');
+    final request = jsonEncode({'state': state, 'questions': questions, 'workflow': workflow}).toNativeUtf8();
+    try {
+      final result = _decideJsonFn!(_ctx, request);
+      if (result == nullptr) {
+        final error = _decisionErrorFn!(_ctx);
+        throw StateError(error == nullptr ? 'Typed decision failed' : error.toDartString());
+      }
+      return jsonDecode(result.toDartString()) as Map<String, dynamic>;
+    } finally { calloc.free(request); }
+  }
+
   void _bindFunctions() {
     _encode = _lib.lookupFunction<CrispembedEncodeNative, CrispembedEncode>(
         'crispembed_encode');
@@ -166,6 +186,11 @@ class CrispEmbed {
       _encodeTokensFn = _lib.lookupFunction<CrispembedEncodeTokensNative, CrispembedEncodeTokens>('crispembed_encode_tokens');
       _encodeTokensRawFn = _lib.lookupFunction<CrispembedEncodeTokensNative, CrispembedEncodeTokens>('crispembed_encode_tokens_raw');
       _tokenIdsFn = _lib.lookupFunction<CrispembedTokenIdsNative, CrispembedTokenIds>('crispembed_last_token_ids');
+    }
+    if (_lib.providesSymbol('crispembed_has_decision')) {
+      _hasDecisionFn = _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>('crispembed_has_decision');
+      _decideJsonFn = _lib.lookupFunction<CrispembedDecideJsonNative, CrispembedDecideJson>('crispembed_decide_json');
+      _decisionErrorFn = _lib.lookupFunction<CrispembedGetPrefixNative, CrispembedGetPrefix>('crispembed_decision_error');
     }
     if (_lib.providesSymbol('crispembed_has_masked_lm')) {
       _hasMaskedLmFn = _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>('crispembed_has_masked_lm');

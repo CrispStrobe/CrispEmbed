@@ -637,6 +637,35 @@ impl CrispEmbed {
     }
 
     /// Top predictions per [MASK]/<|mask|>, with full-vocabulary probabilities.
+    /// Whether the model exposes the calibrated typed-decision head.
+    pub fn has_decision(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_decision(self.ctx) != 0 }
+    }
+
+    /// Submit {state, questions, workflow?} JSON and return typed-answer JSON.
+    /// Values retain their string/integer/boolean types. Requires the opt-in
+    /// CPU GemmaDecision backend; returned data is copied before reuse.
+    pub fn decide_json(&mut self, request: &str) -> Result<String, String> {
+        if !self.has_decision() {
+            return Err("Model has no typed-decision head".into());
+        }
+        let request = CString::new(request).map_err(|_| "Request contains NUL")?;
+        let result = unsafe { crispembed_sys::crispembed_decide_json(self.ctx, request.as_ptr()) };
+        if result.is_null() {
+            let error = unsafe { crispembed_sys::crispembed_decision_error(self.ctx) };
+            return Err(if error.is_null() {
+                "Typed decision failed".into()
+            } else {
+                unsafe { CStr::from_ptr(error) }
+                    .to_string_lossy()
+                    .into_owned()
+            });
+        }
+        Ok(unsafe { CStr::from_ptr(result) }
+            .to_string_lossy()
+            .into_owned())
+    }
+
     pub fn fill_mask(&mut self, text: &str, top_k: usize) -> Result<Vec<MaskResult>, String> {
         if top_k == 0 {
             return Err("top_k must be positive".into());

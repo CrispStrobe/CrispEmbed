@@ -3,6 +3,7 @@
 // Usage: crispembed-server -m model.gguf [--port 8080] [--host 0.0.0.0]
 //
 // Endpoints:
+//   POST /decide          — calibrated typed answers for state + schema
 //   POST /tokens          — raw or normalized per-token features and IDs
 //   POST /masked-logits   — raw tied masked-LM logits and positions
 //   POST /fill-mask       — decoded top-k mask predictions
@@ -794,6 +795,28 @@ int main(int argc, char ** argv) {
     svr.Options("/(.*)", [](const httplib::Request &, httplib::Response & res) { res.status = 204; });
 
     // Raw token features and tied masked-LM predictions.
+    // Typed schema decisions: native rendering, encoding and calibration.
+    svr.Post("/decide", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\":\"no embedding model loaded\"}", "application/json");
+            return;
+        }
+        if (!crispembed_has_decision(ctx)) {
+            res.status = 400;
+            res.set_content("{\"error\":\"model has no typed-decision head\"}", "application/json");
+            return;
+        }
+        std::lock_guard<std::mutex> lock(model_mutex);
+        const char * result = crispembed_decide_json(ctx, req.body.c_str());
+        if (!result) {
+            res.status = 400;
+            res.set_content("{\"error\":\"" + json_escape(crispembed_decision_error(ctx)) + "\"}", "application/json");
+            return;
+        }
+        res.set_content(result, "application/json");
+    });
+
     svr.Post("/tokens", [&](const httplib::Request & req, httplib::Response & res) {
         handle_encoder_request(req, res, ctx, model_mutex, 0);
     });
@@ -3909,6 +3932,7 @@ int main(int argc, char ** argv) {
             js << ", \"dim\": " << dim << ", \"layers\": " << hp->n_layer << ", \"vocab\": " << hp->n_vocab;
             // "dim" stays the native size; the served default after --dim is separate.
             if (server_dim > 0 && server_dim < dim) js << ", \"output_dim\": " << server_dim;
+            if (crispembed_has_decision(ctx)) js << ", \"typed_decision\": true";
             if (crispembed_has_masked_lm(ctx)) js << ", \"masked_lm\": true";
             // Retrieval capabilities of the loaded model → the matching POST routes.
             if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank + /v1/rerank
@@ -4056,6 +4080,8 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /render/ocr           — {\"results\": [...], \"format\": \"hocr|alto|pdf\"}\n");
     fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
     if (ctx) fprintf(stderr, "  POST /tokens          — raw or normalized token embeddings and IDs\n");
+    if (ctx && crispembed_has_decision(ctx))
+        fprintf(stderr, "  POST /decide          — {state, questions, workflow?} typed answers\n");
     if (ctx && crispembed_has_masked_lm(ctx)) {
         fprintf(stderr, "  POST /fill-mask       — {\"text\": \"... [MASK] ...\", \"top_k\": 5}\n");
         fprintf(stderr, "  POST /masked-logits   — raw logits for all mask positions\n");

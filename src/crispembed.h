@@ -217,6 +217,21 @@ CRISPEMBED_API const char * crispembed_token_str(const crispembed_context * ctx,
 //   0 = unknown
 CRISPEMBED_API int crispembed_tokenizer_kind(const crispembed_context * ctx);
 
+// Typed schema decisions (choice, score, noul). Opt-in CPU backend:
+// CRISPEMBED_GEMMA_DECISION=1. JSON request: {state,questions,workflow?}.
+// Returns {question_id:{kind,label,value,confidence,probabilities,expected_level}}.
+// Context-owned output; NULL on invalid/unsupported input. Multiple options are
+// scored jointly; use decision_error for the reason. Not thread-safe per context.
+CRISPEMBED_API int crispembed_has_decision(const crispembed_context * ctx);
+CRISPEMBED_API const char * crispembed_decide_json(crispembed_context * ctx, const char * request_json);
+// Score already-normalized state/question/option embeddings without encoding.
+// state/question: 768 floats; options: [n_options,768]; type: 0 choice,1 score,2 noul.
+// logits/probabilities: caller-owned [n_options]. Returns 1 on success, 0 on failure.
+CRISPEMBED_API int crispembed_decision_scores(crispembed_context * ctx, const float * state, const float * question,
+                                              const float * options, int n_options, int question_type, float * logits,
+                                              float * probabilities);
+CRISPEMBED_API const char * crispembed_decision_error(const crispembed_context * ctx);
+
 // LFM2 bidirectional masked encoder. Enabled by default for official masked encoders on CPU; GPU requires
 // CRISPEMBED_LFM2_ENCODER=1 until GPU reference parity is validated.
 CRISPEMBED_API int crispembed_has_masked_lm(const crispembed_context * ctx);

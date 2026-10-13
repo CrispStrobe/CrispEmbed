@@ -5,11 +5,15 @@
 Branch feat/embeddinggemma2-typed-decision from 9b3c8234. Source pinned to
 mrm8488/embeddinggemma-2-ft-typed-decision at fcc165b7d7d97827e241e09752e83fd11165a74b.
 Read full custom configuration/model and driving decide/encode rendering pipeline.
-Checkpoint 1.089 GB FP32; download outside Git in progress. Next: inspect installed
-EmbeddingGemma2 Python backbone, export exact weights/tokenizer, add gated native
-encoder/head and expose typed answers across C/CLI/server/bindings. Verify every
-layer, norms, probabilities and typed results against original Python before
-registering/publishing validated models. No Gemma3 alias or parity claim yet.
+Checkpoint 1.089 GB FP32; full custom source and Transformers 5.19.0 backbone
+read. Gated CPU encoder/head, ordered JSON rendering and C/CLI/HTTP/Python/Rust/Dart
+surfaces implemented. Hosted validation script converts the pinned source, dumps
+five 29-stage original-Python probes (including >512-token sliding-window coverage),
+and checks head-only scores plus full typed values/CLI/HTTP/error contracts.
+Initial hosted run 38348507559 is queued; replacing it with the complete surface
+validation. Local model inference/builds are intentionally not run under current
+shared-host instructions. Next: fix earliest parity divergence, validate quantized
+variant separately, then publish/register only proven artifacts. No parity claim yet.
 
 ## CrispMath consumer handoff — 5 October 2026
 

@@ -248,6 +248,14 @@ class CrispEmbed:
         ]
         lib.crispembed_encode_multivec.restype = ctypes.POINTER(ctypes.c_float)
 
+        if hasattr(lib, "crispembed_has_decision"):
+            lib.crispembed_has_decision.argtypes = [ctypes.c_void_p]
+            lib.crispembed_has_decision.restype = ctypes.c_int
+            lib.crispembed_decide_json.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+            lib.crispembed_decide_json.restype = ctypes.c_char_p
+            lib.crispembed_decision_error.argtypes = [ctypes.c_void_p]
+            lib.crispembed_decision_error.restype = ctypes.c_char_p
+
         for name in ("crispembed_encode_tokens", "crispembed_encode_tokens_raw"):
             if hasattr(lib, name):
                 fn = getattr(lib, name)
@@ -532,6 +540,27 @@ class CrispEmbed:
         if not ptr:
             raise ValueError("Token ID is out of range or decoding is unsupported")
         return ctypes.string_at(ptr, size.value)
+
+    @property
+    def has_decision(self) -> bool:
+        """Whether this model has the calibrated typed-decision head."""
+        return hasattr(self._lib, "crispembed_has_decision") and bool(self._lib.crispembed_has_decision(self._ctx))
+
+    def decide(self, state, questions, *, workflow: str = "") -> dict:
+        """Return typed choice/score/noul answers with calibrated probabilities.
+
+        Rendering, encoding and scoring run in the native library. Model loading
+        currently requires CRISPEMBED_GEMMA_DECISION=1 (CPU reference path).
+        """
+        import json
+        if not self.has_decision:
+            raise ValueError("Model has no typed-decision head")
+        request = json.dumps({"state": state, "questions": questions, "workflow": workflow}, ensure_ascii=False, allow_nan=False)
+        result = self._lib.crispembed_decide_json(self._ctx, request.encode("utf-8"))
+        if not result:
+            error = self._lib.crispembed_decision_error(self._ctx)
+            raise ValueError(error.decode("utf-8", errors="replace") if error else "Typed decision failed")
+        return json.loads(result.decode("utf-8"))
 
     def fill_mask(self, text: str, top_k: int = 5) -> List[dict]:
         """Top predictions for each [MASK] or <|mask|>, evaluated jointly.

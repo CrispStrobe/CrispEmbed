@@ -441,3 +441,80 @@ bool gemma_decision_scores(gemma_decision_context * c, const float * state, cons
         return false;
     }
 }
+
+#include "core/decision_schema.h"
+#include <iomanip>
+#include <sstream>
+
+std::string gemma_decision_run(gemma_decision_context * c, const std::string & request) {
+    if (!c) return {};
+    c->error.clear();
+    try {
+        using namespace core_decision;
+        const auto root = Parser(request).parse();
+        if (root.kind != Value::object) throw std::runtime_error("request must be an object");
+        bool has_state = false;
+        for (auto & p : root.fields) has_state |= p.first == "state";
+        if (!has_state) throw std::runtime_error("missing state field");
+        const auto questions = unpack(root.get("questions"));
+        if (questions.kind != Value::object || questions.fields.empty() || questions.fields.size() > 128)
+            throw std::runtime_error("questions must be an object with 1 to 128 entries");
+        const std::string workflow =
+            root.get("workflow").kind == Value::null_value ? "" : python_str(root.get("workflow"));
+        std::map<std::string, std::vector<float>> bank;
+        auto encode = [&](const std::string & text) -> const std::vector<float> & {
+            auto it = bank.find(text);
+            if (it == bank.end()) {
+                std::vector<float> v;
+                if (!gemma_decision_encode(c, text, v)) throw std::runtime_error(c->error);
+                it = bank.emplace(text, std::move(v)).first;
+            }
+            return it->second;
+        };
+        const auto state = encode(state_text(workflow, root.get("state")));
+        std::ostringstream out;
+        out << std::setprecision(9) << "{";
+        size_t n = 0;
+        for (const auto & item : questions.fields) {
+            const auto q = question(item.first, item.second);
+            const auto question_embedding = encode(question_text(q));
+            std::vector<float> options;
+            for (size_t i = 0; i < q.options.size(); ++i) {
+                const auto & v = encode(option_text(q, i));
+                options.insert(options.end(), v.begin(), v.end());
+            }
+            std::vector<float> logits(q.options.size()), probabilities(q.options.size());
+            if (!gemma_decision_scores(c, state.data(), question_embedding.data(), options.data(),
+                                       (int)q.options.size(), q.kind_id, logits.data(), probabilities.data()))
+                throw std::runtime_error(c->error);
+            const size_t winner =
+                (size_t)(std::max_element(probabilities.begin(), probabilities.end()) - probabilities.begin());
+            const std::string & label = q.options[winner];
+            out << (n++ ? "," : "") << quote(q.id) << ":{\"kind\":" << quote(q.kind) << ",\"label\":" << quote(label)
+                << ",\"value\":";
+            if (q.kind == "noul")
+                out << (label == "true" ? "true" : "false");
+            else if (q.kind == "score")
+                out << level(label);
+            else
+                out << quote(label);
+            out << ",\"confidence\":" << probabilities[winner] << ",\"probabilities\":{";
+            for (size_t i = 0; i < q.options.size(); ++i)
+                out << (i ? "," : "") << quote(q.options[i]) << ":" << probabilities[i];
+            out << "},\"expected_level\":";
+            if (q.kind == "score") {
+                double expected = 0;
+                for (size_t i = 0; i < q.options.size(); ++i)
+                    expected += level(q.options[i]) * (double)probabilities[i];
+                out << expected;
+            } else
+                out << "null";
+            out << "}";
+        }
+        out << "}";
+        return out.str();
+    } catch (const std::exception & e) {
+        c->error = e.what();
+        return {};
+    }
+}

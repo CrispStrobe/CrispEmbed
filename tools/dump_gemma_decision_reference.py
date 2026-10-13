@@ -155,6 +155,15 @@ def main():
                 "logits": result.logits.tolist(),
                 "probabilities": result.probabilities.tolist(),
                 "text_embeds": result.text_embeds.tolist(),
+                "indices": {
+                    k: inputs[k].tolist()
+                    for k in (
+                        "state_index",
+                        "question_index",
+                        "option_index",
+                        "question_type",
+                    )
+                },
             }
         )
         print(

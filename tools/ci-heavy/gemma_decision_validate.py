@@ -57,6 +57,7 @@ def main():
             str(scratch / "build"),
             "--target",
             "test-gemma-decision-diff",
+            "test-gemma-decision-schema",
             "crispembed-shared",
             "crispembed-cli",
             "crispembed-server",
@@ -98,6 +99,27 @@ def main():
             ],
             "diff-" + ref.stem,
         )
+    run(
+        [
+            sys.executable,
+            "tests/gemma_decision_parity.py",
+            "--model",
+            str(gguf),
+            "--refs",
+            str(refs),
+            "--lib",
+            str(scratch / "build/libcrispembed.so"),
+            "--cli",
+            str(scratch / "build/crispembed"),
+            "--server",
+            str(scratch / "build/crispembed-server"),
+            "--schema",
+            str(scratch / "build/test-gemma-decision-schema"),
+            "--output",
+            str(out / "parity-f32.json"),
+        ],
+        "contracts-f32",
+    )
     (out / "versions.json").write_bytes((refs / "versions.json").read_bytes())
     (out / "decisions.json").write_bytes((refs / "decisions.json").read_bytes())
     (out / "summary.md").write_text(
