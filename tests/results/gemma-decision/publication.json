@@ -93,5 +93,27 @@
   "model_pr_revision": "refs/pr/1",
   "fixture_pr": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/discussions/1",
   "fixture_pr_revision": "refs/pr/1",
-  "metadata_revision": "50bc95288ec868e20a282f23ebc77dcc61a84331"
+  "metadata_revision": "50bc95288ec868e20a282f23ebc77dcc61a84331",
+  "registry_validation": {
+    "contracts": "fresh pinned alias downloads and real CLI decisions PASS",
+    "native_commit": "9b472380e19737d45ebc9abe7e07d0abe7bb3225",
+    "workflow_run": "38375586578",
+    "models": [
+      {
+        "alias": "embeddinggemma-2-ft-typed-decision",
+        "answers": 8,
+        "max_probability_error": 4.827623687697624e-06,
+        "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe",
+        "bytes": 1102182464
+      },
+      {
+        "alias": "embeddinggemma-2-ft-typed-decision-q8",
+        "answers": 8,
+        "max_probability_error": 0.002824783235900852,
+        "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497",
+        "bytes": 307492928
+      }
+    ]
+  },
+  "registry_report_revision": "7a093624993386b42e0b99d0cc3e7f25f9534fa4"
 }

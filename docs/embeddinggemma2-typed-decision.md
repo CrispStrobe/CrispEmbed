@@ -158,3 +158,9 @@ CRISPEMBED_GEMMA_DECISION=1 crispembed -m embeddinggemma-2-ft-typed-decision \
 For the Q8 alias also set `CRISPEMBED_GEMMA_DECISION_F32_DOT=1` to reproduce
 the measured arithmetic. [Publication provenance](../tests/results/gemma-decision/publication.json)
 records model/fixture revisions, workflow, source commit and both file identities.
+
+[Fresh-download validation run38375586578](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38375586578)
+builds `9b472380`, downloads both aliases into an empty cache, verifies exact
+SHA-256/bytes and compares real CLI results to all eight original-Python answers
+for each precision. Probability errors reproduce the table above.
+[Recorded alias results](../tests/results/gemma-decision/registry.json).

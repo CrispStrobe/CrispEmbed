@@ -19,7 +19,8 @@ run38374087175 passes full native/reference and binding checks; remote bytes and
 SHA-256 identities verified. Added two pinned aliases and repaired license-registry
 parsing of adjacent C++ URL literals. The Python15 printability table has its own
 header, preserving the mirrored tokenizer Unicode table byte-for-byte.
-Fresh-download alias validation follows the published fixtures.
+Fresh-download alias run38375586578 passes both pinned file identities and all
+eight typed answers for each precision against the published Python fixtures.
 
 ## 2026-10-05 — CrispMath consumer/runtime public handoff
 

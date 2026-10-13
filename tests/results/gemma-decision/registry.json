@@ -1,0 +1,21 @@
+{
+  "contracts": "fresh pinned alias downloads and real CLI decisions PASS",
+  "native_commit": "9b472380e19737d45ebc9abe7e07d0abe7bb3225",
+  "workflow_run": "38375586578",
+  "models": [
+    {
+      "alias": "embeddinggemma-2-ft-typed-decision",
+      "answers": 8,
+      "max_probability_error": 4.827623687697624e-06,
+      "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe",
+      "bytes": 1102182464
+    },
+    {
+      "alias": "embeddinggemma-2-ft-typed-decision-q8",
+      "answers": 8,
+      "max_probability_error": 0.002824783235900852,
+      "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497",
+      "bytes": 307492928
+    }
+  ]
+}
