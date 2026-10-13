@@ -87,6 +87,22 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             save(f"{phase[0]}.linear.input", args[0])
     handles.append(delta_layer.in_proj_qkv.register_forward_pre_hook(projection_input))
     handles.append(delta_layer.register_forward_hook(hook("linear.output")))
+    # Full trained linear-attention coverage, not just one operator's parameters.
+    def block_input(label):
+        def capture(module, args):
+            if phase[0] is not None:
+                save(f"{phase[0]}.{label}", args[0])
+        return capture
+    for index, block in enumerate(language.layers):
+        if block.block_type != "linear_attention":
+            continue
+        linear = block.linear_attn
+        label = f"linear.{index}"
+        for name, field in [("in_proj_qkv", "qkv"), ("in_proj_z", "z"),
+                            ("in_proj_a", "a"), ("in_proj_b", "b"), ("norm", "norm")]:
+            handles.append(getattr(linear, name).register_forward_hook(hook(f"{label}.{field}")))
+        handles.append(linear.in_proj_qkv.register_forward_pre_hook(block_input(f"{label}.input")))
+        handles.append(linear.register_forward_hook(hook(f"{label}.output")))
     originals = {}
     for method_name in ["chunk_gated_delta_rule", "recurrent_gated_delta_rule"]:
         original = getattr(delta_layer, method_name)
@@ -189,6 +205,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         required += [f"{label}.decoder.layer.{index}" for index in range(decoder_depth)]
         required += [f"{label}.decoder.position_ids", f"{label}.logits"]
         for index, kind in enumerate(model.config.text_config.layer_types):
+            if kind == "linear_attention":
+                required += [f"{label}.linear.{index}.{field}"
+                             for field in ["input", "qkv", "z", "a", "b", "norm", "output"]]
             if label != "full_prefix":
                 fields = ["conv_states", "recurrent_states"] if kind == "linear_attention" else ["keys", "values"]
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
@@ -197,7 +216,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     # Small standalone native-op probe; never part of exported model weights.
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
     for name, value in arrays.items():
-        if ((".delta." in name or ".linear." in name or ".cache.0." in name)
+        if ((".delta." in name or ".linear." in name or ".cache." in name)
                 and name.startswith(("prefill.", "cached."))) or name.startswith("linear."):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()

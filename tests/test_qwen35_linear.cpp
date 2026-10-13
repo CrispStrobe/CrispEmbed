@@ -20,7 +20,8 @@ static bool compare(const crispembed_diff::Ref & ref, const std::string & name, 
 }
 
 static bool include(const char * name, void *) {
-    return std::string(name).find("l.layers.0.linear_attn.") == 0;
+    const std::string value(name);
+    return value.find("l.layers.") == 0 && value.find(".linear_attn.") != std::string::npos;
 }
 
 int main(int argc, char ** argv) {
@@ -36,50 +37,54 @@ int main(int argc, char ** argv) {
     core_gguf::WeightLoad loaded;
     if (!backend || !core_gguf::load_weights_filtered(argv[1], backend, include, nullptr, "qwen35-linear", loaded))
         return 2;
-    auto tensor = [&](const char * suffix) {
-        const std::string name = std::string("l.layers.0.linear_attn.") + suffix;
-        return core_gguf::try_get(loaded.tensors, name.c_str());
-    };
-    const qwen35_ocr::linear_weights weights{
-        tensor("in_proj_qkv.weight"),
-        tensor("in_proj_z.weight"),
-        tensor("in_proj_a.weight"),
-        tensor("in_proj_b.weight"),
-        tensor("out_proj.weight"),
-        tensor("conv1d.weight"),
-        tensor("A_log"),
-        tensor("dt_bias"),
-        tensor("norm.weight"),
-    };
-    qwen35_ocr::projected_linear_outputs previous;
-    bool ok = loaded.tensors.size() == 9;
-    for (const std::string phase : { "prefill", "cached" }) {
-        const auto hidden = ref.get_f32(phase + ".linear.input");
-        const auto shape = ref.shape(phase + ".linear.input");
-        if (!hidden.first || shape.size() != 3 || hidden.second != size_t(shape[0] * shape[1] * shape[2])) {
-            ok = false;
-            break;
+    bool ok = loaded.tensors.size() == 18 * 9;
+    for (int index = 0; index < 24; ++index) {
+        if (index % 4 == 3) continue;
+        auto tensor = [&](const char * suffix) {
+            const std::string name = std::string("l.layers.") + std::to_string(index) + ".linear_attn." + suffix;
+            return core_gguf::try_get(loaded.tensors, name.c_str());
+        };
+        const qwen35_ocr::linear_weights weights{
+            tensor("in_proj_qkv.weight"),
+            tensor("in_proj_z.weight"),
+            tensor("in_proj_a.weight"),
+            tensor("in_proj_b.weight"),
+            tensor("out_proj.weight"),
+            tensor("conv1d.weight"),
+            tensor("A_log"),
+            tensor("dt_bias"),
+            tensor("norm.weight"),
+        };
+        qwen35_ocr::projected_linear_outputs previous;
+        for (const std::string phase : { "prefill", "cached" }) {
+            const auto hidden = ref.get_f32(phase + ".linear." + std::to_string(index) + ".input");
+            const auto shape = ref.shape(phase + ".linear." + std::to_string(index) + ".input");
+            if (!hidden.first || shape.size() != 3 || hidden.second != size_t(shape[0] * shape[1] * shape[2])) {
+                ok = false;
+                break;
+            }
+            qwen35_ocr::projected_linear_outputs current;
+            if (!qwen35_ocr::linear_cpu(weights, hidden.first, int(shape[2]), int(shape[1]), 4,
+                                        previous.core.conv_history.empty() ? nullptr
+                                                                           : previous.core.conv_history.data(),
+                                        previous.core.state.empty() ? nullptr : previous.core.state.data(), current)) {
+                ok = false;
+                break;
+            }
+            ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".qkv", current.qkv);
+            ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".z", current.z);
+            ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".a", current.a);
+            ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".b", current.b);
+            ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".norm", current.core.values);
+            ok &= compare(ref, phase + ".cache." + std::to_string(index) + ".conv_states", current.core.conv_history);
+            ok &= compare(ref, phase + ".cache." + std::to_string(index) + ".recurrent_states", current.core.state);
+            ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".output", current.attention);
+            previous = std::move(current);
         }
-        qwen35_ocr::projected_linear_outputs current;
-        if (!qwen35_ocr::linear_cpu(weights, hidden.first, int(shape[2]), int(shape[1]), 4,
-                                    previous.core.conv_history.empty() ? nullptr : previous.core.conv_history.data(),
-                                    previous.core.state.empty() ? nullptr : previous.core.state.data(), current)) {
-            ok = false;
-            break;
-        }
-        ok &= compare(ref, phase + ".linear.qkv", current.qkv);
-        ok &= compare(ref, phase + ".linear.z", current.z);
-        ok &= compare(ref, phase + ".linear.a", current.a);
-        ok &= compare(ref, phase + ".linear.b", current.b);
-        ok &= compare(ref, phase + ".linear.norm", current.core.values);
-        ok &= compare(ref, phase + ".cache.0.conv_states", current.core.conv_history);
-        ok &= compare(ref, phase + ".delta.final_state", current.core.state);
-        ok &= compare(ref, phase + ".linear.output", current.attention);
-        previous = std::move(current);
     }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("%s actual-checkpoint Qwen3.5 first linear-attention block; full OCR remains pending\n",
+    std::printf("%s actual-checkpoint Qwen3.5 all 18 linear-attention blocks; full OCR remains pending\n",
                 ok ? "PASS" : "FAIL");
     return ok ? 0 : 1;
 }

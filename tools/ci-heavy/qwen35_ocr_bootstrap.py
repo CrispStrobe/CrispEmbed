@@ -127,7 +127,7 @@ def main():
         (out / "native-linear.log").write_text(weighted.stdout + weighted.stderr)
         print(weighted.stdout + weighted.stderr)
         weighted.check_returncode()
-        report["native_linear"] = "passed first checkpoint linear-attention block projections/core/output and native carried states"
+        report["native_linear"] = "passed all 18 checkpoint linear-attention blocks: projections/core/output and native carried states"
         report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
     except BaseException as error:
         report["result"] = "failed"
