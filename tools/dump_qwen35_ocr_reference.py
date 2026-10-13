@@ -94,7 +94,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                 save(f"{phase[0]}.{label}", args[0])
         return capture
     for index, block in enumerate(language.layers):
-        if block.block_type != "linear_attention":
+        if model.config.text_config.layer_types[index] != "linear_attention":
             continue
         linear = block.linear_attn
         label = f"linear.{index}"
