@@ -16,7 +16,7 @@ bool delta_cpu(const float * q, const float * k, const float * v, const float * 
     output.clear();
     final_state.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !q || !k || !v || !g || !beta || batch < 1 || tokens < 1 ||
-        heads < 1 || width < 1 || threads < 1)
+        heads < 1 || width < 1 || threads < 1 || threads > 256)
         return false;
     // Bounded experimental CPU boundary; fail before multiplication/allocation.
     if (batch > 4 || tokens > 4096 || heads > 128 || width > 256) return false;

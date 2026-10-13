@@ -17,8 +17,9 @@ static void gate(const char * value) {
 
 static bool compare(const crispembed_diff::Ref & ref, const std::string & name, const std::vector<float> & values) {
     const auto report = ref.compare(name, values.data(), values.size());
-    const bool ok = report.found && report.cos_min >= 0.99999f && report.max_abs <= 0.002f &&
-                    std::isfinite(report.max_abs) && std::isfinite(report.cos_min);
+    const bool ok = ref.get_f32(name).second == values.size() && report.n_elem == values.size() && report.found &&
+                    report.cos_min >= 0.99999f && report.max_abs <= 0.002f && std::isfinite(report.max_abs) &&
+                    std::isfinite(report.cos_min);
     std::printf("%s %s: cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g norms=%.9g/%.9g\n",
                 ok ? "PASS" : "FAIL", name.c_str(), report.cos_min, report.cos_global, report.max_abs, report.mean_abs,
                 report.mine_norm, report.ref_norm);
@@ -65,6 +66,11 @@ int main(int argc, char ** argv) {
         return 1;
     ok &= compare(ref, "prefill.delta.output", output);
     ok &= compare(ref, "prefill.delta.final_state", state);
+    // Prove that the comparator rejects corruption even when cosine is high.
+    auto perturbed = output;
+    perturbed.front() += 1.0f;
+    const auto bad = ref.compare("prefill.delta.output", perturbed.data(), perturbed.size());
+    ok &= bad.found && bad.max_abs > 0.5f;
     ok &= !qwen35_ocr::delta_cpu(nullptr, k.first, v.first, g.first, beta.first, nullptr, 1, 1, 16, 128, 4, output,
                                  state);
     std::printf("%s Qwen3.5 delta recurrence + continuation + reset + disabled/invalid controls\n",
