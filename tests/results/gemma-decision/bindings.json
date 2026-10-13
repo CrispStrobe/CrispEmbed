@@ -1,0 +1,6 @@
+{
+  "contracts": "Rust/Dart real FFI scores/typed JSON/errors/repeat PASS",
+  "scenarios": 3,
+  "dart": "3.13.5",
+  "rust": "rustc 1.99.0 (b940084d7 2026-09-28)"
+}

@@ -1,0 +1,88 @@
+{
+  "source_model": "mrm8488/embeddinggemma-2-ft-typed-decision",
+  "source_revision": "fcc165b7d7d97827e241e09752e83fd11165a74b",
+  "native_commit": "5773ef584c7d12e465a6be649b4bdd24fe2c79fa",
+  "workflow_run": "38361916083",
+  "artifacts": {
+    "embeddinggemma-2-ft-typed-decision-f32.gguf": {
+      "bytes": 1102182464,
+      "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe"
+    },
+    "embeddinggemma-2-ft-typed-decision-q8_0.gguf": {
+      "bytes": 307492928,
+      "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497"
+    }
+  },
+  "f32_contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+  "f32_embeddings": [
+    {
+      "scenario": 0,
+      "texts": 13,
+      "cosine_min": 0.9999999403953552,
+      "relative_l2_error": 6.886171490805282e-07,
+      "max_absolute_error": 1.1920928955078125e-07,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 1,
+      "texts": 11,
+      "cosine_min": 1.0,
+      "relative_l2_error": 1.305256773775909e-06,
+      "max_absolute_error": 4.507601261138916e-07,
+      "native_norm_min": 0.9999999403953552,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 2,
+      "texts": 6,
+      "cosine_min": 0.9999999403953552,
+      "relative_l2_error": 7.52322250718862e-07,
+      "max_absolute_error": 1.4901161193847656e-07,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    }
+  ],
+  "q8_embeddings": [
+    {
+      "scenario": 0,
+      "texts": 13,
+      "cosine_min": 0.9999668598175049,
+      "relative_l2_error": 0.006827881094068289,
+      "max_absolute_error": 0.0010825181379914284,
+      "native_norm_min": 0.9999999403953552,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 1,
+      "texts": 11,
+      "cosine_min": 0.9999564290046692,
+      "relative_l2_error": 0.007368369959294796,
+      "max_absolute_error": 0.0011576898396015167,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    },
+    {
+      "scenario": 2,
+      "texts": 6,
+      "cosine_min": 0.9999722242355347,
+      "relative_l2_error": 0.006773179396986961,
+      "max_absolute_error": 0.0010066342074424028,
+      "native_norm_min": 1.0,
+      "native_norm_max": 1.0
+    }
+  ],
+  "q8_reference_labels": {
+    "matched": 8,
+    "total": 8
+  },
+  "bindings": {
+    "contracts": "Rust/Dart real FFI scores/typed JSON/errors/repeat PASS",
+    "scenarios": 3,
+    "dart": "3.13.5",
+    "rust": "rustc 1.99.0 (b940084d7 2026-09-28)"
+  },
+  "note": "Reference agreement on these probes, not downstream task accuracy. CPU only.",
+  "publication_state": "validated, upload pending CI credential permission",
+  "model_repo": "cstr/embeddinggemma-2-ft-typed-decision-GGUF"
+}

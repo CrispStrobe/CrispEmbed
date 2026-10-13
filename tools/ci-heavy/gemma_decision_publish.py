@@ -106,7 +106,8 @@ are hosted separately. The base model is a multilingual backbone; the head was
 trained on English schemas. Reference parity is not validation on your own tasks.
 """
     api = HfApi()
-    api.create_repo(repo, exist_ok=True, private=False)
+    if not api.repo_exists(repo):
+        api.create_repo(repo, exist_ok=True, private=False)
     api.create_commit(
         repo_id=repo,
         commit_message="Document original-Python validated typed-decision GGUFs",
