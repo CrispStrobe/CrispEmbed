@@ -115,3 +115,18 @@ gh workflow run heavy-cpu.yml --ref ocr-permissive-roadmap \
    independently. LightOnOCR-3-1B reuses the separate existing LightOn engine;
    TeleOCR uses the Qwen2.5 family; larger shared-backend models follow only
    after small checkpoints pass.
+
+## Checkpoint — 2026-10-13
+
+Implementation branch `ocr-permissive-roadmap`, source `aea235b7`: exporter,
+official reference dumper and hosted bootstrap script are committed/pushed.
+Python AST parsing and `git diff --check` pass; the formatter excludes these
+Python files. [Hosted ARM run 38459422250](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38459422250)
+is queued; no checkpoint conversion/reference result or native parity exists yet.
+Earlier task-owned Linux/ARM queued runs were cancelled while selecting the
+runner and correcting aligned multimodal types in the full-prefix reference.
+
+Next action: collect this run's full conclusion and small `bootstrap.json`,
+`export-manifest.json` and official-reference JSON reports. Fix its first failing
+stage before native implementation. Keep the implementation branch/worktree
+until this model-backed gate completes; the public roadmap/blueprint are on main.

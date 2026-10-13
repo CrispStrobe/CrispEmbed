@@ -27,8 +27,8 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 | 5 | [TeleOCR](https://huggingface.co/XingChen-AGI/TeleOCR) | Apache-2.0; base terms still to audit | ~1.3–1.8 GB | Queued: reuse Qwen2.5-VL where exact config permits; verify renamed NaviDC artifacts/provenance and structured output; estimated 1–2 weeks |
 | 6 | [LightOnOCR-3-4B](https://huggingface.co/lightonai/LightOnOCR-3-4B) | Apache-2.0; Qwen3.5 family | ~3.08–3.38 GB | Queued after small-model parity; larger memory/long-page and grounding checks |
 | 7 | [Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B) | Apache-2.0; base license text to audit before weights | ~6–7 GB, estimate | Queued after small dense Qwen3.5; general VLM/OCRBench evaluation, not an OCR-specific checkpoint |
-| 8 | [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) | Apache-2.0; full dependency audit pending | ~17–20 GB, estimate | Queued after smaller models; inspect exact architecture and long-context memory; GPU reference resources required |
-| 9 | [Infinity-Parser2-Pro](https://huggingface.co/infly/Infinity-Parser2-Pro) | Apache-2.0; base/dependency audit pending | ~22–25 GB, estimate | Queued last: 35.1B total checkpoint parameters; active MoE parameters do not determine storage |
+| 8 | [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) | Apache-2.0; full dependency audit pending | ~17–20 GB, estimate | Queued: config is dense `qwen3_5`, 64 layers; long-context memory/GPU reference resources required |
+| 9 | [Infinity-Parser2-Pro](https://huggingface.co/infly/Infinity-Parser2-Pro) | Apache-2.0; base/dependency audit pending | ~22–25 GB, estimate | Queued last: `qwen3_5_moe`, 40 layers/256 experts, 35.1B total parameters; requires router/expert implementation beyond the dense backend; active parameters do not determine storage |
 
 Shared Qwen3.5 estimate: 2–4 engineering weeks for the first verified model,
 then roughly 3–7 days per checkpoint. These are planning estimates. Vendored ggml
@@ -474,7 +474,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-13 | `ocr-permissive-roadmap` | Permissive OCR queue; LightOnOCR-3-0.8B first, shared Qwen3.5 backend | Started source/tensor/export/reference lane; native inference and parity pending. Models remain unregistered until validated. |
+| 2026-10-13 | `ocr-permissive-roadmap` | Permissive OCR queue; LightOnOCR-3-0.8B first, shared Qwen3.5 backend | Exporter + official-Python full-stage/cache reference bootstrap pushed at `aea235b7`; hosted ARM check [38459422250](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38459422250) queued. Syntax/diff checks pass; model tests have not run. Native inference and parity pending; no aliases/publication. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
