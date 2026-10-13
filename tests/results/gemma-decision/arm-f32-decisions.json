@@ -1,0 +1,220 @@
+{
+  "model": "gemma-decision-f32.gguf",
+  "questions": [
+    {
+      "question": "action",
+      "native": {
+        "kind": "choice",
+        "label": "review",
+        "value": "review",
+        "confidence": 0.57637459,
+        "probabilities": {
+          "continue": 0.173424497,
+          "review": 0.57637459,
+          "stop": 0.250200897
+        },
+        "expected_level": null
+      },
+      "reference": {
+        "kind": "choice",
+        "label": "review",
+        "value": "review",
+        "confidence": 0.5763747692108154,
+        "probabilities": {
+          "continue": 0.17342521250247955,
+          "review": 0.5763747692108154,
+          "stop": 0.2502000033855438
+        },
+        "expected_level": null
+      },
+      "max_probability_error": 8.936144561544346e-07
+    },
+    {
+      "question": "risk",
+      "native": {
+        "kind": "score",
+        "label": "3",
+        "value": 3,
+        "confidence": 0.461614043,
+        "probabilities": {
+          "0": 0.0235396326,
+          "1": 0.129136398,
+          "2": 0.385709912,
+          "3": 0.461614043
+        },
+        "expected_level": 2.28539835
+      },
+      "reference": {
+        "kind": "score",
+        "label": "3",
+        "value": 3,
+        "confidence": 0.461615651845932,
+        "probabilities": {
+          "0": 0.02353939786553383,
+          "1": 0.129135861992836,
+          "2": 0.3857090473175049,
+          "3": 0.461615651845932
+        },
+        "expected_level": 2.285400912165642
+      },
+      "max_probability_error": 1.6088459320329207e-06
+    },
+    {
+      "question": "needs_review",
+      "native": {
+        "kind": "noul",
+        "label": "true",
+        "value": true,
+        "confidence": 0.682183921,
+        "probabilities": {
+          "false": 0.317816108,
+          "true": 0.682183921
+        },
+        "expected_level": null
+      },
+      "reference": {
+        "kind": "noul",
+        "label": "true",
+        "value": true,
+        "confidence": 0.6821867823600769,
+        "probabilities": {
+          "false": 0.3178131878376007,
+          "true": 0.6821867823600769
+        },
+        "expected_level": null
+      },
+      "max_probability_error": 2.920162399278059e-06
+    },
+    {
+      "question": "accion",
+      "native": {
+        "kind": "choice",
+        "label": "escalar",
+        "value": "escalar",
+        "confidence": 0.502786636,
+        "probabilities": {
+          "ayudar": 0.497213393,
+          "escalar": 0.502786636
+        },
+        "expected_level": null
+      },
+      "reference": {
+        "kind": "choice",
+        "label": "escalar",
+        "value": "escalar",
+        "confidence": 0.5027818083763123,
+        "probabilities": {
+          "ayudar": 0.49721813201904297,
+          "escalar": 0.5027818083763123
+        },
+        "expected_level": null
+      },
+      "max_probability_error": 4.827623687697624e-06
+    },
+    {
+      "question": "nivel",
+      "native": {
+        "kind": "score",
+        "label": "1",
+        "value": 1,
+        "confidence": 0.535547554,
+        "probabilities": {
+          "-2": 0.209863886,
+          "1": 0.535547554,
+          "10": 0.254588574
+        },
+        "expected_level": 2.66170552
+      },
+      "reference": {
+        "kind": "score",
+        "label": "1",
+        "value": 1,
+        "confidence": 0.5355453491210938,
+        "probabilities": {
+          "-2": 0.2098662257194519,
+          "1": 0.5355453491210938,
+          "10": 0.2545884847640991
+        },
+        "expected_level": 2.661697745323181
+      },
+      "max_probability_error": 2.3397194519048092e-06
+    },
+    {
+      "question": "named",
+      "native": {
+        "kind": "score",
+        "label": "1",
+        "value": 1,
+        "confidence": 0.753257394,
+        "probabilities": {
+          "0": 0.246742621,
+          "1": 0.753257394
+        },
+        "expected_level": 0.753257394
+      },
+      "reference": {
+        "kind": "score",
+        "label": "1",
+        "value": 1,
+        "confidence": 0.7532588243484497,
+        "probabilities": {
+          "0": 0.24674122035503387,
+          "1": 0.7532588243484497
+        },
+        "expected_level": 0.7532588243484497
+      },
+      "max_probability_error": 1.4303484496824836e-06
+    },
+    {
+      "question": "one",
+      "native": {
+        "kind": "choice",
+        "label": "only",
+        "value": "only",
+        "confidence": 1.0,
+        "probabilities": {
+          "only": 1.0
+        },
+        "expected_level": null
+      },
+      "reference": {
+        "kind": "choice",
+        "label": "only",
+        "value": "only",
+        "confidence": 1.0,
+        "probabilities": {
+          "only": 1.0
+        },
+        "expected_level": null
+      },
+      "max_probability_error": 0.0
+    },
+    {
+      "question": "no",
+      "native": {
+        "kind": "noul",
+        "label": "false",
+        "value": false,
+        "confidence": 0.869661212,
+        "probabilities": {
+          "false": 0.869661212,
+          "true": 0.130338818
+        },
+        "expected_level": null
+      },
+      "reference": {
+        "kind": "noul",
+        "label": "false",
+        "value": false,
+        "confidence": 0.8696627020835876,
+        "probabilities": {
+          "false": 0.8696627020835876,
+          "true": 0.13033729791641235
+        },
+        "expected_level": null
+      },
+      "max_probability_error": 1.520083587641663e-06
+    }
+  ],
+  "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS"
+}

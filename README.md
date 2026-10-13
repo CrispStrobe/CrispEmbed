@@ -25,6 +25,7 @@ Android, and in the browser.
 |---|---|---|
 | **Text embeddings** | Dense vectors from 10 encoder/decoder architectures | BERT, XLM-R, MPNet, NomicBERT (+MoE), ModernBERT, GTE-v1.5, DeBERTa-v2, Qwen3, Gemma3. Matryoshka truncation, prompt prefixes. cos ≥ 0.965 vs HF |
 | **Retrieval** | Sparse + multi-vector + reranking | SPLADE / BGE-M3 sparse term weights, ColBERT per-token + MaxSim, cross-encoder & bi-encoder rerankers |
+| **Typed decisions** | State + question schemas → choices, integer scores or booleans | [EmbeddingGemma 2 fine-tune](docs/embeddinggemma2-typed-decision.md), complete encoder/head and fitted calibration; opt-in CPU. Python-reference parity checked; independent task accuracy unmeasured |
 | **OCR** | 15+ engines, image → text/LaTeX/notation | General (DBNet+TrOCR), scene-text (PARSeq), 7 math engines, 4 music (OMR) engines, 6 document VLMs, 12-language Tesseract-LSTM |
 | **Document AI** | Understand page structure | RT-DETRv2 layout (17 classes), Surya text detection, LiLT layout-aware KIE, hOCR/ALTO/searchable-PDF output |
 | **NER / KIE / LID** | Extract structured info | Zero-shot (GLiNER) + fixed-label (BERT/XLM-R) NER, receipt/form KIE, CLD3/GlotLID language ID |

@@ -1,5 +1,30 @@
 # CrispEmbed — Technical Learnings
 
+## EmbeddingGemma 2: trace the whole typed-decision pipeline (2026-10-13)
+
+The fine-tune uses the new EmbeddingGemma 2 backbone, with direct-weight RMSNorm,
+normalized Q/K/V, unit attention scaling, per-layer head dimensions and
+projection-only per-layer inputs. Its classification prompt, ordered state/schema
+rendering, mean pooling, learned schema-conditioned head and fitted temperatures
+are all part of inference. Base embeddings or a Gemma3 graph cannot substitute
+for this stack. Frozen Python embedding banks isolate head correctness from the
+encoder; decoded string/integer/boolean values and option probabilities check the
+full pipeline.
+
+Two concrete failures preceded successful comparison. Original Hugging Face
+tensor names exceeded GGML's 63-character name limit; short `enc.*` aliases fix
+serialization without changing weights. GGML CPU GELU uses an FP16 lookup even
+on FP32 inputs. A scoped direct-FP32 tanh operator preserves nearby inputs that
+the LUT collapses; the legacy operator remains an A/B gate. The source publisher
+also reports FP16 overflow, so this exporter offers FP32 and measured Q8 only.
+
+[ARM run 38352165925](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352165925)
+passes 145 stage comparisons with magnitudes/absolute errors and exact IDs.
+Maximum stage relative L2 is 1.481e-5, final embedding relative L2 2.17e-6;
+eight typed answers match. Q8 with FP32 activation operands preserves the same
+eight labels but changes probabilities by up to 0.00282493224. That small suite
+does not establish downstream accuracy or justify refitting calibration.
+
 ## Isolate activation arithmetic before attributing quantized drift (2026-10-03)
 
 The LFM2 encoder sweep initially conflated weight and activation precision. Exact

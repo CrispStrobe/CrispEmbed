@@ -14,12 +14,17 @@ ARM run 38349285209 built all native targets and generated five original-Python
 references plus all typed scenarios. First runtime failure: HF tensor names exceed
 GGML_MAX_NAME=64. Exporter/loader now use short enc.* aliases without altering
 weights. Source review also found GGML's CPU GELU FP16 LUT; added a scoped FP32
-operator and collapse regression, with legacy A/B gate. Updated hosted runs will
-prove the loader fix, every-layer parity and full API/CLI/HTTP contracts. No
-successful numerical or decoded parity claim yet. Local builds/model inference
-remain deferred under current shared-host rules. Next: validate current source,
-measure Q8 separately and only then publish/register validated artifacts.
-ARM validation 38352165925 is queued at commit 82383e3e. Added machine-readable
+operator and collapse regression, with legacy A/B gate. ARM run 38352165925 at
+82383e3e now passes all 145 stage comparisons and exact token IDs, including 549
+tokens across the local attention radius. FP32 bank min cosine 0.999999940,
+maximum probability error 4.82762e-6, 8/8 typed answers; Q8/F32-dot min cosine
+0.999956489, probability error 0.00282493224, 8/8 answers. API/CLI/HTTP/schema/head,
+invalid/repeat contracts and generic tokenizer/server regressions pass. Five
+probes/eight questions establish reference agreement, not independent task
+accuracy. Local builds/model inference remain deferred under shared-host rules.
+Independent macOS run 38352829721 also passes all 145 stages and eight answers.
+Next: finish real Rust/Dart checks, then publish/register artifacts.
+Added machine-readable
 embedding/head errors and hosted Rust/Dart real shared-library contracts. The
 publication driver re-runs all numerical/contracts gates before creating public
 model artifacts, records exact provenance and verifies remote hashes/bytes.

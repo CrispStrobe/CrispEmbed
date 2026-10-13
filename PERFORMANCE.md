@@ -1,5 +1,33 @@
 # CrispEmbed Performance
 
+## EmbeddingGemma 2 typed-decision reference agreement (2026-10-13)
+
+Linux ARM64 CPU, original fine-tune FP32, Torch 2.14.1+cpu / Transformers 5.19.0
+eager attention. Source revision fcc165b7d7d97827e241e09752e83fd11165a74b;
+[hosted run 38352165925](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352165925).
+
+| Native weights/arithmetic | Bytes | Decision-bank min cosine | Typed answers | Max probability error |
+|---|---:|---:|---:|---:|
+| FP32 | 1,102,182,464 | 0.999999940 | 8/8 | 4.82762e-6 |
+| Q8_0 / FP32 activation operands | 307,492,928 | 0.999956489 | 8/8 | 0.00282493224 |
+
+FP32 additionally passes 145 stage comparisons across five probes (including
+549 tokens), with maximum stage relative L2 1.481e-5 and final embedding relative
+L2 2.17e-6. Exact schema rendering, head-only logits/probabilities, native Python,
+CLI/HTTP calls, invalid and repeated requests pass. Q8 preserves head, projection,
+norm/scalar/bias tensors and fitted temperatures in FP32; reported arithmetic
+requires `CRISPEMBED_GEMMA_DECISION_F32_DOT=1`.
+
+These are numerical reference measurements, not a latency benchmark or
+independent task accuracy evaluation. GPU and speed remain unmeasured. Full
+[stage metrics](tests/results/gemma-decision/arm-validation.json) and
+[typed answers](tests/results/gemma-decision/arm-f32-decisions.json) are retained.
+Independent [macOS run 38352829721](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352829721)
+passes all 145 stages and the same eight answers, with identical minimum bank
+cosines; maximum probability error is 3.87479e-6 FP32 and 0.00282531946 Q8.
+[macOS reports](tests/results/gemma-decision/macos-f32-decisions.json) include
+head-only errors and embedding magnitudes. Stored calibration remains unchanged.
+
 ## LFM2 encoder FP32 activation operands (2026-10-03)
 
 Same official GGUFs, original FP32 Python reference, 15 cases / 15 masks:

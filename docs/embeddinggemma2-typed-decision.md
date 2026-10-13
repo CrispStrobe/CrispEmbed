@@ -1,7 +1,8 @@
 # EmbeddingGemma 2 typed decisions
 
-Status: native implementation is gated; original-Python hosted validation is
-pending. Do not interpret implemented APIs as measured parity or published models.
+Status: opt-in CPU implementation passes original-Python validation on Linux
+ARM64 and macOS. Publication checks are running; download aliases are not yet
+registered. Reference agreement is measured separately from task accuracy.
 
 Source: [mrm8488/embeddinggemma-2-ft-typed-decision](https://huggingface.co/mrm8488/embeddinggemma-2-ft-typed-decision)
 at `fcc165b7d7d97827e241e09752e83fd11165a74b`. Both its card and
@@ -26,7 +27,7 @@ changes decisions. This is inference support, not a training/collation API.
 ## Interfaces
 
 The CPU reference backend currently requires `CRISPEMBED_GEMMA_DECISION=1`.
-Build from the feature branch while validation is pending. Convert a locally
+Build from the feature branch while integration is pending. Convert a locally
 available pinned source snapshot to GGUF:
 
 ```sh
@@ -39,8 +40,10 @@ CRISPEMBED_GEMMA_DECISION=1 crispembed -m "$GEMMA_DECISION_F32" \
 Python uses the same native encoder, schema renderer and head:
 
 ```python
+import os
 from crispembed import CrispEmbed
 
+os.environ["CRISPEMBED_GEMMA_DECISION"] = "1"
 model = CrispEmbed(model_path)
 answers = model.decide(state, questions, workflow="agent_trace_observability")
 embeddings = model.encode(["text one", "text two"])
@@ -97,7 +100,27 @@ gh workflow run heavy-cpu.yml --ref feat/embeddinggemma2-typed-decision \
   -f 'pip=torch transformers==5.19.0 gguf safetensors numpy sentencepiece'
 ```
 
-Hosted runs are queued as of this checkpoint. No successful numerical or decoded
-parity result exists yet, and no GGUF download alias is registered. Publishing and
-SHA-256 registry pins follow only after reference validation. This text-only
-model does not belong in the OCR orchestrator or CrispCalc OCR catalog.
+[Linux ARM64 run 38352165925](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352165925)
+passes all 145 stage comparisons (five probes × 29 stages), including exact IDs
+for the 549-token window probe. Across stages, maximum relative L2 error is
+1.481e-5; the final normalized embeddings differ by at most 2.17e-6 relative L2.
+Decision-bank embeddings and complete typed answers give:
+
+| Artifact | Bytes | Minimum bank cosine | Answers matching Python | Maximum probability error |
+|---|---:|---:|---:|---:|
+| FP32 | 1,102,182,464 | 0.999999940 | 8/8 | 0.00000482762 |
+| Q8_0, FP32 activation operands | 307,492,928 | 0.999956489 | 8/8 | 0.00282493224 |
+
+These eight questions cover choice, score and boolean schemas; they are a
+numerical reference suite, not an independent accuracy benchmark or calibration
+dataset. The checkpoint's fitted temperatures are retained without refitting.
+Actual API/CLI/HTTP, schema rendering, head-only scores, invalid requests and
+repeat calls pass. Independent
+[macOS run 38352829721](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352829721)
+also passes all 145 stages and eight questions: the same minimum bank cosines,
+maximum FP32 probability error 3.87479e-6 and Q8 error 0.00282531946.
+[Recorded measurements](../tests/results/gemma-decision/arm-validation.json)
+and [decoded FP32 answers](../tests/results/gemma-decision/arm-f32-decisions.json)
+retain the original/native results. Publishing and SHA-256 registry pins follow
+the remaining checks. This text-only model does not belong in the OCR
+orchestrator or CrispCalc OCR catalog.
