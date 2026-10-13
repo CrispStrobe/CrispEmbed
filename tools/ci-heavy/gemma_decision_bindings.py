@@ -28,6 +28,8 @@ def main():
         CARGO_BUILD_JOBS="2",
         CRISPEMBED_GEMMA_DECISION="1",
     )
+    loader_path = "DYLD_LIBRARY_PATH" if sys.platform == "darwin" else "LD_LIBRARY_PATH"
+    env[loader_path] = str(lib.parent) + os.pathsep + env.get(loader_path, "")
     rust = scratch / "rust-decision-consumer"
     (rust / "src").mkdir(parents=True, exist_ok=True)
     (rust / "Cargo.toml").write_text(
