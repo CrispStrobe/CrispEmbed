@@ -4894,3 +4894,9 @@ convolution and recurrent states into its cached step. Reported cos_min
 preserve the actual limits. This is component parity: full-attention,
 residual/FFN depth composition, native vision/frontend, logits and decoded
 transcription remain open. No latency, GPU, Q4 quality or whole-model claim.
+
+Supplementary [Mac original-module weighted batch-2 check 38469337004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38469337004)
+passes 288 additional comparisons: 65-token prefill plus cached continuation,
+synthetic original HF GatedDeltaNet weights. Reported cos_min1.000000000,
+max abs2.5034e-6. [Full evidence](tests/results/qwen35-ocr/synthetic-linear-parity.json).
+This checks projection/core/cache batching, not OCR accuracy or timing.

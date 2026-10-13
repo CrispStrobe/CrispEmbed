@@ -233,3 +233,19 @@ frontend/tokenizer/prompt/positions, full native logits/IDs/transcript and publi
 C ABI/orchestrator/bindings. A supplementary original-module batch-2 weighted
 projection/cache test is queued at [38469337004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38469337004).
 No new OCR registry alias, HF weight publication or runtime release.
+
+## Supplemental multi-batch weighted module check — complete
+
+[Mac run 38469337004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38469337004)
+at `db4c843d` passes another **288 checks** using original Transformers GatedDeltaNet
+modules with synthetic weights, batch two, 65-token prefill and one-token
+continuation. Reported cos_min **1.000000000**, max abs **2.5034e-6**.
+[Complete errors/magnitudes](../tests/results/qwen35-ocr/synthetic-linear-parity.json)
+are retained. Cache snapshots are copied before the original module mutates its
+convolution history in place. These checks exercise the compiled projection/core
+path across a chunk boundary and batches; they are not trained-model accuracy.
+
+The converter/reference/native linear-attention checkpoint is landed on main.
+Its implementation branch is closed; the remaining first-model work above is
+open and must use a fresh isolated worktree. No supported OCR model/alias or HF
+weight publication is claimed by this checkpoint.

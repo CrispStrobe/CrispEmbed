@@ -51,6 +51,14 @@ tau-squared-bench evaluates tool-using agents and does not add an OCR model lane
 
 First-model engineering record: [Qwen3.5 OCR bootstrap](docs/qwen35-ocr.md).
 
+Completed native linear-attention checkpoint: 288 actual-checkpoint ARM stage
+checks and 288 original-module batch-2 Mac controls pass; reported cos_min
+1.000000000, checkpoint block-output max abs5.25e-6. All 18 linear blocks,
+convolution/recurrent state carry and 473-tensor export are verified. This is
+component coverage with official block inputs, not native decoder/transcript
+parity. Full attention, depth composition, frontend, bindings and publication
+remain open in the first-model lane.
+
 **Completion gates for every new checkpoint:** immutable source/license provenance;
 strict full tensor coverage; official Python inputs, image grids, positions and
 prompt IDs; all decoder layers and prefill/cached continuation states; logits,
@@ -474,7 +482,6 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-13 | `ocr-permissive-roadmap` | Permissive OCR queue; LightOnOCR-3-0.8B first, shared Qwen3.5 backend | Actual-checkpoint ARM [38468659301](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38468659301) passes 288 checks across all 18 linear-attention blocks with native cache carry: reported cos_min 1.000000000, max abs 5.34e-5; output max abs 5.25e-6. Verified source `25169f68` landed. Supplemental original-module batch-2 projection check [38469337004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38469337004) queued on feature branch. Full attention, decoder composition, vision/frontend, C ABI/bindings, quantization and publication remain. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
