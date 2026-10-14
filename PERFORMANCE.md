@@ -4988,3 +4988,22 @@ including non-square grids, multiple images, negative deltas and cached blocks
 of1–4 tokens. Bounds/reset/disabled and malformed-input controls pass.
 [Case report](tests/results/qwen35-ocr/independent-positions-parity.json) contains
 exact offsets and assertion lines; no multiple-image OCR or speed claim follows.
+
+
+### Qwen3.5 native RGB/tokenizer boundary — 2026-10-14
+
+[Frontend CI38551847357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38551847357)
+passes nine owned RGB layouts, eleven text cases,5102 original Rust NFC cases and
+285 legacy pretokenizer checks. Resized bytes, packed normalized patches, grids,
+prompt/token IDs and modality labels match exactly. The initial Unicode16-table
+failure is preserved; the serialized tokenizer uses Unicode9.
+
+[Connected CI38547814421](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38547814421)
+produces exact9/9 greedy IDs/EOS and decoded text on both owned RGB fixtures.
+The resized fixture still fails a strict numeric boundary: layer7 cache keys
+max abs0.00201964378 exceeds0.002. Vocabulary-score cosine1 and max abs8.41617584e-5
+do not override this failure. Retaining six key matrices at F32 gives0.00202131271,
+with no improvement. Original F32 CPU backend variation in the same keys is
+0.00162005424, below the gate. The F32 vision trial remains queued.
+[Detailed evidence and limits](docs/qwen35-ocr.md#native-rgbbpe-frontend-lane--2026-10-14).
+No API, corpus accuracy, Q4, GPU or latency claim follows from these fixtures.

@@ -626,19 +626,44 @@ The combining-mark pattern prototype remains available behind default-off
 `CRISPEMBED_QWEN35_TOKENIZER_MARKS=1`; the checkpoint's serialized pattern is the
 default. Preserve older shared Qwen/LFM pretokenizer behavior.
 
-[Hosted frontend checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38547813683)
-at `a65333e6` are pending: nine owned image layouts (including no-resize, up/downscale,
-half-factor and extreme aspect), eleven Unicode/whitespace/added-token cases,
-partial UTF-8 decoding, thousands of cases against the actual original Rust NFC
-normalizer, and existing Qwen/LFM/DeepSeek pretokenizer controls. Require exact
-resized bytes/grids/IDs/template/modality labels, and at most1.2e-7 normalized patch
-error; the vision self-backend budget does not relax this input boundary.
+[Hosted frontend checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38551847357)
+at `c9e08c18` pass all nine owned image layouts, eleven text cases, 5102 NFC
+cases against the actual Rust normalizer, partial UTF-8 decoding and bounds/reset
+controls. Resized RGB bytes, normalized patches, grids, IDs, templates and modality
+labels match exactly. The existing 39 Qwen and 246 other pretokenizer checks pass.
+The first [Unicode failure](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38547813683)
+is retained: Unicode16 tables disagreed in112 cases with the serialized tokenizer's
+Unicode9 normalizer. Correcting the source version removed those mismatches;
+no comparison threshold changed. [Input evidence](../tests/results/qwen35-ocr/frontend-input-parity.json)
+and [initial failure](../tests/results/qwen35-ocr/frontend-unicode-version-failure.json).
 
 [Trained RGB-to-text checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38547814421)
-at the same source are pending for the existing256x256 and a211x301 owned text
-fixture. The native arm derives its own pixels, IDs, embeddings and positions;
-reference fields are comparison targets. Require whole-vocabulary scores, native
-IDs/EOS and native decoded text, retaining the established intermediate policy.
+match both owned fixtures' native IDs9/9 through EOS and decoded text exactly.
+The native arm derives its own pixels, IDs, embeddings and positions; reference
+fields are comparison targets. The unchanged256x256 fixture passes, but the
+211x301 resized fixture fails the strict cache absolute gate: layer7 cached keys
+have max error0.00201964378 against0.002, despite vocabulary-score cosine1 and
+max error8.41617584e-5. This is a numeric failure, not a passing model-support gate.
+[Full initial evidence](../tests/results/qwen35-ocr/frontend-initial-resized-failure.json).
+
+[F32 key retention](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38550962287)
+does not improve the failing cache (0.00202131271); isolated full-attention checks
+pass. Both native/reference mean greedy confidences include EOS and are reported
+as0.995937912/0.995937876 for the resized fixture. An independent
+[original F32 CPU control](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38552512562)
+has layer7 key variation0.00162005424, below the strict0.002 gate. Native attention
+input traces show upstream error amplification; the control does not justify
+calling the native result a strict pass. Retained evidence:
+[key precision](../tests/results/qwen35-ocr/frontend-key-precision-audit.json),
+[CPU/cache boundaries](../tests/results/qwen35-ocr/frontend-cpu-cache-audit.json).
+
+The [F32 vision trial](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38554130487)
+at `3dfe209e` retains52 vision matrices at F32 while leaving text matrices F16.
+It is queued; no improvement or promotion is claimed. All intermediate gates
+remain unchanged. The alternatives stay opt-in, with their weight recipes in
+the test report. API integration, larger pages, quantization, corpus quality,
+performance and HF publication remain open.
+
 The earlier source `c8cdb38b` dispatches
 [frontend](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38546388161) and
 [trained](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38546388295) were
