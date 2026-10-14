@@ -4928,3 +4928,10 @@ the official tokenizer decodes these IDs as `Hello OCR  \n12345`.
 Official merged image/text embeddings and position coordinates remain supplied;
 native vision/frontend/tokenizer, image-to-text, quantization and speed remain
 unverified. This is a structural F16-weight/F32-arithmetic CPU baseline.
+
+Supplementary [Mac 38515525129](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38515525129)
+passes 150 original-module synthetic full-attention comparisons with B2/T65,
+different multimodal axes and batch offsets, cached continuation and fresh
+full-prefix. Reported cos_min1.000000000, max abs2.3842e-6.
+[Complete evidence](tests/results/qwen35-ocr/synthetic-attention-parity.json).
+This is batching/causality/rotary correctness, not trained OCR accuracy or timing.

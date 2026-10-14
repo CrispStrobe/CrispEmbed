@@ -32,8 +32,9 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 Shared Qwen3.5 estimate: 2–4 engineering weeks for the first verified model,
 then roughly 3–7 days per checkpoint. These are planning estimates. Vendored ggml
-already has GatedDeltaNet kernels; missing work is model graph/state management,
-partial/interleaved MRoPE, gated full attention, vision, tokenizer and integration.
+already has GatedDeltaNet kernels. The first small decoder graph/state path,
+partial/interleaved MRoPE and gated full attention are now verified; native vision,
+frontend/tokenizer and integration remain. Larger geometry/MoE stays separate.
 No ONNX Runtime dependency is proposed.
 
 Existing weight references: PaddleOCR-VL-1.6 Q4_K **1.299 GB**, GLM-OCR Q4_K
@@ -61,6 +62,8 @@ composed decoder passes 183 checks, with native greedy IDs9/9 through EOS.
 Worst logit abs4.8637e-5; official merged embeddings/positions are supplied.
 Native vision/frontend, bindings and publication remain open.
 See [decoder evidence](tests/results/qwen35-ocr/composed-decoder-parity.json).
+Supplementary original-module batch-2 full-attention controls pass 150 checks
+on Mac (max abs2.3842e-6); this decoder lane is landed and its board row removed.
 
 **Completion gates for every new checkpoint:** immutable source/license provenance;
 strict full tensor coverage; official Python inputs, image grids, positions and
@@ -485,7 +488,6 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-14 | `ocr-qwen35-attention` | LightOnOCR-3-0.8B native full attention and decoder composition, pinned official reference, hosted CPU parity | IN PROGRESS: 150 trained full-attention + 183 composed decoder comparisons pass, greedy IDs 9/9 through EOS; batch-2 attention controls rerun after pinned-class import fix |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 

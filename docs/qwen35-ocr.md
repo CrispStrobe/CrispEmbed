@@ -95,11 +95,11 @@ gh workflow run heavy-cpu.yml --ref ocr-permissive-roadmap \
 
 ## Next bounded implementation steps
 
-1. Native graph behind `CRISPEMBED_QWEN35_OCR=1`, using `core_env::on()`:
-   exact tokenizer/processor, vision and merger first, then decoder prefill and
-   recurrent/KV cache continuation. Reuse vendored `ggml_gated_delta_net`; verify
-   its input normalization, scaling, layout and state convention against the
-   official captured recurrence before calling it equivalent.
+1. Complete the frontend behind `CRISPEMBED_QWEN35_OCR=1`, using `core_env::on()`:
+   exact tokenizer/processor, vision, merger and multimodal positions. Connect
+   native merged embeddings to the verified 24-layer decoder and its native
+   recurrent/KV caches, then compare standalone image-to-text against Python.
+   Decoder and recurrence evidence is recorded below; frontend is still open.
 2. Full-stage comparator: absolute error/magnitudes, cosine, logits/argmax and
    final decoding against the frozen official reference. Include non-square
    images, digit/Unicode prompts, repeated calls, two independent contexts,
@@ -318,3 +318,21 @@ image-to-text parity; wire C ABI/orchestrator/CLI/server/bindings only after tho
 checks. This F16-weight/F32-arithmetic CPU reference is not a tuned or quantized
 runtime. The current linear core requires equal K/V head counts/widths, and
 attention supports unpadded inputs. No latency/GPU/Q4 or model-support claim.
+
+## Supplementary full-attention batching — complete
+
+[Mac run 38515525129](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38515525129),
+source `a5bac46c`, passes **150 additional comparisons** against the original
+pinned attention modules with synthetic weights, two batches, 65-token prefill,
+cached continuation and a fresh full-prefix replay. Each rotary axis differs,
+with a separate batch offset; head norm weights are nonzero. This tests causal
+masking, partial interleaved RoPE, GQA groups, per-head gates and immutable native
+KV carry beyond the single OCR fixture. Reported cos_min1.000000000,
+max abs2.3842e-6. [Complete stage evidence](../tests/results/qwen35-ocr/synthetic-attention-parity.json).
+The earlier import failure is fixed; thresholds remain unchanged.
+
+The full-attention/composed-decoder lane is complete and landed. Remaining
+first-model work is native vision/frontend, standalone image-to-text validation,
+C ABI/orchestrator/CLI/server/bindings, Q8/Q4 critical-tensor calibration and
+validated HF publication/registry pins. The permissive queue remains active,
+starting with this checkpoint until those completion gates hold.

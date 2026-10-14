@@ -1,0 +1,1510 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38515525129",
+  "source_commit": "a5bac46c938c51f115cb85d5749350dc09fb7208",
+  "scope": "original HF full-attention modules with synthetic weights, B2/T65+cached, different nonzero temporal/height/width axes and batch offsets; fresh full-prefix replay; not trained OCR accuracy",
+  "checks": 150,
+  "min_cos": 1.0,
+  "max_abs": 2.38418579e-06,
+  "comparisons": [
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91333322e-08,
+      "native_norm": 424.101257,
+      "reference_norm": 424.101257
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.91186044e-08,
+      "native_norm": 149.38446,
+      "reference_norm": 149.38446
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.90579738e-08,
+      "native_norm": 149.077927,
+      "reference_norm": 149.077927
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.01254557e-07,
+      "native_norm": 524.409607,
+      "reference_norm": 524.409607
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 9.88967912e-08,
+      "native_norm": 257.026489,
+      "reference_norm": 257.026459
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.55651093e-07,
+      "mean_abs": 2.7908774e-08,
+      "native_norm": 60.5572929,
+      "reference_norm": 60.5572891
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.3.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.7252903e-07,
+      "mean_abs": 3.73800368e-08,
+      "native_norm": 2.98615813,
+      "reference_norm": 2.98615789
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.3.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 1.00488826e-07,
+      "native_norm": 257.026489,
+      "reference_norm": 257.026459
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.3.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.90579738e-08,
+      "native_norm": 149.077927,
+      "reference_norm": 149.077927
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.34921424e-08,
+      "native_norm": 62.9601479,
+      "reference_norm": 62.9601479
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.28582246e-08,
+      "native_norm": 22.2184677,
+      "reference_norm": 22.2184677
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.43570719e-08,
+      "native_norm": 21.6637249,
+      "reference_norm": 21.6637249
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.1920929e-06,
+      "mean_abs": 1.06062416e-07,
+      "native_norm": 65.2906189,
+      "reference_norm": 65.2906265
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 1.25510951e-07,
+      "native_norm": 32.0645676,
+      "reference_norm": 32.0645714
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.12341547e-07,
+      "mean_abs": 2.33060558e-08,
+      "native_norm": 5.16046619,
+      "reference_norm": 5.16046667
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.3.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.79865479e-08,
+      "mean_abs": 2.12967279e-08,
+      "native_norm": 0.283648729,
+      "reference_norm": 0.283648759
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.3.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 1.00882239e-07,
+      "native_norm": 259.018799,
+      "reference_norm": 259.018799
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.3.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91382616e-08,
+      "native_norm": 150.643768,
+      "reference_norm": 150.643768
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91429973e-08,
+      "native_norm": 428.749176,
+      "reference_norm": 428.749176
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.91189455e-08,
+      "native_norm": 151.02774,
+      "reference_norm": 151.02774
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.98023224e-07,
+      "mean_abs": 2.90513977e-08,
+      "native_norm": 150.643768,
+      "reference_norm": 150.643768
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.01230185e-07,
+      "native_norm": 528.458435,
+      "reference_norm": 528.458435
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 9.93556881e-08,
+      "native_norm": 259.018799,
+      "reference_norm": 259.018799
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.55651093e-07,
+      "mean_abs": 2.77321188e-08,
+      "native_norm": 60.7767715,
+      "reference_norm": 60.7767715
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.3.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.7252903e-07,
+      "mean_abs": 3.69148481e-08,
+      "native_norm": 2.99959946,
+      "reference_norm": 2.99959922
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91711792e-08,
+      "native_norm": 424.444885,
+      "reference_norm": 424.444885
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.9408838e-08,
+      "native_norm": 150.890396,
+      "reference_norm": 150.890396
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.93316766e-08,
+      "native_norm": 150.649719,
+      "reference_norm": 150.649719
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 9.65677387e-08,
+      "native_norm": 519.45752,
+      "reference_norm": 519.45752
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.03604279e-07,
+      "native_norm": 259.39267,
+      "reference_norm": 259.39267
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.23871994e-07,
+      "mean_abs": 2.96797431e-08,
+      "native_norm": 64.1300125,
+      "reference_norm": 64.1300125
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.7.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.50177288e-07,
+      "mean_abs": 3.99442932e-08,
+      "native_norm": 3.21830606,
+      "reference_norm": 3.21830606
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.7.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.04937179e-07,
+      "native_norm": 259.39267,
+      "reference_norm": 259.39267
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.7.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.93316766e-08,
+      "native_norm": 150.649719,
+      "reference_norm": 150.649719
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 3.2443495e-08,
+      "native_norm": 62.7472496,
+      "reference_norm": 62.7472496
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.31638148e-08,
+      "native_norm": 21.9090195,
+      "reference_norm": 21.9090195
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.3647666e-08,
+      "native_norm": 22.4705696,
+      "reference_norm": 22.4705696
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 9.58746185e-08,
+      "native_norm": 64.2887802,
+      "reference_norm": 64.2887802
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 1.37605213e-07,
+      "native_norm": 32.077713,
+      "reference_norm": 32.0777168
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.68220901e-07,
+      "mean_abs": 3.04374765e-08,
+      "native_norm": 5.82007599,
+      "reference_norm": 5.82007551
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.7.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 2.52039172e-08,
+      "native_norm": 0.363702178,
+      "reference_norm": 0.363702148
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.7.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.05453893e-07,
+      "native_norm": 261.368561,
+      "reference_norm": 261.368561
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.7.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.93970697e-08,
+      "native_norm": 152.31633,
+      "reference_norm": 152.31633
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91621145e-08,
+      "native_norm": 429.057892,
+      "reference_norm": 429.057892
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.94484366e-08,
+      "native_norm": 152.472672,
+      "reference_norm": 152.472672
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.94171763e-08,
+      "native_norm": 152.31633,
+      "reference_norm": 152.31633
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 9.66497282e-08,
+      "native_norm": 523.420593,
+      "reference_norm": 523.420593
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.0402772e-07,
+      "native_norm": 261.368561,
+      "reference_norm": 261.368561
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.23871994e-07,
+      "mean_abs": 2.95784801e-08,
+      "native_norm": 64.3935699,
+      "reference_norm": 64.3935699
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.7.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.50177288e-07,
+      "mean_abs": 3.95508515e-08,
+      "native_norm": 3.23879194,
+      "reference_norm": 3.23879194
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92941511e-08,
+      "native_norm": 424.468048,
+      "reference_norm": 424.468048
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89354496e-08,
+      "native_norm": 148.42421,
+      "reference_norm": 148.42421
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89018054e-08,
+      "native_norm": 149.822495,
+      "reference_norm": 149.822495
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 9.98779512e-08,
+      "native_norm": 513.265747,
+      "reference_norm": 513.265747
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-06,
+      "mean_abs": 1.00531132e-07,
+      "native_norm": 264.129028,
+      "reference_norm": 264.129028
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.51342964e-07,
+      "mean_abs": 2.82820789e-08,
+      "native_norm": 61.0648499,
+      "reference_norm": 61.0648499
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.11.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 3.83361822e-08,
+      "native_norm": 3.07881761,
+      "reference_norm": 3.07881761
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.11.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-06,
+      "mean_abs": 1.01932692e-07,
+      "native_norm": 264.129028,
+      "reference_norm": 264.129028
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.11.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89018054e-08,
+      "native_norm": 149.822495,
+      "reference_norm": 149.822495
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 3.22709184e-08,
+      "native_norm": 63.7677307,
+      "reference_norm": 63.7677307
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.32802301e-08,
+      "native_norm": 21.6332283,
+      "reference_norm": 21.6332302
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.06881702e-08,
+      "native_norm": 22.451664,
+      "reference_norm": 22.451664
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 8.99472212e-08,
+      "native_norm": 63.8667336,
+      "reference_norm": 63.8667336
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 7.78757112e-08,
+      "native_norm": 32.8059158,
+      "reference_norm": 32.8059158
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.93715096e-07,
+      "mean_abs": 2.07444373e-08,
+      "native_norm": 5.06304359,
+      "reference_norm": 5.06304407
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.11.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.70552254e-08,
+      "mean_abs": 2.16095941e-08,
+      "native_norm": 0.216104805,
+      "reference_norm": 0.216104791
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.11.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-06,
+      "mean_abs": 1.01596449e-07,
+      "native_norm": 266.158539,
+      "reference_norm": 266.158539
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.11.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89288717e-08,
+      "native_norm": 151.495407,
+      "reference_norm": 151.495407
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92761513e-08,
+      "native_norm": 429.231232,
+      "reference_norm": 429.231232
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89456974e-08,
+      "native_norm": 149.992477,
+      "reference_norm": 149.992477
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.98023224e-07,
+      "mean_abs": 2.89256441e-08,
+      "native_norm": 151.495407,
+      "reference_norm": 151.495407
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 9.96150149e-08,
+      "native_norm": 517.223999,
+      "reference_norm": 517.223999
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-06,
+      "mean_abs": 1.00056631e-07,
+      "native_norm": 266.158539,
+      "reference_norm": 266.158539
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.51342964e-07,
+      "mean_abs": 2.81444006e-08,
+      "native_norm": 61.2743835,
+      "reference_norm": 61.2743835
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.11.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 3.79946634e-08,
+      "native_norm": 3.08639264,
+      "reference_norm": 3.0863924
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92135471e-08,
+      "native_norm": 424.83194,
+      "reference_norm": 424.83194
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.06639481e-07,
+      "mean_abs": 2.91699376e-08,
+      "native_norm": 149.333038,
+      "reference_norm": 149.333038
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92234592e-08,
+      "native_norm": 150.399124,
+      "reference_norm": 150.399124
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 9.70262235e-08,
+      "native_norm": 529.415588,
+      "reference_norm": 529.415588
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 9.86177042e-08,
+      "native_norm": 259.191223,
+      "reference_norm": 259.191223
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-07,
+      "mean_abs": 2.94451663e-08,
+      "native_norm": 63.4724503,
+      "reference_norm": 63.4724503
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.15.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.47034836e-07,
+      "mean_abs": 4.04235188e-08,
+      "native_norm": 3.43365812,
+      "reference_norm": 3.43365836
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.15.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 1.00005202e-07,
+      "native_norm": 259.191223,
+      "reference_norm": 259.191223
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.15.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92234592e-08,
+      "native_norm": 150.399124,
+      "reference_norm": 150.399124
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.98023224e-07,
+      "mean_abs": 3.25540555e-08,
+      "native_norm": 63.0954247,
+      "reference_norm": 63.0954247
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.23816494e-08,
+      "native_norm": 21.7688484,
+      "reference_norm": 21.7688484
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.30346666e-08,
+      "native_norm": 22.3277683,
+      "reference_norm": 22.3277683
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.1920929e-06,
+      "mean_abs": 9.19528702e-08,
+      "native_norm": 65.2717209,
+      "reference_norm": 65.2717133
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 1.33343008e-07,
+      "native_norm": 32.1665344,
+      "reference_norm": 32.1665382
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.98023224e-07,
+      "mean_abs": 2.55562274e-08,
+      "native_norm": 5.62337828,
+      "reference_norm": 5.6233778
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.15.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 8.19563866e-08,
+      "mean_abs": 2.58150976e-08,
+      "native_norm": 0.329295367,
+      "reference_norm": 0.329295337
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.15.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 1.00542188e-07,
+      "native_norm": 261.179565,
+      "reference_norm": 261.179596
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.15.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.9281205e-08,
+      "native_norm": 152.04744,
+      "reference_norm": 152.04744
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92099323e-08,
+      "native_norm": 429.491821,
+      "reference_norm": 429.491821
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.06639481e-07,
+      "mean_abs": 2.92183646e-08,
+      "native_norm": 150.911362,
+      "reference_norm": 150.911362
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92274418e-08,
+      "native_norm": 152.04744,
+      "reference_norm": 152.04744
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 9.69578053e-08,
+      "native_norm": 533.424072,
+      "reference_norm": 533.424072
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 9.84235342e-08,
+      "native_norm": 261.179596,
+      "reference_norm": 261.179596
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-07,
+      "mean_abs": 2.92747337e-08,
+      "native_norm": 63.7210655,
+      "reference_norm": 63.7210655
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.15.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.47034836e-07,
+      "mean_abs": 4.02380422e-08,
+      "native_norm": 3.44941211,
+      "reference_norm": 3.44941211
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92058751e-08,
+      "native_norm": 424.624664,
+      "reference_norm": 424.624664
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.95932221e-08,
+      "native_norm": 150.832428,
+      "reference_norm": 150.832428
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.88889996e-08,
+      "native_norm": 148.678207,
+      "reference_norm": 148.678207
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 9.49342791e-08,
+      "native_norm": 515.480652,
+      "reference_norm": 515.480652
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.03791336e-07,
+      "native_norm": 262.556152,
+      "reference_norm": 262.556122
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.2584877e-07,
+      "mean_abs": 2.89029689e-08,
+      "native_norm": 62.6615295,
+      "reference_norm": 62.6615295
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.19.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.87430191e-07,
+      "mean_abs": 3.87218506e-08,
+      "native_norm": 3.21450067,
+      "reference_norm": 3.21450067
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.19.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.0527701e-07,
+      "native_norm": 262.556152,
+      "reference_norm": 262.556122
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.19.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.88889996e-08,
+      "native_norm": 148.678207,
+      "reference_norm": 148.678207
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.68220901e-07,
+      "mean_abs": 3.29778231e-08,
+      "native_norm": 63.4453316,
+      "reference_norm": 63.4453316
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.41824489e-08,
+      "native_norm": 23.7542496,
+      "reference_norm": 23.7542496
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 3.42879503e-08,
+      "native_norm": 22.8207684,
+      "reference_norm": 22.8207684
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.15255737e-07,
+      "mean_abs": 9.41268326e-08,
+      "native_norm": 64.4656143,
+      "reference_norm": 64.4656143
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.15255737e-07,
+      "mean_abs": 7.62663888e-08,
+      "native_norm": 32.5256042,
+      "reference_norm": 32.5256042
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.78813934e-07,
+      "mean_abs": 2.50541934e-08,
+      "native_norm": 5.32902575,
+      "reference_norm": 5.32902575
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.19.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.70552254e-08,
+      "mean_abs": 2.81434041e-08,
+      "native_norm": 0.260582566,
+      "reference_norm": 0.260582566
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.19.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.04871006e-07,
+      "native_norm": 264.56311,
+      "reference_norm": 264.56311
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.19.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89708009e-08,
+      "native_norm": 150.419403,
+      "reference_norm": 150.419403
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.92204305e-08,
+      "native_norm": 429.338348,
+      "reference_norm": 429.338348
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.95696516e-08,
+      "native_norm": 152.691467,
+      "reference_norm": 152.691467
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 2.89414253e-08,
+      "native_norm": 150.419403,
+      "reference_norm": 150.419403
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 9.50196508e-08,
+      "native_norm": 519.496033,
+      "reference_norm": 519.496033
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.90734863e-06,
+      "mean_abs": 1.03757543e-07,
+      "native_norm": 264.56311,
+      "reference_norm": 264.56311
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.2584877e-07,
+      "mean_abs": 2.88093602e-08,
+      "native_norm": 62.887722,
+      "reference_norm": 62.887722
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.19.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.87430191e-07,
+      "mean_abs": 3.86581398e-08,
+      "native_norm": 3.22504544,
+      "reference_norm": 3.22504544
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91733837e-08,
+      "native_norm": 425.664764,
+      "reference_norm": 425.664764
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.87590556e-08,
+      "native_norm": 149.919464,
+      "reference_norm": 149.919464
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91736821e-08,
+      "native_norm": 150.518875,
+      "reference_norm": 150.518875
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 1.005603e-07,
+      "native_norm": 523.897095,
+      "reference_norm": 523.897095
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 1.06368489e-07,
+      "native_norm": 258.656433,
+      "reference_norm": 258.656433
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.66244125e-07,
+      "mean_abs": 2.95355864e-08,
+      "native_norm": 62.5842056,
+      "reference_norm": 62.5842094
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.attention.23.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.87430191e-07,
+      "mean_abs": 4.15316279e-08,
+      "native_norm": 3.30645442,
+      "reference_norm": 3.30645466
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.23.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 1.07880226e-07,
+      "native_norm": 258.656433,
+      "reference_norm": 258.656433
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.cache.23.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91736821e-08,
+      "native_norm": 150.518875,
+      "reference_norm": 150.518875
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.57627869e-07,
+      "mean_abs": 3.33806156e-08,
+      "native_norm": 63.3120193,
+      "reference_norm": 63.3120193
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 3.81915015e-08,
+      "native_norm": 22.2602921,
+      "reference_norm": 22.2602921
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.38418579e-07,
+      "mean_abs": 2.97550287e-08,
+      "native_norm": 22.7175198,
+      "reference_norm": 22.7175198
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 9.53674316e-07,
+      "mean_abs": 9.91663001e-08,
+      "native_norm": 64.9781036,
+      "reference_norm": 64.9781036
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 1.58276734e-07,
+      "native_norm": 32.3411446,
+      "reference_norm": 32.3411446
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 2.98023224e-07,
+      "mean_abs": 2.29605899e-08,
+      "native_norm": 5.50118208,
+      "reference_norm": 5.50118208
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.attention.23.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.07805157e-08,
+      "mean_abs": 2.575689e-08,
+      "native_norm": 0.26947099,
+      "reference_norm": 0.26947099
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.23.keys",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 1.08666129e-07,
+      "native_norm": 260.670471,
+      "reference_norm": 260.670502
+    },
+    {
+      "status": "PASS",
+      "stage": "cached.cache.23.values",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91824911e-08,
+      "native_norm": 152.223572,
+      "reference_norm": 152.223572
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.q",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91769613e-08,
+      "native_norm": 430.347443,
+      "reference_norm": 430.347443
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.k",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.88269515e-08,
+      "native_norm": 151.56308,
+      "reference_norm": 151.56308
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.v",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 4.76837158e-07,
+      "mean_abs": 2.91574125e-08,
+      "native_norm": 152.223572,
+      "reference_norm": 152.223572
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.q_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.66893005e-06,
+      "mean_abs": 1.00518918e-07,
+      "native_norm": 527.911316,
+      "reference_norm": 527.911316
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.k_norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.43051147e-06,
+      "mean_abs": 1.06520439e-07,
+      "native_norm": 260.670471,
+      "reference_norm": 260.670502
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.pooled",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-07,
+      "mean_abs": 2.94606561e-08,
+      "native_norm": 62.8255196,
+      "reference_norm": 62.8255234
+    },
+    {
+      "status": "PASS",
+      "stage": "full_prefix.attention.23.output",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 3.87430191e-07,
+      "mean_abs": 4.11297059e-08,
+      "native_norm": 3.31741714,
+      "reference_norm": 3.31741714
+    }
+  ]
+}
