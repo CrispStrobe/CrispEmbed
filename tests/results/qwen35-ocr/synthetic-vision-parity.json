@@ -1,0 +1,221 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38526798047",
+  "source_commit": "5a427124f227689bc9241c04282fb965ccb30221",
+  "scope": "synthetic original vision model; 12 layers, non-square grids, two images/three frames; not trained OCR accuracy",
+  "official_packed_vs_separate_max_abs": 1.1175870895385742e-08,
+  "checks": 21,
+  "min_cos": 1.0,
+  "max_abs": 7.15255737e-07,
+  "comparisons": [
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.patch_embed",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 2.37600428e-09,
+      "native_norm": 5.93288374,
+      "reference_norm": 5.93288374
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.position",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "native_norm": 0.702584624,
+      "reference_norm": 0.702584624
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.embedded",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 2.38880471e-09,
+      "native_norm": 5.97681522,
+      "reference_norm": 5.97681522
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.rotary_cos",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 6.20881702e-09,
+      "native_norm": 21.1356144,
+      "reference_norm": 21.1356144
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.rotary_sin",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "native_norm": 11.3703899,
+      "reference_norm": 11.3703899
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.0",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 3.58418384e-09,
+      "native_norm": 6.01959705,
+      "reference_norm": 6.01959705
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.1",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 4.46144188e-09,
+      "native_norm": 5.9773984,
+      "reference_norm": 5.9773984
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.2",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 5.27375565e-09,
+      "native_norm": 6.00338745,
+      "reference_norm": 6.00338745
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.3",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 6.06498229e-09,
+      "native_norm": 6.03958559,
+      "reference_norm": 6.03958559
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.4",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 6.56958354e-09,
+      "native_norm": 6.08174133,
+      "reference_norm": 6.08174133
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.5",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.14672899e-08,
+      "mean_abs": 7.04164504e-09,
+      "native_norm": 6.03837824,
+      "reference_norm": 6.03837824
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.6",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.33299351e-08,
+      "mean_abs": 7.69237118e-09,
+      "native_norm": 6.13342571,
+      "reference_norm": 6.13342571
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.7",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.33299351e-08,
+      "mean_abs": 8.22055224e-09,
+      "native_norm": 6.12247801,
+      "reference_norm": 6.12247801
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.8",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 6.33299351e-08,
+      "mean_abs": 8.77143602e-09,
+      "native_norm": 6.07594728,
+      "reference_norm": 6.07594728
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.9",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 9.41791889e-09,
+      "native_norm": 6.01693153,
+      "reference_norm": 6.01693153
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.10",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 8.94069672e-08,
+      "mean_abs": 9.86299842e-09,
+      "native_norm": 5.91844368,
+      "reference_norm": 5.91844368
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.layer.11",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 8.94069672e-08,
+      "mean_abs": 1.03323989e-08,
+      "native_norm": 5.9566412,
+      "reference_norm": 5.9566412
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.merger.norm",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 7.15255737e-07,
+      "mean_abs": 1.00625599e-07,
+      "native_norm": 41.5670815,
+      "reference_norm": 41.5670815
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.merger.up",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.49011612e-07,
+      "mean_abs": 2.77952363e-08,
+      "native_norm": 8.63906479,
+      "reference_norm": 8.63906479
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.merger.activation",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.1920929e-07,
+      "mean_abs": 1.85719937e-08,
+      "native_norm": 4.46380472,
+      "reference_norm": 4.46380472
+    },
+    {
+      "status": "PASS",
+      "stage": "prefill.vision.merger",
+      "cos_min": 1.0,
+      "cos_global": 1.0,
+      "max_abs": 1.67638063e-08,
+      "mean_abs": 4.24046842e-09,
+      "native_norm": 0.365595549,
+      "reference_norm": 0.365595549
+    }
+  ]
+}

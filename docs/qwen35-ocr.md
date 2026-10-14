@@ -355,13 +355,32 @@ native text embeddings, inserts native vision output at the image-token slots,
 then verifies the whole decoder, vocabulary logits, native cache states and
 free-running greedy IDs. **Only official packed pixels, prompt IDs and position
 coordinates are supplied**; this does not verify a raw-image frontend/tokenizer.
-The run's conclusion and numerical evidence are still pending.
+The first F16-weight run fails the original absolute gate at raw vision block11:
+max abs0.167602539 despite reported cosine1.000000000 and L2 magnitudes
+24610.5508/24610.543. Earlier blocks pass; the merger output is much closer,
+max abs5.2571e-5. The connected arm was not reached in that initial run.
+[Initial per-stage errors/magnitudes](../tests/results/qwen35-ocr/trained-vision-initial-failure.json)
+are retained. No threshold was increased; F32 and explicit critical-tensor
+retention are now being audited at
+[38527589341](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38527589341).
 
 Original-module non-square/multi-frame controls are at
 [38526798047](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38526798047),
-source `5a427124`: two non-square grids, three frames, independent per-frame
-Python replay, native composed layers and reset/invalid controls. The initial
+source `5a427124`, **passes 21 comparisons**: two non-square grids, three frames,
+independent per-frame Python replay, native composed layers and reset/invalid
+controls. Reported cos_min1.000000000, max abs7.1526e-7; official packed versus
+separate frame max abs1.1176e-8. [Complete stage evidence](../tests/results/qwen35-ocr/synthetic-vision-parity.json). The initial
 harness stopped before comparison because `Qwen3_5VisionConfig` is not exported
 from Transformers' top-level namespace; the corrected import is from its model
 configuration module. [Initial failure](../tests/results/qwen35-ocr/synthetic-vision-initial-failure.json)
 is retained. Production alias/API, quantization and publication remain open.
+
+The converter now accepts repeatable `--keep-f32 GGUF_NAME` for exact tensor
+names. Unknown names reject before output creation; retained names and actual
+per-tensor dtypes/hashes are recorded in the manifest. The default experimental
+F16 recipe is preserved for comparison. No precision recipe is promoted until
+its full native stage/logit/token checks pass.
+
+Current CPU reference bounds: at most 4096 packed patches total and 1024 per
+frame. Larger-page capacity and attention performance remain deployment work;
+this is not a latency-tuned public engine.
