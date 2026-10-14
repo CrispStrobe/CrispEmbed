@@ -555,3 +555,22 @@ from the largest weight, and rounds/clamps each separable uint8 pass. A float
 Catmull-Rom kernel alone does not reproduce those steps. Capture original RGB,
 resized bytes, normalized packed patches and grids before diagnosing the vision
 projection; retain independent up/downscale and aspect-ratio controls.
+
+[Trained ARM run 38538187682](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187682)
+at `ba44114c` passes **188 comparisons and 11 exact coordinate checks**: prefill,
+cached/full-prefix and all eight generated continuation steps. The native cache
+starts at 78 tokens; the derived offset is **−56**. All nine native greedy IDs,
+including EOS 248046, match the official run. Vocabulary logits/scores retain
+reported cosine **1.000000000**, maximum absolute error **9.22679901e-5**.
+[Per-stage report](../tests/results/qwen35-ocr/native-positions-connected-parity.json)
+keeps absolute errors, norms and the two final-normalization stages that exceed
+the strict 0.002 floor and pass the unchanged official self-backend budget.
+There is no tolerance change in this lane. The older oracle-position arm also
+passes in the same run.
+
+The independent weight-free 18-layout comparison is
+[queued on Linux](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168).
+The initial [Mac dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187763)
+was cancelled after over 23 minutes without a runner, before any code executed.
+Do not mark non-square/multiple-image position coverage verified until this
+additional gate completes.

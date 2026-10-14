@@ -4964,3 +4964,20 @@ passes21 synthetic non-square/multi-frame checks with the original absolute gate
 (no calibration data): mincos1.000000000, max abs7.1526e-7.
 [Control evidence](tests/results/qwen35-ocr/synthetic-vision-calibrated-comparator-parity.json).
 No throughput, latency, GPU or Q4-quality claim.
+
+
+### Qwen3.5 native multimodal/cached coordinates — 2026-10-14
+
+[ARM 38538187682](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187682),
+source `ba44114c`, passes188 connected-stage comparisons plus11 exact coordinate
+checks using native prefill/full-prefix positions and native cache-length
+continuation offsets. The fixture's offset is−56; native greedy IDs remain9/9
+through EOS248046. Logit/score cosine is reported1.000000000 and max absolute
+error9.22679901e-5, unchanged from the original-coordinate connected baseline.
+All-stage cos_min0.999999881, worst absolute0.0068359375 at the final norm; the
+existing official F32 self-backend calibration applies there, with strict
+absolute0.002 unchanged for other decoder/cache/logit stages.
+[Full errors, norms and IDs](tests/results/qwen35-ocr/native-positions-connected-parity.json)
+are retained. This is correctness evidence, with no speed/quantization claim.
+Official packed pixels, prompt IDs and modality IDs remain; raw-image frontend,
+native decoded-text processing and production integration are still pending.
