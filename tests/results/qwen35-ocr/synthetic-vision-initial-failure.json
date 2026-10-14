@@ -1,0 +1,7 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38526366089",
+  "source_commit": "08f7e904",
+  "scope": "synthetic original-model vision harness; failed before native comparisons",
+  "error": "ImportError: Qwen3_5VisionConfig is not exported from the top-level transformers namespace",
+  "fix": "import the original configuration from transformers.models.qwen3_5.configuration_qwen3_5"
+}

@@ -11,7 +11,7 @@ def main():
     import numpy as np
     import torch
     import transformers
-    from transformers import Qwen3_5VisionConfig
+    from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5VisionConfig
     from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5VisionModel
 
     if transformers.__version__ != "5.5.4":
