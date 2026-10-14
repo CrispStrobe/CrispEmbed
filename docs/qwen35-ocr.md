@@ -941,3 +941,28 @@ expand page/corpus coverage and evaluate row-wise F32 matmul memory/performance
 before publication. The current scope remains1024 patches, compressed storage
 with F32 materialization, and four owned synthetic cases. No registry alias,
 HF publication, runtime release, latency or corpus-accuracy claim.
+
+## Native FFN importance/precision lane — 2026-10-14
+
+The next hosted sweep keeps the Q8 tied head and calibrated F32 vision. It adds
+Q6_K matrix loading under the existing quant gate and tests FFN down-projection
+Q8, all-FFN Q6/Q8, compact Q8 attention without F16-head overhead, and native
+importance-weighted Q4. The preceding seven-recipe evidence remains unchanged.
+
+A synchronous observer local to the calling thread is default-off behind
+`CRISPEMBED_QWEN35_IMATRIX`. The hosted collector registers it for six disjoint
+owned calibration images and records actual native F16 FFN input sums of squares
+for all72 gate/up/down matrices. Image and generated-token inputs are native;
+no Python reference activations or teacher-forced IDs feed calibration. Both
+literal0 registration and runtime bypass are checked, and the first image's
+IDs/text must match with collection off/on. Clearing the observer is always
+allowed. Normal inference has no observer or statistics file writes.
+
+The output uses the existing CrispEmbed imatrix GGUF format (F32 sum-square
+vectors plus UINT64 row counts). The quantizer must report all72 FFN vectors
+applied. Calibration image hashes/texts, dimensions/counts/statistics hashes and
+native outputs are recorded, with no image/text overlap against the four held-out
+synthetic evaluation fixtures. All use the same renderer family, so this does
+not establish corpus generalization. Export file SHA-256 is now recorded too.
+Existing F16 numeric gates and all prior runtime alternatives remain unchanged.
+Hosted execution is pending; no selected FFN recipe, HF publication or speed claim.

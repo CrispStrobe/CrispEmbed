@@ -11,6 +11,16 @@
 #include <memory>
 
 namespace qwen35_ocr {
+namespace {
+thread_local projection_observer observer = nullptr;
+thread_local void * observer_user = nullptr;
+} // namespace
+bool set_projection_observer(projection_observer fn, void * user) {
+    if (fn && !core_env::on("CRISPEMBED_QWEN35_IMATRIX")) return false;
+    observer = fn;
+    observer_user = user;
+    return true;
+}
 static bool shape(ggml_tensor * tensor, int64_t columns, int64_t rows) {
     return tensor && tensor->ne[0] == columns && tensor->ne[1] == rows && tensor->ne[2] == 1 && tensor->ne[3] == 1;
 }
@@ -24,6 +34,7 @@ bool matrix_type_supported(const ggml_tensor * source) {
     switch (source->type) {
     case GGML_TYPE_Q8_0:
     case GGML_TYPE_Q4_K:
+    case GGML_TYPE_Q6_K:
         return source->ne[0] % ggml_blck_size(source->type) == 0 && ggml_get_type_traits(source->type)->to_float;
     default:
         return false;
@@ -57,6 +68,9 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
         if (elements > limit) return false;
     }
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
+    if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX"))
+        for (auto * matrix : matrices)
+            if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
     const size_t memory = 1024 * 1024 + elements * sizeof(float);
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ memory, nullptr, false }), ggml_free);
     std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);

@@ -19,6 +19,10 @@ inline float rms_scale_cpu(const float * x, int width, float eps) {
 // Shared F32 reference arithmetic for native experimental decoder paths.
 // Quantized matrix loading is separately default-off; vectors/convs stay float.
 bool matrix_type_supported(const ggml_tensor * source);
+// Internal synchronous calibration observer, local to the calling thread.
+// Registration and invocation require CRISPEMBED_QWEN35_IMATRIX=1. Clear with null.
+using projection_observer = bool (*)(const char *, const float *, int, int, void *);
+bool set_projection_observer(projection_observer observer, void * user);
 bool tensor_floats(ggml_tensor * source, float * target);
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output);

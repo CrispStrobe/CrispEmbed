@@ -35,7 +35,8 @@ def main():
     math_audit = sys.argv[1:] == ["--vision-math"]
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
-    quant_check = sys.argv[1:] == ["--quant"]
+    ffn_check = sys.argv[1:] == ["--ffn"]
+    quant_check = ffn_check or sys.argv[1:] == ["--quant"]
     context_check = public_check or quant_check or sys.argv[1:] == ["--context"]
     frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
     frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
@@ -45,6 +46,7 @@ def main():
     # operator setting into the baseline. The original Python reference is unchanged.
     os.environ["CRISPEMBED_QWEN35_PRECISE_RMS"] = "1" if frontend_rms else "0"
     os.environ["CRISPEMBED_QWEN35_QUANT"] = "0"
+    os.environ["CRISPEMBED_QWEN35_IMATRIX"] = "0"
     torch.set_num_threads(4)
     repo = Path(__file__).resolve().parents[2]
     out = Path(os.environ["HEAVY_OUT"])
@@ -142,6 +144,7 @@ def main():
                         *(["test-qwen35-context"] if context_check else []),
                         *(["test-qwen35-public", "crispembed-cli", "crispembed-server", "crispembed-shared"] if public_check else []),
                         *(["test-qwen35-quant", "crispembed-quantize"] if quant_check else []),
+                        *(["test-qwen35-imatrix"] if ffn_check else []),
                         "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
@@ -275,8 +278,9 @@ def main():
                 context_result.check_returncode()
             if quant_check:
                 calibration = module(repo / "tools/ci-heavy/qwen35_quant_calibration.py", "qwen35_quant_calibration")
-                calibration.run(repo, build, export, image_path, resized_path, local, reference, out, scratch)
-                report["quantization"] = "completed Q8/Q4 mixed-precision measurements; inspect quant-calibration.json for quality, not a publication claim"
+                calibration.run(repo, build, export, image_path, resized_path, local, reference, out, scratch, ffn=ffn_check)
+                report["quantization"] = ("completed native FFN importance/Q6/mixed-precision measurements; inspect ffn-calibration.json"
+                                          if ffn_check else "completed Q8/Q4 mixed-precision measurements; inspect quant-calibration.json")
             if public_check:
                 prompt_out = out / "prompted-public"
                 prompt_out.mkdir(exist_ok=True)

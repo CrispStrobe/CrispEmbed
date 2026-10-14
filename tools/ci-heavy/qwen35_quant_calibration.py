@@ -24,7 +24,83 @@ def errors(reference, actual):
             "wer": distance(reference.split(), actual.split()) / max(1, len(reference.split()))}
 
 
-def run(repo, build, baseline, image_path, resized_path, local, reference, out, scratch):
+def file_sha(path):
+    digest = hashlib.sha256()
+    with open(path, "rb") as stream:
+        for chunk in iter(lambda: stream.read(2 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def collect_native(repo, build, baseline, quant_out, cases):
+    import gguf
+    import numpy as np
+    from PIL import Image, ImageDraw
+
+    root = quant_out / "native-calibration"
+    root.mkdir(exist_ok=True)
+    texts = ["Alpha beta\n67890", "Page 7\nReference", "Receipt\nPaid $8.75",
+             "Cafe menu\nTea 2.40", "Section B\nDraft copy", "Sample text\nCode ZX9"]
+    examples = []
+    paths = []
+    evaluation_hashes = {file_sha(case[1]) for case in cases}
+    for i, text in enumerate(texts):
+        image = Image.new("RGB", (256, 256), "white")
+        ImageDraw.Draw(image).text((22, 64), text, fill="black", font_size=20 + 2 * (i % 3))
+        path = root / (str(i) + ".png")
+        image.save(path)
+        fingerprint = file_sha(path)
+        if fingerprint in evaluation_hashes or text in {case[4] for case in cases}:
+            raise ValueError("Calibration/evaluation image or transcript overlap")
+        paths.append(path)
+        examples.append({"index": i, "gold": text, "image_sha256": fingerprint, "font_size": 20 + 2 * (i % 3)})
+    stats_path = root / "native-ffn-stats.tsv"
+    result = subprocess.run([str(build / "test-qwen35-imatrix"), str(baseline), str(stats_path), *map(str, paths)],
+                            capture_output=True, text=True)
+    (root / "native-collector.log").write_text(result.stdout + result.stderr)
+    result.check_returncode()
+    observations = re.findall(r'^CALIB index=(\d+) stop=(\d+) ids:([^\n]*)\nCALIB utf8_hex:([^\n]*)$', result.stdout, re.M)
+    if len(observations) != len(texts):
+        raise ValueError("Missing native calibration outputs")
+    for entry, observation in zip(examples, observations):
+        assert entry["index"] == int(observation[0])
+        entry["stop"] = int(observation[1])
+        entry["native_ids"] = list(map(int, observation[2].split()))
+        entry["native_text"] = bytes.fromhex(observation[3]).decode("utf-8")
+        entry["native_vs_gold"] = errors(entry["gold"], entry["native_text"])
+    target = root / "native-ffn-imatrix.gguf"
+    writer = gguf.GGUFWriter(str(target), "crispembed-imatrix")
+    writer.add_uint32("imatrix.version", 1)
+    expected = {f"l.layers.{i}.mlp.{kind}_proj.weight": 3584 if kind == "down" else 1024
+                for i in range(24) for kind in ("gate", "up", "down")}
+    collected = []
+    for line in stats_path.read_text().splitlines():
+        name, count, width, *values = line.split()
+        count, width = int(count), int(width)
+        if name not in expected or width != expected.pop(name) or count <= 0 or len(values) != width:
+            raise ValueError("Native importance schema/count mismatch")
+        sums = np.asarray(values, dtype=np.float64).astype(np.float32)
+        if not np.isfinite(sums).all() or np.min(sums) < 0 or not np.max(sums) > 0:
+            raise ValueError("Invalid native activation statistics")
+        writer.add_uint64("count." + name, count)
+        writer.add_tensor(name, sums)
+        collected.append({"name": name, "columns": width, "rows": count,
+                          "sum_min": float(np.min(sums)), "sum_max": float(np.max(sums)),
+                          "sum_sha256": hashlib.sha256(sums.tobytes()).hexdigest()})
+    if expected or len(collected) != 72 or len({row["rows"] for row in collected}) != 1:
+        raise ValueError("Incomplete native FFN importance coverage")
+    writer.write_header_to_file()
+    writer.write_kv_data_to_file()
+    writer.write_tensors_to_file()
+    writer.close()
+    return target, {"producer": "independent native F16 owning-context image/prompt/greedy inference; no reference arrays or teacher forcing",
+                    "collector_gate": "CRISPEMBED_QWEN35_IMATRIX", "literal0_registration_rejected": True,
+                    "source_recipe": "vision-f32", "data": "six disjoint owned synthetic images; same renderer family as evaluation, not a corpus",
+                    "imatrix_sha256": file_sha(target), "imatrix_bytes": target.stat().st_size,
+                    "matrices": collected, "examples": examples}
+
+
+def run(repo, build, baseline, image_path, resized_path, local, reference, out, scratch, ffn=False):
     import gguf
     import numpy as np
     from PIL import Image, ImageDraw
@@ -74,6 +150,18 @@ def run(repo, build, baseline, image_path, resized_path, local, reference, out, 
                ("q4-head-controls-f16", "q4_k", head + controls),
                ("q4-attention-q8", "q4_k", head + attention + controls),
                ("q4-attention-f16", "q4_k", head + [x.replace("=q8_0", "=f16") for x in attention] + controls)]
+    imatrix, importance = None, None
+    if ffn:
+        imatrix, importance = collect_native(repo, build, baseline, quant_out, cases)
+        compact_attention = attention + controls
+        recipes = [("q8-vision-f32", "q8_0", []), ("q4-vision-f32", "q4_k", []),
+                   ("q4-ffn-down-q8", "q4_k", ["l.layers.*.mlp.down_proj.weight=q8_0"]),
+                   ("q4-ffn-q6", "q4_k", ["l.layers.*.mlp.*_proj.weight=q6_k"]),
+                   ("q4-ffn-q8", "q4_k", ["l.layers.*.mlp.*_proj.weight=q8_0"]),
+                   ("q4-attention-q8-compact", "q4_k", compact_attention),
+                   ("q4-attention-q8-ffn-q6", "q4_k", compact_attention + ["l.layers.*.mlp.*_proj.weight=q6_k"]),
+                   ("q4-ffn-imatrix", "q4_k", []),
+                   ("q4-attention-q8-imatrix", "q4_k", compact_attention)]
     source = gguf.GGUFReader(str(baseline))
     schema = {t.name: {"shape": t.shape.tolist(), "type": t.tensor_type.name,
                        "sha256": hashlib.sha256(t.data.tobytes()).hexdigest()} for t in source.tensors}
@@ -85,19 +173,27 @@ def run(repo, build, baseline, image_path, resized_path, local, reference, out, 
               "scope": "four owned synthetic cases, ARM CPU F32 arithmetic; storage/quality calibration, not a corpus or latency benchmark",
               "reference": "original Transformers5.5.4/tokenizers0.22.2; official arrays test-only, teacher-forced scores labeled separately from independent native greedy context",
               "new_fixture_strict_f16": strict, "publication": "none", "arms": []}
+    if ffn:
+        report["native_importance"] = importance
     try:
         for name, kind, overrides in [("f16-baseline", None, [])] + recipes:
             model = baseline
             arm = {"name": name, "target": kind or "source-f16", "overrides": ["v.*=f32"] + overrides if kind else [], "cases": []}
+            use_imatrix = name.endswith("-imatrix")
+            arm["native_imatrix"] = use_imatrix
             report["arms"].append(arm)
             if kind:
                 model = scratch / (name + ".gguf")
                 command = [str(build / "crispembed-quantize"), str(baseline), str(model), kind]
                 for rule in arm["overrides"]:
                     command += ["--tensor-type", rule]
+                if use_imatrix:
+                    command += ["--imatrix", str(imatrix)]
                 result = subprocess.run(command, capture_output=True, text=True)
                 (quant_out / (name + "-quantizer.log")).write_text(result.stdout + result.stderr)
                 result.check_returncode()
+                if use_imatrix and ", 72 with imatrix" not in result.stdout:
+                    raise ValueError("Quantizer did not apply all72 native FFN importance vectors")
             reader = gguf.GGUFReader(str(model))
             stored = []
             if set(schema) != {t.name for t in reader.tensors}:
@@ -121,6 +217,7 @@ def run(repo, build, baseline, image_path, resized_path, local, reference, out, 
                 stored.append({"name": tensor.name, "type": tensor.tensor_type.name,
                                "shape": tensor.shape.tolist(), "bytes": tensor.data.nbytes})
             arm["bytes"] = model.stat().st_size
+            arm["gguf_sha256"] = file_sha(model)
             arm["types"] = dict(Counter(t["type"] for t in stored))
             arm["tensor_audit"] = stored
             del reader
@@ -157,4 +254,4 @@ def run(repo, build, baseline, image_path, resized_path, local, reference, out, 
         report["smallest_exact_synthetic_recipe"] = min(passing,key=lambda a:a['bytes'])['name']
         report["result"] = "completed diagnostic sweep; exact synthetic outputs do not establish corpus quality or publication readiness"
     finally:
-        (out / "quant-calibration.json").write_text(json.dumps(report,indent=2)+'\n')
+        (out / ("ffn-calibration.json" if ffn else "quant-calibration.json")).write_text(json.dumps(report,indent=2)+'\n')
