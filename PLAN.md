@@ -493,7 +493,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-14 | `ocr-qwen35-positions` | LightOnOCR-3 native multimodal prefill/cached position generation | Implement source-pinned coordinates; compare independent rectangular/multi-image cases and connected trained decoder on hosted CI; frontend still experimental |
+| 2026-10-14 | `ocr-qwen35-positions` | LightOnOCR-3 native multimodal prefill/cached position generation | Source `ba44114c` pushed; [18-layout original-reference check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187763) and [trained connected decoder](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187682) queued. Native cache-derived positions implemented; raw-image frontend still experimental |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
