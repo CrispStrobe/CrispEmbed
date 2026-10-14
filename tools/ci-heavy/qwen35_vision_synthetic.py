@@ -77,6 +77,7 @@ def main():
             for handle in handles:
                 handle.remove()
             handles.clear()
+            model.fast_pos_embed_interpolate = original
             # Independent per-frame reference proves segmentation, rather than
             # assuming the model batch path respects the requested boundaries.
             separated = []
