@@ -32,7 +32,8 @@ def main():
         raise ValueError("Reference implementation must be pinned to transformers==5.5.4")
     precision_audit = sys.argv[1:] == ["--vision-precision"]
     math_audit = sys.argv[1:] == ["--vision-math"]
-    if sys.argv[1:] and not (precision_audit or math_audit):
+    frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
+    if sys.argv[1:] and not (precision_audit or math_audit or frontend_keys):
         raise ValueError("Unexpected arguments")
     torch.set_num_threads(4)
     repo = Path(__file__).resolve().parents[2]
@@ -73,7 +74,10 @@ def main():
                          "preprocessor_config.json", "tokenizer_config.json", "chat_template.jinja"]:
             (out / filename).write_bytes((local / filename).read_bytes())
         export = scratch / "lightonocr-3-0.8b-f16-experimental.gguf"
-        manifest = converter.convert(local, export, converter.LIGHTON_MODEL, converter.LIGHTON_REVISION)
+        keep_f32 = [f"l.layers.{i}.self_attn.k_proj.weight" for i in range(3,24,4)] if frontend_keys else []
+        manifest = converter.convert(local, export, converter.LIGHTON_MODEL, converter.LIGHTON_REVISION, keep_f32=keep_f32)
+        report["weight_recipe"] = "full-attention-k-f32" if frontend_keys else "original-f16"
+        report["keep_f32"] = keep_f32
         (out / "export-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         reader = gguf.GGUFReader(str(export))
         expected = {record["name"]: record for record in manifest["records"]}
@@ -215,6 +219,11 @@ def main():
             resized_image.save(resized_path)
             resized_reference = reference.dump_reference(local, resized_path, resized_out / "official-reference.npz")
             gc.collect()
+            attention_result = subprocess.run([str(build / "test-qwen35-attention"), str(export),
+                                               str(resized_out / "official-delta.gguf")], capture_output=True, text=True)
+            (out / "native-resized-attention.log").write_text(attention_result.stdout + attention_result.stderr)
+            print(attention_result.stdout + attention_result.stderr)
+            report["native_resized_attention"] = attention_result.returncode == 0
             result = subprocess.run([str(build / "test-qwen35-decoder"), str(export),
                                      str(resized_out / "official-delta.gguf"), "--native-frontend"], capture_output=True, text=True)
             (out / "native-frontend-resized.log").write_text(result.stdout + result.stderr)
@@ -222,6 +231,7 @@ def main():
             report["native_frontend_resized"] = result.returncode == 0
             report["resized_reference"] = {key: resized_reference[key] for key in ["decoded", "generated_ids", "image_size", "resolved_image_processor"]}
             result.check_returncode()
+            attention_result.check_returncode()
             report["native_parity"] = "native raw RGB/BPE/vision/positions/decoder/text checked on two owned fixtures; production integration/corpus validation pending"
         report["result"] = "export/reference/native model checks passed; production OCR support pending"
     except BaseException as error:

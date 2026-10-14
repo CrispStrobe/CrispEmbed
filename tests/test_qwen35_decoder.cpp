@@ -235,6 +235,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     // arm derives coordinates from modalities/grids and its own carried cache.
     const auto expected = ref.get_f32("generated.ids");
     std::vector<int> ids;
+    double native_confidence = 0, reference_confidence = 0;
     auto cache = std::move(prefill_cache);
     auto logits = std::move(first_logits);
     if (!expected.first || expected.second == 0 || expected.second > 12 || logits.empty())
@@ -243,6 +244,19 @@ static int crispembed_test_main(int argc, char ** argv) {
         for (size_t step = 0; step < expected.second; ++step) {
             ok &= qwen35_compare(ref, "generated.scores." + std::to_string(step), logits);
             const int id = argmax(logits);
+            if (native_frontend) {
+                const auto reference_score = ref.get_f32("generated.scores." + std::to_string(step));
+                double total = 0, reference_total = 0;
+                for (float value : logits) total += std::exp(double(value) - logits[id]);
+                if (!reference_score.first || reference_score.second != logits.size()) return 2;
+                const float highest =
+                    *std::max_element(reference_score.first, reference_score.first + reference_score.second);
+                for (size_t i = 0; i < reference_score.second; ++i)
+                    reference_total += std::exp(double(reference_score.first[i]) - highest);
+                native_confidence += 1 / total;
+                reference_confidence += 1 / reference_total;
+            }
+
             ids.push_back(id);
             if (id != int(expected.first[step])) {
                 ok = false;
@@ -285,6 +299,11 @@ static int crispembed_test_main(int argc, char ** argv) {
         if (!bytes.first || !tokenizer.decode(ids, text)) return 2;
         for (size_t i = 0; i < bytes.second; ++i) oracle.push_back(char(bytes.first[i]));
         ok &= text == oracle;
+        std::printf("Native decoded UTF8 hex:");
+        for (unsigned char byte : text) std::printf("%02x", byte);
+        std::printf("\nNative/reference mean token confidence including EOS: %.9g/%.9g\n",
+                    native_confidence / ids.size(), reference_confidence / ids.size());
+
         std::printf("%s native decoded text exact bytes=%zu: %s\n", text == oracle ? "PASS" : "FAIL", text.size(),
                     text.c_str());
     }
