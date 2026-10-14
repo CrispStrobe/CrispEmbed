@@ -56,13 +56,19 @@ Capture official packed pixels/grid and position values instead of a manual
 preprocessor that happens to match the C++ code.
 
 Tokenizer vocabulary capacity is 248,320 with tied input/output weights.
-Qwen3.5's regex splits digits individually; storing the BPE vocabulary alone
-does not implement that pretokenizer. The checkpoint's top-level EOS is 248046,
-while nested text EOS is 248044 and the tokenizer names `<|im_end|>` as EOS.
-Use the effective official generation configuration and compare stopping IDs;
-do not silently collapse these into one value. Capture the actual chat template
-for empty transcription and `grounding` prompts, and test normalized boxes
-separately from transcription.
+The checkpoint's tokenizer config advertises a combining-mark-aware split, but
+its [serialized tokenizer](https://huggingface.co/lightonai/LightOnOCR-3-0.8B/blob/36d8636925327c671bd8e479c517a004f7566bd9/tokenizer.json)
+contains **NFC plus the older Qwen regex**. Pinned Transformers 5.5.4's generic
+[TokenizersBackend](https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/tokenization_utils_tokenizers.py)
+loads that file directly; configuration hints do not replace its normalizer or
+pretokenizer. Record the instantiated backend before choosing native behavior.
+Its numeric regex splits digits individually. Added tokens bypass BPE and include
+`<think>`/`</think>`, which a scanner for only `<|...|>` misses.
+
+The checkpoint's top-level EOS is 248046, while nested text EOS is 248044.
+Preserve effective generation EOS, tokenizer EOS and padding separately. Capture
+actual templates for empty transcription and `grounding` prompts, and validate
+normalized boxes independently of transcription.
 
 ## Delivered bootstrap and verification
 
@@ -592,3 +598,53 @@ the shared helper uses float. Add half-factor and extreme-aspect fixtures and
 match original grids exactly in the new frontend, preserving existing engines'
 preprocessing behind their current paths. This finding is a source comparison,
 not a newly measured end-to-end resize result.
+
+
+## Native RGB/BPE frontend lane — 2026-10-14
+
+The default-off `CRISPEMBED_QWEN35_OCR` frontend now implements:
+
+- CPU uint8 bicubic using double coefficients and Torch's per-axis int16 precision,
+  signed coefficient rounding, horizontal/vertical uint8 rounding/clamping.
+- Source `smart_resize` ties-to-even, double pixel-budget arithmetic, RGB .5
+  fused normalization and still-frame P16/T2/M2 patch packing.
+- GGUF BPE vocabulary/merges, typed added/special IDs and effective generation EOS.
+  Added tokens split before NFC. Canonical ordering/composition includes algorithmic
+  Hangul and source-pinned Unicode16 data under the existing Unicode license.
+- The audited single-image user/assistant template, image-token expansion and
+  modality labels, native positions/caches, and byte-level decoded text with
+  replacement for incomplete/invalid UTF-8.
+
+This frontend explicitly accepts only the immutable LightOnOCR-3-0.8B source
+profile. It supports raw contiguous RGB, unpadded single-image prompts and the
+current vision bound of1024 patches (262144 resized pixels). Larger default-profile
+pages are rejected, without silently lowering the publisher's pixel budget.
+A caller-supplied pixel budget can be compared with the same official override.
+There is no file decoder/C ABI/CLI/binding/registry promotion in this lane.
+
+The combining-mark pattern prototype remains available behind default-off
+`CRISPEMBED_QWEN35_TOKENIZER_MARKS=1`; the checkpoint's serialized pattern is the
+default. Preserve older shared Qwen/LFM pretokenizer behavior.
+
+[Hosted frontend checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38547813683)
+at `a65333e6` are pending: nine owned image layouts (including no-resize, up/downscale,
+half-factor and extreme aspect), eleven Unicode/whitespace/added-token cases,
+partial UTF-8 decoding, thousands of cases against the actual original Rust NFC
+normalizer, and existing Qwen/LFM/DeepSeek pretokenizer controls. Require exact
+resized bytes/grids/IDs/template/modality labels, and at most1.2e-7 normalized patch
+error; the vision self-backend budget does not relax this input boundary.
+
+[Trained RGB-to-text checks](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38547814421)
+at the same source are pending for the existing256x256 and a211x301 owned text
+fixture. The native arm derives its own pixels, IDs, embeddings and positions;
+reference fields are comparison targets. Require whole-vocabulary scores, native
+IDs/EOS and native decoded text, retaining the established intermediate policy.
+The earlier source `c8cdb38b` dispatches
+[frontend](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38546388161) and
+[trained](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38546388295) were
+cancelled while queued after the serialized NFC discrepancy was found; they
+produced no inference evidence.
+
+Repository GPU-teardown guard also identified seven Qwen test entry points that
+missed `core_util::clean_exit`; source `c4d8a634` adds those wrappers, with no model
+math change. The static guard passes all163 one-shot binaries.
