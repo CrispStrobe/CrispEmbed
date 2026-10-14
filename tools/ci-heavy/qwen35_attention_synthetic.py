@@ -13,7 +13,7 @@ def main():
     import transformers
     from transformers import Qwen3_5TextConfig
     from transformers.cache_utils import DynamicCache
-    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5Attention, Qwen3_5RotaryEmbedding
+    from transformers.models.qwen3_5.modeling_qwen3_5 import Qwen3_5Attention, Qwen3_5TextRotaryEmbedding
 
     if transformers.__version__ != "5.5.4":
         raise ValueError("Pinned original Transformers implementation required")
@@ -27,7 +27,7 @@ def main():
                                               "partial_rotary_factor": 0.25,
                                               "mrope_section": [11, 11, 10], "mrope_interleaved": True})
     config._attn_implementation = "eager"
-    rotary = Qwen3_5RotaryEmbedding(config)
+    rotary = Qwen3_5TextRotaryEmbedding(config)
     weights = gguf.GGUFWriter(str(scratch / "synthetic.gguf"), "qwen35_synthetic_weights")
     reference = gguf.GGUFWriter(str(out / "synthetic-reference.gguf"), "qwen35_reference")
     report = {"scope": "synthetic original HF attention; B=2 T=65+1, distinct multimodal axes, not checkpoint OCR",

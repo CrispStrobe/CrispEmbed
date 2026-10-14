@@ -1,0 +1,7 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514980272",
+  "source_commit": "55369e40",
+  "scope": "checkpoint-free attention harness; failed before native comparisons",
+  "error": "ImportError: pinned implementation uses Qwen3_5TextRotaryEmbedding, not Qwen3_5RotaryEmbedding",
+  "fix": "import and instantiate the original pinned Qwen3_5TextRotaryEmbedding"
+}
