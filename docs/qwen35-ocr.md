@@ -851,3 +851,33 @@ Model registry, quantization, broader page/corpus coverage, HF publication and
 runtime release are not part of this integration checkpoint. CrispSorter provider
 and catalog selection remain a TODO once a validated model artifact is published;
 that application is outside this checkout. The pinned app release remains separate.
+
+## Native quantization calibration lane — 2026-10-14
+
+The owning engine and shared embedding/projection helpers now have a separate
+value-parsed default-off `CRISPEMBED_QWEN35_QUANT` gate for contiguous Q8_0/Q4_K
+matrices. The master OCR gate is still required. Small norms, biases, recurrent
+vectors and convolution kernels remain floating point. Quantized matrices and
+the tied embedding/head are materialized as F32 for the existing CPU arithmetic;
+this is compressed storage, not a reduced-RAM or optimized quantized-matmul claim.
+
+The hosted sweep runs `crispembed-quantize` on the calibrated `vision-f32` export,
+with `--tensor-type 'v.*=f32'` and explicit matrix overrides. It retains Q8 and Q4
+controls, then compares tied head F16, recurrent A/B projection F16, and attention
+Q8/F16 variants. Every export audits all473 logical shapes/types; vision and
+non-matrix bytes must remain exact. Effective stored matrix types must match the
+recipe. Converting an already rounded F16 vision tensor back to F32 does not
+recover the calibrated source weights; start from the named converter recipe.
+
+The quantization harness reports `crispembed-diff` layer/cache errors, norms and
+whole-vocabulary scores without replacing the strict F16 comparator. Teacher-forced
+score comparisons are explicitly diagnostic and use the original Python prefix;
+a separate owning-context call generates freely from real image/prompt/GGUF
+weights. IDs/EOS/text and paired CER/WER are recorded, including mismatches.
+The original/resized images, custom prompt and a new owned invoice image are
+included; literal0 quant-gate initialization rejection is tested per export.
+The strict comparator's capture length bound is extended from12 to64 to permit
+longer fixtures; all numerical thresholds and calibration logic stay unchanged.
+Any strict F16 failure on a new fixture is retained and prevents a production
+parity claim. Hosted execution is pending. Larger pages, a corpus accuracy claim,
+registry hashes and HF publication remain open.

@@ -17,6 +17,8 @@ inline float rms_scale_cpu(const float * x, int width, float eps) {
     return 1.0f / std::sqrt(square / width + eps);
 }
 // Shared F32 reference arithmetic for native experimental decoder paths.
+// Quantized matrix loading is separately default-off; vectors/convs stay float.
+bool matrix_type_supported(const ggml_tensor * source);
 bool tensor_floats(ggml_tensor * source, float * target);
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output);

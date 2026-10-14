@@ -3,6 +3,7 @@
 #include "qwen35_decoder.h"
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
+#include "qwen35_math.h"
 #include "core/env_gate.h"
 #include "ggml-cpu.h"
 #include <algorithm>
@@ -51,7 +52,8 @@ struct qwen35_ocr_context {
 namespace {
 bool shape(ggml_tensor * t, int x, int y = 1, int z = 1) {
     return t && t->ne[0] == x && t->ne[1] == y && t->ne[2] == z && t->ne[3] == 1 &&
-           (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16);
+           ((t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16) ||
+            (y > 1 && z == 1 && qwen35_ocr::matrix_type_supported(t)));
 }
 bool valid_weights(const qwen35_ocr_context & c) {
     const auto & d = c.decoder;

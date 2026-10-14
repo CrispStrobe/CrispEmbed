@@ -15,8 +15,22 @@ static bool shape(ggml_tensor * tensor, int64_t columns, int64_t rows) {
     return tensor && tensor->ne[0] == columns && tensor->ne[1] == rows && tensor->ne[2] == 1 && tensor->ne[3] == 1;
 }
 
+bool matrix_type_supported(const ggml_tensor * source) {
+    if (!source || !ggml_is_contiguous(source)) return false;
+    if (source->type == GGML_TYPE_F32 || source->type == GGML_TYPE_F16) return true;
+    if (!core_env::on("CRISPEMBED_QWEN35_QUANT") || source->ne[0] < 1 || source->ne[1] < 2 || source->ne[2] != 1 ||
+        source->ne[3] != 1)
+        return false;
+    switch (source->type) {
+    case GGML_TYPE_Q8_0:
+    case GGML_TYPE_Q4_K:
+        return source->ne[0] % ggml_blck_size(source->type) == 0 && ggml_get_type_traits(source->type)->to_float;
+    default:
+        return false;
+    }
+}
 bool tensor_floats(ggml_tensor * source, float * target) {
-    if (!source || (source->type != GGML_TYPE_F32 && source->type != GGML_TYPE_F16)) return false;
+    if (!target || !matrix_type_supported(source)) return false;
     std::vector<uint8_t> raw(ggml_nbytes(source));
     ggml_backend_tensor_get(source, raw.data(), 0, raw.size());
     const size_t count = size_t(ggml_nelements(source));
@@ -37,7 +51,7 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     size_t elements = size_t(width) * tokens;
     for (auto * matrix : matrices) {
         if (!matrix || matrix->ne[0] != width || matrix->ne[1] < 1 || matrix->ne[1] > 300000 || matrix->ne[2] != 1 ||
-            matrix->ne[3] != 1 || (matrix->type != GGML_TYPE_F32 && matrix->type != GGML_TYPE_F16))
+            matrix->ne[3] != 1 || !matrix_type_supported(matrix))
             return false;
         elements += size_t(ggml_nelements(matrix)) + size_t(matrix->ne[1]) * tokens;
         if (elements > limit) return false;

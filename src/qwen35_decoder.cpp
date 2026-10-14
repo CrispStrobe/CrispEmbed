@@ -68,7 +68,7 @@ bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vecto
     hidden.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !embedding || ids.empty() || ids.size() > 16384 ||
         embedding->ne[0] < 1 || embedding->ne[0] > 8192 || embedding->ne[2] != 1 || embedding->ne[3] != 1 ||
-        (embedding->type != GGML_TYPE_F32 && embedding->type != GGML_TYPE_F16))
+        !matrix_type_supported(embedding))
         return false;
     const size_t width = size_t(embedding->ne[0]), bytes = ggml_row_size(embedding->type, width);
     if (ids.size() * width > 16 * 1024 * 1024) return false;

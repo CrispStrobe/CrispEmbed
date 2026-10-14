@@ -252,7 +252,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     double native_confidence = 0, reference_confidence = 0;
     auto cache = std::move(prefill_cache);
     auto logits = std::move(first_logits);
-    if (!expected.first || expected.second == 0 || expected.second > 12 || logits.empty())
+    if (!expected.first || expected.second == 0 || expected.second > 64 || logits.empty())
         ok = false;
     else
         for (size_t step = 0; step < expected.second; ++step) {
