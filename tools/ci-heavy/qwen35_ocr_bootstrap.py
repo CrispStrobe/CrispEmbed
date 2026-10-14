@@ -34,8 +34,12 @@ def main():
     math_audit = sys.argv[1:] == ["--vision-math"]
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     frontend_vision = sys.argv[1:] == ["--frontend-vision-f32"]
-    if sys.argv[1:] and not (precision_audit or math_audit or frontend_keys or frontend_vision):
+    frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
+    if sys.argv[1:] and not (precision_audit or math_audit or frontend_keys or frontend_vision or frontend_rms):
         raise ValueError("Unexpected arguments")
+    # Set explicitly for all native child processes; never inherit an accidental
+    # operator setting into the baseline. The original Python reference is unchanged.
+    os.environ["CRISPEMBED_QWEN35_PRECISE_RMS"] = "1" if frontend_rms else "0"
     torch.set_num_threads(4)
     repo = Path(__file__).resolve().parents[2]
     out = Path(os.environ["HEAVY_OUT"])
@@ -83,6 +87,7 @@ def main():
         manifest = converter.convert(local, export, converter.LIGHTON_MODEL, converter.LIGHTON_REVISION, keep_f32=keep_f32)
         report["weight_recipe"] = "vision-f32" if frontend_vision else "full-attention-k-f32" if frontend_keys else "original-f16"
         report["keep_f32"] = keep_f32
+        report["rms_reduction"] = "f64-sum-f32-squares" if frontend_rms else "original-sequential-f32"
         (out / "export-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         reader = gguf.GGUFReader(str(export))
         expected = {record["name"]: record for record in manifest["records"]}

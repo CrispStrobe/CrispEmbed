@@ -673,3 +673,12 @@ produced no inference evidence.
 Repository GPU-teardown guard also identified seven Qwen test entry points that
 missed `core_util::clean_exit`; source `c4d8a634` adds those wrappers, with no model
 math change. The static guard passes all163 one-shot binaries.
+
+
+A second arithmetic control, default-off `CRISPEMBED_QWEN35_PRECISE_RMS=1`,
+retains F32 squared inputs, scale, epsilon and zero-centered weights, but sums
+squares in F64 for decoder and query/key RMS norms. It is an experiment, not
+a source-exact reduction or a promoted recipe. Hosted
+`qwen35_ocr_bootstrap.py --frontend-precise-rms` explicitly sets the gate to1;
+other bootstrap modes explicitly set0. The original Python reference and all
+comparison thresholds remain unchanged. No result is available yet.

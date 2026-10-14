@@ -14,9 +14,7 @@ static bool finite(const std::vector<float> & x) {
     return std::all_of(x.begin(), x.end(), [](float v) { return std::isfinite(v); });
 }
 static void norm_head(const float * x, const float * weights, int width, float eps, float * y) {
-    float square = 0;
-    for (int i = 0; i < width; ++i) square += x[i] * x[i];
-    const float scale = 1.0f / std::sqrt(square / width + eps);
+    const float scale = rms_scale_cpu(x, width, eps);
     for (int i = 0; i < width; ++i) y[i] = (x[i] * scale) * (1.0f + weights[i]);
 }
 static void rotate(float * x, const attention_config & c, const float * positions, int bt, int count) {

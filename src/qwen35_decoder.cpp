@@ -17,9 +17,7 @@ static bool rms(const std::vector<float> & x, ggml_tensor * norm, int width, flo
     if (!tensor_floats(norm, weights.data())) return false;
     y.resize(x.size());
     for (size_t base = 0; base < x.size(); base += width) {
-        float square = 0;
-        for (int i = 0; i < width; ++i) square += x[base + i] * x[base + i];
-        const float scale = 1.0f / std::sqrt(square / width + eps);
+        const float scale = rms_scale_cpu(x.data() + base, width, eps);
         for (int i = 0; i < width; ++i) y[base + i] = (x[base + i] * scale) * (1.0f + weights[i]);
     }
     return true;
