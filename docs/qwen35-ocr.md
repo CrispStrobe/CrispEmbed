@@ -336,3 +336,32 @@ first-model work is native vision/frontend, standalone image-to-text validation,
 C ABI/orchestrator/CLI/server/bindings, Q8/Q4 critical-tensor calibration and
 validated HF publication/registry pins. The permissive queue remains active,
 starting with this checkpoint until those completion gates hold.
+
+## Native vision / connected decoder lane — 2026-10-14
+
+Implemented in `src/qwen35_vision.{h,cpp}` behind the existing value-parsed
+`CRISPEMBED_QWEN35_OCR` gate. The CPU reference uses actual F16/F32 GGUF weights
+and F32 projection arithmetic: flattened Conv3d patch projection plus bias,
+learned bilinear position interpolation in merge-group order, full 2D vision
+RoPE, ordinary LayerNorm, per-frame non-causal attention, tanh-GELU blocks and
+an exact-GELU patch merger. It preserves the checkpoint's `v.blocks.*` names.
+No Python, ONNX Runtime or reference array is part of the native library.
+
+Hosted trained-checkpoint run
+[38526207651](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38526207651),
+source `67430932`, compares all 12 layers and the patch/position/rotary/merger
+boundaries. A connected `test-qwen35-decoder --native-vision` arm constructs
+native text embeddings, inserts native vision output at the image-token slots,
+then verifies the whole decoder, vocabulary logits, native cache states and
+free-running greedy IDs. **Only official packed pixels, prompt IDs and position
+coordinates are supplied**; this does not verify a raw-image frontend/tokenizer.
+The run's conclusion and numerical evidence are still pending.
+
+Original-module non-square/multi-frame controls are at
+[38526798047](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38526798047),
+source `5a427124`: two non-square grids, three frames, independent per-frame
+Python replay, native composed layers and reset/invalid controls. The initial
+harness stopped before comparison because `Qwen3_5VisionConfig` is not exported
+from Transformers' top-level namespace; the corrected import is from its model
+configuration module. [Initial failure](../tests/results/qwen35-ocr/synthetic-vision-initial-failure.json)
+is retained. Production alias/API, quantization and publication remain open.
