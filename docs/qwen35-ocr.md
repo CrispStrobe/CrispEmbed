@@ -108,8 +108,9 @@ gh workflow run heavy-cpu.yml --ref main \
 
 1. The gated native RGB/BPE frontend now passes its independent input checks and
    two connected trained fixtures with the explicit F16 text/F32 vision recipe.
-   Next, create an owning inference context with load/free, file/raw-RGB entry
-   points, bounded native generation, confidence and clear/reset semantics.
+   An owning engine context now passes load/free, file/raw-RGB, native generation,
+   confidence, repeated/two-context and clear/reset checks. Next, wire this context
+   into the unified public API and orchestrator/CLI/bindings.
    No reference arrays belong in that context. Preserve the source pixel budget;
    reject pages beyond the current1024-patch bound instead of silently reducing them.
 2. Full-stage comparator: absolute error/magnitudes, cosine, logits/argmax and
@@ -759,12 +760,16 @@ ID, including EOS. Returned IDs include EOS; decoded text skips source special
 tokens. Invalid token settings reject without changing the previous setting.
 
 [Hosted context check38600487132](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
-at `0a5efdc6` is queued. It uses the passing F32 vision/F16 text recipe, actual PNG
+at `0a5efdc6` passes all eight context cases and the lifecycle/input controls. It uses
+the passing F32 vision/F16 text recipe, actual PNG
 files, a separately compiled C header consumer and the pinned original Python
 reference. Checks cover raw/file outputs, repeated calls, two simultaneously
 loaded contexts, freeing one while using the other, grayscale/RGBA, token-limit
 prefixes, IDs/EOS/text/confidence, missing weights/metadata and invalid-input,
-error-reset/recovery and master=0 controls. No result is claimed before completion.
+error-reset/recovery and master=0 controls. Full requests match all9 IDs through
+EOS and17 decoded bytes; max per-token confidence error2.66547188e-7 under the
+unchanged1e-6 gate. Token-limited prefixes preserve the original IDs/text and report
+MAX_TOKENS. [Complete case/confidence/stop evidence](../tests/results/qwen35-ocr/context-lifecycle-parity.json).
 Long-context exhaustion, larger pages and arbitrary-file/corpus coverage remain
 unverified. The standalone test supplies the image decoder normally provided by
 `image_preprocess.cpp`; the engine is not yet wired into the main library.

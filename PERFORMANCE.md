@@ -5021,3 +5021,17 @@ match, resized keys0.00183296204 and score max abs8.17775726e-5. The numeric gat
 are unchanged. [Full repeated evidence](tests/results/qwen35-ocr/frontend-current-source-parity.json).
 This completes the experimental frontend lane, with production contexts and
 API integration still open.
+
+
+### Qwen3.5 owning engine context — 2026-10-14
+
+[Hosted ARM38600487132](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132),
+source0a5efdc6, passes eight native context cases: raw/file, repeated calls,
+interleaved independent contexts and survivor after freeing another, truncation,
+grayscale/RGBA and error recovery. Full requests match9/9 IDs/EOS and17 decoded
+bytes. Confidence maximum error2.66547188e-7 under the unchanged1e-6 gate; token
+probabilities/means include EOS. C header compilation, invalid metadata/weights,
+settings/input/reset/master=0 controls pass. [Full evidence](tests/results/qwen35-ocr/context-lifecycle-parity.json).
+The explicit F32 vision/F16 text export remains1,918,139,328 bytes. Context-limit
+exhaustion, arbitrary-file/corpus coverage, parallel calls, GPU, quantization and
+production integration remain unverified; no latency or accuracy claim.

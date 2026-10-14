@@ -20,7 +20,7 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 | Order | Model / upstream | License | Total weight budget | Work / status |
 |---|---|---|---|---|
-| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. C ABI and quantization remain; no model-support claim |
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. Owning engine C interface passes8 lifecycle cases and confidence max2.67e-7. Unified API/orchestrator/CLI/bindings and quantization remain; no model-support claim |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -45,8 +45,11 @@ keys abs0.00183296204 under unchanged0.002, and score reported cosine1/max8.18e-
 The [pinned input check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38556570758)
 passes9 images/11 texts/5102 NFC cases +285 legacy checks. Export1,918,139,328 bytes;
 F16/F32-key/F64-RMS failures retained. [Evidence and bounds](docs/qwen35-ocr.md#native-rgbbpe-frontend-lane--2026-10-14).
-Next: owning native inference context, repeated calls/two contexts/reset controls,
-then C ABI/orchestrator/CLI/bindings and calibrated quantization/publication.
+Owning-context lane completed2026-10-14: [ARM context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
+at0a5efdc6 passes8 raw/file/gray/RGBA/lifecycle cases, full9/9 IDs/EOS/text,
+per-token confidence max2.67e-7 under1e-6, C header and invalid/reset/free-survivor
+controls. [Context evidence](tests/results/qwen35-ocr/context-lifecycle-parity.json).
+Next: unified C ABI/orchestrator/CLI/bindings and calibrated quantization/publication.
 No production alias or corpus accuracy claim.
 
 Existing weight references: PaddleOCR-VL-1.6 Q4_K **1.299 GB**, GLM-OCR Q4_K
@@ -508,7 +511,6 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-14 | `ocr-qwen35-context` | Owning native LightOnOCR-3 context, bounded generation/confidence, file/raw inputs and lifecycle controls | [Hosted context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132) dispatched at0a5efdc6: standalone engine C ABI and pure-C header smoke, strict473-tensor schema, independent weights/tokenizers, fresh native caches per request, file/raw/gray/RGBA, limits/confidence, repeat/two-context/error-reset controls. Experimental CPU/F32-F16 only; unified public ABI/orchestrator/quantization/publication remain separate |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
