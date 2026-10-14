@@ -29,8 +29,20 @@ bool tensor_floats(ggml_tensor * source, float * target) {
 
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output) {
+    output.clear();
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
+        width > 32768 || tokens < 1 || tokens > 16384 || threads < 1 || threads > 256)
+        return false;
+    constexpr size_t limit = 512ull * 1024 * 1024;
     size_t elements = size_t(width) * tokens;
-    for (auto * matrix : matrices) elements += size_t(ggml_nelements(matrix)) + size_t(matrix->ne[1]) * tokens;
+    for (auto * matrix : matrices) {
+        if (!matrix || matrix->ne[0] != width || matrix->ne[1] < 1 || matrix->ne[1] > 300000 || matrix->ne[2] != 1 ||
+            matrix->ne[3] != 1 || (matrix->type != GGML_TYPE_F32 && matrix->type != GGML_TYPE_F16))
+            return false;
+        elements += size_t(ggml_nelements(matrix)) + size_t(matrix->ne[1]) * tokens;
+        if (elements > limit) return false;
+    }
+    if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); })) return false;
     const size_t memory = 1024 * 1024 + elements * sizeof(float);
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ memory, nullptr, false }), ggml_free);
     std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);

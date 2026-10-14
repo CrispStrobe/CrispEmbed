@@ -40,8 +40,11 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     ).eval()
     arrays = {}
     phase = ["prefill"]
+    generation_step = [None]
 
     def save(name, tensor):
+        if name.startswith("generated.") and ".decoder.position_ids" not in name and ".scores." not in name and name != "generated.ids":
+            return
         if torch.is_tensor(tensor):
             value = tensor.detach().cpu()
             if value.is_floating_point():
@@ -140,6 +143,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     handles.append(language.norm.register_forward_hook(hook("decoder.norm")))
 
     def language_input(module, args, kwargs):
+        if generation_step[0] is not None:
+            phase[0] = f"generated.{generation_step[0]}"
+            generation_step[0] += 1
         if phase[0] is not None:
             for name in ["position_ids", "inputs_embeds", "input_ids"]:
                 save(f"{phase[0]}.decoder.{name}", kwargs.get(name))
@@ -196,8 +202,11 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         max_error = delta.max().item()
         same_argmax = bool(torch.equal(cached.logits[:, -1].argmax(-1), full.logits[:, -1].argmax(-1)))
         phase[0] = None
+        generation_step[0] = 0
         generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                    use_cache=True, return_dict_in_generate=True, output_scores=True)
+        phase[0] = None
+        generation_step[0] = None
         ids = generated.sequences[:, inputs["input_ids"].shape[1]:]
         save("generated.ids", ids)
         for index, score in enumerate(generated.scores):
@@ -211,7 +220,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     required = [f"prefill.vision.layer.{index}" for index in range(vision_depth)]
     for label in ["prefill", "cached", "full_prefix"]:
         required += [f"{label}.decoder.layer.{index}" for index in range(decoder_depth)]
-        required += [f"{label}.decoder.position_ids", f"{label}.logits"]
+        required += [f"{label}.decoder.position_ids", f"{label}.decoder.inputs_embeds", f"{label}.logits"]
         for index, kind in enumerate(model.config.text_config.layer_types):
             if kind == "linear_attention":
                 required += [f"{label}.linear.{index}.{field}"
@@ -222,14 +231,15 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             if label != "full_prefix":
                 fields = ["conv_states", "recurrent_states"] if kind == "linear_attention" else ["keys", "values"]
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
+    required += [f"generated.{index}.decoder.position_ids" for index in range(len(generated.scores))]
     missing = sorted(set(required) - set(arrays))
     np.savez(output, **arrays)
     # Small standalone native-op probe; never part of exported model weights.
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
     for name, value in arrays.items():
         if ((".delta." in name or ".linear." in name or ".cache." in name
-             or ".attention." in name or name.endswith(".decoder.position_ids"))
-                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith("linear."):
+             or ".attention." in name or ".decoder." in name or name.endswith(".logits"))
+                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith(("linear.", "generated.")):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()
