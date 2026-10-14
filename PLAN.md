@@ -520,6 +520,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-14 | `ocr-qwen35-quant` | Gated Qwen3.5 Q8/Q4 loading and native mixed-precision calibration | Preserve F32 vision/F16 baseline; use crispembed-quantize for Q8/Q4 variants and exact tensor-type audits. Hosted-only Python/native stage, logits, greedy IDs/EOS/text and confidence comparisons; retain every initial result, no existing F16 gate changes. No registry/HF publication until quality evidence supports a recipe |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 
