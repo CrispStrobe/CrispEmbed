@@ -733,3 +733,41 @@ unchanged numerical gates. Resized keys remain0.00183296204; score max abs8.1777
 reported cosine1. [Current-source errors, norms, budgets and outputs](../tests/results/qwen35-ocr/frontend-current-source-parity.json).
 The reproducible frontend lane is complete; the owning-context and production
 integration lanes remain open.
+
+
+## Owning context lane — 2026-10-14
+
+The experimental `crispembed-qwen35-delta` target now includes
+[`qwen35_ocr.h`](../src/qwen35_ocr.h) and its owning CPU engine. Initialization
+checks the pinned source/format/tokenizer and all473 tensors' names, mapped shapes
+and F32/F16 types. It owns backend buffers and the tokenizer, and frees weights
+before the backend. Every recognition starts native vision, positions and fresh
+recurrent/KV state; no reference arrays enter the engine.
+
+The engine C interface provides init/free, bounded max-token configuration,
+file/raw recognition, generated IDs, selected-token probabilities, mean confidence,
+stop reason and an error string. Returned buffers remain valid until the next
+recognition or free; failures clear prior text/IDs/confidence and zero `out_len`.
+Independent contexts own independent state; one context is not reentrant.
+Null prompt uses the audited empty OCR prompt. Grayscale is replicated to RGB;
+RGBA drops alpha, matching the original PIL RGB conversion. The existing native
+pixel/patch bounds still apply, without lowering the publisher's pixel budget.
+
+Generation reports EOS, max-token truncation or native context exhaustion
+separately. Confidence is stable whole-vocabulary softmax for each greedy selected
+ID, including EOS. Returned IDs include EOS; decoded text skips source special
+tokens. Invalid token settings reject without changing the previous setting.
+
+[Hosted context check38600487132](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
+at `0a5efdc6` is queued. It uses the passing F32 vision/F16 text recipe, actual PNG
+files, a separately compiled C header consumer and the pinned original Python
+reference. Checks cover raw/file outputs, repeated calls, two simultaneously
+loaded contexts, freeing one while using the other, grayscale/RGBA, token-limit
+prefixes, IDs/EOS/text/confidence, missing weights/metadata and invalid-input,
+error-reset/recovery and master=0 controls. No result is claimed before completion.
+Long-context exhaustion, larger pages and arbitrary-file/corpus coverage remain
+unverified. The standalone test supplies the image decoder normally provided by
+`image_preprocess.cpp`; the engine is not yet wired into the main library.
+
+Unified `crispembed_ocr_model_*`, orchestrator, CLI/server, bindings, registry,
+quantization, model publication and a runtime release remain separate work.
