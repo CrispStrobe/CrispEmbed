@@ -89,25 +89,29 @@ normalized boxes independently of transcription.
   rejection, official cached-vs-full-prefix logits/argmax and reference artifacts.
   Model/export weights stay in remote scratch; only reports/reference probes are
   retained. The current script also builds and compares native recurrence,
-  trained linear/full attention, vision, decoder and native-position arms;
-  standalone raw-image OCR remains unfinished.
+  trained linear/full attention, vision, decoder, native-position and raw RGB/BPE
+  arms. Two owned image-to-text fixtures pass with the explicit F32 vision recipe;
+  production contexts, corpus validation and integration remain unfinished.
 
 Launch through the existing workflow:
 
 ```sh
 gh workflow run heavy-cpu.yml --ref main \
   -f script=tools/ci-heavy/qwen35_ocr_bootstrap.py \
+  -f args=--frontend-vision-f32 \
+  -f runner=ubuntu-24.04-arm \
   -f 'pip=torch==2.10.0 torchvision==0.25.0 transformers==5.5.4 tokenizers==0.22.2 gguf==0.19.0 huggingface_hub safetensors pillow numpy' \
   -f timeout_minutes=60
 ```
 
 ## Next bounded implementation steps
 
-1. Complete the frontend behind `CRISPEMBED_QWEN35_OCR=1`, using `core_env::on()`:
-   exact tokenizer/template and raw RGB resize/normalization/patch packing.
-   Feed those native inputs into the verified vision/merger, multimodal positions
-   and 24-layer decoder with its native recurrent/KV caches. Compare standalone
-   image-to-text against Python; frontend evidence remains open.
+1. The gated native RGB/BPE frontend now passes its independent input checks and
+   two connected trained fixtures with the explicit F16 text/F32 vision recipe.
+   Next, create an owning inference context with load/free, file/raw-RGB entry
+   points, bounded native generation, confidence and clear/reset semantics.
+   No reference arrays belong in that context. Preserve the source pixel budget;
+   reject pages beyond the current1024-patch bound instead of silently reducing them.
 2. Full-stage comparator: absolute error/magnitudes, cosine, logits/argmax and
    final decoding against the frozen official reference. Include non-square
    images, digit/Unicode prompts, repeated calls, two independent contexts,
@@ -719,3 +723,9 @@ The named recipe matches all52 retained tensors from the successful hosted
 manifest exactly. Hosted `qwen35_ocr_bootstrap.py --frontend-vision-f32` uses the
 same recipe. `--keep-f32` remains available for additional exact tensor names;
 unknown names reject. This command does not register or publish the checkpoint.
+
+
+The current-source [ARM recheck38597484044](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38597484044)
+is queued at `937ab2a0`. It exercises the named shared recipe, explicit Tokenizers
+pin and default-off RMS control together against the same original reference and
+unchanged numerical gates before this lane is landed.
