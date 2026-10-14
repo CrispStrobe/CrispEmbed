@@ -149,6 +149,7 @@ def main():
         report["native_vision"] = probe("native-vision", export, "test-qwen35-vision")
         report["native_decoder"] = probe("native-decoder", export, "test-qwen35-decoder")
         report["native_connected"] = probe("native-connected", export, "test-qwen35-decoder", ["--native-vision"])
+        report["native_positions"] = probe("native-positions", export, "test-qwen35-decoder", ["--native-positions"])
         if precision_audit:
             arms = []
             recipes = [
@@ -202,7 +203,7 @@ def main():
             report["math_arms"] = arms
             if not all(arm["vision"] and arm["connected"] for arm in arms if arm["name"] in ["both", "both-f32"]):
                 raise ValueError("Precise vision reductions fail the unchanged stage/connected parity gates")
-        elif not all(report[key] for key in ["native_vision", "native_decoder", "native_connected"]):
+        elif not all(report[key] for key in ["native_vision", "native_decoder", "native_connected", "native_positions"]):
             raise ValueError("Native vision/decoder/connected parity failed; inspect retained stage logs")
         report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
     except BaseException as error:
