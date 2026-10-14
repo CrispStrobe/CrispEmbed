@@ -5077,3 +5077,37 @@ Q4 FFN error remains even with all attention/head/controls at baseline F16.
 are retained. Quantized scores exceed F16 tolerance; exact synthetic text is a
 bounded result. No latency/corpus claim; weights still materialize as F32.
 Next: FFN precision/importance, broader page coverage and row-wise matmul A/B.
+
+
+### Qwen3.5 native FFN precision/importance calibration — 2026-10-14
+
+[Hosted ARM38627759408](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38627759408),
+source af8a7967, passes ten exports/40 native cases/3490 stage vectors and473
+logical-shape/type/critical-byte audits per export. All41 generated IDs/EOS/text
+match the pinned Python reference per recipe; paired CER/WER0, no teacher-forced
+argmax mismatch. Both new fixtures pass unchanged strict F16 numerical gates.
+The native observer collects72 FFN vectors over511 activation rows each from six
+separate owned calibration images; no Python activation or teacher forcing.
+Literal0 registration/runtime bypass and first-image off/on output controls pass.
+
+| F32-vision/Q8-head recipe | Actual bytes | Min score cosine | Max score absolute error |
+|---|---:|---:|---:|
+| Q8 control | 1,213,238,272 | 0.999463260 | 0.379626036 |
+| Q4 control | 964,430,848 | 0.949601591 | 4.31327391 |
+| Q4 + FFN down Q8 | 1,008,471,040 | 0.954575598 | 4.49197674 |
+| Q4 + FFNs Q6 | 1,032,555,520 | 0.962701976 | 3.45168352 |
+| Q4 + FFNs Q8 | 1,096,551,424 | 0.962654233 | 3.33866954 |
+| Q4 FFNs + Q8 attention/F16 A/B | 1,081,670,656 | 0.977639556 | 3.25204706 |
+| Q6 FFNs + Q8 attention/F16 A/B | 1,149,795,328 | 0.998158216 | 0.887068987 |
+| Q4 + native FFN importance | 964,430,848 | 0.949486971 | 5.22058201 |
+| Q4 FFNs + Q8 attention/F16 A/B + native FFN importance | 1,081,670,656 | 0.980404854 | 3.0016253 |
+
+Q8 attention/Q6 FFNs saves63,442,944 bytes (5.23%) relative to Q8, with less score
+fidelity. Its effective stored types contain no Q4:79 Q8_0,72 Q6_K,36 F16 A/B
+controls,286 F32 tensors. Plain Q4 calibration worsens both metrics here;
+importance helps the Q8-attention arm at unchanged size. Six calibration and four
+evaluation cases share a synthetic renderer family; this is no corpus result.
+[All recipes, export hashes, calibration provenance and full stage/output metrics](tests/results/qwen35-ocr/ffn-calibration-parity.json)
+are retained. Q8 remains the stronger score control. Next: independent page/corpus
+validation for Q8/Q6 and Q8, then memory/performance A/B. Weights still materialize
+as F32, native images are bounded to1024 patches, and latency/RAM are unmeasured.

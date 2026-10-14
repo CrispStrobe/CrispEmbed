@@ -936,7 +936,7 @@ CRISPEMBED_QWEN35_OCR=1 CRISPEMBED_QWEN35_QUANT=1 \
   crispembed -m model-q4.gguf --ocr input.png --ocr-max-tokens 64
 ```
 
-Next: test Q4 FFN projection precision/importance, preserve the Q8 candidate,
+The following FFN sweep extends this evidence. Preserve the Q8 candidate,
 expand page/corpus coverage and evaluate row-wise F32 matmul memory/performance
 before publication. The current scope remains1024 patches, compressed storage
 with F32 materialization, and four owned synthetic cases. No registry alias,
@@ -944,7 +944,7 @@ HF publication, runtime release, latency or corpus-accuracy claim.
 
 ## Native FFN importance/precision lane — 2026-10-14
 
-The next hosted sweep keeps the Q8 tied head and calibrated F32 vision. It adds
+The hosted sweep keeps the Q8 tied head and calibrated F32 vision. It adds
 Q6_K matrix loading under the existing quant gate and tests FFN down-projection
 Q8, all-FFN Q6/Q8, compact Q8 attention without F16-head overhead, and native
 importance-weighted Q4. The preceding seven-recipe evidence remains unchanged.
@@ -966,4 +966,61 @@ synthetic evaluation fixtures. All use the same renderer family, so this does
 not establish corpus generalization. Export file SHA-256 is now recorded too.
 Existing F16 numeric gates and all prior runtime alternatives remain unchanged.
 [Hosted FFN sweep38627759408](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38627759408)
-is running at `af8a7967`; no selected FFN recipe, HF publication or speed claim.
+passed at `af8a7967f2d7af2c4e4c47ba06ea00a53e1fe717`, with lint and secret scan
+also passing. Collection covers511 native activation rows per matrix; all six
+calibration examples reach EOS. The importance GGUF is549,440 bytes, SHA-256
+`223fbfbe1a4ea52114cfc7ca0d387829ac7a2013ac2cb048146122b0f337d8e5`.
+
+All ten exports pass all41 generated IDs/EOS/text on the same four evaluation
+cases, paired CER/WER0 and all teacher-forced argmaxes equal. The sweep retains
+3490 diagnostic vectors and473 tensor audits per export. Both new fixtures pass
+the unchanged strict F16 stage gates. These are synthetic quality checks;
+quantized scores still exceed F16 tolerances.
+
+| Recipe (all keep F32 vision and Q8 tied head) | Actual bytes | Minimum generated-score cosine | Maximum score absolute error |
+|---|---:|---:|---:|
+| F16 text baseline (F16 tied head) | 1,918,139,328 | 1.000000000 | 0.00009465 |
+| Q8 text | 1,213,238,272 | 0.999463260 | 0.379626 |
+| Q4 text | 964,430,848 | 0.949601591 | 4.313274 |
+| Q4 text + Q8 FFN down | 1,008,471,040 | 0.954575598 | 4.491977 |
+| Q4 text + Q6 FFNs | 1,032,555,520 | 0.962701976 | 3.451684 |
+| Q4 text + Q8 FFNs | 1,096,551,424 | 0.962654233 | 3.338670 |
+| Q4 FFNs + Q8 attention/F16 A/B | 1,081,670,656 | 0.977639556 | 3.252047 |
+| Q6 FFNs + Q8 attention/F16 A/B | 1,149,795,328 | 0.998158216 | 0.887069 |
+| Q4 text + native FFN imatrix | 964,430,848 | 0.949486971 | 5.220582 |
+| Q4 FFNs + Q8 attention/F16 A/B + native FFN imatrix | 1,081,670,656 | 0.980404854 | 3.001625 |
+
+The Q8-attention/Q6-FFN candidate saves63,442,944 bytes (5.23%) against Q8,
+with lower score fidelity. Its effective types are79 Q8_0 matrices,72 Q6_K FFN
+matrices,36 F16 A/B controls and286 F32 tensors; no Q4 tensors remain despite
+the sweep arm's historical `q4-attention-q8-ffn-q6` name. Q8 remains the stronger
+score-fidelity control. Neither candidate is selected for production.
+
+Selective FFN restoration alone leaves attention drift. Q8 down improves worst
+cosine but worsens maximum score error; all-FFN Q8 adds more bytes than Q6 without
+improving the worst cosine here. Native importance slightly worsens plain Q4
+and its maximum error, while improving the Q8-attention arm at unchanged size.
+Calibration is recipe-dependent; these six examples do not establish a general
+improvement. All negative results remain in the
+[full report](../tests/results/qwen35-ocr/ffn-calibration-parity.json), including
+export SHA-256, effective tensor types, layer/cache errors/norms, scores, complete
+native outputs and calibration provenance.
+
+To reproduce the mixed candidate from the calibrated F16-text/F32-vision source:
+
+```sh
+crispembed-quantize model-vision-f32.gguf model-attention-q8-ffn-q6.gguf q4_k \
+  --tensor-type 'v.*=f32' \
+  --tensor-type 'l.layers.*.self_attn.*.weight=q8_0' \
+  --tensor-type 'l.layers.*.linear_attn.in_proj_qkv.weight=q8_0' \
+  --tensor-type 'l.layers.*.linear_attn.in_proj_z.weight=q8_0' \
+  --tensor-type 'l.layers.*.linear_attn.out_proj.weight=q8_0' \
+  --tensor-type 'l.layers.*.linear_attn.in_proj_a.weight=f16' \
+  --tensor-type 'l.layers.*.linear_attn.in_proj_b.weight=f16' \
+  --tensor-type 'l.layers.*.mlp.*_proj.weight=q6_k'
+```
+
+Next: broader independent page/corpus coverage for Q8 and the Q8/Q6 candidate,
+then row-wise F32 matmul memory/performance A/B. The1024-patch bound and full F32
+weight materialization remain. No HF publication, registry alias, runtime release,
+latency or peak-memory claim follows from this sweep.

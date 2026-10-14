@@ -98,8 +98,16 @@ Q4 is0.964GB/min scorecos0.9496; Q8 is1.213GB/cos0.99946. Attention precision he
 but the tested head/attention restorations offer less size/score fidelity than Q8.
 [Every stage error/norm and output](../tests/results/qwen35-ocr/quant-calibration-parity.json).
 
-Next bounded lane: FFN mixed precision/importance for Q4, preserving Q8 for broader
-validation; row-wise F32 matmul can target materialization memory/performance.
+The [native FFN sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38627759408)
+at af8a7967 passes ten exports/40 native cases/3490 diagnostic vectors. All41
+IDs/EOS/text match per export. Six disjoint synthetic calibration images supply72
+FFN importance vectors,511 rows each, with registration/runtime literal0 and
+output off/on controls. Q8 attention/Q6 FFNs is1.150GB/min scorecos0.998158,
+versus Q8's1.213GB/0.999463. Plain Q4 importance regresses; with Q8 attention it
+improves0.977640→0.980405 at unchanged1.082GB. All tensor audits, hashes, negative
+results and [full stage/output evidence](../tests/results/qwen35-ocr/ffn-calibration-parity.json)
+are retained. Next bounded lane: broader independent page/corpus coverage for
+Q8 and Q8/Q6; row-wise F32 matmul can target materialization memory/performance.
 Larger pages currently reject beyond1024 patches. Registry aliases, corpus
 accuracy, GPU/latency claims and HF publication remain pending.
 The [owning-context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
