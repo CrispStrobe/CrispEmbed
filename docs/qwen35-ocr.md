@@ -879,5 +879,6 @@ included; literal0 quant-gate initialization rejection is tested per export.
 The strict comparator's capture length bound is extended from12 to64 to permit
 longer fixtures; all numerical thresholds and calibration logic stay unchanged.
 Any strict F16 failure on a new fixture is retained and prevents a production
-parity claim. Hosted execution is pending. Larger pages, a corpus accuracy claim,
+parity claim. [Hosted quant sweep38614951999](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999)
+is running at `6b970ea8`. Larger pages, a corpus accuracy claim,
 registry hashes and HF publication remain open.
