@@ -44,7 +44,7 @@
     ]
   },
   "dart_initial": "legacy hand-sized allocation80 bytes on64-bit, omitted native trailing fields",
-  "dart_corrected": "typed Struct matching all native pipeline fields; runtime layout check pending",
+  "dart_corrected": "typed Struct matching all20 native fields; hosted C/Python/Dart params size136 verified",
   "native_header_fields": 20,
-  "hosted_check": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38609791536"
+  "hosted_check": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501"
 }

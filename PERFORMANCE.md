@@ -5035,3 +5035,18 @@ settings/input/reset/master=0 controls pass. [Full evidence](tests/results/qwen3
 The explicit F32 vision/F16 text export remains1,918,139,328 bytes. Context-limit
 exhaustion, arbitrary-file/corpus coverage, parallel calls, GPU, quantization and
 production integration remain unverified; no latency or accuracy claim.
+
+### Qwen3.5 public OCR integration — 2026-10-14
+
+[Hosted ARM38610331501](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501),
+source815234d5, passes unified C API, orchestrator ID20, Python/Rust/Dart,
+CLI single/stage and HTTP pipeline. An original custom-prompt capture passes189
+native stage comparisons, exact9/9 IDs/EOS and17 decoded bytes. Generated-score
+reported minimum cosine1.0/max absolute error8.63075256e-5; cache-key maximum
+0.00198709965 under unchanged0.002. This narrow margin still needs broader inputs.
+Unified C confidence max error2.64690611e-7; custom prompt6.83976417e-8 under1e-6.
+C/Python/Dart agree on stage168/cleanup60/params136 bytes; incomplete initial
+mirrors were corrected. [Complete prompt errors/norms and public consumer evidence](tests/results/qwen35-ocr/public-integration-parity.json).
+The1,918,139,328-byte F32 vision/F16 text export and1024-patch bound remain.
+No corpus accuracy, latency, GPU or quantization claim; native Q8/Q4 loading and
+mixed precision, broader page validation and publication remain TODO.

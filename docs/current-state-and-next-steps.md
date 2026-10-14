@@ -81,14 +81,21 @@ exact9/9 IDs/EOS and decoded text; resized cache keys max abs0.001833 under the
 unchanged0.002 limit. Storage is1.918 GB. The F16 baseline and precision-control
 failures remain recorded. [Sources, full evidence and bounds](qwen35-ocr.md).
 
-This port has an experimental owning engine C interface, with no unified public
-C ABI, registry alias, quantization result,
-corpus accuracy claim or HF publication. Larger pages currently reject beyond
-1024 patches. The [owning-context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
-passes eight raw/file/lifecycle cases, exact full9/9 IDs/EOS/text, confidence max
-error2.67e-7, repeated/two-context/free-survivor and input/reset controls. The next
-bounded lane is unified public API/orchestrator/CLI/binding integration per the
-contribution checklist; larger-page and corpus validation remain open.
+The owning engine and unified C API/orchestrator ID20, CLI/server and
+Python/Rust/Dart consumers now pass hosted checks. The
+[public integration run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501)
+at815234d5 includes an original custom-prompt capture:189 comparisons, exact9/9
+IDs/EOS/text, score cosine1/max8.63e-5 and cache keys0.0019871 under unchanged0.002.
+C/Python/Dart agree on stage168/cleanup60/params136 bytes. Initial Python/Dart
+layout defects and full stage errors/norms are retained in the
+[public evidence](../tests/results/qwen35-ocr/public-integration-parity.json).
+
+Next bounded lane: Q8/Q4 tensor loading and mixed precision through the native
+quantizer, initially preserving calibrated F32 vision; compare logits/IDs/EOS/text
+before publication. Larger pages currently reject beyond1024 patches. Registry
+aliases, corpus accuracy, GPU/latency claims and HF publication remain pending.
+The [owning-context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
+passes eight lifecycle cases and confidence max error2.67e-7.
 The app's pinned minimal release and OCR dependency remain separate from this
 experimental vendor work. Indra stays restricted to public-code analysis.
 

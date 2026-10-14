@@ -1307,16 +1307,38 @@ final class CrispembedOcrPipelineParamsFFI extends Struct {
   external int imageTextFallback;
 }
 
-
-typedef CrispembedOcrInitStagesNative = Pointer<Void> Function(Int32, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<CrispembedOcrStageFFI>, Int32, Int32);
-typedef CrispembedOcrInitStagesDart = Pointer<Void> Function(int, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<CrispembedOcrStageFFI>, int, int);
+typedef CrispembedOcrInitStagesNative = Pointer<Void> Function(
+    Int32,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<CrispembedOcrStageFFI>,
+    Int32,
+    Int32);
+typedef CrispembedOcrInitStagesDart = Pointer<Void> Function(
+    int,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<Utf8>,
+    Pointer<CrispembedOcrStageFFI>,
+    int,
+    int);
 typedef CrispembedOcrSetMaxNative = Void Function(Pointer<Void>, Int32);
 typedef CrispembedOcrSetMaxDart = void Function(Pointer<Void>, int);
 typedef CrispembedOcrGetMaxNative = Int32 Function(Pointer<Void>);
 typedef CrispembedOcrGetMaxDart = int Function(Pointer<Void>);
-typedef CrispembedOcrSetPromptNative = Int32 Function(Pointer<Void>, Pointer<Utf8>);
+typedef CrispembedOcrSetPromptNative = Int32 Function(
+    Pointer<Void>, Pointer<Utf8>);
 typedef CrispembedOcrSetPromptDart = int Function(Pointer<Void>, Pointer<Utf8>);
-typedef CrispembedOcrConfidenceNative = Pointer<Float> Function(Pointer<Void>, Pointer<Int32>);
-typedef CrispembedOcrConfidenceDart = Pointer<Float> Function(Pointer<Void>, Pointer<Int32>);
+typedef CrispembedOcrConfidenceNative = Pointer<Float> Function(
+    Pointer<Void>, Pointer<Int32>);
+typedef CrispembedOcrConfidenceDart = Pointer<Float> Function(
+    Pointer<Void>, Pointer<Int32>);
 typedef CrispembedOcrMeanNative = Float Function(Pointer<Void>);
 typedef CrispembedOcrMeanDart = double Function(Pointer<Void>);

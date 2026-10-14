@@ -1474,12 +1474,16 @@ class CrispOcrModel {
     }
   }
 
-
   /// Recognize contiguous grayscale/RGB/RGBA bytes through the unified API.
-  String recognizeRaw(Uint8List pixels, int width, int height, {int channels = 3}) {
+  String recognizeRaw(Uint8List pixels, int width, int height,
+      {int channels = 3}) {
     _checkDisposed();
-    if (width <= 0 || height <= 0 || ![1, 3, 4].contains(channels) || pixels.length != width * height * channels) {
-      throw ArgumentError('invalid image dimensions, channels or buffer length');
+    if (width <= 0 ||
+        height <= 0 ||
+        ![1, 3, 4].contains(channels) ||
+        pixels.length != width * height * channels) {
+      throw ArgumentError(
+          'invalid image dimensions, channels or buffer length');
     }
     final data = calloc<Uint8>(pixels.length);
     final len = calloc<Int32>();
@@ -1487,33 +1491,57 @@ class CrispOcrModel {
       data.asTypedList(pixels.length).setAll(0, pixels);
       final result = _recognizeFn(_ctx, data, width, height, channels, len);
       return result == nullptr ? '' : result.toDartString(length: len.value);
-    } finally { calloc.free(data); calloc.free(len); }
+    } finally {
+      calloc.free(data);
+      calloc.free(len);
+    }
   }
+
   void setMaxTokens(int n) {
     _checkDisposed();
-    _lib.lookupFunction<CrispembedOcrSetMaxNative, CrispembedOcrSetMaxDart>('crispembed_ocr_model_set_max_tokens')(_ctx, n);
+    _lib.lookupFunction<CrispembedOcrSetMaxNative, CrispembedOcrSetMaxDart>(
+        'crispembed_ocr_model_set_max_tokens')(_ctx, n);
   }
+
   int get maxTokens {
     _checkDisposed();
-    return _lib.lookupFunction<CrispembedOcrGetMaxNative, CrispembedOcrGetMaxDart>('crispembed_ocr_model_get_max_tokens')(_ctx);
+    return _lib.lookupFunction<CrispembedOcrGetMaxNative,
+        CrispembedOcrGetMaxDart>('crispembed_ocr_model_get_max_tokens')(_ctx);
   }
+
   bool setPrompt(String? prompt) {
     _checkDisposed();
     final p = prompt?.toNativeUtf8() ?? nullptr.cast<Utf8>();
-    try { return _lib.lookupFunction<CrispembedOcrSetPromptNative, CrispembedOcrSetPromptDart>('crispembed_ocr_model_set_prompt')(_ctx, p) != 0; }
-    finally { if (p != nullptr) calloc.free(p); }
+    try {
+      return _lib.lookupFunction<CrispembedOcrSetPromptNative,
+                  CrispembedOcrSetPromptDart>(
+              'crispembed_ocr_model_set_prompt')(_ctx, p) !=
+          0;
+    } finally {
+      if (p != nullptr) calloc.free(p);
+    }
   }
+
   /// Selected-token scores; includes EOS for experimental Qwen3.5 OCR.
   Float32List get confidences {
-    _checkDisposed(); final n = calloc<Int32>();
+    _checkDisposed();
+    final n = calloc<Int32>();
     try {
-      final p = _lib.lookupFunction<CrispembedOcrConfidenceNative, CrispembedOcrConfidenceDart>('crispembed_ocr_model_confidences')(_ctx, n);
-      return p == nullptr || n.value <= 0 ? Float32List(0) : Float32List.fromList(p.asTypedList(n.value));
-    } finally { calloc.free(n); }
+      final p = _lib.lookupFunction<CrispembedOcrConfidenceNative,
+              CrispembedOcrConfidenceDart>('crispembed_ocr_model_confidences')(
+          _ctx, n);
+      return p == nullptr || n.value <= 0
+          ? Float32List(0)
+          : Float32List.fromList(p.asTypedList(n.value));
+    } finally {
+      calloc.free(n);
+    }
   }
+
   double get meanConfidence {
     _checkDisposed();
-    return _lib.lookupFunction<CrispembedOcrMeanNative, CrispembedOcrMeanDart>('crispembed_ocr_model_mean_confidence')(_ctx);
+    return _lib.lookupFunction<CrispembedOcrMeanNative, CrispembedOcrMeanDart>(
+        'crispembed_ocr_model_mean_confidence')(_ctx);
   }
 
   // ------------------------------------------------------------------
@@ -3989,19 +4017,27 @@ class CrispTableParse {
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
 
-/// Full OCR orchestrator with source-type routing, scan cleanup,
-/// multi-engine cascading, and accept-gate fallback.
-///
-/// Wraps `crispembed_ocr_pipeline_init` / `crispembed_ocr_pipeline_run`.
 /// Stage selection for the native explicit builder (cleanup disabled).
 class CrispOcrStageSpec {
   final int engine, sourceType, maxTokens, minChars;
   final String modelA, modelB, modelC, prompt;
   final double minConfidence;
-  const CrispOcrStageSpec({required this.engine, required this.modelA, this.modelB = '', this.modelC = '', this.sourceType = 1,
-    this.maxTokens = 0, this.prompt = '', this.minChars = 1, this.minConfidence = 0});
+  const CrispOcrStageSpec(
+      {required this.engine,
+      required this.modelA,
+      this.modelB = '',
+      this.modelC = '',
+      this.sourceType = 1,
+      this.maxTokens = 0,
+      this.prompt = '',
+      this.minChars = 1,
+      this.minConfidence = 0});
 }
 
+/// Full OCR orchestrator with source-type routing, scan cleanup,
+/// multi-engine cascading, and accept-gate fallback.
+///
+/// Wraps `crispembed_ocr_pipeline_init` / `crispembed_ocr_pipeline_run`.
 class CrispOcrOrchestrator {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
@@ -4078,31 +4114,58 @@ class CrispOcrOrchestrator {
     }
   }
 
-
   /// Explicit stage builder. ID20 is gated Qwen3.5 OCR; modelA is a local GGUF.
-  CrispOcrOrchestrator.fromStages(List<CrispOcrStageSpec> stages, {int nThreads = 4, bool router = false, String? libPath}) {
+  CrispOcrOrchestrator.fromStages(List<CrispOcrStageSpec> stages,
+      {int nThreads = 4, bool router = false, String? libPath}) {
     if (stages.isEmpty) throw ArgumentError('stages must not be empty');
     _lib = _openNativeLib(libPath);
-    _freeFn = _lib.lookupFunction<CrispembedOcrPipelineFreeNative, CrispembedOcrPipelineFreeDart>('crispembed_ocr_pipeline_free');
-    _runFn = _lib.lookupFunction<CrispembedOcrPipelineRunNative, CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
+    _freeFn = _lib.lookupFunction<CrispembedOcrPipelineFreeNative,
+        CrispembedOcrPipelineFreeDart>('crispembed_ocr_pipeline_free');
+    _runFn = _lib.lookupFunction<CrispembedOcrPipelineRunNative,
+        CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
     final native = calloc<CrispembedOcrStageFFI>(stages.length);
     final strings = <Pointer<Utf8>>[];
     Pointer<Utf8> text(String s) {
       if (s.isEmpty) return nullptr.cast<Utf8>();
-      final p = s.toNativeUtf8(); strings.add(p); return p;
+      final p = s.toNativeUtf8();
+      strings.add(p);
+      return p;
     }
+
     try {
       for (var i = 0; i < stages.length; ++i) {
-        final input = stages[i]; final output = native[i];
-        output.sourceType = input.sourceType; output.engine = input.engine;
-        output.modelA = text(input.modelA); output.modelB = text(input.modelB); output.modelC = text(input.modelC);
-        output.vlmMaxTokens = input.maxTokens; output.vlmPrompt = text(input.prompt);
-        output.minChars = input.minChars; output.minConfidence = input.minConfidence;
+        final input = stages[i];
+        final output = native[i];
+        output.sourceType = input.sourceType;
+        output.engine = input.engine;
+        output.modelA = text(input.modelA);
+        output.modelB = text(input.modelB);
+        output.modelC = text(input.modelC);
+        output.vlmMaxTokens = input.maxTokens;
+        output.vlmPrompt = text(input.prompt);
+        output.minChars = input.minChars;
+        output.minConfidence = input.minConfidence;
       }
-      final init = _lib.lookupFunction<CrispembedOcrInitStagesNative, CrispembedOcrInitStagesDart>('crispembed_ocr_pipeline_init_stages');
-      _ctx = init(router ? 1 : 0, nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), native, stages.length, nThreads);
+      final init = _lib.lookupFunction<CrispembedOcrInitStagesNative,
+          CrispembedOcrInitStagesDart>('crispembed_ocr_pipeline_init_stages');
+      _ctx = init(
+          router ? 1 : 0,
+          nullptr.cast<Utf8>(),
+          nullptr.cast<Utf8>(),
+          nullptr.cast<Utf8>(),
+          nullptr.cast<Utf8>(),
+          nullptr.cast<Utf8>(),
+          nullptr.cast<Utf8>(),
+          native,
+          stages.length,
+          nThreads);
       if (_ctx == nullptr) throw Exception('Failed to initialize OCR stages');
-    } finally { for (final p in strings) { calloc.free(p); } calloc.free(native); }
+    } finally {
+      for (final p in strings) {
+        calloc.free(p);
+      }
+      calloc.free(native);
+    }
   }
 
   /// Run the full pipeline on an image. Returns text + metadata.

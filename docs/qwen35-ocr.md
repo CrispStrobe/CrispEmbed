@@ -804,12 +804,28 @@ Hosted consumers compare cleanup/stage/params sizes and Python stage offsets
 against the compiled C header before claiming ABI parity.
 
 [Hosted public check38610331501](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501)
-at `815234d5` is running. It includes the existing full-stage checks, an independently
+at `815234d5` passes. It includes the existing full-stage checks, an independently
 captured original custom-prompt reference and native full-stage comparison,
 unified C ABI, Python/Rust/Dart consumers, CLI single/stage JSON and a loopback
 server `/ocr/pipeline` request. It uses the explicit52-tensor F32 vision recipe;
 no numeric gate changes. Earlier run38609791536 was cancelled while queued before
 inference to add the default-cap reset control; it provides no execution evidence.
+
+The custom-prompt native frontend/decoder passes189 stage comparisons and exact
+9/9 IDs/EOS/17 decoded bytes. Generated-score reported minimum cosine1.0,
+maximum absolute error8.63075256e-5; cache-key maximum0.00198709965 remains
+under the unchanged0.002 limit, with little headroom on this fixture. Unified C
+confidence maximum error2.64690611e-7; the custom-prompt error is6.83976417e-8,
+under1e-6. Prompt/reset, cap0-to-default2048, truncation, NaN-gray rejection and
+recovery, and master0 rejection pass. No tolerance was relaxed.
+
+The actual compiled ABI gives stage168 bytes, cleanup60, params136; Python
+matches all three and the cap/prompt offsets136/144, and Dart matches all three
+sizes. Python/Rust/Dart each pass the model and explicit-stage consumers. Both
+CLI JSON routes and HTTP `/ocr/pipeline` preserve the exact17-byte transcript;
+HTTP returns one region and rounded mean confidence0.9956. Dart analysis and
+execution use SDK3.13.5; only the changed binding classes take its formatter
+output. [Full public evidence and prompt stage errors/norms](../tests/results/qwen35-ocr/public-integration-parity.json).
 
 Experimental usage after a verified build:
 

@@ -676,7 +676,9 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "                      POST /ocr/model also takes a per-request \"prompt\"\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
-        fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, qwen35-ocr, ...);\n");
+        fprintf(
+            stderr,
+            "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, qwen35-ocr, ...);\n");
         fprintf(stderr, "                    engine names and model defaults match the CLI's --ocr-engine\n");
         fprintf(stderr, "  --ocr-cls MODEL   optional PP-LCNet 0/180 line-orientation classifier\n");
         fprintf(stderr, "  --table MODEL     Tesseract-LSTM table-cell model (optional)\n");

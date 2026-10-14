@@ -1,0 +1,1822 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501",
+  "source_commit": "815234d537c2c187aaeb4e04f4dc44b28194892f",
+  "model": "lightonai/LightOnOCR-3-0.8B",
+  "revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+  "transformers": "5.5.4",
+  "tokenizers": "0.22.2",
+  "weight_recipe": "vision-f32",
+  "export_bytes": 1918139328,
+  "default_off_gate": "CRISPEMBED_QWEN35_OCR",
+  "public_engine_id": 20,
+  "public_c_cases": [
+    {
+      "name": "raw-autodetect",
+      "decoded_bytes": 17,
+      "confidence_count": 9,
+      "confidence_max_abs": 2.64690611e-07,
+      "native_mean_confidence": 0.995560706
+    },
+    {
+      "name": "float-gray",
+      "decoded_bytes": 17,
+      "confidence_count": 9,
+      "confidence_max_abs": 2.64690611e-07,
+      "native_mean_confidence": 0.995560706
+    },
+    {
+      "name": "custom-prompt",
+      "decoded_bytes": 17,
+      "confidence_count": 9,
+      "confidence_max_abs": 6.83976417e-08,
+      "native_mean_confidence": 0.986184895
+    },
+    {
+      "name": "recovered-prompt-reset",
+      "decoded_bytes": 17,
+      "confidence_count": 9,
+      "confidence_max_abs": 2.64690611e-07,
+      "native_mean_confidence": 0.995560706
+    }
+  ],
+  "controls": [
+    "master=0 init rejects",
+    "max_tokens=0 restores2048",
+    "two-token truncation",
+    "prompt/reset",
+    "invalid NaN gray clears outputs",
+    "recovery",
+    "orchestrator ID20 with metric name"
+  ],
+  "bindings": {
+    "python": [
+      "PASS unified image/prompt/reset/cap/confidence",
+      "PASS orchestrator ID20"
+    ],
+    "python_abi": {
+      "stage_size": 168,
+      "cleanup_size": 60,
+      "params_size": 136,
+      "vlm_max_tokens_offset": 136,
+      "vlm_prompt_offset": 144
+    },
+    "rust": [
+      "PASS Rust unified RGB/grayscale, buffer guards, prompt/reset, cap and confidence",
+      "PASS Rust orchestrator ID20"
+    ],
+    "dart": [
+      "PASS Dart unified RGB, prompt/reset, cap and confidence",
+      "PASS Dart orchestrator ID20"
+    ],
+    "dart_abi": {
+      "stage_size": 168,
+      "cleanup_size": 60,
+      "params_size": 136
+    }
+  },
+  "entries": {
+    "cli_single": {
+      "text_exact": true,
+      "json": {
+        "text": "Hello OCR  \n12345"
+      }
+    },
+    "cli_stage": {
+      "text_exact": true,
+      "json": {
+        "n_regions": 1,
+        "mean_confidence": 0.996,
+        "full_text": "Hello OCR  \n12345"
+      }
+    },
+    "server_stage": {
+      "text_exact": true,
+      "n_regions": 1,
+      "mean_confidence": 0.9956
+    }
+  },
+  "prompted_reference": {
+    "prompt": "Transcribe the text.",
+    "compared_stages": 189,
+    "generated_ids": [
+      9419,
+      77796,
+      2228,
+      16,
+      17,
+      18,
+      19,
+      20,
+      248046
+    ],
+    "eos": 248046,
+    "decoded": "Hello OCR  \n12345",
+    "decoded_bytes": 17,
+    "ids_eos_text_exact": true,
+    "reference_arrays": "comparison only in test binary; native production inputs are raw image/prompt and actual GGUF weights",
+    "comparisons": [
+      {
+        "stage": "input.pixel_values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "native_norm": 624.667969,
+        "reference_norm": 624.667969
+      },
+      {
+        "stage": "prefill.decoder.position_ids",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "native_norm": 461.72287,
+        "reference_norm": 461.72287
+      },
+      {
+        "stage": "prefill.decoder.inputs_embeds",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.58035278e-05,
+        "mean_abs": 5.0382414e-07,
+        "native_norm": 29.7498741,
+        "reference_norm": 29.7498322
+      },
+      {
+        "stage": "prefill.decoder.layer.0",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.48498535e-05,
+        "mean_abs": 5.22454798e-07,
+        "native_norm": 29.8337421,
+        "reference_norm": 29.8336983
+      },
+      {
+        "stage": "prefill.decoder.layer.1",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 9.52482224e-05,
+        "mean_abs": 5.37430253e-07,
+        "native_norm": 31.8510056,
+        "reference_norm": 31.8509655
+      },
+      {
+        "stage": "prefill.decoder.layer.2",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.00012087822,
+        "mean_abs": 5.7267107e-07,
+        "native_norm": 31.8040771,
+        "reference_norm": 31.8040466
+      },
+      {
+        "stage": "prefill.decoder.layer.3",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000125288963,
+        "mean_abs": 5.97594919e-07,
+        "native_norm": 31.8514252,
+        "reference_norm": 31.8514023
+      },
+      {
+        "stage": "prefill.decoder.layer.4",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000115156174,
+        "mean_abs": 5.71713656e-07,
+        "native_norm": 29.2530441,
+        "reference_norm": 29.2530231
+      },
+      {
+        "stage": "prefill.decoder.layer.5",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.16312027e-05,
+        "mean_abs": 5.74217665e-07,
+        "native_norm": 27.6487427,
+        "reference_norm": 27.6487217
+      },
+      {
+        "stage": "prefill.decoder.layer.6",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.30021095e-05,
+        "mean_abs": 6.29619137e-07,
+        "native_norm": 30.7968769,
+        "reference_norm": 30.7968502
+      },
+      {
+        "stage": "prefill.decoder.layer.7",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.84261322e-05,
+        "mean_abs": 6.52116682e-07,
+        "native_norm": 27.8244209,
+        "reference_norm": 27.8243942
+      },
+      {
+        "stage": "prefill.decoder.layer.8",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.57005405e-05,
+        "mean_abs": 6.46145224e-07,
+        "native_norm": 25.1213531,
+        "reference_norm": 25.1213322
+      },
+      {
+        "stage": "prefill.decoder.layer.9",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.87701797e-05,
+        "mean_abs": 6.83057692e-07,
+        "native_norm": 24.275425,
+        "reference_norm": 24.275404
+      },
+      {
+        "stage": "prefill.decoder.layer.10",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.50720501e-05,
+        "mean_abs": 6.83273413e-07,
+        "native_norm": 24.6099701,
+        "reference_norm": 24.6099548
+      },
+      {
+        "stage": "prefill.decoder.layer.11",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.38799572e-05,
+        "mean_abs": 7.38592689e-07,
+        "native_norm": 24.3974857,
+        "reference_norm": 24.3974743
+      },
+      {
+        "stage": "prefill.decoder.layer.12",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.98241997e-05,
+        "mean_abs": 7.83523944e-07,
+        "native_norm": 24.845499,
+        "reference_norm": 24.8454914
+      },
+      {
+        "stage": "prefill.decoder.layer.13",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.4489584e-05,
+        "mean_abs": 8.42614782e-07,
+        "native_norm": 25.9551945,
+        "reference_norm": 25.9551811
+      },
+      {
+        "stage": "prefill.decoder.layer.14",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.35521317e-05,
+        "mean_abs": 9.53092012e-07,
+        "native_norm": 34.9264259,
+        "reference_norm": 34.9264069
+      },
+      {
+        "stage": "prefill.decoder.layer.15",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.71941447e-05,
+        "mean_abs": 1.22105428e-06,
+        "native_norm": 33.0864487,
+        "reference_norm": 33.0864334
+      },
+      {
+        "stage": "prefill.decoder.layer.16",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000113710761,
+        "mean_abs": 1.46162188e-06,
+        "native_norm": 36.0856018,
+        "reference_norm": 36.0855865
+      },
+      {
+        "stage": "prefill.decoder.layer.17",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000157520175,
+        "mean_abs": 1.77099457e-06,
+        "native_norm": 39.7174492,
+        "reference_norm": 39.7174072
+      },
+      {
+        "stage": "prefill.decoder.layer.18",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000393629074,
+        "mean_abs": 2.02459114e-06,
+        "native_norm": 48.2701111,
+        "reference_norm": 48.2701378
+      },
+      {
+        "stage": "prefill.decoder.layer.19",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000279590487,
+        "mean_abs": 2.49165305e-06,
+        "native_norm": 52.4307365,
+        "reference_norm": 52.4307518
+      },
+      {
+        "stage": "prefill.decoder.layer.20",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000289019197,
+        "mean_abs": 2.74496779e-06,
+        "native_norm": 57.3409653,
+        "reference_norm": 57.3409767
+      },
+      {
+        "stage": "prefill.decoder.layer.21",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000311732292,
+        "mean_abs": 3.12782913e-06,
+        "native_norm": 63.560421,
+        "reference_norm": 63.5604095
+      },
+      {
+        "stage": "prefill.decoder.layer.22",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000346690416,
+        "mean_abs": 3.63292179e-06,
+        "native_norm": 71.080719,
+        "reference_norm": 71.080719
+      },
+      {
+        "stage": "prefill.decoder.layer.23",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 0.000608801842,
+        "mean_abs": 4.71705562e-06,
+        "native_norm": 81.9868774,
+        "reference_norm": 81.9869537
+      },
+      {
+        "stage": "prefill.decoder.norm",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 0.00857925415,
+        "mean_abs": 8.05458767e-05,
+        "native_norm": 1216.04358,
+        "reference_norm": 1216.04321
+      },
+      {
+        "stage": "prefill.logits",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.63075256e-05,
+        "mean_abs": 1.36316175e-05,
+        "native_norm": 1373.89001,
+        "reference_norm": 1373.88721
+      },
+      {
+        "stage": "prefill.cache.0.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.86102295e-05,
+        "mean_abs": 9.68515224e-07,
+        "native_norm": 241.263947,
+        "reference_norm": 241.263702
+      },
+      {
+        "stage": "prefill.cache.0.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.82148743e-06,
+        "mean_abs": 9.02106034e-09,
+        "native_norm": 15.3207836,
+        "reference_norm": 15.3207712
+      },
+      {
+        "stage": "prefill.cache.1.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.85966492e-05,
+        "mean_abs": 1.14191596e-06,
+        "native_norm": 126.603767,
+        "reference_norm": 126.603767
+      },
+      {
+        "stage": "prefill.cache.1.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.76206231e-06,
+        "mean_abs": 3.21071369e-09,
+        "native_norm": 3.94916511,
+        "reference_norm": 3.94916391
+      },
+      {
+        "stage": "prefill.cache.2.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.57492065e-05,
+        "mean_abs": 1.28153363e-06,
+        "native_norm": 157.369186,
+        "reference_norm": 157.369202
+      },
+      {
+        "stage": "prefill.cache.2.recurrent_states",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 2.54809856e-06,
+        "mean_abs": 6.61712285e-09,
+        "native_norm": 6.21208382,
+        "reference_norm": 6.21208382
+      },
+      {
+        "stage": "prefill.cache.3.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000806331635,
+        "mean_abs": 8.46673447e-06,
+        "native_norm": 293.913116,
+        "reference_norm": 293.913116
+      },
+      {
+        "stage": "prefill.cache.3.values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000335037708,
+        "mean_abs": 3.47421815e-06,
+        "native_norm": 116.566292,
+        "reference_norm": 116.566246
+      },
+      {
+        "stage": "prefill.cache.4.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.47955322e-05,
+        "mean_abs": 1.96479004e-06,
+        "native_norm": 217.071182,
+        "reference_norm": 217.071198
+      },
+      {
+        "stage": "prefill.cache.4.recurrent_states",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 1.65104866e-05,
+        "mean_abs": 2.61531667e-08,
+        "native_norm": 25.9797573,
+        "reference_norm": 25.9797688
+      },
+      {
+        "stage": "prefill.cache.5.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.0040741e-05,
+        "mean_abs": 1.79591359e-06,
+        "native_norm": 205.00412,
+        "reference_norm": 205.004181
+      },
+      {
+        "stage": "prefill.cache.5.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.84287739e-06,
+        "mean_abs": 1.26662183e-08,
+        "native_norm": 8.54424,
+        "reference_norm": 8.54424572
+      },
+      {
+        "stage": "prefill.cache.6.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.57492065e-05,
+        "mean_abs": 1.71067313e-06,
+        "native_norm": 160.651413,
+        "reference_norm": 160.651398
+      },
+      {
+        "stage": "prefill.cache.6.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.00420618e-06,
+        "mean_abs": 9.00071484e-09,
+        "native_norm": 4.48923349,
+        "reference_norm": 4.48923349
+      },
+      {
+        "stage": "prefill.cache.7.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000986933708,
+        "mean_abs": 1.0633159e-05,
+        "native_norm": 304.426605,
+        "reference_norm": 304.426636
+      },
+      {
+        "stage": "prefill.cache.7.values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000330507755,
+        "mean_abs": 3.69469785e-06,
+        "native_norm": 100.514,
+        "reference_norm": 100.513977
+      },
+      {
+        "stage": "prefill.cache.8.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.57492065e-05,
+        "mean_abs": 2.1792946e-06,
+        "native_norm": 193.16861,
+        "reference_norm": 193.168579
+      },
+      {
+        "stage": "prefill.cache.8.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.19888306e-06,
+        "mean_abs": 1.58002749e-08,
+        "native_norm": 10.9933739,
+        "reference_norm": 10.9933777
+      },
+      {
+        "stage": "prefill.cache.9.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.05175781e-05,
+        "mean_abs": 2.15980958e-06,
+        "native_norm": 150.252243,
+        "reference_norm": 150.252274
+      },
+      {
+        "stage": "prefill.cache.9.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.6964193e-06,
+        "mean_abs": 1.38983172e-08,
+        "native_norm": 4.58342409,
+        "reference_norm": 4.58342457
+      },
+      {
+        "stage": "prefill.cache.10.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.98023224e-05,
+        "mean_abs": 2.35415928e-06,
+        "native_norm": 140.567429,
+        "reference_norm": 140.567429
+      },
+      {
+        "stage": "prefill.cache.10.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.19419599e-06,
+        "mean_abs": 9.42615408e-09,
+        "native_norm": 2.87020564,
+        "reference_norm": 2.87020469
+      },
+      {
+        "stage": "prefill.cache.11.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.00105202198,
+        "mean_abs": 1.2808453e-05,
+        "native_norm": 316.04541,
+        "reference_norm": 316.04541
+      },
+      {
+        "stage": "prefill.cache.11.values",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.00034891814,
+        "mean_abs": 5.60213493e-06,
+        "native_norm": 98.8065948,
+        "reference_norm": 98.8065643
+      },
+      {
+        "stage": "prefill.cache.12.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.74913216e-05,
+        "mean_abs": 2.9986511e-06,
+        "native_norm": 218.056259,
+        "reference_norm": 218.056259
+      },
+      {
+        "stage": "prefill.cache.12.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.37769699e-06,
+        "mean_abs": 2.70977445e-08,
+        "native_norm": 11.2763004,
+        "reference_norm": 11.2762947
+      },
+      {
+        "stage": "prefill.cache.13.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.05311584e-05,
+        "mean_abs": 2.87160083e-06,
+        "native_norm": 187.837875,
+        "reference_norm": 187.837845
+      },
+      {
+        "stage": "prefill.cache.13.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.71783972e-06,
+        "mean_abs": 9.39837808e-09,
+        "native_norm": 3.50625849,
+        "reference_norm": 3.50625563
+      },
+      {
+        "stage": "prefill.cache.14.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.24249268e-05,
+        "mean_abs": 2.93142284e-06,
+        "native_norm": 173.574387,
+        "reference_norm": 173.574463
+      },
+      {
+        "stage": "prefill.cache.14.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.92741776e-06,
+        "mean_abs": 1.51172443e-08,
+        "native_norm": 5.57053137,
+        "reference_norm": 5.57053185
+      },
+      {
+        "stage": "prefill.cache.15.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.00105285645,
+        "mean_abs": 1.33177582e-05,
+        "native_norm": 335.135712,
+        "reference_norm": 335.135651
+      },
+      {
+        "stage": "prefill.cache.15.values",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000483721495,
+        "mean_abs": 6.48493278e-06,
+        "native_norm": 138.031174,
+        "reference_norm": 138.031113
+      },
+      {
+        "stage": "prefill.cache.16.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.8160553e-05,
+        "mean_abs": 3.8327812e-06,
+        "native_norm": 279.807373,
+        "reference_norm": 279.807373
+      },
+      {
+        "stage": "prefill.cache.16.recurrent_states",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 1.59740448e-05,
+        "mean_abs": 5.44971286e-08,
+        "native_norm": 14.7274084,
+        "reference_norm": 14.7274065
+      },
+      {
+        "stage": "prefill.cache.17.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.9100647e-05,
+        "mean_abs": 4.67771815e-06,
+        "native_norm": 314.127869,
+        "reference_norm": 314.12793
+      },
+      {
+        "stage": "prefill.cache.17.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.12056732e-05,
+        "mean_abs": 8.6020151e-08,
+        "native_norm": 17.9637737,
+        "reference_norm": 17.9637756
+      },
+      {
+        "stage": "prefill.cache.18.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.05583191e-05,
+        "mean_abs": 5.38887753e-06,
+        "native_norm": 388.925568,
+        "reference_norm": 388.925476
+      },
+      {
+        "stage": "prefill.cache.18.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.99947166e-05,
+        "mean_abs": 1.2716643e-07,
+        "native_norm": 25.7254543,
+        "reference_norm": 25.7254543
+      },
+      {
+        "stage": "prefill.cache.19.keys",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.00194978714,
+        "mean_abs": 1.33893373e-05,
+        "native_norm": 307.235931,
+        "reference_norm": 307.235962
+      },
+      {
+        "stage": "prefill.cache.19.values",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 0.00112819672,
+        "mean_abs": 7.75873013e-06,
+        "native_norm": 179.403961,
+        "reference_norm": 179.403946
+      },
+      {
+        "stage": "prefill.cache.20.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.34329224e-05,
+        "mean_abs": 5.67958023e-06,
+        "native_norm": 369.043427,
+        "reference_norm": 369.043396
+      },
+      {
+        "stage": "prefill.cache.20.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.1353364e-05,
+        "mean_abs": 1.21634841e-07,
+        "native_norm": 18.8380356,
+        "reference_norm": 18.8380356
+      },
+      {
+        "stage": "prefill.cache.21.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.7220459e-05,
+        "mean_abs": 6.26896781e-06,
+        "native_norm": 338.25351,
+        "reference_norm": 338.253418
+      },
+      {
+        "stage": "prefill.cache.21.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.70227814e-06,
+        "mean_abs": 8.42694163e-08,
+        "native_norm": 15.4548016,
+        "reference_norm": 15.4548025
+      },
+      {
+        "stage": "prefill.cache.22.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.29425049e-05,
+        "mean_abs": 5.29835233e-06,
+        "native_norm": 265.625031,
+        "reference_norm": 265.625
+      },
+      {
+        "stage": "prefill.cache.22.recurrent_states",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 1.88052654e-05,
+        "mean_abs": 5.14170289e-08,
+        "native_norm": 8.79196644,
+        "reference_norm": 8.79197025
+      },
+      {
+        "stage": "prefill.cache.23.keys",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.00198709965,
+        "mean_abs": 1.71263528e-05,
+        "native_norm": 299.062866,
+        "reference_norm": 299.062836
+      },
+      {
+        "stage": "prefill.cache.23.values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000964194536,
+        "mean_abs": 9.76472438e-06,
+        "native_norm": 491.068481,
+        "reference_norm": 491.068481
+      },
+      {
+        "stage": "cached.decoder.inputs_embeds",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "native_norm": 0.56156981,
+        "reference_norm": 0.56156981
+      },
+      {
+        "stage": "cached.decoder.layer.0",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.23517418e-07,
+        "mean_abs": 5.18576826e-08,
+        "native_norm": 1.39865446,
+        "reference_norm": 1.39865315
+      },
+      {
+        "stage": "cached.decoder.layer.1",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.57627869e-07,
+        "mean_abs": 6.09600193e-08,
+        "native_norm": 1.70102072,
+        "reference_norm": 1.70101964
+      },
+      {
+        "stage": "cached.decoder.layer.2",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.76837158e-07,
+        "mean_abs": 5.98981842e-08,
+        "native_norm": 1.87620461,
+        "reference_norm": 1.87620413
+      },
+      {
+        "stage": "cached.decoder.layer.3",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.57627869e-07,
+        "mean_abs": 7.02821126e-08,
+        "native_norm": 2.01620078,
+        "reference_norm": 2.01620007
+      },
+      {
+        "stage": "cached.decoder.layer.4",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.76837158e-07,
+        "mean_abs": 8.10448455e-08,
+        "native_norm": 2.01741576,
+        "reference_norm": 2.01741505
+      },
+      {
+        "stage": "cached.decoder.layer.5",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.91738319e-07,
+        "mean_abs": 9.4685447e-08,
+        "native_norm": 1.91131711,
+        "reference_norm": 1.91131532
+      },
+      {
+        "stage": "cached.decoder.layer.6",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.73111868e-07,
+        "mean_abs": 9.92752121e-08,
+        "native_norm": 2.09853458,
+        "reference_norm": 2.09853339
+      },
+      {
+        "stage": "cached.decoder.layer.7",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.53788447e-07,
+        "mean_abs": 1.28224883e-07,
+        "native_norm": 1.91781306,
+        "reference_norm": 1.91781199
+      },
+      {
+        "stage": "cached.decoder.layer.8",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.84870577e-07,
+        "mean_abs": 1.19664492e-07,
+        "native_norm": 1.915959,
+        "reference_norm": 1.91595817
+      },
+      {
+        "stage": "cached.decoder.layer.9",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.81145287e-07,
+        "mean_abs": 1.28128249e-07,
+        "native_norm": 1.90536034,
+        "reference_norm": 1.9053601
+      },
+      {
+        "stage": "cached.decoder.layer.10",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.10947609e-07,
+        "mean_abs": 1.21488483e-07,
+        "native_norm": 2.04014969,
+        "reference_norm": 2.04014969
+      },
+      {
+        "stage": "cached.decoder.layer.11",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.94069672e-07,
+        "mean_abs": 1.53215751e-07,
+        "native_norm": 2.02549243,
+        "reference_norm": 2.02549291
+      },
+      {
+        "stage": "cached.decoder.layer.12",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.34465027e-07,
+        "mean_abs": 1.68598945e-07,
+        "native_norm": 2.12434959,
+        "reference_norm": 2.12434912
+      },
+      {
+        "stage": "cached.decoder.layer.13",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.18981028e-07,
+        "mean_abs": 1.77301445e-07,
+        "native_norm": 2.33127451,
+        "reference_norm": 2.33127427
+      },
+      {
+        "stage": "cached.decoder.layer.14",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.34465027e-07,
+        "mean_abs": 1.78015625e-07,
+        "native_norm": 2.91391158,
+        "reference_norm": 2.91391182
+      },
+      {
+        "stage": "cached.decoder.layer.15",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.20699406e-06,
+        "mean_abs": 2.43153409e-07,
+        "native_norm": 3.61555195,
+        "reference_norm": 3.61555195
+      },
+      {
+        "stage": "cached.decoder.layer.16",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.2665987e-06,
+        "mean_abs": 2.59205081e-07,
+        "native_norm": 3.72032523,
+        "reference_norm": 3.72032499
+      },
+      {
+        "stage": "cached.decoder.layer.17",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.43051147e-06,
+        "mean_abs": 2.76857463e-07,
+        "native_norm": 4.11784792,
+        "reference_norm": 4.11784792
+      },
+      {
+        "stage": "cached.decoder.layer.18",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.26101077e-06,
+        "mean_abs": 2.94893198e-07,
+        "native_norm": 5.14141321,
+        "reference_norm": 5.14141273
+      },
+      {
+        "stage": "cached.decoder.layer.19",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.42143869e-06,
+        "mean_abs": 6.255259e-07,
+        "native_norm": 7.391819,
+        "reference_norm": 7.39182234
+      },
+      {
+        "stage": "cached.decoder.layer.20",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.19888306e-06,
+        "mean_abs": 7.09655069e-07,
+        "native_norm": 7.94310617,
+        "reference_norm": 7.9431076
+      },
+      {
+        "stage": "cached.decoder.layer.21",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.91413879e-06,
+        "mean_abs": 8.33251761e-07,
+        "native_norm": 9.04702091,
+        "reference_norm": 9.04702473
+      },
+      {
+        "stage": "cached.decoder.layer.22",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.86781311e-06,
+        "mean_abs": 9.58103556e-07,
+        "native_norm": 9.48815632,
+        "reference_norm": 9.48816299
+      },
+      {
+        "stage": "cached.decoder.layer.23",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.51018524e-06,
+        "mean_abs": 1.27238854e-06,
+        "native_norm": 11.8472366,
+        "reference_norm": 11.8472452
+      },
+      {
+        "stage": "cached.decoder.norm",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.86645508e-05,
+        "mean_abs": 1.46962338e-05,
+        "native_norm": 141.479965,
+        "reference_norm": 141.47998
+      },
+      {
+        "stage": "cached.logits",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.91278076e-05,
+        "mean_abs": 1.19917468e-05,
+        "native_norm": 2772.03589,
+        "reference_norm": 2772.03198
+      },
+      {
+        "stage": "cached.cache.0.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.86102295e-05,
+        "mean_abs": 9.46441219e-07,
+        "native_norm": 237.527817,
+        "reference_norm": 237.527573
+      },
+      {
+        "stage": "cached.cache.0.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.94069672e-06,
+        "mean_abs": 9.22690813e-09,
+        "native_norm": 15.5377941,
+        "reference_norm": 15.5377808
+      },
+      {
+        "stage": "cached.cache.1.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.85966492e-05,
+        "mean_abs": 1.11471604e-06,
+        "native_norm": 134.16629,
+        "reference_norm": 134.166306
+      },
+      {
+        "stage": "cached.cache.1.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.7369166e-06,
+        "mean_abs": 3.36572392e-09,
+        "native_norm": 4.2699275,
+        "reference_norm": 4.2699275
+      },
+      {
+        "stage": "cached.cache.2.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.57492065e-05,
+        "mean_abs": 1.23719713e-06,
+        "native_norm": 160.225891,
+        "reference_norm": 160.225922
+      },
+      {
+        "stage": "cached.cache.2.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.50339508e-06,
+        "mean_abs": 6.7389947e-09,
+        "native_norm": 6.73961401,
+        "reference_norm": 6.73961258
+      },
+      {
+        "stage": "cached.cache.3.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000806331635,
+        "mean_abs": 8.37856896e-06,
+        "native_norm": 295.7789,
+        "reference_norm": 295.778931
+      },
+      {
+        "stage": "cached.cache.3.values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000335037708,
+        "mean_abs": 3.43975694e-06,
+        "native_norm": 117.422264,
+        "reference_norm": 117.422218
+      },
+      {
+        "stage": "cached.cache.4.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.28881836e-05,
+        "mean_abs": 1.82069016e-06,
+        "native_norm": 220.533722,
+        "reference_norm": 220.533722
+      },
+      {
+        "stage": "cached.cache.4.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.6272068e-05,
+        "mean_abs": 2.54403734e-08,
+        "native_norm": 26.2844849,
+        "reference_norm": 26.2844982
+      },
+      {
+        "stage": "cached.cache.5.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.0040741e-05,
+        "mean_abs": 1.68611723e-06,
+        "native_norm": 201.627747,
+        "reference_norm": 201.627792
+      },
+      {
+        "stage": "cached.cache.5.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.85777855e-06,
+        "mean_abs": 1.2171351e-08,
+        "native_norm": 8.8319149,
+        "reference_norm": 8.83191967
+      },
+      {
+        "stage": "cached.cache.6.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.57492065e-05,
+        "mean_abs": 1.65430163e-06,
+        "native_norm": 160.601532,
+        "reference_norm": 160.601501
+      },
+      {
+        "stage": "cached.cache.6.recurrent_states",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 1.97812915e-06,
+        "mean_abs": 8.3130276e-09,
+        "native_norm": 4.66933298,
+        "reference_norm": 4.66933107
+      },
+      {
+        "stage": "cached.cache.7.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000986933708,
+        "mean_abs": 1.05270738e-05,
+        "native_norm": 306.403168,
+        "reference_norm": 306.403168
+      },
+      {
+        "stage": "cached.cache.7.values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000330507755,
+        "mean_abs": 3.65854953e-06,
+        "native_norm": 101.062019,
+        "reference_norm": 101.061996
+      },
+      {
+        "stage": "cached.cache.8.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.57492065e-05,
+        "mean_abs": 2.15990167e-06,
+        "native_norm": 200.629074,
+        "reference_norm": 200.629028
+      },
+      {
+        "stage": "cached.cache.8.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.19888306e-06,
+        "mean_abs": 1.51877533e-08,
+        "native_norm": 11.0559626,
+        "reference_norm": 11.0559673
+      },
+      {
+        "stage": "cached.cache.9.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.05175781e-05,
+        "mean_abs": 2.11053771e-06,
+        "native_norm": 152.14415,
+        "reference_norm": 152.14415
+      },
+      {
+        "stage": "cached.cache.9.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.67499888e-06,
+        "mean_abs": 1.40528398e-08,
+        "native_norm": 5.50340033,
+        "reference_norm": 5.50339937
+      },
+      {
+        "stage": "cached.cache.10.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.98023224e-05,
+        "mean_abs": 2.33454557e-06,
+        "native_norm": 142.863388,
+        "reference_norm": 142.863419
+      },
+      {
+        "stage": "cached.cache.10.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.16439366e-06,
+        "mean_abs": 9.0831529e-09,
+        "native_norm": 2.9880445,
+        "reference_norm": 2.98804355
+      },
+      {
+        "stage": "cached.cache.11.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.00105202198,
+        "mean_abs": 1.26850009e-05,
+        "native_norm": 318.100677,
+        "reference_norm": 318.100677
+      },
+      {
+        "stage": "cached.cache.11.values",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.00034891814,
+        "mean_abs": 5.54805547e-06,
+        "native_norm": 99.2801514,
+        "reference_norm": 99.2801208
+      },
+      {
+        "stage": "cached.cache.12.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.74913216e-05,
+        "mean_abs": 2.98387545e-06,
+        "native_norm": 212.220108,
+        "reference_norm": 212.220108
+      },
+      {
+        "stage": "cached.cache.12.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.4505806e-06,
+        "mean_abs": 2.67403717e-08,
+        "native_norm": 11.1734734,
+        "reference_norm": 11.1734667
+      },
+      {
+        "stage": "cached.cache.13.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.05311584e-05,
+        "mean_abs": 2.89563673e-06,
+        "native_norm": 191.154068,
+        "reference_norm": 191.154007
+      },
+      {
+        "stage": "cached.cache.13.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.2617321e-06,
+        "mean_abs": 9.52591339e-09,
+        "native_norm": 4.17946577,
+        "reference_norm": 4.17946482
+      },
+      {
+        "stage": "cached.cache.14.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.24249268e-05,
+        "mean_abs": 2.88190972e-06,
+        "native_norm": 177.545029,
+        "reference_norm": 177.54512
+      },
+      {
+        "stage": "cached.cache.14.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.74860382e-06,
+        "mean_abs": 1.41391547e-08,
+        "native_norm": 5.64541531,
+        "reference_norm": 5.64541483
+      },
+      {
+        "stage": "cached.cache.15.keys",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.00105285645,
+        "mean_abs": 1.31894867e-05,
+        "native_norm": 337.248077,
+        "reference_norm": 337.248016
+      },
+      {
+        "stage": "cached.cache.15.values",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000483721495,
+        "mean_abs": 6.42188979e-06,
+        "native_norm": 138.603424,
+        "reference_norm": 138.603363
+      },
+      {
+        "stage": "cached.cache.16.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.8160553e-05,
+        "mean_abs": 3.62858691e-06,
+        "native_norm": 277.419983,
+        "reference_norm": 277.420013
+      },
+      {
+        "stage": "cached.cache.16.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.56164169e-05,
+        "mean_abs": 5.14306855e-08,
+        "native_norm": 14.8090277,
+        "reference_norm": 14.8090267
+      },
+      {
+        "stage": "cached.cache.17.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.9100647e-05,
+        "mean_abs": 4.40983422e-06,
+        "native_norm": 320.013733,
+        "reference_norm": 320.013794
+      },
+      {
+        "stage": "cached.cache.17.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 1.10864639e-05,
+        "mean_abs": 8.14786176e-08,
+        "native_norm": 18.123045,
+        "reference_norm": 18.1230469
+      },
+      {
+        "stage": "cached.cache.18.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.05583191e-05,
+        "mean_abs": 4.95727909e-06,
+        "native_norm": 390.9245,
+        "reference_norm": 390.9245
+      },
+      {
+        "stage": "cached.cache.18.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.86610627e-05,
+        "mean_abs": 1.22924561e-07,
+        "native_norm": 26.2807903,
+        "reference_norm": 26.2807941
+      },
+      {
+        "stage": "cached.cache.19.keys",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.00194978714,
+        "mean_abs": 1.32604164e-05,
+        "native_norm": 309.190521,
+        "reference_norm": 309.190582
+      },
+      {
+        "stage": "cached.cache.19.values",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 0.00112819672,
+        "mean_abs": 7.67997062e-06,
+        "native_norm": 180.116135,
+        "reference_norm": 180.116119
+      },
+      {
+        "stage": "cached.cache.20.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.34329224e-05,
+        "mean_abs": 5.33304819e-06,
+        "native_norm": 366.322327,
+        "reference_norm": 366.322205
+      },
+      {
+        "stage": "cached.cache.20.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 2.12155282e-05,
+        "mean_abs": 1.16583955e-07,
+        "native_norm": 18.658289,
+        "reference_norm": 18.658287
+      },
+      {
+        "stage": "cached.cache.21.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.7220459e-05,
+        "mean_abs": 5.74704427e-06,
+        "native_norm": 347.535309,
+        "reference_norm": 347.535217
+      },
+      {
+        "stage": "cached.cache.21.recurrent_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.67247581e-06,
+        "mean_abs": 7.9300861e-08,
+        "native_norm": 15.4186382,
+        "reference_norm": 15.4186392
+      },
+      {
+        "stage": "cached.cache.22.conv_states",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.29425049e-05,
+        "mean_abs": 4.82494579e-06,
+        "native_norm": 276.838745,
+        "reference_norm": 276.838745
+      },
+      {
+        "stage": "cached.cache.22.recurrent_states",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 1.86860561e-05,
+        "mean_abs": 4.55064644e-08,
+        "native_norm": 8.39530849,
+        "reference_norm": 8.39531231
+      },
+      {
+        "stage": "cached.cache.23.keys",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.00198709965,
+        "mean_abs": 1.69587056e-05,
+        "native_norm": 300.935425,
+        "reference_norm": 300.935394
+      },
+      {
+        "stage": "cached.cache.23.values",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000964194536,
+        "mean_abs": 9.67406868e-06,
+        "native_norm": 494.328003,
+        "reference_norm": 494.327972
+      },
+      {
+        "stage": "full_prefix.decoder.position_ids",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "native_norm": 471.448822,
+        "reference_norm": 471.448822
+      },
+      {
+        "stage": "full_prefix.decoder.inputs_embeds",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.58035278e-05,
+        "mean_abs": 4.9782625e-07,
+        "native_norm": 29.7551727,
+        "reference_norm": 29.7551308
+      },
+      {
+        "stage": "full_prefix.decoder.layer.0",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.48498535e-05,
+        "mean_abs": 5.17035858e-07,
+        "native_norm": 29.8665085,
+        "reference_norm": 29.8664646
+      },
+      {
+        "stage": "full_prefix.decoder.layer.1",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 9.52482224e-05,
+        "mean_abs": 5.32052979e-07,
+        "native_norm": 31.8963947,
+        "reference_norm": 31.8963547
+      },
+      {
+        "stage": "full_prefix.decoder.layer.2",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.00012087822,
+        "mean_abs": 5.66915446e-07,
+        "native_norm": 31.8593693,
+        "reference_norm": 31.8593407
+      },
+      {
+        "stage": "full_prefix.decoder.layer.3",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000125288963,
+        "mean_abs": 5.91765172e-07,
+        "native_norm": 31.9151745,
+        "reference_norm": 31.9151516
+      },
+      {
+        "stage": "full_prefix.decoder.layer.4",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 0.000115156174,
+        "mean_abs": 5.66152778e-07,
+        "native_norm": 29.3225269,
+        "reference_norm": 29.322506
+      },
+      {
+        "stage": "full_prefix.decoder.layer.5",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.16312027e-05,
+        "mean_abs": 5.68679297e-07,
+        "native_norm": 27.7147274,
+        "reference_norm": 27.7147064
+      },
+      {
+        "stage": "full_prefix.decoder.layer.6",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.30021095e-05,
+        "mean_abs": 6.23472488e-07,
+        "native_norm": 30.8682919,
+        "reference_norm": 30.8682652
+      },
+      {
+        "stage": "full_prefix.decoder.layer.7",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.84261322e-05,
+        "mean_abs": 6.45993396e-07,
+        "native_norm": 27.8904362,
+        "reference_norm": 27.8904095
+      },
+      {
+        "stage": "full_prefix.decoder.layer.8",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.57005405e-05,
+        "mean_abs": 6.40159215e-07,
+        "native_norm": 25.1943111,
+        "reference_norm": 25.1942902
+      },
+      {
+        "stage": "full_prefix.decoder.layer.9",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.87701797e-05,
+        "mean_abs": 6.76662239e-07,
+        "native_norm": 24.3500862,
+        "reference_norm": 24.3500633
+      },
+      {
+        "stage": "full_prefix.decoder.layer.10",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.50720501e-05,
+        "mean_abs": 6.76757907e-07,
+        "native_norm": 24.6943893,
+        "reference_norm": 24.6943741
+      },
+      {
+        "stage": "full_prefix.decoder.layer.11",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.38799572e-05,
+        "mean_abs": 7.31738396e-07,
+        "native_norm": 24.4814186,
+        "reference_norm": 24.4814091
+      },
+      {
+        "stage": "full_prefix.decoder.layer.12",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.98241997e-05,
+        "mean_abs": 7.76339277e-07,
+        "native_norm": 24.9361534,
+        "reference_norm": 24.9361439
+      },
+      {
+        "stage": "full_prefix.decoder.layer.13",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.4489584e-05,
+        "mean_abs": 8.34839852e-07,
+        "native_norm": 26.0596809,
+        "reference_norm": 26.0596676
+      },
+      {
+        "stage": "full_prefix.decoder.layer.14",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 7.35521317e-05,
+        "mean_abs": 9.44109843e-07,
+        "native_norm": 35.0477715,
+        "reference_norm": 35.0477486
+      },
+      {
+        "stage": "full_prefix.decoder.layer.15",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.71941447e-05,
+        "mean_abs": 1.2097953e-06,
+        "native_norm": 33.2834091,
+        "reference_norm": 33.2833939
+      },
+      {
+        "stage": "full_prefix.decoder.layer.16",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000113710761,
+        "mean_abs": 1.4476949e-06,
+        "native_norm": 36.2768745,
+        "reference_norm": 36.2768593
+      },
+      {
+        "stage": "full_prefix.decoder.layer.17",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000157520175,
+        "mean_abs": 1.75367552e-06,
+        "native_norm": 39.9303436,
+        "reference_norm": 39.9303055
+      },
+      {
+        "stage": "full_prefix.decoder.layer.18",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000393629074,
+        "mean_abs": 2.00463819e-06,
+        "native_norm": 48.5431557,
+        "reference_norm": 48.5431786
+      },
+      {
+        "stage": "full_prefix.decoder.layer.19",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000279590487,
+        "mean_abs": 2.46998661e-06,
+        "native_norm": 52.949234,
+        "reference_norm": 52.9492493
+      },
+      {
+        "stage": "full_prefix.decoder.layer.20",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000289019197,
+        "mean_abs": 2.72132979e-06,
+        "native_norm": 57.8885078,
+        "reference_norm": 57.8885193
+      },
+      {
+        "stage": "full_prefix.decoder.layer.21",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000311732292,
+        "mean_abs": 3.10136897e-06,
+        "native_norm": 64.2010574,
+        "reference_norm": 64.2010422
+      },
+      {
+        "stage": "full_prefix.decoder.layer.22",
+        "cos_min": 0.99999994,
+        "cos_global": 1.0,
+        "max_abs": 0.000346690416,
+        "mean_abs": 3.60196668e-06,
+        "native_norm": 71.7111816,
+        "reference_norm": 71.7111893
+      },
+      {
+        "stage": "full_prefix.decoder.layer.23",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 0.000608801842,
+        "mean_abs": 4.67734753e-06,
+        "native_norm": 82.8384247,
+        "reference_norm": 82.8385086
+      },
+      {
+        "stage": "full_prefix.decoder.norm",
+        "cos_min": 0.999999881,
+        "cos_global": 1.0,
+        "max_abs": 0.00857925415,
+        "mean_abs": 7.97762041e-05,
+        "native_norm": 1224.24609,
+        "reference_norm": 1224.24573
+      },
+      {
+        "stage": "full_prefix.logits",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.29425049e-05,
+        "mean_abs": 1.12940597e-05,
+        "native_norm": 2772.03687,
+        "reference_norm": 2772.03418
+      },
+      {
+        "stage": "generated.scores.0",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 8.63075256e-05,
+        "mean_abs": 1.36316175e-05,
+        "native_norm": 1373.89001,
+        "reference_norm": 1373.88721
+      },
+      {
+        "stage": "generated.scores.1",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.91278076e-05,
+        "mean_abs": 1.19917468e-05,
+        "native_norm": 2772.03589,
+        "reference_norm": 2772.03198
+      },
+      {
+        "stage": "generated.scores.2",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.01735306e-05,
+        "mean_abs": 5.80372171e-06,
+        "native_norm": 1289.81604,
+        "reference_norm": 1289.81592
+      },
+      {
+        "stage": "generated.scores.3",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.05447388e-05,
+        "mean_abs": 9.46998261e-06,
+        "native_norm": 1050.35486,
+        "reference_norm": 1050.35339
+      },
+      {
+        "stage": "generated.scores.4",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 5.38825989e-05,
+        "mean_abs": 8.00036742e-06,
+        "native_norm": 1447.16272,
+        "reference_norm": 1447.16064
+      },
+      {
+        "stage": "generated.scores.5",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 3.9100647e-05,
+        "mean_abs": 7.13562395e-06,
+        "native_norm": 1511.74182,
+        "reference_norm": 1511.7395
+      },
+      {
+        "stage": "generated.scores.6",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.55379486e-05,
+        "mean_abs": 7.23783478e-06,
+        "native_norm": 1536.47803,
+        "reference_norm": 1536.47815
+      },
+      {
+        "stage": "generated.scores.7",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 6.38961792e-05,
+        "mean_abs": 1.00339803e-05,
+        "native_norm": 1743.76819,
+        "reference_norm": 1743.76501
+      },
+      {
+        "stage": "generated.scores.8",
+        "cos_min": 1.0,
+        "cos_global": 1.0,
+        "max_abs": 4.74452972e-05,
+        "mean_abs": 8.07558081e-06,
+        "native_norm": 1641.03467,
+        "reference_norm": 1641.03308
+      }
+    ]
+  },
+  "scope": "ARM CPU, F32 vision/F16 text, synthetic owned fixtures; no corpus accuracy, latency, GPU, Q8/Q4, arbitrary pages or HF publication claim"
+}
