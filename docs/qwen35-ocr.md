@@ -508,3 +508,40 @@ orchestrator/CLI/server/bindings, larger-page performance, Q8/Q4 calibration and
 validated HF publication/hash pins. Packed pixels, prompt IDs and position
 coordinates are still supplied by the official frontend. No supported alias,
 standalone OCR, speed, GPU or corpus accuracy claim is made by this checkpoint.
+
+## Native position generation — 2026-10-14
+
+`qwen35_ocr::image_positions` derives the chronological text plane and three
+multimodal axes from contiguous modality spans and image grids, using the pinned
+original `get_rope_index`/`get_vision_position_ids` semantics. Image coordinates
+advance by the larger merged grid dimension, rather than the number of image
+tokens. `cached_positions` derives the next coordinates from the native cache's
+sequence length plus the prefill RoPE delta. Negative deltas are valid.
+
+Both helpers use the default-off `CRISPEMBED_QWEN35_OCR` gate. Scope is unpadded
+batch-one still images, including multiple images separated by text/delimiters.
+Videos, temporal grids other than one, mismatched image-span lengths, unused
+or missing grids, invalid modalities and context overflow are rejected, with
+outputs cleared. This does not add production C ABI exposure.
+
+The existing official-coordinate decoder arms remain. The new
+`test-qwen35-decoder --native-positions` arm computes its own prefill/full-prefix
+positions and every continuation position from its native carried cache; saved
+reference positions are comparison targets. Packed pixels, prompt IDs and
+modality IDs still come from the official processor. Standalone raw-image OCR,
+tokenizer/template rendering, decoded-text processing and corpus quality remain
+unverified.
+
+The next frontend comparison must record the resolved official processor class
+and backend. The pinned [processor config](https://huggingface.co/lightonai/LightOnOCR-3-0.8B/blob/36d8636925327c671bd8e479c517a004f7566bd9/processor_config.json)
+names `Qwen2VLImageProcessor`, while the
+[legacy preprocessing config](https://huggingface.co/lightonai/LightOnOCR-3-0.8B/blob/36d8636925327c671bd8e479c517a004f7566bd9/preprocessor_config.json)
+names `Qwen2VLImageProcessorFast`. Transformers 5.5.4's
+[Qwen2VL processor implementation](https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/models/qwen2_vl/image_processing_qwen2_vl.py)
+is a `TorchvisionBackend`; its
+[auto-loader](https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/models/auto/image_processing_auto.py)
+can select/fall back between backends. Verify the actual reference environment,
+then compare resized non-square raw RGB fixtures. The current shared native
+float bicubic helper documents residual differences from torchvision's uint8
+coefficient quantization; the 256x256 no-resize fixture cannot establish resize
+parity.
