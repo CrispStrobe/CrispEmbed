@@ -1,4 +1,5 @@
 #include "qwen35_linear.h"
+#include "qwen35_math.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -14,7 +15,7 @@ static bool shape(ggml_tensor * tensor, int64_t columns, int64_t rows) {
     return tensor && tensor->ne[0] == columns && tensor->ne[1] == rows && tensor->ne[2] == 1 && tensor->ne[3] == 1;
 }
 
-static bool floats(ggml_tensor * source, float * target) {
+bool tensor_floats(ggml_tensor * source, float * target) {
     if (!source || (source->type != GGML_TYPE_F32 && source->type != GGML_TYPE_F16)) return false;
     std::vector<uint8_t> raw(ggml_nbytes(source));
     ggml_backend_tensor_get(source, raw.data(), 0, raw.size());
@@ -26,8 +27,8 @@ static bool floats(ggml_tensor * source, float * target) {
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
 
-static bool project(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens,
-                    int threads, std::vector<std::vector<float>> & output) {
+bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
+                 std::vector<std::vector<float>> & output) {
     size_t elements = size_t(width) * tokens;
     for (auto * matrix : matrices) elements += size_t(ggml_nelements(matrix)) + size_t(matrix->ne[1]) * tokens;
     const size_t memory = 1024 * 1024 + elements * sizeof(float);
@@ -41,7 +42,7 @@ static bool project(const std::vector<ggml_tensor *> & matrices, const float * h
     std::vector<ggml_tensor *> results;
     for (auto * matrix : matrices) {
         auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
-        if (!floats(matrix, static_cast<float *>(weight->data))) return false;
+        if (!tensor_floats(matrix, static_cast<float *>(weight->data))) return false;
         auto * result = ggml_mul_mat(ctx.get(), weight, input);
         ggml_mul_mat_set_prec(result, GGML_PREC_F32);
         ggml_build_forward_expand(graph, result);
@@ -76,8 +77,8 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
         weights.conv->ne[3] != 1)
         return false;
     std::vector<std::vector<float>> projections;
-    if (!project({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens, threads,
-                 projections))
+    if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens,
+                     threads, projections))
         return false;
     output.qkv = std::move(projections[0]);
     output.z = std::move(projections[1]);
@@ -85,8 +86,8 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
     output.b = std::move(projections[3]);
     std::vector<float> conv(size_t(3 * group * kernel)), a_log(size_t(heads), 0.0f), dt_bias(size_t(heads), 0.0f),
         norm(size_t(width), 0.0f);
-    if (!floats(weights.conv, conv.data()) || !floats(weights.a_log, a_log.data()) ||
-        !floats(weights.dt_bias, dt_bias.data()) || !floats(weights.norm, norm.data()))
+    if (!tensor_floats(weights.conv, conv.data()) || !tensor_floats(weights.a_log, a_log.data()) ||
+        !tensor_floats(weights.dt_bias, dt_bias.data()) || !tensor_floats(weights.norm, norm.data()))
         return false;
     const linear_inputs input{
         batch,           tokens,      int(heads),        int(width),      int(kernel),
@@ -96,7 +97,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
     };
     if (!linear_core_cpu(input, output.core)) return false;
     projections.clear();
-    if (!project({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections))
+    if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections))
         return false;
     output.attention = std::move(projections[0]);
     return true;

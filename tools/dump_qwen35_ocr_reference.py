@@ -95,6 +95,14 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         return capture
     for index, block in enumerate(language.layers):
         if model.config.text_config.layer_types[index] != "linear_attention":
+            attention = block.self_attn
+            label = f"attention.{index}"
+            for name, field in [("q_proj", "q"), ("k_proj", "k"), ("v_proj", "v"),
+                                ("q_norm", "q_norm"), ("k_norm", "k_norm")]:
+                handles.append(getattr(attention, name).register_forward_hook(hook(f"{label}.{field}")))
+            handles.append(attention.q_proj.register_forward_pre_hook(block_input(f"{label}.input")))
+            handles.append(attention.o_proj.register_forward_pre_hook(block_input(f"{label}.pooled")))
+            handles.append(attention.register_forward_hook(hook(f"{label}.output")))
             continue
         linear = block.linear_attn
         label = f"linear.{index}"
@@ -208,6 +216,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             if kind == "linear_attention":
                 required += [f"{label}.linear.{index}.{field}"
                              for field in ["input", "qkv", "z", "a", "b", "norm", "output"]]
+            else:
+                required += [f"{label}.attention.{index}.{field}" for field in
+                             ["input", "q", "k", "v", "q_norm", "k_norm", "pooled", "output"]]
             if label != "full_prefix":
                 fields = ["conv_states", "recurrent_states"] if kind == "linear_attention" else ["keys", "values"]
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
@@ -216,8 +227,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     # Small standalone native-op probe; never part of exported model weights.
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
     for name, value in arrays.items():
-        if ((".delta." in name or ".linear." in name or ".cache." in name)
-                and name.startswith(("prefill.", "cached."))) or name.startswith("linear."):
+        if ((".delta." in name or ".linear." in name or ".cache." in name
+             or ".attention." in name or name.endswith(".decoder.position_ids"))
+                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith("linear."):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()
