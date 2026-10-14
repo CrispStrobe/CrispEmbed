@@ -1,6 +1,6 @@
 {
   "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514712654",
-  "source_commit": "771f0bfa",
+  "source_commit": "771f0bfae9093254eb52489518b0fe2a9731a36d",
   "scope": "six trained full-attention blocks with official normalized inputs; prefill, native KV carried continuation, fresh full-prefix; not depth/frontend parity",
   "checks": 150,
   "min_cos": 1.0,

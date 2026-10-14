@@ -4913,3 +4913,18 @@ value cache1.9074e-5. [Complete errors/magnitudes](tests/results/qwen35-ocr/trai
 Partial 64/256 interleaved RoPE, zero-centered Q/K RMSNorm and per-head query
 sigmoid gating are exercised. Component parity alone does not prove native
 vision/frontend, decoded transcription, Q4 quality or performance.
+
+### Qwen3.5 composed native decoder — 2026-10-14
+
+[ARM 38514911908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514911908),
+source `0d33acaa`: **183 comparisons** pass, all 24 composed decoder layers in
+prefill/cached/fresh-full-prefix arms, final norms/logits, all native-carried
+cache fields and nine generation score vectors. Worst layer-output abs2.0266e-5,
+final norm2.0791e-4, vocabulary logits/scores4.8637e-5, cache8.5831e-5.
+Reported cosine1.000000000 for hidden/norm/logits, cache minimum0.999999940.
+Free-running native-selected IDs match Python **9/9 through EOS248046**;
+the official tokenizer decodes these IDs as `Hello OCR  \n12345`.
+[Complete evidence](tests/results/qwen35-ocr/composed-decoder-parity.json).
+Official merged image/text embeddings and position coordinates remain supplied;
+native vision/frontend/tokenizer, image-to-text, quantization and speed remain
+unverified. This is a structural F16-weight/F32-arithmetic CPU baseline.

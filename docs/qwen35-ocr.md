@@ -276,11 +276,45 @@ group, and preserves the query/gate split within each head. Tests reject `=0`,
 invalid rotary dimensions and malformed KV caches; a perturbed pooling control
 must exceed the parity threshold. This is an unpadded CPU reference path.
 
-The branch also implements 24-layer residual/norm/SwiGLU composition, tied-head
-logits and native-selected greedy continuation. Its hosted verification at
-[38514911908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514911908)
-is pending. This next arm starts from official merged embeddings and positions;
-it does not establish native vision/frontend/tokenizer parity. Additional
-original-module batch-2 attention controls with distinct rotary axes are at
-[38514980272](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514980272).
+The same trained-checkpoint checks pass again in the composed-decoder run below.
+Supplementary batch-2 attention initially stopped before comparison because the
+harness imported `Qwen3_5RotaryEmbedding`; pinned 5.5.4 names it
+`Qwen3_5TextRotaryEmbedding`. [Initial failure](../tests/results/qwen35-ocr/synthetic-attention-initial-failure.json)
+is retained. The corrected original-module test is at
+[38515525129](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38515525129).
 No registry alias, quantization calibration or weight publication yet.
+
+## Composed native decoder — 2026-10-14
+
+[ARM run 38514911908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514911908),
+source `0d33acaa`, passes **183 comparisons**: 72 decoder-layer outputs (24 each
+for prefill, cached continuation and a fresh full-prefix), three final norms,
+three vocabulary logits, 96 convolution/recurrent/KV cache fields and nine
+original generation score vectors. This arm supplies official merged embeddings
+and multimodal position coordinates, then composes every native decoder layer;
+it does **not** supply hidden states between layers or Python caches.
+
+| Stage | Maximum absolute error | Reported minimum cosine |
+| --- | ---: | ---: |
+| All decoder-layer outputs | 2.0266e-5 | 1.000000000 |
+| Final zero-centered norm | 2.0791e-4 | 1.000000000 |
+| Vocabulary logits / generation scores | 4.8637e-5 | 1.000000000 |
+| Native-carried cache fields | 8.5831e-5 | 0.999999940 |
+
+The free-running native greedy decoder selects its own next token and embedding,
+with native caches carried each step. **9/9 IDs match the original generation,
+including EOS248046**: `9419 77796 2228 16 17 18 19 20 248046`.
+Those IDs decode with the official tokenizer to `Hello OCR  \n12345` (two
+Markdown spaces before the newline). This is decoder token parity on one
+controlled fixture, not native image-to-text or a scored OCR benchmark.
+[Complete stage errors/magnitudes](../tests/results/qwen35-ocr/composed-decoder-parity.json)
+and [bootstrap result](../tests/results/qwen35-ocr/composed-decoder-bootstrap.json)
+are retained. Norm absolute error is higher than layer-output error; the report
+keeps magnitudes rather than treating rounded cosine1 as bit equality.
+
+Next: native vision with all 12 layer/merger checks, then image preprocessing,
+patch order, Qwen3.5 BPE/chat template, multimodal positions and standalone
+image-to-text parity; wire C ABI/orchestrator/CLI/server/bindings only after those
+checks. This F16-weight/F32-arithmetic CPU reference is not a tuned or quantized
+runtime. The current linear core requires equal K/V head counts/widths, and
+attention supports unpadded inputs. No latency/GPU/Q4 or model-support claim.

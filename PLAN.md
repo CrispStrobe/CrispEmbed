@@ -20,7 +20,7 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 | Order | Model / upstream | License | Total weight budget | Work / status |
 |---|---|---|---|---|
-| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; all 18 native linear-attention blocks verified with actual GGUF weights and native cache carry. Full-attention/depth/frontend/C ABI and quantization remain; no model-support claim |
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; all 24 decoder layers composed and verified with actual GGUF weights and native caches, greedy IDs 9/9 through EOS from official embeddings/positions. Native vision/frontend/C ABI and quantization remain; no model-support claim |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -56,8 +56,11 @@ checks and 288 original-module batch-2 Mac controls pass; reported cos_min
 1.000000000, checkpoint block-output max abs5.25e-6. All 18 linear blocks,
 convolution/recurrent state carry and 473-tensor export are verified. This is
 component coverage with official block inputs, not native decoder/transcript
-parity. Full attention, depth composition, frontend, bindings and publication
-remain open in the first-model lane.
+parity. On 2026-10-14, all six full-attention blocks pass 150 checks and the
+composed decoder passes 183 checks, with native greedy IDs9/9 through EOS.
+Worst logit abs4.8637e-5; official merged embeddings/positions are supplied.
+Native vision/frontend, bindings and publication remain open.
+See [decoder evidence](tests/results/qwen35-ocr/composed-decoder-parity.json).
 
 **Completion gates for every new checkpoint:** immutable source/license provenance;
 strict full tensor coverage; official Python inputs, image grids, positions and
