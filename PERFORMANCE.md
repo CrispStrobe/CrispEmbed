@@ -4935,3 +4935,32 @@ different multimodal axes and batch offsets, cached continuation and fresh
 full-prefix. Reported cos_min1.000000000, max abs2.3842e-6.
 [Complete evidence](tests/results/qwen35-ocr/synthetic-attention-parity.json).
 This is batching/causality/rotary correctness, not trained OCR accuracy or timing.
+
+### Qwen3.5 native vision + connected decoder — 2026-10-14
+
+[ARM 38535674747](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38535674747),
+source `0902229d`: **37 vision boundaries + 186 connected decoder comparisons**
+pass the documented calibrated numerical gates. Native 12-layer vision/merger,
+text embeddings, 24-layer decoder, native caches and free-running greedy IDs;
+**9/9 IDs through EOS** match Python, vocabulary-score max abs9.2268e-5,
+reported cosine1.000000000. Official packed pixels/IDs/positions still supplied;
+native image frontend and corpus accuracy/timing remain unverified.
+
+Raw vision max abs0.167755 and final-norm max abs0.006836 are retained, not
+called bit equality. An independent original-model F32 CPU backend change gives
+raw vision0.193451 / final norm0.005831 with unchanged IDs. Vision gates use
+absolute0.002 + twice the named-stage reference variation plus per-patch cosine;
+final norms use per-element reference variation. Decoder hidden/cache/logit
+absolute0.002 and exact IDs/EOS remain unchanged. Full
+[vision](tests/results/qwen35-ocr/trained-vision-calibrated-parity.json),
+[connected](tests/results/qwen35-ocr/trained-connected-calibrated-parity.json) and
+[independent self-control](tests/results/qwen35-ocr/official-cpu-self-parity.json)
+evidence records both strict and calibrated outcomes. Source-weight F32 retention
+and precise reductions do not remove the old raw gaps; neither alternative is
+promoted. Original experimental file remains1,717,205,376 bytes.
+
+[Mac 38534221704](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38534221704)
+passes21 synthetic non-square/multi-frame checks with the original absolute gate
+(no calibration data): mincos1.000000000, max abs7.1526e-7.
+[Control evidence](tests/results/qwen35-ocr/synthetic-vision-calibrated-comparator-parity.json).
+No throughput, latency, GPU or Q4-quality claim.

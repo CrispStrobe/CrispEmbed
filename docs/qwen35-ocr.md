@@ -463,3 +463,48 @@ must reject. Verification is at
 [38535674747](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38535674747).
 The source-precision/default inference path is unchanged. This calibrated gate
 is not a claim of raw bit equality, standalone image-to-text or corpus OCR quality.
+
+## Native vision + connected decoder checkpoint — landed 2026-10-14
+
+[ARM 38535674747](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38535674747),
+source `0902229d`, passes **37 vision-boundary comparisons and 186 connected
+decoder comparisons**, including reset/invalid/gate0 and beyond-budget corruption
+controls. It uses the original experimental F16/F32 GGUF, F32 projections and
+both precise-reduction flags **off**. No extra source-precision recipe is needed
+for this calibrated checkpoint; higher-precision alternatives remain available.
+
+Native patch projection, learned positions, RoPE, all 12 vision blocks and merger
+feed native text embeddings and all 24 decoder blocks. **9/9 native-selected IDs
+match Python through EOS248046**; the official tokenizer decodes the IDs to
+`Hello OCR  \n12345`. Vocabulary logits/scores remain under the original absolute
+limit, worst **9.2268e-5**, reported cosine1.000000000.
+
+| Scope | Minimum reported cosine | Maximum raw absolute error | Maximum calibrated-budget ratio |
+| --- | ---: | ---: | ---: |
+| 37 vision boundaries | 0.999999940 | 0.167755127 | 0.486603 |
+| 186 connected decoder stages | 0.999999881 | 0.006835938 | 0.788510 |
+
+The raw errors above are **not** erased or called bit equality. The report marks
+which stages fail uniform absolute0.002 and which use the independent reference
+budget. Vision uses named-stage CPU self-variation and retains per-patch cosine;
+final decoder norms use per-element variation. Decoder hidden states, cache
+fields and vocabulary scores still use absolute0.002; IDs/EOS remain exact.
+[Vision evidence](../tests/results/qwen35-ocr/trained-vision-calibrated-parity.json),
+[connected evidence](../tests/results/qwen35-ocr/trained-connected-calibrated-parity.json)
+and [bootstrap](../tests/results/qwen35-ocr/vision-connected-bootstrap.json) are retained.
+The two rejected local-envelope experiments remain linked above.
+
+[Mac 38534221704](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38534221704)
+rechecks the comparator on the original synthetic non-square/multi-image/frame
+model: **21 checks** pass, cos_min1.000000000, max abs7.1526e-7, original
+absolute0.002 gate because no CPU-control arrays are present. Original packed
+versus separate-frame replay max abs1.1176e-8.
+[Full control evidence](../tests/results/qwen35-ocr/synthetic-vision-calibrated-comparator-parity.json).
+
+The vision/connected-decoder lane is landed and its active-work row removed.
+**Next:** raw RGB resize/normalization/patch order, Qwen3.5 BPE/chat template and
+multimodal positions, then standalone image-to-text/corpus checks, C ABI,
+orchestrator/CLI/server/bindings, larger-page performance, Q8/Q4 calibration and
+validated HF publication/hash pins. Packed pixels, prompt IDs and position
+coordinates are still supplied by the official frontend. No supported alias,
+standalone OCR, speed, GPU or corpus accuracy claim is made by this checkpoint.
