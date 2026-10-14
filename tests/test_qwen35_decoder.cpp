@@ -2,24 +2,13 @@
 #include "qwen35_vision.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
+#include "qwen35_parity.h"
 #include "ggml-cpu.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-
-static bool compare(const crispembed_diff::Ref & ref, const std::string & name, const std::vector<float> & values) {
-    const auto report = ref.compare(name, values.data(), values.size());
-    const bool ok = report.found && ref.get_f32(name).second == values.size() && report.n_elem == values.size() &&
-                    report.cos_min >= 0.99999f && report.max_abs <= 0.002f && std::isfinite(report.max_abs) &&
-                    std::isfinite(report.cos_min);
-    std::printf("%s %s: cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g norms=%.9g/%.9g\n",
-                ok ? "PASS" : "FAIL", name.c_str(), report.cos_min, report.cos_global, report.max_abs, report.mean_abs,
-                report.mine_norm, report.ref_norm);
-    return ok;
-}
-
 
 static bool include(const char * name, void * user) {
     return std::string(name).find("l.") == 0 || std::string(name) == "lm_head.weight" ||
@@ -131,7 +120,7 @@ int main(int argc, char ** argv) {
                     }
                 ok &= image * 1024 == vision.merged.size();
             }
-            ok &= compare(ref, phase + ".decoder.inputs_embeds", native_hidden);
+            ok &= qwen35_compare(ref, phase + ".decoder.inputs_embeds", native_hidden);
             decoder_input = native_hidden.data();
         }
         qwen35_ocr::decoder_outputs current;
@@ -141,14 +130,14 @@ int main(int argc, char ** argv) {
             break;
         }
         for (size_t i = 0; i < current.hidden.size(); ++i) {
-            if (!compare(ref, phase + ".decoder.layer." + std::to_string(i), current.hidden[i])) {
+            if (!qwen35_compare(ref, phase + ".decoder.layer." + std::to_string(i), current.hidden[i])) {
                 ok = false;
                 // Keep the earliest divergence visible; later layers are not proof.
                 break;
             }
         }
-        ok &= compare(ref, phase + ".decoder.norm", current.norm);
-        ok &= compare(ref, phase + ".logits", current.logits);
+        ok &= qwen35_compare(ref, phase + ".decoder.norm", current.norm);
+        ok &= qwen35_compare(ref, phase + ".logits", current.logits);
         const auto oracle = ref.get_f32(phase + ".logits");
         ok &= oracle.first && argmax(current.logits) ==
                                   int(std::max_element(oracle.first, oracle.first + oracle.second) - oracle.first);
@@ -157,11 +146,11 @@ int main(int argc, char ** argv) {
             if (phase == "full_prefix") continue;
             const auto & cache = current.cache.layers[i];
             if (weights.layers[i].full_attention) {
-                ok &= compare(ref, label + ".keys", cache.attention.keys);
-                ok &= compare(ref, label + ".values", cache.attention.values);
+                ok &= qwen35_compare(ref, label + ".keys", cache.attention.keys);
+                ok &= qwen35_compare(ref, label + ".values", cache.attention.values);
             } else {
-                ok &= compare(ref, label + ".conv_states", cache.conv);
-                ok &= compare(ref, label + ".recurrent_states", cache.recurrent);
+                ok &= qwen35_compare(ref, label + ".conv_states", cache.conv);
+                ok &= qwen35_compare(ref, label + ".recurrent_states", cache.recurrent);
             }
         }
         if (phase == "prefill") {
@@ -181,7 +170,7 @@ int main(int argc, char ** argv) {
         ok = false;
     else
         for (size_t step = 0; step < expected.second; ++step) {
-            ok &= compare(ref, "generated.scores." + std::to_string(step), logits);
+            ok &= qwen35_compare(ref, "generated.scores." + std::to_string(step), logits);
             const int id = argmax(logits);
             ids.push_back(id);
             if (id != int(expected.first[step])) {

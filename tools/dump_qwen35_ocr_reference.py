@@ -242,6 +242,10 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             with torch.backends.mkldnn.flags(enabled=not disabled):
                 controlled = model(**prefill_inputs)
                 save(f"{label}.logits", controlled.logits[:, -1])
+                if label == "backend_off":
+                    phase[0] = "backend_off_full_prefix"
+                    controlled_full = model(**full_inputs)
+                    save("backend_off_full_prefix.logits", controlled_full.logits[:, -1])
                 phase[0] = None
                 controlled_generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                                      use_cache=True, return_dict_in_generate=True)
@@ -308,7 +312,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     for name, value in arrays.items():
         if ((".delta." in name or ".linear." in name or ".cache." in name
              or ".attention." in name or ".decoder." in name or ".vision." in name or name.endswith(".logits"))
-                and name.startswith(("prefill.", "cached.", "full_prefix.", "backend_off.", "patch_chunked."))) or name.startswith(("linear.", "generated.", "input.")):
+                and name.startswith(("prefill.", "cached.", "full_prefix.", "backend_off.", "backend_off_full_prefix.", "patch_chunked."))) or name.startswith(("linear.", "generated.", "input.")):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()

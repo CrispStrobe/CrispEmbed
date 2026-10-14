@@ -1,32 +1,11 @@
 #include "qwen35_vision.h"
 #include "crispembed_diff.h"
+#include "qwen35_parity.h"
 #include "ggml-cpu.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <string>
-
-static bool compare(const crispembed_diff::Ref & ref, const std::string & name, const std::vector<float> & values) {
-    const auto report = ref.compare(name, values.data(), values.size());
-    const bool ok = report.found && ref.get_f32(name).second == values.size() && report.n_elem == values.size() &&
-                    report.cos_min >= 0.99999f && report.max_abs <= 0.002f && std::isfinite(report.max_abs) &&
-                    std::isfinite(report.cos_min);
-    std::printf("%s %s: cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g norms=%.9g/%.9g\n",
-                ok ? "PASS" : "FAIL", name.c_str(), report.cos_min, report.cos_global, report.max_abs, report.mean_abs,
-                report.mine_norm, report.ref_norm);
-    if (report.found) {
-        const auto oracle = ref.get_f32(name);
-        if (oracle.first && oracle.second == values.size()) {
-            size_t worst = 0;
-            for (size_t i = 1; i < values.size(); ++i)
-                if (std::abs(values[i] - oracle.first[i]) > std::abs(values[worst] - oracle.first[worst])) worst = i;
-            std::printf("MAGNITUDE %s: max_abs_index=%zu native=%.9g reference=%.9g\n", name.c_str(), worst,
-                        values[worst], oracle.first[worst]);
-        }
-    }
-    return ok;
-}
-
 
 static bool include(const char * name, void *) {
     return std::string(name).find("v.") == 0;
@@ -79,13 +58,13 @@ int main(int argc, char ** argv) {
         std::printf("FAIL native vision initialization/execution\n");
         return 1;
     }
-    ok &= compare(ref, "prefill.vision.patch_embed", output.patch);
-    ok &= compare(ref, "prefill.vision.position", output.position);
-    ok &= compare(ref, "prefill.vision.embedded", output.embedded);
-    ok &= compare(ref, "prefill.vision.rotary_cos", output.rotary_cos);
-    ok &= compare(ref, "prefill.vision.rotary_sin", output.rotary_sin);
+    ok &= qwen35_compare(ref, "prefill.vision.patch_embed", output.patch);
+    ok &= qwen35_compare(ref, "prefill.vision.position", output.position);
+    ok &= qwen35_compare(ref, "prefill.vision.embedded", output.embedded);
+    ok &= qwen35_compare(ref, "prefill.vision.rotary_cos", output.rotary_cos);
+    ok &= qwen35_compare(ref, "prefill.vision.rotary_sin", output.rotary_sin);
     for (size_t i = 0; i < output.hidden.size(); ++i) {
-        if (!compare(ref, "prefill.vision.layer." + std::to_string(i), output.hidden[i])) {
+        if (!qwen35_compare(ref, "prefill.vision.layer." + std::to_string(i), output.hidden[i])) {
             ok = false;
             break;
         }
@@ -94,19 +73,19 @@ int main(int argc, char ** argv) {
         const auto & probe = output.probes[i];
         if (probe.norm1.empty() || !ref.get_f32("prefill.vision.probe." + std::to_string(i) + ".norm1").first) continue;
         const std::string prefix = "prefill.vision.probe." + std::to_string(i) + ".";
-        ok &= compare(ref, prefix + "norm1", probe.norm1);
-        ok &= compare(ref, prefix + "qkv", probe.qkv);
-        ok &= compare(ref, prefix + "pooled", probe.pooled);
-        ok &= compare(ref, prefix + "attention", probe.attention);
-        ok &= compare(ref, prefix + "norm2", probe.norm2);
-        ok &= compare(ref, prefix + "up", probe.up);
-        ok &= compare(ref, prefix + "activation", probe.activation);
-        ok &= compare(ref, prefix + "down", probe.down);
+        ok &= qwen35_compare(ref, prefix + "norm1", probe.norm1);
+        ok &= qwen35_compare(ref, prefix + "qkv", probe.qkv);
+        ok &= qwen35_compare(ref, prefix + "pooled", probe.pooled);
+        ok &= qwen35_compare(ref, prefix + "attention", probe.attention);
+        ok &= qwen35_compare(ref, prefix + "norm2", probe.norm2);
+        ok &= qwen35_compare(ref, prefix + "up", probe.up);
+        ok &= qwen35_compare(ref, prefix + "activation", probe.activation);
+        ok &= qwen35_compare(ref, prefix + "down", probe.down);
     }
-    ok &= compare(ref, "prefill.vision.merger.norm", output.merger_norm);
-    ok &= compare(ref, "prefill.vision.merger.up", output.merger_up);
-    ok &= compare(ref, "prefill.vision.merger.activation", output.merger_activation);
-    ok &= compare(ref, "prefill.vision.merger", output.merged);
+    ok &= qwen35_compare(ref, "prefill.vision.merger.norm", output.merger_norm);
+    ok &= qwen35_compare(ref, "prefill.vision.merger.up", output.merger_up);
+    ok &= qwen35_compare(ref, "prefill.vision.merger.activation", output.merger_activation);
+    ok &= qwen35_compare(ref, "prefill.vision.merger", output.merged);
     // Repeated calls reset all temporary geometry/state. Fail-closed controls.
     qwen35_ocr::vision_outputs repeated;
     ok &= qwen35_ocr::vision_cpu(weights, config, patches.first, int(shape[1]), dimensions, 4, repeated);
@@ -126,6 +105,18 @@ int main(int argc, char ** argv) {
     auto perturbed = output.position;
     for (float & x : perturbed) x += 0.1f;
     ok &= ref.compare("prefill.vision.position", perturbed.data(), perturbed.size()).max_abs > 0.002f;
+    const auto oracle = ref.get_f32("prefill.vision.layer.11");
+    const auto control = ref.get_f32("backend_off.vision.layer.11");
+    if (control.first && oracle.first && control.second == oracle.second) {
+        std::vector<float> corrupted(oracle.first, oracle.first + oracle.second);
+        size_t worst = 0;
+        for (size_t i = 1; i < oracle.second; ++i)
+            if (std::abs(control.first[i] - oracle.first[i]) > std::abs(control.first[worst] - oracle.first[worst]))
+                worst = i;
+        const float budget = 0.002f + 2.0f * std::abs(control.first[worst] - oracle.first[worst]);
+        corrupted[worst] += 2.0f * budget + 0.1f;
+        ok &= !qwen35_compare(ref, "prefill.vision.layer.11", corrupted, false);
+    }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
     std::printf("%s native composed Qwen3.5 vision from packed pixels, positional geometry, 12 blocks and merger; "
