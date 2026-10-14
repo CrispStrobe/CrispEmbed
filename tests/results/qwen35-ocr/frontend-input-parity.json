@@ -1,0 +1,210 @@
+{
+  "source_commit": "c9e08c18c0d76407023210659883dc3db7f361eb",
+  "model": "lightonai/LightOnOCR-3-0.8B",
+  "revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+  "processor": "transformers.models.qwen3_vl.processing_qwen3_vl.Qwen3VLProcessor",
+  "image_processor": "transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor",
+  "backend": "torchvision CPU uint8",
+  "images": [
+    {
+      "name": "unchanged",
+      "height": 256,
+      "width": 256,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        256,
+        256,
+        3
+      ],
+      "tokens": 78
+    },
+    {
+      "name": "upscale",
+      "height": 170,
+      "width": 220,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        256,
+        320,
+        3
+      ],
+      "tokens": 96
+    },
+    {
+      "name": "round-tie",
+      "height": 80,
+      "width": 1024,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        64,
+        1024,
+        3
+      ],
+      "tokens": 96
+    },
+    {
+      "name": "extreme-aspect",
+      "height": 16,
+      "width": 2048,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        32,
+        2912,
+        3
+      ],
+      "tokens": 105
+    },
+    {
+      "name": "rectangular",
+      "height": 301,
+      "width": 211,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        320,
+        224,
+        3
+      ],
+      "tokens": 86
+    },
+    {
+      "name": "downscale",
+      "height": 800,
+      "width": 900,
+      "limits": [
+        65536,
+        262144
+      ],
+      "resized": [
+        480,
+        512,
+        3
+      ],
+      "tokens": 272
+    },
+    {
+      "name": "horizontal-only",
+      "height": 256,
+      "width": 270,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        256,
+        256,
+        3
+      ],
+      "tokens": 78
+    },
+    {
+      "name": "vertical-only",
+      "height": 270,
+      "width": 256,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        256,
+        256,
+        3
+      ],
+      "tokens": 80
+    },
+    {
+      "name": "tiny-both",
+      "height": 1,
+      "width": 128,
+      "limits": [
+        65536,
+        16777216
+      ],
+      "resized": [
+        32,
+        2912,
+        3
+      ],
+      "tokens": 123
+    }
+  ],
+  "text_cases": 11,
+  "normalization_cases": 5102,
+  "checks": {
+    "test-qwen35-frontend": true,
+    "test-qwen-pretokenize": true,
+    "test-bpe-pretokenize": true
+  },
+  "scope": "original processor/tokenizer comparison; owned images and generated Unicode cases; no corpus OCR score",
+  "tokenizers": "0.22.2",
+  "effective_normalizer": {
+    "type": "NFC"
+  },
+  "effective_pretokenizer": {
+    "type": "Sequence",
+    "pretokenizers": [
+      {
+        "type": "Split",
+        "pattern": {
+          "Regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+"
+        },
+        "behavior": "Isolated",
+        "invert": false
+      },
+      {
+        "type": "ByteLevel",
+        "add_prefix_space": false,
+        "trim_offsets": true,
+        "use_regex": false
+      }
+    ]
+  },
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38551847357",
+  "native_log": [
+    "PASS image.0 resized=256x256 byte_differences=0 patch_max_abs=0 norms=624.667952/624.667952 IDs/modalities/template_exact=1",
+    "PASS image.1 resized=256x320 byte_differences=0 patch_max_abs=0 norms=331.251284/331.251284 IDs/modalities/template_exact=1",
+    "PASS image.2 resized=64x1024 byte_differences=0 patch_max_abs=0 norms=293.797025/293.797025 IDs/modalities/template_exact=1",
+    "PASS image.3 resized=32x2912 byte_differences=0 patch_max_abs=0 norms=353.337468/353.337468 IDs/modalities/template_exact=1",
+    "PASS image.4 resized=320x224 byte_differences=0 patch_max_abs=0 norms=308.075353/308.075353 IDs/modalities/template_exact=1",
+    "PASS image.5 resized=480x512 byte_differences=0 patch_max_abs=0 norms=334.949235/334.949235 IDs/modalities/template_exact=1",
+    "PASS image.6 resized=256x256 byte_differences=0 patch_max_abs=0 norms=319.209594/319.209594 IDs/modalities/template_exact=1",
+    "PASS image.7 resized=256x256 byte_differences=0 patch_max_abs=0 norms=318.749458/318.749458 IDs/modalities/template_exact=1",
+    "PASS image.8 resized=32x2912 byte_differences=0 patch_max_abs=0 norms=400.560222/400.560222 IDs/modalities/template_exact=1",
+    "PASS text.0 IDs/decode exact tokens=8",
+    "PASS text.1 IDs/decode exact tokens=5",
+    "PASS text.2 IDs/decode exact tokens=12",
+    "PASS text.3 IDs/decode exact tokens=7",
+    "PASS text.4 IDs/decode exact tokens=4",
+    "PASS text.5 IDs/decode exact tokens=20",
+    "PASS text.6 IDs/decode exact tokens=7",
+    "PASS text.7 IDs/decode exact tokens=4",
+    "PASS text.8 IDs/decode exact tokens=4",
+    "PASS text.9 IDs/decode exact tokens=14",
+    "PASS text.10 IDs/decode exact tokens=9",
+    "PASS NFC original Rust checks=5102 errors=0",
+    "PASS partial UTF8 token decode replacement exact",
+    "PASS frontend bounds, missing input, marker injection, reset and master=0 controls"
+  ],
+  "normalization_data_version": 9,
+  "image_pixel_differences": 0,
+  "normalized_patch_max_abs": 0,
+  "images_exact": 9,
+  "text_cases_exact": 11,
+  "normalization_errors": 0,
+  "legacy_qwen_checks": 39,
+  "legacy_other_checks": 246
+}
