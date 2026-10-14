@@ -71,6 +71,24 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
+## Supplementary vendor OCR checkpoint — 14 October 2026
+
+CrispEmbed's permissive OCR queue starts with LightOnOCR-3-0.8B (Apache-2.0),
+an experimental native Qwen3.5 backend. Nine independent raw-RGB layouts,
+eleven tokenizer cases,5102 original Rust NFC cases and285 legacy checks pass.
+The explicit F16 text/F32 vision recipe passes two owned connected fixtures with
+exact9/9 IDs/EOS and decoded text; resized cache keys max abs0.001833 under the
+unchanged0.002 limit. Storage is1.918 GB. The F16 baseline and precision-control
+failures remain recorded. [Sources, full evidence and bounds](qwen35-ocr.md).
+
+This port has no production context/C ABI, registry alias, quantization result,
+corpus accuracy claim or HF publication. Larger pages currently reject beyond
+1024 patches. The next bounded lane is an owning inference context with native
+load/free/generation/confidence, repeated calls, two independent contexts and
+input/reset controls, followed by integration per the contribution checklist.
+The app's pinned minimal release and OCR dependency remain separate from this
+experimental vendor work. Indra stays restricted to public-code analysis.
+
 ## Recommended order and dependencies
 
 Start W1 (wheel repair) and V1 (vendor reconciliation) as separate changes.
