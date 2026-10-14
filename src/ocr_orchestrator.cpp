@@ -23,6 +23,7 @@
 #include "pix2struct.h"
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
+#include "qwen35_ocr.h"
 #include "lfm2_vl_ocr.h"
 #include "unlimited_ocr.h"
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
@@ -334,14 +335,15 @@ struct context {
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
-    got_ocr_context * got = nullptr;             // GOT-OCR2 (single-shot VLM)
-    glm_ocr_context * glm = nullptr;             // GLM-OCR (single-shot VLM)
-    qwen2vl_ocr_context * qwen = nullptr;        // Qwen2.5-VL (single-shot VLM)
-    qwen2vl_ocr_context * qwen3 = nullptr;       // Qwen3-VL (DeepStack + IMROPE)
-    internvl2_ocr_context * intern = nullptr;    // InternVL2 (single-shot VLM)
-    deepseek_ocr2_context * dsocr2 = nullptr;    // DeepSeek-OCR-2 (MoE VLM)
-    pix2struct_context * p2s = nullptr;          // Pix2Struct (doc/chart understanding)
-    granite_vision_context * gv = nullptr;       // Granite Vision (LLaVA-Next)
+    got_ocr_context * got = nullptr;          // GOT-OCR2 (single-shot VLM)
+    glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
+    qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
+    internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
+    deepseek_ocr2_context * dsocr2 = nullptr; // DeepSeek-OCR-2 (MoE VLM)
+    pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
+    granite_vision_context * gv = nullptr;    // Granite Vision (LLaVA-Next)
+    qwen35_ocr_context * qwen35 = nullptr;
     lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
     lfm2_vl_ocr_context * lfm2vl = nullptr;      // LFM2.5-VL (SigLIP2 NaFlex multi-tile)
     unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
@@ -1566,6 +1568,38 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
+    case engine::qwen35_ocr: {
+        if (!ctx->qwen35) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: qwen35_ocr stage missing model_a\n");
+                return {};
+            }
+            ctx->qwen35 = qwen35_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->qwen35) {
+                fprintf(stderr, "ocr_orchestrator: qwen35_ocr load failed\n");
+                return {};
+            }
+        }
+        if (!qwen35_ocr_set_max_tokens(ctx->qwen35, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048))
+            return {};
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int c = 0;
+            loaded = stbi_load(path, &w, &h, &c, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int len = 0;
+        const char * t = qwen35_ocr_recognize_raw(
+            ctx->qwen35, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
+        int nconf = 0;
+        const float * conf = qwen35_ocr_confidences(ctx->qwen35, &nconf);
+        auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(ctx->qwen35));
+        if (loaded) stbi_image_free(loaded);
+        return out;
+    }
     case engine::lightonocr: {
         if (!ctx->locr) {
             if (st.model_a.empty()) {
@@ -2060,6 +2094,8 @@ static const char * engine_name(engine e) {
         return "pix2struct";
     case engine::granite_vision:
         return "granite_vision";
+    case engine::qwen35_ocr:
+        return "qwen35_ocr";
     case engine::lightonocr:
         return "lightonocr";
     case engine::lfm2_vl:
@@ -2103,6 +2139,7 @@ static bool is_vlm_engine(engine e) {
     case engine::deepseek_ocr2:
     case engine::pix2struct:
     case engine::granite_vision:
+    case engine::qwen35_ocr:
     case engine::lightonocr:
     case engine::unlimited_ocr:
     case engine::lfm2_vl:
@@ -2381,6 +2418,7 @@ void free(context * ctx) {
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->p2s) pix2struct_free(ctx->p2s);
     if (ctx->gv) granite_vision_free(ctx->gv);
+    if (ctx->qwen35) qwen35_ocr_free(ctx->qwen35);
     if (ctx->locr) lightonocr_free(ctx->locr);
     if (ctx->lfm2vl) lfm2_vl_ocr_free(ctx->lfm2vl);
     if (ctx->uocr) unlimited_ocr_free(ctx->uocr);

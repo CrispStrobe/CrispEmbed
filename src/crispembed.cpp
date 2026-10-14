@@ -4492,6 +4492,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "tesseract_lstm.h"
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
+#include "qwen35_ocr.h"
 #include "deepseek_ocr2.h"
 #include "smoldocling_ocr.h"
 #include "unlimited_ocr.h"
@@ -4540,7 +4541,8 @@ enum ocr_model_type {
     OCR_MODEL_FLOVA,
     OCR_MODEL_TRANSCODA,
     OCR_MODEL_PPOCRV6,
-    OCR_MODEL_LFM2_VL
+    OCR_MODEL_LFM2_VL,
+    OCR_MODEL_QWEN35_OCR
 };
 
 struct ocr_model {
@@ -4575,6 +4577,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "got_ocr") return OCR_MODEL_GOT_OCR;
     if (arch == "tesseract_lstm") return OCR_MODEL_TESSERACT_LSTM;
     if (arch == "granite_vision") return OCR_MODEL_GRANITE_VISION;
+    if (arch == "qwen35_ocr") return OCR_MODEL_QWEN35_OCR;
     if (arch == "lightonocr") return OCR_MODEL_LIGHTONOCR;
     if (arch == "deepseek_ocr2") return OCR_MODEL_DEEPSEEK_OCR2;
     if (arch == "smoldocling") return OCR_MODEL_SMOLDOCLING;
@@ -4642,6 +4645,9 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
         break;
     case OCR_MODEL_GRANITE_VISION:
         inner = granite_vision_init(path, n_threads);
+        break;
+    case OCR_MODEL_QWEN35_OCR:
+        inner = qwen35_ocr_init(path, n_threads);
         break;
     case OCR_MODEL_LIGHTONOCR:
         inner = lightonocr_init(path, n_threads);
@@ -4725,6 +4731,9 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_GRANITE_VISION:
         granite_vision_free((granite_vision_context *)u->ctx);
         break;
+    case OCR_MODEL_QWEN35_OCR:
+        qwen35_ocr_free((qwen35_ocr_context *)u->ctx);
+        break;
     case OCR_MODEL_LIGHTONOCR:
         lightonocr_free((lightonocr_context *)u->ctx);
         break;
@@ -4802,6 +4811,9 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
     case OCR_MODEL_GRANITE_VISION:
         return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch,
                                         u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);
+    case OCR_MODEL_QWEN35_OCR:
+        return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch,
+                                        u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);
     case OCR_MODEL_LIGHTONOCR:
         return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_DEEPSEEK_OCR2:
@@ -4871,6 +4883,18 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         }
         return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3,
                                         u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);
+    }
+    case OCR_MODEL_QWEN35_OCR: {
+        auto * c = (qwen35_ocr_context *)u->ctx;
+        if (!px || w < 1 || h < 1 || w > 32768 || h > 32768 || int64_t(w) * h > 16777216)
+            return qwen35_ocr_recognize_raw(c, nullptr, w, h, 1, nullptr, ol);
+        std::vector<uint8_t> gray(size_t(w) * h);
+        for (size_t i = 0; i < gray.size(); ++i) {
+            if (!std::isfinite(px[i]) || px[i] < 0 || px[i] > 1)
+                return qwen35_ocr_recognize_raw(c, nullptr, w, h, 1, nullptr, ol);
+            gray[i] = uint8_t(px[i] * 255.0f + 0.5f);
+        }
+        return qwen35_ocr_recognize_raw(c, gray.data(), w, h, 1, u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);
     }
     case OCR_MODEL_LIGHTONOCR: {
         std::vector<uint8_t> gray(w * h);
@@ -4962,6 +4986,8 @@ extern "C" const float * crispembed_ocr_model_confidences(const void * ctx, int 
         return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
     case OCR_MODEL_GRANITE_VISION:
         return granite_vision_confidences((const granite_vision_context *)u->ctx, n_tokens);
+    case OCR_MODEL_QWEN35_OCR:
+        return qwen35_ocr_confidences((const qwen35_ocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_LIGHTONOCR:
         return lightonocr_confidences((const lightonocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_LFM2_VL:
@@ -4993,6 +5019,9 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
         break;
     case OCR_MODEL_GRANITE_VISION:
         granite_vision_set_max_tokens((granite_vision_context *)u->ctx, max_tokens);
+        break;
+    case OCR_MODEL_QWEN35_OCR:
+        qwen35_ocr_set_max_tokens((qwen35_ocr_context *)u->ctx, max_tokens);
         break;
     case OCR_MODEL_LIGHTONOCR:
         lightonocr_set_max_tokens((lightonocr_context *)u->ctx, max_tokens);
@@ -5036,6 +5065,8 @@ extern "C" int crispembed_ocr_model_get_max_tokens(const void * ctx) {
         return internvl2_ocr_get_max_tokens((const internvl2_ocr_context *)u->ctx);
     case OCR_MODEL_GRANITE_VISION:
         return granite_vision_get_max_tokens((const granite_vision_context *)u->ctx);
+    case OCR_MODEL_QWEN35_OCR:
+        return qwen35_ocr_get_max_tokens((const qwen35_ocr_context *)u->ctx);
     case OCR_MODEL_LIGHTONOCR:
         return lightonocr_get_max_tokens((const lightonocr_context *)u->ctx);
     case OCR_MODEL_SMOLDOCLING:
@@ -5092,6 +5123,10 @@ extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) 
             return 1;
         });
     }
+    case OCR_MODEL_QWEN35_OCR:
+        if (!reset && strlen(prompt) > 65536) return 0;
+        u->prompt = reset ? std::string() : std::string(prompt);
+        return 1;
     case OCR_MODEL_GRANITE_VISION:
         u->prompt = reset ? std::string() : std::string(prompt);
         return 1;
@@ -5656,6 +5691,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::olmocr;
     case 19:
         return E::lfm2_vl;
+    case 20:
+        return E::qwen35_ocr;
     default:
         return E::dbnet_trocr;
     }

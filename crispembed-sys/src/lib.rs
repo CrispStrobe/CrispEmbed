@@ -104,7 +104,7 @@ pub struct CrispembedOcrStage {
     // 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct
     // 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr
     // 14=unified 15=tesseract_fraktur 16=ppocrv6 17=easyocr 18=olmocr
-    // 19=lfm2_vl
+    // 19=lfm2_vl 20=qwen35_ocr (experimental)
     pub engine: c_int,
     pub model_a: *const c_char,
     pub model_b: *const c_char,

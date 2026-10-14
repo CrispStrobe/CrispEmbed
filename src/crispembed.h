@@ -1276,7 +1276,7 @@ typedef struct crispembed_ocr_stage {
                           // 11=lightonocr  12=qwen3vl  13=unlimited_ocr
                           // 14=unified metadata-dispatched GGUF
                           // 15=tesseract_fraktur  16=ppocrv6  17=easyocr
-                          // 18=olmocr      19=lfm2_vl
+                          // 18=olmocr      19=lfm2_vl   20=qwen35_ocr (experimental)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)

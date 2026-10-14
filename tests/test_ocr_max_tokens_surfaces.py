@@ -108,7 +108,7 @@ ENGINE_TO_OCR_MODEL = {
     "got": "GOT_OCR", "glm": "GLM_OCR", "qwen2vl": "QWEN2VL", "qwen3vl": "QWEN2VL",
     "olmocr": "QWEN2VL", "internvl2": "INTERNVL2", "deepseek_ocr2": "DEEPSEEK_OCR2",
     "granite_vision": "GRANITE_VISION", "lightonocr": "LIGHTONOCR",
-    "unlimited_ocr": "UNLIMITED_OCR", "lfm2_vl": "LFM2_VL",
+    "unlimited_ocr": "UNLIMITED_OCR", "lfm2_vl": "LFM2_VL", "qwen35_ocr": "QWEN35_OCR",
     # pix2struct has no --ocr route at all: it is reached by --pix2struct, whose
     # own --pix2struct-max-tokens is passed per call rather than via a setter.
     "pix2struct": None,

@@ -1474,6 +1474,48 @@ class CrispOcrModel {
     }
   }
 
+
+  /// Recognize contiguous grayscale/RGB/RGBA bytes through the unified API.
+  String recognizeRaw(Uint8List pixels, int width, int height, {int channels = 3}) {
+    _checkDisposed();
+    if (width <= 0 || height <= 0 || ![1, 3, 4].contains(channels) || pixels.length != width * height * channels) {
+      throw ArgumentError('invalid image dimensions, channels or buffer length');
+    }
+    final data = calloc<Uint8>(pixels.length);
+    final len = calloc<Int32>();
+    try {
+      data.asTypedList(pixels.length).setAll(0, pixels);
+      final result = _recognizeFn(_ctx, data, width, height, channels, len);
+      return result == nullptr ? '' : result.toDartString(length: len.value);
+    } finally { calloc.free(data); calloc.free(len); }
+  }
+  void setMaxTokens(int n) {
+    _checkDisposed();
+    _lib.lookupFunction<CrispembedOcrSetMaxNative, CrispembedOcrSetMaxDart>('crispembed_ocr_model_set_max_tokens')(_ctx, n);
+  }
+  int get maxTokens {
+    _checkDisposed();
+    return _lib.lookupFunction<CrispembedOcrGetMaxNative, CrispembedOcrGetMaxDart>('crispembed_ocr_model_get_max_tokens')(_ctx);
+  }
+  bool setPrompt(String? prompt) {
+    _checkDisposed();
+    final p = prompt?.toNativeUtf8() ?? nullptr.cast<Utf8>();
+    try { return _lib.lookupFunction<CrispembedOcrSetPromptNative, CrispembedOcrSetPromptDart>('crispembed_ocr_model_set_prompt')(_ctx, p) != 0; }
+    finally { if (p != nullptr) calloc.free(p); }
+  }
+  /// Selected-token scores; includes EOS for experimental Qwen3.5 OCR.
+  Float32List get confidences {
+    _checkDisposed(); final n = calloc<Int32>();
+    try {
+      final p = _lib.lookupFunction<CrispembedOcrConfidenceNative, CrispembedOcrConfidenceDart>('crispembed_ocr_model_confidences')(_ctx, n);
+      return p == nullptr || n.value <= 0 ? Float32List(0) : Float32List.fromList(p.asTypedList(n.value));
+    } finally { calloc.free(n); }
+  }
+  double get meanConfidence {
+    _checkDisposed();
+    return _lib.lookupFunction<CrispembedOcrMeanNative, CrispembedOcrMeanDart>('crispembed_ocr_model_mean_confidence')(_ctx);
+  }
+
   // ------------------------------------------------------------------
   // Lifecycle
   // ------------------------------------------------------------------
@@ -3951,6 +3993,15 @@ class CrispTableParse {
 /// multi-engine cascading, and accept-gate fallback.
 ///
 /// Wraps `crispembed_ocr_pipeline_init` / `crispembed_ocr_pipeline_run`.
+/// Stage selection for the native explicit builder (cleanup disabled).
+class CrispOcrStageSpec {
+  final int engine, sourceType, maxTokens, minChars;
+  final String modelA, modelB, modelC, prompt;
+  final double minConfidence;
+  const CrispOcrStageSpec({required this.engine, required this.modelA, this.modelB = '', this.modelC = '', this.sourceType = 1,
+    this.maxTokens = 0, this.prompt = '', this.minChars = 1, this.minConfidence = 0});
+}
+
 class CrispOcrOrchestrator {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
@@ -3993,47 +4044,24 @@ class CrispOcrOrchestrator {
     _runFn = _lib.lookupFunction<CrispembedOcrPipelineRunNative,
         CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
 
-    // Build crispembed_ocr_pipeline_params struct.
-    // Layout (64-bit): 3×int32 + 1×float + 6×pointer + 1×int32 + 1×pointer
-    //   router(4) + cleanup_enabled(4) + min_chars(4) + min_confidence(4)
-    //   + det_model(8) + rec_model(8) + nafnet_model(8) + sr_model(8)
-    //   + vlm_model(8) + vlm_engine(4) + pad(4) + punct_model(8)
-    // Total: 72 bytes on 64-bit (with alignment padding)
-    final ptrSize = sizeOf<Pointer>();
-    // Use a generous allocation and write at known offsets
-    final paramsSize = 16 + 6 * ptrSize + 4 + (ptrSize - 4) + ptrSize;
-    final params = calloc<Uint8>(paramsSize);
-
-    // Ints at byte 0, 4, 8
-    params.cast<Int32>()[0] = router ? 1 : 0;
-    params.cast<Int32>()[1] = cleanup ? 1 : 0;
-    params.cast<Int32>()[2] = minChars;
-    // Float at byte 12
-    (params + 12).cast<Float>()[0] = minConfidence;
-    // Pointers at byte 16 (aligned)
-    final ptrBase = (params + 16).cast<Pointer<Utf8>>();
+    final params = calloc<CrispembedOcrPipelineParamsFFI>();
     final detPtr = detModelPath.toNativeUtf8();
     final recPtr = recModelPath.toNativeUtf8();
-    final nafPtr =
-        nafnetModel != null ? nafnetModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    final srPtr =
-        srModel != null ? srModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    final vlmPtr =
-        vlmModel != null ? vlmModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    ptrBase[0] = detPtr; // det_model
-    ptrBase[1] = recPtr; // rec_model
-    ptrBase[2] = nafPtr; // nafnet_model
-    ptrBase[3] = srPtr; // sr_model
-    ptrBase[4] = vlmPtr; // vlm_model
-    // vlm_engine at byte 16 + 5*ptrSize
-    final vlmEngOff = 16 + 5 * ptrSize;
-    (params + vlmEngOff).cast<Int32>()[0] = vlmEngine;
-    // punct_model pointer at next aligned offset
-    final punctOff = vlmEngOff + ptrSize; // aligned to pointer size
-    final punctPtr =
-        punctModel != null ? punctModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    (params + punctOff).cast<Pointer<Utf8>>()[0] = punctPtr;
-
+    final nafPtr = nafnetModel?.toNativeUtf8() ?? nullptr.cast<Utf8>();
+    final srPtr = srModel?.toNativeUtf8() ?? nullptr.cast<Utf8>();
+    final vlmPtr = vlmModel?.toNativeUtf8() ?? nullptr.cast<Utf8>();
+    final punctPtr = punctModel?.toNativeUtf8() ?? nullptr.cast<Utf8>();
+    params.ref.router = router ? 1 : 0;
+    params.ref.cleanupEnabled = cleanup ? 1 : 0;
+    params.ref.minChars = minChars;
+    params.ref.minConfidence = minConfidence;
+    params.ref.detModel = detPtr;
+    params.ref.recModel = recPtr;
+    params.ref.nafnetModel = nafPtr;
+    params.ref.srModel = srPtr;
+    params.ref.vlmModel = vlmPtr;
+    params.ref.vlmEngine = vlmEngine;
+    params.ref.punctModel = punctPtr;
     _ctx = initFn(params.cast<Void>(), nThreads);
 
     calloc.free(detPtr);
@@ -4048,6 +4076,33 @@ class CrispOcrOrchestrator {
       throw Exception(
           'Failed to init OCR orchestrator: $detModelPath + $recModelPath');
     }
+  }
+
+
+  /// Explicit stage builder. ID20 is gated Qwen3.5 OCR; modelA is a local GGUF.
+  CrispOcrOrchestrator.fromStages(List<CrispOcrStageSpec> stages, {int nThreads = 4, bool router = false, String? libPath}) {
+    if (stages.isEmpty) throw ArgumentError('stages must not be empty');
+    _lib = _openNativeLib(libPath);
+    _freeFn = _lib.lookupFunction<CrispembedOcrPipelineFreeNative, CrispembedOcrPipelineFreeDart>('crispembed_ocr_pipeline_free');
+    _runFn = _lib.lookupFunction<CrispembedOcrPipelineRunNative, CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
+    final native = calloc<CrispembedOcrStageFFI>(stages.length);
+    final strings = <Pointer<Utf8>>[];
+    Pointer<Utf8> text(String s) {
+      if (s.isEmpty) return nullptr.cast<Utf8>();
+      final p = s.toNativeUtf8(); strings.add(p); return p;
+    }
+    try {
+      for (var i = 0; i < stages.length; ++i) {
+        final input = stages[i]; final output = native[i];
+        output.sourceType = input.sourceType; output.engine = input.engine;
+        output.modelA = text(input.modelA); output.modelB = text(input.modelB); output.modelC = text(input.modelC);
+        output.vlmMaxTokens = input.maxTokens; output.vlmPrompt = text(input.prompt);
+        output.minChars = input.minChars; output.minConfidence = input.minConfidence;
+      }
+      final init = _lib.lookupFunction<CrispembedOcrInitStagesNative, CrispembedOcrInitStagesDart>('crispembed_ocr_pipeline_init_stages');
+      _ctx = init(router ? 1 : 0, nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), nullptr.cast<Utf8>(), native, stages.length, nThreads);
+      if (_ctx == nullptr) throw Exception('Failed to initialize OCR stages');
+    } finally { for (final p in strings) { calloc.free(p); } calloc.free(native); }
   }
 
   /// Run the full pipeline on an image. Returns text + metadata.

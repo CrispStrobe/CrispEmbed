@@ -120,10 +120,11 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: "
-                    "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
-                    "tromr(music)/flova(music)/transcoda(music)/"
-                    "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/lfm2-vl/unlimited-ocr)\n");
+    fprintf(stderr,
+            "  --ocr FILE       OCR → text (auto-detect: "
+            "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
+            "tromr(music)/flova(music)/transcoda(music)/"
+            "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/lfm2-vl/unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
     fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --ocr-prompt TEXT   custom instruction for prompt-following VLM OCR engines\n");
@@ -165,9 +166,10 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
-    fprintf(stderr, "       --ocr-engine N  primary engine "
-                    "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|"
-                    "unlimited_ocr|olmocr|lfm2-vl)\n");
+    fprintf(stderr,
+            "       --ocr-engine N  primary engine "
+            "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|qwen3vl|"
+            "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -1292,6 +1294,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "pix2struct") return 9;
             if (n == "granite-vision" || n == "granite_vision") return 10;
             if (n == "lightonocr") return 11;
+            if (n == "qwen35-ocr" || n == "qwen35_ocr") return 20;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
             if (n == "unified") return 14;
@@ -1328,17 +1331,21 @@ static int cli_main(int argc, char ** argv) {
             // no tokenizer, null patch embedding) and failed inside the vision
             // graph rather than at load.
             const bool is_vlm =
-                (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 19;
+                (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 19 || eid == 20;
             // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
             // internvl2, granite-vision, qwen3vl, unified (model-dependent),
             // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
             const bool takes_prompt =
-                eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 || eid == 19;
+                eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 || eid == 19 || eid == 20;
             if (!ocr_prompt.empty() && !takes_prompt) {
                 fprintf(stderr,
                         "warning: --ocr-prompt ignored: --ocr-engine %s runs a fixed task prompt "
                         "(custom prompts: qwen2vl, qwen3vl, olmocr, internvl2, lfm2-vl, granite-vision)\n",
                         pipeline_engine.c_str());
+            }
+            if (eid == 20 && ocr_rec_path.empty()) {
+                fprintf(stderr, "error: experimental qwen35-ocr requires --ocr-rec FILE\n");
+                return 1;
             }
             if (eid == 14 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: --ocr-engine unified dispatches on GGUF metadata; provide the model "

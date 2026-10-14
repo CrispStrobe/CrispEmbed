@@ -1852,6 +1852,7 @@ class CrispOcrModel:
     Qwen2.5-VL (VLM, German docs), Qwen3-VL-2B (VLM, DeepStack),
     InternVL2.5/2-1B (VLM, EN+DE),
     GLM-OCR (VLM, 8 langs, OmniDocBench #1).
+    Experimental Qwen3.5/LightOnOCR-3-0.8B requires CRISPEMBED_QWEN35_OCR=1.
     Auto-detects architecture from GGUF metadata.
 
     Usage::
@@ -1887,7 +1888,7 @@ class CrispOcrModel:
         """Set the instruction sent to a prompt-following VLM engine.
 
         Supported: Qwen2-VL / Qwen2.5-VL / Qwen3-VL (incl. PaddleOCR-VL,
-        olmOCR), InternVL2, LFM2-VL, Granite-Vision. ``None`` or ``""``
+        olmOCR), InternVL2, LFM2-VL, Granite-Vision, Qwen3.5 OCR. ``None`` or ``""``
         restores the engine's default prompt.
 
         Returns:
@@ -4144,6 +4145,43 @@ class _CrispOcrPipelineParams(ctypes.Structure):
         ("vlm_model", ctypes.c_char_p),
         ("vlm_engine", ctypes.c_int),
         ("punct_model", ctypes.c_char_p),
+        ("lid_model", ctypes.c_char_p),
+        ("truecase_model", ctypes.c_char_p),
+        ("tess_model_dir", ctypes.c_char_p),
+        ("layout_model", ctypes.c_char_p),
+        ("table_model", ctypes.c_char_p),
+        ("formula_model", ctypes.c_char_p),
+        ("route_tables", ctypes.c_int),
+        ("route_formulas", ctypes.c_int),
+        ("image_text_fallback", ctypes.c_int),
+    ]
+
+
+class _CrispOcrStage(ctypes.Structure):
+    """Exact native stage layout; engine20 selects experimental Qwen3.5 OCR."""
+    _fields_ = [
+        ("source_type", ctypes.c_int),
+        ("engine", ctypes.c_int),
+        ("model_a", ctypes.c_char_p),
+        ("model_b", ctypes.c_char_p),
+        ("model_c", ctypes.c_char_p),
+        ("cleanup_enabled", ctypes.c_int),
+        ("denoise", ctypes.c_int),
+        ("cleanup", _ScanCleanupParams),
+        ("det_prob_threshold", ctypes.c_float),
+        ("det_box_threshold", ctypes.c_float),
+        ("det_target_short", ctypes.c_int),
+        ("det_max_side", ctypes.c_int),
+        ("det_min_height", ctypes.c_int),
+        ("det_width_height_ratio", ctypes.c_float),
+        ("det_max_candidates", ctypes.c_int),
+        ("det_dilation", ctypes.c_int),
+        ("det_score_mode", ctypes.c_int),
+        ("vlm_max_tokens", ctypes.c_int),
+        ("vlm_prompt", ctypes.c_char_p),
+        ("min_chars", ctypes.c_int),
+        ("min_confidence", ctypes.c_float),
+        ("page_segmentation", ctypes.c_int),
     ]
 
 
@@ -4190,17 +4228,45 @@ class CrispOcrOrchestrator:
         print(f"  {result['n_regions']} regions, confidence={result['mean_confidence']:.2f}")
     """
 
-    def __init__(self, det_model: str, rec_model: str, *,
+    def __init__(self, det_model: str = "", rec_model: str = "", *,
                  router: bool = True, cleanup: bool = True,
                  min_chars: int = 8, min_confidence: float = 0.5,
                  nafnet_model: Optional[str] = None,
                  sr_model: Optional[str] = None,
                  vlm_model: Optional[str] = None, vlm_engine: int = 0,  # 0=GOT 1=GLM 2=Qwen2-VL/PaddleOCR-VL 3=InternVL2 4=Qwen3-VL
                  punct_model: Optional[str] = None,
-                 n_threads: int = 4, lib_path: Optional[str] = None):
+                 n_threads: int = 4, lib_path: Optional[str] = None, stages=None):
         self._lib = _load_library(lib_path)
         _setup_ocr_orchestrator_signatures(self._lib)
         _setup_ocr_pipeline_signatures(self._lib)  # for _CrispOcrResult
+        if stages is not None:
+            if not stages:
+                raise ValueError("stages must not be empty")
+            fn = self._lib.crispembed_ocr_pipeline_init_stages
+            fn.argtypes = [ctypes.c_int] + [ctypes.c_char_p] * 6 + [ctypes.POINTER(_CrispOcrStage), ctypes.c_int, ctypes.c_int]
+            fn.restype = ctypes.c_void_p
+            native = (_CrispOcrStage * len(stages))()
+            for dest, spec in zip(native, stages):
+                dest.source_type, dest.min_chars = 1, 1
+                for name, value in spec.items():
+                    if name not in dict(_CrispOcrStage._fields_):
+                        raise ValueError(f"unknown OCR stage field: {name}")
+                    if name == "cleanup":
+                        for key, item in value.items():
+                            if key not in dict(_ScanCleanupParams._fields_):
+                                raise ValueError(f"unknown cleanup field: {key}")
+                            setattr(dest.cleanup, key, item)
+                        continue
+                    if name in ("model_a", "model_b", "model_c", "vlm_prompt"):
+                        value = value.encode("utf-8") if value else None
+                    setattr(dest, name, value)
+            self._ctx = fn(int(router), nafnet_model.encode() if nafnet_model else None,
+                           sr_model.encode() if sr_model else None, punct_model.encode() if punct_model else None,
+                           None, None, None, native, len(stages), n_threads)
+            if not self._ctx:
+                raise RuntimeError("Failed to initialize OCR stages")
+            return
+
 
         params = self._lib.crispembed_ocr_pipeline_defaults()
         params.router = int(router)

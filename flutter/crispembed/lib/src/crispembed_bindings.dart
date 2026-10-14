@@ -1199,3 +1199,124 @@ typedef CrispembedDecisionScores = int Function(
     int,
     Pointer<Float>,
     Pointer<Float>);
+
+// Exact native layouts; do not substitute hand-computed allocation sizes.
+final class CrispembedScanCleanupParamsFFI extends Struct {
+  @Int32()
+  external int deskew;
+  @Int32()
+  external int cropBorders;
+  @Int32()
+  external int whitenBackground;
+  @Int32()
+  external int binarize;
+  @Int32()
+  external int binarizeMethod;
+  @Float()
+  external double sauvolaK;
+  @Int32()
+  external int sauvolaWindow;
+  @Int32()
+  external int morphKernel;
+  @Float()
+  external double borderThreshold;
+  @Float()
+  external double deskewMaxAngle;
+  @Int32()
+  external int despeckle;
+  @Float()
+  external double despeckleThresh;
+  @Int32()
+  external int blackfilter;
+  @Float()
+  external double blackfilterThresh;
+  @Int32()
+  external int deskewConsensus;
+}
+
+final class CrispembedOcrStageFFI extends Struct {
+  @Int32()
+  external int sourceType;
+  @Int32()
+  external int engine;
+  external Pointer<Utf8> modelA;
+  external Pointer<Utf8> modelB;
+  external Pointer<Utf8> modelC;
+  @Int32()
+  external int cleanupEnabled;
+  @Int32()
+  external int denoise;
+  external CrispembedScanCleanupParamsFFI cleanup;
+  @Float()
+  external double detProbThreshold;
+  @Float()
+  external double detBoxThreshold;
+  @Int32()
+  external int detTargetShort;
+  @Int32()
+  external int detMaxSide;
+  @Int32()
+  external int detMinHeight;
+  @Float()
+  external double detWidthHeightRatio;
+  @Int32()
+  external int detMaxCandidates;
+  @Int32()
+  external int detDilation;
+  @Int32()
+  external int detScoreMode;
+  @Int32()
+  external int vlmMaxTokens;
+  external Pointer<Utf8> vlmPrompt;
+  @Int32()
+  external int minChars;
+  @Float()
+  external double minConfidence;
+  @Int32()
+  external int pageSegmentation;
+}
+
+final class CrispembedOcrPipelineParamsFFI extends Struct {
+  @Int32()
+  external int router;
+  @Int32()
+  external int cleanupEnabled;
+  @Int32()
+  external int minChars;
+  @Float()
+  external double minConfidence;
+  external Pointer<Utf8> detModel;
+  external Pointer<Utf8> recModel;
+  external Pointer<Utf8> nafnetModel;
+  external Pointer<Utf8> srModel;
+  external Pointer<Utf8> vlmModel;
+  @Int32()
+  external int vlmEngine;
+  external Pointer<Utf8> punctModel;
+  external Pointer<Utf8> lidModel;
+  external Pointer<Utf8> truecaseModel;
+  external Pointer<Utf8> tessModelDir;
+  external Pointer<Utf8> layoutModel;
+  external Pointer<Utf8> tableModel;
+  external Pointer<Utf8> formulaModel;
+  @Int32()
+  external int routeTables;
+  @Int32()
+  external int routeFormulas;
+  @Int32()
+  external int imageTextFallback;
+}
+
+
+typedef CrispembedOcrInitStagesNative = Pointer<Void> Function(Int32, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<CrispembedOcrStageFFI>, Int32, Int32);
+typedef CrispembedOcrInitStagesDart = Pointer<Void> Function(int, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<Utf8>, Pointer<CrispembedOcrStageFFI>, int, int);
+typedef CrispembedOcrSetMaxNative = Void Function(Pointer<Void>, Int32);
+typedef CrispembedOcrSetMaxDart = void Function(Pointer<Void>, int);
+typedef CrispembedOcrGetMaxNative = Int32 Function(Pointer<Void>);
+typedef CrispembedOcrGetMaxDart = int Function(Pointer<Void>);
+typedef CrispembedOcrSetPromptNative = Int32 Function(Pointer<Void>, Pointer<Utf8>);
+typedef CrispembedOcrSetPromptDart = int Function(Pointer<Void>, Pointer<Utf8>);
+typedef CrispembedOcrConfidenceNative = Pointer<Float> Function(Pointer<Void>, Pointer<Int32>);
+typedef CrispembedOcrConfidenceDart = Pointer<Float> Function(Pointer<Void>, Pointer<Int32>);
+typedef CrispembedOcrMeanNative = Float Function(Pointer<Void>);
+typedef CrispembedOcrMeanDart = double Function(Pointer<Void>);

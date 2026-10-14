@@ -34,7 +34,8 @@ def main():
     precision_audit = sys.argv[1:] == ["--vision-precision"]
     math_audit = sys.argv[1:] == ["--vision-math"]
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
-    context_check = sys.argv[1:] == ["--context"]
+    public_check = sys.argv[1:] == ["--public"]
+    context_check = public_check or sys.argv[1:] == ["--context"]
     frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
     frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
     if sys.argv[1:] and not (precision_audit or math_audit or frontend_keys or frontend_vision or frontend_rms):
@@ -133,10 +134,12 @@ def main():
         build = scratch / "qwen35-native-build"
         subprocess.run(["cmake", "-S", str(repo), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
-                        "-DCRISPEMBED_BUILD_SHARED=OFF"], check=True)
+                        "-DCRISPEMBED_BUILD_SHARED=" + ("ON" if public_check else "OFF")], check=True)
         subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta",
                         "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "test-qwen35-vision",
-                        *(["test-qwen35-context"] if context_check else []), "-j", "4"], check=True)
+                        *(["test-qwen35-context"] if context_check else []),
+                        *(["test-qwen35-public", "crispembed-cli", "crispembed-server", "crispembed-shared"] if public_check else []),
+                        "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
         (out / "native-delta.log").write_text(native.stdout + native.stderr)
@@ -267,6 +270,31 @@ def main():
                 print(context_result.stdout + context_result.stderr)
                 report["native_context"] = context_result.returncode == 0
                 context_result.check_returncode()
+            if public_check:
+                prompt_out = out / "prompted-public"
+                prompt_out.mkdir(exist_ok=True)
+                reference.dump_reference(local, image_path, prompt_out / "official-reference.npz", prompt="Transcribe the text.")
+                gc.collect()
+                prompted_native = subprocess.run([str(build / "test-qwen35-decoder"), str(export),
+                                                  str(prompt_out / "official-delta.gguf"), "--native-frontend"],
+                                                 capture_output=True, text=True)
+                (out / "native-public-prompted.log").write_text(prompted_native.stdout + prompted_native.stderr)
+                print(prompted_native.stdout + prompted_native.stderr)
+                report["native_prompted"] = prompted_native.returncode == 0
+                prompted_native.check_returncode()
+                result = subprocess.run([str(build / "test-qwen35-public"), str(export), str(image_path),
+                                         str(out / "official-delta.gguf"), "Transcribe the text.",
+                                         str(prompt_out / "official-delta.gguf")], capture_output=True, text=True)
+                (out / "native-public.log").write_text(result.stdout + result.stderr)
+                print(result.stdout + result.stderr)
+                report["native_public"] = result.returncode == 0
+                result.check_returncode()
+                bindings = module(repo / "tools/ci-heavy/qwen35_public_bindings.py", "qwen35_public_bindings")
+                os.environ["CRISPEMBED_QWEN35_OCR"] = "1"
+                bindings.verify(repo, build, export, image_path, out, scratch)
+                report["public_bindings"] = "Python/Rust/Dart native model and stage20 checks passed"
+                bindings.entries(build, export, image_path, out)
+                report["public_entries"] = "CLI single/stage and loopback server stage checks passed"
             report["native_parity"] = "native raw RGB/BPE/vision/positions/decoder/text checked on two owned fixtures; production integration/corpus validation pending"
         report["result"] = "export/reference/native model checks passed; production OCR support pending"
     except BaseException as error:

@@ -1368,17 +1368,18 @@ impl OcrModel {
     ///
     /// Returns `Some(latex_string)` on success, `None` on failure.
     pub fn recognize(&mut self, pixel_bytes: &[u8], width: i32, height: i32) -> Option<String> {
-        // Infer channel count from buffer length.
-        let total = pixel_bytes.len();
-        let expected_rgb = (width * height * 3) as usize;
-        let expected_rgba = (width * height * 4) as usize;
-        let channels = if total == expected_rgba {
+        if width <= 0 || height <= 0 {
+            return None;
+        }
+        let area = (width as usize).checked_mul(height as usize)?;
+        let channels = if pixel_bytes.len() == area {
+            1
+        } else if pixel_bytes.len() == area.checked_mul(3)? {
+            3
+        } else if pixel_bytes.len() == area.checked_mul(4)? {
             4
-        } else if total == expected_rgb {
-            3
         } else {
-            // Fall back: pass whatever length we have; the C lib will validate.
-            3
+            return None;
         };
 
         let mut out_len: i32 = 0;
@@ -1409,6 +1410,12 @@ impl OcrModel {
     ///
     /// Returns `Some(latex_string)` on success, `None` on failure.
     pub fn recognize_gray(&mut self, pixels: &[f32], width: i32, height: i32) -> Option<String> {
+        if width <= 0
+            || height <= 0
+            || pixels.len() != (width as usize).checked_mul(height as usize)?
+        {
+            return None;
+        }
         let mut out_len: i32 = 0;
         let ptr = unsafe {
             crispembed_sys::crispembed_ocr_model_recognize_gray(
@@ -1427,6 +1434,38 @@ impl OcrModel {
                 .to_string_lossy()
                 .into_owned(),
         )
+    }
+    /// Generation cap for VLMs (including gated Qwen3.5 OCR).
+    pub fn set_max_tokens(&mut self, max_tokens: i32) {
+        unsafe { crispembed_sys::crispembed_ocr_model_set_max_tokens(self.ctx, max_tokens) }
+    }
+    pub fn get_max_tokens(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_ocr_model_get_max_tokens(self.ctx) }
+    }
+    pub fn set_prompt(&mut self, prompt: Option<&str>) -> Result<bool, String> {
+        let text = prompt
+            .map(CString::new)
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        Ok(unsafe {
+            crispembed_sys::crispembed_ocr_model_set_prompt(
+                self.ctx,
+                text.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            ) != 0
+        })
+    }
+    /// Selected-token probabilities, including EOS for Qwen3.5 OCR.
+    pub fn confidences(&self) -> Vec<f32> {
+        let mut n = 0;
+        let p = unsafe { crispembed_sys::crispembed_ocr_model_confidences(self.ctx, &mut n) };
+        if p.is_null() || n <= 0 {
+            Vec::new()
+        } else {
+            unsafe { std::slice::from_raw_parts(p, n as usize).to_vec() }
+        }
+    }
+    pub fn mean_confidence(&self) -> f32 {
+        unsafe { crispembed_sys::crispembed_ocr_model_mean_confidence(self.ctx) }
     }
 }
 
@@ -2639,7 +2678,7 @@ impl Default for OcrCleanupSpec {
 #[derive(Clone)]
 pub struct OcrStageSpec {
     pub source_type: i32, // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: i32, // 0..13 existing engines, 14=unified metadata-dispatched GGUF (matches map_engine)
+    pub engine: i32, // 0..19 existing engines; 20=qwen35_ocr, experimental (matches map_engine)
     pub model_a: String,
     pub model_b: String,
     pub cleanup: OcrCleanupSpec,

@@ -59,6 +59,7 @@ enum class engine {
     easyocr,           // easyocr_pipeline.cpp (DBNet detection + EasyOCR CRNN)
     olmocr,            // qwen2vl_ocr.cpp (olmOCR document fine-tune of Qwen2.5-VL)
     lfm2_vl,           // lfm2_vl_ocr.cpp (SigLIP2 NaFlex multi-tile + LFM2 hybrid conv/attn)
+    qwen35_ocr,        // experimental LightOnOCR-3-0.8B, native Qwen3.5 CPU
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.

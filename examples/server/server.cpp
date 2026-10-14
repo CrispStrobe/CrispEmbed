@@ -676,7 +676,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "                      POST /ocr/model also takes a per-request \"prompt\"\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
-        fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, ...);\n");
+        fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, qwen35-ocr, ...);\n");
         fprintf(stderr, "                    engine names and model defaults match the CLI's --ocr-engine\n");
         fprintf(stderr, "  --ocr-cls MODEL   optional PP-LCNet 0/180 line-orientation classifier\n");
         fprintf(stderr, "  --table MODEL     Tesseract-LSTM table-cell model (optional)\n");
@@ -1403,6 +1403,7 @@ int main(int argc, char ** argv) {
             if (n == "pix2struct") return 9;
             if (n == "granite-vision" || n == "granite_vision") return 10;
             if (n == "lightonocr") return 11;
+            if (n == "qwen35-ocr" || n == "qwen35_ocr") return 20;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
             if (n == "unified") return 14;
@@ -1413,8 +1414,8 @@ int main(int argc, char ** argv) {
             return 0; // dbnet_trocr
         };
         const int eid = eng_id(ocr_engine_name);
-        const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18;
-        if ((eid == 14 || eid == 15) && ocr_rec_model_path.empty()) {
+        const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20;
+        if ((eid == 14 || eid == 15 || eid == 20) && ocr_rec_model_path.empty()) {
             fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
             return 1;
         }
