@@ -1,4 +1,5 @@
 #include "qwen35_decoder.h"
+#include "qwen35_vision.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "ggml-cpu.h"
@@ -20,8 +21,9 @@ static bool compare(const crispembed_diff::Ref & ref, const std::string & name, 
 }
 
 
-static bool include(const char * name, void *) {
-    return std::string(name).find("l.") == 0 || std::string(name) == "lm_head.weight";
+static bool include(const char * name, void * user) {
+    return std::string(name).find("l.") == 0 || std::string(name) == "lm_head.weight" ||
+           (user && std::string(name).find("v.") == 0);
 }
 static bool positions(const crispembed_diff::Ref & ref, const std::string & label, int batch, int tokens,
                       std::vector<float> & output) {
@@ -42,7 +44,9 @@ static int argmax(const std::vector<float> & x) {
     return int(std::max_element(x.begin(), x.end()) - x.begin());
 }
 int main(int argc, char ** argv) {
-    if (argc != 3) return 2;
+    if (argc != 3 && argc != 4) return 2;
+    const bool native_vision = argc == 4;
+    if (native_vision && std::string(argv[3]) != "--native-vision") return 2;
 #ifdef _WIN32
     _putenv_s("CRISPEMBED_QWEN35_OCR", "1");
 #else
@@ -52,14 +56,45 @@ int main(int argc, char ** argv) {
     if (!ref.load(argv[2])) return 2;
     auto * backend = ggml_backend_cpu_init();
     core_gguf::WeightLoad loaded;
-    if (!backend || !core_gguf::load_weights_filtered(argv[1], backend, include, nullptr, "qwen35-decoder", loaded))
+    if (!backend || !core_gguf::load_weights_filtered(argv[1], backend, include,
+                                                      native_vision ? const_cast<bool *>(&native_vision) : nullptr,
+                                                      "qwen35-decoder", loaded))
         return 2;
     qwen35_ocr::decoder_weights weights;
     if (!qwen35_ocr::map_small_decoder(loaded.tensors, weights)) return 2;
+    qwen35_ocr::vision_outputs vision;
+    std::vector<int> input_ids;
+    if (native_vision) {
+        const auto pixels = ref.get_f32("input.pixel_values");
+        const auto pixel_shape = ref.shape("input.pixel_values");
+        const auto grid = ref.get_f32("input.image_grid_thw");
+        const auto ids = ref.get_f32("input.input_ids");
+        if (!pixels.first || pixel_shape.size() != 2 || pixel_shape[0] != 1536 ||
+            pixels.second != size_t(pixel_shape[0] * pixel_shape[1]) || !grid.first || grid.second % 3 || !ids.first)
+            return 2;
+        std::vector<int> dimensions;
+        for (size_t i = 0; i < grid.second; ++i) {
+            if (!std::isfinite(grid.first[i]) || grid.first[i] < 1 || grid.first[i] > 1024 ||
+                std::floor(grid.first[i]) != grid.first[i])
+                return 2;
+            dimensions.push_back(int(grid.first[i]));
+        }
+        for (size_t i = 0; i < ids.second; ++i) {
+            if (!std::isfinite(ids.first[i]) || ids.first[i] < 0 || ids.first[i] >= 248320 ||
+                std::floor(ids.first[i]) != ids.first[i])
+                return 2;
+            input_ids.push_back(int(ids.first[i]));
+        }
+        qwen35_ocr::vision_weights visual;
+        if (!qwen35_ocr::map_small_vision(loaded.tensors, visual) ||
+            !qwen35_ocr::vision_cpu(visual, {}, pixels.first, int(pixel_shape[1]), dimensions, 4, vision))
+            return 2;
+    }
     const qwen35_ocr::attention_config config;
     bool ok = true;
     qwen35_ocr::decoder_cache prefill_cache;
     std::vector<float> first_logits;
+    int first_selected = -1;
     for (const std::string phase : { "prefill", "cached", "full_prefix" }) {
         const auto hidden = ref.get_f32(phase + ".decoder.inputs_embeds");
         const auto shape = ref.shape(phase + ".decoder.inputs_embeds");
@@ -74,8 +109,33 @@ int main(int argc, char ** argv) {
             ok = false;
             break;
         }
+        std::vector<float> native_hidden;
+        const float * decoder_input = hidden.first;
+        if (native_vision) {
+            std::vector<int> ids = phase == "cached" ? std::vector<int>{ first_selected } : input_ids;
+            if (phase == "full_prefix") ids.push_back(first_selected);
+            if (ids.size() != size_t(tokens) || !qwen35_ocr::embed_cpu(weights.embedding, ids, native_hidden)) {
+                ok = false;
+                break;
+            }
+            if (phase != "cached") {
+                size_t image = 0;
+                for (size_t i = 0; i < ids.size(); ++i)
+                    if (ids[i] == 248056) {
+                        if ((image + 1) * 1024 > vision.merged.size()) {
+                            ok = false;
+                            break;
+                        }
+                        std::copy_n(vision.merged.data() + image * 1024, 1024, native_hidden.data() + i * 1024);
+                        ++image;
+                    }
+                ok &= image * 1024 == vision.merged.size();
+            }
+            ok &= compare(ref, phase + ".decoder.inputs_embeds", native_hidden);
+            decoder_input = native_hidden.data();
+        }
         qwen35_ocr::decoder_outputs current;
-        if (!qwen35_ocr::decoder_cpu(weights, config, hidden.first, coords.data(), batch, tokens, 4,
+        if (!qwen35_ocr::decoder_cpu(weights, config, decoder_input, coords.data(), batch, tokens, 4,
                                      phase == "cached" ? &prefill_cache : nullptr, current)) {
             ok = false;
             break;
@@ -106,11 +166,13 @@ int main(int argc, char ** argv) {
         }
         if (phase == "prefill") {
             prefill_cache = std::move(current.cache);
+            first_selected = argmax(current.logits);
             first_logits = std::move(current.logits);
         }
     }
-    // A free-running decoder: native argmax selects the next embedding. Only
-    // initial merged embeddings and multimodal position geometry come from HF.
+    // Free-running native argmax selects the next embedding. The connected arm
+    // starts from native vision/text embeddings; packed pixels/IDs/positions
+    // still come from the official frontend.
     const auto expected = ref.get_f32("generated.ids");
     std::vector<int> ids;
     auto cache = std::move(prefill_cache);
@@ -151,8 +213,9 @@ int main(int argc, char ** argv) {
     std::printf("\n");
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("%s composed 24-layer native decoder and greedy IDs; official merged embeddings/positions supplied, "
-                "native frontend pending\n",
-                ok ? "PASS" : "FAIL");
+    std::printf("%s composed 24-layer native decoder and greedy IDs; %s, native frontend pending\n",
+                ok ? "PASS" : "FAIL",
+                native_vision ? "native vision/text embeddings from official packed pixels/IDs/positions"
+                              : "official merged embeddings/positions supplied");
     return ok ? 0 : 1;
 }

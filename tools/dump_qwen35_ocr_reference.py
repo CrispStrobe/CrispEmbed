@@ -71,6 +71,22 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     visual = model.model.visual
     for index, block in enumerate(visual.blocks):
         handles.append(block.register_forward_hook(hook(f"vision.layer.{index}")))
+    def vision_input(module, args, kwargs):
+        if phase[0] is not None:
+            save(f"{phase[0]}.vision.embedded", args[0])
+            cosine, sine = kwargs["position_embeddings"]
+            save(f"{phase[0]}.vision.rotary_cos", cosine)
+            save(f"{phase[0]}.vision.rotary_sin", sine)
+    handles.append(visual.blocks[0].register_forward_pre_hook(vision_input, with_kwargs=True))
+    original_position = visual.fast_pos_embed_interpolate
+    def position_capture(grid):
+        value = original_position(grid)
+        if phase[0] is not None:
+            save(f"{phase[0]}.vision.position", value)
+        return value
+    visual.fast_pos_embed_interpolate = position_capture
+    for name, label in [("norm", "norm"), ("linear_fc1", "up"), ("act_fn", "activation")]:
+        handles.append(getattr(visual.merger, name).register_forward_hook(hook("vision.merger." + label)))
     for name in ["patch_embed", "merger"]:
         handles.append(getattr(visual, name).register_forward_hook(hook("vision." + name)))
     handles.append(visual.register_forward_hook(hook("vision.output")))
@@ -213,11 +229,16 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             save(f"generated.scores.{index}", score)
     for handle in handles:
         handle.remove()
+    visual.fast_pos_embed_interpolate = original_position
     for name, original in originals.items():
         setattr(delta_layer, name, original)
     vision_depth = model.config.vision_config.depth
     decoder_depth = model.config.text_config.num_hidden_layers
     required = [f"prefill.vision.layer.{index}" for index in range(vision_depth)]
+    required += [f"prefill.vision.{name}" for name in
+                 ["patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
+                  "merger.norm", "merger.up", "merger.activation", "merger"]]
+    required += ["input.pixel_values", "input.image_grid_thw", "input.input_ids"]
     for label in ["prefill", "cached", "full_prefix"]:
         required += [f"{label}.decoder.layer.{index}" for index in range(decoder_depth)]
         required += [f"{label}.decoder.position_ids", f"{label}.decoder.inputs_embeds", f"{label}.logits"]
@@ -238,8 +259,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
     for name, value in arrays.items():
         if ((".delta." in name or ".linear." in name or ".cache." in name
-             or ".attention." in name or ".decoder." in name or name.endswith(".logits"))
-                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith(("linear.", "generated.")):
+             or ".attention." in name or ".decoder." in name or ".vision." in name or name.endswith(".logits"))
+                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith(("linear.", "generated.", "input.")):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()

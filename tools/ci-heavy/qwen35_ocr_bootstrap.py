@@ -115,7 +115,7 @@ def main():
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
                         "-DCRISPEMBED_BUILD_SHARED=OFF"], check=True)
         subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta",
-                        "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "-j", "4"], check=True)
+                        "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "test-qwen35-vision", "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
         (out / "native-delta.log").write_text(native.stdout + native.stderr)
@@ -134,12 +134,24 @@ def main():
         print(attention.stdout + attention.stderr)
         attention.check_returncode()
         report["native_attention"] = "passed six checkpoint full-attention blocks, native KV carry, fresh full-prefix and controls"
+        vision = subprocess.run([str(build / "test-qwen35-vision"), str(export), str(out / "official-delta.gguf")],
+                                capture_output=True, text=True)
+        (out / "native-vision.log").write_text(vision.stdout + vision.stderr)
+        print(vision.stdout + vision.stderr)
+        vision.check_returncode()
+        report["native_vision"] = "passed native patch/position/12-layer vision/merger from official packed pixels and grids, reset and invalid controls"
         decoder = subprocess.run([str(build / "test-qwen35-decoder"), str(export), str(out / "official-delta.gguf")],
                                  capture_output=True, text=True)
         (out / "native-decoder.log").write_text(decoder.stdout + decoder.stderr)
         print(decoder.stdout + decoder.stderr)
         decoder.check_returncode()
         report["native_decoder"] = "passed composed 24-layer decoder, logits, native caches and free-running generated IDs from official merged embeddings/positions"
+        connected = subprocess.run([str(build / "test-qwen35-decoder"), str(export), str(out / "official-delta.gguf"),
+                                    "--native-vision"], capture_output=True, text=True)
+        (out / "native-connected.log").write_text(connected.stdout + connected.stderr)
+        print(connected.stdout + connected.stderr)
+        connected.check_returncode()
+        report["native_connected"] = "passed composed native vision/text embeddings + decoder + greedy IDs; official packed pixels/prompt IDs/positions supplied"
         report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
     except BaseException as error:
         report["result"] = "failed"
