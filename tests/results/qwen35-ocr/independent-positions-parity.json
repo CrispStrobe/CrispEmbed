@@ -1,0 +1,263 @@
+{
+  "source_commit": "9d7b3dee41248bc72970db0cb58e49096580823e",
+  "reference": "Transformers 5.5.4 original Qwen3_5Model.get_rope_index/get_vision_position_ids",
+  "scope": "unpadded batch=1 still images; no model weights or OCR-quality claim",
+  "cases": [
+    {
+      "name": "text-one",
+      "tokens": 1,
+      "grids": [],
+      "delta": 0,
+      "cached_tokens": 1
+    },
+    {
+      "name": "text-seventeen",
+      "tokens": 17,
+      "grids": [],
+      "delta": 0,
+      "cached_tokens": 2
+    },
+    {
+      "name": "image-only",
+      "tokens": 6,
+      "grids": [
+        [
+          1,
+          4,
+          6
+        ]
+      ],
+      "delta": -3,
+      "cached_tokens": 3
+    },
+    {
+      "name": "grid-2x2-1-1",
+      "tokens": 3,
+      "grids": [
+        [
+          1,
+          2,
+          2
+        ]
+      ],
+      "delta": 0,
+      "cached_tokens": 4
+    },
+    {
+      "name": "grid-2x2-7-5",
+      "tokens": 13,
+      "grids": [
+        [
+          1,
+          2,
+          2
+        ]
+      ],
+      "delta": 0,
+      "cached_tokens": 1
+    },
+    {
+      "name": "grid-4x6-1-1",
+      "tokens": 8,
+      "grids": [
+        [
+          1,
+          4,
+          6
+        ]
+      ],
+      "delta": -3,
+      "cached_tokens": 2
+    },
+    {
+      "name": "grid-4x6-7-5",
+      "tokens": 18,
+      "grids": [
+        [
+          1,
+          4,
+          6
+        ]
+      ],
+      "delta": -3,
+      "cached_tokens": 3
+    },
+    {
+      "name": "grid-6x4-1-1",
+      "tokens": 8,
+      "grids": [
+        [
+          1,
+          6,
+          4
+        ]
+      ],
+      "delta": -3,
+      "cached_tokens": 4
+    },
+    {
+      "name": "grid-6x4-7-5",
+      "tokens": 18,
+      "grids": [
+        [
+          1,
+          6,
+          4
+        ]
+      ],
+      "delta": -3,
+      "cached_tokens": 1
+    },
+    {
+      "name": "grid-16x16-1-1",
+      "tokens": 66,
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "delta": -56,
+      "cached_tokens": 2
+    },
+    {
+      "name": "grid-16x16-7-5",
+      "tokens": 76,
+      "grids": [
+        [
+          1,
+          16,
+          16
+        ]
+      ],
+      "delta": -56,
+      "cached_tokens": 3
+    },
+    {
+      "name": "grid-2x32-1-1",
+      "tokens": 18,
+      "grids": [
+        [
+          1,
+          2,
+          32
+        ]
+      ],
+      "delta": 0,
+      "cached_tokens": 4
+    },
+    {
+      "name": "grid-2x32-7-5",
+      "tokens": 28,
+      "grids": [
+        [
+          1,
+          2,
+          32
+        ]
+      ],
+      "delta": 0,
+      "cached_tokens": 1
+    },
+    {
+      "name": "grid-32x2-1-1",
+      "tokens": 18,
+      "grids": [
+        [
+          1,
+          32,
+          2
+        ]
+      ],
+      "delta": 0,
+      "cached_tokens": 2
+    },
+    {
+      "name": "grid-32x2-7-5",
+      "tokens": 28,
+      "grids": [
+        [
+          1,
+          32,
+          2
+        ]
+      ],
+      "delta": 0,
+      "cached_tokens": 3
+    },
+    {
+      "name": "two-images",
+      "tokens": 23,
+      "grids": [
+        [
+          1,
+          4,
+          6
+        ],
+        [
+          1,
+          8,
+          4
+        ]
+      ],
+      "delta": -7,
+      "cached_tokens": 4
+    },
+    {
+      "name": "three-images",
+      "tokens": 16,
+      "grids": [
+        [
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          4,
+          6
+        ],
+        [
+          1,
+          6,
+          4
+        ]
+      ],
+      "delta": -6,
+      "cached_tokens": 1
+    },
+    {
+      "name": "text-context-bound",
+      "tokens": 4090,
+      "grids": [],
+      "delta": 0,
+      "cached_tokens": 2
+    }
+  ],
+  "passed": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168",
+  "comparison": "all 4 prefill planes, rope_delta, and 1\u20134 cached positions expanded to 3 axes: exact integer equality; max absolute error 0",
+  "controls": "malformed/missing/unused grids, wrong image span size, nondivisible geometry, temporal/video modalities, bad merge, overflow, negative deltas, cleared outputs and master=0: passed",
+  "native_log": [
+    "PASS positions text-one tokens=1 delta=0 cached=1 exact_integer_match=1",
+    "PASS positions text-seventeen tokens=17 delta=0 cached=2 exact_integer_match=1",
+    "PASS positions image-only tokens=6 delta=-3 cached=3 exact_integer_match=1",
+    "PASS positions grid-2x2-1-1 tokens=3 delta=0 cached=4 exact_integer_match=1",
+    "PASS positions grid-2x2-7-5 tokens=13 delta=0 cached=1 exact_integer_match=1",
+    "PASS positions grid-4x6-1-1 tokens=8 delta=-3 cached=2 exact_integer_match=1",
+    "PASS positions grid-4x6-7-5 tokens=18 delta=-3 cached=3 exact_integer_match=1",
+    "PASS positions grid-6x4-1-1 tokens=8 delta=-3 cached=4 exact_integer_match=1",
+    "PASS positions grid-6x4-7-5 tokens=18 delta=-3 cached=1 exact_integer_match=1",
+    "PASS positions grid-16x16-1-1 tokens=66 delta=-56 cached=2 exact_integer_match=1",
+    "PASS positions grid-16x16-7-5 tokens=76 delta=-56 cached=3 exact_integer_match=1",
+    "PASS positions grid-2x32-1-1 tokens=18 delta=0 cached=4 exact_integer_match=1",
+    "PASS positions grid-2x32-7-5 tokens=28 delta=0 cached=1 exact_integer_match=1",
+    "PASS positions grid-32x2-1-1 tokens=18 delta=0 cached=2 exact_integer_match=1",
+    "PASS positions grid-32x2-7-5 tokens=28 delta=0 cached=3 exact_integer_match=1",
+    "PASS positions two-images tokens=23 delta=-7 cached=4 exact_integer_match=1",
+    "PASS positions three-images tokens=16 delta=-6 cached=1 exact_integer_match=1",
+    "PASS positions text-context-bound tokens=4090 delta=0 cached=2 exact_integer_match=1",
+    "PASS positions rejection, bounds, reset, negative delta and master=0 controls"
+  ]
+}

@@ -570,12 +570,18 @@ the strict 0.002 floor and pass the unchanged official self-backend budget.
 There is no tolerance change in this lane. The older oracle-position arm also
 passes in the same run.
 
-The independent weight-free 18-layout comparison is
-[queued on Linux](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168).
-The initial [Mac dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187763)
+The independent weight-free [Linux run 38541059168](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168)
+at `9d7b3dee` passes **18/18 layouts** against original Transformers methods:
+text-only, image-only, rectangular grids in both orientations, two/three images,
+4090-token text and one-to-four-token cached blocks. All four prefill planes,
+RoPE deltas and expanded cached coordinates match exactly (**max error0**).
+Bounds, malformed/missing/unused grids, bad span lengths, temporal/video rejection,
+negative offsets, output reset and `CRISPEMBED_QWEN35_OCR=0` controls pass.
+[Independent report](../tests/results/qwen35-ocr/independent-positions-parity.json)
+retains case geometry, offsets and native assertion lines. The initial
+[Mac dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187763)
 was cancelled after over 23 minutes without a runner, before any code executed.
-Do not mark non-square/multiple-image position coverage verified until this
-additional gate completes.
+This verifies position semantics, not multiple-image OCR quality.
 
 A separate geometry difference exists before resampling: pinned Python
 `smart_resize` uses ties-to-even `round`, while the shared native helper uses

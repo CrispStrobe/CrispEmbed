@@ -20,7 +20,7 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 | Order | Model / upstream | License | Total weight budget | Work / status |
 |---|---|---|---|---|
-| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/positions; intermediate tolerance calibrated against official F32 self-backend variation. Native frontend/C ABI and quantization remain; no model-support claim |
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native frontend/C ABI and quantization remain; no model-support claim |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -64,8 +64,11 @@ On 2026-10-14, native vision/merger + connected decoder pass37+186 checks;
 logits max abs9.2268e-5 and IDs9/9 through EOS. Raw vision differences up to0.168
 are retained and calibrated against the original F32 model's own CPU-backend
 variation (0.193); per-patch cosine and strict decoder/logit/ID gates remain.
-Official packed pixels, IDs and coordinates are still supplied; native frontend,
-bindings, larger-page performance and publication remain open.
+Native positions now pass18 independent layouts and11 trained coordinate checks,
+with188 connected-stage comparisons and unchanged IDs/logit errors. Official
+packed pixels, IDs and modality labels remain supplied; native raw-image
+preprocessing/tokenizer, bindings, larger-page performance and publication remain
+open. See [position evidence](tests/results/qwen35-ocr/native-positions-connected-parity.json).
 See [decoder evidence](tests/results/qwen35-ocr/composed-decoder-parity.json).
 Supplementary original-module batch-2 full-attention controls pass 150 checks
 on Mac (max abs2.3842e-6); this decoder lane is landed and its board row removed.
@@ -493,7 +496,6 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-14 | `ocr-qwen35-positions` | LightOnOCR-3 native multimodal prefill/cached position generation | Source `ba44114c`: [trained ARM check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38538187682) PASS188 stages +11 exact coordinate checks; IDs9/9 incl EOS, logit cos1.000000000/max abs9.23e-5. [18-layout original-reference check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168) still queued on Linux after Mac capacity fallback. Raw-image frontend pending |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 

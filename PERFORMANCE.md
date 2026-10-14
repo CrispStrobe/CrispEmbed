@@ -4981,3 +4981,10 @@ absolute0.002 unchanged for other decoder/cache/logit stages.
 are retained. This is correctness evidence, with no speed/quantization claim.
 Official packed pixels, prompt IDs and modality IDs remain; raw-image frontend,
 native decoded-text processing and production integration are still pending.
+
+The independent [weight-free Linux run38541059168](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168),
+source `9d7b3dee`, passes18/18 original-method position cases with max error0,
+including non-square grids, multiple images, negative deltas and cached blocks
+of1–4 tokens. Bounds/reset/disabled and malformed-input controls pass.
+[Case report](tests/results/qwen35-ocr/independent-positions-parity.json) contains
+exact offsets and assertion lines; no multiple-image OCR or speed claim follows.
