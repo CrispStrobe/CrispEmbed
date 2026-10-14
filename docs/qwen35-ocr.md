@@ -965,4 +965,5 @@ native outputs are recorded, with no image/text overlap against the four held-ou
 synthetic evaluation fixtures. All use the same renderer family, so this does
 not establish corpus generalization. Export file SHA-256 is now recorded too.
 Existing F16 numeric gates and all prior runtime alternatives remain unchanged.
-Hosted execution is pending; no selected FFN recipe, HF publication or speed claim.
+[Hosted FFN sweep38627759408](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38627759408)
+is running at `af8a7967`; no selected FFN recipe, HF publication or speed claim.
