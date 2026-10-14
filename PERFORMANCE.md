@@ -5004,6 +5004,11 @@ The resized fixture still fails a strict numeric boundary: layer7 cache keys
 max abs0.00201964378 exceeds0.002. Vocabulary-score cosine1 and max abs8.41617584e-5
 do not override this failure. Retaining six key matrices at F32 gives0.00202131271,
 with no improvement. Original F32 CPU backend variation in the same keys is
-0.00162005424, below the gate. The F32 vision trial remains queued.
+0.00162005424, below the gate. The [F32 vision trial38554130487](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38554130487)
+passes both fixtures, reducing resized keys to0.00183296204; worst vocabulary-score
+error8.17775726e-5, reported cosine1, exact9/9 IDs/EOS and decoded text. Storage is
+1,918,139,328 bytes, extra200,933,376 bytes over the metadata-bearing F16 baseline.
+The F64 RMS reduction control still fails at0.00202226639; it remains default-off.
+Existing vision/final-norm self-backend budgets are unchanged.
 [Detailed evidence and limits](docs/qwen35-ocr.md#native-rgbbpe-frontend-lane--2026-10-14).
 No API, corpus accuracy, Q4, GPU or latency claim follows from these fixtures.

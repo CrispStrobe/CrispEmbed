@@ -20,7 +20,7 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 | Order | Model / upstream | License | Total weight budget | Work / status |
 |---|---|---|---|---|
-| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision trial pending. C ABI and quantization remain; no model-support claim |
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. C ABI and quantization remain; no model-support claim |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -34,7 +34,7 @@ Shared Qwen3.5 estimate: 2–4 engineering weeks for the first verified model,
 then roughly 3–7 days per checkpoint. These are planning estimates. Vendored ggml
 already has GatedDeltaNet kernels. The first small decoder graph/state path,
 partial/interleaved MRoPE, gated full attention and native vision are now verified;
-frontend inputs match exactly, with one resized composed cache gate still failing.
+frontend inputs match exactly; F16 text/F32 vision passes the two composed fixtures.
 Production integration remains. Larger geometry/MoE stays separate.
 No ONNX Runtime dependency is proposed.
 

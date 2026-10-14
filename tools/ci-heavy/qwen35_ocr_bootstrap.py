@@ -82,9 +82,7 @@ def main():
         export = scratch / "lightonocr-3-0.8b-f16-experimental.gguf"
         keep_f32 = [f"l.layers.{i}.self_attn.k_proj.weight" for i in range(3,24,4)] if frontend_keys else []
         if frontend_vision:
-            keep_f32 = ["v.patch_embed.proj.weight", "v.pos_embed.weight", "v.merger.linear_fc1.weight", "v.merger.linear_fc2.weight"]
-            keep_f32 += [f"v.blocks.{i}.{part}.weight" for i in range(12)
-                         for part in ["attn.qkv", "attn.proj", "mlp.linear_fc1", "mlp.linear_fc2"]]
+            keep_f32 = converter.precision_recipe("vision-f32")
         manifest = converter.convert(local, export, converter.LIGHTON_MODEL, converter.LIGHTON_REVISION, keep_f32=keep_f32)
         report["weight_recipe"] = "vision-f32" if frontend_vision else "full-attention-k-f32" if frontend_keys else "original-f16"
         report["keep_f32"] = keep_f32

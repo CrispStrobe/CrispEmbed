@@ -19,6 +19,17 @@ LIGHTON_MODEL = "lightonai/LightOnOCR-3-0.8B"
 LIGHTON_REVISION = "36d8636925327c671bd8e479c517a004f7566bd9"
 
 
+def precision_recipe(name):
+    if name == "original-f16":
+        return []
+    if name != "vision-f32":
+        raise ValueError(f"Unknown precision recipe: {name}")
+    return ["v.patch_embed.proj.weight", "v.pos_embed.weight", "v.merger.linear_fc1.weight", "v.merger.linear_fc2.weight"] + [
+        f"v.blocks.{i}.{part}.weight" for i in range(12)
+        for part in ["attn.qkv", "attn.proj", "mlp.linear_fc1", "mlp.linear_fc2"]
+    ]
+
+
 def read_tokenizer_metadata(root, vocab_size):
     tokenizer = json.loads((root / "tokenizer.json").read_text())
     if tokenizer["model"]["type"] != "BPE":
@@ -239,6 +250,8 @@ def main():
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--dtype", choices=["f32", "f16"], default="f16")
+    parser.add_argument("--precision-recipe", choices=["original-f16", "vision-f32"], default="original-f16",
+                        help="Experimental F16 text/F32 vision recipe verified on two owned RGB fixtures")
     parser.add_argument("--keep-f32", action="append", default=[], metavar="GGUF_NAME",
                         help="Keep this exact tensor in F32; repeat for multiple tensors (unknown names reject)")
     args = parser.parse_args()
@@ -246,7 +259,8 @@ def main():
         parser.error("--revision must be an immutable 40-hex commit")
     directory = snapshot_download(args.model, revision=args.revision,
                                   allow_patterns=["*.json", "*.jinja", "*.safetensors", "LICENSE*"])
-    manifest = convert(directory, args.output, args.model, args.revision, args.dtype, args.keep_f32)
+    retained = sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32))
+    manifest = convert(directory, args.output, args.model, args.revision, args.dtype, retained)
     print(json.dumps({key: value for key, value in manifest.items() if key != "records"}, indent=2))
 
 

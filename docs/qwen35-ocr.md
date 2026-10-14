@@ -659,10 +659,20 @@ calling the native result a strict pass. Retained evidence:
 
 The [F32 vision trial](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38554130487)
 at `3dfe209e` retains52 vision matrices at F32 while leaving text matrices F16.
-It is queued; no improvement or promotion is claimed. All intermediate gates
-remain unchanged. The alternatives stay opt-in, with their weight recipes in
-the test report. API integration, larger pages, quantization, corpus quality,
-performance and HF publication remain open.
+It passes both native raw-RGB fixtures and all unchanged comparison gates.
+The resized layer7 keys improve from0.00201964378 to0.00183296204; vocabulary-score
+cosine reports1, with worst score error8.17775726e-5. Both fixtures preserve all
+9 IDs through EOS and exact decoded text. This retains the existing original
+F32 self-backend calibration for vision/final norms; it does not imply bit equality
+or that diagnostic attention-input traces satisfy an absolute0.002 limit.
+[Complete comparisons, norms, budgets, IDs and confidence](../tests/results/qwen35-ocr/frontend-vision-f32-parity.json).
+
+The export is1,918,139,328 bytes, versus1,717,205,952 for the current metadata-bearing
+F16 baseline: an extra200,933,376 bytes (about11.7%). Keep this recipe explicit;
+the converter's F16 default remains available with its measured resized failure.
+API integration, larger pages, quantization, corpus quality, performance and HF
+publication remain open. These two fixtures are implementation parity evidence,
+not an OCR accuracy benchmark.
 
 The earlier source `c8cdb38b` dispatches
 [frontend](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38546388161) and
@@ -682,12 +692,30 @@ a source-exact reduction or a promoted recipe. Hosted
 `qwen35_ocr_bootstrap.py --frontend-precise-rms` explicitly sets the gate to1;
 other bootstrap modes explicitly set0. The original Python reference and all
 comparison thresholds remain unchanged. The [hosted RMS control](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38556070004)
-at `46368a4c` is pending behind the vision trial; no result is available yet.
+at `46368a4c` fails the resized fixture's unchanged layer7 key gate at0.00202226639.
+Both texts/IDs still match exactly. This control remains default-off and unpromoted.
+[Full precision-control evidence](../tests/results/qwen35-ocr/frontend-rms-precision-audit.json).
 
 The reference dump and input checker now reject versions other than
 Transformers5.5.4/Tokenizers0.22.2 before inference. The NFC source-version finding
 requires pinning the tokenizer implementation as well as the checkpoint JSON.
 
 [Latest Linux input check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38556570758)
-at `307b19e8` is queued. It repeats the input and legacy checks with the explicit
-Tokenizers pin and the latest C++ changes.
+at `307b19e8` passes all nine images, eleven text cases,5102 NFC cases and285 legacy
+checks with Tokenizers0.22.2 explicitly pinned and the latest C++ changes.
+[Fresh pinned evidence](../tests/results/qwen35-ocr/frontend-pinned-input-parity.json).
+
+
+To reproduce the passing experimental export (run conversion on a hosted runner):
+
+```bash
+python models/convert-qwen35-ocr-to-gguf.py \
+  --revision 36d8636925327c671bd8e479c517a004f7566bd9 \
+  --dtype f16 --precision-recipe vision-f32 \
+  --output lightonocr-3-0.8b-vision-f32-experimental.gguf
+```
+
+The named recipe matches all52 retained tensors from the successful hosted
+manifest exactly. Hosted `qwen35_ocr_bootstrap.py --frontend-vision-f32` uses the
+same recipe. `--keep-f32` remains available for additional exact tensor names;
+unknown names reject. This command does not register or publish the checkpoint.
