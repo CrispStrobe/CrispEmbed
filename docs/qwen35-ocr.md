@@ -439,8 +439,8 @@ are preserved. Both reduction flags remain default-off; no alternative is
 promoted because a particular mean/maximum moved in a favorable direction.
 
 The test-only comparison now records both the original strict-absolute result
-and an independent reference-variation budget. Vision budgets use each patch
-vector's maximum F32 backend self-variation, final decoder norms use each
+and an independent reference-variation budget. Vision budgets use the named
+stage's maximum F32 backend self-variation, final decoder norms use each
 component's variation: **0.002 + 2 × self-variation**. CPU backend controls must
 retain the original greedy IDs before a calibrated reference is emitted.
 Tensor counts/shapes, finite values and minimum cosine0.99999 remain required;
@@ -452,8 +452,14 @@ absolute gate.
 An initial per-component vision envelope was too narrow for errors distributed
 across correlated feature channels; [38533775792](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38533775792)
 retains that failure, while its connected decoder **passes186 checks** and
-all nine IDs. The per-patch vision check (the same representation unit as the
-per-row cosine) and deliberate beyond-budget corruption control are at
-[38534784004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38534784004).
+all nine IDs. A per-patch envelope at
+[38534784004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38534784004)
+was also too narrow at some locations: a single CPU backend pair does not bound
+a third implementation's error at every channel/patch. The final comparison uses
+the independently observed **named-stage** variation for vision, together with
+unchanged minimum cosine **per patch**; it retains elementwise final-norm bounds
+and strict downstream gates. Deliberate corruption beyond the observed budget
+must reject. Verification is at
+[38535674747](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38535674747).
 The source-precision/default inference path is unchanged. This calibrated gate
 is not a claim of raw bit equality, standalone image-to-text or corpus OCR quality.
