@@ -9,7 +9,7 @@
 // Composed Qwen3.5 vision has amplified states for which two official F32 CPU
 // convolution backends differ beyond a uniform 0.002 absolute gate. Only vision
 // boundaries and the final decoder norm may use the independently captured
-// backend variation per patch vector (vision), per element (final norm).
+// backend variation per named stage (vision), per element (final norm).
 // Vocabulary logits, hidden states and caches
 // retain the original absolute gate. Reference arrays are test-only artifacts.
 static bool qwen35_compare(const crispembed_diff::Ref & ref, const std::string & name,
@@ -29,12 +29,10 @@ static bool qwen35_compare(const crispembed_diff::Ref & ref, const std::string &
     const bool patch_vector = control.first && name.find(".vision.") != std::string::npos;
     const size_t row_width = patch_vector && !shape.empty() ? size_t(shape[0]) : 1;
     if (row_width < 1 || values.size() % row_width) ok = false;
-    std::vector<double> row_budget;
+    double stage_variation = 0;
     if (ok && patch_vector) {
-        row_budget.resize(values.size() / row_width, 0.0);
         for (size_t i = 0; i < values.size(); ++i)
-            row_budget[i / row_width] =
-                std::max(row_budget[i / row_width], std::abs(double(control.first[i]) - double(oracle.first[i])));
+            stage_variation = std::max(stage_variation, std::abs(double(control.first[i]) - double(oracle.first[i])));
     }
     double budget_ratio = 0, self_max_abs = 0;
     if (ok) {
@@ -47,7 +45,7 @@ static bool qwen35_compare(const crispembed_diff::Ref & ref, const std::string &
             const double self = control.first ? std::abs(double(control.first[i]) - double(oracle.first[i])) : 0.0;
             const double delta = std::abs(double(values[i]) - double(oracle.first[i]));
             self_max_abs = std::max(self_max_abs, self);
-            const double variation = patch_vector ? row_budget[i / row_width] : self;
+            const double variation = patch_vector ? stage_variation : self;
             budget_ratio = std::max(budget_ratio, delta / (0.002 + 2.0 * variation));
         }
         ok &= budget_ratio <= 1.0;
