@@ -1,0 +1,50 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38550962287",
+  "source_commit": "8b6879d7cc0852369b0317624c863a9ef6bfc222",
+  "weight_recipe": "full-attention-k-f32",
+  "keep_f32": [
+    "l.layers.3.self_attn.k_proj.weight",
+    "l.layers.7.self_attn.k_proj.weight",
+    "l.layers.11.self_attn.k_proj.weight",
+    "l.layers.15.self_attn.k_proj.weight",
+    "l.layers.19.self_attn.k_proj.weight",
+    "l.layers.23.self_attn.k_proj.weight"
+  ],
+  "export_bytes": 1723497408,
+  "result": "resized key-cache gate still fails; no weight recipe promoted",
+  "cases": [
+    {
+      "name": "original",
+      "native_text": "Hello OCR  \n12345",
+      "reference_text": "Hello OCR  \n12345",
+      "paired_CER": 0,
+      "paired_WER": 0,
+      "mean_native_token_confidence": 0.995560737,
+      "mean_reference_token_confidence": 0.995560692,
+      "confidence_scope": "all generated tokens including EOS",
+      "failures": []
+    },
+    {
+      "name": "resized",
+      "native_text": "Hello OCR  \n12345",
+      "reference_text": "Hello OCR  \n12345",
+      "paired_CER": 0,
+      "paired_WER": 0,
+      "mean_native_token_confidence": 0.995937912,
+      "mean_reference_token_confidence": 0.995937876,
+      "confidence_scope": "all generated tokens including EOS",
+      "failures": [
+        {
+          "stage": "prefill.cache.7.keys",
+          "max_abs": 0.00202131271
+        },
+        {
+          "stage": "cached.cache.7.keys",
+          "max_abs": 0.00202131271
+        }
+      ]
+    }
+  ],
+  "isolated_layer7_normalized_key_max_abs": 1.76429749e-05,
+  "interpretation": "isolated attention matches official inputs; discrepancy depends on composed upstream inputs; higher key weight precision did not improve it"
+}
