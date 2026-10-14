@@ -726,6 +726,10 @@ unknown names reject. This command does not register or publish the checkpoint.
 
 
 The current-source [ARM recheck38597484044](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38597484044)
-is queued at `937ab2a0`. It exercises the named shared recipe, explicit Tokenizers
+passes at `937ab2a0`:189 comparisons per owned fixture, all native inputs/IDs/EOS
+and decoded text exact. It exercises the named shared recipe, explicit Tokenizers
 pin and default-off RMS control together against the same original reference and
-unchanged numerical gates before this lane is landed.
+unchanged numerical gates. Resized keys remain0.00183296204; score max abs8.17775726e-5,
+reported cosine1. [Current-source errors, norms, budgets and outputs](../tests/results/qwen35-ocr/frontend-current-source-parity.json).
+The reproducible frontend lane is complete; the owning-context and production
+integration lanes remain open.

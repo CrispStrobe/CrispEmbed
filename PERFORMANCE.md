@@ -5012,3 +5012,12 @@ The F64 RMS reduction control still fails at0.00202226639; it remains default-of
 Existing vision/final-norm self-backend budgets are unchanged.
 [Detailed evidence and limits](docs/qwen35-ocr.md#native-rgbbpe-frontend-lane--2026-10-14).
 No API, corpus accuracy, Q4, GPU or latency claim follows from these fixtures.
+
+
+[Current-source ARM rerun38597484044](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38597484044)
+at `937ab2a0` confirms the shared named52-tensor recipe with RMS precision control
+explicitly off:189 comparisons per fixture pass, all9 IDs/EOS and decoded text
+match, resized keys0.00183296204 and score max abs8.17775726e-5. The numeric gates
+are unchanged. [Full repeated evidence](tests/results/qwen35-ocr/frontend-current-source-parity.json).
+This completes the experimental frontend lane, with production contexts and
+API integration still open.
