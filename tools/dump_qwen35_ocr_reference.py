@@ -277,6 +277,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         save("generated.ids", ids)
         for index, score in enumerate(generated.scores):
             save(f"generated.scores.{index}", score)
+    for label, control in cpu_controls.items():
+        if control["generated_ids"] != ids.tolist():
+            raise ValueError(f"Official CPU backend changes greedy IDs: {label}; cannot calibrate an intermediate budget")
     for handle in handles:
         handle.remove()
     visual.fast_pos_embed_interpolate = original_position

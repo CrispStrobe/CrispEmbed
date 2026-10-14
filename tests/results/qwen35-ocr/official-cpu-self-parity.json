@@ -1,0 +1,98 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38531977370",
+  "source_commit": "c8e395e0852a330e49e32996e8acbd54f5cb0b38",
+  "scope": "same official checkpoint/processor/image/Float32 dtype; independently change CPU convolution backend or patch batching; no native outputs substituted",
+  "original_generated_ids": [
+    [
+      9419,
+      77796,
+      2228,
+      16,
+      17,
+      18,
+      19,
+      20,
+      248046
+    ]
+  ],
+  "original_decoded": [
+    "Hello OCR  \n12345"
+  ],
+  "controls": {
+    "backend_off": {
+      "mkldnn_available": true,
+      "generated_ids": [
+        [
+          9419,
+          77796,
+          2228,
+          16,
+          17,
+          18,
+          19,
+          20,
+          248046
+        ]
+      ],
+      "decoded": [
+        "Hello OCR  \n12345"
+      ],
+      "vision_layer_max_abs": [
+        2.3126602172851562e-05,
+        2.3484230041503906e-05,
+        1.769140362739563e-05,
+        1.5079975128173828e-05,
+        1.65402889251709e-05,
+        4.100799560546875e-05,
+        5.14984130859375e-05,
+        6.210803985595703e-05,
+        8.764863014221191e-05,
+        0.00011220574378967285,
+        0.00018155574798583984,
+        0.193328857421875
+      ],
+      "merger_max_abs": 4.875659942626953e-05,
+      "decoder_norm_max_abs": 0.0058307647705078125,
+      "logits_max_abs": 7.43865966796875e-05,
+      "same_ids": true
+    },
+    "patch_chunked": {
+      "mkldnn_available": true,
+      "generated_ids": [
+        [
+          9419,
+          77796,
+          2228,
+          16,
+          17,
+          18,
+          19,
+          20,
+          248046
+        ]
+      ],
+      "decoded": [
+        "Hello OCR  \n12345"
+      ],
+      "vision_layer_max_abs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "merger_max_abs": 0.0,
+      "decoder_norm_max_abs": 0.0,
+      "logits_max_abs": 0.0,
+      "same_ids": true
+    }
+  },
+  "conclusion": "official F32 backend self-variation exceeds the prior uniform 0.002 bound at amplified vision and decoder norm states; both controls retain identical IDs. Calibrate only sensitive intermediates; keep logits/IDs strict"
+}
