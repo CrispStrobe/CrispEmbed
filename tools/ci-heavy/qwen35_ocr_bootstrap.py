@@ -31,7 +31,8 @@ def main():
     if transformers.__version__ != "5.5.4":
         raise ValueError("Reference implementation must be pinned to transformers==5.5.4")
     precision_audit = sys.argv[1:] == ["--vision-precision"]
-    if sys.argv[1:] and not precision_audit:
+    math_audit = sys.argv[1:] == ["--vision-math"]
+    if sys.argv[1:] and not (precision_audit or math_audit):
         raise ValueError("Unexpected arguments")
     torch.set_num_threads(4)
     repo = Path(__file__).resolve().parents[2]
@@ -183,6 +184,24 @@ def main():
             # all other arm reports are retained to locate the first discrepancy.
             if not all(arm["vision"] and arm["connected"] for arm in arms):
                 raise ValueError("At least one audited precision recipe fails strict native parity; inspect retained stage logs")
+        elif math_audit:
+            arms = []
+            for label, norm, attention in [("norm", "1", "0"), ("attention", "0", "1"), ("both", "1", "1")]:
+                os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM"] = norm
+                os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"] = attention
+                arms.append({"name": label, "norm": norm, "attention": attention,
+                             "vision": probe("native-vision-math-" + label, export, "test-qwen35-vision"),
+                             "connected": probe("native-connected-math-" + label, export, "test-qwen35-decoder", ["--native-vision"])})
+            candidate = scratch / "f32-math-experimental.gguf"
+            candidate_manifest = converter.convert(local, candidate, converter.LIGHTON_MODEL,
+                                                   converter.LIGHTON_REVISION, "f32")
+            arms.append({"name": "both-f32", "norm": "1", "attention": "1",
+                         "bytes": candidate_manifest["bytes"],
+                         "vision": probe("native-vision-math-both-f32", candidate, "test-qwen35-vision"),
+                         "connected": probe("native-connected-math-both-f32", candidate, "test-qwen35-decoder", ["--native-vision"])})
+            report["math_arms"] = arms
+            if not all(arm["vision"] and arm["connected"] for arm in arms if arm["name"] in ["both", "both-f32"]):
+                raise ValueError("Precise vision reductions fail the unchanged stage/connected parity gates")
         elif not all(report[key] for key in ["native_vision", "native_decoder", "native_connected"]):
             raise ValueError("Native vision/decoder/connected parity failed; inspect retained stage logs")
         report["result"] = "export/reference/native delta checks passed; full native OCR support pending"

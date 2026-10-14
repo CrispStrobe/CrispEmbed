@@ -40,7 +40,19 @@ static bool layer_norm(const std::vector<float> & x, ggml_tensor * w, ggml_tenso
             const float centered = x[base + i] - mean;
             variance += centered * centered;
         }
-        const float scale = 1.0f / std::sqrt(variance / width + eps);
+        variance /= width;
+        if (core_env::on("CRISPEMBED_QWEN35_VISION_PRECISE_NORM")) {
+            double sum = 0, square = 0;
+            for (int i = 0; i < width; ++i) sum += double(x[base + i]);
+            const double center = sum / width;
+            for (int i = 0; i < width; ++i) {
+                const double delta = double(x[base + i]) - center;
+                square += delta * delta;
+            }
+            mean = float(center);
+            variance = float(square / width);
+        }
+        const float scale = 1.0f / std::sqrt(variance + eps);
         for (int i = 0; i < width; ++i) y[base + i] = ((x[base + i] - mean) * scale) * weights[i] + biases[i];
     }
     return finite(y);
@@ -124,6 +136,7 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
             }
         }
     const float scale = 1.0f / std::sqrt(float(d));
+    const bool precise = core_env::on("CRISPEMBED_QWEN35_VISION_PRECISE_ATTN");
     for (size_t frame = 1; frame < offsets.size(); ++frame) {
         const int first = offsets[frame - 1], end = offsets[frame];
         std::vector<float> scores(size_t(end - first));
@@ -134,6 +147,12 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
                 for (int s = first; s < end; ++s) {
                     float dot = 0;
                     for (int i = 0; i < d; ++i) dot += q[base + i] * k[size_t(s) * width + head * d + i];
+                    if (precise) {
+                        double exact = 0;
+                        for (int i = 0; i < d; ++i)
+                            exact += double(q[base + i]) * double(k[size_t(s) * width + head * d + i]);
+                        dot = float(exact);
+                    }
                     scores[s - first] = dot * scale;
                     maximum = std::max(maximum, scores[s - first]);
                 }
@@ -142,10 +161,22 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
                     score = std::exp(score - maximum);
                     sum += score;
                 }
+                double exact_sum = 0;
+                if (precise)
+                    for (float score : scores) exact_sum += double(score);
+                const float inverse = precise ? 1.0f / float(exact_sum) : 0.0f;
                 for (int i = 0; i < d; ++i) {
                     float result = 0;
                     for (int s = first; s < end; ++s)
                         result += (scores[s - first] / sum) * values[size_t(s) * width + head * d + i];
+                    if (precise) {
+                        double exact = 0;
+                        for (int s = first; s < end; ++s) {
+                            const float probability = scores[s - first] * inverse;
+                            exact += double(probability) * double(values[size_t(s) * width + head * d + i]);
+                        }
+                        result = float(exact);
+                    }
                     pooled[base + i] = result;
                 }
             }
