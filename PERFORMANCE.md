@@ -4900,3 +4900,16 @@ passes 288 additional comparisons: 65-token prefill plus cached continuation,
 synthetic original HF GatedDeltaNet weights. Reported cos_min1.000000000,
 max abs2.5034e-6. [Full evidence](tests/results/qwen35-ocr/synthetic-linear-parity.json).
 This checks projection/core/cache batching, not OCR accuracy or timing.
+
+### Qwen3.5 six trained full-attention blocks — 2026-10-14
+
+[ARM 38514712654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514712654),
+source `771f0bfa`: **150 comparisons** pass against original Transformers 5.5.4,
+using experimental F16/F32 GGUF weights and F32 projection arithmetic. All six
+blocks cover prefill, native KV-carried continuation and fresh full-prefix;
+official normalized inputs are supplied per block. Reported cos_min1.000000000,
+output max abs3.5763e-6, gated pooling9.6560e-6, key cache2.2888e-5,
+value cache1.9074e-5. [Complete errors/magnitudes](tests/results/qwen35-ocr/trained-attention-parity.json).
+Partial 64/256 interleaved RoPE, zero-centered Q/K RMSNorm and per-head query
+sigmoid gating are exercised. Component parity alone does not prove native
+vision/frontend, decoded transcription, Q4 quality or performance.

@@ -1,8 +1,8 @@
 # Qwen3.5 OCR: first checkpoint and native port blueprint
 
 Started 2026-10-13 with **LightOnOCR-3-0.8B**, the smallest missing checkpoint
-in the permissive OCR queue. This is an export/reference bootstrap, **not native
-support**. No registry alias, output-parity score, calibrated Q4 quality result
+in the permissive OCR queue. This is an experimental native port, **not supported OCR
+inference**. No registry alias, calibrated Q4 quality result
 or production HF publication exists for this lane yet.
 
 ## Immutable sources
@@ -249,3 +249,38 @@ The converter/reference/native linear-attention checkpoint is landed on main.
 Its implementation branch is closed; the remaining first-model work above is
 open and must use a fresh isolated worktree. No supported OCR model/alias or HF
 weight publication is claimed by this checkpoint.
+
+## Full-attention checkpoint — 2026-10-14
+
+[Hosted ARM run 38514712654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514712654),
+source `771f0bfa`, verifies all six trained full-attention blocks with the actual
+experimental F16/F32 GGUF and original pinned Python implementation. **150 checks**
+pass across prefill, native KV-carried continuation and a fresh full-prefix arm.
+Every block uses its official normalized input at this component checkpoint.
+Reported minimum cosine is **1.000000000**; maximum absolute errors:
+
+| Stage | Maximum absolute error |
+| --- | ---: |
+| Q/K/V projections (worst) | 1.9074e-5 |
+| Zero-centered Q/K head norms (worst) | 2.2888e-5 |
+| Partial/interleaved RoPE key cache | 2.2888e-5 |
+| Value cache | 1.9074e-5 |
+| Attention pooling after sigmoid query gate | 9.6560e-6 |
+| Output projection | 3.5763e-6 |
+
+[Complete errors and magnitudes](../tests/results/qwen35-ocr/trained-attention-parity.json)
+and [bootstrap result](../tests/results/qwen35-ocr/trained-attention-bootstrap.json)
+are retained. The native path rotates only 64/256 dimensions, uses chronological
+causality independently of multimodal rotary coordinates, repeats KV heads by
+group, and preserves the query/gate split within each head. Tests reject `=0`,
+invalid rotary dimensions and malformed KV caches; a perturbed pooling control
+must exceed the parity threshold. This is an unpadded CPU reference path.
+
+The branch also implements 24-layer residual/norm/SwiGLU composition, tied-head
+logits and native-selected greedy continuation. Its hosted verification at
+[38514911908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514911908)
+is pending. This next arm starts from official merged embeddings and positions;
+it does not establish native vision/frontend/tokenizer parity. Additional
+original-module batch-2 attention controls with distinct rotary axes are at
+[38514980272](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38514980272).
+No registry alias, quantization calibration or weight publication yet.
