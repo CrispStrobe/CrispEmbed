@@ -24,12 +24,13 @@ def main():
     import numpy as np
     import torch
     import transformers
+    import tokenizers
     from huggingface_hub import HfApi, hf_hub_download, snapshot_download
     from PIL import Image, ImageDraw
     from safetensors.numpy import save_file
 
-    if transformers.__version__ != "5.5.4":
-        raise ValueError("Reference implementation must be pinned to transformers==5.5.4")
+    if transformers.__version__ != "5.5.4" or tokenizers.__version__ != "0.22.2":
+        raise ValueError("Reference requires transformers==5.5.4 and tokenizers==0.22.2")
     precision_audit = sys.argv[1:] == ["--vision-precision"]
     math_audit = sys.argv[1:] == ["--vision-math"]
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]

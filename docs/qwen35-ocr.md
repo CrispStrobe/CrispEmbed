@@ -681,8 +681,13 @@ squares in F64 for decoder and query/key RMS norms. It is an experiment, not
 a source-exact reduction or a promoted recipe. Hosted
 `qwen35_ocr_bootstrap.py --frontend-precise-rms` explicitly sets the gate to1;
 other bootstrap modes explicitly set0. The original Python reference and all
-comparison thresholds remain unchanged. No result is available yet.
+comparison thresholds remain unchanged. The [hosted RMS control](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38556070004)
+at `46368a4c` is pending behind the vision trial; no result is available yet.
 
 The reference dump and input checker now reject versions other than
 Transformers5.5.4/Tokenizers0.22.2 before inference. The NFC source-version finding
 requires pinning the tokenizer implementation as well as the checkpoint JSON.
+
+[Latest Linux input check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38556570758)
+at `307b19e8` is queued. It repeats the input and legacy checks with the explicit
+Tokenizers pin and the latest C++ changes.
