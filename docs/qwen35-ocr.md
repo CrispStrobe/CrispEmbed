@@ -1,9 +1,12 @@
 # Qwen3.5 OCR: first checkpoint and native port blueprint
 
 Started 2026-10-13 with **LightOnOCR-3-0.8B**, the smallest missing checkpoint
-in the permissive OCR queue. This is an experimental native port, **not supported OCR
-inference**. No registry alias, calibrated Q4 quality result
-or production HF publication exists for this lane yet.
+in the permissive OCR queue. The experimental gated port now has C API,
+orchestrator, CLI/server and Python/Rust/Dart integration, plus bounded F16/Q8/Q4
+comparisons. Four synthetic cases preserve IDs/EOS/text; Q4 logit drift is larger
+than Q8. Registry aliases, broader page/corpus validation, performance and HF
+publication remain pending. See the [measured precision sweep](#measured-precision-sweep)
+for the current results and limits; the checkpoints below retain initial evidence.
 
 ## Immutable sources
 
@@ -846,7 +849,9 @@ orch = CrispOcrOrchestrator(router=False, stages=[
 text = orch.run("input.png")["text"]
 ```
 
-The1024-patch bound, F32/F16-only engine and source-profile restriction remain.
+This integration checkpoint covered F32/F16 weights and the1024-patch bound.
+The subsequent quantization lane adds Q8/Q4 matrices behind a separate gate;
+the source-profile and page bounds remain.
 Model registry, quantization, broader page/corpus coverage, HF publication and
 runtime release are not part of this integration checkpoint. CrispSorter provider
 and catalog selection remain a TODO once a validated model artifact is published;
@@ -880,5 +885,59 @@ The strict comparator's capture length bound is extended from12 to64 to permit
 longer fixtures; all numerical thresholds and calibration logic stay unchanged.
 Any strict F16 failure on a new fixture is retained and prevents a production
 parity claim. [Hosted quant sweep38614951999](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999)
-is running at `6b970ea8`. Larger pages, a corpus accuracy claim,
+passes at `6b970ea8`. Larger pages, a corpus accuracy claim,
 registry hashes and HF publication remain open.
+
+### Measured precision sweep
+
+All seven quantized exports plus the F16 baseline preserve all41 generated IDs
+across four owned cases, including each EOS, exact decoded text and paired CER/WER0.
+All teacher-forced argmaxes also match. The new invoice has14 generated IDs;
+its194 strict stage comparisons and the custom prompt's189 comparisons pass
+unchanged F16 numerical gates. Overall2792 diagnostic vectors are retained.
+Every export passes the473-tensor logical-shape/type and critical-byte audit,
+finite-inference and literal0 quant-gate controls.
+
+| Recipe (all keep F32 vision) | Decimal GB | Minimum generated-score cosine | Maximum score absolute error | Exact IDs/EOS/text cases |
+|---|---:|---:|---:|---:|
+| F16 baseline | 1.918139 | 1.000000000 | 0.00009465 | 4/4 |
+| Q8 | 1.213238 | 0.999463260 | 0.379626 | 4/4 |
+| Q4 + Q8 tied head | 0.964431 | 0.949601591 | 4.313274 | 4/4 |
+| Q8 + F16 tied head | 1.451625 | 0.999561191 | 0.334938 | 4/4 |
+| Q4 + F16 tied head | 1.202818 | 0.949943483 | 4.329383 | 4/4 |
+| Q4 + F16 tied head/A/B controls | 1.203666 | 0.949801862 | 4.364334 | 4/4 |
+| Q4 FFN + Q8 attention/F16 head/controls | 1.320058 | 0.977389455 | 3.220321 | 4/4 |
+| Q4 FFN + F16 attention/head/controls | 1.538293 | 0.977991045 | 3.215855 | 4/4 |
+
+The cheapest tested Q4 file is964,430,848 bytes, with186 Q4_K matrices, one Q8
+embedding/tied head and286 F32 tensors. Q8 is1,213,238,272 bytes, with187 Q8 matrices
+and286 F32 tensors. The head-F16 restoration costs238,387,200 additional bytes and
+barely improves Q4 score cosine. Keeping A/B controls F16 adds847,872 bytes and
+slightly worsens the measured worst cosine here. Higher attention precision
+improves cosine, but both tested attention recipes are larger and less faithful
+in logits than the all-Q8 text export. The remaining Q4 FFN error is already
+visible at decoder layer0 even when attention/head/controls are F16; it compounds
+through24 layers. These findings support testing FFN precision/importance rather
+than spending more on the tied head or all attention.
+
+Quantized logit errors exceed the F16 tolerance. Matching these short transcripts
+is a bounded quality result. Q8 is the stronger candidate for broader validation;
+Q4 is the smallest tested synthetic-output match. Gold raw CER includes the
+reference's Markdown two-space line breaks (2/15 on the Hello fixtures,2/24 on
+the invoice); gold WER is0. This is explicitly distinct from paired CER/WER0.
+[Every tensor audit, layer/cache error/norm, teacher score and native output](../tests/results/qwen35-ocr/quant-calibration-parity.json)
+is retained; no thresholds were loosened and no weight payload was downloaded
+from the hosted artifact for this handoff.
+
+Experimental quantized usage requires both gates:
+
+```sh
+CRISPEMBED_QWEN35_OCR=1 CRISPEMBED_QWEN35_QUANT=1 \
+  crispembed -m model-q4.gguf --ocr input.png --ocr-max-tokens 64
+```
+
+Next: test Q4 FFN projection precision/importance, preserve the Q8 candidate,
+expand page/corpus coverage and evaluate row-wise F32 matmul memory/performance
+before publication. The current scope remains1024 patches, compressed storage
+with F32 materialization, and four owned synthetic cases. No registry alias,
+HF publication, runtime release, latency or corpus-accuracy claim.

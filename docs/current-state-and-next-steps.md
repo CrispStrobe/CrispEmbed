@@ -90,10 +90,18 @@ C/Python/Dart agree on stage168/cleanup60/params136 bytes. Initial Python/Dart
 layout defects and full stage errors/norms are retained in the
 [public evidence](../tests/results/qwen35-ocr/public-integration-parity.json).
 
-Next bounded lane: Q8/Q4 tensor loading and mixed precision through the native
-quantizer, initially preserving calibrated F32 vision; compare logits/IDs/EOS/text
-before publication. Larger pages currently reject beyond1024 patches. Registry
-aliases, corpus accuracy, GPU/latency claims and HF publication remain pending.
+The [quantization sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999)
+at6b970ea8 now passes seven mixed Q8/Q4 recipes on four owned synthetic cases,
+all41 IDs/EOS/text exact per recipe, paired CER/WER0 and473-tensor type/byte audits.
+Both new original-reference fixtures pass unchanged strict F16 gates. Smallest
+Q4 is0.964GB/min scorecos0.9496; Q8 is1.213GB/cos0.99946. Attention precision helps,
+but the tested head/attention restorations offer less size/score fidelity than Q8.
+[Every stage error/norm and output](../tests/results/qwen35-ocr/quant-calibration-parity.json).
+
+Next bounded lane: FFN mixed precision/importance for Q4, preserving Q8 for broader
+validation; row-wise F32 matmul can target materialization memory/performance.
+Larger pages currently reject beyond1024 patches. Registry aliases, corpus
+accuracy, GPU/latency claims and HF publication remain pending.
 The [owning-context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
 passes eight lifecycle cases and confidence max error2.67e-7.
 The app's pinned minimal release and OCR dependency remain separate from this

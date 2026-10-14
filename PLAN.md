@@ -20,7 +20,7 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 | Order | Model / upstream | License | Total weight budget | Work / status |
 |---|---|---|---|---|
-| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | ~0.73 GB | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. Owning engine C interface passes8 lifecycle cases and confidence max2.67e-7. Unified API/stage20/CLI/server/Python/Rust/Dart pass; custom prompt189 comparisons, exact9/9 IDs/EOS/text, keys0.0019871<0.002. Quantization, larger pages/corpus and HF publication remain; no production model-support claim |
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | **0.964 GB Q4 /1.213 GB Q8** with F32 vision | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. Owning engine C interface passes8 lifecycle cases and confidence max2.67e-7. Unified API/stage20/CLI/server/Python/Rust/Dart pass; custom prompt189 comparisons, exact9/9 IDs/EOS/text, keys0.0019871<0.002. Native Q8/Q4 loading and7 mixed recipes pass4 synthetic cases/41 IDs/EOS/text with473-tensor audits. Q4 with F32 vision is0.964GB/min scorecos0.9496; Q8 is1.213GB/cos0.99946. Larger pages/corpus, FFN calibration, performance and HF publication remain; no production model-support claim |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -56,9 +56,19 @@ builders, CLI single/stage and HTTP pipeline. Original custom-prompt capture giv
 0.0019871 under unchanged0.002. C/Python/Dart sizes stage168/cleanup60/params136
 agree; initial incomplete Python/Dart layouts retained in the audit.
 [Public evidence](tests/results/qwen35-ocr/public-integration-parity.json).
-Next: Q8/Q4 tensor loading and calibrated mixed precision through
-`crispembed-quantize`, preserving the proven F32 vision recipe first; then compare
-native logits/IDs/EOS/text, larger pages/corpus, verified registry hashes and HF publication.
+Quantization lane completed2026-10-14: [ARM quant sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999)
+at6b970ea8 passes eight exports including baseline, seven Q8/Q4 mixed recipes,
+32 native cases and2792 diagnostic vectors. All41 IDs/EOS/text match on each recipe;
+paired CER/WER0. Both new fixtures pass the unchanged strict F16 gates. All473
+stored types/shapes and critical vision/vector/conv bytes are audited per export;
+quant matrices require a separate literal0-safe gate. Q4 smallest964,430,848 bytes,
+minimum scorecos0.949601591/max error4.31327; Q8 is1,213,238,272 bytes,
+cos0.999463260/max error0.379626. Head/control restoration helps little;
+attention restoration reaches~0.978 but tested recipes cost more than Q8.
+[Full retained calibration](tests/results/qwen35-ocr/quant-calibration-parity.json).
+Next: FFN mixed precision/importance to reduce Q4 logit drift; Q8 broader page/corpus
+validation and row-wise F32 matmul optimization. Registry hashes and HF publication
+remain pending; all inference still uses F32 materialized matrices.
 No production alias or corpus accuracy claim.
 
 Existing weight references: PaddleOCR-VL-1.6 Q4_K **1.299 GB**, GLM-OCR Q4_K
@@ -520,7 +530,6 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-14 | `ocr-qwen35-quant` | Gated Qwen3.5 Q8/Q4 loading and native mixed-precision calibration | Source6b970ea8 pushed; [hosted quant sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999) running at6b970ea8. Separate literal0-safe quant gate, packed embedding rows + matrix dequantization, F32 vision preserved; seven Q8/Q4/head/control/attention recipes with473-tensor type/byte audits. Original/resized/custom-prompt/invoice teacher-forced score and independent greedy comparisons; unchanged F16 numeric gates, all initial results retained. Static AST/format/166 clean-exit checks pass. No registry/HF publication or corpus/speed claim |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 

@@ -5050,3 +5050,30 @@ mirrors were corrected. [Complete prompt errors/norms and public consumer eviden
 The1,918,139,328-byte F32 vision/F16 text export and1024-patch bound remain.
 No corpus accuracy, latency, GPU or quantization claim; native Q8/Q4 loading and
 mixed precision, broader page validation and publication remain TODO.
+
+### Qwen3.5 Q8/Q4 mixed-precision calibration — 2026-10-14
+
+[Hosted ARM38614951999](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999),
+source6b970ea8, passes eight exports including the F16 baseline,32 native cases,
+2792 diagnostic vectors and473-tensor type/shape/critical-byte audits per export.
+All seven quant recipes preserve41 IDs/EOS/text over original/resized/custom-prompt
+and invoice fixtures; paired CER/WER0, all teacher-forced argmaxes equal.
+Both new fixtures also pass unchanged strict F16 numerical gates.
+
+| F32-vision recipe | Actual bytes | Min score cosine | Max score absolute error |
+|---|---:|---:|---:|
+| Q8 text/head | 1,213,238,272 | 0.999463260 | 0.379626036 |
+| Q4 text + Q8 tied head | 964,430,848 | 0.949601591 | 4.31327391 |
+| Q4 text + F16 tied head | 1,202,818,048 | 0.949943483 | 4.32938337 |
+| Q4 text + F16 head/A/B | 1,203,665,920 | 0.949801862 | 4.36433363 |
+| Q4 FFN + Q8 attention/F16 head/A/B | 1,320,057,856 | 0.977389455 | 3.2203207 |
+| Q4 FFN + F16 attention/head/A/B | 1,538,292,736 | 0.977991045 | 3.21585512 |
+
+Q8 + F16 head is1,451,625,472 bytes/min scorecos0.999561191. Head restoration
+adds238,387,200 bytes with little Q4 score gain. A/B adds847,872 bytes without
+an improvement here. Attention helps but the tested recipes cost more than Q8.
+Q4 FFN error remains even with all attention/head/controls at baseline F16.
+[All types/shapes, per-layer/cache errors/norms, scores, IDs/text and raw/paired CER/WER](tests/results/qwen35-ocr/quant-calibration-parity.json)
+are retained. Quantized scores exceed F16 tolerance; exact synthetic text is a
+bounded result. No latency/corpus claim; weights still materialize as F32.
+Next: FFN precision/importance, broader page coverage and row-wise matmul A/B.
