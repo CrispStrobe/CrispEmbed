@@ -34,7 +34,8 @@ def main():
     precision_audit = sys.argv[1:] == ["--vision-precision"]
     math_audit = sys.argv[1:] == ["--vision-math"]
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
-    frontend_vision = sys.argv[1:] == ["--frontend-vision-f32"]
+    context_check = sys.argv[1:] == ["--context"]
+    frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
     frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
     if sys.argv[1:] and not (precision_audit or math_audit or frontend_keys or frontend_vision or frontend_rms):
         raise ValueError("Unexpected arguments")
@@ -134,7 +135,8 @@ def main():
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
                         "-DCRISPEMBED_BUILD_SHARED=OFF"], check=True)
         subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta",
-                        "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "test-qwen35-vision", "-j", "4"], check=True)
+                        "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "test-qwen35-vision",
+                        *(["test-qwen35-context"] if context_check else []), "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
         (out / "native-delta.log").write_text(native.stdout + native.stderr)
@@ -241,6 +243,30 @@ def main():
             report["resized_reference"] = {key: resized_reference[key] for key in ["decoded", "generated_ids", "image_size", "resolved_image_processor"]}
             result.check_returncode()
             attention_result.check_returncode()
+            if context_check:
+                # Real metadata, intentionally incomplete weights: init must
+                # reject rather than substitute missing model parameters.
+                bad_weights = scratch / "context-invalid-weights.gguf"
+                writer = gguf.GGUFWriter(str(bad_weights), converter.ARCH)
+                writer.add_string("general.source.huggingface.repository", converter.LIGHTON_MODEL)
+                writer.add_string("general.source.huggingface.revision", converter.LIGHTON_REVISION)
+                writer.add_uint32("qwen35_ocr.format_version", 1)
+                writer.add_bool("qwen35_ocr.tie_word_embeddings", True)
+                writer.add_bool("qwen35_ocr.zero_centered_text_norm", True)
+                converter.write_tokenizer_metadata(writer, converter.read_tokenizer_metadata(local, 248320))
+                writer.add_tensor("unexpected.weight", np.zeros((1,), np.float32))
+                writer.write_header_to_file()
+                writer.write_kv_data_to_file()
+                writer.write_tensors_to_file()
+                writer.close()
+                context_result = subprocess.run([str(build / "test-qwen35-context"), str(export), str(image_path),
+                                                 str(out / "official-delta.gguf"), str(resized_path),
+                                                 str(resized_out / "official-delta.gguf"), str(bad_weights)],
+                                                capture_output=True, text=True)
+                (out / "native-context.log").write_text(context_result.stdout + context_result.stderr)
+                print(context_result.stdout + context_result.stderr)
+                report["native_context"] = context_result.returncode == 0
+                context_result.check_returncode()
             report["native_parity"] = "native raw RGB/BPE/vision/positions/decoder/text checked on two owned fixtures; production integration/corpus validation pending"
         report["result"] = "export/reference/native model checks passed; production OCR support pending"
     except BaseException as error:

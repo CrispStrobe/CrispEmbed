@@ -756,9 +756,11 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 
 # Experimental Qwen3.5 recurrence boundary, independently testable before the
 # full OCR engine is wired. No production C ABI or registry exposure yet.
-add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp)
+add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_include_directories(crispembed-qwen35-delta PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core)
+add_executable(test-qwen35-context tests/test_qwen35_context.cpp tests/qwen35_context_header.c)
+target_link_libraries(test-qwen35-context PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-delta tests/test_qwen35_delta.cpp)
 target_link_libraries(test-qwen35-delta PRIVATE crispembed-qwen35-delta)
 add_executable(test-qwen35-linear tests/test_qwen35_linear.cpp)
