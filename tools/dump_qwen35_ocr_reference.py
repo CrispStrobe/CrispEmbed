@@ -71,6 +71,21 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     visual = model.model.visual
     for index, block in enumerate(visual.blocks):
         handles.append(block.register_forward_hook(hook(f"vision.layer.{index}")))
+        if index in [5, 11]:
+            for module_name, field in [("norm1", "norm1"), ("attn.qkv", "qkv"),
+                                       ("attn", "attention"), ("norm2", "norm2"),
+                                       ("mlp.linear_fc1", "up"), ("mlp.act_fn", "activation"),
+                                       ("mlp.linear_fc2", "down")]:
+                submodule = block
+                for part in module_name.split("."):
+                    submodule = getattr(submodule, part)
+                handles.append(submodule.register_forward_hook(hook(f"vision.probe.{index}.{field}")))
+            def pooled_capture(label):
+                def capture(module, args):
+                    if phase[0] is not None:
+                        save(f"{phase[0]}.vision.probe.{label}.pooled", args[0])
+                return capture
+            handles.append(block.attn.proj.register_forward_pre_hook(pooled_capture(index)))
     def vision_input(module, args, kwargs):
         if phase[0] is not None:
             save(f"{phase[0]}.vision.embedded", args[0])
@@ -239,6 +254,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                  ["patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
                   "merger.norm", "merger.up", "merger.activation", "merger"]]
     required += ["input.pixel_values", "input.image_grid_thw", "input.input_ids"]
+    required += [f"prefill.vision.probe.{index}.{field}" for index in [5, 11] for field in
+                 ["norm1", "qkv", "pooled", "attention", "norm2", "up", "activation", "down"]]
     for label in ["prefill", "cached", "full_prefix"]:
         required += [f"{label}.decoder.layer.{index}" for index in range(decoder_depth)]
         required += [f"{label}.decoder.position_ids", f"{label}.decoder.inputs_embeds", f"{label}.logits"]

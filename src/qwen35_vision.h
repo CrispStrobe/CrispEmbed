@@ -33,9 +33,14 @@ struct vision_config {
     int patch_width = 1536, merge = 2, position_side = 48;
     float eps = 1e-6f, theta = 10000.0f;
 };
+struct vision_layer_outputs {
+    std::vector<float> norm1, qkv, pooled, attention, norm2, up, activation, down;
+};
 struct vision_outputs {
     std::vector<float> patch, position, embedded, rotary_cos, rotary_sin;
     std::vector<std::vector<float>> hidden;
+    // Sensitive trained blocks 5/11, for earliest-stage numerical probes.
+    std::vector<vision_layer_outputs> probes;
     std::vector<float> merger_norm, merger_up, merger_activation, merged;
 };
 bool map_small_vision(const core_gguf::tensor_map & tensors, vision_weights & weights);

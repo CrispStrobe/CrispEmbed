@@ -19,6 +19,7 @@ def module(path, name):
 
 
 def main():
+    import gc
     import gguf
     import numpy as np
     import torch
@@ -29,6 +30,9 @@ def main():
 
     if transformers.__version__ != "5.5.4":
         raise ValueError("Reference implementation must be pinned to transformers==5.5.4")
+    precision_audit = sys.argv[1:] == ["--vision-precision"]
+    if sys.argv[1:] and not precision_audit:
+        raise ValueError("Unexpected arguments")
     torch.set_num_threads(4)
     repo = Path(__file__).resolve().parents[2]
     out = Path(os.environ["HEAVY_OUT"])
@@ -110,6 +114,7 @@ def main():
         ref = reference.dump_reference(local, image_path, out / "official-reference.npz")
         report["reference"] = {key: ref[key] for key in ["vision_layers", "decoder_layers", "decoded",
                                                        "cached_vs_full_prefix_max_abs", "cached_vs_full_prefix_same_argmax"]}
+        gc.collect()
         build = scratch / "qwen35-native-build"
         subprocess.run(["cmake", "-S", str(repo), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
@@ -134,24 +139,52 @@ def main():
         print(attention.stdout + attention.stderr)
         attention.check_returncode()
         report["native_attention"] = "passed six checkpoint full-attention blocks, native KV carry, fresh full-prefix and controls"
-        vision = subprocess.run([str(build / "test-qwen35-vision"), str(export), str(out / "official-delta.gguf")],
-                                capture_output=True, text=True)
-        (out / "native-vision.log").write_text(vision.stdout + vision.stderr)
-        print(vision.stdout + vision.stderr)
-        vision.check_returncode()
-        report["native_vision"] = "passed native patch/position/12-layer vision/merger from official packed pixels and grids, reset and invalid controls"
-        decoder = subprocess.run([str(build / "test-qwen35-decoder"), str(export), str(out / "official-delta.gguf")],
-                                 capture_output=True, text=True)
-        (out / "native-decoder.log").write_text(decoder.stdout + decoder.stderr)
-        print(decoder.stdout + decoder.stderr)
-        decoder.check_returncode()
-        report["native_decoder"] = "passed composed 24-layer decoder, logits, native caches and free-running generated IDs from official merged embeddings/positions"
-        connected = subprocess.run([str(build / "test-qwen35-decoder"), str(export), str(out / "official-delta.gguf"),
-                                    "--native-vision"], capture_output=True, text=True)
-        (out / "native-connected.log").write_text(connected.stdout + connected.stderr)
-        print(connected.stdout + connected.stderr)
-        connected.check_returncode()
-        report["native_connected"] = "passed composed native vision/text embeddings + decoder + greedy IDs; official packed pixels/prompt IDs/positions supplied"
+        def probe(label, weights, target, flags=()):
+            result = subprocess.run([str(build / target), str(weights), str(out / "official-delta.gguf"), *flags],
+                                    capture_output=True, text=True)
+            (out / (label + ".log")).write_text(result.stdout + result.stderr)
+            print(result.stdout + result.stderr)
+            return result.returncode == 0
+        report["native_vision"] = probe("native-vision", export, "test-qwen35-vision")
+        report["native_decoder"] = probe("native-decoder", export, "test-qwen35-decoder")
+        report["native_connected"] = probe("native-connected", export, "test-qwen35-decoder", ["--native-vision"])
+        if precision_audit:
+            arms = []
+            recipes = [
+                ("f32", "f32", []),
+                ("critical-mlp", "f16", [f"v.blocks.{i}.mlp.linear_fc{fc}.weight" for i in [5, 11] for fc in [1, 2]]),
+                ("vision-f32", "f16", [record["name"] for record in manifest["records"]
+                                        if record["name"].startswith("v.") and record["dtype"] == "float16"]),
+            ]
+            for label, dtype, retained in recipes:
+                candidate = scratch / (label + "-experimental.gguf")
+                candidate_manifest = converter.convert(local, candidate, converter.LIGHTON_MODEL,
+                                                       converter.LIGHTON_REVISION, dtype, retained)
+                (out / (label + "-manifest.json")).write_text(json.dumps(candidate_manifest, indent=2) + "\n")
+                reader = gguf.GGUFReader(str(candidate))
+                records = {record["name"]: record for record in candidate_manifest["records"]}
+                if len(reader.tensors) != len(records):
+                    raise ValueError("Precision arm roundtrip tensor count differs")
+                for tensor in reader.tensors:
+                    record = records[tensor.name]
+                    if list(tensor.data.shape) != record["shape"] or hashlib.sha256(tensor.data.tobytes()).hexdigest() != record["sha256"]:
+                        raise ValueError("Precision arm roundtrip mismatch: " + tensor.name)
+                    if tensor.name in retained and tensor.data.dtype != np.float32:
+                        raise ValueError("Retained tensor is not F32: " + tensor.name)
+                del reader
+                arms.append({"name": label, "dtype": dtype, "keep_f32": retained,
+                             "bytes": candidate_manifest["bytes"], "roundtrip_tensors": len(records),
+                             "vision": probe("native-vision-" + label, candidate, "test-qwen35-vision"),
+                             "connected": probe("native-connected-" + label, candidate, "test-qwen35-decoder", ["--native-vision"])})
+                candidate.unlink()
+                candidate.with_suffix(".gguf.manifest.json").unlink()
+            report["precision_arms"] = arms
+            # Diagnostic run remains red when any strict numerical arm fails;
+            # all other arm reports are retained to locate the first discrepancy.
+            if not all(arm["vision"] and arm["connected"] for arm in arms):
+                raise ValueError("At least one audited precision recipe fails strict native parity; inspect retained stage logs")
+        elif not all(report[key] for key in ["native_vision", "native_decoder", "native_connected"]):
+            raise ValueError("Native vision/decoder/connected parity failed; inspect retained stage logs")
         report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
     except BaseException as error:
         report["result"] = "failed"

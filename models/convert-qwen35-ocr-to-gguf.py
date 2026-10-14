@@ -56,7 +56,7 @@ def tensor_name(name):
     return result
 
 
-def convert(model_dir, output, source_model, source_revision, dtype="f16"):
+def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_f32=()):
     import gguf
     import numpy as np
     import torch
@@ -112,6 +112,10 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16"):
     names = [tensor_name(name) for name in actual]
     if len(names) != len(set(names)):
         raise ValueError("Export tensor names collide")
+    keep_f32 = frozenset(keep_f32)
+    exported_names = set(names) - ({"lm_head.weight"} if tied else set())
+    if keep_f32 - exported_names:
+        raise ValueError(f"Unknown F32 retention tensors: {sorted(keep_f32 - exported_names)}")
     if tied and "lm_head.weight" in actual:
         with safe_open(root / actual["lm_head.weight"][0], framework="pt") as head_file, \
              safe_open(root / actual["model.language_model.embed_tokens.weight"][0], framework="pt") as embed_file:
@@ -174,7 +178,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16"):
                         # to processor-flattened patches; preserve its C,T,H,W order.
                         tensor = tensor.reshape(tensor.shape[0], -1)
                     # Scalars, recurrent coefficients, convs and norms remain F32.
-                    target = np.float16 if dtype == "f16" and tensor.ndim == 2 and "norm" not in name else np.float32
+                    target = np.float16 if dtype == "f16" and name not in keep_f32 and tensor.ndim == 2 and "norm" not in name else np.float32
                     array = np.ascontiguousarray(tensor, dtype=target)
                     if not np.isfinite(array).all():
                         raise ValueError(f"Non-finite or overflowing export: {source}")
@@ -192,7 +196,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16"):
     writer.close()
     pending.replace(output)
     manifest = {"source_model": source_model, "source_revision": source_revision,
-                "architecture": ARCH, "dtype": dtype, "tie_word_embeddings": tied,
+                "architecture": ARCH, "dtype": dtype, "keep_f32": sorted(keep_f32), "tie_word_embeddings": tied,
                 "checkpoint_tensor_count": len(actual), "export_tensor_count": len(records),
                 "records": records, "bytes": output.stat().st_size}
     output.with_suffix(output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
@@ -207,12 +211,14 @@ def main():
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--dtype", choices=["f32", "f16"], default="f16")
+    parser.add_argument("--keep-f32", action="append", default=[], metavar="GGUF_NAME",
+                        help="Keep this exact tensor in F32; repeat for multiple tensors (unknown names reject)")
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
     directory = snapshot_download(args.model, revision=args.revision,
                                   allow_patterns=["*.json", "*.jinja", "*.safetensors", "LICENSE*"])
-    manifest = convert(directory, args.output, args.model, args.revision, args.dtype)
+    manifest = convert(directory, args.output, args.model, args.revision, args.dtype, args.keep_f32)
     print(json.dumps({key: value for key, value in manifest.items() if key != "records"}, indent=2))
 
 

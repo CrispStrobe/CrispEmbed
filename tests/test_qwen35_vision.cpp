@@ -14,6 +14,16 @@ static bool compare(const crispembed_diff::Ref & ref, const std::string & name, 
     std::printf("%s %s: cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g norms=%.9g/%.9g\n",
                 ok ? "PASS" : "FAIL", name.c_str(), report.cos_min, report.cos_global, report.max_abs, report.mean_abs,
                 report.mine_norm, report.ref_norm);
+    if (report.found) {
+        const auto oracle = ref.get_f32(name);
+        if (oracle.first && oracle.second == values.size()) {
+            size_t worst = 0;
+            for (size_t i = 1; i < values.size(); ++i)
+                if (std::abs(values[i] - oracle.first[i]) > std::abs(values[worst] - oracle.first[worst])) worst = i;
+            std::printf("MAGNITUDE %s: max_abs_index=%zu native=%.9g reference=%.9g\n", name.c_str(), worst,
+                        values[worst], oracle.first[worst]);
+        }
+    }
     return ok;
 }
 
@@ -79,6 +89,19 @@ int main(int argc, char ** argv) {
             ok = false;
             break;
         }
+    }
+    for (size_t i = 0; i < output.probes.size(); ++i) {
+        const auto & probe = output.probes[i];
+        if (probe.norm1.empty() || !ref.get_f32("prefill.vision.probe." + std::to_string(i) + ".norm1").first) continue;
+        const std::string prefix = "prefill.vision.probe." + std::to_string(i) + ".";
+        ok &= compare(ref, prefix + "norm1", probe.norm1);
+        ok &= compare(ref, prefix + "qkv", probe.qkv);
+        ok &= compare(ref, prefix + "pooled", probe.pooled);
+        ok &= compare(ref, prefix + "attention", probe.attention);
+        ok &= compare(ref, prefix + "norm2", probe.norm2);
+        ok &= compare(ref, prefix + "up", probe.up);
+        ok &= compare(ref, prefix + "activation", probe.activation);
+        ok &= compare(ref, prefix + "down", probe.down);
     }
     ok &= compare(ref, "prefill.vision.merger.norm", output.merger_norm);
     ok &= compare(ref, "prefill.vision.merger.up", output.merger_up);

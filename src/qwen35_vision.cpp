@@ -205,7 +205,11 @@ bool vision_cpu(const vision_weights & w, const vision_config & c, const float *
     output.embedded = output.patch;
     for (size_t i = 0; i < output.embedded.size(); ++i) output.embedded[i] += output.position[i];
     auto hidden = output.embedded;
-    for (const auto & layer : w.layers) {
+    output.probes.resize(w.layers.size());
+    for (size_t layer_index = 0; layer_index < w.layers.size(); ++layer_index) {
+        const auto & layer = w.layers[layer_index];
+        const bool capture = layer_index == 5 || layer_index == 11;
+        auto & probe = output.probes[layer_index];
         if (!shape(layer.qkv, width, 3 * width) || !shape(layer.out, width, width) ||
             !shape(layer.up, width, c.intermediate) || !shape(layer.down, c.intermediate, width))
             return false;
@@ -213,16 +217,30 @@ bool vision_cpu(const vision_weights & w, const vision_config & c, const float *
         if (!layer_norm(hidden, layer.norm1, layer.norm1_bias, width, c.eps, normalized) ||
             !linear(layer.qkv, layer.qkv_bias, normalized, width, tokens, threads, projected))
             return false;
+        if (capture) {
+            probe.norm1 = normalized;
+            probe.qkv = projected;
+        }
         const auto pooled = attention(projected, c, tokens, offsets, output.rotary_cos, output.rotary_sin);
         if (!linear(layer.out, layer.out_bias, pooled, width, tokens, threads, mixed)) return false;
+        if (capture) {
+            probe.pooled = pooled;
+            probe.attention = mixed;
+        }
         for (size_t i = 0; i < hidden.size(); ++i) hidden[i] += mixed[i];
         if (!layer_norm(hidden, layer.norm2, layer.norm2_bias, width, c.eps, normalized) ||
             !linear(layer.up, layer.up_bias, normalized, width, tokens, threads, projected))
             return false;
+        if (capture) {
+            probe.norm2 = normalized;
+            probe.up = projected;
+        }
         for (float & x : projected)
             x = 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x)));
+        if (capture) probe.activation = projected;
         if (!linear(layer.down, layer.down_bias, projected, c.intermediate, tokens, threads, mixed)) return false;
         for (size_t i = 0; i < hidden.size(); ++i) hidden[i] += mixed[i];
+        if (capture) probe.down = mixed;
         if (!finite(hidden)) return false;
         output.hidden.push_back(hidden);
     }
