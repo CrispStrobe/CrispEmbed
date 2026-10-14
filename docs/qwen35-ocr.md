@@ -384,3 +384,39 @@ its full native stage/logit/token checks pass.
 Current CPU reference bounds: at most 4096 packed patches total and 1024 per
 frame. Larger-page capacity and attention performance remain deployment work;
 this is not a latency-tuned public engine.
+
+### Trained source-precision audit — 2026-10-14
+
+[ARM 38527589341](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38527589341),
+source `80c12d91`, verifies all 473 tensor byte/shape roundtrips for each additional
+precision recipe. Raising source precision does **not** resolve the original
+strict gate. All four connected arms still select **9/9 Python IDs through EOS**;
+this decoded-token result does not erase the intermediate discrepancies.
+
+| Recipe | Bytes | Raw vision block11 maximum absolute error |
+| --- | ---: | ---: |
+| Original experimental F16 | 1,717,205,376 | 0.167602539 |
+| F16, FFNs5/11 retained F32 | 1,736,079,744 | 0.165191650 |
+| F16 text, all vision matrices F32 | 1,918,138,752 | 0.175903320 |
+| All F32 | 3,421,927,808 | 0.175903320 |
+
+The all-F32 arm first exceeds 0.002 inside block11 at its second LayerNorm
+(max abs0.004591), then the FFN amplifies that into 0.176 raw output error.
+The worst raw-layer element is approximately -367.63 versus -367.81. Final
+vision merger output is much closer; connected vocabulary scores pass while
+prefill/full-prefix final decoder norms exceed 0.002. This points to accumulated
+native arithmetic, rather than a source-weight precision fix.
+[All stage errors, magnitudes and selected IDs](../tests/results/qwen35-ocr/vision-precision-audit.json)
+and [bootstrap](../tests/results/qwen35-ocr/vision-precision-bootstrap.json) are
+retained; no source-precision recipe is promoted.
+
+The next A/B at
+[38529255416](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38529255416)
+uses separate default-off `CRISPEMBED_QWEN35_VISION_PRECISE_NORM` and
+`CRISPEMBED_QWEN35_VISION_PRECISE_ATTN` gates for double-precision reductions,
+with F32 boundary tensors/projections. It compares each flag and both together,
+plus an all-F32 weight control, against the same original absolute/cosine/IDs
+gates. The original path remains available with both flags0. The pinned
+[PyTorch LayerNorm primitive](https://raw.githubusercontent.com/pytorch/pytorch/v2.10.0/aten/src/ATen/native/cpu/layer_norm_kernel.cpp)
+and [softmax primitive](https://raw.githubusercontent.com/pytorch/pytorch/v2.10.0/aten/src/ATen/native/cpu/SoftMaxKernel.cpp)
+were inspected for reduction and affine ordering; native code does not call Torch.
