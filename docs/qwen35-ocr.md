@@ -574,3 +574,13 @@ The initial [Mac dispatch](https://github.com/CrispStrobe/CrispEmbed/actions/run
 was cancelled after over 23 minutes without a runner, before any code executed.
 Do not mark non-square/multiple-image position coverage verified until this
 additional gate completes.
+
+A separate geometry difference exists before resampling: pinned Python
+`smart_resize` uses ties-to-even `round`, while the shared native helper uses
+`std::round` and clamps to at least one factor before the pixel-budget check.
+With factor32 and this model's pixel limits, **80x1024 becomes64x1024 in Python
+and96x1024 in the shared helper**. Python uses double for budget square roots;
+the shared helper uses float. Add half-factor and extreme-aspect fixtures and
+match original grids exactly in the new frontend, preserving existing engines'
+preprocessing behind their current paths. This finding is a source comparison,
+not a newly measured end-to-end resize result.
