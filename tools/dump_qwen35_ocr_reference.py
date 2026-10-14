@@ -229,6 +229,37 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         )
         full = model(**full_inputs)
         save("full_prefix.logits", full.logits[:, -1])
+        # Independent original-model CPU controls: same weights, dtype and
+        # inputs. Never substitute these outputs into the native implementation.
+        cpu_controls = {}
+        original_patch = visual.patch_embed.forward
+        def chunked_patch(value):
+            return torch.cat([original_patch(value[index:index+1]) for index in range(value.shape[0])], dim=0)
+        for label, disabled, chunked in [("backend_off", True, False), ("patch_chunked", False, True)]:
+            phase[0] = label
+            if chunked:
+                visual.patch_embed.forward = chunked_patch
+            with torch.backends.mkldnn.flags(enabled=not disabled):
+                controlled = model(**prefill_inputs)
+                save(f"{label}.logits", controlled.logits[:, -1])
+                phase[0] = None
+                controlled_generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
+                                                     use_cache=True, return_dict_in_generate=True)
+                controlled_ids = controlled_generated.sequences[:, inputs["input_ids"].shape[1]:]
+                save(f"{label}.generated.ids", controlled_ids)
+            visual.patch_embed.forward = original_patch
+            cpu_controls[label] = {
+                "mkldnn_available": torch.backends.mkldnn.is_available(),
+                "generated_ids": controlled_ids.tolist(),
+                "decoded": processor.batch_decode(controlled_ids, skip_special_tokens=True),
+                "vision_layer_max_abs": [float(np.max(np.abs(arrays[f"{label}.vision.layer.{index}"] -
+                                                               arrays[f"prefill.vision.layer.{index}"])))
+                                         for index in range(model.config.vision_config.depth)],
+                "merger_max_abs": float(np.max(np.abs(arrays[f"{label}.vision.merger"] - arrays["prefill.vision.merger"]))),
+                "decoder_norm_max_abs": float(np.max(np.abs(arrays[f"{label}.decoder.norm"] - arrays["prefill.decoder.norm"]))),
+                "logits_max_abs": float(np.max(np.abs(arrays[f"{label}.logits"] - arrays["prefill.logits"]))),
+            }
+        phase[0] = "full_prefix"
         delta = (cached.logits[:, -1] - full.logits[:, -1]).abs()
         max_error = delta.max().item()
         same_argmax = bool(torch.equal(cached.logits[:, -1].argmax(-1), full.logits[:, -1].argmax(-1)))
@@ -277,7 +308,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     for name, value in arrays.items():
         if ((".delta." in name or ".linear." in name or ".cache." in name
              or ".attention." in name or ".decoder." in name or ".vision." in name or name.endswith(".logits"))
-                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith(("linear.", "generated.", "input.")):
+                and name.startswith(("prefill.", "cached.", "full_prefix.", "backend_off.", "patch_chunked."))) or name.startswith(("linear.", "generated.", "input.")):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()
@@ -288,6 +319,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         "image_sha256": hashlib.sha256(Path(image_path).read_bytes()).hexdigest(),
         "image_size": list(image.size), "prompt": prompt, "rendered_prompt": rendered,
         "generation_config": model.generation_config.to_dict(),
+        "torch_build": torch.__config__.show(), "cpu_controls": cpu_controls,
         "source_config": model.config.to_dict(), "vision_layers": vision_depth,
         "decoder_layers": decoder_depth, "stages": {name: list(value.shape) for name, value in arrays.items()},
         "generated_ids": ids.tolist(),
