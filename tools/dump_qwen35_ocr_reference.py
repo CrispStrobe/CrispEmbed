@@ -16,10 +16,13 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     import numpy as np
     import torch
     import transformers
+    import tokenizers
     import gguf
     from PIL import Image
     from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
 
+    if transformers.__version__ != "5.5.4" or tokenizers.__version__ != "0.22.2":
+        raise ValueError("Reference requires transformers==5.5.4 and tokenizers==0.22.2")
     torch.set_num_threads(threads)
     torch.manual_seed(0)
     root, output = Path(model_dir), Path(output)
@@ -342,7 +345,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     probe.write_tensors_to_file()
     probe.close()
     report = {
-        "transformers": transformers.__version__, "torch": torch.__version__,
+        "transformers": transformers.__version__, "tokenizers": tokenizers.__version__, "torch": torch.__version__,
         "image_sha256": hashlib.sha256(Path(image_path).read_bytes()).hexdigest(),
         "image_size": list(image.size), "prompt": prompt, "rendered_prompt": rendered,
         "resolved_processor": type(processor).__module__ + "." + type(processor).__name__,

@@ -12,12 +12,13 @@ def main():
     import numpy as np
     import torch
     import transformers
+    import tokenizers
     from huggingface_hub import snapshot_download
     from PIL import Image, ImageDraw
     from transformers import AutoProcessor
 
-    if transformers.__version__ != "5.5.4":
-        raise ValueError("Transformers 5.5.4 required")
+    if transformers.__version__ != "5.5.4" or tokenizers.__version__ != "0.22.2":
+        raise ValueError("Transformers 5.5.4 and Tokenizers 0.22.2 required")
     torch.set_num_threads(4)
     out, scratch = Path(os.environ["HEAVY_OUT"]), Path(os.environ["HEAVY_SCRATCH"])
     repo = Path(__file__).resolve().parents[2]

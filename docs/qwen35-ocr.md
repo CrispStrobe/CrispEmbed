@@ -97,7 +97,7 @@ Launch through the existing workflow:
 ```sh
 gh workflow run heavy-cpu.yml --ref main \
   -f script=tools/ci-heavy/qwen35_ocr_bootstrap.py \
-  -f 'pip=torch==2.10.0 torchvision==0.25.0 transformers==5.5.4 gguf==0.19.0 huggingface_hub safetensors pillow numpy' \
+  -f 'pip=torch==2.10.0 torchvision==0.25.0 transformers==5.5.4 tokenizers==0.22.2 gguf==0.19.0 huggingface_hub safetensors pillow numpy' \
   -f timeout_minutes=60
 ```
 
@@ -682,3 +682,7 @@ a source-exact reduction or a promoted recipe. Hosted
 `qwen35_ocr_bootstrap.py --frontend-precise-rms` explicitly sets the gate to1;
 other bootstrap modes explicitly set0. The original Python reference and all
 comparison thresholds remain unchanged. No result is available yet.
+
+The reference dump and input checker now reject versions other than
+Transformers5.5.4/Tokenizers0.22.2 before inference. The NFC source-version finding
+requires pinning the tokenizer implementation as well as the checkpoint JSON.
