@@ -9,7 +9,8 @@
 // Composed Qwen3.5 vision has amplified states for which two official F32 CPU
 // convolution backends differ beyond a uniform 0.002 absolute gate. Only vision
 // boundaries and the final decoder norm may use the independently captured
-// per-element backend variation. Vocabulary logits, hidden states and caches
+// backend variation per patch vector (vision), per element (final norm).
+// Vocabulary logits, hidden states and caches
 // retain the original absolute gate. Reference arrays are test-only artifacts.
 static bool qwen35_compare(const crispembed_diff::Ref & ref, const std::string & name,
                            const std::vector<float> & values, bool print = true) {

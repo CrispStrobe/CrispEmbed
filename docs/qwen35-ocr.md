@@ -420,3 +420,40 @@ gates. The original path remains available with both flags0. The pinned
 [PyTorch LayerNorm primitive](https://raw.githubusercontent.com/pytorch/pytorch/v2.10.0/aten/src/ATen/native/cpu/layer_norm_kernel.cpp)
 and [softmax primitive](https://raw.githubusercontent.com/pytorch/pytorch/v2.10.0/aten/src/ATen/native/cpu/SoftMaxKernel.cpp)
 were inspected for reduction and affine ordering; native code does not call Torch.
+
+### Official CPU self-parity and calibrated comparison
+
+[ARM 38531977370](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38531977370),
+source `c8e395e0`, runs the **original model** with the same F32 weights/inputs,
+then disables MKLDNN or splits independent patch convolution into single-patch
+calls. Disabling MKLDNN changes raw vision block11 by **0.193328857**, final
+vision merger by **4.8757e-5**, final decoder norm by **0.005830765** and logits
+by **7.4387e-5**. IDs remain **9/9 identical through EOS**. Patch chunking is
+exactly equal on this fixture. [Independent self-parity report](../tests/results/qwen35-ocr/official-cpu-self-parity.json).
+The old uniform absolute0.002 gate rejects the official model against itself at
+those amplified composed states; this is not a source-weight precision defect.
+
+The precision-reduction experiments also retain all nine IDs but do not meet
+that old uniform gate. [All alternatives and magnitudes](../tests/results/qwen35-ocr/vision-reduction-audit.json)
+are preserved. Both reduction flags remain default-off; no alternative is
+promoted because a particular mean/maximum moved in a favorable direction.
+
+The test-only comparison now records both the original strict-absolute result
+and an independent reference-variation budget. Vision budgets use each patch
+vector's maximum F32 backend self-variation, final decoder norms use each
+component's variation: **0.002 + 2 × self-variation**. CPU backend controls must
+retain the original greedy IDs before a calibrated reference is emitted.
+Tensor counts/shapes, finite values and minimum cosine0.99999 remain required;
+**decoder hidden states, caches and vocabulary scores keep absolute0.002, and
+native greedy IDs/EOS must match exactly**. Production inference never reads
+reference controls or budgets. Synthetic tests without controls keep the old
+absolute gate.
+
+An initial per-component vision envelope was too narrow for errors distributed
+across correlated feature channels; [38533775792](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38533775792)
+retains that failure, while its connected decoder **passes186 checks** and
+all nine IDs. The per-patch vision check (the same representation unit as the
+per-row cosine) and deliberate beyond-budget corruption control are at
+[38534784004](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38534784004).
+The source-precision/default inference path is unchanged. This calibrated gate
+is not a claim of raw bit equality, standalone image-to-text or corpus OCR quality.
