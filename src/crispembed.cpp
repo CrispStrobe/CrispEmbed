@@ -5021,7 +5021,7 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
         granite_vision_set_max_tokens((granite_vision_context *)u->ctx, max_tokens);
         break;
     case OCR_MODEL_QWEN35_OCR:
-        qwen35_ocr_set_max_tokens((qwen35_ocr_context *)u->ctx, max_tokens);
+        qwen35_ocr_set_max_tokens((qwen35_ocr_context *)u->ctx, max_tokens > 0 ? max_tokens : 2048);
         break;
     case OCR_MODEL_LIGHTONOCR:
         lightonocr_set_max_tokens((lightonocr_context *)u->ctx, max_tokens);

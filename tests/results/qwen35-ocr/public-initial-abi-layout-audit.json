@@ -1,0 +1,50 @@
+{
+  "basis": "source-only ABI audit on64-bit platform; no old native calls or crash reproduction",
+  "initial_source": "16f55dcc",
+  "pointer_size": 8,
+  "python_initial": {
+    "size": 72,
+    "fields": [
+      "router",
+      "cleanup_enabled",
+      "min_chars",
+      "min_confidence",
+      "det_model",
+      "rec_model",
+      "nafnet_model",
+      "sr_model",
+      "vlm_model",
+      "vlm_engine",
+      "punct_model"
+    ]
+  },
+  "python_corrected": {
+    "size": 136,
+    "fields": [
+      "router",
+      "cleanup_enabled",
+      "min_chars",
+      "min_confidence",
+      "det_model",
+      "rec_model",
+      "nafnet_model",
+      "sr_model",
+      "vlm_model",
+      "vlm_engine",
+      "punct_model",
+      "lid_model",
+      "truecase_model",
+      "tess_model_dir",
+      "layout_model",
+      "table_model",
+      "formula_model",
+      "route_tables",
+      "route_formulas",
+      "image_text_fallback"
+    ]
+  },
+  "dart_initial": "legacy hand-sized allocation80 bytes on64-bit, omitted native trailing fields",
+  "dart_corrected": "typed Struct matching all native pipeline fields; runtime layout check pending",
+  "native_header_fields": 20,
+  "hosted_check": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38609791536"
+}

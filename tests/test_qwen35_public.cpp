@@ -59,6 +59,9 @@ static int crispembed_test_main(int argc, char ** argv) {
     std::unique_ptr<unsigned char, decltype(&stbi_image_free)> pixels(stbi_load(argv[2], &w, &h, &c, 3),
                                                                       stbi_image_free);
     if (!pixels) return 2;
+    crispembed_ocr_model_set_max_tokens(model.get(), 2);
+    crispembed_ocr_model_set_max_tokens(model.get(), 0);
+    ok &= crispembed_ocr_model_get_max_tokens(model.get()) == 2048;
     crispembed_ocr_model_set_max_tokens(model.get(), 12);
     ok &= crispembed_ocr_model_get_max_tokens(model.get()) == 12;
     int len = 0;
