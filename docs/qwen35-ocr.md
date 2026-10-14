@@ -82,12 +82,14 @@ separately from transcription.
   checks, complete GGUF tensor byte/shape roundtrip, malformed shape/unknown-tensor
   rejection, official cached-vs-full-prefix logits/argmax and reference artifacts.
   Model/export weights stay in remote scratch; only reports/reference probes are
-  retained. This run does not build or exercise native inference.
+  retained. The current script also builds and compares native recurrence,
+  trained linear/full attention, vision, decoder and native-position arms;
+  standalone raw-image OCR remains unfinished.
 
 Launch through the existing workflow:
 
 ```sh
-gh workflow run heavy-cpu.yml --ref ocr-permissive-roadmap \
+gh workflow run heavy-cpu.yml --ref main \
   -f script=tools/ci-heavy/qwen35_ocr_bootstrap.py \
   -f 'pip=torch==2.10.0 torchvision==0.25.0 transformers==5.5.4 gguf==0.19.0 huggingface_hub safetensors pillow numpy' \
   -f timeout_minutes=60
@@ -96,10 +98,10 @@ gh workflow run heavy-cpu.yml --ref ocr-permissive-roadmap \
 ## Next bounded implementation steps
 
 1. Complete the frontend behind `CRISPEMBED_QWEN35_OCR=1`, using `core_env::on()`:
-   exact tokenizer/processor, vision, merger and multimodal positions. Connect
-   native merged embeddings to the verified 24-layer decoder and its native
-   recurrent/KV caches, then compare standalone image-to-text against Python.
-   Decoder and recurrence evidence is recorded below; frontend is still open.
+   exact tokenizer/template and raw RGB resize/normalization/patch packing.
+   Feed those native inputs into the verified vision/merger, multimodal positions
+   and 24-layer decoder with its native recurrent/KV caches. Compare standalone
+   image-to-text against Python; frontend evidence remains open.
 2. Full-stage comparator: absolute error/magnitudes, cosine, logits/argmax and
    final decoding against the frozen official reference. Include non-square
    images, digit/Unicode prompts, repeated calls, two independent contexts,
