@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "qwen35_attention.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
@@ -31,7 +32,7 @@ static void gate(const char * value) {
     setenv("CRISPEMBED_QWEN35_OCR", value, 1);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3) return 2;
     gate("1");
     crispembed_diff::Ref ref;
@@ -125,4 +126,8 @@ int main(int argc, char ** argv) {
         "%s GGUF-weighted Qwen3.5 six full-attention blocks, native KV carry and fresh full-prefix; full OCR pending\n",
         ok ? "PASS" : "FAIL");
     return ok ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

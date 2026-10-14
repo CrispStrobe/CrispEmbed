@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "qwen35_delta.h"
 #include "crispembed_diff.h"
 
@@ -26,7 +27,7 @@ static bool compare(const crispembed_diff::Ref & ref, const std::string & name, 
     return ok;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     crispembed_diff::Ref ref;
     if (!ref.load(argv[1])) return 2;
@@ -116,4 +117,8 @@ int main(int argc, char ** argv) {
     std::printf("%s Qwen3.5 delta recurrence + continuation + reset + disabled/invalid controls\n",
                 ok ? "PASS" : "FAIL");
     return ok ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

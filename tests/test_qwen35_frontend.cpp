@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "qwen35_frontend.h"
 #include "crispembed_diff.h"
 #include "core/nfc.h"
@@ -28,7 +29,7 @@ static bool ints(const crispembed_diff::Ref & ref, const std::string & name, con
         if (value.first[i] != actual[i]) return false;
     return true;
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     gate("1");
     crispembed_diff::Ref ref;
@@ -129,4 +130,8 @@ int main(int argc, char ** argv) {
                 controls ? "PASS" : "FAIL");
     core_gguf::free_metadata(meta);
     return ok && controls ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

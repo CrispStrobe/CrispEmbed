@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "qwen35_vision.h"
 #include "crispembed_diff.h"
 #include "qwen35_parity.h"
@@ -17,7 +18,7 @@ static void gate(const char * value) {
     setenv("CRISPEMBED_QWEN35_OCR", value, 1);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3 && argc != 4) return 2;
     if (argc == 4 && std::string(argv[3]) != "--synthetic") return 2;
     gate("1");
@@ -123,4 +124,8 @@ int main(int argc, char ** argv) {
                 "image frontend pending\n",
                 ok ? "PASS" : "FAIL");
     return ok ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

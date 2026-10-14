@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "qwen35_positions.h"
 #include <cstdio>
 #include <cstdlib>
@@ -12,7 +13,7 @@ static void gate(const char * value) {
     setenv("CRISPEMBED_QWEN35_OCR", value, 1);
 #endif
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 2) return 2;
     std::ifstream input(argv[1]);
     int cases = 0;
@@ -67,4 +68,8 @@ int main(int argc, char ** argv) {
     std::printf("%s positions rejection, bounds, reset, negative delta and master=0 controls\n",
                 controls ? "PASS" : "FAIL");
     return ok && controls ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

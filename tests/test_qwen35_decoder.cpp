@@ -1,3 +1,4 @@
+#include "core/clean_exit.h"
 #include "qwen35_decoder.h"
 #include "qwen35_vision.h"
 #include "qwen35_positions.h"
@@ -34,7 +35,7 @@ static bool positions(const crispembed_diff::Ref & ref, const std::string & labe
 static int argmax(const std::vector<float> & x) {
     return int(std::max_element(x.begin(), x.end()) - x.begin());
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3 && argc != 4) return 2;
     const bool native_frontend = argc == 4 && std::string(argv[3]) == "--native-frontend";
     const bool native_positions = native_frontend || (argc == 4 && std::string(argv[3]) == "--native-positions");
@@ -297,4 +298,8 @@ int main(int argc, char ** argv) {
                 : native_vision    ? "native vision/text embeddings from official packed pixels/IDs/positions"
                                    : "official merged embeddings/positions supplied");
     return ok ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
