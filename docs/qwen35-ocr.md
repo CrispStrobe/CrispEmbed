@@ -610,7 +610,7 @@ The default-off `CRISPEMBED_QWEN35_OCR` frontend now implements:
   fused normalization and still-frame P16/T2/M2 patch packing.
 - GGUF BPE vocabulary/merges, typed added/special IDs and effective generation EOS.
   Added tokens split before NFC. Canonical ordering/composition includes algorithmic
-  Hangul and source-pinned Unicode16 data under the existing Unicode license.
+  Hangul and source-pinned Unicode9 data under the existing Unicode license.
 - The audited single-image user/assistant template, image-token expansion and
   modality labels, native positions/caches, and byte-level decoded text with
   replacement for incomplete/invalid UTF-8.

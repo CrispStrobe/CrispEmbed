@@ -40,6 +40,7 @@ inline uint32_t compose(uint32_t first, uint32_t second) {
     return it != std::end(compositions) && it->pair == pair ? it->cp : 0;
 }
 // Canonical decomposition/order/composition, including algorithmic Hangul.
+// Unicode9 matches tokenizers unicode-normalization-alignments 0.1.12.
 // Only the opt-in Qwen3.5 frontend calls this helper; no shared tokenizer default changes.
 inline std::string normalize(const std::string & input) {
     std::vector<uint32_t> parts;
