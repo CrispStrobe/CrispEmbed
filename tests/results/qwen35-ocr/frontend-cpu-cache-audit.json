@@ -1,0 +1,436 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38552512562",
+  "source_commit": "4686e17510a3b20fcb5fe24abe699801f380cb4c",
+  "scope": "same original F32 model/weights/inputs with CPU backend off and one-patch-at-a-time convolution; source-pinned resized owned fixture",
+  "controls": {
+    "backend_off": {
+      "mkldnn_available": true,
+      "generated_ids": [
+        [
+          9419,
+          77796,
+          2228,
+          16,
+          17,
+          18,
+          19,
+          20,
+          248046
+        ]
+      ],
+      "decoded": [
+        "Hello OCR  \n12345"
+      ],
+      "vision_layer_max_abs": [
+        2.3365020751953125e-05,
+        2.5510787963867188e-05,
+        1.9848346710205078e-05,
+        1.7642974853515625e-05,
+        2.1159648895263672e-05,
+        0.00032806396484375,
+        0.000335693359375,
+        0.000335693359375,
+        0.00033473968505859375,
+        0.00038000941276550293,
+        0.0004684925079345703,
+        0.1534423828125
+      ],
+      "cache_max_abs": {
+        "cache.0.conv_states": 1.9073486328125e-05,
+        "cache.0.recurrent_states": 1.3589859008789062e-05,
+        "cache.1.conv_states": 1.3589859008789062e-05,
+        "cache.1.recurrent_states": 2.8908252716064453e-06,
+        "cache.2.conv_states": 1.33514404296875e-05,
+        "cache.2.recurrent_states": 1.5169382095336914e-05,
+        "cache.3.keys": 0.0011888742446899414,
+        "cache.3.values": 0.0003571510314941406,
+        "cache.4.conv_states": 3.075599670410156e-05,
+        "cache.4.recurrent_states": 3.731250762939453e-05,
+        "cache.5.conv_states": 2.384185791015625e-05,
+        "cache.5.recurrent_states": 7.107853889465332e-06,
+        "cache.6.conv_states": 2.0265579223632812e-05,
+        "cache.6.recurrent_states": 3.5017728805541992e-06,
+        "cache.7.keys": 0.0016200542449951172,
+        "cache.7.values": 0.0003777742385864258,
+        "cache.8.conv_states": 3.0517578125e-05,
+        "cache.8.recurrent_states": 1.0594725608825684e-05,
+        "cache.9.conv_states": 3.337860107421875e-05,
+        "cache.9.recurrent_states": 2.6971101760864258e-06,
+        "cache.10.conv_states": 2.8908252716064453e-05,
+        "cache.10.recurrent_states": 4.842877388000488e-06,
+        "cache.11.keys": 0.0010364055633544922,
+        "cache.11.values": 0.00041812658309936523,
+        "cache.12.conv_states": 3.552436828613281e-05,
+        "cache.12.recurrent_states": 5.245208740234375e-06,
+        "cache.13.conv_states": 4.315376281738281e-05,
+        "cache.13.recurrent_states": 2.5033950805664062e-06,
+        "cache.14.conv_states": 3.2901763916015625e-05,
+        "cache.14.recurrent_states": 5.669891834259033e-06,
+        "cache.15.keys": 0.0012259483337402344,
+        "cache.15.values": 0.0005272626876831055,
+        "cache.16.conv_states": 5.1975250244140625e-05,
+        "cache.16.recurrent_states": 1.5974044799804688e-05,
+        "cache.17.conv_states": 3.814697265625e-05,
+        "cache.17.recurrent_states": 4.8220157623291016e-05,
+        "cache.18.conv_states": 5.245208740234375e-05,
+        "cache.18.recurrent_states": 2.9474496841430664e-05,
+        "cache.19.keys": 0.001049041748046875,
+        "cache.19.values": 0.0008080601692199707,
+        "cache.20.conv_states": 7.867813110351562e-05,
+        "cache.20.recurrent_states": 1.2151896953582764e-05,
+        "cache.21.conv_states": 8.392333984375e-05,
+        "cache.21.recurrent_states": 1.4215707778930664e-05,
+        "cache.22.conv_states": 5.1021575927734375e-05,
+        "cache.22.recurrent_states": 8.344650268554688e-06,
+        "cache.23.keys": 0.0009410381317138672,
+        "cache.23.values": 0.0007481575012207031
+      },
+      "merger_max_abs": 0.00011968612670898438,
+      "decoder_norm_max_abs": 0.0044574737548828125,
+      "logits_max_abs": 8.249282836914062e-05
+    },
+    "patch_chunked": {
+      "mkldnn_available": true,
+      "generated_ids": [
+        [
+          9419,
+          77796,
+          2228,
+          16,
+          17,
+          18,
+          19,
+          20,
+          248046
+        ]
+      ],
+      "decoded": [
+        "Hello OCR  \n12345"
+      ],
+      "vision_layer_max_abs": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "cache_max_abs": {
+        "cache.0.conv_states": 0.0,
+        "cache.0.recurrent_states": 0.0,
+        "cache.1.conv_states": 0.0,
+        "cache.1.recurrent_states": 0.0,
+        "cache.2.conv_states": 0.0,
+        "cache.2.recurrent_states": 0.0,
+        "cache.3.keys": 0.0,
+        "cache.3.values": 0.0,
+        "cache.4.conv_states": 0.0,
+        "cache.4.recurrent_states": 0.0,
+        "cache.5.conv_states": 0.0,
+        "cache.5.recurrent_states": 0.0,
+        "cache.6.conv_states": 0.0,
+        "cache.6.recurrent_states": 0.0,
+        "cache.7.keys": 0.0,
+        "cache.7.values": 0.0,
+        "cache.8.conv_states": 0.0,
+        "cache.8.recurrent_states": 0.0,
+        "cache.9.conv_states": 0.0,
+        "cache.9.recurrent_states": 0.0,
+        "cache.10.conv_states": 0.0,
+        "cache.10.recurrent_states": 0.0,
+        "cache.11.keys": 0.0,
+        "cache.11.values": 0.0,
+        "cache.12.conv_states": 0.0,
+        "cache.12.recurrent_states": 0.0,
+        "cache.13.conv_states": 0.0,
+        "cache.13.recurrent_states": 0.0,
+        "cache.14.conv_states": 0.0,
+        "cache.14.recurrent_states": 0.0,
+        "cache.15.keys": 0.0,
+        "cache.15.values": 0.0,
+        "cache.16.conv_states": 0.0,
+        "cache.16.recurrent_states": 0.0,
+        "cache.17.conv_states": 0.0,
+        "cache.17.recurrent_states": 0.0,
+        "cache.18.conv_states": 0.0,
+        "cache.18.recurrent_states": 0.0,
+        "cache.19.keys": 0.0,
+        "cache.19.values": 0.0,
+        "cache.20.conv_states": 0.0,
+        "cache.20.recurrent_states": 0.0,
+        "cache.21.conv_states": 0.0,
+        "cache.21.recurrent_states": 0.0,
+        "cache.22.conv_states": 0.0,
+        "cache.22.recurrent_states": 0.0,
+        "cache.23.keys": 0.0,
+        "cache.23.values": 0.0
+      },
+      "merger_max_abs": 0.0,
+      "decoder_norm_max_abs": 0.0,
+      "logits_max_abs": 0.0
+    }
+  },
+  "native_normalized_input_and_key_traces": [
+    {
+      "stage": "prefill.attention.3.input",
+      "max_abs": 0.00170326233,
+      "cos_min": 1.0,
+      "native_norm": 394.470551,
+      "reference_norm": 394.470551
+    },
+    {
+      "stage": "prefill.attention.7.input",
+      "max_abs": 0.0012216568,
+      "cos_min": 1.0,
+      "native_norm": 332.964172,
+      "reference_norm": 332.964203
+    },
+    {
+      "stage": "prefill.attention.11.input",
+      "max_abs": 0.00145356357,
+      "cos_min": 0.99999994,
+      "native_norm": 331.202911,
+      "reference_norm": 331.202881
+    },
+    {
+      "stage": "prefill.attention.15.input",
+      "max_abs": 0.001329422,
+      "cos_min": 0.99999994,
+      "native_norm": 352.718292,
+      "reference_norm": 352.718292
+    },
+    {
+      "stage": "prefill.attention.19.input",
+      "max_abs": 0.00222969055,
+      "cos_min": 0.99999994,
+      "native_norm": 348.898712,
+      "reference_norm": 348.898682
+    },
+    {
+      "stage": "prefill.attention.23.input",
+      "max_abs": 0.00152111053,
+      "cos_min": 0.99999994,
+      "native_norm": 367.030304,
+      "reference_norm": 367.030243
+    },
+    {
+      "stage": "prefill.attention.3.k_norm",
+      "max_abs": 0.00120949745,
+      "cos_min": 1.0,
+      "native_norm": 295.6073,
+      "reference_norm": 295.6073
+    },
+    {
+      "stage": "prefill.attention.7.k_norm",
+      "max_abs": 0.00201964378,
+      "cos_min": 0.99999994,
+      "native_norm": 306.113037,
+      "reference_norm": 306.113037
+    },
+    {
+      "stage": "prefill.attention.11.k_norm",
+      "max_abs": 0.00127595663,
+      "cos_min": 0.99999994,
+      "native_norm": 317.359131,
+      "reference_norm": 317.359161
+    },
+    {
+      "stage": "prefill.attention.15.k_norm",
+      "max_abs": 0.00116342306,
+      "cos_min": 1.0,
+      "native_norm": 336.205261,
+      "reference_norm": 336.205261
+    },
+    {
+      "stage": "prefill.attention.19.k_norm",
+      "max_abs": 0.00132930279,
+      "cos_min": 1.0,
+      "native_norm": 309.190552,
+      "reference_norm": 309.190552
+    },
+    {
+      "stage": "prefill.attention.23.k_norm",
+      "max_abs": 0.0011040289,
+      "cos_min": 1.0,
+      "native_norm": 300.679657,
+      "reference_norm": 300.679688
+    },
+    {
+      "stage": "cached.attention.3.input",
+      "max_abs": 1.14440918e-05,
+      "cos_min": 1.0,
+      "native_norm": 42.7022743,
+      "reference_norm": 42.7022667
+    },
+    {
+      "stage": "cached.attention.7.input",
+      "max_abs": 1.33514404e-05,
+      "cos_min": 1.0,
+      "native_norm": 35.2792625,
+      "reference_norm": 35.2792587
+    },
+    {
+      "stage": "cached.attention.11.input",
+      "max_abs": 1.52587891e-05,
+      "cos_min": 1.0,
+      "native_norm": 34.0663643,
+      "reference_norm": 34.0663719
+    },
+    {
+      "stage": "cached.attention.15.input",
+      "max_abs": 1.30534172e-05,
+      "cos_min": 1.0,
+      "native_norm": 36.537487,
+      "reference_norm": 36.5374794
+    },
+    {
+      "stage": "cached.attention.19.input",
+      "max_abs": 1.33514404e-05,
+      "cos_min": 1.0,
+      "native_norm": 36.7053795,
+      "reference_norm": 36.7053833
+    },
+    {
+      "stage": "cached.attention.23.input",
+      "max_abs": 2.7179718e-05,
+      "cos_min": 1.0,
+      "native_norm": 40.3281708,
+      "reference_norm": 40.328186
+    },
+    {
+      "stage": "cached.attention.3.k_norm",
+      "max_abs": 5.7220459e-06,
+      "cos_min": 1.0,
+      "native_norm": 33.1591606,
+      "reference_norm": 33.1591606
+    },
+    {
+      "stage": "cached.attention.7.k_norm",
+      "max_abs": 8.10623169e-06,
+      "cos_min": 1.0,
+      "native_norm": 34.7621117,
+      "reference_norm": 34.7621193
+    },
+    {
+      "stage": "cached.attention.11.k_norm",
+      "max_abs": 1.82390213e-05,
+      "cos_min": 1.0,
+      "native_norm": 36.1500168,
+      "reference_norm": 36.1500244
+    },
+    {
+      "stage": "cached.attention.15.k_norm",
+      "max_abs": 1.34706497e-05,
+      "cos_min": 1.0,
+      "native_norm": 37.6186714,
+      "reference_norm": 37.6186714
+    },
+    {
+      "stage": "cached.attention.19.k_norm",
+      "max_abs": 9.9465251e-06,
+      "cos_min": 1.0,
+      "native_norm": 34.6025352,
+      "reference_norm": 34.6025391
+    },
+    {
+      "stage": "cached.attention.23.k_norm",
+      "max_abs": 1.47819519e-05,
+      "cos_min": 1.0,
+      "native_norm": 33.4924927,
+      "reference_norm": 33.4924965
+    },
+    {
+      "stage": "full_prefix.attention.3.input",
+      "max_abs": 0.00170326233,
+      "cos_min": 1.0,
+      "native_norm": 396.775116,
+      "reference_norm": 396.775146
+    },
+    {
+      "stage": "full_prefix.attention.7.input",
+      "max_abs": 0.0012216568,
+      "cos_min": 1.0,
+      "native_norm": 334.827972,
+      "reference_norm": 334.828003
+    },
+    {
+      "stage": "full_prefix.attention.11.input",
+      "max_abs": 0.00145356357,
+      "cos_min": 0.99999994,
+      "native_norm": 332.950287,
+      "reference_norm": 332.950256
+    },
+    {
+      "stage": "full_prefix.attention.15.input",
+      "max_abs": 0.001329422,
+      "cos_min": 0.99999994,
+      "native_norm": 354.605652,
+      "reference_norm": 354.605652
+    },
+    {
+      "stage": "full_prefix.attention.19.input",
+      "max_abs": 0.00222969055,
+      "cos_min": 0.99999994,
+      "native_norm": 350.824158,
+      "reference_norm": 350.824127
+    },
+    {
+      "stage": "full_prefix.attention.23.input",
+      "max_abs": 0.00152111053,
+      "cos_min": 0.99999994,
+      "native_norm": 369.239227,
+      "reference_norm": 369.239166
+    },
+    {
+      "stage": "full_prefix.attention.3.k_norm",
+      "max_abs": 0.00120949745,
+      "cos_min": 1.0,
+      "native_norm": 297.461273,
+      "reference_norm": 297.461273
+    },
+    {
+      "stage": "full_prefix.attention.7.k_norm",
+      "max_abs": 0.00201964378,
+      "cos_min": 0.99999994,
+      "native_norm": 308.080505,
+      "reference_norm": 308.080505
+    },
+    {
+      "stage": "full_prefix.attention.11.k_norm",
+      "max_abs": 0.00127595663,
+      "cos_min": 0.99999994,
+      "native_norm": 319.411407,
+      "reference_norm": 319.411438
+    },
+    {
+      "stage": "full_prefix.attention.15.k_norm",
+      "max_abs": 0.00116342306,
+      "cos_min": 1.0,
+      "native_norm": 338.303314,
+      "reference_norm": 338.303345
+    },
+    {
+      "stage": "full_prefix.attention.19.k_norm",
+      "max_abs": 0.00132930279,
+      "cos_min": 1.0,
+      "native_norm": 311.120758,
+      "reference_norm": 311.120789
+    },
+    {
+      "stage": "full_prefix.attention.23.k_norm",
+      "max_abs": 0.0011040289,
+      "cos_min": 1.0,
+      "native_norm": 302.539246,
+      "reference_norm": 302.539276
+    }
+  ],
+  "native_cache7_key_max_abs": 0.00201964378,
+  "strict_cache_absolute_budget": 0.002,
+  "result": "strict cache gate still fails; no validation policy change"
+}
