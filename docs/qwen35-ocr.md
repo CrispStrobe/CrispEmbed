@@ -545,3 +545,13 @@ then compare resized non-square raw RGB fixtures. The current shared native
 float bicubic helper documents residual differences from torchvision's uint8
 coefficient quantization; the 256x256 no-resize fixture cannot establish resize
 parity.
+
+The pinned [torchvision backend implementation](https://github.com/huggingface/transformers/blob/75d3bdcd4b3ba70cee21287218d9764f33da41f0/src/transformers/image_processing_backends.py)
+also fuses rescale/normalize: RGB mean/std 0.5 become 127.5 before the F32
+subtraction/division. Match this order when comparing normalized patches.
+Torch 2.10's [CPU resize implementation](https://github.com/pytorch/pytorch/blob/v2.10.0/aten/src/ATen/native/cpu/UpSampleKernel.cpp)
+computes antialias coefficients in double, chooses an int16 coefficient precision
+from the largest weight, and rounds/clamps each separable uint8 pass. A float
+Catmull-Rom kernel alone does not reproduce those steps. Capture original RGB,
+resized bytes, normalized packed patches and grids before diagnosing the vision
+projection; retain independent up/downscale and aspect-ratio controls.
