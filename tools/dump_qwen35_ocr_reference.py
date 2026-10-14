@@ -246,6 +246,18 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             with torch.backends.mkldnn.flags(enabled=not disabled):
                 controlled = model(**prefill_inputs)
                 save(f"{label}.logits", controlled.logits[:, -1])
+                save_cache(controlled.past_key_values, label)
+                if label == "backend_off":
+                    phase[0] = "backend_off_cached"
+                    kwargs = dict(input_ids=first_id, attention_mask=continued_mask,
+                                  past_key_values=controlled.past_key_values, use_cache=True)
+                    control_positions = model._prepare_position_ids_for_generation(first_id, kwargs)
+                    prepared = model.prepare_inputs_for_generation(**kwargs, position_ids=control_positions,
+                                                                  is_first_iteration=False, logits_to_keep=1)
+                    control_cached = model(**prepared)
+                    save("backend_off_cached.logits", control_cached.logits[:, -1])
+                    save_cache(control_cached.past_key_values, "backend_off_cached")
+
                 if label == "backend_off":
                     phase[0] = "backend_off_full_prefix"
                     controlled_full = model(**full_inputs)
@@ -263,6 +275,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                 "vision_layer_max_abs": [float(np.max(np.abs(arrays[f"{label}.vision.layer.{index}"] -
                                                                arrays[f"prefill.vision.layer.{index}"])))
                                          for index in range(model.config.vision_config.depth)],
+                "cache_max_abs": {key.removeprefix(f"{label}."): float(np.max(np.abs(value - arrays["prefill." + key.removeprefix(f"{label}.")])))
+                                  for key, value in arrays.items() if key.startswith(f"{label}.cache.")},
                 "merger_max_abs": float(np.max(np.abs(arrays[f"{label}.vision.merger"] - arrays["prefill.vision.merger"]))),
                 "decoder_norm_max_abs": float(np.max(np.abs(arrays[f"{label}.decoder.norm"] - arrays["prefill.decoder.norm"]))),
                 "logits_max_abs": float(np.max(np.abs(arrays[f"{label}.logits"] - arrays["prefill.logits"]))),
@@ -321,7 +335,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     for name, value in arrays.items():
         if ((".delta." in name or ".linear." in name or ".cache." in name
              or ".attention." in name or ".decoder." in name or ".vision." in name or name.endswith(".logits"))
-                and name.startswith(("prefill.", "cached.", "full_prefix.", "backend_off.", "backend_off_full_prefix.", "patch_chunked."))) or name.startswith(("linear.", "generated.", "input.")):
+                and name.startswith(("prefill.", "cached.", "full_prefix.", "backend_off.", "backend_off_full_prefix.", "backend_off_cached.", "patch_chunked."))) or name.startswith(("linear.", "generated.", "input.")):
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()

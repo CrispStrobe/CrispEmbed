@@ -31,6 +31,7 @@ struct decoder_outputs {
     std::vector<std::vector<float>> hidden;
     std::vector<float> norm, logits;
     decoder_cache cache;
+    std::map<int, std::vector<float>> attention_inputs, attention_keys;
 };
 // Explicit small-model schedule; no automatic support for unknown checkpoints.
 bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights);

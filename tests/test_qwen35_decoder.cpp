@@ -199,6 +199,20 @@ static int crispembed_test_main(int argc, char ** argv) {
             ok = false;
             break;
         }
+        if (native_frontend) {
+            for (const auto & entry : current.attention_inputs) {
+                const auto name = phase + ".attention." + std::to_string(entry.first) + ".input";
+                const auto metric = ref.compare(name, entry.second.data(), entry.second.size());
+                std::printf("TRACE %s max_abs=%.9g cos=%.9f norms=%.9g/%.9g\n", name.c_str(), metric.max_abs,
+                            metric.cos_min, metric.mine_norm, metric.ref_norm);
+            }
+            for (const auto & entry : current.attention_keys) {
+                const auto name = phase + ".attention." + std::to_string(entry.first) + ".k_norm";
+                const auto metric = ref.compare(name, entry.second.data(), entry.second.size());
+                std::printf("TRACE %s max_abs=%.9g cos=%.9f norms=%.9g/%.9g\n", name.c_str(), metric.max_abs,
+                            metric.cos_min, metric.mine_norm, metric.ref_norm);
+            }
+        }
         for (size_t i = 0; i < current.hidden.size(); ++i) {
             if (!qwen35_compare(ref, phase + ".decoder.layer." + std::to_string(i), current.hidden[i])) {
                 ok = false;

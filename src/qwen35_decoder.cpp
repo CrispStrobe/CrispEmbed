@@ -113,10 +113,12 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
         std::vector<float> mixed;
         if (layer.full_attention) {
             attention_outputs attention;
+            output.attention_inputs[int(i)] = normalized;
             if (cache && cache->attention.tokens != past) return false;
             if (!attention_cpu(layer.attention, c, normalized.data(), positions, batch, tokens, threads,
                                cache ? &cache->attention : nullptr, attention))
                 return false;
+            output.attention_keys[int(i)] = attention.k_norm;
             mixed = std::move(attention.attention);
             next.attention = std::move(attention.cache);
         } else {
