@@ -776,3 +776,62 @@ unverified. The standalone test supplies the image decoder normally provided by
 
 Unified `crispembed_ocr_model_*`, orchestrator, CLI/server, bindings, registry,
 quantization, model publication and a runtime release remain separate work.
+
+
+## Public integration lane — 2026-10-14
+
+The default-off experimental context is now wired into the main library's
+metadata-dispatched `crispembed_ocr_model_*` API. Raw RGB/grayscale/RGBA, float
+[0,1] grayscale, prompt/reset, generation cap/default-reset and confidence use
+the owning engine. Orchestrator engine20 is appended to the existing public
+mapping; no shipped IDs move. Its stage forwards `vlm_prompt`, applies
+`vlm_max_tokens` and restores the engine default when the stage cap is0.
+The CLI/server recognize `qwen35-ocr` and `qwen35_ocr`; this engine requires an
+explicit local GGUF rather than an unverified download alias.
+
+Python `CrispOcrModel`, Rust `OcrModel` and Dart `CrispOcrModel` use the same
+architecture dispatcher. Python adds `CrispOcrOrchestrator(stages=...)`, Dart adds
+`CrispOcrOrchestrator.fromStages`, and Rust's existing `CrispOcrPipeline::from_stages`
+selects engine20. Rust validates exact grayscale/RGB/RGBA buffer sizes before FFI;
+Dart exposes raw channels, prompt/cap and copied token-confidence accessors.
+
+Source review found incomplete legacy pipeline-parameter mirrors: Python72 bytes
+and Dart's80-byte manual allocation versus the current native136-byte layout on
+64-bit platforms. Both now use all20 native fields, with typed Dart `Struct`
+layouts. This is a source-level initial finding, not a reproduced native crash.
+[Initial audit](../tests/results/qwen35-ocr/public-initial-abi-layout-audit.json).
+Hosted consumers compare cleanup/stage/params sizes and Python stage offsets
+against the compiled C header before claiming ABI parity.
+
+[Hosted public check38610331501](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501)
+at `815234d5` is running. It includes the existing full-stage checks, an independently
+captured original custom-prompt reference and native full-stage comparison,
+unified C ABI, Python/Rust/Dart consumers, CLI single/stage JSON and a loopback
+server `/ocr/pipeline` request. It uses the explicit52-tensor F32 vision recipe;
+no numeric gate changes. Earlier run38609791536 was cancelled while queued before
+inference to add the default-cap reset control; it provides no execution evidence.
+
+Experimental usage after a verified build:
+
+```sh
+CRISPEMBED_QWEN35_OCR=1 crispembed -m model.gguf --ocr input.png --ocr-max-tokens 12
+CRISPEMBED_QWEN35_OCR=1 crispembed --ocr-pipeline input.png \
+  --ocr-engine qwen35-ocr --ocr-rec model.gguf --ocr-max-tokens 12
+```
+
+```python
+from crispembed import CrispOcrModel, CrispOcrOrchestrator
+ocr = CrispOcrModel("model.gguf")  # set CRISPEMBED_QWEN35_OCR=1 in the environment
+ocr.set_max_tokens(12)
+text = ocr.recognize("input.png")
+orch = CrispOcrOrchestrator(router=False, stages=[
+    {"engine": 20, "model_a": "model.gguf", "vlm_max_tokens": 12},
+])
+text = orch.run("input.png")["text"]
+```
+
+The1024-patch bound, F32/F16-only engine and source-profile restriction remain.
+Model registry, quantization, broader page/corpus coverage, HF publication and
+runtime release are not part of this integration checkpoint. CrispSorter provider
+and catalog selection remain a TODO once a validated model artifact is published;
+that application is outside this checkout. The pinned app release remains separate.
