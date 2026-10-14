@@ -36,9 +36,9 @@ def read_tokenizer_metadata(root, vocab_size):
     merges = tokenizer["model"]["merges"]
     merges = [item if isinstance(item, str) else " ".join(item) for item in merges]
 
-    if tokenizer.get("normalizer") is not None or tokenizer["model"].get("dropout") is not None:
+    if tokenizer.get("normalizer") != {"type": "NFC"} or tokenizer["model"].get("dropout") is not None:
         raise ValueError("Unimplemented tokenizer normalization/dropout")
-    if any(t.get("single_word") or t.get("lstrip") or t.get("rstrip") for t in tokenizer["added_tokens"]):
+    if any(t.get("single_word") or t.get("lstrip") or t.get("rstrip") or t.get("normalized") for t in tokenizer["added_tokens"]):
         raise ValueError("Unimplemented added-token matching policy")
     generation = json.loads((root / "generation_config.json").read_text())
     eos = generation["eos_token_id"]
@@ -49,13 +49,16 @@ def read_tokenizer_metadata(root, vocab_size):
             "added": [t["id"] for t in tokenizer["added_tokens"]],
             "special": [t["id"] for t in tokenizer["added_tokens"] if t["special"]],
             "generation_eos": eos, "tokenizer_eos": vocab[config["eos_token"]],
-            "pad": vocab[config["pad_token"]]}
+            "pad": vocab[config["pad_token"]],
+            "normalizer": "NFC", "pattern": tokenizer["pre_tokenizer"]["pretokenizers"][0]["pattern"]["Regex"]}
 
 
 def write_tokenizer_metadata(writer, data):
     import gguf
     writer.add_string("tokenizer.ggml.model", "gpt2")
     writer.add_string("tokenizer.ggml.pre", "qwen35")
+    writer.add_string(f"{ARCH}.normalizer", data["normalizer"])
+    writer.add_string(f"{ARCH}.pretokenizer_pattern", data["pattern"])
     writer.add_array("tokenizer.ggml.tokens", data["tokens"])
     writer.add_array("tokenizer.ggml.merges", data["merges"])
     for key in ["added", "special"]:

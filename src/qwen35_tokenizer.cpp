@@ -1,5 +1,6 @@
 #include "qwen35_frontend.h"
 #include "core/bpe.h"
+#include "core/nfc.h"
 #include "core/env_gate.h"
 #include <algorithm>
 #include <utility>
@@ -48,6 +49,11 @@ bool frontend_tokenizer::load(gguf_context * meta) {
         core_gguf::kv_str(meta, "general.source.huggingface.repository", "") != "lightonai/LightOnOCR-3-0.8B" ||
         core_gguf::kv_str(meta, "general.source.huggingface.revision", "") !=
             "36d8636925327c671bd8e479c517a004f7566bd9")
+        return false;
+    const std::string actual_pattern =
+        R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)";
+    if (core_gguf::kv_str(meta, "qwen35_ocr.normalizer", "") != "NFC" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.pretokenizer_pattern", "") != actual_pattern)
         return false;
     frontend_tokenizer result;
     result.vocab_ = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
@@ -100,7 +106,9 @@ bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids
             }
         }
         const auto ordinary = core_bpe::tokenize_pretokenized(
-            tokens_, merges_, core_bpe::bytelevel_pretokenize(text.substr(start, next - start), 1, true));
+            tokens_, merges_,
+            core_bpe::bytelevel_pretokenize(core_nfc::normalize(replace_invalid_utf8(text.substr(start, next - start))),
+                                            1, core_env::on("CRISPEMBED_QWEN35_TOKENIZER_MARKS")));
         ids.insert(ids.end(), ordinary.begin(), ordinary.end());
         if (added < 0) break;
         ids.push_back(added);

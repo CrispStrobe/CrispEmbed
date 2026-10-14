@@ -108,7 +108,26 @@ def main():
         save_bytes(f"text.{index}.input", text)
         save(f"text.{index}.ids", ids)
         save_bytes(f"text.{index}.decoded", decoded)
-    partial_ids = processor.tokenizer.encode("🙂", add_special_tokens=False)[:1]
+    # Original Rust NFC normalizer is the authority, including composition
+    # exclusions, canonical ordering and algorithmic Hangul.
+    import urllib.request
+    with urllib.request.urlopen("https://www.unicode.org/Public/16.0.0/ucd/UnicodeData.txt", timeout=30) as stream:
+        unicode_data = stream.read()
+    import hashlib
+    assert hashlib.sha256(unicode_data).hexdigest() == "ff58e5823bd095166564a006e47d111130813dcf8bf234ef79fa51a870edb48f"
+    normalization_cases = ["", "e\u0301", "\u0308\u0301A", "a\u0301\u0323", "\u1100\u1161\u11a8", "\u0344"]
+    for line in unicode_data.decode().splitlines():
+        fields = line.split(";")
+        cp = int(fields[0], 16)
+        if fields[5] and not fields[5].startswith("<"):
+            normalization_cases += [chr(cp), "".join(chr(int(x,16)) for x in fields[5].split())]
+        if int(fields[3]):
+            normalization_cases.append("a\u0301" + chr(cp) + "\u0323")
+    writer.add_uint32("test.nfc_count", len(normalization_cases))
+    for index, text in enumerate(normalization_cases):
+        save_bytes(f"nfc.{index}.input", text)
+        save_bytes(f"nfc.{index}.expected", processor.tokenizer.backend_tokenizer.normalizer.normalize_str(text))
+    partial_ids = [processor.tokenizer.convert_tokens_to_ids("ð")]
     save("decode.partial.ids", partial_ids)
     save_bytes("decode.partial.expected", processor.tokenizer.decode(partial_ids, skip_special_tokens=True))
     writer.write_header_to_file()
@@ -131,8 +150,11 @@ def main():
               "model": exporter.LIGHTON_MODEL, "revision": exporter.LIGHTON_REVISION,
               "processor": type(processor).__module__ + "." + type(processor).__name__,
               "image_processor": type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__,
-              "backend": "torchvision CPU uint8", "images": records, "text_cases": len(texts), "checks": statuses,
-              "scope": "metadata-only original processor/tokenizer; no model inference or OCR-quality claim"}
+              "backend": "torchvision CPU uint8", "images": records, "text_cases": len(texts), "normalization_cases": len(normalization_cases), "checks": statuses,
+              "scope": "metadata-only original processor/tokenizer; no model inference or OCR-quality claim",
+              "tokenizers": __import__("tokenizers").__version__,
+              "effective_normalizer": json.loads(processor.tokenizer.backend_tokenizer.to_str())["normalizer"],
+              "effective_pretokenizer": json.loads(processor.tokenizer.backend_tokenizer.to_str())["pre_tokenizer"]}
     (out / "frontend.json").write_text(json.dumps(report, indent=2) + "\n")
     if not all(statuses.values()):
         raise ValueError("Frontend or existing pretokenizer control failed")

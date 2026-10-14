@@ -206,7 +206,24 @@ def main():
                 raise ValueError("Precise vision reductions fail the unchanged stage/connected parity gates")
         elif not all(report[key] for key in ["native_vision", "native_decoder", "native_connected", "native_positions", "native_frontend"]):
             raise ValueError("Native vision/decoder/connected parity failed; inspect retained stage logs")
-        report["result"] = "export/reference/native delta checks passed; full native OCR support pending"
+        if not precision_audit and not math_audit:
+            resized_out = out / "resized-frontend"
+            resized_out.mkdir(exist_ok=True)
+            resized_image = Image.new("RGB", (211, 301), "white")
+            ImageDraw.Draw(resized_image).text((30, 80), "Hello OCR\n12345", fill="black", font_size=24)
+            resized_path = resized_out / "input.png"
+            resized_image.save(resized_path)
+            resized_reference = reference.dump_reference(local, resized_path, resized_out / "official-reference.npz")
+            gc.collect()
+            result = subprocess.run([str(build / "test-qwen35-decoder"), str(export),
+                                     str(resized_out / "official-delta.gguf"), "--native-frontend"], capture_output=True, text=True)
+            (out / "native-frontend-resized.log").write_text(result.stdout + result.stderr)
+            print(result.stdout + result.stderr)
+            report["native_frontend_resized"] = result.returncode == 0
+            report["resized_reference"] = {key: resized_reference[key] for key in ["decoded", "generated_ids", "image_size", "resolved_image_processor"]}
+            result.check_returncode()
+            report["native_parity"] = "native raw RGB/BPE/vision/positions/decoder/text checked on two owned fixtures; production integration/corpus validation pending"
+        report["result"] = "export/reference/native model checks passed; production OCR support pending"
     except BaseException as error:
         report["result"] = "failed"
         report["error"] = f"{type(error).__name__}: {error}"

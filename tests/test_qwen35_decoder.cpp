@@ -247,7 +247,7 @@ int main(int argc, char ** argv) {
                 ok = false;
                 break;
             }
-            if (id == 248046) {
+            if (id == (native_frontend ? tokenizer.eos() : 248046)) {
                 ok &= step + 1 == expected.second;
                 break;
             }
@@ -289,11 +289,12 @@ int main(int argc, char ** argv) {
     }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf(
-        "%s composed 24-layer native decoder and greedy IDs; %s, native frontend pending\n", ok ? "PASS" : "FAIL",
-        native_frontend    ? "native raw RGB/BPE/prompt/vision/positions/decoder/text; official arrays only compared"
-        : native_positions ? "native vision/text embeddings and positions; official packed pixels/IDs"
-        : native_vision    ? "native vision/text embeddings from official packed pixels/IDs/positions"
-                           : "official merged embeddings/positions supplied");
+    std::printf("%s composed 24-layer native decoder and greedy IDs; %s, production integration pending\n",
+                ok ? "PASS" : "FAIL",
+                native_frontend
+                    ? "native raw RGB/BPE/prompt/vision/positions/decoder/text; official arrays only compared"
+                : native_positions ? "native vision/text embeddings and positions; official packed pixels/IDs"
+                : native_vision    ? "native vision/text embeddings from official packed pixels/IDs/positions"
+                                   : "official merged embeddings/positions supplied");
     return ok ? 0 : 1;
 }

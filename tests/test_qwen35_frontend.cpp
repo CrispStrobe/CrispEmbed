@@ -1,5 +1,6 @@
 #include "qwen35_frontend.h"
 #include "crispembed_diff.h"
+#include "core/nfc.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -86,6 +87,19 @@ int main(int argc, char ** argv) {
         std::printf("%s %s IDs/decode exact tokens=%zu\n", match ? "PASS" : "FAIL", label.c_str(), ids.size());
         ok &= match;
     }
+    const int normalization_count = int(core_gguf::kv_u32(meta, "test.nfc_count", 0));
+    if (normalization_count < 4000 || normalization_count > 10000) return 2;
+    int normalization_errors = 0;
+    for (int i = 0; i < normalization_count; ++i) {
+        const auto label = "nfc." + std::to_string(i);
+        if (core_nfc::normalize(bytes(ref, meta, label + ".input")) != bytes(ref, meta, label + ".expected")) {
+            ++normalization_errors;
+            if (normalization_errors <= 5) std::printf("FAIL NFC original Rust case %d\n", i);
+        }
+    }
+    ok &= normalization_errors == 0;
+    std::printf("%s NFC original Rust checks=%d errors=%d\n", normalization_errors == 0 ? "PASS" : "FAIL",
+                normalization_count, normalization_errors);
     const auto partial = ref.get_f32("decode.partial.ids");
     std::vector<int> partial_ids;
     if (!partial.first) return 2;
