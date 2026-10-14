@@ -388,7 +388,10 @@ inline core_uc_class uc_at(const std::string & s, size_t i, size_t & len) {
 //
 // Alternatives are tried in order at each position, leftmost-first, exactly as
 // the Rust regex engine behind HuggingFace `tokenizers` does.
-inline std::vector<std::string> bytelevel_pretokenize(const std::string & s, int max_digit_run) {
+// Qwen3.5 includes combining marks in the letter run and excludes them from
+// punctuation. Existing Qwen/LFM callers retain the original pattern by default.
+inline std::vector<std::string> bytelevel_pretokenize(const std::string & s, int max_digit_run,
+                                                      bool letter_marks = false) {
     std::vector<std::string> out;
     const size_t n = s.size();
     size_t i = 0;
@@ -423,9 +426,14 @@ inline std::vector<std::string> bytelevel_pretokenize(const std::string & s, int
         {
             size_t k = i;
             if (c != '\r' && c != '\n' && cls != CORE_UC_L && cls != CORE_UC_N) k += clen;
-            if (k < n && uc_at(s, k, len) == CORE_UC_L) {
+            if (letter_marks && cls == CORE_UC_M &&
+                (k == n || (uc_at(s, k, len) != CORE_UC_L && uc_at(s, k, len) != CORE_UC_M)))
+                k = i;
+
+            if (k < n && (uc_at(s, k, len) == CORE_UC_L || (letter_marks && uc_at(s, k, len) == CORE_UC_M))) {
                 size_t j = k;
-                while (j < n && uc_at(s, j, len) == CORE_UC_L) j += len;
+                while (j < n && (uc_at(s, j, len) == CORE_UC_L || (letter_marks && uc_at(s, j, len) == CORE_UC_M)))
+                    j += len;
                 out.push_back(s.substr(i, j - i));
                 i = j;
                 continue;
@@ -449,11 +457,12 @@ inline std::vector<std::string> bytelevel_pretokenize(const std::string & s, int
             if (c == ' ') k++;
             if (k < n) {
                 const core_uc_class ck = uc_at(s, k, len);
-                if (ck != CORE_UC_Z && ck != CORE_UC_L && ck != CORE_UC_N) {
+                if (ck != CORE_UC_Z && ck != CORE_UC_L && ck != CORE_UC_N && (!letter_marks || ck != CORE_UC_M)) {
                     size_t j = k;
                     while (j < n) {
                         const core_uc_class e = uc_at(s, j, len);
-                        if (e == CORE_UC_Z || e == CORE_UC_L || e == CORE_UC_N) break;
+                        if (e == CORE_UC_Z || e == CORE_UC_L || e == CORE_UC_N || (letter_marks && e == CORE_UC_M))
+                            break;
                         j += len;
                     }
                     while (j < n && (s[j] == '\r' || s[j] == '\n')) j++;

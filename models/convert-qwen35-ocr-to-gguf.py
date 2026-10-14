@@ -19,6 +19,52 @@ LIGHTON_MODEL = "lightonai/LightOnOCR-3-0.8B"
 LIGHTON_REVISION = "36d8636925327c671bd8e479c517a004f7566bd9"
 
 
+def read_tokenizer_metadata(root, vocab_size):
+    tokenizer = json.loads((root / "tokenizer.json").read_text())
+    if tokenizer["model"]["type"] != "BPE":
+        raise ValueError("Expected an audited BPE tokenizer")
+    vocab = dict(tokenizer["model"]["vocab"])
+    for token in tokenizer["added_tokens"]:
+        vocab[token["content"]] = token["id"]
+    tokens = [""] * vocab_size
+    occupied = set()
+    for token, index in vocab.items():
+        if index < 0 or index >= len(tokens) or index in occupied:
+            raise ValueError(f"Invalid/duplicate tokenizer id: {index}")
+        occupied.add(index)
+        tokens[index] = token
+    merges = tokenizer["model"]["merges"]
+    merges = [item if isinstance(item, str) else " ".join(item) for item in merges]
+
+    if tokenizer.get("normalizer") is not None or tokenizer["model"].get("dropout") is not None:
+        raise ValueError("Unimplemented tokenizer normalization/dropout")
+    if any(t.get("single_word") or t.get("lstrip") or t.get("rstrip") for t in tokenizer["added_tokens"]):
+        raise ValueError("Unimplemented added-token matching policy")
+    generation = json.loads((root / "generation_config.json").read_text())
+    eos = generation["eos_token_id"]
+    if not isinstance(eos, int) or eos < 0 or eos >= vocab_size:
+        raise ValueError("Only a valid single generation EOS supported")
+    config = json.loads((root / "tokenizer_config.json").read_text())
+    return {"tokens": tokens, "merges": merges,
+            "added": [t["id"] for t in tokenizer["added_tokens"]],
+            "special": [t["id"] for t in tokenizer["added_tokens"] if t["special"]],
+            "generation_eos": eos, "tokenizer_eos": vocab[config["eos_token"]],
+            "pad": vocab[config["pad_token"]]}
+
+
+def write_tokenizer_metadata(writer, data):
+    import gguf
+    writer.add_string("tokenizer.ggml.model", "gpt2")
+    writer.add_string("tokenizer.ggml.pre", "qwen35")
+    writer.add_array("tokenizer.ggml.tokens", data["tokens"])
+    writer.add_array("tokenizer.ggml.merges", data["merges"])
+    for key in ["added", "special"]:
+        writer.add_key_value(f"{ARCH}.{key}_token_ids", data[key], gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    writer.add_uint32(f"{ARCH}.generation_eos_id", data["generation_eos"])
+    writer.add_uint32("tokenizer.ggml.eos_token_id", data["tokenizer_eos"])
+    writer.add_uint32("tokenizer.ggml.padding_token_id", data["pad"])
+
+
 def validate_config(config):
     if config.get("model_type") != "qwen3_5":
         raise ValueError("Only dense qwen3_5 checkpoints are supported")
@@ -123,21 +169,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                                embed_file.get_tensor("model.language_model.embed_tokens.weight")):
                 raise ValueError("Checkpoint claims tied weights but stores unequal head/embedding")
 
-    tokenizer = json.loads((root / "tokenizer.json").read_text())
-    if tokenizer["model"]["type"] != "BPE":
-        raise ValueError("Expected an audited BPE tokenizer")
-    vocab = dict(tokenizer["model"]["vocab"])
-    for token in tokenizer["added_tokens"]:
-        vocab[token["content"]] = token["id"]
-    tokens = [""] * text["vocab_size"]
-    occupied = set()
-    for token, index in vocab.items():
-        if index < 0 or index >= len(tokens) or index in occupied:
-            raise ValueError(f"Invalid/duplicate tokenizer id: {index}")
-        occupied.add(index)
-        tokens[index] = token
-    merges = tokenizer["model"]["merges"]
-    merges = [item if isinstance(item, str) else " ".join(item) for item in merges]
+    tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"])
 
     output.parent.mkdir(parents=True, exist_ok=True)
     pending = output.with_name(output.name + ".partial")
@@ -154,14 +186,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                      "tokenizer_config.json", "generation_config.json"]:
         writer.add_string(f"{ARCH}.{filename.removesuffix('.json')}", (root / filename).read_text())
     writer.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
-    writer.add_string("tokenizer.ggml.model", "gpt2")
-    writer.add_string("tokenizer.ggml.pre", "qwen35")
-    writer.add_array("tokenizer.ggml.tokens", tokens)
-    writer.add_array("tokenizer.ggml.merges", merges)
-    # Keep actual tokenizer EOS and model generation EOS separately.
-    tok_config = json.loads((root / "tokenizer_config.json").read_text())
-    writer.add_uint32("tokenizer.ggml.eos_token_id", vocab[tok_config["eos_token"]])
-    writer.add_uint32("tokenizer.ggml.padding_token_id", vocab[tok_config["pad_token"]])
+    write_tokenizer_metadata(writer, tokenizer_data)
 
     records = []
     try:

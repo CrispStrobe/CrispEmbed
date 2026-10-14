@@ -53,6 +53,10 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                     raise ValueError(f"Non-finite reference: {name}")
             arrays[name] = value.numpy().copy()
 
+    save("input.rgb", torch.from_numpy(np.array(image, dtype=np.uint8).copy()))
+    save("input.prompt_utf8", torch.tensor(list(prompt.encode("utf-8")), dtype=torch.int32) if prompt else torch.zeros(1, dtype=torch.int32))
+    save("input.prompt_length", torch.tensor([len(prompt.encode("utf-8"))], dtype=torch.int32))
+    save("input.decoded_utf8", torch.zeros(1))  # overwritten after official generate
     for name, value in inputs.items():
         save("input." + name, value)
 
@@ -309,6 +313,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
     required += [f"generated.{index}.decoder.position_ids" for index in range(len(generated.scores))]
     missing = sorted(set(required) - set(arrays))
+    decoded = processor.batch_decode(ids, skip_special_tokens=True)[0]
+    save("input.decoded_utf8", torch.tensor(list(decoded.encode("utf-8")), dtype=torch.int32))
     np.savez(output, **arrays)
     # Small standalone native-op probe; never part of exported model weights.
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
@@ -325,6 +331,9 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         "transformers": transformers.__version__, "torch": torch.__version__,
         "image_sha256": hashlib.sha256(Path(image_path).read_bytes()).hexdigest(),
         "image_size": list(image.size), "prompt": prompt, "rendered_prompt": rendered,
+        "resolved_processor": type(processor).__module__ + "." + type(processor).__name__,
+        "resolved_image_processor": type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__,
+        "resolved_image_backend": getattr(processor.image_processor, "backend", None),
         "generation_config": model.generation_config.to_dict(),
         "torch_build": torch.__config__.show(), "cpu_controls": cpu_controls,
         "source_config": model.config.to_dict(), "vision_layers": vision_depth,

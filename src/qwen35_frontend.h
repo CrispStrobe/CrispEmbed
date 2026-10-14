@@ -1,0 +1,35 @@
+#pragma once
+#include "core/gguf_loader.h"
+#include <cstdint>
+#include <string>
+#include <unordered_map>
+#include <vector>
+namespace qwen35_ocr {
+struct image_config {
+    int min_pixels = 65536, max_pixels = 16777216;
+};
+struct image_inputs {
+    std::vector<uint8_t> resized_rgb;
+    std::vector<float> patches;
+    std::vector<int> grid;
+    int height = 0, width = 0;
+};
+// Pinned Qwen2VL torchvision CPU uint8 bicubic, fused .5 normalization, P16/T2/M2.
+// Still RGB only; maximum 1024 patches matches the current native vision bound.
+bool preprocess_rgb(const uint8_t * rgb, int height, int width, const image_config & config, image_inputs & output);
+class frontend_tokenizer {
+    std::vector<std::string> vocab_;
+    std::unordered_map<std::string, int32_t> tokens_, merges_;
+    std::vector<int> added_, special_;
+    int eos_ = -1;
+
+public:
+    bool load(gguf_context * metadata);
+    bool encode(const std::string & text, std::vector<int> & ids) const;
+    bool decode(const std::vector<int> & ids, std::string & text) const;
+    // Exact single-image LightOnOCR-3-0.8B user + non-thinking assistant prefix.
+    bool image_prompt(const std::string & prompt, int image_tokens, std::vector<int> & ids,
+                      std::vector<int> & modalities, std::string & rendered) const;
+    int eos() const { return eos_; }
+};
+} // namespace qwen35_ocr

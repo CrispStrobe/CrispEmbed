@@ -1,6 +1,7 @@
 #include "qwen35_decoder.h"
 #include "qwen35_vision.h"
 #include "qwen35_positions.h"
+#include "qwen35_frontend.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "qwen35_parity.h"
@@ -35,7 +36,8 @@ static int argmax(const std::vector<float> & x) {
 }
 int main(int argc, char ** argv) {
     if (argc != 3 && argc != 4) return 2;
-    const bool native_positions = argc == 4 && std::string(argv[3]) == "--native-positions";
+    const bool native_frontend = argc == 4 && std::string(argv[3]) == "--native-frontend";
+    const bool native_positions = native_frontend || (argc == 4 && std::string(argv[3]) == "--native-positions");
     const bool native_vision = argc == 4;
     if (native_vision && !native_positions && std::string(argv[3]) != "--native-vision") return 2;
 #ifdef _WIN32
@@ -54,6 +56,8 @@ int main(int argc, char ** argv) {
     qwen35_ocr::decoder_weights weights;
     if (!qwen35_ocr::map_small_decoder(loaded.tensors, weights)) return 2;
     qwen35_ocr::vision_outputs vision;
+    qwen35_ocr::frontend_tokenizer tokenizer;
+    qwen35_ocr::image_inputs image;
     std::vector<int> input_ids, modalities, dimensions;
     qwen35_ocr::position_outputs prefill_positions;
     if (native_vision) {
@@ -77,6 +81,36 @@ int main(int argc, char ** argv) {
                 return 2;
             input_ids.push_back(int(ids.first[i]));
         }
+        std::vector<int> native_modalities;
+        if (native_frontend) {
+            auto * metadata = core_gguf::open_metadata(argv[1]);
+            const bool ready = tokenizer.load(metadata);
+            if (metadata) core_gguf::free_metadata(metadata);
+            const auto rgb = ref.get_f32("input.rgb");
+            const auto rgb_shape = ref.shape("input.rgb");
+            const auto prompt_bytes = ref.get_f32("input.prompt_utf8");
+            const auto prompt_length = ref.get_f32("input.prompt_length");
+            if (!ready || !rgb.first || rgb_shape.size() != 3 || rgb_shape[0] != 3 ||
+                rgb.second != size_t(3 * rgb_shape[1] * rgb_shape[2]) || !prompt_bytes.first || !prompt_length.first)
+                return 2;
+            std::vector<uint8_t> bytes(rgb.second);
+            for (size_t i = 0; i < rgb.second; ++i) {
+                if (rgb.first[i] < 0 || rgb.first[i] > 255 || std::floor(rgb.first[i]) != rgb.first[i]) return 2;
+                bytes[i] = uint8_t(rgb.first[i]);
+            }
+            std::string prompt, rendered;
+            for (int i = 0; i < int(prompt_length.first[0]); ++i) prompt.push_back(char(prompt_bytes.first[i]));
+            std::vector<int> derived_ids;
+            if (!qwen35_ocr::preprocess_rgb(bytes.data(), int(rgb_shape[2]), int(rgb_shape[1]), {}, image) ||
+                !tokenizer.image_prompt(prompt, int(image.patches.size() / 1536 / 4), derived_ids, native_modalities,
+                                        rendered))
+                return 2;
+            if (image.grid != dimensions || derived_ids != input_ids) return 1;
+            input_ids = std::move(derived_ids);
+            dimensions = image.grid;
+            std::printf("PASS native raw RGB grid and prompt IDs exact\n");
+            if (!qwen35_compare(ref, "input.pixel_values", image.patches)) return 1;
+        }
         if (native_positions) {
             const auto types = ref.get_f32("input.mm_token_type_ids");
             if (!types.first || types.second != input_ids.size()) return 2;
@@ -84,11 +118,16 @@ int main(int argc, char ** argv) {
                 if (types.first[i] != 0 && types.first[i] != 1) return 2;
                 modalities.push_back(int(types.first[i]));
             }
+            if (native_frontend) {
+                if (native_modalities != modalities) return 1;
+                modalities = std::move(native_modalities);
+            }
             if (!qwen35_ocr::image_positions(modalities, dimensions, 2, prefill_positions)) return 2;
         }
         qwen35_ocr::vision_weights visual;
         if (!qwen35_ocr::map_small_vision(loaded.tensors, visual) ||
-            !qwen35_ocr::vision_cpu(visual, {}, pixels.first, int(pixel_shape[1]), dimensions, 4, vision))
+            !qwen35_ocr::vision_cpu(visual, {}, native_frontend ? image.patches.data() : pixels.first,
+                                    int(pixel_shape[1]), dimensions, 4, vision))
             return 2;
     }
     const qwen35_ocr::attention_config config;
@@ -239,12 +278,22 @@ int main(int argc, char ** argv) {
     std::printf("Native generated IDs:");
     for (int id : ids) std::printf(" %d", id);
     std::printf("\n");
+    if (native_frontend) {
+        std::string text, oracle;
+        const auto bytes = ref.get_f32("input.decoded_utf8");
+        if (!bytes.first || !tokenizer.decode(ids, text)) return 2;
+        for (size_t i = 0; i < bytes.second; ++i) oracle.push_back(char(bytes.first[i]));
+        ok &= text == oracle;
+        std::printf("%s native decoded text exact bytes=%zu: %s\n", text == oracle ? "PASS" : "FAIL", text.size(),
+                    text.c_str());
+    }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("%s composed 24-layer native decoder and greedy IDs; %s, native frontend pending\n",
-                ok ? "PASS" : "FAIL",
-                native_positions ? "native vision/text embeddings and positions; official packed pixels/IDs"
-                : native_vision  ? "native vision/text embeddings from official packed pixels/IDs/positions"
-                                 : "official merged embeddings/positions supplied");
+    std::printf(
+        "%s composed 24-layer native decoder and greedy IDs; %s, native frontend pending\n", ok ? "PASS" : "FAIL",
+        native_frontend    ? "native raw RGB/BPE/prompt/vision/positions/decoder/text; official arrays only compared"
+        : native_positions ? "native vision/text embeddings and positions; official packed pixels/IDs"
+        : native_vision    ? "native vision/text embeddings from official packed pixels/IDs/positions"
+                           : "official merged embeddings/positions supplied");
     return ok ? 0 : 1;
 }
