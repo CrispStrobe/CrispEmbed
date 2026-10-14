@@ -23,7 +23,18 @@ static bool qwen35_compare(const crispembed_diff::Ref & ref, const std::string &
     const auto control = ref.get_f32(control_name);
     bool ok = report.found && oracle.first && oracle.second == values.size() && report.n_elem == values.size() &&
               report.cos_min >= 0.99999f && std::isfinite(report.max_abs) && std::isfinite(report.cos_min);
-    if (control.first && control.second != values.size()) ok = false;
+    if (control.first && (control.second != values.size() || ref.shape(control_name) != ref.shape(name))) ok = false;
+    const auto shape = ref.shape(name);
+    const bool patch_vector = control.first && name.find(".vision.") != std::string::npos;
+    const size_t row_width = patch_vector && !shape.empty() ? size_t(shape[0]) : 1;
+    if (row_width < 1 || values.size() % row_width) ok = false;
+    std::vector<double> row_budget;
+    if (ok && patch_vector) {
+        row_budget.resize(values.size() / row_width, 0.0);
+        for (size_t i = 0; i < values.size(); ++i)
+            row_budget[i / row_width] =
+                std::max(row_budget[i / row_width], std::abs(double(control.first[i]) - double(oracle.first[i])));
+    }
     double budget_ratio = 0, self_max_abs = 0;
     if (ok) {
         for (size_t i = 0; i < values.size(); ++i) {
@@ -35,7 +46,8 @@ static bool qwen35_compare(const crispembed_diff::Ref & ref, const std::string &
             const double self = control.first ? std::abs(double(control.first[i]) - double(oracle.first[i])) : 0.0;
             const double delta = std::abs(double(values[i]) - double(oracle.first[i]));
             self_max_abs = std::max(self_max_abs, self);
-            budget_ratio = std::max(budget_ratio, delta / (0.002 + 2.0 * self));
+            const double variation = patch_vector ? row_budget[i / row_width] : self;
+            budget_ratio = std::max(budget_ratio, delta / (0.002 + 2.0 * variation));
         }
         ok &= budget_ratio <= 1.0;
     }
