@@ -39,7 +39,8 @@ def main():
     page_check = sys.argv[1:] == ["--pages"]
     cascade_check = sys.argv[1:] == ["--cascade-norm"]
     stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
-    block_check = sys.argv[1:] == ["--vision-blocks"]
+    cascade_blocks = sys.argv[1:] == ["--cascade-blocks"]
+    block_check = cascade_blocks or sys.argv[1:] == ["--vision-blocks"]
     operator_check = stats_check or block_check or sys.argv[1:] == ["--vision-operators"]
     isolation_check = sys.argv[1:] == ["--isolate"]
     drift_check = isolation_check or sys.argv[1:] == ["--drift"]
@@ -292,7 +293,7 @@ def main():
             if operator_check:
                 operators = module(repo / "tools/ci-heavy/qwen35_vision_operators.py", "qwen35_vision_operators")
                 report["vision_audit"] = "normalization statistics" if stats_check else "native block replay" if block_check else "same-input operators"
-                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check, stats=stats_check, cascade=cascade_check)
+                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check, stats=stats_check, cascade=cascade_check, cascade_blocks=cascade_blocks)
                 report["norm_statistics" if stats_check else "vision_blocks" if block_check else "vision_operators"] = "completed original-blueprint localization; inspect retained diagnostic report; no parity/default promotion"
             elif drift_check:
                 drift = module(repo / "tools/ci-heavy/qwen35_prefill_drift.py", "qwen35_prefill_drift")

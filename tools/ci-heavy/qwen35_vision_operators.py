@@ -69,7 +69,7 @@ def prefill_records(log):
                 selected=int(status[1]), reference=int(status[2]))
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False, cascade=False):
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False, cascade=False, cascade_blocks=False):
     import gguf
     import numpy as np
     from PIL import Image
@@ -77,7 +77,8 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
     frozen = json.loads((repo / 'tests/results/qwen35-ocr/page-parity.json').read_text())
     previous = json.loads((repo / 'tests/results/qwen35-ocr/prefill-isolation.json').read_text())
     if blocks and stats: raise ValueError('Choose one bounded audit')
-    report_name = 'cascade-norm' if cascade else 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
+    if cascade_blocks and (not blocks or stats or cascade): raise ValueError('Cascade block audit requires native block mode')
+    report_name = 'cascade-blocks' if cascade_blocks else 'cascade-norm' if cascade else 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
     root = out / report_name
     root.mkdir(exist_ok=True)
     report = dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=repo, text=True).strip(),
@@ -94,7 +95,12 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
         if not production or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in production) or not any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1' in c for c in audit):
             raise ValueError('Test translation-unit isolation missing')
         report['production_source_sha256'] = source_hash
-        report['cascade_runtime_experiment'] = cascade
+        if cascade_blocks:
+            report['norm_source_sha256'] = file_sha(repo/'src/qwen35_norm.cpp')
+            if report['norm_source_sha256'] != '753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268':
+                raise ValueError('Cascade implementation changed during block audit')
+        report['cascade_runtime_experiment'] = cascade or cascade_blocks
+        report['cascade_block_replay'] = cascade_blocks
         report['production_source_scope'] = 'original' if source_hash.startswith('c0ec7611') else 'gated four-lane cascade; baseline requires unchanged measurements'
         if blocks or stats:
             block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_norm_statistics.cpp' if stats else '/test_qwen35_vision_blocks.cpp')]
@@ -151,9 +157,12 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
             module(repo/'tools/ci-heavy/qwen35_norm_statistics.py','qwen35_norm_statistics').run_cases(repo,build,baseline,root,out,report,cascade=cascade)
             return
         recipes = [('baseline',False,False),('precise-both',True,True)] if blocks else [('baseline',False,False),('precise-norm',True,False),('precise-attention',False,True),('precise-both',True,True)]
-        for name,norm,attention in recipes:
-            arm=dict(name=name,precise_norm=norm,precise_attention=attention,cases=[]);report['arms'].append(arm)
-            env=dict(os.environ,CRISPEMBED_QWEN35_VISION_PRECISE_NORM=str(int(norm)),CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=str(int(attention)),CRISPEMBED_QWEN35_PRECISE_RMS='0',CRISPEMBED_QWEN35_VISION_PROBES='0')
+        recipes = [(name,norm,attention,False) for name,norm,attention in recipes]
+        if cascade_blocks: recipes += [('cascade',False,False,True),('cascade-attention',False,True,True)]
+        replay_audit = module(repo/'tools/ci-heavy/qwen35_cascade_blocks.py','qwen35_cascade_blocks') if cascade_blocks else None
+        for name,norm,attention,cascade_enabled in recipes:
+            arm=dict(name=name,precise_norm=norm,precise_attention=attention,cascade_norm=cascade_enabled,cases=[]);report['arms'].append(arm)
+            env=dict(os.environ,CRISPEMBED_QWEN35_VISION_CASCADE_NORM=str(int(cascade_enabled)),CRISPEMBED_QWEN35_VISION_PRECISE_NORM=str(int(norm)),CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=str(int(attention)),CRISPEMBED_QWEN35_PRECISE_RMS='0',CRISPEMBED_QWEN35_VISION_PROBES='0')
             for case in report['cases']:
                 folder=root/case['name'];ref=folder/'official-delta.gguf'
                 cmd=[str(build/('test-qwen35-vision-blocks' if blocks else 'test-qwen35-vision-ops')),str(baseline),str(ref)]
@@ -172,18 +181,20 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
                     entry['prior_scalar_prefill_metrics_exact']=entry['prefill']['metrics']==old['metrics']
                 entry['vision_merger_matches_composed_prefill']=next(m['max_abs'] for m in entry['vision'] if m['mode']=='composed' and m['stage']=='prefill.vision.merger')==next(m['max_abs'] for m in entry['prefill']['metrics'] if m['stage']=='prefill.vision.merger')
                 if not entry['vision_merger_matches_composed_prefill']:raise ValueError('Vision diagnostic differs from native composed inference')
-                if blocks:
+                if blocks and not cascade_blocks:
                     prior_ops = json.loads((repo/'tests/results/qwen35-ocr/vision-operators.json').read_text())
                     prior_arm = next(a for a in prior_ops['arms'] if a['name']==name)
                     prior_case = next(c for c in prior_arm['cases'] if c['name']==case['name'])
                     entry['prior_operator_prefill_metrics_exact'] = entry['prefill']['metrics']==prior_case['prefill']['metrics']
+                if replay_audit: replay_audit.check_prior(repo,name,entry)
                 (out/(report_name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
                 print(name,case['name'],'qualified prefill failures',entry['prefill']['qualified_failed_stages'],flush=True)
+        if replay_audit: replay_audit.decode_controls(build,baseline,root,out,report,recipes)
         report['qualified_failure_count']=sum(
             sum(not m['qualified_pass'] for m in case['vision']) + len(case['prefill']['qualified_failed_stages'])
             for arm in report['arms'] for case in arm['cases'])
         report['result']='completed unchanged-gate diagnostic sweep; see every measured failure before promotion'
-        if report['qualified_failure_count']:
+        if report['qualified_failure_count'] or any(not c['passed'] for c in report.get('small_decode_controls',[])):
             raise AssertionError(f"Completed sweep retains {report['qualified_failure_count']} failed stage comparisons")
     finally:
         (out/(report_name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
