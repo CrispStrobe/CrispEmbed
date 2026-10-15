@@ -1,0 +1,386 @@
+0000000000000700 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)>:
+     700:	d10403ff 	sub	sp, sp, #0x100
+     704:	90000005 	adrp	x5, 0 <__stack_chk_guard>
+     708:	f94000a5 	ldr	x5, [x5]
+     70c:	a9087bfd 	stp	x29, x30, [sp, #128]
+     710:	910203fd 	add	x29, sp, #0x80
+     714:	a90b63f7 	stp	x23, x24, [sp, #176]
+     718:	f94000a6 	ldr	x6, [x5]
+     71c:	f9003fe6 	str	x6, [sp, #120]
+     720:	d2800006 	mov	x6, #0x0                   	// #0
+     724:	b40005a1 	cbz	x1, 7d8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0xd8>
+     728:	a90953f3 	stp	x19, x20, [sp, #144]
+     72c:	aa0003f4 	mov	x20, x0
+     730:	aa0103f8 	mov	x24, x1
+     734:	f9400820 	ldr	x0, [x1, #16]
+     738:	a90a5bf5 	stp	x21, x22, [sp, #160]
+     73c:	93407c76 	sxtw	x22, w3
+     740:	2a0303f3 	mov	w19, w3
+     744:	52800017 	mov	w23, #0x0                   	// #0
+     748:	eb0002df 	cmp	x22, x0
+     74c:	540001e0 	b.eq	788 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x88>  // b.none
+     750:	a94953f3 	ldp	x19, x20, [sp, #144]
+     754:	a94a5bf5 	ldp	x21, x22, [sp, #160]
+     758:	90000000 	adrp	x0, 0 <__stack_chk_guard>
+     75c:	f9400000 	ldr	x0, [x0]
+     760:	f9403fe2 	ldr	x2, [sp, #120]
+     764:	f9400001 	ldr	x1, [x0]
+     768:	eb010042 	subs	x2, x2, x1
+     76c:	d2800001 	mov	x1, #0x0                   	// #0
+     770:	54001701 	b.ne	a50 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x350>  // b.any
+     774:	a9487bfd 	ldp	x29, x30, [sp, #128]
+     778:	2a1703e0 	mov	w0, w23
+     77c:	a94b63f7 	ldp	x23, x24, [sp, #176]
+     780:	910403ff 	add	sp, sp, #0x100
+     784:	d65f03c0 	ret
+     788:	f9400c20 	ldr	x0, [x1, #24]
+     78c:	f100041f 	cmp	x0, #0x1
+     790:	54fffe01 	b.ne	750 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x50>  // b.any
+     794:	f9401020 	ldr	x0, [x1, #32]
+     798:	f100041f 	cmp	x0, #0x1
+     79c:	54fffda1 	b.ne	750 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x50>  // b.any
+     7a0:	f9401420 	ldr	x0, [x1, #40]
+     7a4:	a90c6bf9 	stp	x25, x26, [sp, #192]
+     7a8:	aa0203f9 	mov	x25, x2
+     7ac:	f100041f 	cmp	x0, #0x1
+     7b0:	1a9f17e1 	cset	w1, eq	// eq = none
+     7b4:	f100005f 	cmp	x2, #0x0
+     7b8:	1a9f07e0 	cset	w0, ne	// ne = any
+     7bc:	0a000037 	and	w23, w1, w0
+     7c0:	6a00003f 	tst	w1, w0
+     7c4:	540000e1 	b.ne	7e0 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0xe0>  // b.any
+     7c8:	a94953f3 	ldp	x19, x20, [sp, #144]
+     7cc:	a94a5bf5 	ldp	x21, x22, [sp, #160]
+     7d0:	a94c6bf9 	ldp	x25, x26, [sp, #192]
+     7d4:	17ffffe1 	b	758 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x58>
+     7d8:	52800017 	mov	w23, #0x0                   	// #0
+     7dc:	17ffffdf 	b	758 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x58>
+     7e0:	f9400840 	ldr	x0, [x2, #16]
+     7e4:	52800017 	mov	w23, #0x0                   	// #0
+     7e8:	eb0002df 	cmp	x22, x0
+     7ec:	54fffee1 	b.ne	7c8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0xc8>  // b.any
+     7f0:	f9400c40 	ldr	x0, [x2, #24]
+     7f4:	f100041f 	cmp	x0, #0x1
+     7f8:	54fffe81 	b.ne	7c8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0xc8>  // b.any
+     7fc:	f9401040 	ldr	x0, [x2, #32]
+     800:	f100041f 	cmp	x0, #0x1
+     804:	54fffe21 	b.ne	7c8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0xc8>  // b.any
+     808:	f9401440 	ldr	x0, [x2, #40]
+     80c:	f100041f 	cmp	x0, #0x1
+     810:	54fffdc1 	b.ne	7c8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0xc8>  // b.any
+     814:	6d0e27e8 	stp	d8, d9, [sp, #224]
+     818:	1e204008 	fmov	s8, s0
+     81c:	910123e0 	add	x0, sp, #0x48
+     820:	aa1603e1 	mov	x1, x22
+     824:	aa0403f5 	mov	x21, x4
+     828:	f9000be0 	str	x0, [sp, #16]
+     82c:	a90d73fb 	stp	x27, x28, [sp, #208]
+     830:	97fffea0 	bl	2b0 <std::vector<float, std::allocator<float> >::vector(unsigned long, std::allocator<float> const&) [clone .constprop.0]>
+     834:	910183fc 	add	x28, sp, #0x60
+     838:	aa1603e1 	mov	x1, x22
+     83c:	aa1c03e0 	mov	x0, x28
+     840:	97fffe9c 	bl	2b0 <std::vector<float, std::allocator<float> >::vector(unsigned long, std::allocator<float> const&) [clone .constprop.0]>
+     844:	f94027f7 	ldr	x23, [sp, #72]
+     848:	aa1803e0 	mov	x0, x24
+     84c:	aa1703e1 	mov	x1, x23
+     850:	94000000 	bl	0 <qwen35_ocr::tensor_floats(ggml_tensor*, float*)>
+     854:	36001720 	tbz	w0, #0, b38 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x438>
+     858:	f94033f8 	ldr	x24, [sp, #96]
+     85c:	aa1903e0 	mov	x0, x25
+     860:	aa1803e1 	mov	x1, x24
+     864:	94000000 	bl	0 <qwen35_ocr::tensor_floats(ggml_tensor*, float*)>
+     868:	36001680 	tbz	w0, #0, b38 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x438>
+     86c:	a9400682 	ldp	x2, x1, [x20]
+     870:	aa1503e0 	mov	x0, x21
+     874:	cb020021 	sub	x1, x1, x2
+     878:	9342fc21 	asr	x1, x1, #2
+     87c:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     880:	710c027f 	cmp	w19, #0x300
+     884:	5286f7a0 	mov	w0, #0x37bd                	// #14269
+     888:	72a6b0c0 	movk	w0, #0x3586, lsl #16
+     88c:	1e270009 	fmov	s9, w0
+     890:	1e290500 	fccmp	s8, s9, #0x0, eq	// eq = none
+     894:	54001940 	b.eq	bbc <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x4bc>  // b.none
+     898:	53027e60 	lsr	w0, w19, #2
+     89c:	90000001 	adrp	x1, 0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     8a0:	f9400282 	ldr	x2, [x20]
+     8a4:	d37cec00 	lsl	x0, x0, #4
+     8a8:	f9000fe0 	str	x0, [sp, #24]
+     8ac:	91000020 	add	x0, x1, #0x0
+     8b0:	f9001fe0 	str	x0, [sp, #56]
+     8b4:	d37ef6c0 	lsl	x0, x22, #2
+     8b8:	f90003e0 	str	x0, [sp]
+     8bc:	51000660 	sub	w0, w19, #0x1
+     8c0:	b9000fe0 	str	w0, [sp, #12]
+     8c4:	53027e60 	lsr	w0, w19, #2
+     8c8:	b90033e0 	str	w0, [sp, #48]
+     8cc:	91001300 	add	x0, x24, #0x4
+     8d0:	121e7679 	and	w25, w19, #0xfffffffc
+     8d4:	f90013e0 	str	x0, [sp, #32]
+     8d8:	910012e0 	add	x0, x23, #0x4
+     8dc:	d280001b 	mov	x27, #0x0                   	// #0
+     8e0:	d280001a 	mov	x26, #0x0                   	// #0
+     8e4:	f90017e0 	str	x0, [sp, #40]
+     8e8:	12000660 	and	w0, w19, #0x3
+     8ec:	b90037e0 	str	w0, [sp, #52]
+     8f0:	6d0f2fea 	stp	d10, d11, [sp, #240]
+     8f4:	f9400680 	ldr	x0, [x20, #8]
+     8f8:	cb020000 	sub	x0, x0, x2
+     8fc:	eb800b5f 	cmp	x26, x0, asr #2
+     900:	54001542 	b.cs	ba8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x4a8>  // b.hs, b.nlast
+     904:	1e22026b 	scvtf	s11, w19
+     908:	7100027f 	cmp	w19, #0x0
+     90c:	540013ad 	b.le	b80 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x480>
+     910:	f94003e0 	ldr	x0, [sp]
+     914:	8b1b0041 	add	x1, x2, x27
+     918:	0f000409 	movi	v9.2s, #0x0
+     91c:	8b000042 	add	x2, x2, x0
+     920:	aa0103e0 	mov	x0, x1
+     924:	8b1b0042 	add	x2, x2, x27
+     928:	bc404400 	ldr	s0, [x0], #4
+     92c:	1e202929 	fadd	s9, s9, s0
+     930:	eb00005f 	cmp	x2, x0
+     934:	54ffffa1 	b.ne	928 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x228>  // b.any
+     938:	1e2b1929 	fdiv	s9, s9, s11
+     93c:	b9400fe0 	ldr	w0, [sp, #12]
+     940:	7100081f 	cmp	w0, #0x2
+     944:	54001189 	b.ls	b74 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x474>  // b.plast
+     948:	4e040521 	dup	v1.4s, v9.s[0]
+     94c:	d2800000 	mov	x0, #0x0                   	// #0
+     950:	0f00040a 	movi	v10.2s, #0x0
+     954:	d37cec02 	lsl	x2, x0, #4
+     958:	91000400 	add	x0, x0, #0x1
+     95c:	3ce26820 	ldr	q0, [x1, x2]
+     960:	b94033e2 	ldr	w2, [sp, #48]
+     964:	4ea1d400 	fsub	v0.4s, v0.4s, v1.4s
+     968:	6e20dc00 	fmul	v0.4s, v0.4s, v0.4s
+     96c:	5e0c0403 	mov	s3, v0.s[1]
+     970:	1e20294a 	fadd	s10, s10, s0
+     974:	5e140402 	mov	s2, v0.s[2]
+     978:	5e1c0400 	mov	s0, v0.s[3]
+     97c:	1e23294a 	fadd	s10, s10, s3
+     980:	1e22294a 	fadd	s10, s10, s2
+     984:	1e20294a 	fadd	s10, s10, s0
+     988:	6b00005f 	cmp	w2, w0
+     98c:	54fffe48 	b.hi	954 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x254>  // b.pmore
+     990:	6b19027f 	cmp	w19, w25
+     994:	54000100 	b.eq	9b4 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x2b4>  // b.none
+     998:	93407f20 	sxtw	x0, w25
+     99c:	bc607820 	ldr	s0, [x1, x0, lsl #2]
+     9a0:	91000400 	add	x0, x0, #0x1
+     9a4:	1e293800 	fsub	s0, s0, s9
+     9a8:	1f00280a 	fmadd	s10, s0, s0, s10
+     9ac:	6b00027f 	cmp	w19, w0
+     9b0:	54ffff6c 	b.gt	99c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x29c>
+     9b4:	f9401fe0 	ldr	x0, [sp, #56]
+     9b8:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     9bc:	37001620 	tbnz	w0, #0, c80 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x580>
+     9c0:	1e2b1940 	fdiv	s0, s10, s11
+     9c4:	1e282800 	fadd	s0, s0, s8
+     9c8:	94000000 	bl	0 <sqrtf>
+     9cc:	1e2e1001 	fmov	s1, #1.000000000000000000e+00
+     9d0:	1e201820 	fdiv	s0, s1, s0
+     9d4:	f9400282 	ldr	x2, [x20]
+     9d8:	f94002a4 	ldr	x4, [x21]
+     9dc:	7100067f 	cmp	w19, #0x1
+     9e0:	54001460 	b.eq	c6c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x56c>  // b.none
+     9e4:	91001360 	add	x0, x27, #0x4
+     9e8:	8b1b0081 	add	x1, x4, x27
+     9ec:	8b000040 	add	x0, x2, x0
+     9f0:	cb000020 	sub	x0, x1, x0
+     9f4:	f100201f 	cmp	x0, #0x8
+     9f8:	a94203e3 	ldp	x3, x0, [sp, #32]
+     9fc:	cb030025 	sub	x5, x1, x3
+     a00:	cb000020 	sub	x0, x1, x0
+     a04:	fa4888a0 	ccmp	x5, #0x8, #0x0, hi	// hi = pmore
+     a08:	fa488800 	ccmp	x0, #0x8, #0x0, hi	// hi = pmore
+     a0c:	54000308 	b.hi	a6c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x36c>  // b.pmore
+     a10:	d2800000 	mov	x0, #0x0                   	// #0
+     a14:	8b1b0044 	add	x4, x2, x27
+     a18:	bc607881 	ldr	s1, [x4, x0, lsl #2]
+     a1c:	bc607ae3 	ldr	s3, [x23, x0, lsl #2]
+     a20:	bc607b02 	ldr	s2, [x24, x0, lsl #2]
+     a24:	1e293821 	fsub	s1, s1, s9
+     a28:	1e200821 	fmul	s1, s1, s0
+     a2c:	1f010861 	fmadd	s1, s3, s1, s2
+     a30:	bc207821 	str	s1, [x1, x0, lsl #2]
+     a34:	91000400 	add	x0, x0, #0x1
+     a38:	6b00027f 	cmp	w19, w0
+     a3c:	54fffeec 	b.gt	a18 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x318>
+     a40:	f94003e0 	ldr	x0, [sp]
+     a44:	8b16035a 	add	x26, x26, x22
+     a48:	8b00037b 	add	x27, x27, x0
+     a4c:	17ffffaa 	b	8f4 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x1f4>
+     a50:	a90953f3 	stp	x19, x20, [sp, #144]
+     a54:	a90a5bf5 	stp	x21, x22, [sp, #160]
+     a58:	a90c6bf9 	stp	x25, x26, [sp, #192]
+     a5c:	a90d73fb 	stp	x27, x28, [sp, #208]
+     a60:	6d0e27e8 	stp	d8, d9, [sp, #224]
+     a64:	6d0f2fea 	stp	d10, d11, [sp, #240]
+     a68:	94000000 	bl	0 <__stack_chk_fail>
+     a6c:	b9400fe0 	ldr	w0, [sp, #12]
+     a70:	7100081f 	cmp	w0, #0x2
+     a74:	54000789 	b.ls	b64 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x464>  // b.plast
+     a78:	4e040524 	dup	v4.4s, v9.s[0]
+     a7c:	8b1b0045 	add	x5, x2, x27
+     a80:	4e040403 	dup	v3.4s, v0.s[0]
+     a84:	d2800000 	mov	x0, #0x0                   	// #0
+     a88:	3ce068a1 	ldr	q1, [x5, x0]
+     a8c:	3ce06ae5 	ldr	q5, [x23, x0]
+     a90:	4ea4d421 	fsub	v1.4s, v1.4s, v4.4s
+     a94:	3ce06b02 	ldr	q2, [x24, x0]
+     a98:	f9400fe3 	ldr	x3, [sp, #24]
+     a9c:	6e23dc21 	fmul	v1.4s, v1.4s, v3.4s
+     aa0:	4e21cca2 	fmla	v2.4s, v5.4s, v1.4s
+     aa4:	3ca06822 	str	q2, [x1, x0]
+     aa8:	91004000 	add	x0, x0, #0x10
+     aac:	eb00007f 	cmp	x3, x0
+     ab0:	54fffec1 	b.ne	a88 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x388>  // b.any
+     ab4:	6b19027f 	cmp	w19, w25
+     ab8:	54fffc40 	b.eq	a40 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x340>  // b.none
+     abc:	b94037e1 	ldr	w1, [sp, #52]
+     ac0:	2a0103e0 	mov	w0, w1
+     ac4:	7100043f 	cmp	w1, #0x1
+     ac8:	54000d80 	b.eq	c78 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x578>  // b.none
+     acc:	2a1903e6 	mov	w6, w25
+     ad0:	2a1903e1 	mov	w1, w25
+     ad4:	8b214345 	add	x5, x26, w1, uxtw
+     ad8:	0e040523 	dup	v3.2s, v9.s[0]
+     adc:	d37ef421 	lsl	x1, x1, #2
+     ae0:	d37ef4a5 	lsl	x5, x5, #2
+     ae4:	fc616ae4 	ldr	d4, [x23, x1]
+     ae8:	fc656841 	ldr	d1, [x2, x5]
+     aec:	fc616b02 	ldr	d2, [x24, x1]
+     af0:	0ea3d421 	fsub	v1.2s, v1.2s, v3.2s
+     af4:	0f809021 	fmul	v1.2s, v1.2s, v0.s[0]
+     af8:	0e24cc22 	fmla	v2.2s, v1.2s, v4.2s
+     afc:	fc256882 	str	d2, [x4, x5]
+     b00:	3607fa00 	tbz	w0, #0, a40 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x340>
+     b04:	121f7800 	and	w0, w0, #0xfffffffe
+     b08:	0b060000 	add	w0, w0, w6
+     b0c:	8b20c341 	add	x1, x26, w0, sxtw
+     b10:	937e7c00 	sbfiz	x0, x0, #2, #32
+     b14:	d37ef421 	lsl	x1, x1, #2
+     b18:	bc606ae3 	ldr	s3, [x23, x0]
+     b1c:	bc606b02 	ldr	s2, [x24, x0]
+     b20:	bc616841 	ldr	s1, [x2, x1]
+     b24:	1e293821 	fsub	s1, s1, s9
+     b28:	1e200820 	fmul	s0, s1, s0
+     b2c:	1f030800 	fmadd	s0, s0, s3, s2
+     b30:	bc216880 	str	s0, [x4, x1]
+     b34:	17ffffc3 	b	a40 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x340>
+     b38:	52800017 	mov	w23, #0x0                   	// #0
+     b3c:	aa1c03e0 	mov	x0, x28
+     b40:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     b44:	f9400be0 	ldr	x0, [sp, #16]
+     b48:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     b4c:	a94953f3 	ldp	x19, x20, [sp, #144]
+     b50:	a94a5bf5 	ldp	x21, x22, [sp, #160]
+     b54:	a94c6bf9 	ldp	x25, x26, [sp, #192]
+     b58:	a94d73fb 	ldp	x27, x28, [sp, #208]
+     b5c:	6d4e27e8 	ldp	d8, d9, [sp, #224]
+     b60:	17fffefe 	b	758 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x58>
+     b64:	2a1303e0 	mov	w0, w19
+     b68:	52800006 	mov	w6, #0x0                   	// #0
+     b6c:	d2800001 	mov	x1, #0x0                   	// #0
+     b70:	17ffffd9 	b	ad4 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x3d4>
+     b74:	0f00040a 	movi	v10.2s, #0x0
+     b78:	d2800000 	mov	x0, #0x0                   	// #0
+     b7c:	17ffff88 	b	99c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x29c>
+     b80:	90000000 	adrp	x0, 0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     b84:	91000000 	add	x0, x0, #0x0
+     b88:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     b8c:	370003a0 	tbnz	w0, #0, c00 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x500>
+     b90:	0f000400 	movi	v0.2s, #0x0
+     b94:	1e2b1800 	fdiv	s0, s0, s11
+     b98:	1e282800 	fadd	s0, s0, s8
+     b9c:	94000000 	bl	0 <sqrtf>
+     ba0:	f9400282 	ldr	x2, [x20]
+     ba4:	17ffffa7 	b	a40 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x340>
+     ba8:	aa1503e0 	mov	x0, x21
+     bac:	97fffd15 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     bb0:	6d4f2fea 	ldp	d10, d11, [sp, #240]
+     bb4:	12001c17 	and	w23, w0, #0xff
+     bb8:	17ffffe1 	b	b3c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x43c>
+     bbc:	90000000 	adrp	x0, 0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     bc0:	91000000 	add	x0, x0, #0x0
+     bc4:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     bc8:	3607e680 	tbz	w0, #0, 898 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x198>
+     bcc:	a9400680 	ldp	x0, x1, [x20]
+     bd0:	d2806006 	mov	x6, #0x300                 	// #768
+     bd4:	f94002a5 	ldr	x5, [x21]
+     bd8:	1e204120 	fmov	s0, s9
+     bdc:	aa1803e4 	mov	x4, x24
+     be0:	aa1703e3 	mov	x3, x23
+     be4:	2a0603e2 	mov	w2, w6
+     be8:	cb000021 	sub	x1, x1, x0
+     bec:	9342fc21 	asr	x1, x1, #2
+     bf0:	9ac60821 	udiv	x1, x1, x6
+     bf4:	94000000 	bl	0 <qwen35_ocr::cascade_layer_norm(float const*, int, int, float, float const*, float const*, float*)>
+     bf8:	12001c17 	and	w23, w0, #0xff
+     bfc:	17ffffd0 	b	b3c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x43c>
+     c00:	2f00e401 	movi	d1, #0x0
+     c04:	1e620263 	scvtf	d3, w19
+     c08:	2f00e400 	movi	d0, #0x0
+     c0c:	aa1b03e1 	mov	x1, x27
+     c10:	52800000 	mov	w0, #0x0                   	// #0
+     c14:	1e631821 	fdiv	d1, d1, d3
+     c18:	14000008 	b	c38 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x538>
+     c1c:	f9400282 	ldr	x2, [x20]
+     c20:	11000400 	add	w0, w0, #0x1
+     c24:	bc616842 	ldr	s2, [x2, x1]
+     c28:	91001021 	add	x1, x1, #0x4
+     c2c:	1e22c042 	fcvt	d2, s2
+     c30:	1e613842 	fsub	d2, d2, d1
+     c34:	1f420040 	fmadd	d0, d2, d2, d0
+     c38:	6b13001f 	cmp	w0, w19
+     c3c:	54ffff0b 	b.lt	c1c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x51c>  // b.tstop
+     c40:	1e631800 	fdiv	d0, d0, d3
+     c44:	1e624029 	fcvt	s9, d1
+     c48:	1e624000 	fcvt	s0, d0
+     c4c:	1e282800 	fadd	s0, s0, s8
+     c50:	94000000 	bl	0 <sqrtf>
+     c54:	1e2e1001 	fmov	s1, #1.000000000000000000e+00
+     c58:	1e201820 	fdiv	s0, s1, s0
+     c5c:	7100027f 	cmp	w19, #0x0
+     c60:	54ffebac 	b.gt	9d4 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x2d4>
+     c64:	f9400282 	ldr	x2, [x20]
+     c68:	17ffff76 	b	a40 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x340>
+     c6c:	8b1b0081 	add	x1, x4, x27
+     c70:	d2800000 	mov	x0, #0x0                   	// #0
+     c74:	17ffff68 	b	a14 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x314>
+     c78:	2a1903e0 	mov	w0, w25
+     c7c:	17ffffa4 	b	b0c <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x40c>
+     c80:	2f00e401 	movi	d1, #0x0
+     c84:	aa1b03e1 	mov	x1, x27
+     c88:	52800000 	mov	w0, #0x0                   	// #0
+     c8c:	14000007 	b	ca8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x5a8>
+     c90:	f9400282 	ldr	x2, [x20]
+     c94:	11000400 	add	w0, w0, #0x1
+     c98:	bc616840 	ldr	s0, [x2, x1]
+     c9c:	91001021 	add	x1, x1, #0x4
+     ca0:	1e22c000 	fcvt	d0, s0
+     ca4:	1e602821 	fadd	d1, d1, d0
+     ca8:	6b13001f 	cmp	w0, w19
+     cac:	54ffff2b 	b.lt	c90 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x590>  // b.tstop
+     cb0:	17ffffd5 	b	c04 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x504>
+     cb4:	aa0003f3 	mov	x19, x0
+     cb8:	14000004 	b	cc8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x5c8>
+     cbc:	aa0003f3 	mov	x19, x0
+     cc0:	aa1c03e0 	mov	x0, x28
+     cc4:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     cc8:	f9400be0 	ldr	x0, [sp, #16]
+     ccc:	94000000 	bl	0 <qwen35_ocr::finite(std::vector<float, std::allocator<float> > const&)>
+     cd0:	90000000 	adrp	x0, 0 <__stack_chk_guard>
+     cd4:	f9400000 	ldr	x0, [x0]
+     cd8:	f9403fe2 	ldr	x2, [sp, #120]
+     cdc:	f9400001 	ldr	x1, [x0]
+     ce0:	eb010042 	subs	x2, x2, x1
+     ce4:	d2800001 	mov	x1, #0x0                   	// #0
+     ce8:	6d0f2fea 	stp	d10, d11, [sp, #240]
+     cec:	54000061 	b.ne	cf8 <qwen35_ocr::layer_norm(std::vector<float, std::allocator<float> > const&, ggml_tensor*, ggml_tensor*, int, float, std::vector<float, std::allocator<float> >&)+0x5f8>  // b.any
+     cf0:	aa1303e0 	mov	x0, x19
+     cf4:	94000000 	bl	0 <_Unwind_Resume>
+     cf8:	94000000 	bl	0 <__stack_chk_fail>
+     cfc:	d503201f 	nop
+

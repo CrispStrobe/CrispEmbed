@@ -1,0 +1,25 @@
+{
+  "source_commit": "849a09851760daf22a5bd9ffcfd063bb196bdbf6",
+  "scope": "Static compiler output only; no model download or inference",
+  "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I$REPO/src -I$REPO/ggml/src/../include -I$REPO/src/core -I$REPO/ggml/include -O3 -DNDEBUG -std=gnu++17 -fPIC -o CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_vision.cpp.o -c $REPO/src/qwen35_vision.cpp",
+  "source_sha256": {
+    "src/qwen35_vision.cpp": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+    "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268"
+  },
+  "disassembly_sha256": "01e72004998ca14cdfc6447c154d22b9920c94016a304af902d3b323b3f35c0d",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38766140128",
+  "workflow_conclusion": "success",
+  "artifact_report_sha256": "b1ff922ad5ae0b219bd0680c331776cd09a00a322b81e19e6d4a062052e6d482",
+  "retained_excerpt": {
+    "file": "vision-norm-disassembly.txt",
+    "sha256": "8df202837cecf753f42301ccb8055ec388ac7c40918992f17f7a7b865a954f58",
+    "scope": "Entire LayerNorm function from the unchanged objdump output"
+  },
+  "observations": {
+    "variance_loop": "0x954\u20130x98c: vector subtract, separate vector multiply, then four scalar additions in input order",
+    "width768": "Width is rounded down with mask0xfffffffc;768 is a multiple of4, so the scalar fused tail at0x99c\u20130x9b0 is skipped",
+    "affine_loop": "0xa88\u20130xab0: centered scaling followed by fused multiply-add",
+    "scope": "GCC13.3 AArch64 Release flags above; static compiler evidence only. Numerical controls are independently required."
+  }
+}
