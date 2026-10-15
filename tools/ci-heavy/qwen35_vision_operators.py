@@ -33,10 +33,10 @@ def vision_records(log):
         records.append(dict(mode=mode, stage=stage, **metric(m.groups()[2:]),
             qualified_pass=lines[i+2].startswith('PASS '), strict_absolute_pass=bool(int(budget[2])),
             calibrated=bool(int(budget[3])), self_max_abs=float(budget[4]), max_ratio=float(budget[5])))
-    status = re.search(r'^VISION_OPS finite=1 metrics=218 qualified_failures=(\d+) controls=1$', log, re.M)
-    if len(records) != 218 or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
+    status = re.search(r'^VISION_OPS finite=1 metrics=138 qualified_failures=(\d+) controls=1$', log, re.M)
+    if len(records) != 138 or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
         raise ValueError('Incomplete finite vision operator diagnostics')
-    if Counter(m['mode'] for m in records) != {'composed': 117, 'same-input': 101}:
+    if Counter(m['mode'] for m in records) != {'composed': 37, 'same-input': 101}:
         raise ValueError('Missing composed or same-input boundaries')
     return records
 
@@ -67,11 +67,16 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
         scope='Vision stage traces, test-only same-input operators and native composed prefill; no full-output/latency/corpus claim',
         comparator='crispembed_diff::Ref + unchanged qwen35_compare; all raw failures retained', cases=[], arms=[])
     try:
+        import hashlib
+        source_hash = hashlib.sha256((repo / 'src/qwen35_vision.cpp').read_bytes()).hexdigest()
+        if source_hash != 'c0ec7611af79293e8f5dc6bcc4b695b285cdff87b61d9016bfe3773f0af5a257': raise ValueError('Production vision source changed during audit')
         commands = json.loads((build / 'compile_commands.json').read_text())
-        commands = [c['command'] for c in commands if c['file'].endswith('/qwen35_vision.cpp')]
-        if not any('CRISPEMBED_QWEN35_VISION_TEST_OPS=1' in c for c in commands) or not any('CRISPEMBED_QWEN35_VISION_TEST_OPS' not in c for c in commands):
-            raise ValueError('Test operator compile isolation missing')
-        report['test_operator_compile_isolation'] = 'macro present only in validation target; production source compile command excludes it'
+        production = [c['command'] for c in commands if c['file'].endswith('/qwen35_vision.cpp')]
+        audit = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_vision_ops.cpp')]
+        if not production or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in production) or not any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1' in c for c in audit):
+            raise ValueError('Test translation-unit isolation missing')
+        report['production_source_sha256'] = source_hash
+        report['test_operator_compile_isolation'] = 'unchanged production source; replay compiled only in separate validation translation unit'
         report['compact_anchor'] = capture.dump_reference(local, anchor_image, root / 'compact-anchor', max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
         report['vision_anchor'] = capture.dump_reference(local, anchor_image, root / 'vision-anchor', max_new_tokens=12, vision_probes=True)

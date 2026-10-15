@@ -1231,12 +1231,15 @@ expanded arrays against the full original dumper. It then retains original
 backend-off/per-patch controls on the same three document derivatives.
 
 `test-qwen35-vision-ops` uses `crispembed_diff::Ref` and the unchanged qualified
-`qwen35_compare` for 117 composed vision boundaries and 101 same-input operator
-calls. Its replay entry points compile only under
-`CRISPEMBED_QWEN35_VISION_TEST_OPS` in the validation library. Production compile
-commands exclude that macro. `CRISPEMBED_QWEN35_VISION_PROBES=1` expands native
-observational captures to all blocks; literal0 preserves the usual block5/11
-captures and identical outputs. No original array enters production inference.
+`qwen35_compare` for the existing 37 composed native vision boundaries and 101
+same-input operator calls spanning all twelve blocks. The production vision
+source is byte-for-byte unchanged and SHA-checked. Replay code includes that
+implementation in a separate test translation unit, renaming its public entry
+points to keep the ordinary linked implementation in its original compilation
+context. Only the test target defines
+`CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT`. No replay code or original arrays enter
+production inference. Scalar activation replay has a separate compilation context;
+composed native measurements and the existing golden guards remain authoritative.
 
 The sweep retains baseline, existing precise-norm, precise-attention and combined
 modes, plus the existing 77-stage composed decoder measurements for each. Reports

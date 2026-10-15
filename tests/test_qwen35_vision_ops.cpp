@@ -1,5 +1,5 @@
 #include "core/clean_exit.h"
-#include "qwen35_vision.h"
+#include "qwen35_vision_operators_impl.h"
 #include "crispembed_diff.h"
 #include "qwen35_parity.h"
 #include "ggml-cpu.h"
@@ -77,14 +77,16 @@ static int crispembed_test_main(int argc, char ** argv) {
     for (size_t i = 0; i < native.hidden.size(); ++i) {
         const auto prefix = "probe." + std::to_string(i) + ".";
         const auto & p = native.probes[i];
-        composed(prefix + "norm1", p.norm1);
-        composed(prefix + "qkv", p.qkv);
-        composed(prefix + "pooled", p.pooled);
-        composed(prefix + "attention", p.attention);
-        composed(prefix + "norm2", p.norm2);
-        composed(prefix + "up", p.up);
-        composed(prefix + "activation", p.activation);
-        composed(prefix + "down", p.down);
+        if (!p.norm1.empty()) {
+            composed(prefix + "norm1", p.norm1);
+            composed(prefix + "qkv", p.qkv);
+            composed(prefix + "pooled", p.pooled);
+            composed(prefix + "attention", p.attention);
+            composed(prefix + "norm2", p.norm2);
+            composed(prefix + "up", p.up);
+            composed(prefix + "activation", p.activation);
+            composed(prefix + "down", p.down);
+        }
         composed("layer." + std::to_string(i), native.hidden[i]);
     }
     composed("merger.norm", native.merger_norm);
@@ -142,7 +144,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     ggml_backend_free(backend);
     std::printf("VISION_OPS finite=%d metrics=%d qualified_failures=%d controls=%d\n", ok, measurements, failures, ok);
     // Failures are retained diagnostic outcomes, never tolerance changes.
-    return ok && measurements == 218 ? 0 : 1;
+    return ok && measurements == 138 ? 0 : 1;
 }
 int main(int argc, char ** argv) {
     core_util::clean_exit(crispembed_test_main(argc, argv));
