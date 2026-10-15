@@ -21,7 +21,7 @@ def run():
         started = time.perf_counter()
         subprocess.run(["cmake", "-S", str(repo), "-B", str(ios), "-DCMAKE_BUILD_TYPE=Release",
                         "-DCMAKE_SYSTEM_NAME=iOS", "-DCMAKE_OSX_ARCHITECTURES=arm64",
-                        "-DCMAKE_OSX_SYSROOT=" + sdk, "-DCMAKE_OSX_DEPLOYMENT_TARGET=13.0",
+                        "-DCMAKE_OSX_SYSROOT=" + sdk, "-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0",
                         "-DGGML_NATIVE=OFF", "-DGGML_METAL=ON", "-DGGML_METAL_EMBED_LIBRARY=ON",
                         "-DGGML_BLAS=OFF", "-DCRISPEMBED_BUILD_SHARED=OFF"], check=True)
         reply = ios / ".cmake/api/v1/reply"
@@ -35,7 +35,7 @@ def run():
         if not any(target["name"] == "crispembed" for target in targets):
             raise ValueError("iOS library target missing")
         subprocess.run(["cmake", "--build", str(ios), "-j", "4"], check=True)
-        library = ios / "libcrispembed.a"
+        library = ios / "libcrispembed-static.a"
         arch = subprocess.check_output(["xcrun", "lipo", "-archs", str(library)], text=True).strip()
         if arch != "arm64":
             raise ValueError("Unexpected iOS archive architecture")
