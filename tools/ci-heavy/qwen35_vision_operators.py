@@ -69,7 +69,7 @@ def prefill_records(log):
                 selected=int(status[1]), reference=int(status[2]))
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False, cascade=False, cascade_blocks=False):
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False, cascade=False, cascade_blocks=False, attention_trace=False):
     import gguf
     import numpy as np
     from PIL import Image
@@ -78,7 +78,8 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
     previous = json.loads((repo / 'tests/results/qwen35-ocr/prefill-isolation.json').read_text())
     if blocks and stats: raise ValueError('Choose one bounded audit')
     if cascade_blocks and (not blocks or stats or cascade): raise ValueError('Cascade block audit requires native block mode')
-    report_name = 'cascade-blocks' if cascade_blocks else 'cascade-norm' if cascade else 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
+    if attention_trace and (blocks or stats or cascade or cascade_blocks): raise ValueError('Choose one bounded audit')
+    report_name = 'attention-trace' if attention_trace else 'cascade-blocks' if cascade_blocks else 'cascade-norm' if cascade else 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
     root = out / report_name
     root.mkdir(exist_ok=True)
     report = dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=repo, text=True).strip(),
@@ -95,12 +96,13 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
         if not production or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in production) or not any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1' in c for c in audit):
             raise ValueError('Test translation-unit isolation missing')
         report['production_source_sha256'] = source_hash
-        if cascade_blocks:
+        if cascade_blocks or attention_trace:
             report['norm_source_sha256'] = file_sha(repo/'src/qwen35_norm.cpp')
             if report['norm_source_sha256'] != '753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268':
                 raise ValueError('Cascade implementation changed during block audit')
         report['cascade_runtime_experiment'] = cascade or cascade_blocks
         report['cascade_block_replay'] = cascade_blocks
+        report['attention_trace'] = attention_trace
         report['production_source_scope'] = 'original' if source_hash.startswith('c0ec7611') else 'gated four-lane cascade; baseline requires unchanged measurements'
         if blocks or stats:
             block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_norm_statistics.cpp' if stats else '/test_qwen35_vision_blocks.cpp')]
@@ -111,7 +113,7 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
             report['block_replay_limits'] = 'Original block inputs enter through an exactly checked test-only identity frontend. Rotary geometry stays native and is measured against original geometry. Residuals use public native projections and float additions, checked against native block outputs. No production source injection or private implementation copy.'
         report['compact_anchor'] = capture.dump_reference(local, anchor_image, root / 'compact-anchor', max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
-        report['vision_anchor'] = capture.dump_reference(local, anchor_image, root / 'vision-anchor', max_new_tokens=12, vision_probes=True, norm_statistics=stats)
+        report['vision_anchor'] = capture.dump_reference(local, anchor_image, root / 'vision-anchor', max_new_tokens=12, vision_probes=True, norm_statistics=stats, attention_trace=attention_trace)
         reader = gguf.GGUFReader(str(root / 'vision-anchor/official-delta.gguf'))
         new_names = {'input.decoded_length', 'prefill.vision.merger.input'}
         fields = ('norm1','qkv','pooled','attention','norm2','up','activation','down')
@@ -122,6 +124,10 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
             for i in range(12):
                 new_names.update(f'prefill.vision.probe.{i}.{n}.{s}' for n in ('norm1','norm2') for s in ('mean','rstd'))
             new_names.update('prefill.vision.merger.norm.'+s for s in ('mean','rstd'))
+        if attention_trace:
+            new_names.add('input.vision_attention_queries')
+            for i in (5,11):
+                new_names.update(f'prefill.vision.probe.{i}.trace.{f}' for f in ('query','key','value','scores','probabilities','pooled_sample'))
         shared, extra = [], []
         with np.load(anchor_npz) as full:
             for t in reader.tensors:
@@ -146,13 +152,16 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
             if file_sha(path) != old['input_sha256']: raise ValueError('Changed evaluation derivative')
             case=dict(name=old['name'],source=old['source'],crop=old['crop'],explicit_resize=old['explicit_resize'],input_sha256=file_sha(path))
             report['cases'].append(case)
-            case['reference']=capture.dump_reference(local,path,folder,max_new_tokens=1,prefill_controls=True,vision_probes=True,norm_statistics=stats,
+            case['reference']=capture.dump_reference(local,path,folder,max_new_tokens=1,prefill_controls=True,vision_probes=True,norm_statistics=stats,attention_trace=attention_trace,
                 native_geometry=(build/'test-qwen35-norm-statistics',baseline) if stats else None)
-            if any(len(rows)!=(267 if stats else 217) for rows in case['reference']['cpu_controls'].values()):raise ValueError('Incomplete original operator controls')
+            if any(len(rows)!=(267 if stats else 229 if attention_trace else 217) for rows in case['reference']['cpu_controls'].values()):raise ValueError('Incomplete original operator controls')
             gc.collect()
         manifest=json.loads((out/'export-manifest.json').read_text())
         report['weights']=dict(bytes=baseline.stat().st_size,sha256=file_sha(baseline),tensor_audit=manifest['records'])
         if report['weights']['sha256']!=previous['arms'][0]['gguf_sha256'] or len(manifest['records'])!=473:raise ValueError('Changed baseline weights')
+        if attention_trace:
+            module(repo/'tools/ci-heavy/qwen35_attention_trace.py','qwen35_attention_trace').run_cases(repo,build,baseline,root,out,report)
+            return
         if stats:
             module(repo/'tools/ci-heavy/qwen35_norm_statistics.py','qwen35_norm_statistics').run_cases(repo,build,baseline,root,out,report,cascade=cascade)
             return

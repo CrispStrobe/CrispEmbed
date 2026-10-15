@@ -1571,3 +1571,38 @@ retained in [the complete report](../tests/results/qwen35-ocr/cascade-blocks.jso
 No tolerance/default, large-document quality, speed, memory or publication change
 follows. Next capture selected original attention boundaries with exact native
 controls and compare full decoded outputs on the independent documents.
+
+## Selected attention boundary audit contract
+
+`qwen35_ocr_bootstrap.py --attention-trace` observes original eager calls in vision
+blocks5/11, returning their original outputs unchanged. Reconstructed F32 scores
+and softmax must reproduce the returned probabilities exactly; the second matrix
+product must reproduce the returned pooled tensor, which is also checked against
+the original projection input. These checks apply in prefill and both original
+CPU-control phases. The observer is restored before generation and on exceptions.
+
+Full rotated Q/K/V and pooled tensors are retained. Scores/probabilities cover16
+deterministic query positions spanning the token axis, with every head and key;
+this preserves each sampled row's full softmax normalization. Unsampled score rows
+are not captured. The compact original reference and126 shared full-anchor arrays
+must remain exact. Expanded hooks add13 arrays beyond the earlier rich anchor.
+
+The test-only native arithmetic trace must match actual linked production QKV,
+full pooled output and sampled probability-to-value replay exactly before its
+intermediate values can be interpreted. Every failed control is retained and
+invalidates that interpretation. No trace code or original arrays enter the
+production library; its source hash and the existing cascade helper are pinned.
+
+Four arithmetic arms compare original QKV with original/native geometry, native
+projection from original norm1 with original/native geometry, original rotated
+Q/K/V reductions and original probabilities/value pooling. These conditional
+experiments distinguish input projection, geometry and reduction effects. Their
+scores/probabilities remain compared with the primary original geometry. Each
+arm/case has93 shared-diff vectors and six native equality controls. Across four
+arms and three larger inputs this gives1,116 component vectors and72 controls,
+plus924 unchanged ordinary prefill vectors and four small-fixture full ID/text/EOS
+checks. All prior prefill,108 shared composed vision and1,302 original CPU-control
+records must reproduce exactly; new original CPU boundaries bring that total to
+1,374. All raw failures and unchanged qualified budgets remain visible. Completing
+this diagnostic alone does not promote runtime arithmetic, full-document quality,
+performance, quantization or publication.

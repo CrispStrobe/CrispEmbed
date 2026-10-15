@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False,
-                   vision_probes=False, norm_statistics=False, native_geometry=None):
+                   vision_probes=False, norm_statistics=False, native_geometry=None, attention_trace=False):
     import gguf
     import numpy as np
     import torch
@@ -38,6 +38,8 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     patches = int(torch.prod(inputs["image_grid_thw"][0]).item())
     if patches > 1024:
         raise ValueError("Prepared fixture exceeds existing native1024-patch bound")
+    if attention_trace and not vision_probes:
+        raise ValueError("Attention capture requires original vision probes")
     if norm_statistics and not vision_probes:
         raise ValueError("Norm statistics require original vision probes")
     geometry = None
@@ -143,15 +145,26 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
                 handles.append(getattr(block,label).register_forward_hook(statistics_hook(f"prefill.vision.probe.{i}.{label}")))
         handles.append(visual.merger.norm.register_forward_hook(statistics_hook("prefill.vision.merger.norm")))
 
+    attention_result = None
+    if attention_trace:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('qwen35_attention_reference', Path(__file__).with_name('qwen35_attention_reference.py'))
+        observer = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(observer)
+        check_attention_pool, finish_attention, restore_attention = observer.install(visual, phase, arrays, save, patches)
+
     def language_input(module, args, kwargs):
         save("prefill.decoder.inputs_embeds", kwargs["inputs_embeds"])
     handles.append(language.register_forward_pre_hook(language_input, with_kwargs=True))
-    with torch.inference_mode():
+    from contextlib import ExitStack
+    with torch.inference_mode(), ExitStack() as cleanup:
+        if attention_trace: cleanup.callback(restore_attention)
         positions = model._prepare_position_ids_for_generation(inputs["input_ids"], dict(inputs))
         prepared = model.prepare_inputs_for_generation(
             **inputs, position_ids=positions, use_cache=True, is_first_iteration=True, logits_to_keep=1)
         def capture_prefill():
             prefill = model(**prepared)
+            if attention_trace: check_attention_pool()
             save("prefill.logits", prefill.logits[:, -1])
             for index, layer in enumerate(prefill.past_key_values.layers):
                 for name in ("conv_states", "recurrent_states", "keys", "values"):
@@ -173,6 +186,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
             finally:
                 model.model.visual.patch_embed.forward = original_patch
             phase[0] = "prefill"
+        if attention_trace: attention_result = finish_attention(prefill_controls)
         for handle in handles:
             handle.remove()
         visual.fast_pos_embed_interpolate = original_position
@@ -231,6 +245,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
               "stop": "eos" if generated_ids and generated_ids[-1] in eos else "max_tokens",
               "captured_arrays": len(arrays), "anchor_arrays_exact": anchor is not None}
     result["generation_seconds"] = generation_seconds
+    if attention_trace: result["attention_trace"] = attention_result
     if norm_statistics:
         if any(v!=25 for v in statistics_controls.values()) or len(statistics_controls)!=(3 if prefill_controls else 1):
             raise ValueError("Incomplete original mean/rstd controls")
