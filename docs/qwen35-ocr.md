@@ -1701,3 +1701,27 @@ quality gate. F64 attention is not uniformly closer to the original F32 result.
 [rotary-only failures](../tests/results/qwen35-ocr/attention-trace-fma-initial.json)
 preserve every raw metric and control. Original arrays stay test-only. Production
 kernels, precision defaults, weights, thresholds and publication status are unchanged.
+
+## Four-arm decoded panel driver
+
+`tools/ci-heavy/qwen35_ocr_bootstrap.py --decoded-panel` runs the next quality
+gate through hosted `heavy-cpu.yml` on the same ARM64 runner and pinned Python
+packages as the attention audit. `qwen35_decoded_panel.py` freezes the original
+Python references first, then compares actual owning-context free generation
+under baseline, combined F64, cascade and cascade-attention settings. The four
+existing documents, image derivatives, prompt and token caps stay fixed. Full
+IDs, UTF-8 bytes/text, EOS versus cap, confidence and available CER/WER are
+reported; teacher-forced score comparisons remain separate from free generation.
+Reference confidence normalizes the actual original F32 generation scores in
+F64, including EOS, matching the native API's definition; it is not calibrated
+OCR accuracy. This adds metadata without changing original scores or generation.
+
+The driver also reruns the three larger inputs' strict prefill comparisons with
+the unchanged shared `crispembed-diff`/`qwen35_compare` gates. It checks all 924
+prior records, 1,302 original CPU-control records, original full outputs and the
+previous baseline decode measurements exactly. Exact output cannot waive a
+strict failure. The receipt remains a384-token prefix/cap control until the
+separate long-document lane. No model, production arithmetic, tolerance, default
+or publication changes are part of this diagnostic driver. Model-free positive
+and malformed-output controls run in `qwen35-decoded-audit.yml` and before the
+hosted model audit. Results are pending; dispatch is not a parity result.
