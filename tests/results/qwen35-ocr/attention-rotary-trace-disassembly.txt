@@ -1,0 +1,1679 @@
+0000000000000f90 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)>:
+     f90:	a9b87bfd 	stp	x29, x30, [sp, #-128]!
+     f94:	910003fd 	mov	x29, sp
+     f98:	a90153f3 	stp	x19, x20, [sp, #16]
+     f9c:	aa0103f3 	mov	x19, x1
+     fa0:	d2800014 	mov	x20, #0x0                   	// #0
+     fa4:	a9025bf5 	stp	x21, x22, [sp, #32]
+     fa8:	2a0203f5 	mov	w21, w2
+     fac:	a90363f7 	stp	x23, x24, [sp, #48]
+     fb0:	aa0603f7 	mov	x23, x6
+     fb4:	a9046bf9 	stp	x25, x26, [sp, #64]
+     fb8:	12001cf9 	and	w25, w7, #0xff
+     fbc:	a90573fb 	stp	x27, x28, [sp, #80]
+     fc0:	6d0627e8 	stp	d8, d9, [sp, #96]
+     fc4:	6d072fea 	stp	d10, d11, [sp, #112]
+     fc8:	d10843ff 	sub	sp, sp, #0x210
+     fcc:	90000009 	adrp	x9, 0 <__stack_chk_guard>
+     fd0:	f9400129 	ldr	x9, [x9]
+     fd4:	b9001be2 	str	w2, [sp, #24]
+     fd8:	a9028fe0 	stp	x0, x3, [sp, #40]
+     fdc:	aa1503e0 	mov	x0, x21
+     fe0:	f9001fe4 	str	x4, [sp, #56]
+     fe4:	b3607c14 	bfi	x20, x0, #32, #32
+     fe8:	a908a3e1 	stp	x1, x8, [sp, #136]
+     fec:	f9006be5 	str	x5, [sp, #208]
+     ff0:	f9400120 	ldr	x0, [x9]
+     ff4:	f90107e0 	str	x0, [sp, #520]
+     ff8:	d2800000 	mov	x0, #0x0                   	// #0
+     ffc:	d2800100 	mov	x0, #0x8                   	// #8
+    1000:	94000000 	bl	0 <operator new(unsigned long)>
+    1004:	29404e61 	ldp	w1, w19, [x19]
+    1008:	93407ea3 	sxtw	x3, w21
+    100c:	f9000014 	str	x20, [x0]
+    1010:	f9004fe3 	str	x3, [sp, #152]
+    1014:	9b217eb8 	smull	x24, w21, w1
+    1018:	b900dfe1 	str	w1, [sp, #220]
+    101c:	f9008fe0 	str	x0, [sp, #280]
+    1020:	1ad30c35 	sdiv	w21, w1, w19
+    1024:	f900fbe0 	str	x0, [sp, #496]
+    1028:	91002000 	add	x0, x0, #0x8
+    102c:	a91f83e0 	stp	x0, x0, [sp, #504]
+    1030:	92fc0000 	mov	x0, #0x1fffffffffffffff    	// #2305843009213693951
+    1034:	eb00031f 	cmp	x24, x0
+    1038:	5400bdc8 	b.hi	27f0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1860>  // b.pmore
+    103c:	4f000400 	movi	v0.4s, #0x0
+    1040:	910803e0 	add	x0, sp, #0x200
+    1044:	93407c3b 	sxtw	x27, w1
+    1048:	3c958000 	stur	q0, [x0, #-168]
+    104c:	b4001738 	cbz	x24, 1330 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x3a0>
+    1050:	d37ef716 	lsl	x22, x24, #2
+    1054:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    1058:	f9400273 	ldr	x19, [x19]
+    105c:	aa1603e0 	mov	x0, x22
+    1060:	94000000 	bl	0 <operator new(unsigned long)>
+    1064:	aa0003fa 	mov	x26, x0
+    1068:	8b160013 	add	x19, x0, x22
+    106c:	b800441f 	str	wzr, [x0], #4
+    1070:	f900abfa 	str	x26, [sp, #336]
+    1074:	f900b3f3 	str	x19, [sp, #352]
+    1078:	f100071f 	cmp	x24, #0x1
+    107c:	5400ba00 	b.eq	27bc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x182c>  // b.none
+    1080:	9342fed8 	asr	x24, x22, #2
+    1084:	eb13001f 	cmp	x0, x19
+    1088:	54000080 	b.eq	1098 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x108>  // b.none
+    108c:	d10012c2 	sub	x2, x22, #0x4
+    1090:	52800001 	mov	w1, #0x0                   	// #0
+    1094:	94000000 	bl	0 <memset>
+    1098:	f900aff3 	str	x19, [sp, #344]
+    109c:	b27ef3e0 	mov	x0, #0x7ffffffffffffffc    	// #9223372036854775804
+    10a0:	eb0002df 	cmp	x22, x0
+    10a4:	5400bba8 	b.hi	2818 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1888>  // b.pmore
+    10a8:	910803e0 	add	x0, sp, #0x200
+    10ac:	a937fc1f 	stp	xzr, xzr, [x0, #-136]
+    10b0:	b400bc98 	cbz	x24, 2840 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x18b0>
+    10b4:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    10b8:	f9400273 	ldr	x19, [x19]
+    10bc:	aa1603e0 	mov	x0, x22
+    10c0:	94000000 	bl	0 <operator new(unsigned long)>
+    10c4:	aa0003f4 	mov	x20, x0
+    10c8:	8b160013 	add	x19, x0, x22
+    10cc:	b800441f 	str	wzr, [x0], #4
+    10d0:	f900bbf4 	str	x20, [sp, #368]
+    10d4:	f900c3f3 	str	x19, [sp, #384]
+    10d8:	f100071f 	cmp	x24, #0x1
+    10dc:	5400b820 	b.eq	27e0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1850>  // b.none
+    10e0:	eb13001f 	cmp	x0, x19
+    10e4:	54000080 	b.eq	10f4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x164>  // b.none
+    10e8:	d10012c2 	sub	x2, x22, #0x4
+    10ec:	52800001 	mov	w1, #0x0                   	// #0
+    10f0:	94000000 	bl	0 <memset>
+    10f4:	910803e0 	add	x0, sp, #0x200
+    10f8:	f900bff3 	str	x19, [sp, #376]
+    10fc:	a939fc1f 	stp	xzr, xzr, [x0, #-104]
+    1100:	aa1603e0 	mov	x0, x22
+    1104:	94000000 	bl	0 <operator new(unsigned long)>
+    1108:	8b160013 	add	x19, x0, x22
+    110c:	f9000be0 	str	x0, [sp, #16]
+    1110:	f900cbe0 	str	x0, [sp, #400]
+    1114:	b800441f 	str	wzr, [x0], #4
+    1118:	f900d3f3 	str	x19, [sp, #416]
+    111c:	f100071f 	cmp	x24, #0x1
+    1120:	5400b580 	b.eq	27d0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1840>  // b.none
+    1124:	eb13001f 	cmp	x0, x19
+    1128:	54000080 	b.eq	1138 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1a8>  // b.none
+    112c:	d10012c2 	sub	x2, x22, #0x4
+    1130:	52800001 	mov	w1, #0x0                   	// #0
+    1134:	94000000 	bl	0 <memset>
+    1138:	910803e0 	add	x0, sp, #0x200
+    113c:	f900cff3 	str	x19, [sp, #408]
+    1140:	a93bfc1f 	stp	xzr, xzr, [x0, #-72]
+    1144:	aa1603e0 	mov	x0, x22
+    1148:	94000000 	bl	0 <operator new(unsigned long)>
+    114c:	f94047e1 	ldr	x1, [sp, #136]
+    1150:	f90083e0 	str	x0, [sp, #256]
+    1154:	f900dbe0 	str	x0, [sp, #432]
+    1158:	b9400433 	ldr	w19, [x1, #4]
+    115c:	8b160001 	add	x1, x0, x22
+    1160:	b800441f 	str	wzr, [x0], #4
+    1164:	f90087e1 	str	x1, [sp, #264]
+    1168:	f9007be0 	str	x0, [sp, #240]
+    116c:	f900e3e1 	str	x1, [sp, #448]
+    1170:	f100071f 	cmp	x24, #0x1
+    1174:	54000100 	b.eq	1194 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x204>  // b.none
+    1178:	eb01001f 	cmp	x0, x1
+    117c:	54000080 	b.eq	118c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1fc>  // b.none
+    1180:	d10012c2 	sub	x2, x22, #0x4
+    1184:	52800001 	mov	w1, #0x0                   	// #0
+    1188:	94000000 	bl	0 <memset>
+    118c:	f94087e0 	ldr	x0, [sp, #264]
+    1190:	f9007be0 	str	x0, [sp, #240]
+    1194:	f9406be1 	ldr	x1, [sp, #208]
+    1198:	93407e73 	sxtw	x19, w19
+    119c:	f9404be3 	ldr	x3, [sp, #144]
+    11a0:	a9400420 	ldp	x0, x1, [x1]
+    11a4:	4f000400 	movi	v0.4s, #0x0
+    11a8:	f9407be2 	ldr	x2, [sp, #240]
+    11ac:	f900dfe2 	str	x2, [sp, #440]
+    11b0:	aa0303e2 	mov	x2, x3
+    11b4:	cb000021 	sub	x1, x1, x0
+    11b8:	ad000060 	stp	q0, q0, [x3]
+    11bc:	f9404fe0 	ldr	x0, [sp, #152]
+    11c0:	9342fc21 	asr	x1, x1, #2
+    11c4:	ad010060 	stp	q0, q0, [x3, #32]
+    11c8:	9b007c21 	mul	x1, x1, x0
+    11cc:	ad020060 	stp	q0, q0, [x3, #64]
+    11d0:	ad030060 	stp	q0, q0, [x3, #96]
+    11d4:	9b137c21 	mul	x1, x1, x19
+    11d8:	3d802060 	str	q0, [x3, #128]
+    11dc:	3c890c40 	str	q0, [x2, #144]!
+    11e0:	f900085f 	str	xzr, [x2, #16]
+    11e4:	f9009be2 	str	x2, [sp, #304]
+    11e8:	b50007e1 	cbnz	x1, 12e4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x354>
+    11ec:	f9404fe1 	ldr	x1, [sp, #152]
+    11f0:	92fc0000 	mov	x0, #0x1fffffffffffffff    	// #2305843009213693951
+    11f4:	eb00003f 	cmp	x1, x0
+    11f8:	5400b2a8 	b.hi	284c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x18bc>  // b.pmore
+    11fc:	910803e0 	add	x0, sp, #0x200
+    1200:	a93dfc1f 	stp	xzr, xzr, [x0, #-40]
+    1204:	f9404fe0 	ldr	x0, [sp, #152]
+    1208:	b4000620 	cbz	x0, 12cc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x33c>
+    120c:	d37ef402 	lsl	x2, x0, #2
+    1210:	f9008be2 	str	x2, [sp, #272]
+    1214:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    1218:	f9400273 	ldr	x19, [x19]
+    121c:	aa0203f6 	mov	x22, x2
+    1220:	aa0203e0 	mov	x0, x2
+    1224:	94000000 	bl	0 <operator new(unsigned long)>
+    1228:	8b160013 	add	x19, x0, x22
+    122c:	aa1603e2 	mov	x2, x22
+    1230:	52801fe1 	mov	w1, #0xff                  	// #255
+    1234:	f90073e0 	str	x0, [sp, #224]
+    1238:	f900ebe0 	str	x0, [sp, #464]
+    123c:	f900f3f3 	str	x19, [sp, #480]
+    1240:	94000000 	bl	0 <memset>
+    1244:	f9406be0 	ldr	x0, [sp, #208]
+    1248:	f900eff3 	str	x19, [sp, #472]
+    124c:	a9400c01 	ldp	x1, x3, [x0]
+    1250:	d2800000 	mov	x0, #0x0                   	// #0
+    1254:	cb010062 	sub	x2, x3, x1
+    1258:	9342fc42 	asr	x2, x2, #2
+    125c:	eb03003f 	cmp	x1, x3
+    1260:	540000e0 	b.eq	127c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x2ec>  // b.none
+    1264:	f94073e4 	ldr	x4, [sp, #224]
+    1268:	b8a07823 	ldrsw	x3, [x1, x0, lsl #2]
+    126c:	b8237880 	str	w0, [x4, x3, lsl #2]
+    1270:	91000400 	add	x0, x0, #0x1
+    1274:	eb02001f 	cmp	x0, x2
+    1278:	54ffff63 	b.cc	1264 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x2d4>  // b.lo, b.ul, b.last
+    127c:	b4005c57 	cbz	x23, 1e04 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xe74>
+    1280:	910543f6 	add	x22, sp, #0x150
+    1284:	9105c3f9 	add	x25, sp, #0x170
+    1288:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    128c:	f9400273 	ldr	x19, [x19]
+    1290:	aa1603e0 	mov	x0, x22
+    1294:	910643fa 	add	x26, sp, #0x190
+    1298:	aa1703e1 	mov	x1, x23
+    129c:	97fffbf6 	bl	274 <std::vector<float, std::allocator<float> >::operator=(std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    12a0:	aa1903e0 	mov	x0, x25
+    12a4:	910062e1 	add	x1, x23, #0x18
+    12a8:	97fffbf3 	bl	274 <std::vector<float, std::allocator<float> >::operator=(std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    12ac:	9100c2e1 	add	x1, x23, #0x30
+    12b0:	aa1a03e0 	mov	x0, x26
+    12b4:	97fffbf0 	bl	274 <std::vector<float, std::allocator<float> >::operator=(std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    12b8:	1e2202a0 	scvtf	s0, w21
+    12bc:	1e202008 	fcmp	s0, #0.0
+    12c0:	54000565 	b.pl	136c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x3dc>  // b.nfrst
+    12c4:	94000000 	bl	0 <sqrtf>
+    12c8:	1400002a 	b	1370 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x3e0>
+    12cc:	d2800013 	mov	x19, #0x0                   	// #0
+    12d0:	f90073ff 	str	xzr, [sp, #224]
+    12d4:	f9008bff 	str	xzr, [sp, #272]
+    12d8:	f900ebff 	str	xzr, [sp, #464]
+    12dc:	f900f3ff 	str	xzr, [sp, #480]
+    12e0:	17ffffd9 	b	1244 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x2b4>
+    12e4:	91012076 	add	x22, x3, #0x48
+    12e8:	aa0303f8 	mov	x24, x3
+    12ec:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    12f0:	f9400273 	ldr	x19, [x19]
+    12f4:	aa1603e0 	mov	x0, x22
+    12f8:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    12fc:	f94006c2 	ldr	x2, [x22, #8]
+    1300:	91018300 	add	x0, x24, #0x60
+    1304:	f9400404 	ldr	x4, [x0, #8]
+    1308:	f9402701 	ldr	x1, [x24, #72]
+    130c:	f9403303 	ldr	x3, [x24, #96]
+    1310:	cb010042 	sub	x2, x2, x1
+    1314:	cb030081 	sub	x1, x4, x3
+    1318:	eb01005f 	cmp	x2, x1
+    131c:	54005689 	b.ls	1dec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xe5c>  // b.plast
+    1320:	9342fc42 	asr	x2, x2, #2
+    1324:	cb810841 	sub	x1, x2, x1, asr #2
+    1328:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    132c:	17ffffb0 	b	11ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x25c>
+    1330:	d280001a 	mov	x26, #0x0                   	// #0
+    1334:	f900b3ff 	str	xzr, [sp, #352]
+    1338:	3d8057e0 	str	q0, [sp, #336]
+    133c:	d2800014 	mov	x20, #0x0                   	// #0
+    1340:	4f000400 	movi	v0.4s, #0x0
+    1344:	f9000bff 	str	xzr, [sp, #16]
+    1348:	f9007bff 	str	xzr, [sp, #240]
+    134c:	a9107fff 	stp	xzr, xzr, [sp, #256]
+    1350:	3d805fe0 	str	q0, [sp, #368]
+    1354:	f900c3ff 	str	xzr, [sp, #384]
+    1358:	3d8067e0 	str	q0, [sp, #400]
+    135c:	f900d3ff 	str	xzr, [sp, #416]
+    1360:	f900dbff 	str	xzr, [sp, #432]
+    1364:	f900e3ff 	str	xzr, [sp, #448]
+    1368:	17ffff8b 	b	1194 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x204>
+    136c:	1e21c000 	fsqrt	s0, s0
+    1370:	1e2e1008 	fmov	s8, #1.000000000000000000e+00
+    1374:	90000000 	adrp	x0, 0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    1378:	91000000 	add	x0, x0, #0x0
+    137c:	1e201908 	fdiv	s8, s8, s0
+    1380:	94000000 	bl	0 <getenv>
+    1384:	b90123ff 	str	wzr, [sp, #288]
+    1388:	aa0003e1 	mov	x1, x0
+    138c:	b4000100 	cbz	x0, 13ac <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x41c>
+    1390:	39400000 	ldrb	w0, [x0]
+    1394:	340000c0 	cbz	w0, 13ac <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x41c>
+    1398:	7100c000 	subs	w0, w0, #0x30
+    139c:	5400a060 	b.eq	27a8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1818>  // b.none
+    13a0:	7100001f 	cmp	w0, #0x0
+    13a4:	1a9f07e0 	cset	w0, ne	// ne = any
+    13a8:	b90123e0 	str	w0, [sp, #288]
+    13ac:	f9408fe1 	ldr	x1, [sp, #280]
+    13b0:	92fc0000 	mov	x0, #0x1fffffffffffffff    	// #2305843009213693951
+    13b4:	29406037 	ldp	w23, w24, [x1]
+    13b8:	4b170301 	sub	w1, w24, w23
+    13bc:	b900ebe1 	str	w1, [sp, #232]
+    13c0:	93407c34 	sxtw	x20, w1
+    13c4:	eb00029f 	cmp	x20, x0
+    13c8:	5400a568 	b.hi	2874 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x18e4>  // b.pmore
+    13cc:	b4004eb4 	cbz	x20, 1da0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xe10>
+    13d0:	d37ef69c 	lsl	x28, x20, #2
+    13d4:	910543f6 	add	x22, sp, #0x150
+    13d8:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    13dc:	f9400273 	ldr	x19, [x19]
+    13e0:	aa1c03e0 	mov	x0, x28
+    13e4:	9105c3f9 	add	x25, sp, #0x170
+    13e8:	910643fa 	add	x26, sp, #0x190
+    13ec:	f90063fc 	str	x28, [sp, #192]
+    13f0:	94000000 	bl	0 <operator new(unsigned long)>
+    13f4:	f940cbe1 	ldr	x1, [sp, #400]
+    13f8:	aa0003e6 	mov	x6, x0
+    13fc:	b800441f 	str	wzr, [x0], #4
+    1400:	f90057e1 	str	x1, [sp, #168]
+    1404:	f940abea 	ldr	x10, [sp, #336]
+    1408:	f940bbe8 	ldr	x8, [sp, #368]
+    140c:	f100069f 	cmp	x20, #0x1
+    1410:	54004e20 	b.eq	1dd4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xe44>  // b.none
+    1414:	8b1c00da 	add	x26, x6, x28
+    1418:	eb1a001f 	cmp	x0, x26
+    141c:	54009bc0 	b.eq	2794 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1804>  // b.none
+    1420:	f94063e1 	ldr	x1, [sp, #192]
+    1424:	a9002be6 	stp	x6, x10, [sp]
+    1428:	d1001022 	sub	x2, x1, #0x4
+    142c:	52800001 	mov	w1, #0x0                   	// #0
+    1430:	f9000be8 	str	x8, [sp, #16]
+    1434:	94000000 	bl	0 <memset>
+    1438:	a9402be6 	ldp	x6, x10, [sp]
+    143c:	6b1802ff 	cmp	w23, w24
+    1440:	f9400be8 	ldr	x8, [sp, #16]
+    1444:	54001c8a 	b.ge	17d4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x844>  // b.tcont
+    1448:	f94063e0 	ldr	x0, [sp, #192]
+    144c:	f9005fe0 	str	x0, [sp, #184]
+    1450:	f940abea 	ldr	x10, [sp, #336]
+    1454:	f940bbe8 	ldr	x8, [sp, #368]
+    1458:	f940cbe0 	ldr	x0, [sp, #400]
+    145c:	f90057e0 	str	x0, [sp, #168]
+    1460:	110006e0 	add	w0, w23, #0x1
+    1464:	b940dfe1 	ldr	w1, [sp, #220]
+    1468:	f94047e2 	ldr	x2, [sp, #136]
+    146c:	93407c00 	sxtw	x0, w0
+    1470:	f90053e0 	str	x0, [sp, #160]
+    1474:	93407ee0 	sxtw	x0, w23
+    1478:	f90067e0 	str	x0, [sp, #200]
+    147c:	9b377c21 	smull	x1, w1, w23
+    1480:	b940ebe0 	ldr	w0, [sp, #232]
+    1484:	53027ea4 	lsr	w4, w21, #2
+    1488:	b9400442 	ldr	w2, [x2, #4]
+    148c:	aa0103fc 	mov	x28, x1
+    1490:	2a0003e7 	mov	w7, w0
+    1494:	93407ea3 	sxtw	x3, w21
+    1498:	937e7ea5 	sbfiz	x5, x21, #2, #32
+    149c:	8b2048d3 	add	x19, x6, w0, uxtw #2
+    14a0:	d37cec84 	lsl	x4, x4, #4
+    14a4:	51000400 	sub	w0, w0, #0x1
+    14a8:	b900fbe0 	str	w0, [sp, #248]
+    14ac:	aa0103f1 	mov	x17, x1
+    14b0:	f90097e7 	str	x7, [sp, #296]
+    14b4:	aa0603e1 	mov	x1, x6
+    14b8:	f9406bf2 	ldr	x18, [sp, #208]
+    14bc:	aa0303e6 	mov	x6, x3
+    14c0:	2a1803e7 	mov	w7, w24
+    14c4:	aa1c03e3 	mov	x3, x28
+    14c8:	2f03d7e9 	mvni	v9.2s, #0x7f, msl #16
+    14cc:	aa0503fc 	mov	x28, x5
+    14d0:	d37ef774 	lsl	x20, x27, #2
+    14d4:	510006ac 	sub	w12, w21, #0x1
+    14d8:	121e76af 	and	w15, w21, #0xfffffffc
+    14dc:	120006ad 	and	w13, w21, #0x3
+    14e0:	aa0403f9 	mov	x25, x4
+    14e4:	aa1b03e9 	mov	x9, x27
+    14e8:	2a1703e5 	mov	w5, w23
+    14ec:	aa0803f8 	mov	x24, x8
+    14f0:	7100005f 	cmp	w2, #0x0
+    14f4:	5400168d 	b.le	17c4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x834>
+    14f8:	f94083e0 	ldr	x0, [sp, #256]
+    14fc:	d37ef468 	lsl	x8, x3, #2
+    1500:	8b080156 	add	x22, x10, x8
+    1504:	aa0303f7 	mov	x23, x3
+    1508:	8b080008 	add	x8, x0, x8
+    150c:	b94123e0 	ldr	w0, [sp, #288]
+    1510:	aa1103eb 	mov	x11, x17
+    1514:	2a0203fe 	mov	w30, w2
+    1518:	12000004 	and	w4, w0, #0x1
+    151c:	d280000e 	mov	x14, #0x0                   	// #0
+    1520:	f94073e0 	ldr	x0, [sp, #224]
+    1524:	2a0403fb 	mov	w27, w4
+    1528:	a9006bff 	stp	xzr, x26, [sp]
+    152c:	d1001000 	sub	x0, x0, #0x4
+    1530:	f9005be0 	str	x0, [sp, #176]
+    1534:	a9138ff1 	stp	x17, x3, [sp, #312]
+    1538:	6b0700bf 	cmp	w5, w7
+    153c:	540033ca 	b.ge	1bb4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc24>  // b.tcont
+    1540:	1e20412b 	fmov	s11, s9
+    1544:	8b0b0b00 	add	x0, x24, x11, lsl #2
+    1548:	aa0b03f1 	mov	x17, x11
+    154c:	aa0103f0 	mov	x16, x1
+    1550:	710002bf 	cmp	w21, #0x0
+    1554:	540026ed 	b.le	1a30 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xaa0>
+    1558:	0f000401 	movi	v1.2s, #0x0
+    155c:	7100099f 	cmp	w12, #0x2
+    1560:	540026c9 	b.ls	1a38 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xaa8>  // b.plast
+    1564:	d2800002 	mov	x2, #0x0                   	// #0
+    1568:	3ce26802 	ldr	q2, [x0, x2]
+    156c:	3ce26ac0 	ldr	q0, [x22, x2]
+    1570:	91004042 	add	x2, x2, #0x10
+    1574:	6e22dc00 	fmul	v0.4s, v0.4s, v2.4s
+    1578:	5e0c0402 	mov	s2, v0.s[1]
+    157c:	1e202821 	fadd	s1, s1, s0
+    1580:	5e140403 	mov	s3, v0.s[2]
+    1584:	5e1c0400 	mov	s0, v0.s[3]
+    1588:	1e212841 	fadd	s1, s2, s1
+    158c:	1e232821 	fadd	s1, s1, s3
+    1590:	1e202821 	fadd	s1, s1, s0
+    1594:	eb02033f 	cmp	x25, x2
+    1598:	54fffe81 	b.ne	1568 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x5d8>  // b.any
+    159c:	2a0f03e2 	mov	w2, w15
+    15a0:	3400032d 	cbz	w13, 1604 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x674>
+    15a4:	93407c44 	sxtw	x4, w2
+    15a8:	11000443 	add	w3, w2, #0x1
+    15ac:	8b17009a 	add	x26, x4, x23
+    15b0:	8b110084 	add	x4, x4, x17
+    15b4:	bc7a7942 	ldr	s2, [x10, x26, lsl #2]
+    15b8:	bc647b00 	ldr	s0, [x24, x4, lsl #2]
+    15bc:	1f000441 	fmadd	s1, s2, s0, s1
+    15c0:	6b15007f 	cmp	w3, w21
+    15c4:	5400020a 	b.ge	1604 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x674>  // b.tcont
+    15c8:	93407c63 	sxtw	x3, w3
+    15cc:	11000842 	add	w2, w2, #0x2
+    15d0:	8b170064 	add	x4, x3, x23
+    15d4:	8b110063 	add	x3, x3, x17
+    15d8:	bc647942 	ldr	s2, [x10, x4, lsl #2]
+    15dc:	bc637b00 	ldr	s0, [x24, x3, lsl #2]
+    15e0:	1f000441 	fmadd	s1, s2, s0, s1
+    15e4:	6b0202bf 	cmp	w21, w2
+    15e8:	540000ed 	b.le	1604 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x674>
+    15ec:	93407c42 	sxtw	x2, w2
+    15f0:	8b110043 	add	x3, x2, x17
+    15f4:	8b170042 	add	x2, x2, x23
+    15f8:	bc637b02 	ldr	s2, [x24, x3, lsl #2]
+    15fc:	bc627940 	ldr	s0, [x10, x2, lsl #2]
+    1600:	1f000441 	fmadd	s1, s2, s0, s1
+    1604:	35001fdb 	cbnz	w27, 19fc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xa6c>
+    1608:	1e280821 	fmul	s1, s1, s8
+    160c:	1e2b2030 	fcmpe	s1, s11
+    1610:	bd000201 	str	s1, [x16]
+    1614:	54001d4c 	b.gt	19bc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xa2c>
+    1618:	91001210 	add	x16, x16, #0x4
+    161c:	8b090231 	add	x17, x17, x9
+    1620:	8b140000 	add	x0, x0, x20
+    1624:	eb13021f 	cmp	x16, x19
+    1628:	54fff941 	b.ne	1550 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x5c0>  // b.any
+    162c:	f94053e2 	ldr	x2, [sp, #160]
+    1630:	f9405be0 	ldr	x0, [sp, #176]
+    1634:	f9400244 	ldr	x4, [x18]
+    1638:	b8627803 	ldr	w3, [x0, x2, lsl #2]
+    163c:	f9400640 	ldr	x0, [x18, #8]
+    1640:	7100007f 	cmp	w3, #0x0
+    1644:	1a9fa062 	csel	w2, w3, wzr, ge	// ge = tcont
+    1648:	cb040000 	sub	x0, x0, x4
+    164c:	93407c42 	sxtw	x2, w2
+    1650:	9342fc00 	asr	x0, x0, #2
+    1654:	9b0e0800 	madd	x0, x0, x14, x2
+    1658:	f9404fe2 	ldr	x2, [sp, #152]
+    165c:	9b027c00 	mul	x0, x0, x2
+    1660:	f9000be0 	str	x0, [sp, #16]
+    1664:	54001eea 	b.ge	1a40 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xab0>  // b.tcont
+    1668:	f94007e0 	ldr	x0, [sp, #8]
+    166c:	eb01001f 	cmp	x0, x1
+    1670:	540037c0 	b.eq	1d68 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xdd8>  // b.none
+    1674:	f94007fa 	ldr	x26, [sp, #8]
+    1678:	0f00040a 	movi	v10.2s, #0x0
+    167c:	a9054fee 	stp	x14, x19, [sp, #80]
+    1680:	aa0103f3 	mov	x19, x1
+    1684:	f9000fe1 	str	x1, [sp, #24]
+    1688:	b90023ef 	str	w15, [sp, #32]
+    168c:	b9002be7 	str	w7, [sp, #40]
+    1690:	b90033e3 	str	w3, [sp, #48]
+    1694:	b9003bec 	str	w12, [sp, #56]
+    1698:	a9042fe6 	stp	x6, x11, [sp, #64]
+    169c:	a9064be8 	stp	x8, x18, [sp, #96]
+    16a0:	a90727ea 	stp	x10, x9, [sp, #112]
+    16a4:	b90083ed 	str	w13, [sp, #128]
+    16a8:	b900dbe5 	str	w5, [sp, #216]
+    16ac:	d503201f 	nop
+    16b0:	bd400260 	ldr	s0, [x19]
+    16b4:	1e2b3800 	fsub	s0, s0, s11
+    16b8:	94000000 	bl	0 <expf>
+    16bc:	bd000260 	str	s0, [x19]
+    16c0:	aa1303e2 	mov	x2, x19
+    16c4:	91001273 	add	x19, x19, #0x4
+    16c8:	1e20294a 	fadd	s10, s10, s0
+    16cc:	eb13035f 	cmp	x26, x19
+    16d0:	54ffff01 	b.ne	16b0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x720>  // b.any
+    16d4:	f9400fe1 	ldr	x1, [sp, #24]
+    16d8:	a9442fe6 	ldp	x6, x11, [sp, #64]
+    16dc:	a9454fee 	ldp	x14, x19, [sp, #80]
+    16e0:	a9464be8 	ldp	x8, x18, [sp, #96]
+    16e4:	a94727ea 	ldp	x10, x9, [sp, #112]
+    16e8:	b94023ef 	ldr	w15, [sp, #32]
+    16ec:	b9402be7 	ldr	w7, [sp, #40]
+    16f0:	b94033e3 	ldr	w3, [sp, #48]
+    16f4:	b9403bec 	ldr	w12, [sp, #56]
+    16f8:	b94083ed 	ldr	w13, [sp, #128]
+    16fc:	b940dbe5 	ldr	w5, [sp, #216]
+    1700:	350021bb 	cbnz	w27, 1b34 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xba4>
+    1704:	36f824e3 	tbz	w3, #31, 1ba0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc10>
+    1708:	f94047e0 	ldr	x0, [sp, #136]
+    170c:	0f000403 	movi	v3.2s, #0x0
+    1710:	b940041e 	ldr	w30, [x0, #4]
+    1714:	710002bf 	cmp	w21, #0x0
+    1718:	5400230d 	b.le	1b78 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbe8>
+    171c:	f94057e0 	ldr	x0, [sp, #168]
+    1720:	f94003e3 	ldr	x3, [sp]
+    1724:	8b0b0804 	add	x4, x0, x11, lsl #2
+    1728:	8b060070 	add	x16, x3, x6
+    172c:	d503201f 	nop
+    1730:	0f000401 	movi	v1.2s, #0x0
+    1734:	aa0403e2 	mov	x2, x4
+    1738:	aa0103e0 	mov	x0, x1
+    173c:	6b0700bf 	cmp	w5, w7
+    1740:	5400014a 	b.ge	1768 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x7d8>  // b.tcont
+    1744:	d503201f 	nop
+    1748:	bc404400 	ldr	s0, [x0], #4
+    174c:	bd400042 	ldr	s2, [x2]
+    1750:	8b140042 	add	x2, x2, x20
+    1754:	1e2a1800 	fdiv	s0, s0, s10
+    1758:	1f020401 	fmadd	s1, s0, s2, s1
+    175c:	eb13001f 	cmp	x0, x19
+    1760:	54ffff41 	b.ne	1748 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x7b8>  // b.any
+    1764:	3500131b 	cbnz	w27, 19c4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xa34>
+    1768:	bc237901 	str	s1, [x8, x3, lsl #2]
+    176c:	91000463 	add	x3, x3, #0x1
+    1770:	91001084 	add	x4, x4, #0x4
+    1774:	eb03021f 	cmp	x16, x3
+    1778:	54fffdc1 	b.ne	1730 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x7a0>  // b.any
+    177c:	910005ce 	add	x14, x14, #0x1
+    1780:	f90003f0 	str	x16, [sp]
+    1784:	8b06016b 	add	x11, x11, x6
+    1788:	8b0602f7 	add	x23, x23, x6
+    178c:	8b1c02d6 	add	x22, x22, x28
+    1790:	6b0e03df 	cmp	w30, w14
+    1794:	54ffed2c 	b.gt	1538 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x5a8>
+    1798:	f94053e0 	ldr	x0, [sp, #160]
+    179c:	2a1e03e2 	mov	w2, w30
+    17a0:	f94007fa 	ldr	x26, [sp, #8]
+    17a4:	a9538ff1 	ldp	x17, x3, [sp, #312]
+    17a8:	6b0000ff 	cmp	w7, w0
+    17ac:	540000cd 	b.le	17c4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x834>
+    17b0:	91000400 	add	x0, x0, #0x1
+    17b4:	f90053e0 	str	x0, [sp, #160]
+    17b8:	8b090063 	add	x3, x3, x9
+    17bc:	7100005f 	cmp	w2, #0x0
+    17c0:	54ffe9cc 	b.gt	14f8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x568>
+    17c4:	aa0103e6 	mov	x6, x1
+    17c8:	aa1803e8 	mov	x8, x24
+    17cc:	aa0903fb 	mov	x27, x9
+    17d0:	b40000c1 	cbz	x1, 17e8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x858>
+    17d4:	f94063e1 	ldr	x1, [sp, #192]
+    17d8:	aa0603e0 	mov	x0, x6
+    17dc:	a90023ea 	stp	x10, x8, [sp]
+    17e0:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    17e4:	a94023ea 	ldp	x10, x8, [sp]
+    17e8:	f9404be4 	ldr	x4, [sp, #144]
+    17ec:	a9558be3 	ldp	x3, x2, [sp, #344]
+    17f0:	a9157fff 	stp	xzr, xzr, [sp, #336]
+    17f4:	f9400080 	ldr	x0, [x4]
+    17f8:	a9000c8a 	stp	x10, x3, [x4]
+    17fc:	f9400881 	ldr	x1, [x4, #16]
+    1800:	f9000882 	str	x2, [x4, #16]
+    1804:	f900b3ff 	str	xzr, [sp, #352]
+    1808:	b40000a0 	cbz	x0, 181c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x88c>
+    180c:	cb000021 	sub	x1, x1, x0
+    1810:	f90003e8 	str	x8, [sp]
+    1814:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    1818:	f94003e8 	ldr	x8, [sp]
+    181c:	f9404be5 	ldr	x5, [sp, #144]
+    1820:	a9578fe4 	ldp	x4, x3, [sp, #376]
+    1824:	a9177fff 	stp	xzr, xzr, [sp, #368]
+    1828:	f9400ca0 	ldr	x0, [x5, #24]
+    182c:	a90190a8 	stp	x8, x4, [x5, #24]
+    1830:	f94014a1 	ldr	x1, [x5, #40]
+    1834:	f90014a3 	str	x3, [x5, #40]
+    1838:	f900c3ff 	str	xzr, [sp, #384]
+    183c:	b4000060 	cbz	x0, 1848 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x8b8>
+    1840:	cb000021 	sub	x1, x1, x0
+    1844:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    1848:	f9404be5 	ldr	x5, [sp, #144]
+    184c:	f94057e6 	ldr	x6, [sp, #168]
+    1850:	f94018a0 	ldr	x0, [x5, #48]
+    1854:	a9598fe4 	ldp	x4, x3, [sp, #408]
+    1858:	a90310a6 	stp	x6, x4, [x5, #48]
+    185c:	f94020a1 	ldr	x1, [x5, #64]
+    1860:	f90020a3 	str	x3, [x5, #64]
+    1864:	a9197fff 	stp	xzr, xzr, [sp, #400]
+    1868:	f900d3ff 	str	xzr, [sp, #416]
+    186c:	b4000060 	cbz	x0, 1878 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x8e8>
+    1870:	cb000021 	sub	x1, x1, x0
+    1874:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    1878:	f9404be3 	ldr	x3, [sp, #144]
+    187c:	a91b7fff 	stp	xzr, xzr, [sp, #432]
+    1880:	f9409be2 	ldr	x2, [sp, #304]
+    1884:	f900e3ff 	str	xzr, [sp, #448]
+    1888:	f94083e4 	ldr	x4, [sp, #256]
+    188c:	f9400841 	ldr	x1, [x2, #16]
+    1890:	f9404860 	ldr	x0, [x3, #144]
+    1894:	f9004864 	str	x4, [x3, #144]
+    1898:	f9407be3 	ldr	x3, [sp, #240]
+    189c:	f9000443 	str	x3, [x2, #8]
+    18a0:	f94087e3 	ldr	x3, [sp, #264]
+    18a4:	f9000843 	str	x3, [x2, #16]
+    18a8:	b4000060 	cbz	x0, 18b4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x924>
+    18ac:	cb000021 	sub	x1, x1, x0
+    18b0:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    18b4:	f9406be0 	ldr	x0, [sp, #208]
+    18b8:	f9404be2 	ldr	x2, [sp, #144]
+    18bc:	a9400003 	ldp	x3, x0, [x0]
+    18c0:	9101e054 	add	x20, x2, #0x78
+    18c4:	f9400684 	ldr	x4, [x20, #8]
+    18c8:	f9403c45 	ldr	x5, [x2, #120]
+    18cc:	cb030001 	sub	x1, x0, x3
+    18d0:	cb050082 	sub	x2, x4, x5
+    18d4:	9342fc21 	asr	x1, x1, #2
+    18d8:	9342fc42 	asr	x2, x2, #2
+    18dc:	9b1b7c21 	mul	x1, x1, x27
+    18e0:	eb02003f 	cmp	x1, x2
+    18e4:	54007428 	b.hi	2768 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x17d8>  // b.pmore
+    18e8:	54007363 	b.cc	2754 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x17c4>  // b.lo, b.ul, b.last
+    18ec:	eb03001f 	cmp	x0, x3
+    18f0:	54000340 	b.eq	1958 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x9c8>  // b.none
+    18f4:	b940dfe1 	ldr	w1, [sp, #220]
+    18f8:	7100003f 	cmp	w1, #0x0
+    18fc:	540002ed 	b.le	1958 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x9c8>
+    1900:	d37ef77b 	lsl	x27, x27, #2
+    1904:	d2800015 	mov	x21, #0x0                   	// #0
+    1908:	d2800013 	mov	x19, #0x0                   	// #0
+    190c:	f100137f 	cmp	x27, #0x4
+    1910:	54007cc0 	b.eq	28a8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1918>  // b.none
+    1914:	f9406bf6 	ldr	x22, [sp, #208]
+    1918:	f9409bf7 	ldr	x23, [sp, #304]
+    191c:	aa1b03e2 	mov	x2, x27
+    1920:	b8737861 	ldr	w1, [x3, x19, lsl #2]
+    1924:	91000673 	add	x19, x19, #0x1
+    1928:	b940dfe4 	ldr	w4, [sp, #220]
+    192c:	f94002e3 	ldr	x3, [x23]
+    1930:	f9400280 	ldr	x0, [x20]
+    1934:	9b217c81 	smull	x1, w4, w1
+    1938:	8b150000 	add	x0, x0, x21
+    193c:	8b1b02b5 	add	x21, x21, x27
+    1940:	8b010861 	add	x1, x3, x1, lsl #2
+    1944:	94000000 	bl	0 <memmove>
+    1948:	a94002c3 	ldp	x3, x0, [x22]
+    194c:	cb030000 	sub	x0, x0, x3
+    1950:	eb800a7f 	cmp	x19, x0, asr #2
+    1954:	54fffe43 	b.cc	191c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x98c>  // b.lo, b.ul, b.last
+    1958:	f94073e0 	ldr	x0, [sp, #224]
+    195c:	b4000060 	cbz	x0, 1968 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x9d8>
+    1960:	f9408be1 	ldr	x1, [sp, #272]
+    1964:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    1968:	f9408fe0 	ldr	x0, [sp, #280]
+    196c:	d2800101 	mov	x1, #0x8                   	// #8
+    1970:	94000000 	bl	0 <operator delete(void*, unsigned long)>
+    1974:	90000000 	adrp	x0, 0 <__stack_chk_guard>
+    1978:	f9400000 	ldr	x0, [x0]
+    197c:	f94107e2 	ldr	x2, [sp, #520]
+    1980:	f9400001 	ldr	x1, [x0]
+    1984:	eb010042 	subs	x2, x2, x1
+    1988:	d2800001 	mov	x1, #0x0                   	// #0
+    198c:	54007d81 	b.ne	293c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19ac>  // b.any
+    1990:	f9404be0 	ldr	x0, [sp, #144]
+    1994:	910843ff 	add	sp, sp, #0x210
+    1998:	a94153f3 	ldp	x19, x20, [sp, #16]
+    199c:	a9425bf5 	ldp	x21, x22, [sp, #32]
+    19a0:	a94363f7 	ldp	x23, x24, [sp, #48]
+    19a4:	a9446bf9 	ldp	x25, x26, [sp, #64]
+    19a8:	a94573fb 	ldp	x27, x28, [sp, #80]
+    19ac:	6d4627e8 	ldp	d8, d9, [sp, #96]
+    19b0:	6d472fea 	ldp	d10, d11, [sp, #112]
+    19b4:	a8c87bfd 	ldp	x29, x30, [sp], #128
+    19b8:	d65f03c0 	ret
+    19bc:	1e20402b 	fmov	s11, s1
+    19c0:	17ffff16 	b	1618 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x688>
+    19c4:	2f00e401 	movi	d1, #0x0
+    19c8:	aa0403e2 	mov	x2, x4
+    19cc:	aa0103e0 	mov	x0, x1
+    19d0:	bc404400 	ldr	s0, [x0], #4
+    19d4:	bd400042 	ldr	s2, [x2]
+    19d8:	8b140042 	add	x2, x2, x20
+    19dc:	1e200860 	fmul	s0, s3, s0
+    19e0:	1e22c042 	fcvt	d2, s2
+    19e4:	1e22c000 	fcvt	d0, s0
+    19e8:	1f420401 	fmadd	d1, d0, d2, d1
+    19ec:	eb13001f 	cmp	x0, x19
+    19f0:	54ffff01 	b.ne	19d0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xa40>  // b.any
+    19f4:	1e624021 	fcvt	s1, d1
+    19f8:	17ffff5c 	b	1768 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x7d8>
+    19fc:	2f00e401 	movi	d1, #0x0
+    1a00:	d2800002 	mov	x2, #0x0                   	// #0
+    1a04:	d503201f 	nop
+    1a08:	bc626ac2 	ldr	s2, [x22, x2]
+    1a0c:	bc626800 	ldr	s0, [x0, x2]
+    1a10:	91001042 	add	x2, x2, #0x4
+    1a14:	1e22c042 	fcvt	d2, s2
+    1a18:	1e22c000 	fcvt	d0, s0
+    1a1c:	1f400441 	fmadd	d1, d2, d0, d1
+    1a20:	eb1c005f 	cmp	x2, x28
+    1a24:	54ffff21 	b.ne	1a08 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xa78>  // b.any
+    1a28:	1e624021 	fcvt	s1, d1
+    1a2c:	17fffef7 	b	1608 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x678>
+    1a30:	0f000401 	movi	v1.2s, #0x0
+    1a34:	17fffef5 	b	1608 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x678>
+    1a38:	52800002 	mov	w2, #0x0                   	// #0
+    1a3c:	17fffeda 	b	15a4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x614>
+    1a40:	f9404be2 	ldr	x2, [sp, #144]
+    1a44:	f9405fe4 	ldr	x4, [sp, #184]
+    1a48:	f9402442 	ldr	x2, [x2, #72]
+    1a4c:	8b000840 	add	x0, x2, x0, lsl #2
+    1a50:	f100109f 	cmp	x4, #0x4
+    1a54:	5400192d 	b.le	1d78 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xde8>
+    1a58:	aa0403e2 	mov	x2, x4
+    1a5c:	f9000fe1 	str	x1, [sp, #24]
+    1a60:	b90023e3 	str	w3, [sp, #32]
+    1a64:	b9002be5 	str	w5, [sp, #40]
+    1a68:	b90033e7 	str	w7, [sp, #48]
+    1a6c:	b9003bec 	str	w12, [sp, #56]
+    1a70:	a9042fe6 	stp	x6, x11, [sp, #64]
+    1a74:	a90523ee 	stp	x14, x8, [sp, #80]
+    1a78:	a9062bf2 	stp	x18, x10, [sp, #96]
+    1a7c:	f9003be9 	str	x9, [sp, #112]
+    1a80:	b9007bed 	str	w13, [sp, #120]
+    1a84:	b900dbef 	str	w15, [sp, #216]
+    1a88:	94000000 	bl	0 <memmove>
+    1a8c:	a9442fe6 	ldp	x6, x11, [sp, #64]
+    1a90:	a94523ee 	ldp	x14, x8, [sp, #80]
+    1a94:	a9462bf2 	ldp	x18, x10, [sp, #96]
+    1a98:	f9400fe1 	ldr	x1, [sp, #24]
+    1a9c:	f9403be9 	ldr	x9, [sp, #112]
+    1aa0:	b94023e3 	ldr	w3, [sp, #32]
+    1aa4:	b9402be5 	ldr	w5, [sp, #40]
+    1aa8:	b94033e7 	ldr	w7, [sp, #48]
+    1aac:	b9403bec 	ldr	w12, [sp, #56]
+    1ab0:	b9407bed 	ldr	w13, [sp, #120]
+    1ab4:	b940dbef 	ldr	w15, [sp, #216]
+    1ab8:	f94007e0 	ldr	x0, [sp, #8]
+    1abc:	eb01001f 	cmp	x0, x1
+    1ac0:	54ffdda1 	b.ne	1674 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x6e4>  // b.any
+    1ac4:	350007db 	cbnz	w27, 1bbc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc2c>
+    1ac8:	6b0700bf 	cmp	w5, w7
+    1acc:	540017ea 	b.ge	1dc8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xe38>  // b.tcont
+    1ad0:	f9404be0 	ldr	x0, [sp, #144]
+    1ad4:	0f00040a 	movi	v10.2s, #0x0
+    1ad8:	f9403002 	ldr	x2, [x0, #96]
+    1adc:	b940fbe0 	ldr	w0, [sp, #248]
+    1ae0:	f94067e3 	ldr	x3, [sp, #200]
+    1ae4:	7100101f 	cmp	w0, #0x4
+    1ae8:	f9400be0 	ldr	x0, [sp, #16]
+    1aec:	8b030000 	add	x0, x0, x3
+    1af0:	540000c9 	b.ls	1b08 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xb78>  // b.plast
+    1af4:	91001023 	add	x3, x1, #0x4
+    1af8:	8b000844 	add	x4, x2, x0, lsl #2
+    1afc:	cb030083 	sub	x3, x4, x3
+    1b00:	f100207f 	cmp	x3, #0x8
+    1b04:	54000e68 	b.hi	1cd0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xd40>  // b.pmore
+    1b08:	f94097e3 	ldr	x3, [sp, #296]
+    1b0c:	8b000842 	add	x2, x2, x0, lsl #2
+    1b10:	d2800000 	mov	x0, #0x0                   	// #0
+    1b14:	d503201f 	nop
+    1b18:	bc607820 	ldr	s0, [x1, x0, lsl #2]
+    1b1c:	1e2a1800 	fdiv	s0, s0, s10
+    1b20:	bc207840 	str	s0, [x2, x0, lsl #2]
+    1b24:	91000400 	add	x0, x0, #0x1
+    1b28:	eb00007f 	cmp	x3, x0
+    1b2c:	54ffff61 	b.ne	1b18 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xb88>  // b.any
+    1b30:	17fffef6 	b	1708 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x778>
+    1b34:	2f00e401 	movi	d1, #0x0
+    1b38:	aa0103e0 	mov	x0, x1
+    1b3c:	d503201f 	nop
+    1b40:	bd400000 	ldr	s0, [x0]
+    1b44:	eb00005f 	cmp	x2, x0
+    1b48:	91001000 	add	x0, x0, #0x4
+    1b4c:	1e22c000 	fcvt	d0, s0
+    1b50:	1e602821 	fadd	d1, d1, d0
+    1b54:	54ffff61 	b.ne	1b40 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbb0>  // b.any
+    1b58:	1e624021 	fcvt	s1, d1
+    1b5c:	1e2e1003 	fmov	s3, #1.000000000000000000e+00
+    1b60:	1e211863 	fdiv	s3, s3, s1
+    1b64:	36f80323 	tbz	w3, #31, 1bc8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc38>
+    1b68:	f94047e0 	ldr	x0, [sp, #136]
+    1b6c:	b940041e 	ldr	w30, [x0, #4]
+    1b70:	710002bf 	cmp	w21, #0x0
+    1b74:	54ffdd4c 	b.gt	171c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x78c>
+    1b78:	f94003e0 	ldr	x0, [sp]
+    1b7c:	910005ce 	add	x14, x14, #0x1
+    1b80:	8b06016b 	add	x11, x11, x6
+    1b84:	8b0602f7 	add	x23, x23, x6
+    1b88:	8b060010 	add	x16, x0, x6
+    1b8c:	f90003f0 	str	x16, [sp]
+    1b90:	8b1c02d6 	add	x22, x22, x28
+    1b94:	6b0e03df 	cmp	w30, w14
+    1b98:	54ffcd0c 	b.gt	1538 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x5a8>
+    1b9c:	17fffeff 	b	1798 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x808>
+    1ba0:	6b0700bf 	cmp	w5, w7
+    1ba4:	54ffdb2a 	b.ge	1708 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x778>  // b.tcont
+    1ba8:	f9404be0 	ldr	x0, [sp, #144]
+    1bac:	f9403002 	ldr	x2, [x0, #96]
+    1bb0:	17ffffcb 	b	1adc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xb4c>
+    1bb4:	1e20412b 	fmov	s11, s9
+    1bb8:	17fffe9d 	b	162c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x69c>
+    1bbc:	0f00040a 	movi	v10.2s, #0x0
+    1bc0:	1e2e1003 	fmov	s3, #1.000000000000000000e+00
+    1bc4:	1e2a1863 	fdiv	s3, s3, s10
+    1bc8:	6b0700bf 	cmp	w5, w7
+    1bcc:	54fffcea 	b.ge	1b68 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbd8>  // b.tcont
+    1bd0:	f9404be0 	ldr	x0, [sp, #144]
+    1bd4:	f94067e2 	ldr	x2, [sp, #200]
+    1bd8:	f9403003 	ldr	x3, [x0, #96]
+    1bdc:	b940fbe0 	ldr	w0, [sp, #248]
+    1be0:	7100101f 	cmp	w0, #0x4
+    1be4:	f9400be0 	ldr	x0, [sp, #16]
+    1be8:	8b020000 	add	x0, x0, x2
+    1bec:	540000c9 	b.ls	1c04 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc74>  // b.plast
+    1bf0:	91001022 	add	x2, x1, #0x4
+    1bf4:	8b000864 	add	x4, x3, x0, lsl #2
+    1bf8:	cb020082 	sub	x2, x4, x2
+    1bfc:	f100205f 	cmp	x2, #0x8
+    1c00:	54000168 	b.hi	1c2c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc9c>  // b.pmore
+    1c04:	8b000862 	add	x2, x3, x0, lsl #2
+    1c08:	d2800000 	mov	x0, #0x0                   	// #0
+    1c0c:	f94097e3 	ldr	x3, [sp, #296]
+    1c10:	bc607820 	ldr	s0, [x1, x0, lsl #2]
+    1c14:	1e230800 	fmul	s0, s0, s3
+    1c18:	bc207840 	str	s0, [x2, x0, lsl #2]
+    1c1c:	91000400 	add	x0, x0, #0x1
+    1c20:	eb00007f 	cmp	x3, x0
+    1c24:	54ffff61 	b.ne	1c10 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xc80>  // b.any
+    1c28:	17ffffd0 	b	1b68 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbd8>
+    1c2c:	4e040461 	dup	v1.4s, v3.s[0]
+    1c30:	b940ebe0 	ldr	w0, [sp, #232]
+    1c34:	53027c02 	lsr	w2, w0, #2
+    1c38:	d2800000 	mov	x0, #0x0                   	// #0
+    1c3c:	d37cec42 	lsl	x2, x2, #4
+    1c40:	3ce06820 	ldr	q0, [x1, x0]
+    1c44:	6e21dc00 	fmul	v0.4s, v0.4s, v1.4s
+    1c48:	3ca06880 	str	q0, [x4, x0]
+    1c4c:	91004000 	add	x0, x0, #0x10
+    1c50:	eb00005f 	cmp	x2, x0
+    1c54:	54ffff61 	b.ne	1c40 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xcb0>  // b.any
+    1c58:	b940ebe4 	ldr	w4, [sp, #232]
+    1c5c:	121e7482 	and	w2, w4, #0xfffffffc
+    1c60:	0b0200a0 	add	w0, w5, w2
+    1c64:	f240049f 	tst	x4, #0x3
+    1c68:	54fff800 	b.eq	1b68 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbd8>  // b.none
+    1c6c:	bc62d820 	ldr	s0, [x1, w2, sxtw #2]
+    1c70:	f9400be2 	ldr	x2, [sp, #16]
+    1c74:	1e230800 	fmul	s0, s0, s3
+    1c78:	8b20c044 	add	x4, x2, w0, sxtw
+    1c7c:	11000402 	add	w2, w0, #0x1
+    1c80:	bc247860 	str	s0, [x3, x4, lsl #2]
+    1c84:	6b0200ff 	cmp	w7, w2
+    1c88:	54fff70d 	b.le	1b68 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbd8>
+    1c8c:	4b050044 	sub	w4, w2, w5
+    1c90:	11000800 	add	w0, w0, #0x2
+    1c94:	f9400bf0 	ldr	x16, [sp, #16]
+    1c98:	bc64d820 	ldr	s0, [x1, w4, sxtw #2]
+    1c9c:	8b22c202 	add	x2, x16, w2, sxtw
+    1ca0:	1e230800 	fmul	s0, s0, s3
+    1ca4:	bc227860 	str	s0, [x3, x2, lsl #2]
+    1ca8:	6b0000ff 	cmp	w7, w0
+    1cac:	54fff5ed 	b.le	1b68 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xbd8>
+    1cb0:	4b050002 	sub	w2, w0, w5
+    1cb4:	8b20c200 	add	x0, x16, w0, sxtw
+    1cb8:	f94047e4 	ldr	x4, [sp, #136]
+    1cbc:	bc62d820 	ldr	s0, [x1, w2, sxtw #2]
+    1cc0:	b940049e 	ldr	w30, [x4, #4]
+    1cc4:	1e230800 	fmul	s0, s0, s3
+    1cc8:	bc207860 	str	s0, [x3, x0, lsl #2]
+    1ccc:	17fffe92 	b	1714 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x784>
+    1cd0:	4e040541 	dup	v1.4s, v10.s[0]
+    1cd4:	b940ebe0 	ldr	w0, [sp, #232]
+    1cd8:	53027c03 	lsr	w3, w0, #2
+    1cdc:	d2800000 	mov	x0, #0x0                   	// #0
+    1ce0:	d37cec63 	lsl	x3, x3, #4
+    1ce4:	3ce06820 	ldr	q0, [x1, x0]
+    1ce8:	6e21fc00 	fdiv	v0.4s, v0.4s, v1.4s
+    1cec:	3ca06880 	str	q0, [x4, x0]
+    1cf0:	91004000 	add	x0, x0, #0x10
+    1cf4:	eb00007f 	cmp	x3, x0
+    1cf8:	54ffff61 	b.ne	1ce4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xd54>  // b.any
+    1cfc:	b940ebe4 	ldr	w4, [sp, #232]
+    1d00:	121e7483 	and	w3, w4, #0xfffffffc
+    1d04:	0b0300a0 	add	w0, w5, w3
+    1d08:	f240049f 	tst	x4, #0x3
+    1d0c:	54ffcfe0 	b.eq	1708 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x778>  // b.none
+    1d10:	bc63d820 	ldr	s0, [x1, w3, sxtw #2]
+    1d14:	11000403 	add	w3, w0, #0x1
+    1d18:	f9400bf0 	ldr	x16, [sp, #16]
+    1d1c:	1e2a1800 	fdiv	s0, s0, s10
+    1d20:	8b20c204 	add	x4, x16, w0, sxtw
+    1d24:	bc247840 	str	s0, [x2, x4, lsl #2]
+    1d28:	6b0300ff 	cmp	w7, w3
+    1d2c:	54ffceed 	b.le	1708 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x778>
+    1d30:	4b050064 	sub	w4, w3, w5
+    1d34:	8b23c203 	add	x3, x16, w3, sxtw
+    1d38:	11000800 	add	w0, w0, #0x2
+    1d3c:	bc64d820 	ldr	s0, [x1, w4, sxtw #2]
+    1d40:	1e2a1800 	fdiv	s0, s0, s10
+    1d44:	bc237840 	str	s0, [x2, x3, lsl #2]
+    1d48:	6b0000ff 	cmp	w7, w0
+    1d4c:	54ffcded 	b.le	1708 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x778>
+    1d50:	4b050003 	sub	w3, w0, w5
+    1d54:	8b20c200 	add	x0, x16, w0, sxtw
+    1d58:	bc63d820 	ldr	s0, [x1, w3, sxtw #2]
+    1d5c:	1e2a1800 	fdiv	s0, s0, s10
+    1d60:	bc207840 	str	s0, [x2, x0, lsl #2]
+    1d64:	17fffe69 	b	1708 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x778>
+    1d68:	3500013b 	cbnz	w27, 1d8c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xdfc>
+    1d6c:	0f00040a 	movi	v10.2s, #0x0
+    1d70:	1e204143 	fmov	s3, s10
+    1d74:	17fffe68 	b	1714 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x784>
+    1d78:	54ffea01 	b.ne	1ab8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xb28>  // b.any
+    1d7c:	f9400be0 	ldr	x0, [sp, #16]
+    1d80:	bd400020 	ldr	s0, [x1]
+    1d84:	bc207840 	str	s0, [x2, x0, lsl #2]
+    1d88:	17ffff4c 	b	1ab8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xb28>
+    1d8c:	0f000400 	movi	v0.2s, #0x0
+    1d90:	1e2e1003 	fmov	s3, #1.000000000000000000e+00
+    1d94:	1e201863 	fdiv	s3, s3, s0
+    1d98:	1e20400a 	fmov	s10, s0
+    1d9c:	17fffe5e 	b	1714 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x784>
+    1da0:	f940cbe0 	ldr	x0, [sp, #400]
+    1da4:	f90057e0 	str	x0, [sp, #168]
+    1da8:	f940abea 	ldr	x10, [sp, #336]
+    1dac:	f940bbe8 	ldr	x8, [sp, #368]
+    1db0:	6b1802ff 	cmp	w23, w24
+    1db4:	54ffd1aa 	b.ge	17e8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x858>  // b.tcont
+    1db8:	d280001a 	mov	x26, #0x0                   	// #0
+    1dbc:	d2800006 	mov	x6, #0x0                   	// #0
+    1dc0:	a90bffff 	stp	xzr, xzr, [sp, #184]
+    1dc4:	17fffda7 	b	1460 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x4d0>
+    1dc8:	f94047e0 	ldr	x0, [sp, #136]
+    1dcc:	b940041e 	ldr	w30, [x0, #4]
+    1dd0:	17ffffe7 	b	1d6c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xddc>
+    1dd4:	aa0003fa 	mov	x26, x0
+    1dd8:	d2800080 	mov	x0, #0x4                   	// #4
+    1ddc:	a90b83e0 	stp	x0, x0, [sp, #184]
+    1de0:	6b1802ff 	cmp	w23, w24
+    1de4:	54ffb3eb 	b.lt	1460 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x4d0>  // b.tstop
+    1de8:	17fffe7b 	b	17d4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x844>
+    1dec:	54ffa002 	b.cs	11ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x25c>  // b.hs, b.nlast
+    1df0:	8b020063 	add	x3, x3, x2
+    1df4:	eb03009f 	cmp	x4, x3
+    1df8:	54ff9fa0 	b.eq	11ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x25c>  // b.none
+    1dfc:	f9000403 	str	x3, [x0, #8]
+    1e00:	17fffcfb 	b	11ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x25c>
+    1e04:	b9401be0 	ldr	w0, [sp, #24]
+    1e08:	34ffa580 	cbz	w0, 12b8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x328>
+    1e0c:	f94047e0 	ldr	x0, [sp, #136]
+    1e10:	0b557eb7 	add	w23, w21, w21, lsr #31
+    1e14:	b940dfe2 	ldr	w2, [sp, #220]
+    1e18:	93407ea3 	sxtw	x3, w21
+    1e1c:	f90007e3 	str	x3, [sp, #8]
+    1e20:	13017ef7 	asr	w23, w23, #1
+    1e24:	b9400401 	ldr	w1, [x0, #4]
+    1e28:	937e7eb6 	sbfiz	x22, x21, #2, #32
+    1e2c:	531f7840 	lsl	w0, w2, #1
+    1e30:	b900dbe1 	str	w1, [sp, #216]
+    1e34:	93407c00 	sxtw	x0, w0
+    1e38:	7100003f 	cmp	w1, #0x0
+    1e3c:	54ffa3ed 	b.le	12b8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x328>
+    1e40:	37001679 	tbnz	w25, #0, 210c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x117c>
+    1e44:	710006bf 	cmp	w21, #0x1
+    1e48:	d37ef402 	lsl	x2, x0, #2
+    1e4c:	1a9fc6f2 	csinc	w18, w23, wzr, gt
+    1e50:	93407ee0 	sxtw	x0, w23
+    1e54:	f90003e0 	str	x0, [sp]
+    1e58:	121e7640 	and	w0, w18, #0xfffffffc
+    1e5c:	b90023e0 	str	w0, [sp, #32]
+    1e60:	12000640 	and	w0, w18, #0x3
+    1e64:	937e7ee9 	sbfiz	x9, x23, #2, #32
+    1e68:	b90053e0 	str	w0, [sp, #80]
+    1e6c:	53027e40 	lsr	w0, w18, #2
+    1e70:	d280000f 	mov	x15, #0x0                   	// #0
+    1e74:	d37ef76a 	lsl	x10, x27, #2
+    1e78:	2a1503ee 	mov	w14, w21
+    1e7c:	aa0903e3 	mov	x3, x9
+    1e80:	aa1b03ec 	mov	x12, x27
+    1e84:	b9005bf2 	str	w18, [sp, #88]
+    1e88:	2a1703f2 	mov	w18, w23
+    1e8c:	aa0f03f7 	mov	x23, x15
+    1e90:	d37cec00 	lsl	x0, x0, #4
+    1e94:	d280000b 	mov	x11, #0x0                   	// #0
+    1e98:	d2800008 	mov	x8, #0x0                   	// #0
+    1e9c:	52800001 	mov	w1, #0x0                   	// #0
+    1ea0:	f90023e0 	str	x0, [sp, #64]
+    1ea4:	f94017e4 	ldr	x4, [sp, #40]
+    1ea8:	8b0b0560 	add	x0, x11, x11, lsl #1
+    1eac:	d37ef579 	lsl	x25, x11, #2
+    1eb0:	aa0b03fb 	mov	x27, x11
+    1eb4:	d37ef400 	lsl	x0, x0, #2
+    1eb8:	2a0103e5 	mov	w5, w1
+    1ebc:	f9400095 	ldr	x21, [x4]
+    1ec0:	8b000147 	add	x7, x10, x0
+    1ec4:	8b000046 	add	x6, x2, x0
+    1ec8:	aa0203ed 	mov	x13, x2
+    1ecc:	8b0702a7 	add	x7, x21, x7
+    1ed0:	8b0602a6 	add	x6, x21, x6
+    1ed4:	8b0002b5 	add	x21, x21, x0
+    1ed8:	8b03033c 	add	x28, x25, x3
+    1edc:	f9400be0 	ldr	x0, [sp, #16]
+    1ee0:	aa1503e4 	mov	x4, x21
+    1ee4:	2a0e03f5 	mov	w21, w14
+    1ee8:	8b190358 	add	x24, x26, x25
+    1eec:	8b140333 	add	x19, x25, x20
+    1ef0:	52800009 	mov	w9, #0x0                   	// #0
+    1ef4:	8b190019 	add	x25, x0, x25
+    1ef8:	910012e0 	add	x0, x23, #0x4
+    1efc:	f90027e0 	str	x0, [sp, #72]
+    1f00:	f90033e3 	str	x3, [sp, #96]
+    1f04:	710002bf 	cmp	w21, #0x0
+    1f08:	54000ced 	b.le	20a4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1114>
+    1f0c:	f10012df 	cmp	x22, #0x4
+    1f10:	54004140 	b.eq	2738 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x17a8>  // b.none
+    1f14:	aa0403e1 	mov	x1, x4
+    1f18:	aa1603e2 	mov	x2, x22
+    1f1c:	aa1803e0 	mov	x0, x24
+    1f20:	a9069fe6 	stp	x6, x7, [sp, #104]
+    1f24:	f9003fe4 	str	x4, [sp, #120]
+    1f28:	b90083e5 	str	w5, [sp, #128]
+    1f2c:	b900a3f2 	str	w18, [sp, #160]
+    1f30:	b900abe9 	str	w9, [sp, #168]
+    1f34:	a90b2bed 	stp	x13, x10, [sp, #176]
+    1f38:	a90c23eb 	stp	x11, x8, [sp, #192]
+    1f3c:	f90077ec 	str	x12, [sp, #232]
+    1f40:	94000000 	bl	0 <memmove>
+    1f44:	f9403be7 	ldr	x7, [sp, #112]
+    1f48:	aa1603e2 	mov	x2, x22
+    1f4c:	aa1303e0 	mov	x0, x19
+    1f50:	aa0703e1 	mov	x1, x7
+    1f54:	94000000 	bl	0 <memmove>
+    1f58:	f94037e6 	ldr	x6, [sp, #104]
+    1f5c:	aa1603e2 	mov	x2, x22
+    1f60:	aa1903e0 	mov	x0, x25
+    1f64:	aa0603e1 	mov	x1, x6
+    1f68:	94000000 	bl	0 <memmove>
+    1f6c:	a9469fe6 	ldp	x6, x7, [sp, #104]
+    1f70:	a94b2bed 	ldp	x13, x10, [sp, #176]
+    1f74:	a94c23eb 	ldp	x11, x8, [sp, #192]
+    1f78:	f9403fe4 	ldr	x4, [sp, #120]
+    1f7c:	f94077ec 	ldr	x12, [sp, #232]
+    1f80:	b94083e5 	ldr	w5, [sp, #128]
+    1f84:	b940a3f2 	ldr	w18, [sp, #160]
+    1f88:	b940abe9 	ldr	w9, [sp, #168]
+    1f8c:	710006bf 	cmp	w21, #0x1
+    1f90:	540008a0 	b.eq	20a4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1114>  // b.none
+    1f94:	f9401be0 	ldr	x0, [sp, #48]
+    1f98:	f9400001 	ldr	x1, [x0]
+    1f9c:	f9401fe0 	ldr	x0, [sp, #56]
+    1fa0:	f9400000 	ldr	x0, [x0]
+    1fa4:	71000ebf 	cmp	w21, #0x3
+    1fa8:	54003bcd 	b.le	2720 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1790>
+    1fac:	f94027e3 	ldr	x3, [sp, #72]
+    1fb0:	8b030002 	add	x2, x0, x3
+    1fb4:	8b03002e 	add	x14, x1, x3
+    1fb8:	cb020310 	sub	x16, x24, x2
+    1fbc:	cb0e030f 	sub	x15, x24, x14
+    1fc0:	f100221f 	cmp	x16, #0x8
+    1fc4:	cb020270 	sub	x16, x19, x2
+    1fc8:	fa4889e0 	ccmp	x15, #0x8, #0x0, hi	// hi = pmore
+    1fcc:	cb0e027e 	sub	x30, x19, x14
+    1fd0:	d37ef76f 	lsl	x15, x27, #2
+    1fd4:	1a9f97f1 	cset	w17, hi	// hi = pmore
+    1fd8:	f100221f 	cmp	x16, #0x8
+    1fdc:	910041f0 	add	x16, x15, #0x10
+    1fe0:	fa488bc0 	ccmp	x30, #0x8, #0x0, hi	// hi = pmore
+    1fe4:	9100439e 	add	x30, x28, #0x10
+    1fe8:	1a9f97e3 	cset	w3, hi	// hi = pmore
+    1fec:	eb1c021f 	cmp	x16, x28
+    1ff0:	8b1c0290 	add	x16, x20, x28
+    1ff4:	fa4fc3c4 	ccmp	x30, x15, #0x4, gt
+    1ff8:	cb0e021e 	sub	x30, x16, x14
+    1ffc:	8b1c034f 	add	x15, x26, x28
+    2000:	fa48dbc0 	ccmp	x30, #0x8, #0x0, le
+    2004:	cb0e01ee 	sub	x14, x15, x14
+    2008:	1a9f97fe 	cset	w30, hi	// hi = pmore
+    200c:	f10021df 	cmp	x14, #0x8
+    2010:	cb02020e 	sub	x14, x16, x2
+    2014:	0a030231 	and	w17, w17, w3
+    2018:	fa4889c0 	ccmp	x14, #0x8, #0x0, hi	// hi = pmore
+    201c:	cb0201e2 	sub	x2, x15, x2
+    2020:	0a1103de 	and	w30, w30, w17
+    2024:	1a9f97f1 	cset	w17, hi	// hi = pmore
+    2028:	f100205f 	cmp	x2, #0x8
+    202c:	0a1e0231 	and	w17, w17, w30
+    2030:	1a9f97fe 	cset	w30, hi	// hi = pmore
+    2034:	aa1c03ee 	mov	x14, x28
+    2038:	d2800002 	mov	x2, #0x0                   	// #0
+    203c:	6a1103df 	tst	w30, w17
+    2040:	54002c21 	b.ne	25c4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1634>  // b.any
+    2044:	8b170021 	add	x1, x1, x23
+    2048:	8b170000 	add	x0, x0, x23
+    204c:	bc627820 	ldr	s0, [x1, x2, lsl #2]
+    2050:	bc627b07 	ldr	s7, [x24, x2, lsl #2]
+    2054:	bc627a65 	ldr	s5, [x19, x2, lsl #2]
+    2058:	bc627801 	ldr	s1, [x0, x2, lsl #2]
+    205c:	bc6e6b48 	ldr	s8, [x26, x14]
+    2060:	1e2008e4 	fmul	s4, s7, s0
+    2064:	bc6e6a86 	ldr	s6, [x20, x14]
+    2068:	1e2008a3 	fmul	s3, s5, s0
+    206c:	1e200902 	fmul	s2, s8, s0
+    2070:	1f019104 	fmsub	s4, s8, s1, s4
+    2074:	1f068c23 	fmsub	s3, s1, s6, s3
+    2078:	1e260800 	fmul	s0, s0, s6
+    207c:	1f0108e2 	fmadd	s2, s7, s1, s2
+    2080:	1f0100a0 	fmadd	s0, s5, s1, s0
+    2084:	bc227b04 	str	s4, [x24, x2, lsl #2]
+    2088:	bc227a63 	str	s3, [x19, x2, lsl #2]
+    208c:	91000442 	add	x2, x2, #0x1
+    2090:	bc2e6b42 	str	s2, [x26, x14]
+    2094:	bc2e6a80 	str	s0, [x20, x14]
+    2098:	910011ce 	add	x14, x14, #0x4
+    209c:	6b02025f 	cmp	w18, w2
+    20a0:	54fffd6c 	b.gt	204c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x10bc>
+    20a4:	f94007e0 	ldr	x0, [sp, #8]
+    20a8:	11000529 	add	w9, w9, #0x1
+    20ac:	8b16039c 	add	x28, x28, x22
+    20b0:	8b160318 	add	x24, x24, x22
+    20b4:	8b00037b 	add	x27, x27, x0
+    20b8:	b940dbe0 	ldr	w0, [sp, #216]
+    20bc:	8b160273 	add	x19, x19, x22
+    20c0:	8b160084 	add	x4, x4, x22
+    20c4:	8b1600e7 	add	x7, x7, x22
+    20c8:	8b1600c6 	add	x6, x6, x22
+    20cc:	8b160339 	add	x25, x25, x22
+    20d0:	6b00013f 	cmp	w9, w0
+    20d4:	54fff181 	b.ne	1f04 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xf74>  // b.any
+    20d8:	f94007e0 	ldr	x0, [sp, #8]
+    20dc:	110004a1 	add	w1, w5, #0x1
+    20e0:	f94033e3 	ldr	x3, [sp, #96]
+    20e4:	8b000108 	add	x8, x8, x0
+    20e8:	b9401be0 	ldr	w0, [sp, #24]
+    20ec:	2a1503ee 	mov	w14, w21
+    20f0:	aa0d03e2 	mov	x2, x13
+    20f4:	8b1602f7 	add	x23, x23, x22
+    20f8:	8b0c016b 	add	x11, x11, x12
+    20fc:	6b01001f 	cmp	w0, w1
+    2100:	54ffed21 	b.ne	1ea4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xf14>  // b.any
+    2104:	aa0c03fb 	mov	x27, x12
+    2108:	17fffc6c 	b	12b8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x328>
+    210c:	710006bf 	cmp	w21, #0x1
+    2110:	cb1b0000 	sub	x0, x0, x27
+    2114:	1a9fc6e9 	csinc	w9, w23, wzr, gt
+    2118:	52800181 	mov	w1, #0xc                   	// #12
+    211c:	d37ef40e 	lsl	x14, x0, #2
+    2120:	d37ef767 	lsl	x7, x27, #2
+    2124:	53027d20 	lsr	w0, w9, #2
+    2128:	9b217c4f 	smull	x15, w2, w1
+    212c:	937e7ef3 	sbfiz	x19, x23, #2, #32
+    2130:	121e7523 	and	w3, w9, #0xfffffffc
+    2134:	d37cec00 	lsl	x0, x0, #4
+    2138:	aa0f03fe 	mov	x30, x15
+    213c:	aa0e03e8 	mov	x8, x14
+    2140:	2a1703ef 	mov	w15, w23
+    2144:	aa0703e1 	mov	x1, x7
+    2148:	2a1503ee 	mov	w14, w21
+    214c:	aa1b03f1 	mov	x17, x27
+    2150:	f90023e0 	str	x0, [sp, #64]
+    2154:	93407ee0 	sxtw	x0, w23
+    2158:	aa1303f7 	mov	x23, x19
+    215c:	d2800002 	mov	x2, #0x0                   	// #0
+    2160:	d2800012 	mov	x18, #0x0                   	// #0
+    2164:	d280000b 	mov	x11, #0x0                   	// #0
+    2168:	d280000c 	mov	x12, #0x0                   	// #0
+    216c:	5280000d 	mov	w13, #0x0                   	// #0
+    2170:	f90013e0 	str	x0, [sp, #32]
+    2174:	b9004be3 	str	w3, [sp, #72]
+    2178:	12000523 	and	w3, w9, #0x3
+    217c:	b9005be3 	str	w3, [sp, #88]
+    2180:	b90063e9 	str	w9, [sp, #96]
+    2184:	f94017e0 	ldr	x0, [sp, #40]
+    2188:	8b0c0593 	add	x19, x12, x12, lsl #1
+    218c:	8b080035 	add	x21, x1, x8
+    2190:	aa0c03e6 	mov	x6, x12
+    2194:	8b020359 	add	x25, x26, x2
+    2198:	8b020298 	add	x24, x20, x2
+    219c:	f9400000 	ldr	x0, [x0]
+    21a0:	8b1a02fc 	add	x28, x23, x26
+    21a4:	8b17029b 	add	x27, x20, x23
+    21a8:	aa1703e9 	mov	x9, x23
+    21ac:	8b010003 	add	x3, x0, x1
+    21b0:	8b150015 	add	x21, x0, x21
+    21b4:	8b130813 	add	x19, x0, x19, lsl #2
+    21b8:	aa1e03e5 	mov	x5, x30
+    21bc:	f90003e3 	str	x3, [sp]
+    21c0:	aa1303e3 	mov	x3, x19
+    21c4:	aa0603f3 	mov	x19, x6
+    21c8:	aa0103e6 	mov	x6, x1
+    21cc:	b9006bed 	str	w13, [sp, #104]
+    21d0:	aa1103ed 	mov	x13, x17
+    21d4:	a90733f7 	stp	x23, x12, [sp, #112]
+    21d8:	aa0203ec 	mov	x12, x2
+    21dc:	aa1603e2 	mov	x2, x22
+    21e0:	aa1503f6 	mov	x22, x21
+    21e4:	91001240 	add	x0, x18, #0x4
+    21e8:	5280000a 	mov	w10, #0x0                   	// #0
+    21ec:	f9002be0 	str	x0, [sp, #80]
+    21f0:	710001df 	cmp	w14, #0x0
+    21f4:	54000d0d 	b.le	2394 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1404>
+    21f8:	f9400be0 	ldr	x0, [sp, #16]
+    21fc:	d37ef675 	lsl	x21, x19, #2
+    2200:	8b150017 	add	x23, x0, x21
+    2204:	f100105f 	cmp	x2, #0x4
+    2208:	54001c60 	b.eq	2594 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1604>  // b.none
+    220c:	aa0303e1 	mov	x1, x3
+    2210:	aa1903e0 	mov	x0, x25
+    2214:	f90043e2 	str	x2, [sp, #128]
+    2218:	f90053e3 	str	x3, [sp, #160]
+    221c:	b900abee 	str	w14, [sp, #168]
+    2220:	b900b3ef 	str	w15, [sp, #176]
+    2224:	b900bbea 	str	w10, [sp, #184]
+    2228:	a90c4be9 	stp	x9, x18, [sp, #192]
+    222c:	f90077eb 	str	x11, [sp, #232]
+    2230:	f9007fe7 	str	x7, [sp, #248]
+    2234:	a9121be5 	stp	x5, x6, [sp, #288]
+    2238:	a913b3e8 	stp	x8, x12, [sp, #312]
+    223c:	f900a7ed 	str	x13, [sp, #328]
+    2240:	94000000 	bl	0 <memmove>
+    2244:	f94003e1 	ldr	x1, [sp]
+    2248:	aa1803e0 	mov	x0, x24
+    224c:	f94043e2 	ldr	x2, [sp, #128]
+    2250:	94000000 	bl	0 <memmove>
+    2254:	f94043e2 	ldr	x2, [sp, #128]
+    2258:	aa1603e1 	mov	x1, x22
+    225c:	aa1703e0 	mov	x0, x23
+    2260:	94000000 	bl	0 <memmove>
+    2264:	a94c4be9 	ldp	x9, x18, [sp, #192]
+    2268:	a9521be5 	ldp	x5, x6, [sp, #288]
+    226c:	a953b3e8 	ldp	x8, x12, [sp, #312]
+    2270:	f94043e2 	ldr	x2, [sp, #128]
+    2274:	f94053e3 	ldr	x3, [sp, #160]
+    2278:	f94077eb 	ldr	x11, [sp, #232]
+    227c:	f9407fe7 	ldr	x7, [sp, #248]
+    2280:	f940a7ed 	ldr	x13, [sp, #328]
+    2284:	b940abee 	ldr	w14, [sp, #168]
+    2288:	b940b3ef 	ldr	w15, [sp, #176]
+    228c:	b940bbea 	ldr	w10, [sp, #184]
+    2290:	710005df 	cmp	w14, #0x1
+    2294:	54000800 	b.eq	2394 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1404>  // b.none
+    2298:	f9401be0 	ldr	x0, [sp, #48]
+    229c:	f9400001 	ldr	x1, [x0]
+    22a0:	f9401fe0 	ldr	x0, [sp, #56]
+    22a4:	f9400000 	ldr	x0, [x0]
+    22a8:	71000ddf 	cmp	w14, #0x3
+    22ac:	5400170d 	b.le	258c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x15fc>
+    22b0:	f9402be4 	ldr	x4, [sp, #80]
+    22b4:	8b040011 	add	x17, x0, x4
+    22b8:	8b040030 	add	x16, x1, x4
+    22bc:	cb11039e 	sub	x30, x28, x17
+    22c0:	cb100397 	sub	x23, x28, x16
+    22c4:	f10023df 	cmp	x30, #0x8
+    22c8:	cb11037e 	sub	x30, x27, x17
+    22cc:	fa488ae0 	ccmp	x23, #0x8, #0x0, hi	// hi = pmore
+    22d0:	cb100377 	sub	x23, x27, x16
+    22d4:	1a9f97e4 	cset	w4, hi	// hi = pmore
+    22d8:	f10023df 	cmp	x30, #0x8
+    22dc:	fa488ae0 	ccmp	x23, #0x8, #0x0, hi	// hi = pmore
+    22e0:	cb110317 	sub	x23, x24, x17
+    22e4:	1a9f97fe 	cset	w30, hi	// hi = pmore
+    22e8:	f10022ff 	cmp	x23, #0x8
+    22ec:	cb100317 	sub	x23, x24, x16
+    22f0:	cb110331 	sub	x17, x25, x17
+    22f4:	fa488ae0 	ccmp	x23, #0x8, #0x0, hi	// hi = pmore
+    22f8:	cb100330 	sub	x16, x25, x16
+    22fc:	1a9f97f7 	cset	w23, hi	// hi = pmore
+    2300:	f100223f 	cmp	x17, #0x8
+    2304:	fa488a00 	ccmp	x16, #0x8, #0x0, hi	// hi = pmore
+    2308:	91004130 	add	x16, x9, #0x10
+    230c:	0a1e0091 	and	w17, w4, w30
+    2310:	1a9f97fe 	cset	w30, hi	// hi = pmore
+    2314:	eb15021f 	cmp	x16, x21
+    2318:	910042b5 	add	x21, x21, #0x10
+    231c:	0a1102f7 	and	w23, w23, w17
+    2320:	fa55c120 	ccmp	x9, x21, #0x0, gt
+    2324:	0a1703de 	and	w30, w30, w23
+    2328:	1a9fb7f1 	cset	w17, ge	// ge = tcont
+    232c:	d2800010 	mov	x16, #0x0                   	// #0
+    2330:	6a1e023f 	tst	w17, w30
+    2334:	54000761 	b.ne	2420 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1490>  // b.any
+    2338:	8b120021 	add	x1, x1, x18
+    233c:	8b120000 	add	x0, x0, x18
+    2340:	bc707800 	ldr	s0, [x0, x16, lsl #2]
+    2344:	bc707b67 	ldr	s7, [x27, x16, lsl #2]
+    2348:	bc707b85 	ldr	s5, [x28, x16, lsl #2]
+    234c:	bc707821 	ldr	s1, [x1, x16, lsl #2]
+    2350:	bc707b08 	ldr	s8, [x24, x16, lsl #2]
+    2354:	1e270804 	fmul	s4, s0, s7
+    2358:	bc707b26 	ldr	s6, [x25, x16, lsl #2]
+    235c:	1e250803 	fmul	s3, s0, s5
+    2360:	1e280802 	fmul	s2, s0, s8
+    2364:	1f289024 	fnmsub	s4, s1, s8, s4
+    2368:	1f268c23 	fnmsub	s3, s1, s6, s3
+    236c:	1e260800 	fmul	s0, s0, s6
+    2370:	1f070822 	fmadd	s2, s1, s7, s2
+    2374:	1f050020 	fmadd	s0, s1, s5, s0
+    2378:	bc307b04 	str	s4, [x24, x16, lsl #2]
+    237c:	bc307b23 	str	s3, [x25, x16, lsl #2]
+    2380:	bc307b62 	str	s2, [x27, x16, lsl #2]
+    2384:	bc307b80 	str	s0, [x28, x16, lsl #2]
+    2388:	91000610 	add	x16, x16, #0x1
+    238c:	6b1001ff 	cmp	w15, w16
+    2390:	54fffd8c 	b.gt	2340 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x13b0>
+    2394:	f94003e0 	ldr	x0, [sp]
+    2398:	1100054a 	add	w10, w10, #0x1
+    239c:	8b020339 	add	x25, x25, x2
+    23a0:	8b020063 	add	x3, x3, x2
+    23a4:	8b020000 	add	x0, x0, x2
+    23a8:	f90003e0 	str	x0, [sp]
+    23ac:	f94007e0 	ldr	x0, [sp, #8]
+    23b0:	8b020318 	add	x24, x24, x2
+    23b4:	8b0202d6 	add	x22, x22, x2
+    23b8:	8b02039c 	add	x28, x28, x2
+    23bc:	8b000273 	add	x19, x19, x0
+    23c0:	b940dbe0 	ldr	w0, [sp, #216]
+    23c4:	8b02037b 	add	x27, x27, x2
+    23c8:	8b020129 	add	x9, x9, x2
+    23cc:	6b00015f 	cmp	w10, w0
+    23d0:	54fff101 	b.ne	21f0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1260>  // b.any
+    23d4:	aa0203f6 	mov	x22, x2
+    23d8:	8b020252 	add	x18, x18, x2
+    23dc:	8b070182 	add	x2, x12, x7
+    23e0:	aa0d03f1 	mov	x17, x13
+    23e4:	a94733f7 	ldp	x23, x12, [sp, #112]
+    23e8:	aa0503fe 	mov	x30, x5
+    23ec:	f94007e0 	ldr	x0, [sp, #8]
+    23f0:	8b0500c1 	add	x1, x6, x5
+    23f4:	b9406bed 	ldr	w13, [sp, #104]
+    23f8:	8b00016b 	add	x11, x11, x0
+    23fc:	b9401be0 	ldr	w0, [sp, #24]
+    2400:	110005ad 	add	w13, w13, #0x1
+    2404:	8b11018c 	add	x12, x12, x17
+    2408:	8b0702f7 	add	x23, x23, x7
+    240c:	6b0d001f 	cmp	w0, w13
+    2410:	54ffeba1 	b.ne	2184 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x11f4>  // b.any
+    2414:	2a0e03f5 	mov	w21, w14
+    2418:	aa1103fb 	mov	x27, x17
+    241c:	17fffba7 	b	12b8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x328>
+    2420:	71001ddf 	cmp	w14, #0x7
+    2424:	54000cad 	b.le	25b8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1628>
+    2428:	8b120035 	add	x21, x1, x18
+    242c:	8b120011 	add	x17, x0, x18
+    2430:	3cf06a20 	ldr	q0, [x17, x16]
+    2434:	3cf06b66 	ldr	q6, [x27, x16]
+    2438:	3cf06b85 	ldr	q5, [x28, x16]
+    243c:	6e26dc02 	fmul	v2.4s, v0.4s, v6.4s
+    2440:	3cf06b08 	ldr	q8, [x24, x16]
+    2444:	6e25dc01 	fmul	v1.4s, v0.4s, v5.4s
+    2448:	3cf06b27 	ldr	q7, [x25, x16]
+    244c:	3cf06aa3 	ldr	q3, [x21, x16]
+    2450:	6ea0f842 	fneg	v2.4s, v2.4s
+    2454:	6ea0f821 	fneg	v1.4s, v1.4s
+    2458:	6e28dc04 	fmul	v4.4s, v0.4s, v8.4s
+    245c:	6e27dc00 	fmul	v0.4s, v0.4s, v7.4s
+    2460:	4e28cc62 	fmla	v2.4s, v3.4s, v8.4s
+    2464:	4e27cc61 	fmla	v1.4s, v3.4s, v7.4s
+    2468:	4e26cc64 	fmla	v4.4s, v3.4s, v6.4s
+    246c:	4e25cc60 	fmla	v0.4s, v3.4s, v5.4s
+    2470:	f94023e4 	ldr	x4, [sp, #64]
+    2474:	3cb06b02 	str	q2, [x24, x16]
+    2478:	3cb06b21 	str	q1, [x25, x16]
+    247c:	3cb06b64 	str	q4, [x27, x16]
+    2480:	3cb06b80 	str	q0, [x28, x16]
+    2484:	91004210 	add	x16, x16, #0x10
+    2488:	eb10009f 	cmp	x4, x16
+    248c:	54fffd21 	b.ne	2430 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x14a0>  // b.any
+    2490:	b9405be4 	ldr	w4, [sp, #88]
+    2494:	34fff804 	cbz	w4, 2394 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1404>
+    2498:	b9404bf1 	ldr	w17, [sp, #72]
+    249c:	2a1103f0 	mov	w16, w17
+    24a0:	b94063e4 	ldr	w4, [sp, #96]
+    24a4:	4b100097 	sub	w23, w4, w16
+    24a8:	710006ff 	cmp	w23, #0x1
+    24ac:	54000400 	b.eq	252c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x159c>  // b.none
+    24b0:	f94013e4 	ldr	x4, [sp, #32]
+    24b4:	8b10017e 	add	x30, x11, x16
+    24b8:	8b040275 	add	x21, x19, x4
+    24bc:	d37ef7de 	lsl	x30, x30, #2
+    24c0:	8b1002b5 	add	x21, x21, x16
+    24c4:	8b100270 	add	x16, x19, x16
+    24c8:	d37ef6b5 	lsl	x21, x21, #2
+    24cc:	fc7e6800 	ldr	d0, [x0, x30]
+    24d0:	d37ef610 	lsl	x16, x16, #2
+    24d4:	fc7e6823 	ldr	d3, [x1, x30]
+    24d8:	fc756a88 	ldr	d8, [x20, x21]
+    24dc:	fc756b47 	ldr	d7, [x26, x21]
+    24e0:	fc706a86 	ldr	d6, [x20, x16]
+    24e4:	2e28dc02 	fmul	v2.2s, v0.2s, v8.2s
+    24e8:	fc706b45 	ldr	d5, [x26, x16]
+    24ec:	2e27dc01 	fmul	v1.2s, v0.2s, v7.2s
+    24f0:	2e26dc04 	fmul	v4.2s, v0.2s, v6.2s
+    24f4:	2e25dc00 	fmul	v0.2s, v0.2s, v5.2s
+    24f8:	2ea0f842 	fneg	v2.2s, v2.2s
+    24fc:	2ea0f821 	fneg	v1.2s, v1.2s
+    2500:	0e28cc64 	fmla	v4.2s, v3.2s, v8.2s
+    2504:	0e27cc60 	fmla	v0.2s, v3.2s, v7.2s
+    2508:	0e26cc62 	fmla	v2.2s, v3.2s, v6.2s
+    250c:	0e25cc61 	fmla	v1.2s, v3.2s, v5.2s
+    2510:	fc306a82 	str	d2, [x20, x16]
+    2514:	fc306b41 	str	d1, [x26, x16]
+    2518:	fc356a84 	str	d4, [x20, x21]
+    251c:	fc356b40 	str	d0, [x26, x21]
+    2520:	3607f3b7 	tbz	w23, #0, 2394 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1404>
+    2524:	121f7af7 	and	w23, w23, #0xfffffffe
+    2528:	0b170231 	add	w17, w17, w23
+    252c:	f94013e4 	ldr	x4, [sp, #32]
+    2530:	93407e30 	sxtw	x16, w17
+    2534:	8b100271 	add	x17, x19, x16
+    2538:	8b100170 	add	x16, x11, x16
+    253c:	8b110095 	add	x21, x4, x17
+    2540:	bc707800 	ldr	s0, [x0, x16, lsl #2]
+    2544:	bc757b46 	ldr	s6, [x26, x21, lsl #2]
+    2548:	bc757a85 	ldr	s5, [x20, x21, lsl #2]
+    254c:	bc707822 	ldr	s2, [x1, x16, lsl #2]
+    2550:	bc717b41 	ldr	s1, [x26, x17, lsl #2]
+    2554:	1e260804 	fmul	s4, s0, s6
+    2558:	bc717a87 	ldr	s7, [x20, x17, lsl #2]
+    255c:	1e250803 	fmul	s3, s0, s5
+    2560:	1f219044 	fnmsub	s4, s2, s1, s4
+    2564:	1e210801 	fmul	s1, s0, s1
+    2568:	1f278c43 	fnmsub	s3, s2, s7, s3
+    256c:	1e270800 	fmul	s0, s0, s7
+    2570:	1f060441 	fmadd	s1, s2, s6, s1
+    2574:	1f050040 	fmadd	s0, s2, s5, s0
+    2578:	bc317b44 	str	s4, [x26, x17, lsl #2]
+    257c:	bc317a83 	str	s3, [x20, x17, lsl #2]
+    2580:	bc357b41 	str	s1, [x26, x21, lsl #2]
+    2584:	bc357a80 	str	s0, [x20, x21, lsl #2]
+    2588:	17ffff83 	b	2394 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1404>
+    258c:	d2800010 	mov	x16, #0x0                   	// #0
+    2590:	17ffff6a 	b	2338 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x13a8>
+    2594:	f94003e0 	ldr	x0, [sp]
+    2598:	bd400060 	ldr	s0, [x3]
+    259c:	bd000320 	str	s0, [x25]
+    25a0:	bd400000 	ldr	s0, [x0]
+    25a4:	f9400be0 	ldr	x0, [sp, #16]
+    25a8:	bd000300 	str	s0, [x24]
+    25ac:	bd4002c0 	ldr	s0, [x22]
+    25b0:	bc337800 	str	s0, [x0, x19, lsl #2]
+    25b4:	17ffff37 	b	2290 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1300>
+    25b8:	d2800010 	mov	x16, #0x0                   	// #0
+    25bc:	52800011 	mov	w17, #0x0                   	// #0
+    25c0:	17ffffb8 	b	24a0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1510>
+    25c4:	71001ebf 	cmp	w21, #0x7
+    25c8:	54000b2d 	b.le	272c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x179c>
+    25cc:	8b170031 	add	x17, x1, x23
+    25d0:	8b17000e 	add	x14, x0, x23
+    25d4:	3ce26a20 	ldr	q0, [x17, x2]
+    25d8:	3ce26b06 	ldr	q6, [x24, x2]
+    25dc:	3ce26a65 	ldr	q5, [x19, x2]
+    25e0:	3ce269e8 	ldr	q8, [x15, x2]
+    25e4:	3ce26a07 	ldr	q7, [x16, x2]
+    25e8:	3ce269c1 	ldr	q1, [x14, x2]
+    25ec:	6e20dcc4 	fmul	v4.4s, v6.4s, v0.4s
+    25f0:	6e20dca3 	fmul	v3.4s, v5.4s, v0.4s
+    25f4:	6e20dd02 	fmul	v2.4s, v8.4s, v0.4s
+    25f8:	6e20dce0 	fmul	v0.4s, v7.4s, v0.4s
+    25fc:	4ea1cd04 	fmls	v4.4s, v8.4s, v1.4s
+    2600:	4ea1cce3 	fmls	v3.4s, v7.4s, v1.4s
+    2604:	4e26cc22 	fmla	v2.4s, v1.4s, v6.4s
+    2608:	4e25cc20 	fmla	v0.4s, v1.4s, v5.4s
+    260c:	f94023e3 	ldr	x3, [sp, #64]
+    2610:	3ca26b04 	str	q4, [x24, x2]
+    2614:	3ca26a63 	str	q3, [x19, x2]
+    2618:	3ca269e2 	str	q2, [x15, x2]
+    261c:	3ca26a00 	str	q0, [x16, x2]
+    2620:	91004042 	add	x2, x2, #0x10
+    2624:	eb02007f 	cmp	x3, x2
+    2628:	54fffd61 	b.ne	25d4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1644>  // b.any
+    262c:	b94053e2 	ldr	w2, [sp, #80]
+    2630:	34ffd3a2 	cbz	w2, 20a4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1114>
+    2634:	b94023e2 	ldr	w2, [sp, #32]
+    2638:	2a0203ef 	mov	w15, w2
+    263c:	b9405be3 	ldr	w3, [sp, #88]
+    2640:	4b0f0071 	sub	w17, w3, w15
+    2644:	7100063f 	cmp	w17, #0x1
+    2648:	540003c0 	b.eq	26c0 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1730>  // b.none
+    264c:	f94003e3 	ldr	x3, [sp]
+    2650:	8b0801fe 	add	x30, x15, x8
+    2654:	8b1b01f0 	add	x16, x15, x27
+    2658:	8b1b006e 	add	x14, x3, x27
+    265c:	d37ef7de 	lsl	x30, x30, #2
+    2660:	8b0f01ce 	add	x14, x14, x15
+    2664:	d37ef610 	lsl	x16, x16, #2
+    2668:	d37ef5ce 	lsl	x14, x14, #2
+    266c:	fc7e6820 	ldr	d0, [x1, x30]
+    2670:	fc706b46 	ldr	d6, [x26, x16]
+    2674:	fc706a85 	ldr	d5, [x20, x16]
+    2678:	fc6e6b48 	ldr	d8, [x26, x14]
+    267c:	fc6e6a87 	ldr	d7, [x20, x14]
+    2680:	2e26dc04 	fmul	v4.2s, v0.2s, v6.2s
+    2684:	2e25dc03 	fmul	v3.2s, v0.2s, v5.2s
+    2688:	fc7e6801 	ldr	d1, [x0, x30]
+    268c:	2e28dc02 	fmul	v2.2s, v0.2s, v8.2s
+    2690:	2e27dc00 	fmul	v0.2s, v0.2s, v7.2s
+    2694:	0ea8cc24 	fmls	v4.2s, v1.2s, v8.2s
+    2698:	0ea7cc23 	fmls	v3.2s, v1.2s, v7.2s
+    269c:	0e26cc22 	fmla	v2.2s, v1.2s, v6.2s
+    26a0:	0e25cc20 	fmla	v0.2s, v1.2s, v5.2s
+    26a4:	fc306b44 	str	d4, [x26, x16]
+    26a8:	fc306a83 	str	d3, [x20, x16]
+    26ac:	fc2e6b42 	str	d2, [x26, x14]
+    26b0:	fc2e6a80 	str	d0, [x20, x14]
+    26b4:	3607cf91 	tbz	w17, #0, 20a4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1114>
+    26b8:	121f7a31 	and	w17, w17, #0xfffffffe
+    26bc:	0b110042 	add	w2, w2, w17
+    26c0:	f94003e3 	ldr	x3, [sp]
+    26c4:	93407c42 	sxtw	x2, w2
+    26c8:	8b08004e 	add	x14, x2, x8
+    26cc:	8b1b0042 	add	x2, x2, x27
+    26d0:	8b02006f 	add	x15, x3, x2
+    26d4:	bc6e7820 	ldr	s0, [x1, x14, lsl #2]
+    26d8:	bc627b47 	ldr	s7, [x26, x2, lsl #2]
+    26dc:	bc627a85 	ldr	s5, [x20, x2, lsl #2]
+    26e0:	bc6e7801 	ldr	s1, [x0, x14, lsl #2]
+    26e4:	bc6f7b48 	ldr	s8, [x26, x15, lsl #2]
+    26e8:	1e270804 	fmul	s4, s0, s7
+    26ec:	bc6f7a86 	ldr	s6, [x20, x15, lsl #2]
+    26f0:	1e250803 	fmul	s3, s0, s5
+    26f4:	1e280802 	fmul	s2, s0, s8
+    26f8:	1f089024 	fmsub	s4, s1, s8, s4
+    26fc:	1f068c23 	fmsub	s3, s1, s6, s3
+    2700:	1e260800 	fmul	s0, s0, s6
+    2704:	1f070822 	fmadd	s2, s1, s7, s2
+    2708:	1f050020 	fmadd	s0, s1, s5, s0
+    270c:	bc227b44 	str	s4, [x26, x2, lsl #2]
+    2710:	bc227a83 	str	s3, [x20, x2, lsl #2]
+    2714:	bc2f7b42 	str	s2, [x26, x15, lsl #2]
+    2718:	bc2f7a80 	str	s0, [x20, x15, lsl #2]
+    271c:	17fffe62 	b	20a4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1114>
+    2720:	aa1c03ee 	mov	x14, x28
+    2724:	d2800002 	mov	x2, #0x0                   	// #0
+    2728:	17fffe47 	b	2044 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x10b4>
+    272c:	d280000f 	mov	x15, #0x0                   	// #0
+    2730:	52800002 	mov	w2, #0x0                   	// #0
+    2734:	17ffffc2 	b	263c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x16ac>
+    2738:	bd400080 	ldr	s0, [x4]
+    273c:	bd000300 	str	s0, [x24]
+    2740:	bd4000e0 	ldr	s0, [x7]
+    2744:	bd000260 	str	s0, [x19]
+    2748:	bd4000c0 	ldr	s0, [x6]
+    274c:	bd000320 	str	s0, [x25]
+    2750:	17fffe0f 	b	1f8c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0xffc>
+    2754:	8b0108a1 	add	x1, x5, x1, lsl #2
+    2758:	eb01009f 	cmp	x4, x1
+    275c:	54ff8c80 	b.eq	18ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x95c>  // b.none
+    2760:	f9000681 	str	x1, [x20, #8]
+    2764:	17fffc62 	b	18ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x95c>
+    2768:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    276c:	f9400273 	ldr	x19, [x19]
+    2770:	cb020021 	sub	x1, x1, x2
+    2774:	910543f6 	add	x22, sp, #0x150
+    2778:	9105c3f9 	add	x25, sp, #0x170
+    277c:	910643fa 	add	x26, sp, #0x190
+    2780:	aa1403e0 	mov	x0, x20
+    2784:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2788:	f9406be0 	ldr	x0, [sp, #208]
+    278c:	a9400003 	ldp	x3, x0, [x0]
+    2790:	17fffc57 	b	18ec <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x95c>
+    2794:	6b1802ff 	cmp	w23, w24
+    2798:	54ff81ea 	b.ge	17d4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x844>  // b.tcont
+    279c:	f94063e0 	ldr	x0, [sp, #192]
+    27a0:	f9005fe0 	str	x0, [sp, #184]
+    27a4:	17fffb2f 	b	1460 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x4d0>
+    27a8:	39400420 	ldrb	w0, [x1, #1]
+    27ac:	7100001f 	cmp	w0, #0x0
+    27b0:	1a9f07e0 	cset	w0, ne	// ne = any
+    27b4:	b90123e0 	str	w0, [sp, #288]
+    27b8:	17fffafd 	b	13ac <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x41c>
+    27bc:	f900afe0 	str	x0, [sp, #344]
+    27c0:	910803e0 	add	x0, sp, #0x200
+    27c4:	d2800096 	mov	x22, #0x4                   	// #4
+    27c8:	a937fc1f 	stp	xzr, xzr, [x0, #-136]
+    27cc:	17fffa3a 	b	10b4 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x124>
+    27d0:	f900cfe0 	str	x0, [sp, #408]
+    27d4:	910803e0 	add	x0, sp, #0x200
+    27d8:	a93bfc1f 	stp	xzr, xzr, [x0, #-72]
+    27dc:	17fffa5a 	b	1144 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1b4>
+    27e0:	f900bfe0 	str	x0, [sp, #376]
+    27e4:	910803e0 	add	x0, sp, #0x200
+    27e8:	a939fc1f 	stp	xzr, xzr, [x0, #-104]
+    27ec:	17fffa45 	b	1100 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x170>
+    27f0:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    27f4:	f9400273 	ldr	x19, [x19]
+    27f8:	f94107e0 	ldr	x0, [sp, #520]
+    27fc:	f9400261 	ldr	x1, [x19]
+    2800:	eb010000 	subs	x0, x0, x1
+    2804:	d2800001 	mov	x1, #0x0                   	// #0
+    2808:	540009a1 	b.ne	293c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19ac>  // b.any
+    280c:	90000000 	adrp	x0, 0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2810:	91000000 	add	x0, x0, #0x0
+    2814:	94000000 	bl	0 <std::__throw_length_error(char const*)>
+    2818:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    281c:	f9400273 	ldr	x19, [x19]
+    2820:	f94107e0 	ldr	x0, [sp, #520]
+    2824:	f9400261 	ldr	x1, [x19]
+    2828:	eb010000 	subs	x0, x0, x1
+    282c:	d2800001 	mov	x1, #0x0                   	// #0
+    2830:	54000861 	b.ne	293c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19ac>  // b.any
+    2834:	90000000 	adrp	x0, 0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2838:	91000000 	add	x0, x0, #0x0
+    283c:	94000000 	bl	0 <std::__throw_length_error(char const*)>
+    2840:	f94047e0 	ldr	x0, [sp, #136]
+    2844:	b9400413 	ldr	w19, [x0, #4]
+    2848:	17fffabd 	b	133c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x3ac>
+    284c:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    2850:	f9400273 	ldr	x19, [x19]
+    2854:	f94107e0 	ldr	x0, [sp, #520]
+    2858:	f9400261 	ldr	x1, [x19]
+    285c:	eb010000 	subs	x0, x0, x1
+    2860:	d2800001 	mov	x1, #0x0                   	// #0
+    2864:	540006c1 	b.ne	293c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19ac>  // b.any
+    2868:	90000000 	adrp	x0, 0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    286c:	91000000 	add	x0, x0, #0x0
+    2870:	94000000 	bl	0 <std::__throw_length_error(char const*)>
+    2874:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    2878:	f9400273 	ldr	x19, [x19]
+    287c:	f94107e0 	ldr	x0, [sp, #520]
+    2880:	f9400261 	ldr	x1, [x19]
+    2884:	eb010000 	subs	x0, x0, x1
+    2888:	d2800001 	mov	x1, #0x0                   	// #0
+    288c:	54000581 	b.ne	293c <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19ac>  // b.any
+    2890:	90000000 	adrp	x0, 0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2894:	910543f6 	add	x22, sp, #0x150
+    2898:	91000000 	add	x0, x0, #0x0
+    289c:	9105c3f9 	add	x25, sp, #0x170
+    28a0:	910643fa 	add	x26, sp, #0x190
+    28a4:	94000000 	bl	0 <std::__throw_length_error(char const*)>
+    28a8:	7100043f 	cmp	w1, #0x1
+    28ac:	cb030000 	sub	x0, x0, x3
+    28b0:	f9404be1 	ldr	x1, [sp, #144]
+    28b4:	9342fc00 	asr	x0, x0, #2
+    28b8:	d2800002 	mov	x2, #0x0                   	// #0
+    28bc:	f9403c25 	ldr	x5, [x1, #120]
+    28c0:	f9404824 	ldr	x4, [x1, #144]
+    28c4:	d2800001 	mov	x1, #0x0                   	// #0
+    28c8:	540003c1 	b.ne	2940 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19b0>  // b.any
+    28cc:	b8a17866 	ldrsw	x6, [x3, x1, lsl #2]
+    28d0:	91000421 	add	x1, x1, #0x1
+    28d4:	bc667880 	ldr	s0, [x4, x6, lsl #2]
+    28d8:	bc2268a0 	str	s0, [x5, x2]
+    28dc:	91001042 	add	x2, x2, #0x4
+    28e0:	eb01001f 	cmp	x0, x1
+    28e4:	54ffff48 	b.hi	28cc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x193c>  // b.pmore
+    28e8:	17fffc1c 	b	1958 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x9c8>
+    28ec:	aa0003f4 	mov	x20, x0
+    28f0:	910743e0 	add	x0, sp, #0x1d0
+    28f4:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    28f8:	f9404be0 	ldr	x0, [sp, #144]
+    28fc:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2900:	9106c3e0 	add	x0, sp, #0x1b0
+    2904:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2908:	aa1a03e0 	mov	x0, x26
+    290c:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2910:	aa1903e0 	mov	x0, x25
+    2914:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2918:	aa1603e0 	mov	x0, x22
+    291c:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2920:	9107c3e0 	add	x0, sp, #0x1f0
+    2924:	94000000 	bl	0 <equal(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&) [clone .isra.0]>
+    2928:	f94107e0 	ldr	x0, [sp, #520]
+    292c:	f9400261 	ldr	x1, [x19]
+    2930:	eb010000 	subs	x0, x0, x1
+    2934:	d2800001 	mov	x1, #0x0                   	// #0
+    2938:	54000420 	b.eq	29bc <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1a2c>  // b.none
+    293c:	94000000 	bl	0 <__stack_chk_fail>
+    2940:	b8a17866 	ldrsw	x6, [x3, x1, lsl #2]
+    2944:	91000421 	add	x1, x1, #0x1
+    2948:	bc667880 	ldr	s0, [x4, x6, lsl #2]
+    294c:	bc2268a0 	str	s0, [x5, x2]
+    2950:	91001042 	add	x2, x2, #0x4
+    2954:	eb01001f 	cmp	x0, x1
+    2958:	54ffff48 	b.hi	2940 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x19b0>  // b.pmore
+    295c:	17fffbff 	b	1958 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x9c8>
+    2960:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    2964:	f9400273 	ldr	x19, [x19]
+    2968:	910543f6 	add	x22, sp, #0x150
+    296c:	aa0003f4 	mov	x20, x0
+    2970:	9105c3f9 	add	x25, sp, #0x170
+    2974:	910643fa 	add	x26, sp, #0x190
+    2978:	17ffffe4 	b	2908 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1978>
+    297c:	90000013 	adrp	x19, 0 <__stack_chk_guard>
+    2980:	f9400273 	ldr	x19, [x19]
+    2984:	910543f6 	add	x22, sp, #0x150
+    2988:	aa0003f4 	mov	x20, x0
+    298c:	9105c3f9 	add	x25, sp, #0x170
+    2990:	17ffffe0 	b	2910 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1980>
+    2994:	910543f6 	add	x22, sp, #0x150
+    2998:	aa0003f4 	mov	x20, x0
+    299c:	9105c3f9 	add	x25, sp, #0x170
+    29a0:	910643fa 	add	x26, sp, #0x190
+    29a4:	17ffffd5 	b	28f8 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1968>
+    29a8:	aa0003f4 	mov	x20, x0
+    29ac:	17ffffdd 	b	2920 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1990>
+    29b0:	910543f6 	add	x22, sp, #0x150
+    29b4:	aa0003f4 	mov	x20, x0
+    29b8:	17ffffd8 	b	2918 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1988>
+    29bc:	aa1403e0 	mov	x0, x20
+    29c0:	94000000 	bl	0 <_Unwind_Resume>
+
