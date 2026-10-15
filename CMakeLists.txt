@@ -1136,6 +1136,10 @@ if(CRISPEMBED_BUILD_SHARED)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/crispembed
     )
 
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    )
+
     # pkg-config for autotools / meson consumers.
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/crispembed.pc.in
