@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <string>
 #include <utility>
 
@@ -23,6 +24,12 @@ static bool include(const char * name, void *) {
 static std::vector<float> array(const crispembed_diff::Ref & ref, const std::string & name) {
     const auto value = ref.get_f32(name);
     return value.first ? std::vector<float>(value.first, value.first + value.second) : std::vector<float>();
+}
+using projection_inputs = std::map<std::string, std::vector<float>>;
+static bool observe(const char * name, const float * input, int width, int tokens, void * user) {
+    if (!name || !input || width < 1 || tokens < 1) return false;
+    auto & inputs = *static_cast<projection_inputs *>(user);
+    return inputs.emplace(name, std::vector<float>(input, input + size_t(width) * tokens)).second;
 }
 static int failures = 0, measurements = 0;
 static bool measure(const crispembed_diff::Ref & ref, const char * mode, const std::string & name,
@@ -64,7 +71,13 @@ static int crispembed_test_main(int argc, char ** argv) {
     const int tokens = grid[1] * grid[2];
     if (pixels.size() != size_t(tokens) * config.patch_width) return 2;
     qwen35_ocr::vision_outputs native;
-    if (!qwen35_ocr::vision_cpu(weights, config, pixels.data(), tokens, grid, 4, native)) return 2;
+    projection_inputs observed;
+    gate("CRISPEMBED_QWEN35_IMATRIX", "1");
+    if (!qwen35_ocr::set_projection_observer(observe, &observed)) return 2;
+    const bool ran = qwen35_ocr::vision_cpu(weights, config, pixels.data(), tokens, grid, 4, native);
+    qwen35_ocr::set_projection_observer(nullptr, nullptr);
+    gate("CRISPEMBED_QWEN35_IMATRIX", "0");
+    if (!ran || observed.size() != 51) return 2;
     bool ok = true;
     auto composed = [&](const std::string & name, const std::vector<float> & values) {
         ok &= measure(ref, "composed", "prefill.vision." + name, values);
@@ -77,14 +90,20 @@ static int crispembed_test_main(int argc, char ** argv) {
     for (size_t i = 0; i < native.hidden.size(); ++i) {
         const auto prefix = "probe." + std::to_string(i) + ".";
         const auto & p = native.probes[i];
+        const auto weight_prefix = "v.blocks." + std::to_string(i) + ".";
+        const auto & norm1 = observed.at(weight_prefix + "attn.qkv.weight");
+        const auto & pooled = observed.at(weight_prefix + "attn.proj.weight");
+        const auto & norm2 = observed.at(weight_prefix + "mlp.linear_fc1.weight");
+        const auto & activation = observed.at(weight_prefix + "mlp.linear_fc2.weight");
+        composed(prefix + "norm1", norm1);
+        composed(prefix + "pooled", pooled);
+        composed(prefix + "norm2", norm2);
+        composed(prefix + "activation", activation);
         if (!p.norm1.empty()) {
-            composed(prefix + "norm1", p.norm1);
+            ok &= norm1 == p.norm1 && pooled == p.pooled && norm2 == p.norm2 && activation == p.activation;
             composed(prefix + "qkv", p.qkv);
-            composed(prefix + "pooled", p.pooled);
             composed(prefix + "attention", p.attention);
-            composed(prefix + "norm2", p.norm2);
             composed(prefix + "up", p.up);
-            composed(prefix + "activation", p.activation);
             composed(prefix + "down", p.down);
         }
         composed("layer." + std::to_string(i), native.hidden[i]);
@@ -142,9 +161,10 @@ static int crispembed_test_main(int argc, char ** argv) {
                                                 rejected);
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("VISION_OPS finite=%d metrics=%d qualified_failures=%d controls=%d\n", ok, measurements, failures, ok);
+    std::printf("VISION_OPS finite=%d metrics=%d qualified_failures=%d controls=%d observer=%zu\n", ok, measurements,
+                failures, ok, observed.size());
     // Failures are retained diagnostic outcomes, never tolerance changes.
-    return ok && measurements == 138 ? 0 : 1;
+    return ok && measurements == 178 ? 0 : 1;
 }
 int main(int argc, char ** argv) {
     core_util::clean_exit(crispembed_test_main(argc, argv));

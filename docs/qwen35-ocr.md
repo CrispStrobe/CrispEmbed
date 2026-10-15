@@ -1231,9 +1231,13 @@ expanded arrays against the full original dumper. It then retains original
 backend-off/per-patch controls on the same three document derivatives.
 
 `test-qwen35-vision-ops` uses `crispembed_diff::Ref` and the unchanged qualified
-`qwen35_compare` for the existing 37 composed native vision boundaries and 101
+`qwen35_compare` for 77 composed native vision boundaries and 101
 same-input operator calls spanning all twelve blocks. The production vision
-source is byte-for-byte unchanged and SHA-checked. Replay code includes that
+source is byte-for-byte unchanged and SHA-checked. The existing gated projection
+observer captures 51 actual projection inputs, exposing norm, attention-pooling
+and activation boundaries across all twelve blocks. Existing block5/11 captures
+are checked for exact equality, and an observer-off rerun checks unchanged outputs.
+Replay code includes that
 implementation in a separate test translation unit, renaming its public entry
 points to keep the ordinary linked implementation in its original compilation
 context. Only the test target defines

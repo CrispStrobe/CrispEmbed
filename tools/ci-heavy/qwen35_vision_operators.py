@@ -33,10 +33,10 @@ def vision_records(log):
         records.append(dict(mode=mode, stage=stage, **metric(m.groups()[2:]),
             qualified_pass=lines[i+2].startswith('PASS '), strict_absolute_pass=bool(int(budget[2])),
             calibrated=bool(int(budget[3])), self_max_abs=float(budget[4]), max_ratio=float(budget[5])))
-    status = re.search(r'^VISION_OPS finite=1 metrics=138 qualified_failures=(\d+) controls=1$', log, re.M)
-    if len(records) != 138 or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
+    status = re.search(r'^VISION_OPS finite=1 metrics=178 qualified_failures=(\d+) controls=1 observer=51$', log, re.M)
+    if len(records) != 178 or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
         raise ValueError('Incomplete finite vision operator diagnostics')
-    if Counter(m['mode'] for m in records) != {'composed': 37, 'same-input': 101}:
+    if Counter(m['mode'] for m in records) != {'composed': 77, 'same-input': 101}:
         raise ValueError('Missing composed or same-input boundaries')
     return records
 
