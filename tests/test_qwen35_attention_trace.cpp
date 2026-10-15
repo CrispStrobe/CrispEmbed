@@ -100,7 +100,8 @@ static int crispembed_test_main(int argc, char ** argv) {
         return 2;
     bool ok = true, native_controls = true;
     using namespace qwen35_attention_audit;
-    auto record_trace = [&](const std::string & mode, const std::string & p, const trace_result & t, bool full) {
+    auto record_trace = [&](const std::string & mode, const std::string & p, const trace_result & t, bool full,
+                            const std::vector<float> * production_pooled = nullptr) {
         bool valid = true;
         if (full) {
             valid &= measure(ref, mode, p + "trace.query", t.query);
@@ -110,7 +111,7 @@ static int crispembed_test_main(int argc, char ** argv) {
         valid &= measure(ref, mode, p + "trace.scores", t.scores);
         valid &= measure(ref, mode, p + "trace.probabilities", t.probabilities);
         valid &= measure(ref, mode, p + "trace.pooled_sample", t.pooled_sample);
-        valid &= measure(ref, mode, p + "pooled", t.pooled);
+        valid &= measure(ref, mode, p + "pooled", production_pooled ? *production_pooled : t.pooled);
         return valid;
     };
     for (int index : { 5, 11 }) {
@@ -124,10 +125,19 @@ static int crispembed_test_main(int argc, char ** argv) {
         native_controls &= equal("native-pooled." + std::to_string(index), actual.pooled, probe.pooled);
         native_controls &= equal("native-probabilities-pool." + std::to_string(index),
                                  original_probabilities_pool(actual, tokens, config, queries), actual.pooled_sample);
+        const auto legacy =
+            trace(probe.qkv, config, tokens, native.rotary_cos, native.rotary_sin, queries, nullptr, false);
+        double legacy_error = 0, pinned_error = 0;
+        for (size_t i = 0; i < probe.pooled.size(); ++i) {
+            legacy_error = std::max(legacy_error, std::abs(double(legacy.pooled[i]) - probe.pooled[i]));
+            pinned_error = std::max(pinned_error, std::abs(double(actual.pooled[i]) - probe.pooled[i]));
+        }
+        std::printf("ATTN_ROUNDING block=%d legacy_max_abs=%.9g pinned_max_abs=%.9g n=%zu\n", index, legacy_error,
+                    pinned_error, probe.pooled.size());
         // Retain measurements even on failed controls, but never validate their interpretation.
         ok &= measure(ref, "composed", p + "norm1", probe.norm1);
         ok &= measure(ref, "composed", p + "qkv", probe.qkv);
-        ok &= record_trace("composed", p, actual, true);
+        ok &= record_trace("composed", p, actual, true, &probe.pooled);
         ok &= measure(ref, "composed", "prefill.vision.layer." + std::to_string(index), native.hidden[index]);
         const auto original_qkv = array(ref, p + "qkv"), norm = array(ref, p + "norm1");
         trace_result original;

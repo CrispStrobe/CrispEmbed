@@ -29,7 +29,11 @@ def records(log):
             raise ValueError('Invalid native equality control')
     if bool(int(status[2])) != all(c['passed'] for c in controls):
         raise ValueError('Native attention control verdict mismatch')
-    return dict(metrics=rows, native_controls=controls, controls_passed=bool(int(status[2])))
+    contrasts = [dict(block=int(m[0]), legacy_max_abs=float(m[1]), pinned_max_abs=float(m[2]), elements=int(m[3]))
+        for m in re.findall(r'^ATTN_ROUNDING block=(\d+) legacy_max_abs=(\S+) pinned_max_abs=(\S+) n=(\d+)$', log, re.M)]
+    if len(contrasts) != 2 or {m['block'] for m in contrasts} != {5,11}:
+        raise ValueError('Missing native rotary rounding contrasts')
+    return dict(metrics=rows, native_controls=controls, controls_passed=bool(int(status[2])), rounding_contrasts=contrasts)
 
 
 def check_prior(prior_arm, entry):

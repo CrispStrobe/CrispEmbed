@@ -161,6 +161,8 @@ def main():
                         *(["test-qwen35-imatrix"] if ffn_check else []),
                         *(["test-qwen35-attention-trace"] if attention_trace else ["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
+        if attention_trace:
+            module(repo / "tools/ci-heavy/qwen35_attention_codegen.py", "qwen35_attention_codegen").capture(repo, build, out)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
         (out / "native-delta.log").write_text(native.stdout + native.stderr)

@@ -12,7 +12,8 @@ struct trace_result {
 };
 static trace_result trace(const std::vector<float> & qkv, const qwen35_ocr::vision_config & c, int tokens,
                           const std::vector<float> & cosine, const std::vector<float> & sine,
-                          const std::vector<int> & query_ids, const trace_result * original_rotated = nullptr) {
+                          const std::vector<int> & query_ids, const trace_result * original_rotated = nullptr,
+                          bool pin_cosine_fma = true) {
     const std::vector<int> offsets{ 0, tokens };
     const int width = c.width, d = width / c.heads, half = d / 2;
     std::vector<float> q(size_t(tokens) * width), k(q.size()), values(q.size()), pooled(q.size());
@@ -37,8 +38,16 @@ static trace_result trace(const std::vector<float> & qkv, const qwen35_ocr::visi
                     const float co = cosine[size_t(t) * d + i], si = sine[size_t(t) * d + i];
                     for (auto * v : { &q, &k }) {
                         const float left = (*v)[base + i], right = (*v)[base + i + half];
-                        (*v)[base + i] = left * co - right * si;
-                        (*v)[base + i + half] = right * co + left * si;
+                        if (pin_cosine_fma) {
+                            // Match the actual GCC13 AArch64 production object:
+                            // sine products round first; cosine multiply/add is fused.
+                            const float right_sine = right * si, left_sine = left * si;
+                            (*v)[base + i] = std::fma(left, co, -right_sine);
+                            (*v)[base + i + half] = std::fma(right, co, left_sine);
+                        } else {
+                            (*v)[base + i] = left * co - right * si;
+                            (*v)[base + i + half] = right * co + left * si;
+                        }
                     }
                 }
             }
