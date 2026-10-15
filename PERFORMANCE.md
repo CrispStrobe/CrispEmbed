@@ -5224,3 +5224,31 @@ failures. Baseline scalar results exactly reproduce all231 previous measurements
 expanded reference anchors and observer-off native outputs are exact. The
 workflow remains failed with all67 qualified prefill failures retained, and
 runtime defaults stay unchanged. [Full errors, norms, controls and verdicts](tests/results/qwen35-ocr/vision-operators.json).
+
+
+## Qwen3.5 conditional native block replay — 15 October 2026
+
+[Hosted38726666455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
+at `7437aed1`; same weights and document derivatives. All678 exact native/identity/
+residual controls pass. These are conditional numerical measurements, not new
+end-to-end recognition or timing results.
+
+| Input | Baseline composed layer11 max error | Layer11 with original block input | Merger after original block10 suffix input | Ordinary baseline merger |
+|---|---:|---:|---:|---:|
+| Form | 0.136475 | 0.007202 | 0.000013590 | 0.000139356 |
+| Receipt | 0.441040 | 0.005859 | 0.000028491 | 0.000193000 |
+| German header | 0.954773 | 0.006104 | 0.000028849 | 0.000095248 |
+
+The combined-precision arm's isolated layer11 errors are0.006714/0.005615/
+0.004700. Across both arms, all66 independent blocks0–10 outputs meet raw0.002,
+while all six block11 outputs fail it. Block-input cosine reports1.000000000;
+that does not remove the absolute failures.
+
+Resets are not uniformly beneficial. Baseline receipt reset4 produces layer11
+error1.116821 versus its ordinary0.441040; German reset0 gives1.288086 versus
+0.954773. Both exceed existing qualified vision budgets. All31 ordinary prefill
+failures (20 baseline,11 combined) remain exactly unchanged; all six first
+argmaxes match. The audit exits nonzero after retaining all33 qualified failures.
+Native rotary values remain in these experiments, so exact original-geometry
+isolation and a usable runtime correction remain pending.
+[All2058 stage vectors,678 controls and negative results](tests/results/qwen35-ocr/vision-blocks.json).

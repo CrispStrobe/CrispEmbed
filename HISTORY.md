@@ -4,6 +4,35 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 native block and suffix localization
+
+[Hosted38726666455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
+at `7437aed1` completes baseline/combined-precision × three document derivatives.
+All678 identity, native-block, projection-input and residual-sum controls are
+exact. The test links the unchanged production implementation and never copies
+its private source. It retains2058 stage vectors,1302 original CPU-control vectors,
+126 exact shared full-anchor arrays and106 original-hook additions. All462 prior
+prefill records and402 shared composed vision records reproduce exactly.
+
+Supplying original inputs to individual blocks reduces baseline final-block
+output error from0.136475/0.441040/0.954773 to0.007202/0.005859/0.006104 for
+form/receipt/German. All66 earlier independent block outputs satisfy raw0.002
+across both precision arms; the six last-block outputs still exceed it. Resetting
+later suffix inputs generally reduces merger error, but earlier resets can make
+it worse: baseline receipt reset4 reaches1.116821 at layer11, and German reset0
+reaches1.288086. Both fail existing qualified vision budgets and remain retained.
+These conditional experiments locate upstream accumulation and final-block
+amplification; they are not production corrections or a monotonic reset recipe.
+
+Ordinary prefill still has20 baseline /11 combined-precision failures; all six
+first argmaxes match. The workflow correctly fails with33 total verdicts (31
+prefill and two suffix comparisons), after collecting every case. Native rotary
+geometry remains in use during replay and differs from original by up to5.96e-8;
+original-geometry equivalence is not claimed. No new full decoding, corpus,
+speed, default or publication claim. [Complete raw measurements and controls](tests/results/qwen35-ocr/vision-blocks.json).
+The next bounded task is original LayerNorm mean/rstd and reduction-kernel
+localization, including an original-Python/native-geometry control.
+
 ## 2026-10-15 — Qwen3.5 original-blueprint vision operator audit
 
 [Hosted38719205543](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38719205543)

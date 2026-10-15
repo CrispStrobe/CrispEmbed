@@ -91,7 +91,11 @@ no tolerance is relaxed. The completed
 [operator audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38719205543)
 reproduces the baseline exactly; both existing vision precision gates reduce20
 prefill failures to11, while attention alone regresses to23. Same-input operators
-mostly satisfy raw0.002; complete-block/residual amplification remains to isolate.
+mostly satisfy raw0.002. The completed
+[native block audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
+passes678 exact controls: original block inputs reduce final-block error sharply,
+but ordinary prefill failures remain20/11 and two earlier suffix resets regress.
+Next audit original LayerNorm statistics/reduction kernels and rotary controls.
 No precision default changes. Full decoding, materialization/graph performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).

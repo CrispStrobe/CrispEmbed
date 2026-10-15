@@ -1327,3 +1327,49 @@ this is block-input isolation, not exact original-geometry isolation. No parity
 budget, production source, runtime default or publication status changes. The
 report is checkpointed per completed case; failures remain nonzero after all
 valid arms have been collected.
+
+
+## Completed native block and suffix replay
+
+[38726666455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
+at `7437aed1` completes2058 stage vectors and678 exact controls. Every identity
+frontend, selected native block output, observed projection input and reconstructed
+residual sum agrees with ordinary native execution. All462 prior prefill records
+and402 shared vision records reproduce exactly, including the prior direct
+block5/11 attention/down scalar captures. Reference anchors retain126 exact shared
+arrays and106 expected additions;1302 original CPU-control vectors are retained.
+
+| Baseline input | Ordinary layer11 max error | Original-input block11 | Original-input suffix8 layer11 | Original-input suffix10 layer11 |
+|---|---:|---:|---:|---:|
+| Form | 0.136475 | 0.007202 | 0.013855 | 0.006836 |
+| Receipt | 0.441040 | 0.005859 | 0.065247 | 0.008545 |
+| German header | 0.954773 | 0.006104 | 0.017822 | 0.007690 |
+
+All independent block0–10 outputs meet raw0.002 in both arms; block11 outputs
+still fail in all six cases. With original block11 input, baseline pre-norm2
+residual error is only2.19e-5–2.86e-5, growing through norm2/activation/down to
+0.00586–0.00720. This separates local last-block amplification from the much larger
+upstream contribution, without identifying one structural defect. Original-input
+block cosine reports1.000000000 despite those absolute failures.
+
+Earlier resets can worsen the result. Baseline receipt suffix4 produces layer11
+error1.116821 and German suffix0 gives1.288086; both fail qualified vision gates.
+All outcomes remain in the report. The unchanged ordinary decoder still fails20
+baseline /11 combined-precision stages. All six first argmaxes match, and all old
+small-fixture frontend/context/decoded-output guards pass. The complete audit
+correctly exits nonzero with33 verdict failures; no default or threshold changes.
+Native rotary values remain in use, with original differences up to5.96e-8.
+No full-document, EOS, speed, memory, corpus or publication claim follows.
+[Every measurement, control and retained failure](../tests/results/qwen35-ocr/vision-blocks.json).
+
+The next kernel audit should observe original mean/rstd via native_layer_norm,
+first checking its output against the existing LayerNorm hook. The pinned
+[PyTorch2.10 F32 LayerNorm kernel](https://github.com/pytorch/pytorch/blob/449b1768410104d3ed79d3bcfe4ba1d65c7f22c0/aten/src/ATen/native/cpu/layer_norm_kernel.cpp)
+uses the same centered affine ordering as the native path, while
+[RowwiseMoments](https://github.com/pytorch/pytorch/blob/449b1768410104d3ed79d3bcfe4ba1d65c7f22c0/aten/src/ATen/native/cpu/moments_utils.h)
+uses vector Welford/cascade reductions instead of the native sequential two-pass
+statistics. Record dispatch/vector width rather than assuming one architecture.
+This source difference is a testable numerical hypothesis, not an established
+cause. Evaluate original Python blocks with native rotary values as an additional
+conditional control before attributing replay differences to normalization or
+attention arithmetic. Keep all original references and composed gates unchanged.

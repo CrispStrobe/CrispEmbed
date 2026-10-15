@@ -8,19 +8,21 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Isolate Qwen3.5 residual/normalization/FFN amplification.** The completed
-   [operator audit](tests/results/qwen35-ocr/vision-operators.json) retains20 baseline
-   prefill failures; precise norm/attention together reduce this to11 (form0,
-   receipt7, German4), while attention alone regresses to23. Of303 same-input
-   operators per arm,302 meet raw0.002; form block11 FFN down reaches0.00219727.
-   Composed raw vision error crosses0.002 around block8, although qualified
-   vision checks pass. Patch projection already differs by3.58e-6–4.81e-6.
-   Next replay complete vision blocks/prefixes from original inputs, capturing
-   pre-norm residual additions and FFN projection errors. First control replay
-   against ordinary native block inputs/outputs to detect compilation-context
-   changes; preserve the byte-identical production source and original anchors.
-   Retain every failed arm and require composed native-frontend parity under
-   unchanged0.002 cache and qualified norm budgets, plus decoded-output checks.
+1. [ ] **Audit Qwen3.5 normalization statistics and attention reductions.** The
+   [native block audit](tests/results/qwen35-ocr/vision-blocks.json) passes678 exact
+   controls and reproduces all prior composed measurements. Baseline last-block
+   error falls from0.136–0.955 to0.0059–0.0072 with original block inputs, while
+   ordinary prefill retains20 /11 baseline/combined-precision failures. Two
+   earlier suffix resets regress beyond qualified vision budgets; retain them.
+   Next capture original LayerNorm mean/rstd using the pinned native_layer_norm
+   kernel, verify its output against unchanged module hooks, and record CPU
+   dispatch/vector width. Compare native two-pass statistics with original
+   Welford/cascade reductions under controlled identical inputs. Add original
+   Python block evaluation with native rotary values as a separate control to
+   isolate geometry, keeping the original reference unchanged. Require replay
+   agreement with actual native outputs before interpreting candidates, then
+   test one gated reduction/attention change at a time. Preserve unchanged0.002
+   cache gates, qualified norm budgets, anchors and decoded-output checks.
    Original arrays remain test-only; no precision default promotion yet.
 2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
