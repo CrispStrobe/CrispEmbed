@@ -6901,7 +6901,7 @@
     "shared_full_anchor_arrays_exact": 126,
     "additional_original_hook_arrays": 119,
     "prior_scalar_prefill_metrics_exact": 924,
-    "prior_shared_composed_vision_metrics_exact": 0,
+    "prior_shared_composed_vision_metrics_exact": 84,
     "isolated_metrics_norm_gate_independent_exact": 420,
     "first_argmax_exact_cases": 12,
     "small_decode_controls": 4,
@@ -6920,6 +6920,7 @@
     "conditional": "Original QKV/norm/geometry/QK/probability inputs are supplied only to validation experiments, never production inference. Original statistics/arrays are not native computation claims.",
     "generation": "Four arithmetic arms decode the same small fixture with original IDs/text/EOS. Larger documents have ordinary prefill/first argmax only; no new full-document output/CER/WER.",
     "performance": "No latency or peak-memory result",
-    "qualification": "Unchanged qualified original-backend vision/final norm budgets; raw 0.002 failures retained. Decoder states, caches and logits remain strict."
+    "qualification": "Unchanged qualified original-backend vision/final norm budgets; raw 0.002 failures retained. Decoder states, caches and logits remain strict.",
+    "initial_reproduction": "Composed pooled fields used the validation trace. Their failed native fidelity also invalidated all12 aggregate shared-vision case checks;84 individual shared vision records and all924 actual native prefill records remain exact."
   }
 }
