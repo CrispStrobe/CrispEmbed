@@ -13,7 +13,8 @@ This guide covers adding a new model backend (OCR, embedding, face, etc.) to Cri
 7. [ ] **Regenerate SHA-256 pins** (`python tools/fetch_model_hashes.py`) — an
        unpinned registry URL refuses to download
 8. [ ] Verify parity, quantize, update CrispCalc catalog
-9. [ ] `tools/format.sh --fix`, and add a row to `PLAN.md`'s active-work table
+9. [ ] `tools/format.sh --fix`, claim/update `PLAN.md` ownership and pending gates;
+   put completed milestones/evidence in `HISTORY.md` and measured quality/timing in `PERFORMANCE.md`
 
 ---
 

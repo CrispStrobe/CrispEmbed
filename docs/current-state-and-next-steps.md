@@ -1,6 +1,7 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Verified 5 October 2026. This handoff scopes follow-up work; it does not say the
+Consumer snapshot verified5 October2026; vendor roadmap updated15 October2026.
+This handoff scopes follow-up work; it does not say the
 lanes below have been implemented. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
 All references are public repository paths, workflow runs or published services.
@@ -71,59 +72,39 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Supplementary vendor OCR checkpoint — 14 October 2026
+## Vendor status — 15 October 2026
 
-CrispEmbed's permissive OCR queue starts with LightOnOCR-3-0.8B (Apache-2.0),
-an experimental native Qwen3.5 backend. Nine independent raw-RGB layouts,
-eleven tokenizer cases,5102 original Rust NFC cases and285 legacy checks pass.
-The explicit F16 text/F32 vision recipe passes two owned connected fixtures with
-exact9/9 IDs/EOS and decoded text; resized cache keys max abs0.001833 under the
-unchanged0.002 limit. Storage is1.918 GB. The F16 baseline and precision-control
-failures remain recorded. [Sources, full evidence and bounds](qwen35-ocr.md).
+Use [PLAN.md](../PLAN.md) for active tasks and ownership, [HISTORY.md](../HISTORY.md)
+for completed work and frozen handoffs, and [PERFORMANCE.md](../PERFORMANCE.md)
+for measured quality/timing. The earlier vendor milestones are now archived;
+this status does not promote experimental vendor main into the app's pinned release.
 
-The owning engine and unified C API/orchestrator ID20, CLI/server and
-Python/Rust/Dart consumers now pass hosted checks. The
-[public integration run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38610331501)
-at815234d5 includes an original custom-prompt capture:189 comparisons, exact9/9
-IDs/EOS/text, score cosine1/max8.63e-5 and cache keys0.0019871 under unchanged0.002.
-C/Python/Dart agree on stage168/cleanup60/params136 bytes. Initial Python/Dart
-layout defects and full stage errors/norms are retained in the
-[public evidence](../tests/results/qwen35-ocr/public-integration-parity.json).
+LightOnOCR-3-0.8B has a native Qwen3.5 engine and public C/orchestrator/CLI/server/
+Python/Rust/Dart wiring. The [external-document panel](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
+finds exact F16 outputs/stops on4 cases, but three exceed the prior0.002 cache-key
+budget (worst0.00622). Q8 matches2/3 EOS-completed cases; Q8/Q6 matches1/3.
+All receipt arms truncate at384 tokens. Numerical controls, full decoding,
+materialization/graph performance, quantized quality and HF publication remain
+open;1024 patches is the native bound. [Detailed evidence](qwen35-ocr.md).
 
-The [quantization sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38614951999)
-at6b970ea8 now passes seven mixed Q8/Q4 recipes on four owned synthetic cases,
-all41 IDs/EOS/text exact per recipe, paired CER/WER0 and473-tensor type/byte audits.
-Both new original-reference fixtures pass unchanged strict F16 gates. Smallest
-Q4 is0.964GB/min scorecos0.9496; Q8 is1.213GB/cos0.99946. Attention precision helps,
-but the tested head/attention restorations offer less size/score fidelity than Q8.
-[Every stage error/norm and output](../tests/results/qwen35-ocr/quant-calibration-parity.json).
+The [latest main platform build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635)
+failed on iOS standalone test-target wiring; other platform jobs passed and
+Flutter bundling skipped. The scoped repair is being checked with an actual
+library-only iOS build plus an original18-case native position fixture in
+[hosted38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574).
+The initial verifier's fixture-invocation failure is retained; no runtime numerical
+change is part of the build repair.
 
-The [native FFN sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38627759408)
-at af8a7967 passes ten exports/40 native cases/3490 diagnostic vectors. All41
-IDs/EOS/text match per export. Six disjoint synthetic calibration images supply72
-FFN importance vectors,511 rows each, with registration/runtime literal0 and
-output off/on controls. Q8 attention/Q6 FFNs is1.150GB/min scorecos0.998158,
-versus Q8's1.213GB/0.999463. Plain Q4 importance regresses; with Q8 attention it
-improves0.977640→0.980405 at unchanged1.082GB. All tensor audits, hashes, negative
-results and [full stage/output evidence](../tests/results/qwen35-ocr/ffn-calibration-parity.json)
-are retained. The [external-document panel](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
-atd6c89416 now finds Q8 form divergence and Q8/Q6 form/German divergence, despite
-minimum scorecos0.998763/0.994997. F16 matches4/4 outputs/stops, but cache-key error
-exceeds the prior0.002 budget on3 cases, worst0.00622. All receipt arms match a
-384-token truncated prefix, not a complete document.90 shared compact/full anchor
-arrays match exactly;12 native cases/2586 stage vectors and all473-tensor audits
-are retained in the [full panel report](../tests/results/qwen35-ocr/page-parity.json).
-Native single-run receipt observations are578/351/411 seconds for F16/Q8/Q8-Q6;
-Python generate is31 seconds with a different documented timing scope.
-Neither quantized recipe is promoted. Next: unrounded-text/official-backend
-controls for larger-input drift, an adequate receipt cap, and profiling/gated
-materialization or graph optimization.
-Larger pages currently reject beyond1024 patches. Registry aliases, corpus
-accuracy, GPU/latency claims and HF publication remain pending.
-The [owning-context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)
-passes eight lifecycle cases and confidence max error2.67e-7.
-The app's pinned minimal release and OCR dependency remain separate from this
-experimental vendor work. Indra stays restricted to public-code analysis.
+LFM2.5 Encoder and EmbeddingGemma typed-decision integration/publication are
+archived as complete, with GPU, independent task-quality and long-context/perf
+follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasibility
+audit and a proposed port order, but no native implementation or weight download.
+Indra remains public-code analysis only under the selected permissive-model scope.
+
+The next vendor work follows PLAN's order: finish platform repair, isolate
+larger-input drift with unrounded text/original CPU controls, profile gated runtime
+changes, finish long documents, then validate quantization/publication. The
+consumer lanes below remain separate, with their original verification dates.
 
 ## Recommended order and dependencies
 

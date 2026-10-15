@@ -75,19 +75,20 @@ Two runtime requirements apply to every new path:
   decoder semantics, dictionary candidate reranking, and a transcribed
   multi-code fixture. Wider beams are currently much slower and must remain
   gated until they demonstrably improve word choice.
-- Every benchmark finding belongs in `PLAN.md` and, for stable timing/quality
-  data, `PERFORMANCE.md`. Include whether output is on par, worse, or simply
+- Open benchmark follow-ups belong in `PLAN.md`; completed milestones and
+  evidence belong in `HISTORY.md`, with stable timing/quality data in `PERFORMANCE.md`. Include whether output is on par, worse, or simply
   unverified, plus a concrete TODO when it is worse or materially slower.
 
 ## Next actions
 
-1. Re-sync with remote `main` and run the comparator on the canonical page
-   fixture with DAWG scoring off/on and controlled recode beam widths.
-2. Extend the benchmark JSON/table to expose the exact paired outputs and
-   region/line counts for each mode; do not hide output differences in a
-   summary metric.
-3. Build a real multi-code/word-choice fixture and validate DAWG candidate
-   ranking against official Tesseract before considering any default change.
-4. Profile the largest native stage gaps, then optimize one gated path at a
-   time and re-run the same quality and performance gates.
+Follow the current execution order in [PLAN.md](PLAN.md): platform build health,
+Qwen larger-input numerical controls, measured inference optimization, complete
+long-document decoding, then quantization/publication and queued permissive models.
+UltraBERT feasibility is recorded in [docs/ultrabert.md](docs/ultrabert.md); it is
+not native support. Keep its dependency environment separate from pinned OCR references.
 
+Tesseract page/crop/recoder/dictionary work remains in the plan's portfolio backlog.
+Read the archived technical briefs for evidence, then verify current code before
+reviving a historical failure. Move completed lane narratives into HISTORY rather
+than growing PLAN with dated work logs. Do not treat archived machine commands,
+agent assignments or release snapshots as current instructions.
