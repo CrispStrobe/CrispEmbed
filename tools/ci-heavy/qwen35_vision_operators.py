@@ -100,7 +100,7 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
             block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_norm_statistics.cpp' if stats else '/test_qwen35_vision_blocks.cpp')]
             if not block_commands or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in block_commands):
                 raise ValueError('Block replay must link the ordinary production implementation')
-        report['test_operator_compile_isolation'] = ('unchanged linked production implementation; test-only identity patch fixtures' if blocks or stats else 'unchanged production source; replay compiled only in separate validation translation unit')
+        report['test_operator_compile_isolation'] = ('linked production implementation without test macros; test-only identity patch fixtures' if blocks or stats else 'hash-guarded production source; replay compiled only in separate validation translation unit')
         if blocks:
             report['block_replay_limits'] = 'Original block inputs enter through an exactly checked test-only identity frontend. Rotary geometry stays native and is measured against original geometry. Residuals use public native projections and float additions, checked against native block outputs. No production source injection or private implementation copy.'
         report['compact_anchor'] = capture.dump_reference(local, anchor_image, root / 'compact-anchor', max_new_tokens=12, anchor=anchor_npz)
