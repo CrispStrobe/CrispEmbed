@@ -139,7 +139,10 @@ static int crispembed_test_main(int argc, char ** argv) {
         static_cast<float *>(identity->data)[size_t(i) * config.patch_width + i] = 1.0f;
     bool finite = true, controls = true;
     int exact_controls = 0;
-    const char * modes[] = { "two-pass-f32", "two-pass-f64", "welford-4", "welford-8", "welford-16" };
+    const char * modes[] = {
+        "two-pass-f32",           "two-pass-f64",           "welford-4",       "welford-8",       "welford-16",
+        "original-moments-fused", "original-moments-split", "welford-4-split", "welford-8-split", "welford-16-split"
+    };
     for (int node = 0; node < 25; ++node) {
         const int layer = node == 24 ? 0 : node / 2;
         const bool second = node < 24 && node % 2;
@@ -169,9 +172,16 @@ static int crispembed_test_main(int argc, char ** argv) {
         for (int t = 0; t < tokens; ++t)
             std::copy_n(input.data() + size_t(t) * config.width, config.width,
                         packed.data() + size_t(t) * config.patch_width);
-        for (int mode = 0; mode < 5; ++mode) {
+        for (int mode = 0; mode < 10; ++mode) {
             std::vector<float> output, means, rstds;
-            norm_audit::normalize(input, gamma, beta, mode, output, means, rstds);
+            const int statistic_mode = mode < 5 ? mode : mode < 7 ? 0 : mode - 5;
+            norm_audit::normalize(input, gamma, beta, statistic_mode, output, means, rstds);
+            if (mode == 5 || mode == 6) {
+                means = array(ref, prefix + ".mean");
+                rstds = array(ref, prefix + ".rstd");
+                if (means.size() != size_t(tokens) || rstds.size() != size_t(tokens)) return 2;
+            }
+            if (mode >= 5) norm_audit::affine(input, gamma, beta, means, rstds, mode == 5, output);
             if (mode < 2) {
                 gate("CRISPEMBED_QWEN35_VISION_PRECISE_NORM", mode ? "1" : "0");
                 qwen35_ocr::vision_outputs probe;
@@ -213,7 +223,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     ggml_backend_free(backend);
     std::printf("NORM_AUDIT finite=%d metrics=%d qualified_failures=%d controls=%d exact_controls=%d\n", finite,
                 metrics, failures, controls, exact_controls);
-    return finite && metrics == 387 && controls && failures == 0 ? 0 : 1;
+    return finite && metrics == 762 && controls && failures == 0 ? 0 : 1;
 }
 int main(int argc, char ** argv) {
     core_util::clean_exit(crispembed_test_main(argc, argv));

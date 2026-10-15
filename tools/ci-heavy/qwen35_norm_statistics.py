@@ -9,10 +9,10 @@ from qwen35_vision_operators import stage_records, prefill_records
 
 def records(log):
     rows=stage_records(log,'NORM_METRIC')
-    status=re.search(r'^NORM_AUDIT finite=1 metrics=387 qualified_failures=(\d+) controls=(\d+) exact_controls=(\d+)$',log,re.M)
-    expected={name:75 for name in ('two-pass-f32','two-pass-f64','welford-4','welford-8','welford-16')}
+    status=re.search(r'^NORM_AUDIT finite=1 metrics=762 qualified_failures=(\d+) controls=(\d+) exact_controls=(\d+)$',log,re.M)
+    expected={name:75 for name in ('two-pass-f32','two-pass-f64','welford-4','welford-8','welford-16','original-moments-fused','original-moments-split','welford-4-split','welford-8-split','welford-16-split')}
     expected['python-native-geometry']=12
-    if len(rows)!=387 or not status or Counter(m['mode'] for m in rows)!=expected or sum(not m['qualified_pass'] for m in rows)!=int(status[1]):
+    if len(rows)!=762 or not status or Counter(m['mode'] for m in rows)!=expected or sum(not m['qualified_pass'] for m in rows)!=int(status[1]):
         raise ValueError('Incomplete original-statistics diagnostics')
     controls=[dict(mode=m[0],stage=m[1],passed=bool(int(m[2])),max_abs=float(m[3]),native_elements=int(m[4]),expected_elements=int(m[5]))
         for m in re.findall(r'^NORM_CONTROL (\S+) (\S+) pass=(\d+) max_abs=(\S+) n=(\d+)/(\d+)$',log,re.M)]

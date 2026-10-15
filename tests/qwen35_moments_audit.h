@@ -101,4 +101,19 @@ static void normalize(const std::vector<float> & x, const std::vector<float> & g
             output[base + i] = ((x[base + i] - stats.first) * stats.second) * gamma[i] + beta[i];
     }
 }
+// Conditional affine controls. Original moments never enter production inference.
+static void affine(const std::vector<float> & x, const std::vector<float> & gamma, const std::vector<float> & beta,
+                   const std::vector<float> & means, const std::vector<float> & rstds, bool fused,
+                   std::vector<float> & output) {
+    const size_t width = gamma.size();
+    for (size_t j = 0; j < x.size(); ++j) {
+        const float normalized = (x[j] - means[j / width]) * rstds[j / width];
+        if (fused)
+            output[j] = std::fma(normalized, gamma[j % width], beta[j % width]);
+        else {
+            volatile float weighted = normalized * gamma[j % width];
+            output[j] = weighted + beta[j % width];
+        }
+    }
+}
 } // namespace norm_audit
