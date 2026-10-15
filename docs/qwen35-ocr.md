@@ -1054,5 +1054,6 @@ generation excludes processor/model load and collects scores; native recognition
 includes image decoding/preprocessing, excludes context load and teacher probes.
 They do not establish a latency benchmark.
 
-Results pending hosted execution; no corpus score, default promotion, HF
+[Hosted panel38674281196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
+is queued at `d6c89416`; no corpus score, default promotion, HF
 publication, registry alias or runtime release is implied by this panel.
