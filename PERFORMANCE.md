@@ -5296,3 +5296,9 @@ controls still fail despite explicit fused variance accumulation. These failures
 remain invalidating controls and are retained separately from candidate/native
 agreement. No large-document decode, speed, peak-memory or default promotion.
 [All2,979 vectors and negative results](tests/results/qwen35-ocr/cascade-norm-initial.json).
+
+The cascade merger maximum errors are0.000208378/0.000286222/0.0000984641
+for form/receipt/German, versus baseline0.000139356/0.000193000/0.0000952482.
+All three are larger despite fewer strict prefill failures. Receipt logit max
+error also rises from0.000143051 to0.000219464. These non-monotonic results are
+part of the candidate's limits, not evidence for an overall quality promotion.
