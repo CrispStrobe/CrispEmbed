@@ -5275,3 +5275,24 @@ statistics. Ordinary prefill reproduces its 20 failures exactly.
 Original Python/native-rotary block errors reach 0.00109863/0.000732422/
 0.000732422 for form/receipt/German. No timing or full decoding improvement.
 [Raw results, failed controls and unchanged budgets](tests/results/qwen35-ocr/norm-statistics.json).
+
+## Qwen3.5 gated cascade runtime — initial 15 October 2026
+
+[Hosted38759613908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38759613908)
+at `16e3399d`. Same original references and weights; no budget change.
+
+| Arm | Form failures | Receipt failures | German failures | Worst cache-key error |
+|---|---:|---:|---:|---:|
+| Literal0 baseline | 5 | 7 | 8 | 0.00622153 |
+| Cascade | 0 | 6 | 5 | 0.00549555 |
+| Cascade + precise attention | 3 | 7 | 4 | 0.00423408 |
+
+All nine first argmaxes match. All75 actual cascade norm outputs on original
+inputs are exact, cosine1.000000000/max error0. All three small-document arms
+match original IDs/text/EOS, with17 UTF-8 bytes. All231 prior baseline records
+remain exact. The earlier combined F64 precision arm had0/7/4 failures and worst
+key0.00408316; the new path is not uniformly better. All75 F32 reconstruction
+controls still fail despite explicit fused variance accumulation. These failures
+remain invalidating controls and are retained separately from candidate/native
+agreement. No large-document decode, speed, peak-memory or default promotion.
+[All2,979 vectors and negative results](tests/results/qwen35-ocr/cascade-norm-initial.json).

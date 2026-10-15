@@ -4,6 +4,29 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 computed cascade runtime A/B, initial controls
+
+[Hosted38759613908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38759613908)
+at `16e3399d` tests actual native four-lane normalization, without original arrays
+in production. All75 candidate norm-output controls and all75 F64 controls pass;
+all225 delivered-input controls pass. All231 prior baseline scalar records remain
+exact. Baseline/cascade/cascade-plus-attention small-document runs match all nine
+original IDs, UTF-8 text and EOS; no large-document decode was added.
+
+Strict prefill failures are20 baseline,11 cascade and14 cascade-plus-attention.
+Cascade gives form/receipt/German counts0/6/5, versus baseline5/7/8. Its worst key
+error is0.00549555 versus baseline0.00622153; adding precise attention gives
+0.00423408 but increases the failure count. The existing combined F64 precision
+arm also had11 failures, with a smaller0.00408316 worst key error; cascade is not
+an overall best-path promotion. All alternatives remain default-off.
+
+Explicit fused variance accumulation fails to repair all75 F32 reconstruction
+controls; their measurements reproduce the initial negatives. The complete audit
+retains2,979 vectors and exits nonzero for45 prefill verdicts plus75 controls.
+Next test explicitly split variance multiplication/addition, retaining the fused
+variant as a measured contrast. Do not relabel the failed reconstruction as
+validated. [All initial runtime results and failures](tests/results/qwen35-ocr/cascade-norm-initial.json).
+
 ## 2026-10-15 — Qwen3.5 original LayerNorm statistics and rotary controls
 
 [Hosted38739442000](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38739442000)

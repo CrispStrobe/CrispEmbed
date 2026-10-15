@@ -10,10 +10,10 @@ from qwen35_vision_operators import stage_records, prefill_records
 def records(log,cascade=False):
     control_count=75 if cascade else 50
     rows=stage_records(log,'NORM_METRIC')
-    status=re.search(r'^NORM_AUDIT finite=1 metrics=762 qualified_failures=(\d+) controls=(\d+) exact_controls=(\d+)$',log,re.M)
-    expected={name:75 for name in ('two-pass-f32','two-pass-f64','welford-4','welford-8','welford-16','original-moments-fused','original-moments-split','welford-4-split','welford-8-split','welford-16-split')}
+    status=re.search(r'^NORM_AUDIT finite=1 metrics=837 qualified_failures=(\d+) controls=(\d+) exact_controls=(\d+)$',log,re.M)
+    expected={name:75 for name in ('two-pass-f32','two-pass-f64','welford-4','welford-8','welford-16','original-moments-fused','original-moments-split','welford-4-split','welford-8-split','welford-16-split','two-pass-f32-fused-variance')}
     expected['python-native-geometry']=12
-    if len(rows)!=762 or not status or Counter(m['mode'] for m in rows)!=expected or sum(not m['qualified_pass'] for m in rows)!=int(status[1]):
+    if len(rows)!=837 or not status or Counter(m['mode'] for m in rows)!=expected or sum(not m['qualified_pass'] for m in rows)!=int(status[1]):
         raise ValueError('Incomplete original-statistics diagnostics')
     controls=[dict(mode=m[0],stage=m[1],passed=bool(int(m[2])),max_abs=float(m[3]),native_elements=int(m[4]),expected_elements=int(m[5]))
         for m in re.findall(r'^NORM_CONTROL (\S+) (\S+) pass=(\d+) max_abs=(\S+) n=(\d+)/(\d+)$',log,re.M)]
@@ -26,7 +26,9 @@ def records(log,cascade=False):
         if c['passed']!=(d['passed'] and c['max_abs']==0):raise ValueError('Native equality verdict mismatch')
     if bool(int(status[2]))!=all(c['passed'] and d['passed'] for c,d in zip(controls,delivered)):
         raise ValueError('Gate/native equality controls failed')
-    return dict(metrics=rows,native_controls=controls,input_controls=delivered,controls_passed=bool(int(status[2])))
+    contrast=[dict(stage=m[0],split_max_abs=float(m[1]),fused_max_abs=float(m[2]),elements=int(m[3])) for m in re.findall(r'^VARIANCE_CONTRAST (\S+) split_max_abs=(\S+) fused_max_abs=(\S+) n=(\d+)$',log,re.M)]
+    if len(contrast)!=25:raise ValueError('Missing fused/split variance contrasts')
+    return dict(metrics=rows,native_controls=controls,input_controls=delivered,variance_contrasts=contrast,controls_passed=bool(int(status[2])))
 
 
 def run_cases(repo,build,baseline,root,out,report,cascade=False):

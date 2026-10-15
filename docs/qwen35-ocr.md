@@ -1452,3 +1452,31 @@ small-document decode arms must match original IDs/text and stop at EOS.
 F32 reconstruction now explicitly fuses variance accumulation as a hypothesis;
 its equality controls must pass before that reconstruction is accepted. The
 initial75 failures remain in the completed report. No budgets are changed.
+
+## Initial native cascade measurements
+
+[Hosted38759613908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38759613908)
+at `16e3399d` tests actual native four-lane normalization, without original arrays
+in production. All75 candidate norm-output controls and all75 F64 controls pass;
+all225 delivered-input controls pass. All231 prior baseline scalar records remain
+exact. Baseline/cascade/cascade-plus-attention small-document runs match all nine
+original IDs, UTF-8 text and EOS; no large-document decode was added.
+
+Strict prefill failures are20 baseline,11 cascade and14 cascade-plus-attention.
+Cascade gives form/receipt/German counts0/6/5, versus baseline5/7/8. Its worst key
+error is0.00549555 versus baseline0.00622153; adding precise attention gives
+0.00423408 but increases the failure count. The existing combined F64 precision
+arm also had11 failures, with a smaller0.00408316 worst key error; cascade is not
+an overall best-path promotion. All alternatives remain default-off.
+
+Explicit fused variance accumulation fails to repair all75 F32 reconstruction
+controls; their measurements reproduce the initial negatives. The complete audit
+retains2,979 vectors and exits nonzero for45 prefill verdicts plus75 controls.
+Next test explicitly split variance multiplication/addition, retaining the fused
+variant as a measured contrast. Do not relabel the failed reconstruction as
+validated. [All initial runtime results and failures](tests/results/qwen35-ocr/cascade-norm-initial.json).
+
+The next audit adds explicit split variance accumulation and retains the fused
+variance variant separately. It compares837 statistics/geometry vectors per case,
+plus baseline/cascade/cascade-attention prefill and unchanged decoded controls.
+All75 native norm-output controls per case remain mandatory.

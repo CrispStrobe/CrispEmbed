@@ -26,14 +26,19 @@ static void merge(moments & a, const moments & b, bool vector_lane) {
     }
     a.count = total;
 }
-static std::pair<float, float> row(const float * x, int width, int mode) {
+static std::pair<float, float> row(const float * x, int width, int mode, bool fused_variance) {
     float mean = 0, variance = 0;
     if (mode < 2) {
         for (int i = 0; i < width; ++i) mean += x[i];
         mean /= width;
         for (int i = 0; i < width; ++i) {
             const float centered = x[i] - mean;
-            variance = std::fma(centered, centered, variance);
+            if (fused_variance)
+                variance = std::fma(centered, centered, variance);
+            else {
+                volatile float square = centered * centered;
+                variance += square;
+            }
         }
         variance /= width;
         if (mode == 1) {
@@ -88,13 +93,14 @@ static std::pair<float, float> row(const float * x, int width, int mode) {
     return { mean, 1.0f / std::sqrt(variance + 1e-6f) };
 }
 static void normalize(const std::vector<float> & x, const std::vector<float> & gamma, const std::vector<float> & beta,
-                      int mode, std::vector<float> & output, std::vector<float> & means, std::vector<float> & rstds) {
+                      int mode, std::vector<float> & output, std::vector<float> & means, std::vector<float> & rstds,
+                      bool fused_variance = false) {
     const int width = int(gamma.size());
     output.resize(x.size());
     means.resize(x.size() / width);
     rstds.resize(means.size());
     for (size_t base = 0; base < x.size(); base += width) {
-        const auto stats = row(x.data() + base, width, mode);
+        const auto stats = row(x.data() + base, width, mode, fused_variance);
         means[base / width] = stats.first;
         rstds[base / width] = stats.second;
         for (int i = 0; i < width; ++i)
