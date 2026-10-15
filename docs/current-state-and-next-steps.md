@@ -83,7 +83,11 @@ LightOnOCR-3-0.8B has a native Qwen3.5 engine and public C/orchestrator/CLI/serv
 Python/Rust/Dart wiring. The [external-document panel](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
 finds exact F16 outputs/stops on4 cases, but three exceed the prior0.002 cache-key
 budget (worst0.00622). Q8 matches2/3 EOS-completed cases; Q8/Q6 matches1/3.
-All receipt arms truncate at384 tokens. Numerical controls, full decoding,
+All receipt arms truncate at384 tokens. The completed
+[larger-input controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
+show that all-F32 text and precise RMS do not remove strict failures: worst key
+errors remain0.00620–0.00625. Original CPU-backend variation also exceeds0.002;
+no tolerance is relaxed. Operator-level isolation, full decoding,
 materialization/graph performance, quantized quality and HF publication remain
 open;1024 patches is the native bound. [Detailed evidence](qwen35-ocr.md).
 
@@ -103,7 +107,7 @@ audit and a proposed port order, but no native implementation or weight download
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The next vendor work follows PLAN's order: finish platform repair, isolate
-larger-input drift with unrounded text/original CPU controls, profile gated runtime
+larger-input vision/decoder operators after the precision controls, profile gated runtime
 changes, finish long documents, then validate quantization/publication. The
 consumer lanes below remain separate, with their original verification dates.
 

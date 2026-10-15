@@ -4,6 +4,26 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 larger-input precision/backend isolation
+
+[Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
+at263d6abe completes three fixed document inputs × three native arms,693 stage
+vectors/budget records,456 original CPU-control vectors and473 tensors per arm.
+All90 shared compact/full anchor arrays are exact; document derivatives and the
+F16 baseline hash match the preceding panel. Pixel values are exact; the first
+measured difference is at the vision merger. All nine first-token argmaxes match.
+
+All-F32 increases storage from1.918GB to3.422GB without fixing the failures:
+worst key error0.00625157 versus F16's0.00622153; precise RMS gives0.00619769.
+Each arm retains20 strict failures (form5, receipt7, German8). Original Python
+backend-off key variation also exceeds0.002 on all three inputs; per-patch
+convolution is identical on these inputs. The existing qualified norm budget
+passes receipt but still fails form/German. No budget or runtime default changes.
+The next operator-level isolation remains in PLAN. This is prefill-only, not
+new full decoding, quality, latency or publication evidence.
+[Complete errors, magnitudes, controls, failures and provenance](tests/results/qwen35-ocr/prefill-drift.json);
+[technical interpretation](docs/qwen35-ocr.md#larger-input-precision-and-original-backend-controls).
+
 ## 2026-10-15 — iOS standalone-target build repair
 
 Moved the appended standalone validation executables under the existing native

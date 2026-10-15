@@ -1125,3 +1125,63 @@ are retained. Neither quantized recipe is promoted. Next: isolate larger-input
 cache drift with unrounded text weights/official CPU controls, complete a receipt
 under an explicit adequate cap, and profile the native hot path before publication.
 No corpus score, registry alias, HF publication or runtime release follows.
+
+## Larger-input precision and original backend controls
+
+[Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
+at `263d6abe67fd53049986dff8912437e2b904305c` separates text-weight precision,
+RMS reduction and original CPU convolution variation on the same form, receipt
+and German derivatives. All source/input hashes match the preceding panel;
+90 shared compact/full original anchor arrays remain bitwise exact. The reference
+is original Transformers5.5.4 F32 eager. HF metadata for the pinned checkpoint
+reports852,985,920 BF16 parameters: F32 here expands the original stored values.
+No higher-precision upstream checkpoint is invented.
+
+The native `--prefill-only` diagnostic takes real image/prompt/tokenizer inputs
+and runs the native vision/decoder. It measures77 stages and applies the unchanged
+strict comparator at each boundary. A successful experiment means all finite,
+shape, capture and report checks completed; **it does not mean numerical parity
+passed**. The report retains every failed stage and budget ratio. No reference
+array enters the production inference path. No full-generation, EOS, corpus
+accuracy or speed claim is added by this probe.
+
+| Arm | Storage GB (decimal) | Form max key error | Receipt max key error | German max key error | Strict failed stages (form/receipt/German) |
+|---|---:|---:|---:|---:|---|
+| F16 text/F32 vision | 1.918 | 0.00295281 | 0.00264263 | 0.00622153 | 5 /7 /8 |
+| All-F32 | 3.422 | 0.00295234 | 0.00264335 | 0.00625157 | 5 /7 /8 |
+| All-F32 + precise RMS | 3.422 | 0.00295186 | 0.00264016 | 0.00619769 | 5 /7 /8 |
+
+The F16 baseline is byte-identical to the preceding panel. The all-F32 export is
+3,421,928,384 bytes, SHA-256
+`cab4631dbea7aa08512ed9473a72e695add5ea51f0a3d652939fda0212cbcc48`.
+All473 names/shapes are checked for every arm; vision, vectors and convolutions
+keep identical bytes. The F16 arm has187 F16 and286 F32 tensors; the other two
+have473 F32 tensors. More text precision and the existing F64-sum-of-F32-squares
+RMS alternative do not resolve this drift. No precision recipe is promoted.
+
+Pixels match exactly. The first measured native difference is the vision merger:
+maximum errors0.000139356/0.000193000/0.0000952482 for form/receipt/German, with
+norms47.346/69.233/55.774. Input embeddings inherit those errors. In the F16 arm,
+all decoder hidden layers stay under0.002 (maxima0.00126052/0.00087929/0.00191617).
+The first strict cache failure is layer11 keys for form and layer7 keys for the
+other two; later keys and some receipt/German values also exceed0.002. This
+locates measured boundaries, not yet the first responsible operator.
+All first-token argmaxes match across nine native cases; maximum prefill-logit
+error is0.000196576 across all arms. Stage cosines remain above0.99999, while
+absolute budgets still fail. All norms and errors are retained, not just cosine.
+
+Original Python backend-off versus default variation reaches key errors
+0.00212538/0.00320449/0.00398135 and final-norm errors
+0.00990486/0.01163006/0.00962448. Per-patch original convolution is identical to
+default at all76 captured boundaries on each input. These controls measure
+original implementation variability; they do not relax the cache budget.
+The existing elementwise qualified final-norm gate passes receipt (maximum budget
+ratio0.65814) but fails form1.01615 and German1.17035 in the F16 arm. Using a
+stage-wide norm allowance would conceal those failures and is not accepted.
+
+The report contains693 native metric/budget vectors,456 original control vectors,
+all60 strict failures and the unchanged anchor/component/context controls.
+Next isolate vision operators and decoder projection/normalization/RoPE with
+identical inputs in test-only probes, then measure runtime costs. The0.002 cache
+budget, runtime math/defaults and prior full-output evidence remain unchanged.
+[Complete retained report](../tests/results/qwen35-ocr/prefill-drift.json).
