@@ -1477,7 +1477,31 @@ Next test explicitly split variance multiplication/addition, retaining the fused
 variant as a measured contrast. Do not relabel the failed reconstruction as
 validated. [All initial runtime results and failures](tests/results/qwen35-ocr/cascade-norm-initial.json).
 
-The next audit adds explicit split variance accumulation and retains the fused
-variance variant separately. It compares837 statistics/geometry vectors per case,
+The completed follow-up uses explicit split variance accumulation and retains
+the fused variant separately. It compares837 statistics/geometry vectors per case,
 plus baseline/cascade/cascade-attention prefill and unchanged decoded controls.
-All75 native norm-output controls per case remain mandatory.
+All75 native norm-output controls per case pass in the final run.
+
+## Verified native controls and current limits
+
+[Final38764189561](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38764189561)
+at `65c859b2` passes all 225 actual native norm-output and 225 delivered-input
+controls. Explicitly split variance multiplication/addition fixes the validation
+reconstruction; all 75 fused contrasts reproduce the old mismatch exactly.
+[Actual compiler output](../tests/results/qwen35-ocr/norm-codegen.json) confirms
+separate variance vector products and ordered additions at width 768, with fused
+affine. This is build-specific evidence; unsupported widths retain the old path.
+
+All 693 earlier prefill scalar records reproduce exactly. Failure counts remain
+20/11/14 for baseline/cascade/cascade-attention; all nine first argmaxes and three
+small-document ID/text/EOS controls match. The final diagnostic retains all 45
+prefill failures and exits nonzero, with zero failed native controls. Cascade
+merger maxima worsen on all three inputs, and the earlier combined F64 arm also
+had 11 failures with a smaller worst key error. Keep all alternatives default-off;
+no overall quality, speed or publication promotion follows from component parity.
+
+[All 3,204 vectors and variance contrasts](../tests/results/qwen35-ocr/cascade-norm.json),
+[completed lane](../HISTORY.md#2026-10-15--qwen35-native-normalization-controls-resolved)
+and [remaining tasks](../PLAN.md). Large-document decoded A/B and remaining
+attention/projection/rotary isolation remain open; original arrays never enter
+production inference. Package/install/vendor licenses retain the kernel's BSD notice.

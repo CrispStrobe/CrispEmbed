@@ -4,6 +4,44 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 native normalization controls resolved
+
+[Hosted 38764189561](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38764189561)
+at `65c859b2` completes 3,204 vectors, 1,602 original CPU-control vectors and all
+225 actual native norm-output / 225 delivered-input controls exactly. All 693
+baseline/cascade/cascade-attention prefill records reproduce the preceding A/B
+exactly, including the 231 baseline records frozen before this lane. All three
+small-document arms match the original nine IDs, 17 UTF-8 bytes and EOS.
+
+The earlier F32 reconstruction failure came from variance multiply/add rounding
+in the validation code. Explicit split multiplication/addition matches all 75
+native F32 outputs exactly. The retained fused variant differs on all 75 and
+reproduces all 225 earlier fused output/mean/rstd measurements exactly. No
+comparison budget was relaxed and no failed record was discarded. The separate
+[compiler audit 38766140128](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38766140128)
+at `849a0985` confirms GCC 13.3 emits vector multiply then ordered scalar additions
+for width 768; its fused scalar remainder is skipped for this width. Affine uses
+fused multiply-add. [Compiler provenance and retained function](tests/results/qwen35-ocr/norm-codegen.json).
+This establishes the tested build's behavior, not a universal compiler rule.
+
+The computed four-lane runtime path matches all 75 original-input norm outputs
+exactly and stays behind `CRISPEMBED_QWEN35_VISION_CASCADE_NORM`. Its original-input
+mean/rstd candidate measurements are also exact. Ordinary prefill still has
+20/11/14 failures for baseline/cascade/cascade-attention. Cascade's worst key error
+is 0.00549555 versus baseline 0.00622153; merger maxima increase on all three cases.
+The earlier combined F64 arm also had 11 failures and a smaller0.00408316 worst
+key error. These trade-offs prohibit an overall/default promotion. All working
+precision alternatives remain available, and all nine first argmaxes match.
+
+The workflow correctly exits nonzero for the retained 45 prefill verdicts, with
+zero failed native controls. All older small-fixture guards pass. The ordinary
+vision implementation links a separate computed kernel; original arrays and
+private operator replay remain test-only. BSD attribution accompanies source,
+distribution licenses, CMake installation and Rust vendoring. No new large-document
+transcript, speed, peak-memory, model publication or app release is claimed.
+[All final records and contrasts](tests/results/qwen35-ocr/cascade-norm.json);
+[initial runtime negatives](tests/results/qwen35-ocr/cascade-norm-initial.json).
+
 ## 2026-10-15 — Qwen3.5 computed cascade runtime A/B, initial controls
 
 [Hosted38759613908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38759613908)

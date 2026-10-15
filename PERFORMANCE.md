@@ -5302,3 +5302,20 @@ for form/receipt/German, versus baseline0.000139356/0.000193000/0.0000952482.
 All three are larger despite fewer strict prefill failures. Receipt logit max
 error also rises from0.000143051 to0.000219464. These non-monotonic results are
 part of the candidate's limits, not evidence for an overall quality promotion.
+
+## Qwen3.5 verified native norm controls — 15 October 2026
+
+[Hosted 38764189561](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38764189561)
+at `65c859b2` repeats all 693 earlier prefill measurements exactly. Failure counts
+and merger/logit trade-offs in the preceding table are unchanged. All 225 native
+norm-output controls now pass, including 75 F32 controls after explicit split
+variance multiplication/addition. All 75 fused contrasts retain nonzero errors
+(up to 0.0000305176) and exactly reproduce the previous fused measurements.
+[GCC 13.3 AArch64 disassembly](tests/results/qwen35-ocr/norm-codegen.json) confirms
+split variance vector products at width 768 and fused affine.
+
+Actual cascade norm outputs on original inputs remain 75/75 exact, cosine1.0 and
+max error 0. Three actual small-document arms again match all IDs/text/EOS. All
+3,204 vectors are retained; the job exits1 for 45 known prefill comparisons, with
+zero failed native controls. No thresholds, defaults, large-document quality or
+performance claims change. [Final measurements](tests/results/qwen35-ocr/cascade-norm.json).

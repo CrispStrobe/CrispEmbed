@@ -95,14 +95,15 @@ mostly satisfy raw0.002. The completed
 [native block audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
 passes678 exact controls: original block inputs reduce final-block error sharply,
 but ordinary prefill failures remain20/11 and two earlier suffix resets regress.
-The [statistics audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38739442000)
-matches all75 original norm outputs/mean/rstd with four-lane Welford, but all75
-F32 native reconstruction controls fail; F64 controls and delivered inputs are
-exact. Native rotary substitution in original Python blocks reaches0.00110.
-A computed, default-off cascade runtime candidate is queued in
-[38759613908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38759613908);
-actual native controls and composed/decoded results remain pending.
-No precision default changes. Full decoding, materialization/graph performance,
+The [completed native norm audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38764189561)
+passes 225 exact controls and reproduces693 prior prefill records. Actual computed
+cascade outputs match75 original-input norms exactly; split variance rounding
+resolves the earlier validation-code mismatch and compiler output confirms it.
+Prefill failures remain20/11/14 for baseline/cascade/cascade-attention; the older
+combined F64 arm also had 11, with different trade-offs. Three small-document
+ID/text/EOS arms pass, but no large-document quality or default promotion follows.
+Next isolate remaining attention/projection/rotary drift and compare full output.
+Full decoding, materialization/graph performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
