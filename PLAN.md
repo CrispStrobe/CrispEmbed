@@ -82,7 +82,7 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
 
 ## Text encoders and typed decisions
 
-- [ ] **UltraBERT feasibility and port:** finish the pinned-source audit in
+- [ ] **UltraBERT native port:** use the completed pinned-source audit in
   [docs/ultrabert.md](docs/ultrabert.md). Prefer UltraBERT-Embed-150M first for
   retrieval, then base150M masked-LM and380M. Verify exact local/global masks,
   per-layer RoPE, BOS/padding IDs, CLS pooling/query prefixes and the untied MLM

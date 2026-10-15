@@ -21,6 +21,19 @@ exited2; the corrected verifier uses the SHA-pinned original fixture from
 38541059168. [Initial verifier record](tests/results/ios-platform/ios-verifier-initial.json).
 No runtime math, model default, release tag or app dependency changed.
 
+## 2026-10-15 — UltraBERT public-source feasibility
+
+Inspected pinned150M/380M base and Embed-150M configs, custom Python source,
+tokenizer/module/prompt metadata and parameter totals. No weight download or
+inference. The family declares Apache-2.0; converted redistribution still needs
+recorded license/notice provenance. A native port is feasible using existing
+primitives, but local-window radius, global-layer offset, RMSNorm/SwiGLU, CLS
+pooling and the untied MLM head prevent a stock ModernBERT alias. The embedder is
+the suggested first checkpoint. Shape-based storage estimates and exact source
+hashes are in [the audit](docs/ultrabert.md) and
+[its manifest](tests/results/ultrabert/source-audit.json). Native implementation,
+parity, long-context validation and publication remain tasks in PLAN.
+
 ## 2026-10-15 — Qwen3.5 document validation and calibration checkpoints
 
 Completed the gated LightOnOCR-3-0.8B native engine, converter/reference tooling,
