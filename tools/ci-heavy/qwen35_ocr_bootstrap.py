@@ -36,7 +36,8 @@ def main():
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
-    page_check = sys.argv[1:] == ["--pages"]
+    decoded_check = sys.argv[1:] == ["--decoded-panel"]
+    page_check = decoded_check or sys.argv[1:] == ["--pages"]
     cascade_check = sys.argv[1:] == ["--cascade-norm"]
     stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
     attention_trace = sys.argv[1:] == ["--attention-trace"]
@@ -69,6 +70,8 @@ def main():
     report = {"native_parity": "comparisons pending; workflow completion is not a parity claim", "publication": "none",
               "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()}
     try:
+        if decoded_check:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_decoded_panel.py"), "-q"], check=True)
         api = HfApi()
         # Resolve metadata and verify permissive terms before downloading weights.
         sources = [(converter.LIGHTON_MODEL, converter.LIGHTON_REVISION),
@@ -306,9 +309,14 @@ def main():
                     "completed test-only original-embedding isolation; inspect prefill-isolation.json; not composed OCR parity"
                     if isolation_check else "completed fixed-input weight/backend controls; inspect prefill-drift.json")
             elif page_check:
-                pages = module(repo / "tools/ci-heavy/qwen35_page_parity.py", "qwen35_page_parity")
-                pages.run(repo, build, export, local, out, scratch, module, image_path, out / "official-reference.npz")
-                report["page_parity"] = "completed fixed real-document panel; inspect page-parity.json for differences"
+                if decoded_check:
+                    pages = module(repo / "tools/ci-heavy/qwen35_decoded_panel.py", "qwen35_decoded_panel")
+                    pages.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    report["decoded_panel"] = "completed four-arm decoded panel; inspect decoded-panel.json and retained strict failures"
+                else:
+                    pages = module(repo / "tools/ci-heavy/qwen35_page_parity.py", "qwen35_page_parity")
+                    pages.run(repo, build, export, local, out, scratch, module, image_path, out / "official-reference.npz")
+                    report["page_parity"] = "completed fixed real-document panel; inspect page-parity.json for differences"
             elif quant_check:
                 calibration = module(repo / "tools/ci-heavy/qwen35_quant_calibration.py", "qwen35_quant_calibration")
                 calibration.run(repo, build, export, image_path, resized_path, local, reference, out, scratch, ffn=ffn_check)

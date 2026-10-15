@@ -213,6 +213,14 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
         save("generated.ids", ids)
         for index, score in enumerate(generated.scores):
             save(f"generated.scores.{index}", score)
+    # Diagnostic confidence from the actual original generate scores, including
+    # EOS. Normalize in F64 as the native public confidence API does; generation
+    # and every captured score stay unchanged. This is not an accuracy measure.
+    confidence = []
+    for index, score in enumerate(generated.scores):
+        values = score[0].double()
+        selected = int(ids[0, index])
+        confidence.append(float((1.0 / torch.exp(values - values[selected]).sum()).item()))
     decoded = processor.batch_decode(ids, skip_special_tokens=True)[0]
     arrays["input.decoded_utf8"] = np.frombuffer(decoded.encode("utf-8"), dtype=np.uint8).astype(np.int32)
     # Same model, processor, F32 eager backend, image and generation parameters
@@ -244,6 +252,9 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
               "eos_ids": eos, "reached_eos": bool(generated_ids and generated_ids[-1] in eos),
               "stop": "eos" if generated_ids and generated_ids[-1] in eos else "max_tokens",
               "captured_arrays": len(arrays), "anchor_arrays_exact": anchor is not None}
+    result["selected_token_confidences"] = confidence
+    result["mean_confidence"] = sum(confidence) / len(confidence)
+    result["confidence_scope"] = "Original generated F32 scores, F64 exponential normalization of selected token, includes EOS; no calibration claim"
     result["generation_seconds"] = generation_seconds
     if attention_trace: result["attention_trace"] = attention_result
     if norm_statistics:
