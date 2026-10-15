@@ -12,12 +12,14 @@ static bool shape(ggml_tensor * t, int columns, int rows) {
 static bool finite(const std::vector<float> & v) {
     return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
 }
+#ifdef CRISPEMBED_QWEN35_VISION_TEST_OPS
 static float gelu_tanh(float x) {
     return 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x)));
 }
 static float gelu_erf(float x) {
     return 0.5f * x * (1.0f + std::erf(x * 0.7071067811865475f));
 }
+#endif
 static bool bias(std::vector<float> & x, ggml_tensor * b, int width) {
     if (!shape(b, width, 1)) return false;
     std::vector<float> values(width);
@@ -272,7 +274,8 @@ bool vision_cpu(const vision_weights & w, const vision_config & c, const float *
             probe.norm2 = normalized;
             probe.up = projected;
         }
-        for (float & x : projected) x = gelu_tanh(x);
+        for (float & x : projected)
+            x = 0.5f * x * (1.0f + std::tanh(0.7978845608028654f * (x + 0.044715f * x * x * x)));
         if (capture) probe.activation = projected;
         if (!linear(layer.down, layer.down_bias, projected, c.intermediate, tokens, threads, mixed)) return false;
         for (size_t i = 0; i < hidden.size(); ++i) hidden[i] += mixed[i];
@@ -285,7 +288,7 @@ bool vision_cpu(const vision_weights & w, const vision_config & c, const float *
                 output.merger_up))
         return false;
     output.merger_activation = output.merger_up;
-    for (float & x : output.merger_activation) x = gelu_erf(x);
+    for (float & x : output.merger_activation) x = 0.5f * x * (1.0f + std::erf(x * 0.7071067811865475f));
     return linear(w.merger_down, w.merger_down_bias, output.merger_activation, width * group, tokens / group, threads,
                   output.merged);
 }
