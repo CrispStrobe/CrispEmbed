@@ -1434,3 +1434,21 @@ and validate F32 reconstruction, then test computed four-lane normalization in
 an opt-in runtime path against actual native outputs and composed inference.
 [All measurements and controls](tests/results/qwen35-ocr/norm-statistics.json).
 
+## Gated computed cascade experiment
+
+`CRISPEMBED_QWEN35_VISION_CASCADE_NORM=1` selects computed four-lane cascade
+statistics and explicit fused affine for width768/epsilon1e-6 vision norms.
+Literal0 and unset preserve the existing two-pass path; unsupported shapes
+retain it as well. When selected, cascade takes precedence over PRECISE_NORM;
+PRECISE_ATTN remains independent. This is a candidate, not a promoted default.
+Its arithmetic is in a separate production translation unit with the pinned
+PyTorch BSD notice. No original moments, arrays or test dependencies enter it.
+
+Hosted `--cascade-norm` requires75 actual native norm-output controls per case,
+including the candidate on original inputs; it tests ordinary baseline, cascade,
+and cascade plus the existing attention gate through all77 prefill stages.
+Every previous baseline scalar record must reproduce exactly. Three actual
+small-document decode arms must match original IDs/text and stop at EOS.
+F32 reconstruction now explicitly fuses variance accumulation as a hypothesis;
+its equality controls must pass before that reconstruction is accepted. The
+initial75 failures remain in the completed report. No budgets are changed.

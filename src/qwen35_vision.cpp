@@ -1,5 +1,6 @@
 #include "qwen35_vision.h"
 #include "qwen35_math.h"
+#include "qwen35_norm.h"
 #include "core/env_gate.h"
 #include <algorithm>
 #include <cmath>
@@ -32,6 +33,8 @@ static bool layer_norm(const std::vector<float> & x, ggml_tensor * w, ggml_tenso
     std::vector<float> weights(width), biases(width);
     if (!tensor_floats(w, weights.data()) || !tensor_floats(b, biases.data())) return false;
     y.resize(x.size());
+    if (width == 768 && eps == 1e-6f && core_env::on("CRISPEMBED_QWEN35_VISION_CASCADE_NORM"))
+        return cascade_layer_norm(x.data(), int(x.size() / width), width, eps, weights.data(), biases.data(), y.data());
     for (size_t base = 0; base < x.size(); base += width) {
         float mean = 0, variance = 0;
         for (int i = 0; i < width; ++i) mean += x[base + i];

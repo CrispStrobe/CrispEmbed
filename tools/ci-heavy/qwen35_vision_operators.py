@@ -69,7 +69,7 @@ def prefill_records(log):
                 selected=int(status[1]), reference=int(status[2]))
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False):
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False, cascade=False):
     import gguf
     import numpy as np
     from PIL import Image
@@ -77,7 +77,7 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
     frozen = json.loads((repo / 'tests/results/qwen35-ocr/page-parity.json').read_text())
     previous = json.loads((repo / 'tests/results/qwen35-ocr/prefill-isolation.json').read_text())
     if blocks and stats: raise ValueError('Choose one bounded audit')
-    report_name = 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
+    report_name = 'cascade-norm' if cascade else 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
     root = out / report_name
     root.mkdir(exist_ok=True)
     report = dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=repo, text=True).strip(),
@@ -87,13 +87,15 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
     try:
         import hashlib
         source_hash = hashlib.sha256((repo / 'src/qwen35_vision.cpp').read_bytes()).hexdigest()
-        if source_hash != 'c0ec7611af79293e8f5dc6bcc4b695b285cdff87b61d9016bfe3773f0af5a257': raise ValueError('Production vision source changed during audit')
+        if source_hash not in ('c0ec7611af79293e8f5dc6bcc4b695b285cdff87b61d9016bfe3773f0af5a257', 'e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db'): raise ValueError('Production vision source changed during audit')
         commands = json.loads((build / 'compile_commands.json').read_text())
         production = [c['command'] for c in commands if c['file'].endswith('/qwen35_vision.cpp')]
         audit = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_vision_ops.cpp')]
         if not production or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in production) or not any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1' in c for c in audit):
             raise ValueError('Test translation-unit isolation missing')
         report['production_source_sha256'] = source_hash
+        report['cascade_runtime_experiment'] = cascade
+        report['production_source_scope'] = 'original' if source_hash.startswith('c0ec7611') else 'gated four-lane cascade; baseline requires unchanged measurements'
         if blocks or stats:
             block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_norm_statistics.cpp' if stats else '/test_qwen35_vision_blocks.cpp')]
             if not block_commands or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in block_commands):
@@ -146,7 +148,7 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
         report['weights']=dict(bytes=baseline.stat().st_size,sha256=file_sha(baseline),tensor_audit=manifest['records'])
         if report['weights']['sha256']!=previous['arms'][0]['gguf_sha256'] or len(manifest['records'])!=473:raise ValueError('Changed baseline weights')
         if stats:
-            module(repo/'tools/ci-heavy/qwen35_norm_statistics.py','qwen35_norm_statistics').run_cases(repo,build,baseline,root,out,report)
+            module(repo/'tools/ci-heavy/qwen35_norm_statistics.py','qwen35_norm_statistics').run_cases(repo,build,baseline,root,out,report,cascade=cascade)
             return
         recipes = [('baseline',False,False),('precise-both',True,True)] if blocks else [('baseline',False,False),('precise-norm',True,False),('precise-attention',False,True),('precise-both',True,True)]
         for name,norm,attention in recipes:

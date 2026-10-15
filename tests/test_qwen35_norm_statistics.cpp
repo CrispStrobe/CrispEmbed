@@ -78,9 +78,11 @@ static bool write(const std::string & path, const std::vector<float> & values) {
 }
 static int crispembed_test_main(int argc, char ** argv) {
     const bool geometry = argc == 6 && std::string(argv[1]) == "--geometry";
-    if (!geometry && argc != 3) return 2;
+    const bool cascade = argc == 4 && std::string(argv[3]) == "--cascade";
+    if (!geometry && argc != 3 && !cascade) return 2;
     gate("CRISPEMBED_QWEN35_OCR", "1");
     gate("CRISPEMBED_QWEN35_VISION_PROBES", "1");
+    gate("CRISPEMBED_QWEN35_VISION_CASCADE_NORM", "0");
     gate("CRISPEMBED_QWEN35_VISION_PRECISE_NORM", "0");
     auto * backend = ggml_backend_cpu_init();
     core_gguf::WeightLoad loaded;
@@ -182,8 +184,9 @@ static int crispembed_test_main(int argc, char ** argv) {
                 if (means.size() != size_t(tokens) || rstds.size() != size_t(tokens)) return 2;
             }
             if (mode >= 5) norm_audit::affine(input, gamma, beta, means, rstds, mode == 5, output);
-            if (mode < 2) {
-                gate("CRISPEMBED_QWEN35_VISION_PRECISE_NORM", mode ? "1" : "0");
+            if (mode < 2 || (cascade && mode == 2)) {
+                gate("CRISPEMBED_QWEN35_VISION_PRECISE_NORM", mode == 1 ? "1" : "0");
+                gate("CRISPEMBED_QWEN35_VISION_CASCADE_NORM", mode == 2 ? "1" : "0");
                 qwen35_ocr::vision_outputs probe;
                 std::vector<float> actual;
                 const bool delivered = stopped(local, config, packed, grid, probe, actual) && probe.embedded == input;
@@ -197,6 +200,7 @@ static int crispembed_test_main(int argc, char ** argv) {
                 std::printf("NORM_INPUT %s %s pass=%d\n", modes[mode], prefix.c_str(), delivered);
                 std::printf("NORM_CONTROL %s %s pass=%d max_abs=%.9g n=%zu/%zu\n", modes[mode], prefix.c_str(), exact,
                             error, actual.size(), output.size());
+                gate("CRISPEMBED_QWEN35_VISION_CASCADE_NORM", "0");
                 controls &= exact;
                 exact_controls += int(exact);
             }

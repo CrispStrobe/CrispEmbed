@@ -37,7 +37,8 @@ def main():
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
     page_check = sys.argv[1:] == ["--pages"]
-    stats_check = sys.argv[1:] == ["--norm-statistics"]
+    cascade_check = sys.argv[1:] == ["--cascade-norm"]
+    stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
     block_check = sys.argv[1:] == ["--vision-blocks"]
     operator_check = stats_check or block_check or sys.argv[1:] == ["--vision-operators"]
     isolation_check = sys.argv[1:] == ["--isolate"]
@@ -53,6 +54,7 @@ def main():
     os.environ["CRISPEMBED_QWEN35_PRECISE_RMS"] = "1" if frontend_rms else "0"
     os.environ["CRISPEMBED_QWEN35_QUANT"] = "0"
     os.environ["CRISPEMBED_QWEN35_IMATRIX"] = "0"
+    os.environ["CRISPEMBED_QWEN35_VISION_CASCADE_NORM"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PROBES"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"] = "0"
@@ -290,7 +292,7 @@ def main():
             if operator_check:
                 operators = module(repo / "tools/ci-heavy/qwen35_vision_operators.py", "qwen35_vision_operators")
                 report["vision_audit"] = "normalization statistics" if stats_check else "native block replay" if block_check else "same-input operators"
-                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check, stats=stats_check)
+                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check, stats=stats_check, cascade=cascade_check)
                 report["norm_statistics" if stats_check else "vision_blocks" if block_check else "vision_operators"] = "completed original-blueprint localization; inspect retained diagnostic report; no parity/default promotion"
             elif drift_check:
                 drift = module(repo / "tools/ci-heavy/qwen35_prefill_drift.py", "qwen35_prefill_drift")

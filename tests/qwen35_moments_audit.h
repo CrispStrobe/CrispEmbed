@@ -33,7 +33,7 @@ static std::pair<float, float> row(const float * x, int width, int mode) {
         mean /= width;
         for (int i = 0; i < width; ++i) {
             const float centered = x[i] - mean;
-            variance += centered * centered;
+            variance = std::fma(centered, centered, variance);
         }
         variance /= width;
         if (mode == 1) {
