@@ -20,7 +20,7 @@ Keeping critical tensors at Q8/F16 can change the final export size.
 
 | Order | Model / upstream | License | Total weight budget | Work / status |
 |---|---|---|---|---|
-| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | **0.964 GB Q4 /1.213 GB Q8** with F32 vision | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. Owning engine C interface passes8 lifecycle cases and confidence max2.67e-7. Unified API/stage20/CLI/server/Python/Rust/Dart pass; custom prompt189 comparisons, exact9/9 IDs/EOS/text, keys0.0019871<0.002. Native Q8/Q4 loading and7 mixed recipes pass4 synthetic cases/41 IDs/EOS/text with473-tensor audits. Q4 with F32 vision is0.964GB/min scorecos0.9496; Q8 is1.213GB/cos0.99946. FFN sweep adds Q8 attention/Q6 FFNs1.150GB/min scorecos0.998158 and72-vector native importance; ten exports preserve all41 IDs/EOS/text. Larger pages/corpus, performance and HF publication remain; no production model-support claim |
+| 1 | [LightOnOCR-3-0.8B](https://huggingface.co/lightonai/LightOnOCR-3-0.8B) | Apache-2.0; Qwen3.5 family | **0.964 GB Q4 /1.213 GB Q8** with F32 vision | **IN PROGRESS**: strict converter and official reference; native 12-layer vision/merger + 24-layer decoder and native positions from actual GGUF weights, IDs9/9 through EOS from official packed pixels/IDs/modality labels; positions exact in18 independent layouts and11 trained checks; intermediate tolerance calibrated against official F32 self-backend variation. Native RGB/BPE inputs exact in9 images/11 texts/5102 NFC cases; both trained transcripts/IDs exact, but resized cache keys0.0020196 fail strict0.002. F32 vision recipe passes both composed fixtures: resized keys0.001833, logits reported cosine1/max8.18e-5, exact9/9 IDs/EOS/text; 1.918GB experimental export. Owning engine C interface passes8 lifecycle cases and confidence max2.67e-7. Unified API/stage20/CLI/server/Python/Rust/Dart pass; custom prompt189 comparisons, exact9/9 IDs/EOS/text, keys0.0019871<0.002. Native Q8/Q4 loading and7 mixed recipes pass4 synthetic cases/41 IDs/EOS/text with473-tensor audits. Q4 with F32 vision is0.964GB/min scorecos0.9496; Q8 is1.213GB/cos0.99946. FFN sweep adds Q8 attention/Q6 FFNs1.150GB/min scorecos0.998158 and72-vector native importance; ten exports preserve all41 IDs/EOS/text. External-document panel finds Q8 form divergence and Q8/Q6 form/German divergence; F16 outputs match but cache errors exceed prior0.002 on3 cases, receipt truncates at384. Numerical/performance work and HF publication remain; no production model-support claim |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -75,8 +75,22 @@ output controls pass. Q8 attention/Q6 FFNs reaches1,149,795,328 bytes/min scorec
 Plain Q4 importance regresses; Q8-attention/Q4-FFN importance improves0.977640→
 0.980405 at1.082GB. Retained [complete evidence](tests/results/qwen35-ocr/ffn-calibration-parity.json)
 includes every negative result and export hash. No Q4 remains in the Q8/Q6 arm.
-Next: Q8 and Q8/Q6 broader page/corpus validation and row-wise F32 matmul optimization. Registry hashes and HF publication
-remain pending; all inference still uses F32 materialized matrices.
+Document panel completed2026-10-15: [ARM38674281196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
+atd6c89416 passes90 shared compact/full anchor arrays, three473-tensor audits and
+12 finite native cases/2586 diagnostic vectors.554 teacher scores per export.
+F16 outputs/stops match4/4; Q8 matches3/4 (form diverges at75), Q8/Q6 matches2/4
+(form10, German8). Receipt384-token prefixes match but all truncate, so only
+three cases reach reference EOS. Minimum scorecos Q8 0.998763/Q8-Q6 0.994997
+is not decoded parity. F16 cache-key maxima exceed prior0.002 on3 documents,
+worst0.00622153; final norms lack new backend controls. No numeric gate relaxation.
+Native receipt observations F16/Q8/Q8-Q6 are578/351/411 seconds versus original
+Python31 seconds, with explicitly different timing scopes. All raw gold/paired
+CER/WER, outputs, confidence, errors/norms, hashes and failures remain in the
+[panel record](tests/results/qwen35-ocr/page-parity.json). Neither quantized recipe
+is promoted; annotation metrics also reflect figure descriptions/HTML and truncation.
+Next: isolate unrounded-text and original-backend effects on larger inputs,
+complete a receipt under an adequate cap and profile gated materialization/graph
+optimization. Registry hashes and HF publication remain pending; all inference still uses F32 materialized matrices.
 No production alias or corpus accuracy claim.
 
 Existing weight references: PaddleOCR-VL-1.6 Q4_K **1.299 GB**, GLM-OCR Q4_K

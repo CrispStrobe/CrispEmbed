@@ -5111,3 +5111,48 @@ evaluation cases share a synthetic renderer family; this is no corpus result.
 are retained. Q8 remains the stronger score control. Next: independent page/corpus
 validation for Q8/Q6 and Q8, then memory/performance A/B. Weights still materialize
 as F32, native images are bounded to1024 patches, and latency/RAM are unmeasured.
+
+
+### Qwen3.5 external-document panel — 2026-10-15
+
+[Hosted ARM38674281196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196),
+source d6c89416:90 shared compact/full original anchor arrays exact, three exports,
+12 native cases/2586 diagnostic vectors,554 teacher scores per export and473
+shape/type/critical-byte audits each. Export hashes equal the preceding sweep.
+
+| F32-vision recipe | Exact IDs/text/stop cases | Exact completed cases of3 | Min score cosine | Max score absolute error |
+|---|---:|---:|---:|---:|
+| F16 text | 4/4 | 3/3 | 1.000000000 | 0.00144529343 |
+| Q8 text | 3/4 | 2/3 | 0.998763442 | 0.680236816 |
+| Q8 attention/Q6 FFNs | 2/4 | 1/3 | 0.994996905 | 1.93534493 |
+
+Receipt384-token outputs all truncate inside HTML, despite exact prefix matches.
+Q8 form diverges at step75 (paired CER/WER0.117431/0.133333); mixed Q8/Q6 form at10
+(0.526606/0.733333), German at8 (0.068966/0.166667). Arabic reaches EOS identically
+in all arms. Q8 has two teacher argmax mismatches; Q8/Q6 has six. These fail
+reference-output parity; no quantized default or publication is selected.
+F16 cache keys exceed the prior0.002 error budget on form0.00295281,
+receipt0.00264263 and German0.00622153; some cached values also exceed it.
+Final norm error reaches0.0147171 without new official-backend controls for its
+qualified budget. Strict original anchor gates remain unchanged. Output equality
+does not establish new strict numerical parity; retain these failures.
+
+| Input | Python generate seconds | F16 native seconds | Q8 native seconds | Q8/Q6 native seconds |
+|---|---:|---:|---:|---:|
+| Arabic line | 1.326 | 9.998 | 7.095 | 7.996 |
+| Form | 12.201 | 225.124 | 124.466 | 172.131 |
+| Receipt prefix | 31.092 | 578.030 | 351.114 | 411.234 |
+| German header | 3.816 | 37.505 | 27.872 | 29.841 |
+
+Single-run observations only: Python generate excludes processor/model load and
+collects scores; native recognize_file includes image decode/preprocess, excludes
+context load and teacher probes. Form/German generated counts differ. No speed
+ratio or peak-RAM improvement is claimed; native latency remains materially high.
+Q8/Q6 is smaller but slower here and preserves fewer outputs than Q8.
+Default upstream form output describes a figure; receipt emits truncated HTML.
+Raw plain-text annotation CER/WER can exceed1 from insertions and output format;
+these are not corpus/benchmark scores or proof that every reference difference
+worsens annotation accuracy. [Every transcript, annotation, stop, confidence,
+error/norm and timing](tests/results/qwen35-ocr/page-parity.json) is retained.
+Next: unrounded-text/official-backend controls, complete receipt decoding at an
+adequate explicit cap, and profiling before gated graph/materialization changes.

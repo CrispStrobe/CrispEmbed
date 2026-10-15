@@ -106,8 +106,18 @@ output off/on controls. Q8 attention/Q6 FFNs is1.150GB/min scorecos0.998158,
 versus Q8's1.213GB/0.999463. Plain Q4 importance regresses; with Q8 attention it
 improves0.977640→0.980405 at unchanged1.082GB. All tensor audits, hashes, negative
 results and [full stage/output evidence](../tests/results/qwen35-ocr/ffn-calibration-parity.json)
-are retained. Next bounded lane: broader independent page/corpus coverage for
-Q8 and Q8/Q6; row-wise F32 matmul can target materialization memory/performance.
+are retained. The [external-document panel](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
+atd6c89416 now finds Q8 form divergence and Q8/Q6 form/German divergence, despite
+minimum scorecos0.998763/0.994997. F16 matches4/4 outputs/stops, but cache-key error
+exceeds the prior0.002 budget on3 cases, worst0.00622. All receipt arms match a
+384-token truncated prefix, not a complete document.90 shared compact/full anchor
+arrays match exactly;12 native cases/2586 stage vectors and all473-tensor audits
+are retained in the [full panel report](../tests/results/qwen35-ocr/page-parity.json).
+Native single-run receipt observations are578/351/411 seconds for F16/Q8/Q8-Q6;
+Python generate is31 seconds with a different documented timing scope.
+Neither quantized recipe is promoted. Next: unrounded-text/official-backend
+controls for larger-input drift, an adequate receipt cap, and profiling/gated
+materialization or graph optimization.
 Larger pages currently reject beyond1024 patches. Registry aliases, corpus
 accuracy, GPU/latency claims and HF publication remain pending.
 The [owning-context check](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38600487132)

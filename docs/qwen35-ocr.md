@@ -1034,6 +1034,8 @@ receipt explicitly resized to448×576, and a German page header cropped at
 `[0,0,1920,650]` then explicitly resized to768×256. These are evaluation image
 derivatives, not changes to production preprocessing or its1024-patch limit.
 The original full-size documents remain unchanged.
+This is an external-document panel including rendered receipt/form artifacts and
+a historical scan, not four independent camera scans or a scored corpus.
 
 The compact reference calls the pinned original Transformers5.5.4 F32 eager
 model and processor. Every captured array must equal the full original capture
@@ -1055,5 +1057,71 @@ includes image decoding/preprocessing, excludes context load and teacher probes.
 They do not establish a latency benchmark.
 
 [Hosted panel38674281196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
-is running at `d6c89416`; lint and secret scan pass. No corpus score, default promotion, HF
-publication, registry alias or runtime release is implied by this panel.
+completed at `d6c8941662e84fcb410de7838036afc7ba971e9b`; lint and secret scan pass.
+All90 shared compact anchor arrays equal the original full capture exactly; the
+compact file has91 arrays including its additional decoded-length field. The panel
+retains three exports,12 native cases,2586 stage vectors and554 teacher-forced
+score vectors per export. All473 tensor audits and literal0 controls pass; export
+SHA-256 matches the preceding calibration run for all three files.
+
+| Recipe | Exact IDs/text/stop cases | Exact EOS-completed cases (of3) | Min score cosine | Max score absolute error |
+|---|---:|---:|---:|---:|
+| F16 text/F32 vision | 4/4 | 3/3 | 1.000000000 | 0.00144529 |
+| Q8 text/F32 vision | 3/4 | 2/3 | 0.998763442 | 0.680237 |
+| Q8 attention/Q6 FFNs/F32 vision | 2/4 | 1/3 | 0.994996905 | 1.935345 |
+
+The receipt produces384 tokens and stops at the cap in Python and all native
+arms, ending inside an HTML closing tag. Its prefix matches exactly, including
+stop reason, but the receipt is incomplete. The other Python outputs reach EOS:
+Arabic5 IDs, form148 IDs and German header17 IDs. Resolved patch counts are
+272/560/1008/768 respectively; the original processor upsizes the small Arabic
+line according to its minimum-pixel policy.
+
+Q8 first diverges on the form at generated step75, with paired CER0.117431 and
+WER0.133333; there are two teacher-forced argmax differences. Q8/Q6 diverges on
+the form at step10 (CER0.526606/WER0.733333), and on German at step8
+(CER0.068966/WER0.166667); six teacher argmax differences in total. These are
+zero-based steps. Native free generation confirms the differences independently.
+Both quantized arms first show storage-related drift at decoder layer0; the F32
+vision merger is identical across recipes. High score cosine did not preserve
+these outputs. The earlier short synthetic matches did not establish this parity.
+
+F16 preserves the decoded outputs but exceeds the prior0.002 cache-key error
+budget on form0.00295281, receipt0.00264263 and German0.00622153 (Arabic0.00041670).
+Some receipt/German cached values also exceed0.002. Final-norm raw error reaches
+0.0147171; the new compact captures lack official backend-off controls for
+assessing the existing qualified norm budget.
+These are diagnostic measurements, **not new strict numerical-parity passes**.
+The original strict anchor gates still pass unchanged. Isolate F16 text rounding
+and original CPU backend variation on the larger inputs before any numerical
+promotion; do not enlarge the budget to accommodate these results.
+
+The upstream form output is a figure description with a label list, not a literal
+field transcription; F16 reproduces it exactly. Raw annotation CER/WER is
+1.676113/2.027778 for Python/F16 and1.651822/2.000000 for Q8.
+Q8/Q6 gives1.975709/2.361111. The truncated receipt's raw annotation
+CER/WER is1.275184/0.842857 for every arm. Insertions, HTML/figure markup, output
+intent and truncation dominate these raw comparisons with plain-text annotations;
+insertion errors can make raw CER/WER exceed1.
+They are retained evidence, not an OCRBench or corpus-accuracy score. Quantized
+reference disagreement alone also does not prove worse annotation accuracy.
+
+Single native recognize-file observations (context loading excluded) were:
+
+| Input | Python generate seconds | F16 native seconds | Q8 native seconds | Q8/Q6 native seconds |
+|---|---:|---:|---:|---:|
+| Arabic line | 1.326 | 9.998 | 7.095 | 7.996 |
+| Form | 12.201 | 225.124 | 124.466 | 172.131 |
+| Receipt (384-token prefix) | 31.092 | 578.030 | 351.114 | 411.234 |
+| German header | 3.816 | 37.505 | 27.872 | 29.841 |
+
+The timing scopes differ as described above; form/German token counts also differ
+between recipes. These are not controlled speed ratios. The material native
+latency gap requires profiling and gated graph/F32-materialization work. Q8/Q6
+is smaller but slower than Q8 in these observations and loses more output parity.
+
+[All outputs, annotations, errors/norms, stop states, confidence and timings](../tests/results/qwen35-ocr/page-parity.json)
+are retained. Neither quantized recipe is promoted. Next: isolate larger-input
+cache drift with unrounded text weights/official CPU controls, complete a receipt
+under an explicit adequate cap, and profile the native hot path before publication.
+No corpus score, registry alias, HF publication or runtime release follows.
