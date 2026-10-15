@@ -37,9 +37,10 @@ def main():
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
     page_check = sys.argv[1:] == ["--pages"]
+    operator_check = sys.argv[1:] == ["--vision-operators"]
     isolation_check = sys.argv[1:] == ["--isolate"]
     drift_check = isolation_check or sys.argv[1:] == ["--drift"]
-    quant_check = drift_check or page_check or ffn_check or sys.argv[1:] == ["--quant"]
+    quant_check = operator_check or drift_check or page_check or ffn_check or sys.argv[1:] == ["--quant"]
     context_check = public_check or quant_check or sys.argv[1:] == ["--context"]
     frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
     frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
@@ -50,6 +51,9 @@ def main():
     os.environ["CRISPEMBED_QWEN35_PRECISE_RMS"] = "1" if frontend_rms else "0"
     os.environ["CRISPEMBED_QWEN35_QUANT"] = "0"
     os.environ["CRISPEMBED_QWEN35_IMATRIX"] = "0"
+    os.environ["CRISPEMBED_QWEN35_VISION_PROBES"] = "0"
+    os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM"] = "0"
+    os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"] = "0"
     torch.set_num_threads(4)
     repo = Path(__file__).resolve().parents[2]
     out = Path(os.environ["HEAVY_OUT"])
@@ -141,6 +145,7 @@ def main():
         build = scratch / "qwen35-native-build"
         subprocess.run(["cmake", "-S", str(repo), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
+                        *(["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"] if operator_check else []),
                         "-DCRISPEMBED_BUILD_SHARED=" + ("ON" if public_check else "OFF")], check=True)
         subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta",
                         "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "test-qwen35-vision",
@@ -148,6 +153,7 @@ def main():
                         *(["test-qwen35-public", "crispembed-cli", "crispembed-server", "crispembed-shared"] if public_check else []),
                         *(["test-qwen35-quant", "crispembed-quantize"] if quant_check else []),
                         *(["test-qwen35-imatrix"] if ffn_check else []),
+                        *(["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
@@ -279,7 +285,11 @@ def main():
                 print(context_result.stdout + context_result.stderr)
                 report["native_context"] = context_result.returncode == 0
                 context_result.check_returncode()
-            if drift_check:
+            if operator_check:
+                operators = module(repo / "tools/ci-heavy/qwen35_vision_operators.py", "qwen35_vision_operators")
+                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                report["vision_operators"] = "completed original-blueprint operator localization; inspect vision-operators.json; no parity/default promotion"
+            elif drift_check:
                 drift = module(repo / "tools/ci-heavy/qwen35_prefill_drift.py", "qwen35_prefill_drift")
                 drift.run(repo, build, export, local, out, scratch, module, converter, image_path,
                           out / "official-reference.npz", isolate=isolation_check)

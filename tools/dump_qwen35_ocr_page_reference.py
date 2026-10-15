@@ -10,7 +10,8 @@ import time
 from pathlib import Path
 
 
-def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False):
+def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False,
+                   vision_probes=False):
     import gguf
     import numpy as np
     import torch
@@ -68,6 +69,46 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     handles.append(language.norm.register_forward_hook(hook("prefill.decoder.norm")))
     handles.append(model.model.visual.merger.register_forward_hook(hook("prefill.vision.merger")))
 
+    # The same original modules/boundaries as the full dumper, expanded to all
+    # twelve blocks for localization. Hooks observe original calls; no native
+    # values or reconstructed reference arithmetic enter this capture.
+    visual = model.model.visual
+    original_position = visual.fast_pos_embed_interpolate
+    if vision_probes:
+        def prehook(name):
+            def capture(module, args):
+                save(name, args[0])
+            return capture
+        for index, block in enumerate(visual.blocks):
+            prefix = f"prefill.vision.probe.{index}."
+            handles.append(block.register_forward_pre_hook(prehook(prefix + "input")))
+            handles.append(block.register_forward_hook(hook(f"prefill.vision.layer.{index}")))
+            for module_name, field in [("norm1", "norm1"), ("attn.qkv", "qkv"),
+                                       ("attn", "attention"), ("norm2", "norm2"),
+                                       ("mlp.linear_fc1", "up"), ("mlp.act_fn", "activation"),
+                                       ("mlp.linear_fc2", "down")]:
+                submodule = block
+                for part in module_name.split("."):
+                    submodule = getattr(submodule, part)
+                handles.append(submodule.register_forward_hook(hook(prefix + field)))
+            handles.append(block.norm2.register_forward_pre_hook(prehook(prefix + "norm2_input")))
+            handles.append(block.attn.proj.register_forward_pre_hook(prehook(prefix + "pooled")))
+        def vision_input(module, args, kwargs):
+            save("prefill.vision.embedded", args[0])
+            cosine, sine = kwargs["position_embeddings"]
+            save("prefill.vision.rotary_cos", cosine)
+            save("prefill.vision.rotary_sin", sine)
+        handles.append(visual.blocks[0].register_forward_pre_hook(vision_input, with_kwargs=True))
+        def position_capture(grid):
+            value = original_position(grid)
+            save("prefill.vision.position", value)
+            return value
+        visual.fast_pos_embed_interpolate = position_capture
+        handles.append(visual.patch_embed.register_forward_hook(hook("prefill.vision.patch_embed")))
+        handles.append(visual.merger.norm.register_forward_pre_hook(prehook("prefill.vision.merger.input")))
+        for name, label in [("norm", "norm"), ("linear_fc1", "up"), ("act_fn", "activation")]:
+            handles.append(getattr(visual.merger, name).register_forward_hook(hook("prefill.vision.merger." + label)))
+
     def language_input(module, args, kwargs):
         save("prefill.decoder.inputs_embeds", kwargs["inputs_embeds"])
     handles.append(language.register_forward_pre_hook(language_input, with_kwargs=True))
@@ -100,6 +141,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
             phase[0] = "prefill"
         for handle in handles:
             handle.remove()
+        visual.fast_pos_embed_interpolate = original_position
         del prepared
         started = time.perf_counter()
         generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,

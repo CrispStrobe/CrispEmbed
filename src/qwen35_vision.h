@@ -39,7 +39,7 @@ struct vision_layer_outputs {
 struct vision_outputs {
     std::vector<float> patch, position, embedded, rotary_cos, rotary_sin;
     std::vector<std::vector<float>> hidden;
-    // Sensitive trained blocks 5/11, for earliest-stage numerical probes.
+    // Blocks 5/11 normally; all blocks under the explicit diagnostic gate.
     std::vector<vision_layer_outputs> probes;
     std::vector<float> merger_norm, merger_up, merger_activation, merged;
 };
@@ -48,4 +48,11 @@ bool map_small_vision(const core_gguf::tensor_map & tensors, vision_weights & we
 // non-causal per frame, never across images or frames. CPU reference path.
 bool vision_cpu(const vision_weights & weights, const vision_config & config, const float * patches, int tokens,
                 const std::vector<int> & grid_thw, int threads, vision_outputs & output);
+#ifdef CRISPEMBED_QWEN35_VISION_TEST_OPS
+// Compiled only into the validation library, never the production library.
+bool vision_test_operator_cpu(const vision_weights & weights, const vision_config & config, int layer,
+                              const char * operation, const std::vector<float> & input, const std::vector<int> & grid,
+                              const std::vector<float> & cosine, const std::vector<float> & sine, int threads,
+                              std::vector<float> & output);
+#endif
 } // namespace qwen35_ocr

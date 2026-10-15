@@ -1221,3 +1221,25 @@ responsible vision operator is still unknown. The composed native baseline still
 fails its strict gates: these are conditional component passes, not a replacement
 frontend, full decoding, recognition benchmark, speed result or publication gate.
 [Complete retained measurements and scope](../tests/results/qwen35-ocr/prefill-isolation.json).
+
+## Vision operator audit contract
+
+`tools/dump_qwen35_ocr_page_reference.py` can observe every original vision block
+and its operator inputs without rebuilding the reference arithmetic. The hosted
+`--vision-operators` lane first checks the unchanged compact anchor and all shared
+expanded arrays against the full original dumper. It then retains original
+backend-off/per-patch controls on the same three document derivatives.
+
+`test-qwen35-vision-ops` uses `crispembed_diff::Ref` and the unchanged qualified
+`qwen35_compare` for 117 composed vision boundaries and 101 same-input operator
+calls. Its replay entry points compile only under
+`CRISPEMBED_QWEN35_VISION_TEST_OPS` in the validation library. Production compile
+commands exclude that macro. `CRISPEMBED_QWEN35_VISION_PROBES=1` expands native
+observational captures to all blocks; literal0 preserves the usual block5/11
+captures and identical outputs. No original array enters production inference.
+
+The sweep retains baseline, existing precise-norm, precise-attention and combined
+modes, plus the existing 77-stage composed decoder measurements for each. Reports
+retain finite/shape/control assertions, all errors/norms, raw absolute failures
+and unchanged qualified verdicts. Experiment completion does not establish
+composed numerical parity, full decoding, corpus accuracy or a speed result.
