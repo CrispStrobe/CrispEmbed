@@ -1160,6 +1160,9 @@ if(CRISPEMBED_WASM_EMBED AND EMSCRIPTEN)
         SUFFIX       ".js"
     )
 endif()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+# Standalone validation executables follow the same platform rule as the CLI
+# and tests above. The Qwen probe library is defined inside that native block.
 add_executable(test-adair-diff tests/test_adair_diff.cpp)
 target_link_libraries(test-adair-diff PRIVATE crispembed)
 
@@ -1199,3 +1202,4 @@ target_link_libraries(test-qwen35-positions PRIVATE crispembed-qwen35-delta)
 
 add_executable(test-qwen35-frontend tests/test_qwen35_frontend.cpp)
 target_link_libraries(test-qwen35-frontend PRIVATE crispembed-qwen35-delta crispembed-core)
+endif() # NOT iOS: standalone validation executables
