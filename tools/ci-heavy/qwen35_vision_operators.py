@@ -17,11 +17,11 @@ def metric(match):
         ('cos_min', 'cos_global', 'max_abs', 'mean_abs', 'rms', 'native_norm', 'reference_norm'), map(float, match[1:]))))
 
 
-def vision_records(log, blocks=False):
+def stage_records(log, prefix="VISION_METRIC"):
     lines = log.splitlines()
     records = []
     for i, line in enumerate(lines):
-        m = re.match(r'^VISION_METRIC (\S+) (\S+) ' + METRIC + '$', line)
+        m = re.match(r'^' + prefix + r' (\S+) (\S+) ' + METRIC + '$', line)
         if not m:
             continue
         mode, stage = m[1], m[2]
@@ -33,6 +33,11 @@ def vision_records(log, blocks=False):
         records.append(dict(mode=mode, stage=stage, **metric(m.groups()[2:]),
             qualified_pass=lines[i+2].startswith('PASS '), strict_absolute_pass=bool(int(budget[2])),
             calibrated=bool(int(budget[3])), self_max_abs=float(budget[4]), max_ratio=float(budget[5])))
+    return records
+
+
+def vision_records(log, blocks=False):
+    records = stage_records(log)
     label, count = ('VISION_BLOCKS', 266) if blocks else ('VISION_OPS', 178)
     status = re.search(r'^' + label + r' finite=1 metrics=' + str(count) + r' qualified_failures=(\d+) controls=1 observer=51$', log, re.M)
     if len(records) != count or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
@@ -64,18 +69,19 @@ def prefill_records(log):
                 selected=int(status[1]), reference=int(status[2]))
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False):
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False, stats=False):
     import gguf
     import numpy as np
     from PIL import Image
     capture = module(repo / 'tools/dump_qwen35_ocr_page_reference.py', 'qwen35_operator_reference')
     frozen = json.loads((repo / 'tests/results/qwen35-ocr/page-parity.json').read_text())
     previous = json.loads((repo / 'tests/results/qwen35-ocr/prefill-isolation.json').read_text())
-    report_name = 'vision-blocks' if blocks else 'vision-operators'
+    if blocks and stats: raise ValueError('Choose one bounded audit')
+    report_name = 'norm-statistics' if stats else 'vision-blocks' if blocks else 'vision-operators'
     root = out / report_name
     root.mkdir(exist_ok=True)
     report = dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=repo, text=True).strip(),
-        block_replay=blocks, model=frozen['model'], revision=frozen['revision'], reference='Original Transformers5.5.4 F32 eager modules and hooks',
+        block_replay=blocks, normalization_statistics=stats, model=frozen['model'], revision=frozen['revision'], reference='Original Transformers5.5.4 F32 eager modules and hooks',
         scope='Vision stage traces, test-only same-input operators and native composed prefill; no full-output/latency/corpus claim',
         comparator='crispembed_diff::Ref + unchanged qwen35_compare; all raw failures retained', cases=[], arms=[])
     try:
@@ -88,22 +94,26 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
         if not production or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in production) or not any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1' in c for c in audit):
             raise ValueError('Test translation-unit isolation missing')
         report['production_source_sha256'] = source_hash
-        if blocks:
-            block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_vision_blocks.cpp')]
+        if blocks or stats:
+            block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_norm_statistics.cpp' if stats else '/test_qwen35_vision_blocks.cpp')]
             if not block_commands or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in block_commands):
                 raise ValueError('Block replay must link the ordinary production implementation')
-        report['test_operator_compile_isolation'] = ('unchanged linked production implementation; test-only identity patch fixtures' if blocks else 'unchanged production source; replay compiled only in separate validation translation unit')
+        report['test_operator_compile_isolation'] = ('unchanged linked production implementation; test-only identity patch fixtures' if blocks or stats else 'unchanged production source; replay compiled only in separate validation translation unit')
         if blocks:
             report['block_replay_limits'] = 'Original block inputs enter through an exactly checked test-only identity frontend. Rotary geometry stays native and is measured against original geometry. Residuals use public native projections and float additions, checked against native block outputs. No production source injection or private implementation copy.'
         report['compact_anchor'] = capture.dump_reference(local, anchor_image, root / 'compact-anchor', max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
-        report['vision_anchor'] = capture.dump_reference(local, anchor_image, root / 'vision-anchor', max_new_tokens=12, vision_probes=True)
+        report['vision_anchor'] = capture.dump_reference(local, anchor_image, root / 'vision-anchor', max_new_tokens=12, vision_probes=True, norm_statistics=stats)
         reader = gguf.GGUFReader(str(root / 'vision-anchor/official-delta.gguf'))
         new_names = {'input.decoded_length', 'prefill.vision.merger.input'}
         fields = ('norm1','qkv','pooled','attention','norm2','up','activation','down')
         for i in range(12):
             new_names.update(f'prefill.vision.probe.{i}.{f}' for f in ('input','norm2_input'))
             if i not in (5,11): new_names.update(f'prefill.vision.probe.{i}.{f}' for f in fields)
+        if stats:
+            for i in range(12):
+                new_names.update(f'prefill.vision.probe.{i}.{n}.{s}' for n in ('norm1','norm2') for s in ('mean','rstd'))
+            new_names.update('prefill.vision.merger.norm.'+s for s in ('mean','rstd'))
         shared, extra = [], []
         with np.load(anchor_npz) as full:
             for t in reader.tensors:
@@ -128,12 +138,16 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blo
             if file_sha(path) != old['input_sha256']: raise ValueError('Changed evaluation derivative')
             case=dict(name=old['name'],source=old['source'],crop=old['crop'],explicit_resize=old['explicit_resize'],input_sha256=file_sha(path))
             report['cases'].append(case)
-            case['reference']=capture.dump_reference(local,path,folder,max_new_tokens=1,prefill_controls=True,vision_probes=True)
-            if any(len(rows)!=217 for rows in case['reference']['cpu_controls'].values()):raise ValueError('Incomplete original operator controls')
+            case['reference']=capture.dump_reference(local,path,folder,max_new_tokens=1,prefill_controls=True,vision_probes=True,norm_statistics=stats,
+                native_geometry=(build/'test-qwen35-norm-statistics',baseline) if stats else None)
+            if any(len(rows)!=(267 if stats else 217) for rows in case['reference']['cpu_controls'].values()):raise ValueError('Incomplete original operator controls')
             gc.collect()
         manifest=json.loads((out/'export-manifest.json').read_text())
         report['weights']=dict(bytes=baseline.stat().st_size,sha256=file_sha(baseline),tensor_audit=manifest['records'])
         if report['weights']['sha256']!=previous['arms'][0]['gguf_sha256'] or len(manifest['records'])!=473:raise ValueError('Changed baseline weights')
+        if stats:
+            module(repo/'tools/ci-heavy/qwen35_norm_statistics.py','qwen35_norm_statistics').run_cases(repo,build,baseline,root,out,report)
+            return
         recipes = [('baseline',False,False),('precise-both',True,True)] if blocks else [('baseline',False,False),('precise-norm',True,False),('precise-attention',False,True),('precise-both',True,True)]
         for name,norm,attention in recipes:
             arm=dict(name=name,precise_norm=norm,precise_attention=attention,cases=[]);report['arms'].append(arm)

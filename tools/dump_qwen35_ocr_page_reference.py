@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False,
-                   vision_probes=False):
+                   vision_probes=False, norm_statistics=False, native_geometry=None):
     import gguf
     import numpy as np
     import torch
@@ -38,6 +38,21 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     patches = int(torch.prod(inputs["image_grid_thw"][0]).item())
     if patches > 1024:
         raise ValueError("Prepared fixture exceeds existing native1024-patch bound")
+    if norm_statistics and not vision_probes:
+        raise ValueError("Norm statistics require original vision probes")
+    geometry = None
+    if native_geometry is not None:
+        import subprocess
+        executable, weights = native_geometry
+        grid = inputs["image_grid_thw"].tolist()
+        if len(grid)!=1 or grid[0][0]!=1:
+            raise ValueError("Native geometry control requires one frame")
+        process = subprocess.run([str(executable), "--geometry", str(weights), str(grid[0][1]), str(grid[0][2]), str(output)], capture_output=True, text=True)
+        (output / "geometry.log").write_text(process.stdout + process.stderr)
+        process.check_returncode()
+        if "GEOMETRY finite=1 controls=1" not in process.stdout:
+            raise ValueError("Native geometry independence controls missing")
+        geometry = [np.fromfile(output / ("native-rotary-" + name + ".bin"), dtype=np.float32) for name in ("cos","sin")]
     model = Qwen3_5ForConditionalGeneration.from_pretrained(
         root, local_files_only=True, trust_remote_code=False,
         dtype=torch.float32, attn_implementation="eager").eval()
@@ -74,6 +89,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     # values or reconstructed reference arithmetic enter this capture.
     visual = model.model.visual
     original_position = visual.fast_pos_embed_interpolate
+    statistics_controls = {}
     if vision_probes:
         def prehook(name):
             def capture(module, args):
@@ -109,6 +125,24 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
         for name, label in [("norm", "norm"), ("linear_fc1", "up"), ("act_fn", "activation")]:
             handles.append(getattr(visual.merger, name).register_forward_hook(hook("prefill.vision.merger." + label)))
 
+    if norm_statistics:
+        def statistics_hook(name):
+            def capture(module, args, result):
+                if args[0].dtype != torch.float32 or module.eps != 1e-6:
+                    raise ValueError("Statistics oracle requires F32")
+                value, mean, rstd = torch.ops.aten.native_layer_norm.default(
+                    args[0], module.normalized_shape, module.weight, module.bias, module.eps)
+                if not torch.equal(value, result):
+                    raise ValueError("Native LayerNorm oracle differs from original module: " + name)
+                statistics_controls[phase[0]] = statistics_controls.get(phase[0], 0) + 1
+                save(name + ".mean", mean.reshape(1,-1))
+                save(name + ".rstd", rstd.reshape(1,-1))
+            return capture
+        for i, block in enumerate(visual.blocks):
+            for label in ("norm1","norm2"):
+                handles.append(getattr(block,label).register_forward_hook(statistics_hook(f"prefill.vision.probe.{i}.{label}")))
+        handles.append(visual.merger.norm.register_forward_hook(statistics_hook("prefill.vision.merger.norm")))
+
     def language_input(module, args, kwargs):
         save("prefill.decoder.inputs_embeds", kwargs["inputs_embeds"])
     handles.append(language.register_forward_pre_hook(language_input, with_kwargs=True))
@@ -143,6 +177,20 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
             handle.remove()
         visual.fast_pos_embed_interpolate = original_position
         del prepared
+        if geometry is not None:
+            head_width = visual.config.hidden_size // visual.config.num_heads
+            if any(v.size!=patches*head_width or not np.isfinite(v).all() for v in geometry):
+                raise ValueError("Malformed native rotary arrays")
+            original_geometry = tuple(torch.from_numpy(arrays["prefill.vision.rotary_"+name]) for name in ("cos","sin"))
+            native_positions = tuple(torch.from_numpy(v.reshape(patches,head_width)) for v in geometry)
+            cu = torch.tensor([0,patches], dtype=torch.int32)
+            for i, block in enumerate(visual.blocks):
+                block_input = torch.from_numpy(arrays[f"prefill.vision.probe.{i}.input"])
+                original_output = block(block_input,cu_seqlens=cu,position_embeddings=original_geometry)
+                if not torch.equal(original_output,torch.from_numpy(arrays[f"prefill.vision.layer.{i}"])):
+                    raise ValueError("Original block replay differs from unchanged hook")
+                controlled = block(block_input,cu_seqlens=cu,position_embeddings=native_positions)
+                save(f"native_geometry.vision.layer.{i}",controlled)
         started = time.perf_counter()
         generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                    use_cache=True, return_dict_in_generate=True, output_scores=True)
@@ -183,6 +231,16 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
               "stop": "eos" if generated_ids and generated_ids[-1] in eos else "max_tokens",
               "captured_arrays": len(arrays), "anchor_arrays_exact": anchor is not None}
     result["generation_seconds"] = generation_seconds
+    if norm_statistics:
+        if any(v!=25 for v in statistics_controls.values()) or len(statistics_controls)!=(3 if prefill_controls else 1):
+            raise ValueError("Incomplete original mean/rstd controls")
+        result["norm_statistics"] = dict(original_kernel="aten.native_layer_norm", module_output_exact_controls=statistics_controls,
+            cpu_capability=torch.backends.cpu.get_cpu_capability(), torch_git_version=torch.version.git_version,
+            reference_vector_width=None, vector_width_scope="not exposed by Python; candidate widths are tested, not assumed")
+    if geometry is not None:
+        result["native_geometry"] = dict(original_block_replay_exact=12, pixel_independence_exact=True,
+            maximum_original_rotary_error=max(float(np.max(np.abs(v.reshape(patches,-1)-arrays["prefill.vision.rotary_"+name]))) for v,name in zip(geometry,("cos","sin"))),
+            arrays_sha256={name:hashlib.sha256(v.tobytes()).hexdigest() for name,v in zip(("cos","sin"),geometry)})
     if prefill_controls:
         result["cpu_controls"] = {}
         for label in ("backend_off", "patch_chunked"):

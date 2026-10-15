@@ -37,8 +37,9 @@ def main():
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
     page_check = sys.argv[1:] == ["--pages"]
+    stats_check = sys.argv[1:] == ["--norm-statistics"]
     block_check = sys.argv[1:] == ["--vision-blocks"]
-    operator_check = block_check or sys.argv[1:] == ["--vision-operators"]
+    operator_check = stats_check or block_check or sys.argv[1:] == ["--vision-operators"]
     isolation_check = sys.argv[1:] == ["--isolate"]
     drift_check = isolation_check or sys.argv[1:] == ["--drift"]
     quant_check = operator_check or drift_check or page_check or ffn_check or sys.argv[1:] == ["--quant"]
@@ -154,7 +155,7 @@ def main():
                         *(["test-qwen35-public", "crispembed-cli", "crispembed-server", "crispembed-shared"] if public_check else []),
                         *(["test-qwen35-quant", "crispembed-quantize"] if quant_check else []),
                         *(["test-qwen35-imatrix"] if ffn_check else []),
-                        *(["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
+                        *(["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
                                 capture_output=True, text=True)
@@ -288,9 +289,9 @@ def main():
                 context_result.check_returncode()
             if operator_check:
                 operators = module(repo / "tools/ci-heavy/qwen35_vision_operators.py", "qwen35_vision_operators")
-                report["vision_audit"] = "native block replay" if block_check else "same-input operators"
-                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check)
-                report["vision_blocks" if block_check else "vision_operators"] = "completed original-blueprint localization; inspect retained diagnostic report; no parity/default promotion"
+                report["vision_audit"] = "normalization statistics" if stats_check else "native block replay" if block_check else "same-input operators"
+                operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check, stats=stats_check)
+                report["norm_statistics" if stats_check else "vision_blocks" if block_check else "vision_operators"] = "completed original-blueprint localization; inspect retained diagnostic report; no parity/default promotion"
             elif drift_check:
                 drift = module(repo / "tools/ci-heavy/qwen35_prefill_drift.py", "qwen35_prefill_drift")
                 drift.run(repo, build, export, local, out, scratch, module, converter, image_path,
