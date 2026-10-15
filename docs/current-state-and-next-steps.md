@@ -108,10 +108,10 @@ arms make all 36 original-input norm1 outputs exact, but local block11 errors
 remain and cascade's early suffix resets still fail twice. All four small-fixture
 ID/text/EOS arms pass; the sweep retains 56 prefill and four suffix failures.
 The [completed attention trace](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
-passes all 72 native equality controls and preserves924 prefill,108 shared vision
+passes all 72 native equality controls and preserves924 prefill, 108 shared vision
 and 1,302 original CPU-control records. Two compiler-rounding differences in the
 validation copy are corrected; production kernels remain unchanged. All 840
-conditional vectors pass raw0.002. Original-input F32 sampled QK scores and
+conditional vectors pass raw 0.002. Original-input F32 sampled QK scores and
 original-probability pooling are exact; softmax probability errors reach 1.88e-6.
 The sweep retains 56 prefill failures and passes four small-fixture ID/text/EOS
 arms. Next compare full decoded output on independent documents.

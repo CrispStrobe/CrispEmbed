@@ -14,14 +14,14 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
    and 1,302 original CPU-control records. All 840 conditional vectors pass raw
    0.002; reported minimum cosine is 1.000000000. Original-input F32 sampled QK
    scores and original-probability sampled pooling are exact; remaining softmax
-   probability error reaches 1.88e-6. Ordinary prefill still fails20/11/11/14 stages
+   probability error reaches 1.88e-6. Ordinary prefill still fails 20/11/11/14 stages
    for baseline/combined F64/cascade/cascade-attention. No path is promoted.
    Run full generated IDs, text/EOS, confidence and available CER/WER A/B on the
    independent documents under all four settings. Retain receipt prefix/cap
    controls until the long-document lane below. Use the faithful trace for any
    decoded divergence; capture original softmax exp/sum boundaries and test one
    gated correction only where the evidence warrants it. Preserve every raw
-   failure, original anchor,0.002 cache gate and qualified vision/norm budget.
+   failure, original anchor, 0.002 cache gate and qualified vision/norm budget.
    Original arrays stay test-only; all precision alternatives stay default-off.
 2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.

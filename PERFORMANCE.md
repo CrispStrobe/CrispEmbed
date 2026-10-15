@@ -2,10 +2,10 @@
 
 ## Qwen3.5 faithful selected attention trace (2026-10-15)
 
-[Hosted38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+[Hosted 38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
 at `f93ebcd3`, original Transformers5.5.4 F32 eager and pinned LightOnOCR-3-0.8B
 on ARM64 CPU. Test-only arithmetic reproduces all 72 actual native equality
-controls. Values below are maximum absolute errors across blocks5/11 and the
+controls. Values below are maximum absolute errors across blocks 5/11 and the
 three larger documents, with original inputs supplied only to diagnostics.
 Scores/probabilities cover 16 query positions and every head/key; full pooled
 measurements cover every token. These are reference errors, not OCR accuracy.
@@ -19,12 +19,12 @@ measurements cover every token. These are reference errors, not OCR accuracy.
 | Full pooled, original norm1 → native projection/original geometry | 2.43187e-5 | 2.52724e-5 |
 
 Baseline/cascade same-input metrics are identical, as are combined-F64/cascade-
-attention metrics (420 vectors). All 840 conditional vectors pass raw0.002 and
+attention metrics (420 vectors). All 840 conditional vectors pass raw 0.002 and
 report minimum cosine 1.000000000. F32 QK and sampled original-probability pooling
 match exactly; residual softmax and projection errors remain. Geometry is not
 silently substituted into the primary reference, and F64 is not uniformly closer.
 
-All 924 prior prefill,108 shared composed vision,1,302 original CPU-control and
+All 924 prior prefill, 108 shared composed vision, 1,302 original CPU-control and
 558 already-validated F64 trace records reproduce exactly. All four small-fixture
 ID/text/EOS controls and 12 first argmaxes match. Ordinary prefill still fails
 20/11/11/14 stages; all 56 failures remain nonzero. The initial 24 and subsequent 12

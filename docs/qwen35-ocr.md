@@ -1575,7 +1575,7 @@ controls and compare full decoded outputs on the independent documents.
 ## Selected attention boundary audit contract
 
 `qwen35_ocr_bootstrap.py --attention-trace` observes original eager calls in vision
-blocks5/11, returning their original outputs unchanged. Reconstructed F32 scores
+blocks 5/11, returning their original outputs unchanged. Reconstructed F32 scores
 and softmax must reproduce the returned probabilities exactly; the second matrix
 product must reproduce the returned pooled tensor, which is also checked against
 the original projection input. These checks apply in prefill and both original
@@ -1601,7 +1601,7 @@ scores/probabilities remain compared with the primary original geometry. Each
 arm/case has93 shared-diff vectors and six native equality controls. Across four
 arms and three larger inputs this gives 1,116 component vectors and 72 controls,
 plus 924 unchanged ordinary prefill vectors and four small-fixture full ID/text/EOS
-checks. All prior prefill,108 shared composed vision and 1,302 original CPU-control
+checks. All prior prefill, 108 shared composed vision and 1,302 original CPU-control
 records must reproduce exactly; new original CPU boundaries bring that total to
 1,374. All raw failures and unchanged qualified budgets remain visible. Completing
 this diagnostic alone does not promote runtime arithmetic, full-document quality,
@@ -1610,10 +1610,10 @@ performance, quantization or publication.
 
 ## Initial attention trace controls
 
-[Hosted38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
+[Hosted 38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
 at `05d4705c` passes all 60 original function/projection reconstruction controls and
 reproduces all 924 prior native prefill records and 1,302 original CPU-control
-records exactly. It retains 2,040 vectors, all 56 prefill verdict failures,12 exact
+records exactly. It retains 2,040 vectors, all 56 prefill verdict failures, 12 exact
 first argmaxes and four matching small-fixture ID/text/EOS controls.
 
 All 24 native QKV and 24 probability-to-value controls pass, but all 24 full pooled
@@ -1637,7 +1637,7 @@ kernels, gates and comparison budgets are unchanged.
 
 ## Rotary-only trace correction and remaining controls
 
-[Hosted38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)
+[Hosted 38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)
 at `07e8ea00` passes all 36 native controls in the precise-attention arms after the
 explicit rotary pin. All 24 QKV and 24 probability-to-value controls pass across
 all four arms. Twelve full pooled controls still fail in the F32-attention arms,
@@ -1661,7 +1661,7 @@ not change production attention, tolerances or default precision gates.
 
 ## Completed faithful attention trace
 
-[Hosted38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+[Hosted 38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
 at `f93ebcd3` passes all 72 actual native QKV/full-pooled/sampled probability-to-
 value controls exactly after explicit rotary and scalar QK FMA ordering. This
 repairs validation fidelity; production attention is unchanged. The initial 24
@@ -1670,14 +1670,14 @@ All 24 current legacy rotary contrasts still differ (maximum 6.32e-6), while the
 pinned trace has zero error in every contrast. The production object disassembly
 again equals the prior norm audit. [Actual final compiler provenance/excerpts](../tests/results/qwen35-ocr/attention-final-codegen.json).
 
-All 60 original function/projection controls,126 shared anchor arrays,924 prior
-prefill,108 shared composed vision and 1,302 original CPU-control records remain
+All 60 original function/projection controls, 126 shared anchor arrays, 924 prior
+prefill, 108 shared composed vision and 1,302 original CPU-control records remain
 exact. All 558 F64 trace vectors from the rotary-only run remain exact. All 420
 conditional vectors shared across norm-gate pairs also match. The full audit
 compares 2,040 stage vectors and 1,374 original CPU-control vectors; its rich anchor
 adds119 arrays beyond the 126 shared full-reference arrays.
 
-Every one of the 840 conditional comparisons satisfies raw0.002 and reports cosine
+Every one of the 840 conditional comparisons satisfies raw 0.002 and reports cosine
 1.000000000. With original rotated Q/K/V, F32 sampled QK scores match exactly,
 while subsequent probabilities differ by up to1.88e-6 and full pooled output by
 1.67e-5. Given original probabilities/V, sampled F32 pooling matches exactly.

@@ -6,12 +6,12 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 
 ## 2026-10-15 — Qwen3.5 attention trace fidelity resolved
 
-[Hosted38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+[Hosted 38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
 at `f93ebcd3` resolves all 72 native QKV/full-pooled/sampled probability-to-value
-controls exactly. All 60 original function/projection controls,924 prior prefill,
+controls exactly. All 60 original function/projection controls, 924 prior prefill,
 108 shared composed vision and 1,302 original CPU-control records remain exact.
 The complete sweep compares 2,040 vectors and 1,374 original CPU-control vectors.
-All 840 conditional vectors satisfy raw0.002 and report minimum cosine 1.000000000;
+All 840 conditional vectors satisfy raw 0.002 and report minimum cosine 1.000000000;
 51 raw composed attention failures remain under unchanged qualified budgets.
 All 12 first argmaxes and four small-fixture full ID/text/EOS arms match.
 
@@ -29,14 +29,14 @@ The faithful F32 trace reproduces all sampled original-input QK scores exactly;
 softmax probabilities differ by up to1.88e-6 and full pooled output by 1.67e-5.
 Supplied original probabilities/value give exact sampled F32 pooling. Original
 norm1 followed by native projection/original geometry gives pooled error 2.43e-5.
-These are conditional measurements on blocks5/11 and 16 query positions with all
+These are conditional measurements on blocks 5/11 and 16 query positions with all
 heads/keys. F64 attention is not uniformly closer to the original F32 reference.
 
 All 1,116 qualified attention verdicts pass, but ordinary prefill retains 56
 failures (20/11/11/14 by arm), so the workflow correctly exits nonzero. Production
 kernels, all precision defaults, comparison thresholds, weights and app release
 are unchanged. No larger-document quality, latency, peak-memory or publication
-promotion follows. Python parsing, C++ syntax/formatting,171 clean-exit guards,
+promotion follows. Python parsing, C++ syntax/formatting, 171 clean-exit guards,
 actual-log positive/negative controls and secret checks pass; hosted formatting
 [38800963797](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963797) succeeds.
 [Complete final records](tests/results/qwen35-ocr/attention-trace.json),
@@ -45,7 +45,7 @@ actual-log positive/negative controls and secret checks pass; hosted formatting
 
 ## 2026-10-15 — Qwen3.5 rotary trace pin, remaining F32 controls
 
-[Hosted38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)
+[Hosted 38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)
 at `07e8ea00` makes test-only rotary contraction match the actual scalar native
 object. All 36 native controls in the two precise-attention arms now pass exactly,
 including their12 full pooled controls. QKV and probability-to-value controls
@@ -53,7 +53,7 @@ continue to pass in all arms. Twelve full pooled controls in baseline/cascade
 remain invalidating, with maximum error 8.43e-6; their F32 traces are not validated.
 All 924 prefill and 108 actual composed vision records now reproduce exactly after
 composed pooled measurements were separated from the copied trace. All 1,302 prior
-original CPU-control records,60 original function/projection controls,12 first
+original CPU-control records, 60 original function/projection controls, 12 first
 argmaxes and four small-fixture ID/text/EOS arms remain exact. All 56 prefill
 failures and every new failed control are retained.
 
@@ -67,16 +67,16 @@ precision defaults and all comparison budgets remain unchanged.
 
 ## 2026-10-15 — Qwen3.5 selected attention audit, invalidating initial controls
 
-[Hosted38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
-at `05d4705c` captures blocks5/11 with full original rotated Q/K/V and pooled
+[Hosted 38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
+at `05d4705c` captures blocks 5/11 with full original rotated Q/K/V and pooled
 projection inputs. Scores/probabilities cover 16 deterministic query positions,
 all heads and the complete key axis. Scores reconstruct the pinned eager
 expression; probabilities come from its original returned output. All 60 original
-function/projection controls,126 shared anchor arrays and 1,302 prior original
+function/projection controls, 126 shared anchor arrays and 1,302 prior original
 CPU-control records reproduce exactly. Expanded CPU controls contain1,374 vectors.
 
 The native sweep retains 2,040 comparisons and all 56 prior prefill failures.
-All 924 actual native prefill records,12 first argmaxes and four small-fixture full
+All 924 actual native prefill records, 12 first argmaxes and four small-fixture full
 ID/text/EOS arms reproduce exactly. All 24 QKV replay and 24 sampled probability-to-
 value controls pass. All 24 full pooled replay controls fail, with errors between
 6.56e-7 and 7.27e-6. All 1,116 component verdicts satisfy existing qualified budgets,
@@ -88,7 +88,7 @@ aggregate shared-vision case checks fail;84 individual shared vision records sti
 match. The follow-up separates actual public native pooled measurements from
 traced measurements, pins test-only rotary FMA ordering to the earlier actual
 production disassembly and retains the original expression as a contrast.
-[Compiler inspection38795599697](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795599697)
+[Compiler inspection 38795599697](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795599697)
 at `4abeee6a` confirms the production object's unchanged disassembly and identifies
 the copied trace's different vector contraction of the left rotary component.
 [Exact source/compiler/excerpt evidence](tests/results/qwen35-ocr/attention-initial-codegen.json)
