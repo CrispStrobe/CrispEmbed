@@ -37,7 +37,8 @@ def main():
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
     page_check = sys.argv[1:] == ["--pages"]
-    quant_check = page_check or ffn_check or sys.argv[1:] == ["--quant"]
+    drift_check = sys.argv[1:] == ["--drift"]
+    quant_check = drift_check or page_check or ffn_check or sys.argv[1:] == ["--quant"]
     context_check = public_check or quant_check or sys.argv[1:] == ["--context"]
     frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
     frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
@@ -277,7 +278,12 @@ def main():
                 print(context_result.stdout + context_result.stderr)
                 report["native_context"] = context_result.returncode == 0
                 context_result.check_returncode()
-            if page_check:
+            if drift_check:
+                drift = module(repo / "tools/ci-heavy/qwen35_prefill_drift.py", "qwen35_prefill_drift")
+                drift.run(repo, build, export, local, out, scratch, module, converter, image_path,
+                          out / "official-reference.npz")
+                report["prefill_drift"] = "completed fixed-input weight/backend controls; inspect prefill-drift.json"
+            elif page_check:
                 pages = module(repo / "tools/ci-heavy/qwen35_page_parity.py", "qwen35_page_parity")
                 pages.run(repo, build, export, local, out, scratch, module, image_path, out / "official-reference.npz")
                 report["page_parity"] = "completed fixed real-document panel; inspect page-parity.json for differences"

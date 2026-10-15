@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 
-def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None):
+def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False):
     import gguf
     import numpy as np
     import torch
@@ -41,8 +41,11 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
         root, local_files_only=True, trust_remote_code=False,
         dtype=torch.float32, attn_implementation="eager").eval()
     arrays = {}
+    phase = ["prefill"]
 
     def save(name, tensor):
+        if name.startswith("prefill."):
+            name = phase[0] + name[len("prefill"):]
         value = tensor.detach().cpu()
         if value.is_floating_point():
             value = value.float()
@@ -72,16 +75,32 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
         positions = model._prepare_position_ids_for_generation(inputs["input_ids"], dict(inputs))
         prepared = model.prepare_inputs_for_generation(
             **inputs, position_ids=positions, use_cache=True, is_first_iteration=True, logits_to_keep=1)
-        prefill = model(**prepared)
-        save("prefill.logits", prefill.logits[:, -1])
-        for index, layer in enumerate(prefill.past_key_values.layers):
-            for name in ("conv_states", "recurrent_states", "keys", "values"):
-                value = getattr(layer, name, None)
-                if value is not None:
-                    save(f"prefill.cache.{index}.{name}", value)
+        def capture_prefill():
+            prefill = model(**prepared)
+            save("prefill.logits", prefill.logits[:, -1])
+            for index, layer in enumerate(prefill.past_key_values.layers):
+                for name in ("conv_states", "recurrent_states", "keys", "values"):
+                    value = getattr(layer, name, None)
+                    if value is not None:
+                        save(f"prefill.cache.{index}.{name}", value)
+        capture_prefill()
+        if prefill_controls:
+            phase[0] = "backend_off"
+            with torch.backends.mkldnn.flags(enabled=False):
+                capture_prefill()
+            original_patch = model.model.visual.patch_embed.forward
+            def chunked_patch(value):
+                return torch.cat([original_patch(value[i:i+1]) for i in range(value.shape[0])], dim=0)
+            try:
+                phase[0] = "patch_chunked"
+                model.model.visual.patch_embed.forward = chunked_patch
+                capture_prefill()
+            finally:
+                model.model.visual.patch_embed.forward = original_patch
+            phase[0] = "prefill"
         for handle in handles:
             handle.remove()
-        del prefill, prepared
+        del prepared
         started = time.perf_counter()
         generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                    use_cache=True, return_dict_in_generate=True, output_scores=True)
@@ -122,6 +141,20 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
               "stop": "eos" if generated_ids and generated_ids[-1] in eos else "max_tokens",
               "captured_arrays": len(arrays), "anchor_arrays_exact": anchor is not None}
     result["generation_seconds"] = generation_seconds
+    if prefill_controls:
+        result["cpu_controls"] = {}
+        for label in ("backend_off", "patch_chunked"):
+            records = []
+            for name, value in arrays.items():
+                if name.startswith(label + "."):
+                    original = arrays["prefill" + name[len(label):]]
+                    delta = value.astype(np.float64) - original.astype(np.float64)
+                    records.append(dict(stage="prefill" + name[len(label):], elements=value.size,
+                                        max_abs=float(np.max(np.abs(delta))), mean_abs=float(np.mean(np.abs(delta))),
+                                        rms=float(np.sqrt(np.mean(delta * delta))),
+                                        control_norm=float(np.linalg.norm(value.astype(np.float64))),
+                                        original_norm=float(np.linalg.norm(original.astype(np.float64)))))
+            result["cpu_controls"][label] = records
     result["timing_scope"] = "official generate including vision/prefill/greedy; excludes processor/model load, includes score collection"
     (output / "official-reference.json").write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n")
     return result

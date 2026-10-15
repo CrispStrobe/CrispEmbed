@@ -38,9 +38,11 @@ static int best(const std::vector<float> & scores) {
     return int(std::max_element(scores.begin(), scores.end()) - scores.begin());
 }
 static int crispembed_test_main(int argc, char ** argv) {
-    if (argc != 5 && argc != 6) return 2; // model, image, reference, prompt, optional token cap
+    if (argc < 5 || argc > 7) return 2; // model, image, reference, prompt, optional cap and --prefill-only
+    const bool prefill_only = argc == 7 && std::string(argv[6]) == "--prefill-only";
+    if (argc == 7 && !prefill_only) return 2;
     int token_cap = 64;
-    if (argc == 6) {
+    if (argc >= 6) {
         char * end = nullptr;
         const long parsed = std::strtol(argv[5], &end, 10);
         if (!end || *end || parsed < 1 || parsed > 512) return 2;
@@ -119,6 +121,13 @@ static int crispembed_test_main(int argc, char ** argv) {
             ok &= measure(ref, label + ".conv_states", c.conv);
             ok &= measure(ref, label + ".recurrent_states", c.recurrent);
         }
+    }
+    if (prefill_only) {
+        std::printf("PREFILL_ONLY finite=%d metrics=77 selected=%d reference=%d\n", ok, best(current.logits),
+                    int(expected.first[0]));
+        core_gguf::free_weights(loaded);
+        ggml_backend_free(backend);
+        return ok ? 0 : 1;
     }
     // Teacher forcing is confined to this diagnostic arm. It keeps each score
     // comparison on the original Python prefix even after a quantized argmax differs.
