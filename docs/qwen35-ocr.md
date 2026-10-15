@@ -1505,3 +1505,27 @@ no overall quality, speed or publication promotion follows from component parity
 and [remaining tasks](../PLAN.md). Large-document decoded A/B and remaining
 attention/projection/rotary isolation remain open; original arrays never enter
 production inference. Package/install/vendor licenses retain the kernel's BSD notice.
+
+## Four-arm native block replay contract
+
+`qwen35_ocr_bootstrap.py --cascade-blocks` reuses the actual linked native block
+and suffix replay with baseline, combined F64, cascade and cascade plus precise
+attention. All four arms explicitly set the cascade/precision gates, including
+literal0 for the baseline. The validation executable and production sources are
+unchanged; original inputs enter only through the checked test-only identity
+frontend. Native rotary values stay in use, so this is conditional block parity.
+
+Each arm covers266 vision vectors and77 ordinary composed prefill vectors per
+larger document. Across the three inputs this gives4,116 vectors and1,356 exact
+identity/block/projection/residual controls. Baseline and combined F64 must
+reproduce all1,596 prior block vectors and their controls exactly. All four arms
+must reproduce924 prior prefill records, including their unchanged budgets and
+verdicts; every first argmax must agree. A changed historical metric is an
+invalidating control failure, separate from the retained parity failures.
+
+Four actual small-fixture decode controls additionally compare complete IDs,
+UTF-8 bytes, text and EOS with the original reference. They reuse one document
+across four arithmetic settings; they do not establish larger-document quality.
+All raw failures remain in `cascade-blocks.json`, and the job exits nonzero when
+any qualified comparison or decoded control fails. No runtime/default, tolerance,
+model publication, speed or memory promotion follows from this diagnostic alone.
