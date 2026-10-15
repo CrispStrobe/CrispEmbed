@@ -57,20 +57,6 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | 7 | [Qwen3.5-9B](https://huggingface.co/Qwen/Qwen3.5-9B) | Apache-2.0; base license text to audit before weights | ~6–7 GB, estimate | Queued after small dense Qwen3.5; general VLM/OCRBench evaluation, not an OCR-specific checkpoint |
 | 8 | [Qwen3.6-27B](https://huggingface.co/Qwen/Qwen3.6-27B) | Apache-2.0; full dependency audit pending | ~17–20 GB, estimate | Queued: config is dense `qwen3_5`, 64 layers; long-context memory/GPU reference resources required |
 | 9 | [Infinity-Parser2-Pro](https://huggingface.co/infly/Infinity-Parser2-Pro) | Apache-2.0; base/dependency audit pending | ~22–25 GB, estimate | Queued last: `qwen3_5_moe`, 40 layers/256 experts, 35.1B total parameters; requires router/expert implementation beyond the dense backend; active parameters do not determine storage |
-| 2 | **Transcoda-59M-zeroshot** | 58.8M | **AGPL code / CC BY 4.0 weights** (`btrkeks/transcoda-59M-zeroshot-v1`, verified HF card) | ConvNeXt-V2-Tiny enc + 8L Transformer dec (d512/8h, **RoPE**) | **kern | **Full-page + historical scans** (zero-shot); **current OMR-NED SOTA** (Polish 63.97%, Verovio 18.46% — beats SMT++ & Legato) | **Med** | **DOABLE — accuracy leader.** Weights CC BY 4.0 → GGUF redistribution clean (attribute). Engine **clean-room** (code is AGPL). Arch fully in-tree: ConvNeXt-V2 ≈ SMT's ConvNext, RoPE decoder ≈ Qwen3; add 3000-token kern BPE tok; optional GBNF grammar-constrained decode. Training data `polish-scores` = `license: other` (irrelevant to CC-BY weight redistribution) |
-| 3 | Polyphonic-TrOMR (NetEase) | ~22M | **Apache-2.0 / Apache-2.0** | ViT + multi-head Transformer decoder (rhythm/pitch/lift/note) | symbolic text | Printed polyphonic photos | Medium | **DONE** — `src/tromr_ocr.cpp` (cos 1.0 / 100% argmax / byte-exact); `cstr/tromr-GGUF` |
-| 4 | **Flova/omr_transformer** | 143M | Apache-2.0 / Apache-2.0 | Donut VED (DonutSwin + 4L mBART) | LilyPond | artificial + **handwritten** + whiteboard (monophonic) | Medium | **DONE** — `src/flova_ocr.cpp` (cos 1.0 / 40-40 argmax / byte-exact); `cstr/flova-omr-GGUF` (f32 + q8_0); CLI + registry wired |
-| 5 | oemer | 2× U-Net | MIT / MIT | 2 segmentation U-Nets + numpy reconstruction | MusicXML | Printed, photos, skewed | High | Reference-only — multi-model + rule-based reconstruction, poor ggml fit |
-| 2 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | **DONE + verified E2E** (2026-07-02): reuses qwen2vl_ocr engine; fox.png → "The quick brown fox…" on CPU+Metal. Was SIGSEGV-ing (ERNIE head_dim=128≠D/heads) + empty output (SPM vocab loaded as GPT-2 BPE); both fixed. Q8_0/Q4_K on HF |
-| 3 | **PaddleOCR-VL-1.6** | 0.9B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B (same arch, improved training) | **DONE**: same engine/fixes as 0.9B; Q8_0/Q4_K on HF |
-| 5 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | DONE: engine + parity cos=0.9999, HF `cstr/smoldocling-GGUF` |
-| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | **DONE (shipped)** — registry `qari-ocr` → `qari-ocr-2b-q4_k.gguf`. Vision parity fixed; direct "output only text" prompt; filename-independent `general.name` detection. |
-| 2 | InternVL2.5-2B* | InternLM2.5-1.8B | 2.1B | ~830 | MIT | **Ported** |
-| 3 | MiniMonkey | InternLM2-1.8B | ~2B | 806 | — | Low priority |
-| 4 | H2OVL-Mississippi-2B | H2O-Danube-1.8B | 2.1B | 782 | Apache-2.0 | **Ported** |
-| 5 | InternVL2-1B | Qwen2-0.5B | 0.9B | 779 | MIT | **Ported** (edge) |
-| 6 | InternVL2-4B | Phi-3-mini | ~4B | 776 | MIT | Low (too big) |
-| 7 | H2OVL-Mississippi-0.8B | H2O-Danube3-0.5B | 0.8B | 751 | Apache-2.0 | Low (tiny) |
 
 These are storage estimates, not RAM or verified CrispEmbed exports for queued
 models. Critical precision can increase sizes. Keep converters, original Python
@@ -173,6 +159,12 @@ The detailed original briefs are indexed below, with all evidence preserved.
   quantize-and-run candidates; do not publish the known bad ESRGAN Q4 recipe.
 - [ ] **OMR:** reconcile remaining Transcoda decode/vocabulary work and music
   model candidates with current notation/sequence accuracy and checkpoint terms.
+  Transcoda remains outside the permissive queue (AGPL code / CC BY weights);
+  oemer is reference-only pending a suitable reconstruction design. Completed
+  TrOMR and Flova integrations are preserved in HISTORY.
+- [ ] **Other VLM candidates:** audit MiniMonkey, InternVL2-4B and
+  H2OVL-Mississippi-0.8B against current licensing, architecture and resource
+  requirements before scheduling them; historical candidate tables are archived.
 - [ ] **T9:** audit control-test coverage and native output paths, not merely
   whether tests pass. Deferred SAM flash-attention work stays low priority.
 - [ ] **F10:** coordinate any shared CrispASR changes in that repository; do not
