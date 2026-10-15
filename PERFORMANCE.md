@@ -1,5 +1,35 @@
 # CrispEmbed Performance
 
+## Qwen3.5 cascade native block replay (2026-10-15)
+
+Original Transformers5.5.4 F32 eager, pinned LightOnOCR-3-0.8B and the same three
+larger document derivatives on hosted ARM64 CPU. Actual native blocks receive
+original block inputs through a checked test-only identity frontend; native rotary
+geometry remains. These are conditional arithmetic errors, not OCR accuracy or
+latency. [Hosted38775800804](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38775800804)
+at `f7143914` retains 4,116 vectors and 1,356 exact controls.
+
+| Arithmetic | Isolated block11 form max error | Receipt | German | Ordinary prefill failures (of 231) |
+|---|---:|---:|---:|---:|
+| Baseline | 0.00720215 | 0.00585938 | 0.00610352 | 20 |
+| Combined F64 norm/attention | 0.00671387 | 0.00561523 | 0.00469971 | 11 |
+| Cascade norm | 0.00549316 | 0.00512695 | 0.00558472 | 11 |
+| Cascade + precise attention | 0.00634766 | 0.00537109 | 0.00488281 | 14 |
+
+All 72 original-input norm1 outputs in the two cascade arms are exact. All 132
+independent block0–10 outputs pass raw0.002, while all 12 block11 outputs fail it;
+block-input cosines report1.000000000. Cascade improves all three local block11
+errors but worsens composed layer11 on form/German and merger maxima on all three.
+Cascade receipt suffix4 reaches 1.0625 and German suffix0 reaches 1.285950, both
+qualified failures; the attention arms avoid these two qualified suffix failures.
+No uniform best recipe/default is selected.
+
+All 924 prior composed prefill and 1,596 prior block vectors reproduce exactly;
+all 12 first argmaxes and four small-fixture complete ID/text/EOS arms match.
+The sweep retains 56 prefill plus four suffix failures and correctly exits nonzero.
+No new large-document transcript, CER/WER, speed or peak-memory measurement follows.
+[All measurements and limits](tests/results/qwen35-ocr/cascade-blocks.json).
+
 ## Qwen3.5 same-input decoder isolation (2026-10-15)
 
 Same three larger documents; original embeddings supplied only to diagnostic

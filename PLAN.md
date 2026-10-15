@@ -9,17 +9,19 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 ## Execution order
 
 1. [ ] **Isolate remaining Qwen3.5 composed vision drift and verify full output.**
-   The [completed norm audit](tests/results/qwen35-ocr/cascade-norm.json) resolves
-   all 225 native controls and preserves693 prior prefill records. Cascade still
-   has 11 strict prefill failures; the earlier combined F64 arm also had 11, with
-   different trade-offs. No default or overall quality promotion is justified.
-   Replay actual native blocks under cascade and the existing precision arms,
-   then capture original attention score/probability boundaries where needed.
-   Separate original-input projection/reduction error from rotary geometry before
-   changing one gated operation at a time. Compare full IDs, text/EOS and available
-   CER/WER on independent documents before selecting a path. Preserve every raw
-   failure, original anchor,0.002 cache gate and qualified vision/norm budget.
-   Original arrays remain test-only; cascade and precision alternatives stay gated.
+   The [completed four-arm block audit](tests/results/qwen35-ocr/cascade-blocks.json)
+   passes 1,356 exact controls and reproduces 924 prior prefill records. Cascade
+   makes original-input norm1 exact in all 36 blocks, but last-block errors remain
+   0.00513–0.00558 and its early suffix resets still fail twice. Ordinary prefill
+   remains 20/11/11/14 failures for baseline/combined F64/cascade/cascade-attention;
+   all four small-fixture ID/text/EOS arms pass. No path is uniformly best.
+   Capture original Q/K/V, attention scores/probabilities and pooled boundaries
+   for selected blocks, with native replay controls; isolate original-input
+   projection/reduction error from rotary geometry before changing one gated
+   operation at a time. Compare full IDs, text/EOS and available CER/WER on the
+   independent documents before selecting a path. Preserve every raw failure,
+   original anchor,0.002 cache gate and qualified vision/norm budget. Original
+   arrays remain test-only; all precision alternatives stay default-off.
 2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
    Test one gated F32 materialization/graph optimization at a time with the same
@@ -228,5 +230,4 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-15 | `ocr-qwen35-cascade-blocks` | Replay linked native blocks and suffixes under baseline, combined F64, cascade and cascade-attention; retain original captures and exact prior composed metrics | Driver pushed at `f7143914`; [four-arm hosted sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38775800804) queued. Exact prior block/prefill and small decoded controls required; budgets/defaults unchanged |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |

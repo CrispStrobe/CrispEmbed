@@ -1515,10 +1515,10 @@ literal0 for the baseline. The validation executable and production sources are
 unchanged; original inputs enter only through the checked test-only identity
 frontend. Native rotary values stay in use, so this is conditional block parity.
 
-Each arm covers266 vision vectors and77 ordinary composed prefill vectors per
-larger document. Across the three inputs this gives4,116 vectors and1,356 exact
+Each arm covers266 vision vectors and 77 ordinary composed prefill vectors per
+larger document. Across the three inputs this gives 4,116 vectors and 1,356 exact
 identity/block/projection/residual controls. Baseline and combined F64 must
-reproduce all1,596 prior block vectors and their controls exactly. All four arms
+reproduce all 1,596 prior block vectors and their controls exactly. All four arms
 must reproduce924 prior prefill records, including their unchanged budgets and
 verdicts; every first argmax must agree. A changed historical metric is an
 invalidating control failure, separate from the retained parity failures.
@@ -1529,3 +1529,45 @@ across four arithmetic settings; they do not establish larger-document quality.
 All raw failures remain in `cascade-blocks.json`, and the job exits nonzero when
 any qualified comparison or decoded control fails. No runtime/default, tolerance,
 model publication, speed or memory promotion follows from this diagnostic alone.
+
+
+## Completed cascade block and suffix replay
+
+[Hosted38775800804](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38775800804)
+at `f7143914` completes 4,116 stage vectors and all 1,356 exact native replay controls.
+All 924 prior composed prefill records,1,596 prior baseline/combined-F64 block
+vectors and 678 prior control records reproduce exactly. The original anchor
+retains 126 exact shared arrays and 106 additions;1,302 original CPU-control vectors
+remain recorded. Production kernels and the C++ replay executable are unchanged
+from the preceding normalization lane.
+
+With original block inputs, cascade and cascade-attention produce exact norm1
+outputs in all 36 blocks each. All 132 independent block0–10 outputs satisfy raw
+0.002 across the four arms, while all 12 block11 outputs still exceed it. Cascade
+reduces isolated block11 error from 0.007202/0.005859/0.006104 to
+0.005493/0.005127/0.005585 on form/receipt/German. These block vectors report cosine
+1.000000000 despite the absolute failures; qualified vision gates still apply.
+[Four-arm error table](../PERFORMANCE.md#qwen35-cascade-native-block-replay-2026-10-15).
+
+In cascade block11, exact norm1 is followed by pooled errors 1.37e-5–2.43e-5,
+residual errors 2.00e-5–2.67e-5, norm2 errors 0.000170–0.000191, activation errors
+0.00104–0.00127 and down/output errors 0.00513–0.00558. This localizes a remaining
+post-norm1 attention-path contribution and later amplification. It does not yet
+separate QKV projection, native rotary geometry and attention reductions.
+Original geometry remains the primary reference; native geometry is retained
+in these conditional block replays.
+
+Composed cascade layer11 improves receipt0.441040→0.279785, but worsens form
+0.136475→0.163574 and German0.954773→0.997681. Earlier resets remain nonmonotonic:
+cascade receipt suffix4 gives 1.0625 and German suffix0 gives 1.285950, both qualified
+failures. Precise attention removes those two qualified suffix failures in both
+norm variants, but no arm is uniformly best and ordinary prefill remains
+20/11/11/14 failures for baseline/combined F64/cascade/cascade-attention.
+
+All 12 first argmaxes and four actual small-fixture ID/text/EOS controls pass.
+The workflow correctly fails for 56 prefill and four suffix verdicts, with no
+invalidating replay/reproduction controls. Every raw measurement and failure is
+retained in [the complete report](../tests/results/qwen35-ocr/cascade-blocks.json).
+No tolerance/default, large-document quality, speed, memory or publication change
+follows. Next capture selected original attention boundaries with exact native
+controls and compare full decoded outputs on the independent documents.

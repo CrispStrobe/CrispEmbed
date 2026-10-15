@@ -4,6 +4,38 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 four-arm cascade block replay
+
+[Hosted38775800804](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38775800804)
+at `f7143914` completes 4,116 vectors across baseline, combined F64, cascade and
+cascade-attention. All 1,356 identity/native-block/projection/residual controls
+pass exactly. All 924 prior prefill,1,596 prior block and 678 prior control records
+reproduce exactly;126 shared original anchor arrays and 1,302 original CPU-control
+vectors remain intact. The driver now rejects changed historical records/budgets
+and requires actual small-fixture ID/text/byte/EOS controls in all four arms.
+Local positive/negative guard checks and Python parsing pass; the secret scanner
+runs four checks with one environment-dependent skip. No production kernel,
+C++ replay executable or comparison threshold changes in this lane.
+
+Both cascade arms compute exact norm1 on all 36 original-input blocks each.
+All 132 independent block0–10 outputs satisfy raw0.002, but all 12 block11 outputs
+still exceed it. Cascade reduces local last-block errors on all three inputs to
+0.00513–0.00558. Pooled/residual errors remain after exact norm1 and amplify through
+norm2/MLP; QKV, geometry and attention reductions still need separate controls.
+Composed cascade layer11 improves receipt but worsens form/German. Its receipt
+suffix4 and German suffix0 remain qualified failures at 1.0625 and 1.285950.
+
+Ordinary prefill remains 20/11/11/14 failures; all 12 first argmaxes and four full
+small-fixture ID/text/EOS arms match the original nine IDs and 17 UTF-8 bytes.
+The workflow correctly fails for 56 prefill plus four suffix verdicts, with no
+failed native/reproduction controls. Every negative is retained; all precision
+alternatives stay default-off. No large-document quality, performance, quantized
+publication or app release is claimed. Only small JSON reports were retrieved;
+8.33GB of model/intermediate artifacts remain remote.
+[Complete report](tests/results/qwen35-ocr/cascade-blocks.json),
+[measurements](PERFORMANCE.md#qwen35-cascade-native-block-replay-2026-10-15),
+[contract and next isolation](docs/qwen35-ocr.md#completed-cascade-block-and-suffix-replay).
+
 ## 2026-10-15 — Qwen3.5 native normalization controls resolved
 
 [Hosted 38764189561](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38764189561)

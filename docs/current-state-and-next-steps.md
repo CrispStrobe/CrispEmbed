@@ -102,7 +102,13 @@ resolves the earlier validation-code mismatch and compiler output confirms it.
 Prefill failures remain20/11/14 for baseline/cascade/cascade-attention; the older
 combined F64 arm also had 11, with different trade-offs. Three small-document
 ID/text/EOS arms pass, but no large-document quality or default promotion follows.
-Next isolate remaining attention/projection/rotary drift and compare full output.
+The [four-arm block replay](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38775800804)
+passes 1,356 exact controls and preserves 924 prior prefill records. Both cascade
+arms make all 36 original-input norm1 outputs exact, but local block11 errors
+remain and cascade's early suffix resets still fail twice. All four small-fixture
+ID/text/EOS arms pass; the sweep retains 56 prefill and four suffix failures.
+Next capture selected attention boundaries to separate projection/reduction from
+geometry, and compare full decoded output on independent documents.
 Full decoding, materialization/graph performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
