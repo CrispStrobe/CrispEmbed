@@ -1,0 +1,42 @@
+{
+  "source_commit": "4abeee6aa90063e27beeddea30528effebee9c1f",
+  "scope": "Actual native/validation object disassembly only; compiler inspection is not model parity",
+  "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "objects": [
+    {
+      "name": "vision",
+      "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I$REPO/src -I$REPO/ggml/src/../include -I$REPO/src/core -I$REPO/ggml/include -O3 -DNDEBUG -std=gnu++17 -fPIC -o CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_vision.cpp.o -c $REPO/src/qwen35_vision.cpp",
+      "disassembly_sha256": "01e72004998ca14cdfc6447c154d22b9920c94016a304af902d3b323b3f35c0d",
+      "bytes": 398186,
+      "retained_excerpt": {
+        "file": "attention-initial-vision-disassembly.txt",
+        "bytes": 948,
+        "sha256": "4ff74b0d7b390144866e82fab4fcdc28f7513f30153d9641000b5801dc19a89d",
+        "scope": "Exact excerpt; full object disassembly hash/size above refer to remote artifact"
+      }
+    },
+    {
+      "name": "trace",
+      "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I$REPO/src -I$REPO/ggml/src/../include -I$REPO/src/core -I$REPO/ggml/include -O3 -DNDEBUG -std=gnu++17 -fPIE -o CMakeFiles/test-qwen35-attention-trace.dir/tests/test_qwen35_attention_trace.cpp.o -c $REPO/tests/test_qwen35_attention_trace.cpp",
+      "disassembly_sha256": "8734cc068884d4ab93cfba2f6992fbda8781653288cd44c1dad926884b362a62",
+      "bytes": 715268,
+      "retained_excerpt": {
+        "file": "attention-initial-trace-disassembly.txt",
+        "bytes": 4883,
+        "sha256": "a3eab8466f49dd5d22163dee5c7d86a036e5aebfa370fd803c539e4f63212785",
+        "scope": "Exact excerpt; full object disassembly hash/size above refer to remote artifact"
+      }
+    }
+  ],
+  "source_sha256": {
+    "src/qwen35_vision.cpp": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+    "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268",
+    "tests/test_qwen35_attention_trace.cpp": "7001483bb9bd625e587b3b74f94ecd63a32b7fe28bee84be0d16c32b7ed19635",
+    "tests/qwen35_attention_audit.h": "2782b01d10dea735550927f3c50ae1e3d9b72ed06342fff935cce54a6396f2eb"
+  },
+  "native_disassembly_matches_prior_norm_audit": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795599697",
+  "workflow_conclusion": "success",
+  "artifact_report_sha256": "55407ea8b496882e099a22201700be45ae37ffac86dfba153788272f978d45cd",
+  "limits": "Compiler provenance only. Initial vector rotary contracts a different multiply/subtract than scalar production. Native equality controls determine trace fidelity; no runtime/default or tolerance change."
+}
