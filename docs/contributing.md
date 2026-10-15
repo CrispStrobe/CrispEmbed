@@ -401,12 +401,32 @@ show cos 0.9999 at every stage.
 | Q8_0   | ~1.3x| 0.9999+     | Best quantized |
 | Q4_K   | ~0.7x| 0.997+      | Desktop target |
 
-### PyTorch ground-truth debugging
-If parity is bad, use the reference GGUF to narrow down the bug:
-1. Run reference dumper with synthetic test image
-2. Run test binary with same model + reference
-3. Compare layer-by-layer: the first layer where cosine drops below 0.999 is where the bug lives
-4. **Never blame FP** — always find the real bug via layer-by-layer diff
+### Python / ONNX ground-truth debugging
+
+Read the pinned upstream inference blueprint before changing native arithmetic.
+Reuse the existing `tools/` intermediate dumper and `crispembed-diff` harness;
+extend their captures when a boundary is missing. Observe original modules or
+ONNX graph intermediates rather than reconstructing the expected math in the test.
+
+If parity is bad, narrow down the first differing stage:
+
+1. Freeze the original model, configuration, processor/tokenizer, backend and
+   reference arrays. Check expanded captures against existing unchanged anchors.
+2. Run native inference with the same checkpoint and prepared input. Compare
+   preprocessing, every layer, caches, final norm and vocabulary logits.
+3. Inspect absolute errors, RMS, tensor magnitudes and cosine together. Cosine
+   near1 can conceal cache errors and changed token choices. Preserve every
+   failed stage and its original budget; do not relax a gate to pass an audit.
+4. Replay one operator with the original operator input to separate local error
+   from upstream amplification. Keep reference-input replay test-only, and check
+   that observation leaves ordinary native output unchanged.
+5. Recheck composed inference and actual IDs, EOS/stops and decoded text after
+   each candidate fix. Component parity does not establish recognition quality.
+   Failed comparisons must make the test exit nonzero, even when a diagnostic
+   driver continues collecting the remaining arms before reporting failure.
+
+**Never blame FP** — establish the cause through intermediate comparisons and
+controlled alternatives before changing precision, algorithms or defaults.
 
 ---
 
