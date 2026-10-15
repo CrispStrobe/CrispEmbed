@@ -62,7 +62,9 @@ static trace_result trace(const std::vector<float> & qkv, const qwen35_ocr::visi
                 float maximum = -INFINITY;
                 for (int s = first; s < end; ++s) {
                     float dot = 0;
-                    for (int i = 0; i < d; ++i) dot += q[base + i] * k[size_t(s) * width + head * d + i];
+                    // The actual production object uses ordered scalar FMA.
+                    // An unconstrained copy vectorizes rounded products instead.
+                    for (int i = 0; i < d; ++i) dot = std::fma(q[base + i], k[size_t(s) * width + head * d + i], dot);
                     if (precise) {
                         double exact = 0;
                         for (int i = 0; i < d; ++i)
