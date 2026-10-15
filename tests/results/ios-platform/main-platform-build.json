@@ -1,0 +1,129 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752",
+  "source_commit": "79023ec6a8251ca7da8e5e229cb23e91d47e9783",
+  "status": "completed",
+  "conclusion": "success",
+  "scope": "complete main native platform workflow after standalone-target iOS repair; no runtime release",
+  "jobs": [
+    {
+      "name": "ios-arm64",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298620792",
+      "startedAt": "2026-10-15T07:30:02Z",
+      "completedAt": "2026-10-15T07:31:59Z"
+    },
+    {
+      "name": "sibling-crispasr (shared libs)",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298620959",
+      "startedAt": "2026-10-15T07:38:11Z",
+      "completedAt": "2026-10-15T07:39:08Z"
+    },
+    {
+      "name": "android-armeabi-v7a",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298620983",
+      "startedAt": "2026-10-15T07:38:54Z",
+      "completedAt": "2026-10-15T07:42:12Z"
+    },
+    {
+      "name": "android-arm64-v8a",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298621018",
+      "startedAt": "2026-10-15T07:53:27Z",
+      "completedAt": "2026-10-15T07:57:11Z"
+    },
+    {
+      "name": "windows-x86_64",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298621086",
+      "startedAt": "2026-10-15T07:20:25Z",
+      "completedAt": "2026-10-15T07:27:08Z"
+    },
+    {
+      "name": "android-x86_64",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298621089",
+      "startedAt": "2026-10-15T07:44:19Z",
+      "completedAt": "2026-10-15T07:50:00Z"
+    },
+    {
+      "name": "macos-arm64",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298621102",
+      "startedAt": "2026-10-15T07:30:22Z",
+      "completedAt": "2026-10-15T07:35:40Z"
+    },
+    {
+      "name": "Static guards",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298621114",
+      "startedAt": "2026-10-15T08:24:35Z",
+      "completedAt": "2026-10-15T08:24:43Z"
+    },
+    {
+      "name": "linux-x86_64",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116298621192",
+      "startedAt": "2026-10-15T08:16:30Z",
+      "completedAt": "2026-10-15T08:19:39Z"
+    },
+    {
+      "name": "Bundle Flutter plugin",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752/job/116321634141",
+      "startedAt": "2026-10-15T08:43:22Z",
+      "completedAt": "2026-10-15T08:43:40Z"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 11958936856,
+      "name": "flutter-plugin-bundled",
+      "size_in_bytes": 93185044,
+      "expired": false
+    },
+    {
+      "id": 11957334405,
+      "name": "linux-x86_64",
+      "size_in_bytes": 22709429,
+      "expired": false
+    },
+    {
+      "id": 11957300076,
+      "name": "android-arm64-v8a",
+      "size_in_bytes": 20184618,
+      "expired": false
+    },
+    {
+      "id": 11956185403,
+      "name": "macos-arm64",
+      "size_in_bytes": 17511914,
+      "expired": false
+    },
+    {
+      "id": 11955627407,
+      "name": "android-armeabi-v7a",
+      "size_in_bytes": 19058704,
+      "expired": false
+    },
+    {
+      "id": 11955614135,
+      "name": "android-x86_64",
+      "size_in_bytes": 20750598,
+      "expired": false
+    },
+    {
+      "id": 11955403703,
+      "name": "windows-x86_64",
+      "size_in_bytes": 8504253,
+      "expired": false
+    },
+    {
+      "id": 11954334526,
+      "name": "ios-arm64",
+      "size_in_bytes": 4058174,
+      "expired": false
+    }
+  ]
+}

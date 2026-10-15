@@ -4,6 +4,25 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 same-input decoder isolation
+
+[Hosted38702930399](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
+at `799bfefe` repeats the three larger inputs with an unchanged composed F16
+baseline and two explicitly test-only original-embedding controls. All baseline
+scalar metrics exactly reproduce the preceding run. Each arm retains all 473
+tensor audits and 231 stage comparisons; all 90 shared anchor arrays are exact.
+Native vision merger metrics are identical across arms.
+
+Replacing decoder input embeddings only in the diagnostic removes all 20 stage
+failures in both F16 and all-F32 decoder arms. Worst key error falls from
+0.00622153 to 0.0000406504 (F16) / 0.0000371933 (all-F32); all isolated stages also
+pass the raw 0.002 absolute gate. All nine first argmaxes match. This narrows the
+remaining composed-model work to the vision/input path and its downstream
+amplification; the responsible vision operator remains to be isolated. No
+production path reads original embeddings, and no composed OCR parity,
+full-document, latency or publication claim follows from these component probes.
+[Complete results and retained baseline failures](tests/results/qwen35-ocr/prefill-isolation.json).
+
 ## 2026-10-15 — Qwen3.5 larger-input precision/backend isolation
 
 [Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
@@ -39,6 +58,17 @@ Initial main failure38681503635 is retained. The first verifier38696165504 passe
 the iOS build but invoked the desktop test without its required fixture and
 exited2; the corrected verifier uses the SHA-pinned original fixture from
 38541059168. [Initial verifier record](tests/results/ios-platform/ios-verifier-initial.json).
+The complete main platform workflow
+[38697864752](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752)
+at `79023ec6` passes all ten jobs: seven platform builds, the sibling shared-library
+check, static guards and Flutter bundling. All 38 expected bundled native library
+entries across seven platforms match their source artifacts by byte size and ZIP
+CRC. [Workflow record](tests/results/ios-platform/main-platform-build.json),
+[bundle manifest and verification limits](tests/results/ios-platform/flutter-bundle-manifest.json).
+The same main source also passes WASM build 38697864733 and the LFM2 precise-arithmetic
+fixture 38697864663. These are build/packaging checks, not a new runtime release or
+installed-plugin/device inference validation.
+
 No runtime math, model default, release tag or app dependency changed.
 
 ## 2026-10-15 — UltraBERT public-source feasibility

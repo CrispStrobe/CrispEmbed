@@ -1,5 +1,23 @@
 # CrispEmbed Performance
 
+## Qwen3.5 same-input decoder isolation (2026-10-15)
+
+Same three larger documents; original embeddings supplied only to diagnostic
+F16/all-F32 decoder arms. No production path or threshold changes.
+[Hosted38702930399](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
+at `799bfefe` retains the exactly reproduced composed baseline and all failures.
+
+| Arm | Worst key error | Worst final-norm error | Failed stages (of 231) |
+|---|---:|---:|---:|
+| Composed F16 text/F32 vision | 0.00622153 | 0.0147171 | 20 |
+| F16 decoder, original inputs (test-only) | 0.0000406504 | 0.000167608 | 0 |
+| All-F32 decoder, original inputs (test-only) | 0.0000371933 | 0.000216484 | 0 |
+
+The isolated arms pass all raw absolute gates and match first argmaxes. These
+component controls narrow the remaining work to the vision/input path; they do
+not establish composed native OCR parity, full-document quality or latency.
+[All metrics, magnitudes and controls](tests/results/qwen35-ocr/prefill-isolation.json).
+
 ## Qwen3.5 larger-input precision controls (2026-10-15)
 
 Original Transformers5.5.4 F32 eager; same three document derivatives, CPU ARM64.
@@ -7,7 +25,7 @@ Original Transformers5.5.4 F32 eager; same three document derivatives, CPU ARM64
 at `263d6abe` records 693 native prefill stage vectors and 456 original CPU-control
 vectors. This is numerical isolation, not a latency or recognition benchmark.
 
-| Native arm | GB (decimal) | Worst key absolute error | Strict failed stages (of231) |
+| Native arm | GB (decimal) | Worst key absolute error | Strict failed stages (of 231) |
 |---|---:|---:|---:|
 | F16 text/F32 vision | 1.918 | 0.00622153 | 20 |
 | All-F32 | 3.422 | 0.00625157 | 20 |

@@ -81,8 +81,8 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Follow the current execution order in [PLAN.md](PLAN.md): platform build health,
-Qwen larger-input numerical controls, measured inference optimization, complete
+Follow the current execution order in [PLAN.md](PLAN.md): Qwen larger-input
+vision-operator isolation, measured inference optimization, complete
 long-document decoding, then quantization/publication and queued permissive models.
 UltraBERT feasibility is recorded in [docs/ultrabert.md](docs/ultrabert.md); it is
 not native support. Keep its dependency environment separate from pinned OCR references.

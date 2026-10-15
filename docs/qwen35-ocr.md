@@ -1179,9 +1179,45 @@ The existing elementwise qualified final-norm gate passes receipt (maximum budge
 ratio 0.65814) but fails form 1.01615 and German 1.17035 in the F16 arm. Using a
 stage-wide norm allowance would conceal those failures and is not accepted.
 
-The report contains 693 native metric/budget vectors,456 original control vectors,
+The report contains 693 native metric/budget vectors, 456 original control vectors,
 all 60 strict failures and the unchanged anchor/component/context controls.
 Next isolate vision operators and decoder projection/normalization/RoPE with
 identical inputs in test-only probes, then measure runtime costs. The0.002 cache
 budget, runtime math/defaults and prior full-output evidence remain unchanged.
 [Complete retained report](../tests/results/qwen35-ocr/prefill-drift.json).
+
+## Same-input decoder isolation
+
+[Hosted38702930399](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
+at `799bfefe26e97f46ae3a5ec859801e935a6afd23` keeps the same three inputs,
+original captures, tensor audits and unchanged comparison gates. It repeats the
+composed F16 baseline and adds F16/all-F32 decoder arms with the original full
+input-embedding vector supplied **only inside the diagnostic test executable**.
+Native vision still runs and is measured independently. The explicit
+`--prefill-reference-embeddings` flag and `ISOLATION` output distinguish these
+arms; production inference and public bindings do not accept reference arrays.
+
+| Arm | Max key error | Max final-norm error | Failed stages (of 231) |
+|---|---:|---:|---:|
+| Composed native F16 text/F32 vision | 0.00622153 | 0.0147171 | 20 |
+| F16 decoder, original input embeddings (test-only) | 0.0000406504 | 0.000167608 | 0 |
+| All-F32 decoder, original input embeddings (test-only) | 0.0000371933 | 0.000216484 | 0 |
+
+The baseline reproduces every scalar stage metric from the preceding experiment.
+Native vision merger metrics are identical across all arms. The isolated decoder
+inputs are exact; all isolated stage errors pass the raw 0.002 absolute gate,
+including final norms without needing the qualified backend-variation allowance.
+Minimum stage cosines are 0.999999821 and 0.999999881 for the two isolated arms.
+All nine first-token argmaxes match. The report retains 693 native metric/budget
+vectors, 456 original CPU-control vectors, all 473 tensor records per arm and every
+baseline failure.
+
+These controls localize the larger-input failures to differences entering the
+decoder, with the first measured difference already present in the native vision
+merger. The preceding all-F32 composed control did not remove them. Prioritize
+native vision patch/projection, position, norm, attention/FFN and merger operator
+isolation before changing decoder arithmetic or text precision. The exact
+responsible vision operator is still unknown. The composed native baseline still
+fails its strict gates: these are conditional component passes, not a replacement
+frontend, full decoding, recognition benchmark, speed result or publication gate.
+[Complete retained measurements and scope](../tests/results/qwen35-ocr/prefill-isolation.json).

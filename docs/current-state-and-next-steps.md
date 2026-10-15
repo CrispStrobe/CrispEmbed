@@ -91,14 +91,19 @@ no tolerance is relaxed. Operator-level isolation, full decoding,
 materialization/graph performance, quantized quality and HF publication remain
 open;1024 patches is the native bound. [Detailed evidence](qwen35-ocr.md).
 
-The [latest main platform build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635)
-failed on iOS standalone test-target wiring; other platform jobs passed and
-Flutter bundling skipped. The scoped repair passes an actual library-only iOS build plus all 18 original
-native position cases in
-[hosted38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574).
-The initial verifier's fixture-invocation failure is retained; no runtime numerical
-change is part of the build repair. Complete-main platform validation remains
-pending after landing.
+The iOS standalone-target repair now passes the complete
+[ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),
+including Flutter bundling. All 38 bundled native library entries match the seven
+platform artifacts by size/ZIP CRC. The scoped 18-case position probe and initial
+failures remain in HISTORY. This does not change the app's runtime pin or establish
+installed-plugin/device inference validation.
+
+The [same-input decoder experiment](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
+removes all 20 strict stage failures when original embeddings are supplied only
+to diagnostic decoder arms; worst F16 key error becomes 0.0000406504. The composed
+baseline exactly reproduces its prior failures. Vision/input operator isolation
+is now the first pending correctness task; component passes do not establish
+composed OCR parity.
 
 LFM2.5 Encoder and EmbeddingGemma typed-decision integration/publication are
 archived as complete, with GPU, independent task-quality and long-context/perf
@@ -106,9 +111,9 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: finish platform repair, isolate
-larger-input vision/decoder operators after the precision controls, profile gated runtime
-changes, finish long documents, then validate quantization/publication. The
+The next vendor work follows PLAN's order: isolate larger-input vision operators,
+profile gated runtime changes, finish long documents, then validate quantization
+and publication. The
 consumer lanes below remain separate, with their original verification dates.
 
 ## Recommended order and dependencies

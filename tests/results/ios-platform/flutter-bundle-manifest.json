@@ -1,0 +1,276 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752",
+  "scope": "ZIP central-directory library presence, byte size and CRC equality across source/bundled artifacts; not cryptographic hashes or installed-plugin inference",
+  "bundle_artifact_id": 11958936856,
+  "platforms": 7,
+  "matching_libraries": [
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libcrispembed.so",
+      "bundled_file": "linux/lib/libcrispembed.so",
+      "bytes": 8545496,
+      "zip_crc32": 2680034563
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libcrispembed.so.0",
+      "bundled_file": "linux/lib/libcrispembed.so.0",
+      "bytes": 8545496,
+      "zip_crc32": 2680034563
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libcrispembed.so.0.17.11",
+      "bundled_file": "linux/lib/libcrispembed.so.0.17.11",
+      "bytes": 8545496,
+      "zip_crc32": 2680034563
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml-base.so",
+      "bundled_file": "linux/lib/libggml-base.so",
+      "bytes": 917880,
+      "zip_crc32": 3890938233
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml-base.so.0",
+      "bundled_file": "linux/lib/libggml-base.so.0",
+      "bytes": 917880,
+      "zip_crc32": 3890938233
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml-base.so.0.17.0",
+      "bundled_file": "linux/lib/libggml-base.so.0.17.0",
+      "bytes": 917880,
+      "zip_crc32": 3890938233
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml-cpu.so",
+      "bundled_file": "linux/lib/libggml-cpu.so",
+      "bytes": 1376688,
+      "zip_crc32": 212630860
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml-cpu.so.0",
+      "bundled_file": "linux/lib/libggml-cpu.so.0",
+      "bytes": 1376688,
+      "zip_crc32": 212630860
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml-cpu.so.0.17.0",
+      "bundled_file": "linux/lib/libggml-cpu.so.0.17.0",
+      "bytes": 1376688,
+      "zip_crc32": 212630860
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml.so",
+      "bundled_file": "linux/lib/libggml.so",
+      "bytes": 56376,
+      "zip_crc32": 387381073
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml.so.0.17.0",
+      "bundled_file": "linux/lib/libggml.so.0.17.0",
+      "bytes": 56376,
+      "zip_crc32": 387381073
+    },
+    {
+      "platform": "linux-x86_64",
+      "source_file": "lib/libggml.so.0",
+      "bundled_file": "linux/lib/libggml.so.0",
+      "bytes": 56376,
+      "zip_crc32": 387381073
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libcrispembed.0.17.11.dylib",
+      "bundled_file": "macos/Libs/libcrispembed.0.17.11.dylib",
+      "bytes": 5819288,
+      "zip_crc32": 1284626000
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libcrispembed.0.dylib",
+      "bundled_file": "macos/Libs/libcrispembed.0.dylib",
+      "bytes": 5819288,
+      "zip_crc32": 1284626000
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libcrispembed.dylib",
+      "bundled_file": "macos/Libs/libcrispembed.dylib",
+      "bytes": 5819288,
+      "zip_crc32": 1284626000
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-base.0.17.0.dylib",
+      "bundled_file": "macos/Libs/libggml-base.0.17.0.dylib",
+      "bytes": 730664,
+      "zip_crc32": 124383298
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-base.0.dylib",
+      "bundled_file": "macos/Libs/libggml-base.0.dylib",
+      "bytes": 730664,
+      "zip_crc32": 124383298
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-base.dylib",
+      "bundled_file": "macos/Libs/libggml-base.dylib",
+      "bytes": 730664,
+      "zip_crc32": 124383298
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-blas.0.17.0.dylib",
+      "bundled_file": "macos/Libs/libggml-blas.0.17.0.dylib",
+      "bytes": 58776,
+      "zip_crc32": 2357260453
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-blas.0.dylib",
+      "bundled_file": "macos/Libs/libggml-blas.0.dylib",
+      "bytes": 58776,
+      "zip_crc32": 2357260453
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-blas.dylib",
+      "bundled_file": "macos/Libs/libggml-blas.dylib",
+      "bytes": 58776,
+      "zip_crc32": 2357260453
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-cpu.0.17.0.dylib",
+      "bundled_file": "macos/Libs/libggml-cpu.0.17.0.dylib",
+      "bytes": 953416,
+      "zip_crc32": 3341428583
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-cpu.0.dylib",
+      "bundled_file": "macos/Libs/libggml-cpu.0.dylib",
+      "bytes": 953416,
+      "zip_crc32": 3341428583
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-metal.0.17.0.dylib",
+      "bundled_file": "macos/Libs/libggml-metal.0.17.0.dylib",
+      "bytes": 919800,
+      "zip_crc32": 3811116883
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-cpu.dylib",
+      "bundled_file": "macos/Libs/libggml-cpu.dylib",
+      "bytes": 953416,
+      "zip_crc32": 3341428583
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-metal.0.dylib",
+      "bundled_file": "macos/Libs/libggml-metal.0.dylib",
+      "bytes": 919800,
+      "zip_crc32": 3811116883
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml-metal.dylib",
+      "bundled_file": "macos/Libs/libggml-metal.dylib",
+      "bytes": 919800,
+      "zip_crc32": 3811116883
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml.0.17.0.dylib",
+      "bundled_file": "macos/Libs/libggml.0.17.0.dylib",
+      "bytes": 59816,
+      "zip_crc32": 1962807734
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml.0.dylib",
+      "bundled_file": "macos/Libs/libggml.0.dylib",
+      "bytes": 59816,
+      "zip_crc32": 1962807734
+    },
+    {
+      "platform": "macos-arm64",
+      "source_file": "lib/libggml.dylib",
+      "bundled_file": "macos/Libs/libggml.dylib",
+      "bytes": 59816,
+      "zip_crc32": 1962807734
+    },
+    {
+      "platform": "windows-x86_64",
+      "source_file": "bin/crispembed.dll",
+      "bundled_file": "windows/lib/crispembed.dll",
+      "bytes": 5272576,
+      "zip_crc32": 921767564
+    },
+    {
+      "platform": "windows-x86_64",
+      "source_file": "bin/ggml-base.dll",
+      "bundled_file": "windows/lib/ggml-base.dll",
+      "bytes": 668672,
+      "zip_crc32": 1935950348
+    },
+    {
+      "platform": "windows-x86_64",
+      "source_file": "bin/ggml-cpu.dll",
+      "bundled_file": "windows/lib/ggml-cpu.dll",
+      "bytes": 1043456,
+      "zip_crc32": 1508077193
+    },
+    {
+      "platform": "windows-x86_64",
+      "source_file": "bin/ggml.dll",
+      "bundled_file": "windows/lib/ggml.dll",
+      "bytes": 68608,
+      "zip_crc32": 3707567191
+    },
+    {
+      "platform": "ios-arm64",
+      "source_file": "libcrispembed-static.a",
+      "bundled_file": "ios/Libs/libcrispembed-static.a",
+      "bytes": 9513352,
+      "zip_crc32": 3029214301
+    },
+    {
+      "platform": "android-arm64-v8a",
+      "source_file": "libcrispembed.so",
+      "bundled_file": "android/src/main/jniLibs/arm64-v8a/libcrispembed.so",
+      "bytes": 76372064,
+      "zip_crc32": 1858843962
+    },
+    {
+      "platform": "android-armeabi-v7a",
+      "source_file": "libcrispembed.so",
+      "bundled_file": "android/src/main/jniLibs/armeabi-v7a/libcrispembed.so",
+      "bytes": 58849956,
+      "zip_crc32": 1180644360
+    },
+    {
+      "platform": "android-x86_64",
+      "source_file": "libcrispembed.so",
+      "bundled_file": "android/src/main/jniLibs/x86_64/libcrispembed.so",
+      "bytes": 74326432,
+      "zip_crc32": 4013139301
+    }
+  ],
+  "all_expected_libraries_present_and_match": true,
+  "large_artifacts_downloaded": false
+}
