@@ -1024,3 +1024,35 @@ Next: broader independent page/corpus coverage for Q8 and the Q8/Q6 candidate,
 then row-wise F32 matmul memory/performance A/B. The1024-patch bound and full F32
 weight materialization remain. No HF publication, registry alias, runtime release,
 latency or peak-memory claim follows from this sweep.
+
+## Fixed real-document panel — 2026-10-15
+
+The hosted `--pages` mode compares the unchanged F16-text/F32-vision recipe,
+Q8 text, and Q8 attention/Q6 FFNs. Inputs come from the repository's checksummed
+CC0/public-domain catalog: the Arabic printed line, complete form, complete
+receipt explicitly resized to448×576, and a German page header cropped at
+`[0,0,1920,650]` then explicitly resized to768×256. These are evaluation image
+derivatives, not changes to production preprocessing or its1024-patch limit.
+The original full-size documents remain unchanged.
+
+The compact reference calls the pinned original Transformers5.5.4 F32 eager
+model and processor. Every captured array must equal the full original capture
+on the existing anchor before page evaluation. It stores the77 prefill diagnostic
+boundaries plus official generated scores, IDs and text. The native probe uses
+independent image/prompt/BPE/free generation; teacher-forced scores stay separate.
+Explicit per-case caps64/192/384/128 retain EOS versus max-token stops. Matching
+truncated outputs are not complete-document parity. Empty decoded output remains
+distinguishable from failure. The existing strict F16 anchor checks are unchanged.
+
+Reports retain all473 effective tensor types/shapes, protected-byte checks,
+export hashes, layer/cache magnitudes/errors, native outputs, confidence, lines,
+timing scopes and paired CER/WER. Existing receipt/form annotations additionally
+provide raw gold CER/WER; form ambiguity and annotation confidence remain visible.
+No crop or Arabic annotation is guessed. Reference agreement is separate from
+accuracy against annotations. Timings are single-run observations: Python
+generation excludes processor/model load and collects scores; native recognition
+includes image decoding/preprocessing, excludes context load and teacher probes.
+They do not establish a latency benchmark.
+
+Results pending hosted execution; no corpus score, default promotion, HF
+publication, registry alias or runtime release is implied by this panel.

@@ -9,6 +9,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ggml/examples/stb_image.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -37,14 +38,22 @@ static int best(const std::vector<float> & scores) {
     return int(std::max_element(scores.begin(), scores.end()) - scores.begin());
 }
 static int crispembed_test_main(int argc, char ** argv) {
-    if (argc != 5) return 2; // model, real image, test-only reference, independently supplied prompt
+    if (argc != 5 && argc != 6) return 2; // model, image, reference, prompt, optional token cap
+    int token_cap = 64;
+    if (argc == 6) {
+        char * end = nullptr;
+        const long parsed = std::strtol(argv[5], &end, 10);
+        if (!end || *end || parsed < 1 || parsed > 512) return 2;
+        token_cap = int(parsed);
+    }
     gate("CRISPEMBED_QWEN35_OCR", "1");
     gate("CRISPEMBED_QWEN35_QUANT", "1");
     crispembed_diff::Ref ref;
     if (!ref.load(argv[3])) return 2;
     const auto expected = ref.get_f32("generated.ids");
     const auto expected_bytes = ref.get_f32("input.decoded_utf8");
-    if (!expected.first || !expected.second || expected.second > 64 || !expected_bytes.first) return 2;
+    const auto expected_length = ref.get_f32("input.decoded_length");
+    if (!expected.first || !expected.second || expected.second > size_t(token_cap) || !expected_bytes.first) return 2;
     int w = 0, h = 0, channels = 0;
     std::unique_ptr<unsigned char, decltype(&stbi_image_free)> rgb(stbi_load(argv[2], &w, &h, &channels, 3),
                                                                    stbi_image_free);
@@ -136,16 +145,26 @@ static int crispembed_test_main(int argc, char ** argv) {
     disabled.reset();
     gate("CRISPEMBED_QWEN35_QUANT", "1");
     owner context(qwen35_ocr_init(argv[1], 4), qwen35_ocr_free);
-    if (!context || !qwen35_ocr_set_max_tokens(context.get(), 64)) return 2;
+    if (!context || !qwen35_ocr_set_max_tokens(context.get(), token_cap)) return 2;
     int length = 0;
+    const auto started = std::chrono::steady_clock::now();
     const char * text = qwen35_ocr_recognize_file(context.get(), argv[2], argv[4], &length);
+    const double elapsed_ms =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
     int count = 0;
     const auto * generated = qwen35_ocr_token_ids(context.get(), &count);
     if (!text || !generated || count < 1 || length < 0) return 2;
     bool exact_ids = count == int(expected.second);
     for (int i = 0; i < count && i < int(expected.second); ++i) exact_ids &= generated[i] == int(expected.first[i]);
     std::string reference;
-    for (size_t i = 0; i < expected_bytes.second; ++i) reference.push_back(char(expected_bytes.first[i]));
+    size_t reference_length = expected_bytes.second;
+    if (expected_length.first) {
+        if (expected_length.second != 1 || !std::isfinite(expected_length.first[0]) || expected_length.first[0] < 0 ||
+            expected_length.first[0] > float(expected_bytes.second))
+            return 2;
+        reference_length = size_t(expected_length.first[0]);
+    }
+    for (size_t i = 0; i < reference_length; ++i) reference.push_back(char(expected_bytes.first[i]));
     std::printf("FREE ids:");
     for (int i = 0; i < count; ++i) std::printf(" %d", generated[i]);
     std::printf("\nFREE utf8_hex:");
@@ -153,6 +172,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     std::printf("\nFREE ids_exact=%d text_exact=%d stop=%d mean_confidence=%.9g bytes=%d\n", exact_ids,
                 std::string(text, size_t(length)) == reference, qwen35_ocr_last_stop(context.get()),
                 qwen35_ocr_mean_confidence(context.get()), length);
+    std::printf("FREE time_ms=%.9g\n", elapsed_ms);
     std::printf("%s finite quantization measurements, native input IDs and literal0 quant gate control\n",
                 ok ? "PASS" : "FAIL");
     // Quality differences are recorded, not hidden behind relaxed parity gates.

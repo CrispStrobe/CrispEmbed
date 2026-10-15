@@ -36,7 +36,8 @@ def main():
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
-    quant_check = ffn_check or sys.argv[1:] == ["--quant"]
+    page_check = sys.argv[1:] == ["--pages"]
+    quant_check = page_check or ffn_check or sys.argv[1:] == ["--quant"]
     context_check = public_check or quant_check or sys.argv[1:] == ["--context"]
     frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
     frontend_rms = sys.argv[1:] == ["--frontend-precise-rms"]
@@ -276,7 +277,11 @@ def main():
                 print(context_result.stdout + context_result.stderr)
                 report["native_context"] = context_result.returncode == 0
                 context_result.check_returncode()
-            if quant_check:
+            if page_check:
+                pages = module(repo / "tools/ci-heavy/qwen35_page_parity.py", "qwen35_page_parity")
+                pages.run(repo, build, export, local, out, scratch, module, image_path, out / "official-reference.npz")
+                report["page_parity"] = "completed fixed real-document panel; inspect page-parity.json for differences"
+            elif quant_check:
                 calibration = module(repo / "tools/ci-heavy/qwen35_quant_calibration.py", "qwen35_quant_calibration")
                 calibration.run(repo, build, export, image_path, resized_path, local, reference, out, scratch, ffn=ffn_check)
                 report["quantization"] = ("completed native FFN importance/Q6/mixed-precision measurements; inspect ffn-calibration.json"
