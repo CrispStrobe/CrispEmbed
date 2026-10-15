@@ -7,15 +7,15 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 ## 2026-10-15 — Qwen3.5 larger-input precision/backend isolation
 
 [Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
-at263d6abe completes three fixed document inputs × three native arms,693 stage
+at `263d6abe` completes three fixed document inputs × three native arms,693 stage
 vectors/budget records,456 original CPU-control vectors and473 tensors per arm.
-All90 shared compact/full anchor arrays are exact; document derivatives and the
+All 90 shared compact/full anchor arrays are exact; document derivatives and the
 F16 baseline hash match the preceding panel. Pixel values are exact; the first
 measured difference is at the vision merger. All nine first-token argmaxes match.
 
-All-F32 increases storage from1.918GB to3.422GB without fixing the failures:
-worst key error0.00625157 versus F16's0.00622153; precise RMS gives0.00619769.
-Each arm retains20 strict failures (form5, receipt7, German8). Original Python
+All-F32 increases storage from 1.918 GB to 3.422 GB without fixing the failures:
+worst key error 0.00625157 versus F16's 0.00622153; precise RMS gives 0.00619769.
+Each arm retains 20 strict failures (form 5, receipt 7, German 8). Original Python
 backend-off key variation also exceeds0.002 on all three inputs; per-patch
 convolution is identical on these inputs. The existing qualified norm budget
 passes receipt but still fails form/German. No budget or runtime default changes.
@@ -31,7 +31,7 @@ platform condition. iOS now builds the library without creating test executables
 that refer to a probe library excluded on that platform; desktop probes remain.
 [Hosted38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574)
 at756c5505 builds a9,466,864-byte arm64 iOS archive with zero executable targets,
-then runs all18 independently captured original integer-position cases and
+then runs all 18 independently captured original integer-position cases and
 bounds/reset/literal0 controls natively. No weights or inference batch is needed.
 [Retained result](tests/results/ios-platform/ios-validation.json).
 
@@ -67,7 +67,7 @@ atd6c89416 compares90 shared compact/full original anchor arrays exactly, three
 exports and12 native cases/2586 stage vectors. F16 matches all four outputs/stops;
 only three reference cases reach EOS. Q8 matches two completed cases; Q8/Q6 one.
 The receipt matches a384-token truncated prefix in every arm. F16 cache-key error
-reaches0.00622153 against the existing0.002 budget; no threshold is relaxed.
+reaches0.00622153 against the existing 0.002 budget; no threshold is relaxed.
 Native receipt observations are578/351/411 seconds for F16/Q8/Q8-Q6 versus Python
 generate31 seconds, with different documented timing scopes. Neither quantized
 recipe is promoted or published. All artifacts, confidence, annotations, errors,

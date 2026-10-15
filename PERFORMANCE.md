@@ -4,7 +4,7 @@
 
 Original Transformers5.5.4 F32 eager; same three document derivatives, CPU ARM64.
 [Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
-at263d6abe records693 native prefill stage vectors and456 original CPU-control
+at `263d6abe` records 693 native prefill stage vectors and 456 original CPU-control
 vectors. This is numerical isolation, not a latency or recognition benchmark.
 
 | Native arm | GB (decimal) | Worst key absolute error | Strict failed stages (of231) |
@@ -14,7 +14,7 @@ vectors. This is numerical isolation, not a latency or recognition benchmark.
 | All-F32 + precise RMS | 3.422 | 0.00619769 | 20 |
 
 All first-token argmaxes match, and all stage cosines exceed0.99999; the absolute
-failures remain. Original backend-off key variation is0.002125/0.003204/0.003981
+failures remain. Original backend-off key variation is 0.002125/0.003204/0.003981
 on form/receipt/German. Cache tolerance remains0.002; the existing per-element
 qualified norm budget still fails form/German. No recipe/default is promoted.
 [All magnitudes/errors and controls](tests/results/qwen35-ocr/prefill-drift.json),

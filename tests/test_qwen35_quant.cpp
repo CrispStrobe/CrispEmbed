@@ -42,8 +42,9 @@ static int best(const std::vector<float> & scores) {
     return int(std::max_element(scores.begin(), scores.end()) - scores.begin());
 }
 static int crispembed_test_main(int argc, char ** argv) {
-    if (argc < 5 || argc > 7) return 2; // model, image, reference, prompt, optional cap and --prefill-only
-    const bool prefill_only = argc == 7 && std::string(argv[6]) == "--prefill-only";
+    if (argc < 5 || argc > 7) return 2; // model, image, reference, prompt, optional cap and diagnostic mode
+    const bool reference_embeddings = argc == 7 && std::string(argv[6]) == "--prefill-reference-embeddings";
+    const bool prefill_only = reference_embeddings || (argc == 7 && std::string(argv[6]) == "--prefill-only");
     if (argc == 7 && !prefill_only) return 2;
     strict_prefill = prefill_only;
     int token_cap = 64;
@@ -107,6 +108,15 @@ static int crispembed_test_main(int argc, char ** argv) {
             ++image_token;
         }
     if (image_token * 1024 != vision.merged.size()) return 2;
+    if (reference_embeddings) {
+        // Test-only same-input localization, never a production frontend or
+        // composed-model parity claim. Keep the independently measured vision
+        // result above, but isolate decoder arithmetic from its input error.
+        const auto original = ref.get_f32("prefill.decoder.inputs_embeds");
+        if (!original.first || original.second != hidden.size()) return 2;
+        hidden.assign(original.first, original.first + original.second);
+        std::printf("ISOLATION reference_embeddings=1 test_only=1\n");
+    }
     ok &= measure(ref, "prefill.decoder.inputs_embeds", hidden);
     qwen35_ocr::decoder_outputs current;
     if (!qwen35_ocr::decoder_cpu(decoder, {}, hidden.data(), positions.axes.data(), 1, int(ids.size()), 4, nullptr,

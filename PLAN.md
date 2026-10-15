@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated15 October2026. Completed work, measurements and dated handoffs belong in
+Updated 15 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -18,9 +18,9 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
    [the retained report](tests/results/qwen35-ocr/prefill-drift.json); they do not
    remove strict failures. Capture native/original vision patch, attention and
    FFN boundaries, then isolate decoder projections, Q/K normalization and RoPE
-   with identical inputs in test-only probes. Start at cache11 for the form and
-   cache7 for receipt/German. Pixel preprocessing is exact; the first measured
-   difference is the vision merger. Keep the0.002 cache and existing elementwise
+   with identical inputs in test-only probes. Start at cache 11 for the form and
+   cache 7 for receipt/German. Pixel preprocessing is exact; the first measured
+   difference is the vision merger. Keep the 0.002 cache and existing elementwise
    norm budgets unchanged; exact decoded text alone is insufficient.
 3. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
@@ -230,5 +230,5 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-15 | `ocr-qwen35-drift` | Larger-input F16/F32 and original CPU-backend numerical controls | [Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749) passes experiment-completeness checks at263d6abe;693 numerical vectors retain60 strict failures across9 cases. All-F32/precise RMS do not fix the drift; all raw records retained. Lint/secret checks pass; curating evidence and landing this bounded diagnosis, with operator isolation pending |
+| 2026-10-15 | `ocr-qwen35-drift` | Larger-input F16/F32 and original CPU-backend numerical controls | [Hosted38698415749](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749) passes experiment-completeness checks at `263d6abe`; 693 numerical vectors retain 60 strict failures across 9 cases. All-F32/precise RMS do not fix the drift; all raw records retained. Lint/secret checks pass; curating evidence and landing this bounded diagnosis, with operator isolation pending |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |

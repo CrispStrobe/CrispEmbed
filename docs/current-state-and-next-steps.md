@@ -86,14 +86,14 @@ budget (worst0.00622). Q8 matches2/3 EOS-completed cases; Q8/Q6 matches1/3.
 All receipt arms truncate at384 tokens. The completed
 [larger-input controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
 show that all-F32 text and precise RMS do not remove strict failures: worst key
-errors remain0.00620–0.00625. Original CPU-backend variation also exceeds0.002;
+errors remain 0.00620–0.00625. Original CPU-backend variation also exceeds0.002;
 no tolerance is relaxed. Operator-level isolation, full decoding,
 materialization/graph performance, quantized quality and HF publication remain
 open;1024 patches is the native bound. [Detailed evidence](qwen35-ocr.md).
 
 The [latest main platform build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635)
 failed on iOS standalone test-target wiring; other platform jobs passed and
-Flutter bundling skipped. The scoped repair passes an actual library-only iOS build plus all18 original
+Flutter bundling skipped. The scoped repair passes an actual library-only iOS build plus all 18 original
 native position cases in
 [hosted38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574).
 The initial verifier's fixture-invocation failure is retained; no runtime numerical

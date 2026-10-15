@@ -10,12 +10,12 @@ from collections import Counter
 from qwen35_quant_calibration import file_sha
 
 
-def run(repo, build, baseline, local, out, scratch, module, converter, anchor_image, anchor_npz):
+def run(repo, build, baseline, local, out, scratch, module, converter, anchor_image, anchor_npz, isolate=False):
     import gguf
     from PIL import Image
 
     capture = module(repo / "tools/dump_qwen35_ocr_page_reference.py", "qwen35_drift_reference")
-    root = out / "prefill-drift"
+    root = out / ("prefill-isolation" if isolate else "prefill-drift")
     root.mkdir(exist_ok=True)
     frozen = json.loads((repo / "tests/results/qwen35-ocr/page-parity.json").read_text())
     report = dict(source_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip(),
@@ -24,6 +24,9 @@ def run(repo, build, baseline, local, out, scratch, module, converter, anchor_im
                   prior_workflow=frozen["workflow"], key_absolute_budget=0.002,
                   reference="original Transformers5.5.4 F32 eager; backend-off and per-patch-convolution controls",
                   original_numeric_gates="unchanged", cases=[], arms=[])
+    if isolate:
+        report["scope"] = "test-only original-embedding decoder isolation; no composed native OCR, output or quality claim"
+        report["prior_precision_workflow"] = "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749"
     try:
         report["anchor"] = capture.dump_reference(local, anchor_image, root / "anchor", max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
@@ -58,8 +61,13 @@ def run(repo, build, baseline, local, out, scratch, module, converter, anchor_im
         schema = {t.name: dict(shape=t.shape.tolist(), type=t.tensor_type.name,
                               sha256=hashlib.sha256(t.data.tobytes()).hexdigest()) for t in reader.tensors}
         del reader
-        for name, model, precise in [("f16-text-vision-f32", baseline, False),
-                                     ("all-f32", unrounded, False), ("all-f32-precise-rms", unrounded, True)]:
+        arms = [("f16-text-vision-f32", baseline, False, False),
+                ("all-f32", unrounded, False, False), ("all-f32-precise-rms", unrounded, True, False)]
+        if isolate:
+            arms = [("f16-text-vision-f32", baseline, False, False),
+                    ("f16-reference-embeddings", baseline, False, True),
+                    ("all-f32-reference-embeddings", unrounded, False, True)]
+        for name, model, precise, reference_embeddings in arms:
             reader = gguf.GGUFReader(str(model))
             if set(schema) != {t.name for t in reader.tensors}:
                 raise ValueError("Changed tensor names/count")
@@ -78,13 +86,15 @@ def run(repo, build, baseline, local, out, scratch, module, converter, anchor_im
                                   bytes=tensor.data.nbytes))
             del reader
             arm = dict(name=name, bytes=model.stat().st_size, gguf_sha256=file_sha(model),
-                       precise_rms=precise, types=dict(Counter(t["type"] for t in audit)), tensor_audit=audit, cases=[])
+                       precise_rms=precise, reference_embeddings_test_only=reference_embeddings,
+                       types=dict(Counter(t["type"] for t in audit)), tensor_audit=audit, cases=[])
             report["arms"].append(arm)
             for case in report["cases"]:
                 folder = root / case["name"]
                 env = dict(os.environ, CRISPEMBED_QWEN35_PRECISE_RMS="1" if precise else "0")
                 result = subprocess.run([str(build / "test-qwen35-quant"), str(model), str(folder / "input.png"),
-                                         str(folder / "official-delta.gguf"), "", "1", "--prefill-only"],
+                                         str(folder / "official-delta.gguf"), "", "1",
+                                         "--prefill-reference-embeddings" if reference_embeddings else "--prefill-only"],
                                         capture_output=True, text=True, env=env)
                 log = result.stdout + result.stderr
                 (folder / (name + ".log")).write_text(log)
@@ -97,6 +107,11 @@ def run(repo, build, baseline, local, out, scratch, module, converter, anchor_im
                 status = re.search(r'^PREFILL_ONLY finite=1 metrics=77 selected=(\d+) reference=(\d+) strict_failures=(\d+)$', log, re.M)
                 if len(metrics) != 77 or not status:
                     raise ValueError("Missing finite prefill measurements")
+                if ("ISOLATION reference_embeddings=1 test_only=1" in log) != reference_embeddings:
+                    raise ValueError("Incorrect same-input diagnostic mode")
+                inputs = next(m for m in metrics if m["stage"] == "prefill.decoder.inputs_embeds")
+                if reference_embeddings and inputs["max_abs"] != 0:
+                    raise ValueError("Decoder isolation input is not exact")
                 keys = [m for m in metrics if m["stage"].endswith(".keys")]
                 cached = [m for m in metrics if m["stage"].startswith("prefill.cache.")]
                 entry = dict(name=case["name"], metrics=metrics, selected=int(status[1]), reference=int(status[2]),
@@ -111,6 +126,7 @@ def run(repo, build, baseline, local, out, scratch, module, converter, anchor_im
                 arm["cases"].append(entry)
                 print(name, case["name"], "max key", entry["key_max_abs"],
                       "cache budget exceedances", len(entry["strict_cache_exceedances"]), flush=True)
-        report["result"] = "completed weight/backend controls; preserve all failures, no default or tolerance change"
+        report["result"] = ("completed test-only original-embedding isolation; not composed native model parity"
+                            if isolate else "completed weight/backend controls; preserve all failures, no default or tolerance change")
     finally:
-        (out / "prefill-drift.json").write_text(json.dumps(report, indent=2) + "\n")
+        (out / ("prefill-isolation.json" if isolate else "prefill-drift.json")).write_text(json.dumps(report, indent=2) + "\n")

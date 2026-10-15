@@ -37,7 +37,8 @@ def main():
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
     page_check = sys.argv[1:] == ["--pages"]
-    drift_check = sys.argv[1:] == ["--drift"]
+    isolation_check = sys.argv[1:] == ["--isolate"]
+    drift_check = isolation_check or sys.argv[1:] == ["--drift"]
     quant_check = drift_check or page_check or ffn_check or sys.argv[1:] == ["--quant"]
     context_check = public_check or quant_check or sys.argv[1:] == ["--context"]
     frontend_vision = context_check or sys.argv[1:] == ["--frontend-vision-f32"]
@@ -281,8 +282,10 @@ def main():
             if drift_check:
                 drift = module(repo / "tools/ci-heavy/qwen35_prefill_drift.py", "qwen35_prefill_drift")
                 drift.run(repo, build, export, local, out, scratch, module, converter, image_path,
-                          out / "official-reference.npz")
-                report["prefill_drift"] = "completed fixed-input weight/backend controls; inspect prefill-drift.json"
+                          out / "official-reference.npz", isolate=isolation_check)
+                report["prefill_isolation" if isolation_check else "prefill_drift"] = (
+                    "completed test-only original-embedding isolation; inspect prefill-isolation.json; not composed OCR parity"
+                    if isolation_check else "completed fixed-input weight/backend controls; inspect prefill-drift.json")
             elif page_check:
                 pages = module(repo / "tools/ci-heavy/qwen35_page_parity.py", "qwen35_page_parity")
                 pages.run(repo, build, export, local, out, scratch, module, image_path, out / "official-reference.npz")

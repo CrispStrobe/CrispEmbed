@@ -668,7 +668,7 @@ calling the native result a strict pass. Retained evidence:
 The [F32 vision trial](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38554130487)
 at `3dfe209e` retains52 vision matrices at F32 while leaving text matrices F16.
 It passes both native raw-RGB fixtures and all unchanged comparison gates.
-The resized layer7 keys improve from0.00201964378 to0.00183296204; vocabulary-score
+The resized layer 7 keys improve from0.00201964378 to0.00183296204; vocabulary-score
 cosine reports1, with worst score error8.17775726e-5. Both fixtures preserve all
 9 IDs through EOS and exact decoded text. This retains the existing original
 F32 self-backend calibration for vision/final norms; it does not imply bit equality
@@ -743,7 +743,7 @@ integration lanes remain open.
 
 The experimental `crispembed-qwen35-delta` target now includes
 [`qwen35_ocr.h`](../src/qwen35_ocr.h) and its owning CPU engine. Initialization
-checks the pinned source/format/tokenizer and all473 tensors' names, mapped shapes
+checks the pinned source/format/tokenizer and all 473 tensors' names, mapped shapes
 and F32/F16 types. It owns backend buffers and the tokenizer, and frees weights
 before the backend. Every recognition starts native vision, positions and fresh
 recurrent/KV state; no reference arrays enter the engine.
@@ -869,7 +869,7 @@ this is compressed storage, not a reduced-RAM or optimized quantized-matmul clai
 The hosted sweep runs `crispembed-quantize` on the calibrated `vision-f32` export,
 with `--tensor-type 'v.*=f32'` and explicit matrix overrides. It retains Q8 and Q4
 controls, then compares tied head F16, recurrent A/B projection F16, and attention
-Q8/F16 variants. Every export audits all473 logical shapes/types; vision and
+Q8/F16 variants. Every export audits all 473 logical shapes/types; vision and
 non-matrix bytes must remain exact. Effective stored matrix types must match the
 recipe. Converting an already rounded F16 vision tensor back to F32 does not
 recover the calibrated source weights; start from the named converter recipe.
@@ -1046,7 +1046,7 @@ Explicit per-case caps64/192/384/128 retain EOS versus max-token stops. Matching
 truncated outputs are not complete-document parity. Empty decoded output remains
 distinguishable from failure. The existing strict F16 anchor checks are unchanged.
 
-Reports retain all473 effective tensor types/shapes, protected-byte checks,
+Reports retain all 473 effective tensor types/shapes, protected-byte checks,
 export hashes, layer/cache magnitudes/errors, native outputs, confidence, lines,
 timing scopes and paired CER/WER. Existing receipt/form annotations additionally
 provide raw gold CER/WER; form ambiguity and annotation confidence remain visible.
@@ -1058,10 +1058,10 @@ They do not establish a latency benchmark.
 
 [Hosted panel38674281196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
 completed at `d6c8941662e84fcb410de7838036afc7ba971e9b`; lint and secret scan pass.
-All90 shared compact anchor arrays equal the original full capture exactly; the
+All 90 shared compact anchor arrays equal the original full capture exactly; the
 compact file has91 arrays including its additional decoded-length field. The panel
 retains three exports,12 native cases,2586 stage vectors and554 teacher-forced
-score vectors per export. All473 tensor audits and literal0 controls pass; export
+score vectors per export. All 473 tensor audits and literal0 controls pass; export
 SHA-256 matches the preceding calibration run for all three files.
 
 | Recipe | Exact IDs/text/stop cases | Exact EOS-completed cases (of3) | Min score cosine | Max score absolute error |
@@ -1134,11 +1134,11 @@ RMS reduction and original CPU convolution variation on the same form, receipt
 and German derivatives. All source/input hashes match the preceding panel;
 90 shared compact/full original anchor arrays remain bitwise exact. The reference
 is original Transformers5.5.4 F32 eager. HF metadata for the pinned checkpoint
-reports852,985,920 BF16 parameters: F32 here expands the original stored values.
+reports 852,985,920 BF16 parameters: F32 here expands the original stored values.
 No higher-precision upstream checkpoint is invented.
 
 The native `--prefill-only` diagnostic takes real image/prompt/tokenizer inputs
-and runs the native vision/decoder. It measures77 stages and applies the unchanged
+and runs the native vision/decoder. It measures 77 stages and applies the unchanged
 strict comparator at each boundary. A successful experiment means all finite,
 shape, capture and report checks completed; **it does not mean numerical parity
 passed**. The report retains every failed stage and budget ratio. No reference
@@ -1154,33 +1154,33 @@ accuracy or speed claim is added by this probe.
 The F16 baseline is byte-identical to the preceding panel. The all-F32 export is
 3,421,928,384 bytes, SHA-256
 `cab4631dbea7aa08512ed9473a72e695add5ea51f0a3d652939fda0212cbcc48`.
-All473 names/shapes are checked for every arm; vision, vectors and convolutions
-keep identical bytes. The F16 arm has187 F16 and286 F32 tensors; the other two
-have473 F32 tensors. More text precision and the existing F64-sum-of-F32-squares
+All 473 names/shapes are checked for every arm; vision, vectors and convolutions
+keep identical bytes. The F16 arm has 187 F16 and 286 F32 tensors; the other two
+have 473 F32 tensors. More text precision and the existing F64-sum-of-F32-squares
 RMS alternative do not resolve this drift. No precision recipe is promoted.
 
 Pixels match exactly. The first measured native difference is the vision merger:
-maximum errors0.000139356/0.000193000/0.0000952482 for form/receipt/German, with
-norms47.346/69.233/55.774. Input embeddings inherit those errors. In the F16 arm,
-all decoder hidden layers stay under0.002 (maxima0.00126052/0.00087929/0.00191617).
-The first strict cache failure is layer11 keys for form and layer7 keys for the
+maximum errors 0.000139356/0.000193000/0.0000952482 for form/receipt/German, with
+norms 47.346/69.233/55.774. Input embeddings inherit those errors. In the F16 arm,
+all decoder hidden layers stay under0.002 (maxima 0.00126052/0.00087929/0.00191617).
+The first strict cache failure is layer 11 keys for form and layer 7 keys for the
 other two; later keys and some receipt/German values also exceed0.002. This
 locates measured boundaries, not yet the first responsible operator.
 All first-token argmaxes match across nine native cases; maximum prefill-logit
-error is0.000196576 across all arms. Stage cosines remain above0.99999, while
+error is 0.000196576 across all arms. Stage cosines remain above0.99999, while
 absolute budgets still fail. All norms and errors are retained, not just cosine.
 
 Original Python backend-off versus default variation reaches key errors
 0.00212538/0.00320449/0.00398135 and final-norm errors
 0.00990486/0.01163006/0.00962448. Per-patch original convolution is identical to
-default at all76 captured boundaries on each input. These controls measure
+default at all 76 captured boundaries on each input. These controls measure
 original implementation variability; they do not relax the cache budget.
 The existing elementwise qualified final-norm gate passes receipt (maximum budget
-ratio0.65814) but fails form1.01615 and German1.17035 in the F16 arm. Using a
+ratio 0.65814) but fails form 1.01615 and German 1.17035 in the F16 arm. Using a
 stage-wide norm allowance would conceal those failures and is not accepted.
 
-The report contains693 native metric/budget vectors,456 original control vectors,
-all60 strict failures and the unchanged anchor/component/context controls.
+The report contains 693 native metric/budget vectors,456 original control vectors,
+all 60 strict failures and the unchanged anchor/component/context controls.
 Next isolate vision operators and decoder projection/normalization/RoPE with
 identical inputs in test-only probes, then measure runtime costs. The0.002 cache
 budget, runtime math/defaults and prior full-output evidence remain unchanged.
