@@ -1252,3 +1252,50 @@ and unchanged qualified verdicts. Failed comparisons make the test executable
 exit nonzero; the driver retains all arms before failing the overall audit when
 qualified failures remain. Experiment completion does not establish
 composed numerical parity, full decoding, corpus accuracy or a speed result.
+
+
+## Completed larger-input vision operator localization
+
+[38719205543](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38719205543)
+at `8418621b` completes the contract above:3060 stage vectors and1302 original
+CPU-control vectors across three derivatives and four existing precision arms.
+All126 shared full-anchor arrays are exact;106 additional original-hook arrays
+have the expected schema. The production source is SHA-checked,51 projection
+inputs are observed per call, observer-off native outputs are exact, and all231
+previous baseline scalar prefill measurements reproduce exactly. All old
+small-fixture component/frontend/context guards pass again. Restoring the entire
+production translation unit and isolating replay recovers the baseline; the
+specific compiler transformation behind the initial instrumentation regression
+has not been established.
+
+| Arm | Form failed prefill stages | Receipt | German | Worst key error |
+|---|---:|---:|---:|---:|
+| Baseline | 5 | 7 | 8 | 0.00622153 |
+| Precise norm | 1 | 7 | 5 | 0.00534558 |
+| Precise attention | 1 | 16 | 6 | 0.00410581 |
+| Both | 0 | 7 | 4 | 0.00408316 |
+
+These use the unchanged qualified comparator: cache/hidden/logit absolute gates
+remain0.002; only the existing vision/final-norm backend qualification applies.
+Both gates pass all77 form checks, but raw final-norm error is0.00835323 and is
+qualified by the original backend control. Receipt/German still fail strict cache
+gates. All12 first argmaxes match. The driver finishes every arm, retains67
+failed comparisons and then exits nonzero. No precision default is promoted.
+
+Same-input operators report cosine1.000000000. Of303 per arm,302 satisfy raw0.002;
+form block11 FFN down reaches0.00219727. Precise norm reduces worst local norm
+error from0.000183105 to0.0000305176. In composed baseline inference, patch
+projection differs by3.58e-6–4.81e-6, and raw0.002 is first exceeded at block8
+norm2 for form/receipt and block8 norm1 for German. Composed block11 FFN-down
+errors reach0.136841/0.443115/0.956604, versus isolated0.002197/0.001953/0.001709.
+All vision comparisons still pass existing backend-qualified budgets; the raw
+violations remain recorded separately and cannot substitute for strict decoder
+parity. Scalar activation replay retains its separate compilation-context limit.
+
+This narrows follow-up to complete-block/prefix replay and pre-norm residual/FFN
+amplification. Establish replay agreement on ordinary native block inputs before
+interpreting original-input block controls. The data does not identify one faulty
+operator or prove that higher precision alone solves the port. There is no new
+full decoding, EOS, recognition-quality, latency or publication result.
+[Complete retained data and original failures](../tests/results/qwen35-ocr/vision-operators.json);
+[rejected initial instrumentation](../tests/results/qwen35-ocr/vision-operators-initial.json).

@@ -87,9 +87,14 @@ All receipt arms truncate at384 tokens. The completed
 [larger-input controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38698415749)
 show that all-F32 text and precise RMS do not remove strict failures: worst key
 errors remain 0.00620–0.00625. Original CPU-backend variation also exceeds0.002;
-no tolerance is relaxed. Operator-level isolation, full decoding,
-materialization/graph performance, quantized quality and HF publication remain
-open;1024 patches is the native bound. [Detailed evidence](qwen35-ocr.md).
+no tolerance is relaxed. The completed
+[operator audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38719205543)
+reproduces the baseline exactly; both existing vision precision gates reduce20
+prefill failures to11, while attention alone regresses to23. Same-input operators
+mostly satisfy raw0.002; complete-block/residual amplification remains to isolate.
+No precision default changes. Full decoding, materialization/graph performance,
+quantized quality and HF publication remain open;1024 patches is the native bound.
+[Detailed evidence](qwen35-ocr.md).
 
 The iOS standalone-target repair now passes the complete
 [ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),

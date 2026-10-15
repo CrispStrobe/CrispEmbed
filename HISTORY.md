@@ -4,6 +4,36 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 original-blueprint vision operator audit
+
+[Hosted38719205543](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38719205543)
+at `8418621b` completes three document derivatives × four existing precision arms.
+The production vision source/header and qualified comparator are unchanged;
+replay lives in a separate test translation unit. The existing gated projection
+observer captures51 inputs per native call; observer-off outputs are exact.
+All previous small-fixture component/frontend/context guards recover, and all231
+baseline prefill scalar records exactly reproduce the preceding isolation run.
+This establishes recovery from the rejected instrumentation attempts without
+identifying a particular compiler transformation as their cause.
+
+The audit retains3060 stage vectors,1302 original CPU-control vectors,473 tensor
+audits,126 exact shared full-anchor arrays and106 additional original-hook arrays.
+Qualified prefill failures are baseline20, precise-norm13, precise-attention23,
+and both11. Both gates pass all77 qualified form checks, but receipt retains7
+failures and German4. Attention alone regresses receipt to16 failures. All12
+first argmaxes match. The job correctly exits with failure after collecting all67
+failed comparisons; a completed diagnostic is not a parity pass.
+
+All2136 vision comparisons pass existing qualified budgets. Raw0.002 violations
+remain explicit: one of303 same-input operators per arm (form block11 FFN down,
+0.00219727), versus39–44 composed vision boundaries per arm. Baseline first raw
+crossings occur at block8 norm2 for form/receipt and block8 norm1 for German;
+patch projection already differs by3.58e-6–4.81e-6. These results narrow the next
+experiment to accumulated residual/normalization/FFN amplification; they do not
+establish a single structural defect or justify relaxing cache gates. Existing
+precision paths stay opt-in. No new full decoding, speed, corpus or publication
+claim. [Every raw measurement, failure, norm and provenance](tests/results/qwen35-ocr/vision-operators.json).
+
 ## 2026-10-15 — Qwen3.5 rejected in-place audit instrumentation
 
 The first operator-audit attempt at `b341d3e4`

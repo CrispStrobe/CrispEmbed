@@ -8,16 +8,20 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Trace Qwen3.5 native vision operators on larger inputs.** The completed
-   [same-input decoder controls](tests/results/qwen35-ocr/prefill-isolation.json)
-   pass all 231 stages in both F16 and all-F32 arms; the composed F16 baseline
-   retains 20 failures. Pixels are exact and the first measured difference is
-   the vision merger. Capture patch projection, position interpolation, per-layer
-   attention/norm/FFN and merger boundaries with original inputs. Retain the
-   existing gated precision alternatives and test one operator at a time.
-   Require composed native-frontend parity under the unchanged 0.002 cache and
-   elementwise norm budgets, plus prior anchors and decoded-output checks.
-   Original embeddings are test-only probes, never production substitutes.
+1. [ ] **Isolate Qwen3.5 residual/normalization/FFN amplification.** The completed
+   [operator audit](tests/results/qwen35-ocr/vision-operators.json) retains20 baseline
+   prefill failures; precise norm/attention together reduce this to11 (form0,
+   receipt7, German4), while attention alone regresses to23. Of303 same-input
+   operators per arm,302 meet raw0.002; form block11 FFN down reaches0.00219727.
+   Composed raw vision error crosses0.002 around block8, although qualified
+   vision checks pass. Patch projection already differs by3.58e-6–4.81e-6.
+   Next replay complete vision blocks/prefixes from original inputs, capturing
+   pre-norm residual additions and FFN projection errors. First control replay
+   against ordinary native block inputs/outputs to detect compilation-context
+   changes; preserve the byte-identical production source and original anchors.
+   Retain every failed arm and require composed native-frontend parity under
+   unchanged0.002 cache and qualified norm budgets, plus decoded-output checks.
+   Original arrays remain test-only; no precision default promotion yet.
 2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
    Test one gated F32 materialization/graph optimization at a time with the same

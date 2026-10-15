@@ -5194,3 +5194,33 @@ worsens annotation accuracy. [Every transcript, annotation, stop, confidence,
 error/norm and timing](tests/results/qwen35-ocr/page-parity.json) is retained.
 Next: unrounded-text/official-backend controls, complete receipt decoding at an
 adequate explicit cap, and profiling before gated graph/materialization changes.
+
+
+## Qwen3.5 larger-input operator audit — 15 October 2026
+
+[Hosted38719205543](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38719205543)
+at `8418621b`, same1,918,139,328-byte F16-text/F32-vision file and three fixed
+form/receipt/German derivatives. These are numerical prefill measurements; no
+new timing, memory, full-output or corpus result.
+
+| Existing gate arm | Qualified prefill failures (form/receipt/German) | Worst cache-key error | Minimum reported prefill cosine |
+|---|---:|---:|---:|
+| Baseline | 5 / 7 / 8 | 0.00622153 | 0.999998808 |
+| Precise norm | 1 / 7 / 5 | 0.00534558 | 0.999999106 |
+| Precise attention | 1 / 16 / 6 | 0.00410581 | 0.999997556 |
+| Both | 0 / 7 / 4 | 0.00408316 | 0.999999344 |
+
+All12 first argmaxes match, but no arm passes all three inputs. Both gates improve
+the form while receipt's worst key error worsens from0.00264263 to0.00281432.
+Attention alone introduces six late receipt hidden-state failures. Lower maximum
+key error across the panel is not sufficient promotion evidence.
+
+All1212 same-input operator comparisons report cosine1.000000000; four repeat
+the form block11 FFN-down raw error0.00219727, while the remaining1208 meet0.002.
+All2136 vision comparisons pass the existing backend-qualified gate, while raw
+composed violations remain39–44 per arm. Precise norm reduces worst same-input
+norm error from0.000183105 to0.0000305176 without eliminating composed cache
+failures. Baseline scalar results exactly reproduce all231 previous measurements;
+expanded reference anchors and observer-off native outputs are exact. The
+workflow remains failed with all67 qualified prefill failures retained, and
+runtime defaults stay unchanged. [Full errors, norms, controls and verdicts](tests/results/qwen35-ocr/vision-operators.json).
