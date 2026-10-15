@@ -1299,3 +1299,31 @@ operator or prove that higher precision alone solves the port. There is no new
 full decoding, EOS, recognition-quality, latency or publication result.
 [Complete retained data and original failures](../tests/results/qwen35-ocr/vision-operators.json);
 [rejected initial instrumentation](../tests/results/qwen35-ocr/vision-operators-initial.json).
+
+
+## Native block and suffix replay contract
+
+The hosted `--vision-blocks` audit links the unchanged production vision engine;
+it does not include a private implementation copy. A validation-only identity
+patch matrix and zero patch bias/position table deliver a captured block input.
+The prepared embedding must equal that input exactly. Each of the twelve blocks
+must then reproduce ordinary native block output and four observed projection
+inputs exactly before any original-input block measurements are interpreted.
+Observer-off output and residual-sum controls also remain mandatory.
+
+Pre-norm residuals are reconstructed from the public native attention projection
+and float addition; adding the independently replayed native FFN-down projection
+must recover the ordinary block output exactly. Original expected values still
+come from the unchanged Python dumper/hooks and `crispembed-diff`. The identity
+frontend, selected layer lists and original inputs are confined to the test binary.
+Literal0/master-off and malformed-input controls reject replay before inference.
+
+Each case compares111 composed boundaries,108 original-block-input boundaries,
+and47 suffix boundaries starting at blocks0/4/8/10/11, then77 ordinary composed
+decoder stages. Baseline and the existing combined precision gates are retained;
+the other two precision arms remain in the preceding operator report. Native
+rotary geometry remains in use and is explicitly compared with the original;
+this is block-input isolation, not exact original-geometry isolation. No parity
+budget, production source, runtime default or publication status changes. The
+report is checkpointed per completed case; failures remain nonzero after all
+valid arms have been collected.

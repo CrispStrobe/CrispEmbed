@@ -17,7 +17,7 @@ def metric(match):
         ('cos_min', 'cos_global', 'max_abs', 'mean_abs', 'rms', 'native_norm', 'reference_norm'), map(float, match[1:]))))
 
 
-def vision_records(log):
+def vision_records(log, blocks=False):
     lines = log.splitlines()
     records = []
     for i, line in enumerate(lines):
@@ -33,11 +33,22 @@ def vision_records(log):
         records.append(dict(mode=mode, stage=stage, **metric(m.groups()[2:]),
             qualified_pass=lines[i+2].startswith('PASS '), strict_absolute_pass=bool(int(budget[2])),
             calibrated=bool(int(budget[3])), self_max_abs=float(budget[4]), max_ratio=float(budget[5])))
-    status = re.search(r'^VISION_OPS finite=1 metrics=178 qualified_failures=(\d+) controls=1 observer=51$', log, re.M)
-    if len(records) != 178 or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
+    label, count = ('VISION_BLOCKS', 266) if blocks else ('VISION_OPS', 178)
+    status = re.search(r'^' + label + r' finite=1 metrics=' + str(count) + r' qualified_failures=(\d+) controls=1 observer=51$', log, re.M)
+    if len(records) != count or not status or sum(not m['qualified_pass'] for m in records) != int(status[1]):
         raise ValueError('Incomplete finite vision operator diagnostics')
-    if Counter(m['mode'] for m in records) != {'composed': 77, 'same-input': 101}:
+    expected = {'composed': 111, 'block-input': 108, 'suffix-input-0': 16, 'suffix-input-4': 12, 'suffix-input-8': 8, 'suffix-input-10': 6, 'suffix-input-11': 5} if blocks else {'composed': 77, 'same-input': 101}
+    if blocks and 'BLOCK_CONTROL_COMPLETE pass=1 blocks=12' not in log: raise ValueError('Native block replay does not reproduce production outputs')
+    if Counter(m['mode'] for m in records) != expected:
         raise ValueError('Missing composed or same-input boundaries')
+    return records
+
+
+def block_controls(log):
+    records = [dict(name=m[0], passed=bool(int(m[1])), max_abs=float(m[2]), native_elements=int(m[3]), expected_elements=int(m[4]))
+               for m in re.findall(r'^BLOCK_CONTROL (\S+) pass=(\d+) max_abs=(\S+) n=(\d+)/(\d+)$', log, re.M)]
+    if len(records)!=113 or any(not m['passed'] or m['max_abs']!=0 or m['native_elements']<1 or m['native_elements']!=m['expected_elements'] for m in records):
+        raise ValueError('Incomplete or unequal native block/identity/residual controls')
     return records
 
 
@@ -53,17 +64,18 @@ def prefill_records(log):
                 selected=int(status[1]), reference=int(status[2]))
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, blocks=False):
     import gguf
     import numpy as np
     from PIL import Image
     capture = module(repo / 'tools/dump_qwen35_ocr_page_reference.py', 'qwen35_operator_reference')
     frozen = json.loads((repo / 'tests/results/qwen35-ocr/page-parity.json').read_text())
     previous = json.loads((repo / 'tests/results/qwen35-ocr/prefill-isolation.json').read_text())
-    root = out / 'vision-operators'
+    report_name = 'vision-blocks' if blocks else 'vision-operators'
+    root = out / report_name
     root.mkdir(exist_ok=True)
     report = dict(source_commit=subprocess.check_output(['git','rev-parse','HEAD'], cwd=repo, text=True).strip(),
-        model=frozen['model'], revision=frozen['revision'], reference='Original Transformers5.5.4 F32 eager modules and hooks',
+        block_replay=blocks, model=frozen['model'], revision=frozen['revision'], reference='Original Transformers5.5.4 F32 eager modules and hooks',
         scope='Vision stage traces, test-only same-input operators and native composed prefill; no full-output/latency/corpus claim',
         comparator='crispembed_diff::Ref + unchanged qwen35_compare; all raw failures retained', cases=[], arms=[])
     try:
@@ -76,7 +88,13 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
         if not production or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in production) or not any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1' in c for c in audit):
             raise ValueError('Test translation-unit isolation missing')
         report['production_source_sha256'] = source_hash
-        report['test_operator_compile_isolation'] = 'unchanged production source; replay compiled only in separate validation translation unit'
+        if blocks:
+            block_commands = [c['command'] for c in commands if c['file'].endswith('/test_qwen35_vision_blocks.cpp')]
+            if not block_commands or any('CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT' in c for c in block_commands):
+                raise ValueError('Block replay must link the ordinary production implementation')
+        report['test_operator_compile_isolation'] = ('unchanged linked production implementation; test-only identity patch fixtures' if blocks else 'unchanged production source; replay compiled only in separate validation translation unit')
+        if blocks:
+            report['block_replay_limits'] = 'Original block inputs enter through an exactly checked test-only identity frontend. Rotary geometry stays native and is measured against original geometry. Residuals use public native projections and float additions, checked against native block outputs. No production source injection or private implementation copy.'
         report['compact_anchor'] = capture.dump_reference(local, anchor_image, root / 'compact-anchor', max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
         report['vision_anchor'] = capture.dump_reference(local, anchor_image, root / 'vision-anchor', max_new_tokens=12, vision_probes=True)
@@ -116,16 +134,18 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
         manifest=json.loads((out/'export-manifest.json').read_text())
         report['weights']=dict(bytes=baseline.stat().st_size,sha256=file_sha(baseline),tensor_audit=manifest['records'])
         if report['weights']['sha256']!=previous['arms'][0]['gguf_sha256'] or len(manifest['records'])!=473:raise ValueError('Changed baseline weights')
-        for name,norm,attention in [('baseline',False,False),('precise-norm',True,False),('precise-attention',False,True),('precise-both',True,True)]:
+        recipes = [('baseline',False,False),('precise-both',True,True)] if blocks else [('baseline',False,False),('precise-norm',True,False),('precise-attention',False,True),('precise-both',True,True)]
+        for name,norm,attention in recipes:
             arm=dict(name=name,precise_norm=norm,precise_attention=attention,cases=[]);report['arms'].append(arm)
             env=dict(os.environ,CRISPEMBED_QWEN35_VISION_PRECISE_NORM=str(int(norm)),CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=str(int(attention)),CRISPEMBED_QWEN35_PRECISE_RMS='0',CRISPEMBED_QWEN35_VISION_PROBES='0')
             for case in report['cases']:
                 folder=root/case['name'];ref=folder/'official-delta.gguf'
-                cmd=[str(build/'test-qwen35-vision-ops'),str(baseline),str(ref)]
-                if name=='baseline':cmd.append('--gate-controls')
+                cmd=[str(build/('test-qwen35-vision-blocks' if blocks else 'test-qwen35-vision-ops')),str(baseline),str(ref)]
+                if name=='baseline' and not blocks:cmd.append('--gate-controls')
                 result=subprocess.run(cmd,capture_output=True,text=True,env=env)
                 log=result.stdout+result.stderr;(folder/(name+'-vision.log')).write_text(log)
-                entry=dict(name=case['name'],vision=vision_records(log),vision_exit_code=result.returncode);arm['cases'].append(entry)
+                entry=dict(name=case['name'],vision=vision_records(log, blocks=blocks),vision_exit_code=result.returncode);arm['cases'].append(entry)
+                if blocks: entry['block_controls'] = block_controls(log)
                 expected_exit=int(any(not m['qualified_pass'] for m in entry['vision']))
                 if result.returncode != expected_exit:raise ValueError('Vision exit status disagrees with shared comparator verdicts')
                 result=subprocess.run([str(build/'test-qwen35-quant'),str(baseline),str(folder/'input.png'),str(ref),'','1','--prefill-only'],capture_output=True,text=True,env=env)
@@ -136,6 +156,12 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                     entry['prior_scalar_prefill_metrics_exact']=entry['prefill']['metrics']==old['metrics']
                 entry['vision_merger_matches_composed_prefill']=next(m['max_abs'] for m in entry['vision'] if m['mode']=='composed' and m['stage']=='prefill.vision.merger')==next(m['max_abs'] for m in entry['prefill']['metrics'] if m['stage']=='prefill.vision.merger')
                 if not entry['vision_merger_matches_composed_prefill']:raise ValueError('Vision diagnostic differs from native composed inference')
+                if blocks:
+                    prior_ops = json.loads((repo/'tests/results/qwen35-ocr/vision-operators.json').read_text())
+                    prior_arm = next(a for a in prior_ops['arms'] if a['name']==name)
+                    prior_case = next(c for c in prior_arm['cases'] if c['name']==case['name'])
+                    entry['prior_operator_prefill_metrics_exact'] = entry['prefill']['metrics']==prior_case['prefill']['metrics']
+                (out/(report_name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
                 print(name,case['name'],'qualified prefill failures',entry['prefill']['qualified_failed_stages'],flush=True)
         report['qualified_failure_count']=sum(
             sum(not m['qualified_pass'] for m in case['vision']) + len(case['prefill']['qualified_failed_stages'])
@@ -144,4 +170,4 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
         if report['qualified_failure_count']:
             raise AssertionError(f"Completed sweep retains {report['qualified_failure_count']} failed stage comparisons")
     finally:
-        (out/'vision-operators.json').write_text(json.dumps(report,indent=2)+'\n')
+        (out/(report_name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
