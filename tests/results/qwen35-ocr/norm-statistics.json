@@ -6162,6 +6162,7 @@
     "geometry": "Original blocks replay exactly before the native-rotary substitution. These conditional original-Python/native-rotary comparisons isolate geometry without establishing composed native parity.",
     "production_context": "Ordinary linked vision implementation remains byte-identical; no private source copy or test API in production.",
     "generation": "Ordinary composed prefill/first argmax only, plus existing small-fixture decoded guards; no new full-document decoding, EOS, corpus accuracy, speed or peak-memory result",
-    "qualification": "Vision/final norm retain existing original-backend qualification; raw 0.002 failures are preserved. Caches, hidden decoder states and logits remain strict."
+    "qualification": "Vision/final norm retain existing original-backend qualification; raw 0.002 failures are preserved. Caches, hidden decoder states and logits remain strict.",
+    "legacy_bootstrap": "Historical native_parity/result wording is retained verbatim from the source artifact; native/public wiring already exists. Raw guard, control and decoded records determine the scope of parity."
   }
 }

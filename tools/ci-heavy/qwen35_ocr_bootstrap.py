@@ -64,7 +64,7 @@ def main():
     scratch = Path(os.environ["HEAVY_SCRATCH"])
     converter = module(repo / "models/convert-qwen35-ocr-to-gguf.py", "qwen35_export")
     reference = module(repo / "tools/dump_qwen35_ocr_reference.py", "qwen35_reference")
-    report = {"native_parity": "not implemented", "publication": "none",
+    report = {"native_parity": "comparisons pending; workflow completion is not a parity claim", "publication": "none",
               "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()}
     try:
         api = HfApi()
@@ -335,8 +335,8 @@ def main():
                 report["public_bindings"] = "Python/Rust/Dart native model and stage20 checks passed"
                 bindings.entries(build, export, image_path, out)
                 report["public_entries"] = "CLI single/stage and loopback server stage checks passed"
-            report["native_parity"] = "native raw RGB/BPE/vision/positions/decoder/text checked on two owned fixtures; production integration/corpus validation pending"
-        report["result"] = "export/reference/native model checks passed; production OCR support pending"
+            report["native_parity"] = "native raw RGB/BPE/vision/positions/decoder/text checked on two owned fixtures; broader numerical and corpus validation have separate gates"
+        report["result"] = "requested export/reference/native checks completed; inspect stage and decoded reports before promotion"
     except BaseException as error:
         report["result"] = "failed"
         report["error"] = f"{type(error).__name__}: {error}"
