@@ -1055,5 +1055,5 @@ includes image decoding/preprocessing, excludes context load and teacher probes.
 They do not establish a latency benchmark.
 
 [Hosted panel38674281196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38674281196)
-is queued at `d6c89416`; no corpus score, default promotion, HF
+is running at `d6c89416`; lint and secret scan pass. No corpus score, default promotion, HF
 publication, registry alias or runtime release is implied by this panel.
