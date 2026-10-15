@@ -8,11 +8,11 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Repair the iOS build.** Standalone validation targets must follow the
-   existing iOS exclusion; native tests must remain buildable. Initial failure:
-   [38681503635](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635).
-   Prove an actual arm64 iOS library build, no iOS executable targets, native
-   probe execution with its independent fixture, then the complete platform build.
+1. [ ] **Verify the complete main platform build after the iOS repair.** The
+   scoped library-only cross-build and18-case native probe pass
+   [38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574).
+   Completed repair and initial failures are recorded in HISTORY. Require the
+   full matrix and Flutter bundling before treating current main as releasable.
 2. [ ] **Diagnose Qwen3.5 larger-input numerical drift.** Compare unrounded text
    weights against the current F16-text/F32-vision source and capture original
    CPU-backend controls. Locate the first differing projection/cache stage on

@@ -89,11 +89,12 @@ open;1024 patches is the native bound. [Detailed evidence](qwen35-ocr.md).
 
 The [latest main platform build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635)
 failed on iOS standalone test-target wiring; other platform jobs passed and
-Flutter bundling skipped. The scoped repair is being checked with an actual
-library-only iOS build plus an original18-case native position fixture in
+Flutter bundling skipped. The scoped repair passes an actual library-only iOS build plus all18 original
+native position cases in
 [hosted38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574).
 The initial verifier's fixture-invocation failure is retained; no runtime numerical
-change is part of the build repair.
+change is part of the build repair. Complete-main platform validation remains
+pending after landing.
 
 LFM2.5 Encoder and EmbeddingGemma typed-decision integration/publication are
 archived as complete, with GPU, independent task-quality and long-context/perf

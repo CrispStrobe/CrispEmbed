@@ -4,6 +4,23 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — iOS standalone-target build repair
+
+Moved the appended standalone validation executables under the existing native
+platform condition. iOS now builds the library without creating test executables
+that refer to a probe library excluded on that platform; desktop probes remain.
+[Hosted38696900574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574)
+at756c5505 builds a9,466,864-byte arm64 iOS archive with zero executable targets,
+then runs all18 independently captured original integer-position cases and
+bounds/reset/literal0 controls natively. No weights or inference batch is needed.
+[Retained result](tests/results/build/ios-validation.json).
+
+Initial main failure38681503635 is retained. The first verifier38696165504 passed
+the iOS build but invoked the desktop test without its required fixture and
+exited2; the corrected verifier uses the SHA-pinned original fixture from
+38541059168. [Initial verifier record](tests/results/build/ios-verifier-initial.json).
+No runtime math, model default, release tag or app dependency changed.
+
 ## 2026-10-15 — Qwen3.5 document validation and calibration checkpoints
 
 Completed the gated LightOnOCR-3-0.8B native engine, converter/reference tooling,
