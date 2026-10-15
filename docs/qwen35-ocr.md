@@ -1633,3 +1633,27 @@ contracts the sine subtraction for the left component. Exact retained excerpts
 show both instruction sequences. This is build-specific compiler evidence;
 the corrected trace still needs all native equality controls to pass. Production
 kernels, gates and comparison budgets are unchanged.
+
+
+## Rotary-only trace correction and remaining controls
+
+[Hosted38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)
+at `07e8ea00` passes all 36 native controls in the precise-attention arms after the
+explicit rotary pin. All 24 QKV and 24 probability-to-value controls pass across
+all four arms. Twelve full pooled controls still fail in the F32-attention arms,
+so those traces remain invalid. Their largest mismatch is 8.43e-6.
+
+All 924 actual native prefill and 108 shared composed vision records reproduce
+exactly. Composed pooled measurements now use the public native result directly,
+independently of trace fidelity. All 1,302 prior original CPU-control records and
+60 original function/projection controls remain exact. The workflow retains 56
+prefill failures and 12 invalidating native controls, while all four small-fixture
+ID/text/EOS arms pass. [Every measurement](../tests/results/qwen35-ocr/attention-trace-fma-initial.json).
+
+The [actual compiler output](../tests/results/qwen35-ocr/attention-rotary-codegen.json)
+shows why a further correction is needed: native QK uses scalar FMA at 0x3ab0,
+while the trace's F32 loop multiplies four lanes at 0x1574 then adds the rounded
+products. Its scalar remainder uses FMA, but is skipped at head width 64. The
+production disassembly still matches the earlier norm audit. A test-only explicit
+QK FMA pin targets this mismatch; exact native controls must verify it. This does
+not change production attention, tolerances or default precision gates.

@@ -4,6 +4,28 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 rotary trace pin, remaining F32 controls
+
+[Hosted38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)
+at `07e8ea00` makes test-only rotary contraction match the actual scalar native
+object. All 36 native controls in the two precise-attention arms now pass exactly,
+including their12 full pooled controls. QKV and probability-to-value controls
+continue to pass in all arms. Twelve full pooled controls in baseline/cascade
+remain invalidating, with maximum error 8.43e-6; their F32 traces are not validated.
+All 924 prefill and 108 actual composed vision records now reproduce exactly after
+composed pooled measurements were separated from the copied trace. All 1,302 prior
+original CPU-control records,60 original function/projection controls,12 first
+argmaxes and four small-fixture ID/text/EOS arms remain exact. All 56 prefill
+failures and every new failed control are retained.
+
+[Compiler evidence](tests/results/qwen35-ocr/attention-rotary-codegen.json) captures
+the actual native and test objects in this model run. The production disassembly
+again matches the prior norm audit exactly. Native QK accumulation uses scalar
+FMA; the trace's F32 vector loop rounds products before ordered additions. The
+next test-only correction pins those FMA semantics explicitly. Production kernels,
+precision defaults and all comparison budgets remain unchanged.
+[Complete rotary-only report](tests/results/qwen35-ocr/attention-trace-fma-initial.json).
+
 ## 2026-10-15 — Qwen3.5 selected attention audit, invalidating initial controls
 
 [Hosted38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
