@@ -5,6 +5,7 @@
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
 #include "crispembed_diff.h"
+#include "qwen35_parity.h"
 #include "ggml-cpu.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ggml/examples/stb_image.h"
@@ -23,6 +24,8 @@ static void gate(const char * name, const char * value) {
     setenv(name, value, 1);
 #endif
 }
+static bool strict_prefill = false;
+static int strict_prefill_failures = 0;
 static bool measure(const crispembed_diff::Ref & ref, const std::string & name, const std::vector<float> & values) {
     const auto r = ref.compare(name, values.data(), values.size());
     if (!r.found || r.n_elem != values.size() || values.empty() ||
@@ -32,6 +35,7 @@ static bool measure(const crispembed_diff::Ref & ref, const std::string & name, 
     // Diagnostic measurements, never replace or relax the F16 parity gates.
     std::printf("METRIC %s n=%zu cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g rms=%.9g norms=%.9g/%.9g\n",
                 name.c_str(), r.n_elem, r.cos_min, r.cos_global, r.max_abs, r.mean_abs, r.rms, r.mine_norm, r.ref_norm);
+    if (strict_prefill && !qwen35_compare(ref, name, values)) ++strict_prefill_failures;
     return true;
 }
 static int best(const std::vector<float> & scores) {
@@ -41,6 +45,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 5 || argc > 7) return 2; // model, image, reference, prompt, optional cap and --prefill-only
     const bool prefill_only = argc == 7 && std::string(argv[6]) == "--prefill-only";
     if (argc == 7 && !prefill_only) return 2;
+    strict_prefill = prefill_only;
     int token_cap = 64;
     if (argc >= 6) {
         char * end = nullptr;
@@ -123,8 +128,8 @@ static int crispembed_test_main(int argc, char ** argv) {
         }
     }
     if (prefill_only) {
-        std::printf("PREFILL_ONLY finite=%d metrics=77 selected=%d reference=%d\n", ok, best(current.logits),
-                    int(expected.first[0]));
+        std::printf("PREFILL_ONLY finite=%d metrics=77 selected=%d reference=%d strict_failures=%d\n", ok,
+                    best(current.logits), int(expected.first[0]), strict_prefill_failures);
         core_gguf::free_weights(loaded);
         ggml_backend_free(backend);
         return ok ? 0 : 1;

@@ -94,14 +94,20 @@ def run(repo, build, baseline, local, out, scratch, module, converter, anchor_im
                 for x in re.findall(pattern, log, re.M):
                     metrics.append(dict(stage=x[0], elements=int(x[1]), **dict(zip(
                         ("cos_min", "cos_global", "max_abs", "mean_abs", "rms", "native_norm", "reference_norm"), map(float, x[2:])))))
-                status = re.search(r'^PREFILL_ONLY finite=1 metrics=77 selected=(\d+) reference=(\d+)$', log, re.M)
+                status = re.search(r'^PREFILL_ONLY finite=1 metrics=77 selected=(\d+) reference=(\d+) strict_failures=(\d+)$', log, re.M)
                 if len(metrics) != 77 or not status:
                     raise ValueError("Missing finite prefill measurements")
                 keys = [m for m in metrics if m["stage"].endswith(".keys")]
                 cached = [m for m in metrics if m["stage"].startswith("prefill.cache.")]
                 entry = dict(name=case["name"], metrics=metrics, selected=int(status[1]), reference=int(status[2]),
+                             strict_failed_stages=re.findall(r'^FAIL (\S+): cos_min=', log, re.M),
+                             strict_budget_records=[dict(stage=x[0], strict_absolute_pass=bool(int(x[1])),
+                                                         calibrated=bool(int(x[2])), self_max_abs=float(x[3]), max_ratio=float(x[4]))
+                                 for x in re.findall(r'^BUDGET (\S+): strict_absolute_pass=(\d+) calibrated=(\d+) self_max_abs=(\S+) max_ratio=(\S+)$', log, re.M)],
                              key_max_abs=max(m["max_abs"] for m in keys),
                              strict_cache_exceedances=[m for m in cached if m["max_abs"] > 0.002])
+                if len(entry["strict_failed_stages"]) != int(status[3]) or len(entry["strict_budget_records"]) != 77:
+                    raise ValueError("Incomplete unchanged strict-budget diagnostics")
                 arm["cases"].append(entry)
                 print(name, case["name"], "max key", entry["key_max_abs"],
                       "cache budget exceedances", len(entry["strict_cache_exceedances"]), flush=True)
