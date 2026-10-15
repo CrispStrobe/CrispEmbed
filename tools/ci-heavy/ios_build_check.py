@@ -1,4 +1,5 @@
 """Hosted iOS library build plus native Qwen positions regression, no models."""
+import hashlib
 import json
 import os
 import subprocess
@@ -46,11 +47,16 @@ def run():
         subprocess.run(["cmake", "-S", str(repo), "-B", str(native), "-DCMAKE_BUILD_TYPE=Release",
                         "-DGGML_NATIVE=OFF", "-DGGML_METAL=OFF", "-DGGML_BLAS=OFF"], check=True)
         subprocess.run(["cmake", "--build", str(native), "--target", "test-qwen35-positions", "-j", "4"], check=True)
-        result = subprocess.run([str(native / "test-qwen35-positions")], capture_output=True, text=True)
+        fixture = repo / "tests/regression/qwen35-positions/official-positions.txt"
+        provenance = json.loads(fixture.with_name("provenance.json").read_text())
+        fingerprint = hashlib.sha256(fixture.read_bytes()).hexdigest()
+        if fingerprint != provenance["sha256"]:
+            raise ValueError("Original positions fixture checksum mismatch")
+        result = subprocess.run([str(native / "test-qwen35-positions"), str(fixture)], capture_output=True, text=True)
         (out / "native-positions.log").write_text(result.stdout + result.stderr)
         print(result.stdout + result.stderr)
         result.check_returncode()
-        report["checks"]["native_positions"] = dict(passed=True, log="native-positions.log")
+        report["checks"]["native_positions"] = dict(passed=True, log="native-positions.log", fixture_sha256=fingerprint, cases=provenance["cases"])
         report["result"] = "passed iOS library-only target graph/full build and native probe"
     finally:
         (out / "ios-build-check.json").write_text(json.dumps(report, indent=2) + "\n")

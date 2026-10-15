@@ -1,0 +1,7 @@
+{
+  "source_workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38541059168",
+  "producer": "tools/ci-heavy/qwen35_positions_reference.py; original Transformers5.5.4 Qwen3_5Model methods, no weights",
+  "cases": 18,
+  "sha256": "8ae62a8dbbe9efb5305c1273e5dc9d491c7052f0c4132ab412c219217e1eb07d",
+  "scope": "test-only integer positions for unpadded batch1 still images and cached continuation; not a production input"
+}
