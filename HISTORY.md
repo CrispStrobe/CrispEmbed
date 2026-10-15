@@ -13,12 +13,12 @@ that refer to a probe library excluded on that platform; desktop probes remain.
 at756c5505 builds a9,466,864-byte arm64 iOS archive with zero executable targets,
 then runs all18 independently captured original integer-position cases and
 bounds/reset/literal0 controls natively. No weights or inference batch is needed.
-[Retained result](tests/results/build/ios-validation.json).
+[Retained result](tests/results/ios-platform/ios-validation.json).
 
 Initial main failure38681503635 is retained. The first verifier38696165504 passed
 the iOS build but invoked the desktop test without its required fixture and
 exited2; the corrected verifier uses the SHA-pinned original fixture from
-38541059168. [Initial verifier record](tests/results/build/ios-verifier-initial.json).
+38541059168. [Initial verifier record](tests/results/ios-platform/ios-verifier-initial.json).
 No runtime math, model default, release tag or app dependency changed.
 
 ## 2026-10-15 — Qwen3.5 document validation and calibration checkpoints

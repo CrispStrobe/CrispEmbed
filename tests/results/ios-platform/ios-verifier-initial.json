@@ -1,0 +1,18 @@
+{
+  "source_commit": "9750332043285d1da8f41bc676e6921be6f8d635",
+  "initial_failure": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635",
+  "scope": "model-free iOS cross-build and native standalone probe",
+  "checks": {
+    "ios": {
+      "passed": true,
+      "standalone_executables": [],
+      "library_bytes": 9466864,
+      "architecture": "arm64",
+      "build_seconds": 65.405617958
+    }
+  },
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696165504",
+  "workflow_conclusion": "failure",
+  "artifact_report_sha256": "519a09f4464dddf97be9ff1fe7341173a9fc969b9d95307710d28be7814de3c0",
+  "failure_reason": "iOS full build passed; native positions verifier omitted required fixture argument and exited2; corrected in later run, not a numerical failure"
+}

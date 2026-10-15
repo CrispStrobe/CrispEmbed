@@ -1,0 +1,24 @@
+{
+  "source_commit": "756c55052d5502fbf1652005704a036c2f388ae2",
+  "initial_failure": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38681503635",
+  "scope": "model-free iOS cross-build and native standalone probe",
+  "checks": {
+    "ios": {
+      "passed": true,
+      "standalone_executables": [],
+      "library_bytes": 9466864,
+      "architecture": "arm64",
+      "build_seconds": 98.21848283299998
+    },
+    "native_positions": {
+      "passed": true,
+      "log": "native-positions.log",
+      "fixture_sha256": "8ae62a8dbbe9efb5305c1273e5dc9d491c7052f0c4132ab412c219217e1eb07d",
+      "cases": 18
+    }
+  },
+  "result": "passed iOS library-only target graph/full build and native probe",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38696900574",
+  "workflow_conclusion": "success",
+  "artifact_report_sha256": "c3163c6f30deec5573517826144ead15a8ed42b65f27eb83eb88b0db3dee10df"
+}
