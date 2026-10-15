@@ -1625,7 +1625,11 @@ prefill records still reproduce. [All initial failures](../tests/results/qwen35-
 
 The test-only follow-up makes rotary FMA ordering explicit, retains the original
 expression as a measured contrast and compares composed pooled output directly
-from the public production result. Existing production disassembly suggests the
-sine products round before a fused cosine multiply-add; new compiler inspection
-and exact controls must verify that hypothesis. Production kernels, gates and
-comparison budgets are unchanged.
+from the public production result. The [compiler inspection](../tests/results/qwen35-ocr/attention-initial-codegen.json)
+at `4abeee6a` confirms that the production object disassembly is byte-identical to
+the prior norm audit. Native scalar rotary rounds sine products before a fused
+cosine multiply-add/subtract. The initial trace's vector fast path instead
+contracts the sine subtraction for the left component. Exact retained excerpts
+show both instruction sequences. This is build-specific compiler evidence;
+the corrected trace still needs all native equality controls to pass. Production
+kernels, gates and comparison budgets are unchanged.

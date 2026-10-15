@@ -26,8 +26,12 @@ The initial composed pooled fields also came from that validation copy, so all 1
 aggregate shared-vision case checks fail;84 individual shared vision records still
 match. The follow-up separates actual public native pooled measurements from
 traced measurements, pins test-only rotary FMA ordering to the earlier actual
-production disassembly and retains the original expression as a contrast. Its
-numerical validation and compiler inspection remain pending in PLAN.
+production disassembly and retains the original expression as a contrast.
+[Compiler inspection38795599697](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795599697)
+at `4abeee6a` confirms the production object's unchanged disassembly and identifies
+the copied trace's different vector contraction of the left rotary component.
+[Exact source/compiler/excerpt evidence](tests/results/qwen35-ocr/attention-initial-codegen.json)
+is retained; the numerical follow-up is tracked in PLAN.
 [Every initial metric and failed control](tests/results/qwen35-ocr/attention-trace-initial.json).
 
 ## 2026-10-15 — Qwen3.5 four-arm cascade block replay
