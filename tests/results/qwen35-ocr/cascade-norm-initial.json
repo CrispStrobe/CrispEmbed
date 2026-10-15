@@ -3450,17 +3450,23 @@
             "literal0": {
               "qualified_failures": 5,
               "maximum_key_error": 0.0029528141,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.000139355659,
+              "logits_max_abs": 0.000183582306
             },
             "cascade": {
               "qualified_failures": 0,
               "maximum_key_error": 0.00151360035,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.000208377838,
+              "logits_max_abs": 0.00017118454
             },
             "cascade-attention": {
               "qualified_failures": 3,
               "maximum_key_error": 0.00213384628,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.000417709351,
+              "logits_max_abs": 0.000175952911
             }
           }
         },
@@ -5091,17 +5097,23 @@
             "literal0": {
               "qualified_failures": 7,
               "maximum_key_error": 0.00264263153,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.00019299984,
+              "logits_max_abs": 0.000143051147
             },
             "cascade": {
               "qualified_failures": 6,
               "maximum_key_error": 0.0024689734,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.000286221504,
+              "logits_max_abs": 0.000219464302
             },
             "cascade-attention": {
               "qualified_failures": 7,
               "maximum_key_error": 0.00271612406,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.000107169151,
+              "logits_max_abs": 0.000113844872
             }
           }
         },
@@ -6732,17 +6744,23 @@
             "literal0": {
               "qualified_failures": 8,
               "maximum_key_error": 0.00622153282,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 9.52482224e-05,
+              "logits_max_abs": 0.000129699707
             },
             "cascade": {
               "qualified_failures": 5,
               "maximum_key_error": 0.00549554825,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 9.84640792e-05,
+              "logits_max_abs": 0.000110685825
             },
             "cascade-attention": {
               "qualified_failures": 4,
               "maximum_key_error": 0.00423407555,
-              "first_argmax_exact": true
+              "first_argmax_exact": true,
+              "merger_max_abs": 0.000105448999,
+              "logits_max_abs": 9.15527344e-05
             }
           }
         }
