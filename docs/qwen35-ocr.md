@@ -1581,10 +1581,10 @@ product must reproduce the returned pooled tensor, which is also checked against
 the original projection input. These checks apply in prefill and both original
 CPU-control phases. The observer is restored before generation and on exceptions.
 
-Full rotated Q/K/V and pooled tensors are retained. Scores/probabilities cover16
+Full rotated Q/K/V and pooled tensors are retained. Scores/probabilities cover 16
 deterministic query positions spanning the token axis, with every head and key;
 this preserves each sampled row's full softmax normalization. Unsampled score rows
-are not captured. The compact original reference and126 shared full-anchor arrays
+are not captured. The compact original reference and 126 shared full-anchor arrays
 must remain exact. Expanded hooks add13 arrays beyond the earlier rich anchor.
 
 The test-only native arithmetic trace must match actual linked production QKV,
@@ -1599,10 +1599,33 @@ Q/K/V reductions and original probabilities/value pooling. These conditional
 experiments distinguish input projection, geometry and reduction effects. Their
 scores/probabilities remain compared with the primary original geometry. Each
 arm/case has93 shared-diff vectors and six native equality controls. Across four
-arms and three larger inputs this gives1,116 component vectors and72 controls,
-plus924 unchanged ordinary prefill vectors and four small-fixture full ID/text/EOS
-checks. All prior prefill,108 shared composed vision and1,302 original CPU-control
+arms and three larger inputs this gives 1,116 component vectors and 72 controls,
+plus 924 unchanged ordinary prefill vectors and four small-fixture full ID/text/EOS
+checks. All prior prefill,108 shared composed vision and 1,302 original CPU-control
 records must reproduce exactly; new original CPU boundaries bring that total to
 1,374. All raw failures and unchanged qualified budgets remain visible. Completing
 this diagnostic alone does not promote runtime arithmetic, full-document quality,
 performance, quantization or publication.
+
+
+## Initial attention trace controls
+
+[Hosted38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
+at `05d4705c` passes all 60 original function/projection reconstruction controls and
+reproduces all 924 prior native prefill records and 1,302 original CPU-control
+records exactly. It retains 2,040 vectors, all 56 prefill verdict failures,12 exact
+first argmaxes and four matching small-fixture ID/text/EOS controls.
+
+All 24 native QKV and 24 probability-to-value controls pass, but all 24 full pooled
+trace controls fail by 6.56e-7–7.27e-6. Even though all 1,116 component qualified
+verdicts pass, the copied arithmetic is not validated as faithful production
+behavior. The initial composed pooled fields use the copy too, invalidating all 12
+aggregate shared-vision case checks;84 individual records and all 924 actual
+prefill records still reproduce. [All initial failures](../tests/results/qwen35-ocr/attention-trace-initial.json).
+
+The test-only follow-up makes rotary FMA ordering explicit, retains the original
+expression as a measured contrast and compares composed pooled output directly
+from the public production result. Existing production disassembly suggests the
+sine products round before a fused cosine multiply-add; new compiler inspection
+and exact controls must verify that hypothesis. Production kernels, gates and
+comparison budgets are unchanged.

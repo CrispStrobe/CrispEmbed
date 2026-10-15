@@ -4,6 +4,32 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 selected attention audit, invalidating initial controls
+
+[Hosted38791137435](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38791137435)
+at `05d4705c` captures blocks5/11 with full original rotated Q/K/V and pooled
+projection inputs. Scores/probabilities cover 16 deterministic query positions,
+all heads and the complete key axis. Scores reconstruct the pinned eager
+expression; probabilities come from its original returned output. All 60 original
+function/projection controls,126 shared anchor arrays and 1,302 prior original
+CPU-control records reproduce exactly. Expanded CPU controls contain1,374 vectors.
+
+The native sweep retains 2,040 comparisons and all 56 prior prefill failures.
+All 924 actual native prefill records,12 first argmaxes and four small-fixture full
+ID/text/EOS arms reproduce exactly. All 24 QKV replay and 24 sampled probability-to-
+value controls pass. All 24 full pooled replay controls fail, with errors between
+6.56e-7 and 7.27e-6. All 1,116 component verdicts satisfy existing qualified budgets,
+but those failed equality controls invalidate interpreting the copied arithmetic
+as a faithful native trace. No tolerance is relaxed and no production fix follows.
+
+The initial composed pooled fields also came from that validation copy, so all 12
+aggregate shared-vision case checks fail;84 individual shared vision records still
+match. The follow-up separates actual public native pooled measurements from
+traced measurements, pins test-only rotary FMA ordering to the earlier actual
+production disassembly and retains the original expression as a contrast. Its
+numerical validation and compiler inspection remain pending in PLAN.
+[Every initial metric and failed control](tests/results/qwen35-ocr/attention-trace-initial.json).
+
 ## 2026-10-15 — Qwen3.5 four-arm cascade block replay
 
 [Hosted38775800804](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38775800804)
