@@ -164,7 +164,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     std::printf("VISION_OPS finite=%d metrics=%d qualified_failures=%d controls=%d observer=%zu\n", ok, measurements,
                 failures, ok, observed.size());
     // Failures are retained diagnostic outcomes, never tolerance changes.
-    return ok && measurements == 178 ? 0 : 1;
+    return ok && measurements == 178 && failures == 0 ? 0 : 1;
 }
 int main(int argc, char ** argv) {
     core_util::clean_exit(crispembed_test_main(argc, argv));

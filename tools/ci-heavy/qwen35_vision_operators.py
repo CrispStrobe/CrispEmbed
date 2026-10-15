@@ -124,8 +124,10 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                 cmd=[str(build/'test-qwen35-vision-ops'),str(baseline),str(ref)]
                 if name=='baseline':cmd.append('--gate-controls')
                 result=subprocess.run(cmd,capture_output=True,text=True,env=env)
-                log=result.stdout+result.stderr;(folder/(name+'-vision.log')).write_text(log);result.check_returncode()
-                entry=dict(name=case['name'],vision=vision_records(log));arm['cases'].append(entry)
+                log=result.stdout+result.stderr;(folder/(name+'-vision.log')).write_text(log)
+                entry=dict(name=case['name'],vision=vision_records(log),vision_exit_code=result.returncode);arm['cases'].append(entry)
+                expected_exit=int(any(not m['qualified_pass'] for m in entry['vision']))
+                if result.returncode != expected_exit:raise ValueError('Vision exit status disagrees with shared comparator verdicts')
                 result=subprocess.run([str(build/'test-qwen35-quant'),str(baseline),str(folder/'input.png'),str(ref),'','1','--prefill-only'],capture_output=True,text=True,env=env)
                 log=result.stdout+result.stderr;(folder/(name+'-prefill.log')).write_text(log);result.check_returncode()
                 entry['prefill']=prefill_records(log)
@@ -135,6 +137,11 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                 entry['vision_merger_matches_composed_prefill']=next(m['max_abs'] for m in entry['vision'] if m['mode']=='composed' and m['stage']=='prefill.vision.merger')==next(m['max_abs'] for m in entry['prefill']['metrics'] if m['stage']=='prefill.vision.merger')
                 if not entry['vision_merger_matches_composed_prefill']:raise ValueError('Vision diagnostic differs from native composed inference')
                 print(name,case['name'],'qualified prefill failures',entry['prefill']['qualified_failed_stages'],flush=True)
+        report['qualified_failure_count']=sum(
+            sum(not m['qualified_pass'] for m in case['vision']) + len(case['prefill']['qualified_failed_stages'])
+            for arm in report['arms'] for case in arm['cases'])
         report['result']='completed unchanged-gate diagnostic sweep; see every measured failure before promotion'
+        if report['qualified_failure_count']:
+            raise AssertionError(f"Completed sweep retains {report['qualified_failure_count']} failed stage comparisons")
     finally:
         (out/'vision-operators.json').write_text(json.dumps(report,indent=2)+'\n')

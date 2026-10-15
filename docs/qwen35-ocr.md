@@ -1248,5 +1248,7 @@ composed native measurements and the existing golden guards remain authoritative
 The sweep retains baseline, existing precise-norm, precise-attention and combined
 modes, plus the existing 77-stage composed decoder measurements for each. Reports
 retain finite/shape/control assertions, all errors/norms, raw absolute failures
-and unchanged qualified verdicts. Experiment completion does not establish
+and unchanged qualified verdicts. Failed comparisons make the test executable
+exit nonzero; the driver retains all arms before failing the overall audit when
+qualified failures remain. Experiment completion does not establish
 composed numerical parity, full decoding, corpus accuracy or a speed result.
