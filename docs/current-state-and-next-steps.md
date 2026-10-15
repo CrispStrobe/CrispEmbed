@@ -95,7 +95,13 @@ mostly satisfy raw0.002. The completed
 [native block audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
 passes678 exact controls: original block inputs reduce final-block error sharply,
 but ordinary prefill failures remain20/11 and two earlier suffix resets regress.
-Next audit original LayerNorm statistics/reduction kernels and rotary controls.
+The [statistics audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38739442000)
+matches all75 original norm outputs/mean/rstd with four-lane Welford, but all75
+F32 native reconstruction controls fail; F64 controls and delivered inputs are
+exact. Native rotary substitution in original Python blocks reaches0.00110.
+A computed, default-off cascade runtime candidate is queued in
+[38759613908](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38759613908);
+actual native controls and composed/decoded results remain pending.
 No precision default changes. Full decoding, materialization/graph performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
