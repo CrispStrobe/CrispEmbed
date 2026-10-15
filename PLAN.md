@@ -8,22 +8,18 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Audit Qwen3.5 normalization statistics and attention reductions.** The
-   [native block audit](tests/results/qwen35-ocr/vision-blocks.json) passes678 exact
-   controls and reproduces all prior composed measurements. Baseline last-block
-   error falls from0.136–0.955 to0.0059–0.0072 with original block inputs, while
-   ordinary prefill retains20 /11 baseline/combined-precision failures. Two
-   earlier suffix resets regress beyond qualified vision budgets; retain them.
-   Next capture original LayerNorm mean/rstd using the pinned native_layer_norm
-   kernel, verify its output against unchanged module hooks, and record CPU
-   dispatch/vector width. Compare native two-pass statistics with original
-   Welford/cascade reductions under controlled identical inputs. Add original
-   Python block evaluation with native rotary values as a separate control to
-   isolate geometry, keeping the original reference unchanged. Require replay
-   agreement with actual native outputs before interpreting candidates, then
-   test one gated reduction/attention change at a time. Preserve unchanged0.002
-   cache gates, qualified norm budgets, anchors and decoded-output checks.
-   Original arrays remain test-only; no precision default promotion yet.
+1. [ ] **Validate computed four-lane Qwen3.5 normalization in native inference.**
+   The [statistics audit](tests/results/qwen35-ocr/norm-statistics.json) matches
+   all75 original norm outputs, means and rstds with the four-lane candidate;
+   eight/sixteen lanes do not. All75 F32 baseline reconstruction controls fail
+   (up to0.0000305), while F64 controls and delivered inputs are exact. First
+   isolate F32 accumulation/contraction and require exact native controls.
+   Test a default-off computed four-lane path with fused affine against actual
+   native outputs and unchanged original captures, then composed prefill and
+   decoded guards. Original-Python/native-rotary errors reach0.00110 and are
+   retained. Baseline still has20 strict prefill failures; do not promote a
+   candidate from component agreement alone. Preserve raw0.002 cache gates,
+   qualified vision/norm budgets, all alternatives and original anchors.
 2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
    Test one gated F32 materialization/graph optimization at a time with the same

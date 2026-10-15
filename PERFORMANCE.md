@@ -5252,3 +5252,26 @@ argmaxes match. The audit exits nonzero after retaining all33 qualified failures
 Native rotary values remain in these experiments, so exact original-geometry
 isolation and a usable runtime correction remain pending.
 [All2058 stage vectors,678 controls and negative results](tests/results/qwen35-ocr/vision-blocks.json).
+
+## Qwen3.5 original-statistics candidates — 15 October 2026
+
+[Hosted38739442000](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38739442000)
+at `c55832bc`, unchanged weights and original references. These conditional
+component results do not establish composed OCR parity.
+
+| Candidate | Exact original norm outputs | Largest output error |
+|---|---:|---:|
+| Four-lane Welford | 75/75 | 0 |
+| Eight-lane Welford | 0/75 | 0.0000457764 |
+| Sixteen-lane Welford | 0/75 | 0.0000610352 |
+| Original moments + fused affine (test-only) | 75/75 | 0 |
+| Original moments + split affine (test-only) | 0/75 | 0.00000762939 |
+
+Four-lane means/rstds also match 75/75 each. Reported output cosine is
+1.000000000 for all candidates, including non-exact ones. All 75 F64 native
+reconstruction controls pass; all 75 F32 controls fail by up to 0.0000305176.
+F32 candidate measurements cannot be represented as validated native baseline
+statistics. Ordinary prefill reproduces its 20 failures exactly.
+Original Python/native-rotary block errors reach 0.00109863/0.000732422/
+0.000732422 for form/receipt/German. No timing or full decoding improvement.
+[Raw results, failed controls and unchanged budgets](tests/results/qwen35-ocr/norm-statistics.json).

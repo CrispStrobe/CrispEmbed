@@ -4,6 +4,35 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 original LayerNorm statistics and rotary controls
+
+[Hosted38739442000](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38739442000)
+at `c55832bc` completed 2,517 comparisons and 1,602 original CPU-control vectors.
+All 126 shared anchor arrays and 231 prior baseline prefill records remain exact;
+all earlier small-fixture guards pass. Original native_layer_norm outputs equal
+250 original module captures exactly. All 36 original block replays and native
+rotary input-independence controls pass. The complete report retains every raw
+record, including 75 failed F32 native reconstruction controls (maximum 0.0000305).
+All 75 F64 reconstructions and all 150 delivered-input controls are exact.
+The F32 reconstruction is therefore not validated as the native baseline.
+
+The four-lane Welford candidate computes all 75 original mean/rstd/output triples
+exactly. Eight- and sixteen-lane candidates do not. Original-moment fused affine
+controls match all 75 outputs, while split affine differs by up to 0.00000763;
+these original moments remain test-only and exact statistics there are by
+construction. Torch reports CPU capability DEFAULT, not an exposed vector width;
+these results establish the tested candidate's agreement on this runner only.
+
+Original Python blocks with native rotary values differ by up to 0.00109863
+(form), 0.000732422 (receipt/German), despite rotary differences below 5.97e-8.
+All these comparisons satisfy existing budgets. Ordinary prefill retains all
+20 failures and exact first argmaxes. The job correctly exits nonzero for those
+20 verdicts plus 75 invalidating reconstruction controls. No runtime/default,
+threshold, decoded-quality or publication improvement is claimed. Next repair
+and validate F32 reconstruction, then test computed four-lane normalization in
+an opt-in runtime path against actual native outputs and composed inference.
+[All measurements and controls](tests/results/qwen35-ocr/norm-statistics.json).
+
 ## 2026-10-15 — Qwen3.5 native block and suffix localization
 
 [Hosted38726666455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38726666455)
