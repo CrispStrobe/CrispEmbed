@@ -7,7 +7,7 @@
 # publish` uploads a crate that cannot build for anyone, with no warning.
 # Run this before `cargo package`/`cargo publish` (CI does it automatically).
 #
-# What is vendored: CMakeLists.txt, VERSION (CMakeLists file(READ)s it), cmake/,
+# What is vendored: CMakeLists.txt, VERSION (CMakeLists file(READ)s it), LICENSE, cmake/,
 # src/, examples/ (the library itself compiles examples/cli/model_mgr.cpp), the
 # ggml submodule, and the test *sources* — but NOT the 33 MB of test fixtures,
 # which would blow the crates.io size limit.
@@ -61,7 +61,7 @@ copy_tracked() {   # $1 = git dir, $2 = destination prefix, rest = pathspecs
         | tar -C "$vendor/$prefix" -xf -
 }
 
-copy_tracked "$repo_root" ""      CMakeLists.txt VERSION cmake src examples
+copy_tracked "$repo_root" ""      CMakeLists.txt VERSION LICENSE cmake src examples
 # Sources only from tests/ and tools/ — their fixtures/models are the 33 MB we
 # must not ship. `:(glob)` so nested directories are matched too.
 for ext in cpp cc c h hpp; do
@@ -73,7 +73,7 @@ n=$(find "$vendor" -type f | wc -l | tr -d ' ')
 echo "vendored $n tracked files -> ${vendor#"$repo_root"/}"
 
 # Guard against a partial copy shipping a crate that cannot build.
-for required in CMakeLists.txt VERSION ggml/CMakeLists.txt; do
+for required in CMakeLists.txt VERSION LICENSE ggml/CMakeLists.txt; do
     if [ ! -f "$vendor/$required" ]; then
         echo "error: vendored tree is incomplete — missing $required" >&2
         exit 1
