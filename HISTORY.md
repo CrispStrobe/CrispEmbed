@@ -4,6 +4,28 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 rejected in-place audit instrumentation
+
+The first operator-audit attempt at `b341d3e4`
+([38709424081](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38709424081))
+stopped at the existing connected/frontend guards before reaching the larger-input
+sweep. Cache keys at layers19/23 reached0.00249147/0.00253892 against the unchanged
+0.002 limit, including their cached counterparts. The small fixture still produced
+all nine original IDs and the exact17-byte text. All37 vision checks passed their
+existing qualified budgets; this did not override the cache failures.
+
+Restoring inline GELU loops at `8a5e79e9`
+([38714017861](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38714017861))
+reproduced all226 measured frontend/vision scalar records exactly, including the
+same failures. GELU extraction was therefore not established as the cause.
+The next audit restores the production vision source/header byte-for-byte and
+keeps replay in a separate test translation unit. It uses the existing calibration
+observer for additional composed captures and checks observer-off equality.
+No tolerance or runtime default was changed. Both rejected attempts, errors,
+magnitudes, verdicts, decoded IDs/text and log hashes remain in the
+[initial audit record](tests/results/qwen35-ocr/vision-operators-initial.json).
+The independent operator sweep and any actual correction remain pending in PLAN.
+
 ## 2026-10-15 — Qwen3.5 same-input decoder isolation
 
 [Hosted38702930399](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
