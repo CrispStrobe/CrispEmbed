@@ -22,8 +22,8 @@
       "bytes": 744054,
       "retained_excerpt": {
         "file": "attention-rotary-trace-disassembly.txt",
-        "bytes": 129078,
-        "sha256": "754bfd7cdd13099f99ffa01ba284fae3d41aac499a0f2e581f4c3bf65b23bbd5",
+        "bytes": 129077,
+        "sha256": "6d62f6c3b81b414c1b824659439a55c2b50a0a5758511898170328a98c9a1ede",
         "scope": "Exact excerpt; full object disassembly hash/size above refer to remote artifact"
       }
     }
@@ -38,5 +38,6 @@
   "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126",
   "workflow_conclusion": "failure",
   "artifact_report_sha256": "1341d678c51fc214071350ebf2cb9078fae8a73ffdde4beef5226cec9dcf97a5",
-  "limits": "Compiler provenance only. Initial vector rotary contracts a different multiply/subtract than scalar production. Native equality controls determine trace fidelity; no runtime/default or tolerance change."
+  "limits": "Compiler provenance only. Explicit rotary FMA matches native ordering; all F64 replay controls pass. F32 trace QK still rounds vector products before addition while production uses scalar FMA;12 F32 pooled controls remain invalidating. Production disassembly unchanged.",
+  "model_control_report": "attention-trace-fma-initial.json"
 }

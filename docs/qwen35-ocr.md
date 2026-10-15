@@ -1657,3 +1657,47 @@ products. Its scalar remainder uses FMA, but is skipped at head width 64. The
 production disassembly still matches the earlier norm audit. A test-only explicit
 QK FMA pin targets this mismatch; exact native controls must verify it. This does
 not change production attention, tolerances or default precision gates.
+
+
+## Completed faithful attention trace
+
+[Hosted38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+at `f93ebcd3` passes all 72 actual native QKV/full-pooled/sampled probability-to-
+value controls exactly after explicit rotary and scalar QK FMA ordering. This
+repairs validation fidelity; production attention is unchanged. The initial 24
+failed full-pooled controls and rotary-only 12 F32 failures remain retained.
+All 24 current legacy rotary contrasts still differ (maximum 6.32e-6), while the
+pinned trace has zero error in every contrast. The production object disassembly
+again equals the prior norm audit. [Actual final compiler provenance/excerpts](../tests/results/qwen35-ocr/attention-final-codegen.json).
+
+All 60 original function/projection controls,126 shared anchor arrays,924 prior
+prefill,108 shared composed vision and 1,302 original CPU-control records remain
+exact. All 558 F64 trace vectors from the rotary-only run remain exact. All 420
+conditional vectors shared across norm-gate pairs also match. The full audit
+compares 2,040 stage vectors and 1,374 original CPU-control vectors; its rich anchor
+adds119 arrays beyond the 126 shared full-reference arrays.
+
+Every one of the 840 conditional comparisons satisfies raw0.002 and reports cosine
+1.000000000. With original rotated Q/K/V, F32 sampled QK scores match exactly,
+while subsequent probabilities differ by up to1.88e-6 and full pooled output by
+1.67e-5. Given original probabilities/V, sampled F32 pooling matches exactly.
+This isolates a remaining softmax-stage rounding contribution on sampled rows.
+Original norm1 with native projection and original geometry produces full pooled
+error up to2.43e-5. Supplying original geometry does not eliminate all projection/
+reduction differences. These maxima are conditional errors against the same
+original reference, not additive error attributions or complete score-matrix
+coverage. [F32/F64 measurement table](../PERFORMANCE.md#qwen35-faithful-selected-attention-trace-2026-10-15).
+
+All 1,116 qualified attention verdicts pass;51 raw composed attention failures
+remain visible. Ordinary prefill retains 20/11/11/14 failures across the four arms,
+so the workflow correctly fails for 56 prefill verdicts with zero failed native or
+reproduction controls. All 12 first argmaxes and four actual small-fixture complete
+ID/text/EOS arms match. The trace is now suitable for further diagnosis on this
+validated build, but full independent-document decoded A/B remains the next
+quality gate. F64 attention is not uniformly closer to the original F32 result.
+
+[Complete final report](../tests/results/qwen35-ocr/attention-trace.json),
+[initial failures](../tests/results/qwen35-ocr/attention-trace-initial.json) and
+[rotary-only failures](../tests/results/qwen35-ocr/attention-trace-fma-initial.json)
+preserve every raw metric and control. Original arrays stay test-only. Production
+kernels, precision defaults, weights, thresholds and publication status are unchanged.

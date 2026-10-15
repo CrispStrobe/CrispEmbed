@@ -8,20 +8,21 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Isolate remaining Qwen3.5 composed vision drift and verify full output.**
-   The [completed four-arm block audit](tests/results/qwen35-ocr/cascade-blocks.json)
-   passes 1,356 exact controls and reproduces 924 prior prefill records. Cascade
-   makes original-input norm1 exact in all 36 blocks, but last-block errors remain
-   0.00513–0.00558 and its early suffix resets still fail twice. Ordinary prefill
-   remains 20/11/11/14 failures for baseline/combined F64/cascade/cascade-attention;
-   all four small-fixture ID/text/EOS arms pass. No path is uniformly best.
-   Capture original Q/K/V, attention scores/probabilities and pooled boundaries
-   for selected blocks, with native replay controls; isolate original-input
-   projection/reduction error from rotary geometry before changing one gated
-   operation at a time. Compare full IDs, text/EOS and available CER/WER on the
-   independent documents before selecting a path. Preserve every raw failure,
-   original anchor,0.002 cache gate and qualified vision/norm budget. Original
-   arrays remain test-only; all precision alternatives stay default-off.
+1. [ ] **Verify full Qwen3.5 decoded output with the faithful attention trace.**
+   The [completed attention audit](tests/results/qwen35-ocr/attention-trace.json)
+   resolves all 72 native controls and preserves 924 prefill, 108 shared vision
+   and 1,302 original CPU-control records. All 840 conditional vectors pass raw
+   0.002; reported minimum cosine is 1.000000000. Original-input F32 sampled QK
+   scores and original-probability sampled pooling are exact; remaining softmax
+   probability error reaches 1.88e-6. Ordinary prefill still fails20/11/11/14 stages
+   for baseline/combined F64/cascade/cascade-attention. No path is promoted.
+   Run full generated IDs, text/EOS, confidence and available CER/WER A/B on the
+   independent documents under all four settings. Retain receipt prefix/cap
+   controls until the long-document lane below. Use the faithful trace for any
+   decoded divergence; capture original softmax exp/sum boundaries and test one
+   gated correction only where the evidence warrants it. Preserve every raw
+   failure, original anchor,0.002 cache gate and qualified vision/norm budget.
+   Original arrays stay test-only; all precision alternatives stay default-off.
 2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
    Test one gated F32 materialization/graph optimization at a time with the same
@@ -230,5 +231,4 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-15 | `ocr-qwen35-attention-trace` | Capture selected original attention Q/K/V, scores/probabilities and native replay controls; isolate projection/geometry/reductions with unchanged composed gates | Rotary pin passes all F64 controls;12 F32 pooled controls remain invalidating. Compiler evidence shows vector rounded QK products versus native scalar FMA. Test-only dot pin `f93ebcd3`; [rerun](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470) queued. Production/defaults/budgets unchanged |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |

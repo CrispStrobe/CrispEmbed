@@ -4,6 +4,45 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-15 — Qwen3.5 attention trace fidelity resolved
+
+[Hosted38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+at `f93ebcd3` resolves all 72 native QKV/full-pooled/sampled probability-to-value
+controls exactly. All 60 original function/projection controls,924 prior prefill,
+108 shared composed vision and 1,302 original CPU-control records remain exact.
+The complete sweep compares 2,040 vectors and 1,374 original CPU-control vectors.
+All 840 conditional vectors satisfy raw0.002 and report minimum cosine 1.000000000;
+51 raw composed attention failures remain under unchanged qualified budgets.
+All 12 first argmaxes and four small-fixture full ID/text/EOS arms match.
+
+The initial trace had24 failed full-pooled controls. Explicit cosine FMA fixes
+all F64 controls; ordered scalar QK FMA then fixes the remaining12 F32 controls.
+Both are validation-code corrections to reproduce the actual compiled native
+operation ordering. The production source and object disassembly remain unchanged
+from the prior norm audit. All 558 already-validated F64 trace vectors remain exact;
+420 same-input vectors remain independent of the norm gate. Twenty-four legacy
+rotary-expression contrasts still differ from production (maximum 6.32e-6), while
+all 24 pinned contrasts have zero error. Both earlier invalidating reports remain.
+[Compiler provenance and excerpts](tests/results/qwen35-ocr/attention-final-codegen.json).
+
+The faithful F32 trace reproduces all sampled original-input QK scores exactly;
+softmax probabilities differ by up to1.88e-6 and full pooled output by 1.67e-5.
+Supplied original probabilities/value give exact sampled F32 pooling. Original
+norm1 followed by native projection/original geometry gives pooled error 2.43e-5.
+These are conditional measurements on blocks5/11 and 16 query positions with all
+heads/keys. F64 attention is not uniformly closer to the original F32 reference.
+
+All 1,116 qualified attention verdicts pass, but ordinary prefill retains 56
+failures (20/11/11/14 by arm), so the workflow correctly exits nonzero. Production
+kernels, all precision defaults, comparison thresholds, weights and app release
+are unchanged. No larger-document quality, latency, peak-memory or publication
+promotion follows. Python parsing, C++ syntax/formatting,171 clean-exit guards,
+actual-log positive/negative controls and secret checks pass; hosted formatting
+[38800963797](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963797) succeeds.
+[Complete final records](tests/results/qwen35-ocr/attention-trace.json),
+[initial invalid controls](tests/results/qwen35-ocr/attention-trace-initial.json),
+[rotary-only invalid F32 controls](tests/results/qwen35-ocr/attention-trace-fma-initial.json).
+
 ## 2026-10-15 — Qwen3.5 rotary trace pin, remaining F32 controls
 
 [Hosted38795690126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38795690126)

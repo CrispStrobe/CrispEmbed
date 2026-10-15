@@ -6908,6 +6908,7 @@
     "qualified_attention_failures": 0,
     "qualified_prefill_failures": 56,
     "failed_native_controls": 24,
+    "native_output_controls_passed": 48,
     "total_qualified_failures": 56
   },
   "limits": {

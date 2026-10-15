@@ -1,0 +1,19 @@
+    36e8:	bc6169a2 	ldr	s2, [x13, x1]
+    36ec:	f940aff1 	ldr	x17, [sp, #344]
+    36f0:	f901e3f1 	str	x17, [sp, #960]
+    36f4:	bc616843 	ldr	s3, [x2, x1]
+    36f8:	d2800002 	mov	x2, #0x0                   	// #0
+    36fc:	f940b3ed 	ldr	x13, [sp, #352]
+    3700:	f86269ad 	ldr	x13, [x13, x2]
+    3704:	91002042 	add	x2, x2, #0x8
+    3708:	f94001ad 	ldr	x13, [x13]
+    370c:	bc7069a4 	ldr	s4, [x13, x16]
+    3710:	bc6069a0 	ldr	s0, [x13, x0]
+    3714:	1e240841 	fmul	s1, s2, s4
+    3718:	1f208461 	fnmsub	s1, s3, s0, s1
+    371c:	1e200840 	fmul	s0, s2, s0
+    3720:	1f040060 	fmadd	s0, s3, s4, s0
+    3724:	bc2069a1 	str	s1, [x13, x0]
+    3728:	bc3069a0 	str	s0, [x13, x16]
+    372c:	f100405f 	cmp	x2, #0x10
+    3730:	54fffe61 	b.ne	36fc <qwen35_ocr::vision_cpu(qwen35_ocr::vision_weights const&, qwen35_ocr::vision_config const&, float const*, int, std::vector<int, std::allocator<int> > const&, int, qwen35_ocr::vision_outputs&)+0x15dc>  // b.any

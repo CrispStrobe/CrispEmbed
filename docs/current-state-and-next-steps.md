@@ -107,8 +107,14 @@ passes 1,356 exact controls and preserves 924 prior prefill records. Both cascad
 arms make all 36 original-input norm1 outputs exact, but local block11 errors
 remain and cascade's early suffix resets still fail twice. All four small-fixture
 ID/text/EOS arms pass; the sweep retains 56 prefill and four suffix failures.
-Next capture selected attention boundaries to separate projection/reduction from
-geometry, and compare full decoded output on independent documents.
+The [completed attention trace](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+passes all 72 native equality controls and preserves924 prefill,108 shared vision
+and 1,302 original CPU-control records. Two compiler-rounding differences in the
+validation copy are corrected; production kernels remain unchanged. All 840
+conditional vectors pass raw0.002. Original-input F32 sampled QK scores and
+original-probability pooling are exact; softmax probability errors reach 1.88e-6.
+The sweep retains 56 prefill failures and passes four small-fixture ID/text/EOS
+arms. Next compare full decoded output on independent documents.
 Full decoding, materialization/graph performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
@@ -123,9 +129,9 @@ installed-plugin/device inference validation.
 The [same-input decoder experiment](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
 removes all 20 strict stage failures when original embeddings are supplied only
 to diagnostic decoder arms; worst F16 key error becomes 0.0000406504. The composed
-baseline exactly reproduces its prior failures. Vision/input operator isolation
-is now the first pending correctness task; component passes do not establish
-composed OCR parity.
+baseline exactly reproduces its prior failures. Full independent-document decoded
+A/B is now the first pending correctness task, using the faithful attention trace
+for any divergence; component passes do not establish composed OCR parity.
 
 LFM2.5 Encoder and EmbeddingGemma typed-decision integration/publication are
 archived as complete, with GPU, independent task-quality and long-context/perf

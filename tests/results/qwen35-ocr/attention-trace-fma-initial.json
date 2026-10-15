@@ -7076,6 +7076,7 @@
     "qualified_attention_failures": 0,
     "qualified_prefill_failures": 56,
     "failed_native_controls": 12,
+    "native_output_controls_passed": 60,
     "total_qualified_failures": 56,
     "rounding_contrasts": 24,
     "rounding_pin_exact": 12

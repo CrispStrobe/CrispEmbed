@@ -1676,4 +1676,3 @@
     29b8:	17ffffd8 	b	2918 <qwen35_attention_audit::trace(std::vector<float, std::allocator<float> > const&, qwen35_ocr::vision_config const&, int, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<int, std::allocator<int> > const&, qwen35_attention_audit::trace_result const*, bool)+0x1988>
     29bc:	aa1403e0 	mov	x0, x20
     29c0:	94000000 	bl	0 <_Unwind_Resume>
-

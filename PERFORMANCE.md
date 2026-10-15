@@ -1,5 +1,37 @@
 # CrispEmbed Performance
 
+## Qwen3.5 faithful selected attention trace (2026-10-15)
+
+[Hosted38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)
+at `f93ebcd3`, original Transformers5.5.4 F32 eager and pinned LightOnOCR-3-0.8B
+on ARM64 CPU. Test-only arithmetic reproduces all 72 actual native equality
+controls. Values below are maximum absolute errors across blocks5/11 and the
+three larger documents, with original inputs supplied only to diagnostics.
+Scores/probabilities cover 16 query positions and every head/key; full pooled
+measurements cover every token. These are reference errors, not OCR accuracy.
+
+| Conditional comparison | F32 attention | Existing F64 attention gate |
+|---|---:|---:|
+| Sampled scores, original rotated Q/K | 0 | 1.90735e-5 |
+| Sampled probabilities, original rotated Q/K | 1.87755e-6 | 1.96695e-6 |
+| Full pooled, original rotated Q/K/V | 1.66893e-5 | 2.28882e-5 |
+| Sampled pooled, original probabilities/V | 0 | 8.34465e-6 |
+| Full pooled, original norm1 → native projection/original geometry | 2.43187e-5 | 2.52724e-5 |
+
+Baseline/cascade same-input metrics are identical, as are combined-F64/cascade-
+attention metrics (420 vectors). All 840 conditional vectors pass raw0.002 and
+report minimum cosine 1.000000000. F32 QK and sampled original-probability pooling
+match exactly; residual softmax and projection errors remain. Geometry is not
+silently substituted into the primary reference, and F64 is not uniformly closer.
+
+All 924 prior prefill,108 shared composed vision,1,302 original CPU-control and
+558 already-validated F64 trace records reproduce exactly. All four small-fixture
+ID/text/EOS controls and 12 first argmaxes match. Ordinary prefill still fails
+20/11/11/14 stages; all 56 failures remain nonzero. The initial 24 and subsequent 12
+failed trace controls remain retained, while all 72 final native controls pass.
+No new full-document CER/WER, speed, memory, default or publication result follows.
+[All errors, magnitudes, contrasts and limits](tests/results/qwen35-ocr/attention-trace.json).
+
 ## Qwen3.5 cascade native block replay (2026-10-15)
 
 Original Transformers5.5.4 F32 eager, pinned LightOnOCR-3-0.8B and the same three

@@ -1,0 +1,43 @@
+{
+  "source_commit": "f93ebcd32788a12cdf1cba5002183b287f641169",
+  "scope": "Actual native/validation object disassembly only; compiler inspection is not model parity",
+  "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "objects": [
+    {
+      "name": "vision",
+      "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I$REPO/src -I$REPO/ggml/src/../include -I$REPO/src/core -I$REPO/ggml/include -O3 -DNDEBUG -std=gnu++17 -fPIC -o CMakeFiles/crispembed-qwen35-delta.dir/src/qwen35_vision.cpp.o -c $REPO/src/qwen35_vision.cpp",
+      "disassembly_sha256": "01e72004998ca14cdfc6447c154d22b9920c94016a304af902d3b323b3f35c0d",
+      "bytes": 398186,
+      "retained_excerpt": {
+        "file": "attention-final-vision-disassembly.txt",
+        "bytes": 948,
+        "sha256": "4ff74b0d7b390144866e82fab4fcdc28f7513f30153d9641000b5801dc19a89d",
+        "scope": "Exact excerpt; full object disassembly hash/size above refer to remote artifact"
+      }
+    },
+    {
+      "name": "trace",
+      "command": "/usr/bin/c++ -DGGML_BACKEND_SHARED -DGGML_SHARED -DGGML_USE_CPU -I$REPO/src -I$REPO/ggml/src/../include -I$REPO/src/core -I$REPO/ggml/include -O3 -DNDEBUG -std=gnu++17 -fPIE -o CMakeFiles/test-qwen35-attention-trace.dir/tests/test_qwen35_attention_trace.cpp.o -c $REPO/tests/test_qwen35_attention_trace.cpp",
+      "disassembly_sha256": "c48655ab31dcc391843d965e6177f82009f578239dc5779147035d083ac6e543",
+      "bytes": 740168,
+      "retained_excerpt": {
+        "file": "attention-final-trace-disassembly.txt",
+        "bytes": 125167,
+        "sha256": "911064058fda74a1ecd2aaf465966c6d963c3b111da6f1587746a8e2e0319ea8",
+        "scope": "Exact excerpt; full object disassembly hash/size above refer to remote artifact"
+      }
+    }
+  ],
+  "source_sha256": {
+    "src/qwen35_vision.cpp": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+    "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268",
+    "tests/test_qwen35_attention_trace.cpp": "90dd32427e68c546ac020f070993d5e358dec139da354b85ad603620befb327a",
+    "tests/qwen35_attention_audit.h": "20eca87b9bb3c99ec5f17268b16736ebfcb40b16673821428025a5c060ca927d"
+  },
+  "native_disassembly_matches_prior_norm_audit": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470",
+  "workflow_conclusion": "failure",
+  "artifact_report_sha256": "979c40888dba28567dc304b1598fe183154533397e7482261817bbf818c80a6b",
+  "limits": "Compiler provenance for explicit test-only rotary and ordered QK FMA. Exact model controls in the linked report determine native trace fidelity. Production object disassembly remains unchanged; no runtime/default or tolerance change.",
+  "model_control_report": "attention-trace.json"
+}
