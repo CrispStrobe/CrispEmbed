@@ -4,6 +4,49 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Qwen3.5 receipt completion and prompt semantics audited
+
+[Hosted 38870347237](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237)
+at `a07e83fbd02e1c8ff73b3f4f9a224ab0cba265c3` freezes fresh original Transformers
+5.5.4 F32 eager references before native generation, using the unchanged frozen
+448×576 receipt derivative/1008 patches and an explicit 1024-token cap. The
+upstream image-only prompt reaches EOS at 455 tokens; the generic literal prompt
+reaches EOS at 434. Both actual owning-API native outputs match original IDs,
+UTF-8 and stops exactly. All 889 original-prefix teacher argmaxes and score vectors
+pass unchanged `crispembed-diff`/`qwen35_compare` absolute0.002 and row-cosine0.99999
+gates, without calibration allowances. Worst score absolute errors are 0.00046941638
+and0.000396966934; actual token-probability errors peak at 1.06506e-5 and1.68508e-5.
+
+Both compact/full original-dumper anchors match exactly. The upstream old 384-token
+prefix reproduces original IDs/text/F64 probabilities, all 434 original CPU controls,
+native IDs/teacher/score records and prefix mean confidence, plus the earlier 32
+native token probabilities. Four upstream precision arms reproduce all 308 receipt
+prefill records and 27 old failures (7/7/6/7). The literal baseline adds 77 records
+and seven failures: this audit has 34 prefill failures, zero teacher-score failures,
+zero output failures and zero incomplete cases. Its workflow correctly remains
+red. The historical full panel remains 924 records/56 failures; its other 616
+records were retained, not rerun here. Weights and production runtime hashes are
+unchanged from the materialization audit; precision alternatives stay gated.
+
+The literal instruction asks for plain text, but both outputs contain HTML tables.
+It removes the Markdown heading/table wrappers and changes line breaks. Raw
+CER/WER fall 1.289926/0.771429→1.029484/0.700000 against unchanged plain-text gold;
+serialization differences prevent interpreting this as better recognition. No
+markup stripping, annotation replacement, prompt-default change or corpus-quality
+claim. Independent format-aware evaluation and quantized quality remain pending.
+This validates adequate caps, not a production cap fix: the native setter already
+accepts 1..4096. Only test bounds and opt-in long-reference bounds extend to 1024.
+
+All 46 Python and Linux/macOS/Windows native controls pass
+[38870034506](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034506).
+[Lint](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034331) and
+[secrets](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034324) pass.
+Both actual logs reproduce retained confidence/teacher verdicts; 18 malformed
+actual-log variants are rejected. Model/reference arrays remain hosted/test-only.
+No runtime release, weight upload, production alias or app-pin change.
+[Full records, decoded outputs and exact provenance](tests/results/qwen35-ocr/receipt.json),
+[measurements](PERFORMANCE.md), [audit contract](docs/qwen35-ocr.md#receipt-completion-and-prompt-audit).
+
 ## 2026-10-16 — Qwen3.5 gated parallel F16 materialization validated
 
 Added `CRISPEMBED_QWEN35_PARALLEL_F16=1`: large F16 projection arrays use disjoint

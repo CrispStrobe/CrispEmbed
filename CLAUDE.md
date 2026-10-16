@@ -81,9 +81,12 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Follow the current execution order in [PLAN.md](PLAN.md): complete Qwen receipt
-decoding and literal-transcription prompt checks, then quantization/publication
-and queued permissive models. The [parallel-F16 trial](tests/results/qwen35-ocr/f16-materialization.json)
+Follow the current execution order in [PLAN.md](PLAN.md): freeze independent,
+format-aware OCR evaluation, then revisit quantization/publication and queued
+permissive models. The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
+reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
+vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.
+The [parallel-F16 trial](tests/results/qwen35-ocr/f16-materialization.json)
 preserves every converted F32 bit and frozen inference record, with 1.37–1.67×
 paired ARM64 speedups; its gate remains default-off. Further cache/memory and
 other-host/default-adoption work remains pending. The fixed-cap four-arm decoded

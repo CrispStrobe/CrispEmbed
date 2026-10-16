@@ -141,9 +141,19 @@ for a 32-token receipt prefix; medians fall 225.89→135.21s, 39.16→28.50s and
 Peak child RSS stays around 3725.36 MiB including load; incremental inference memory
 is not isolated. All 37 Python and Linux/macOS/Windows native controls pass;
 all 56 numerical failures and 384-token receipt truncation remain. The conversion
-gate stays default-off. Full receipt/prompt semantics is next.
-Full receipt decoding, further materialization/default-adoption work,
-quantized quality and HF publication remain open;1024 patches is the native bound.
+gate stays default-off. The completed
+[receipt/prompt audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237)
+at `a07e83fb` reaches EOS at455/434 tokens (image-only/literal), with exact original
+Python IDs/text/stops and all889 teacher-score vectors passing unchanged gates.
+Both outputs still contain HTML tables. Lower raw CER is a serialization change,
+not proof of improved recognition. All308 earlier receipt prefill records reproduce
+with27 failures; the literal prompt adds77 records/seven failures. This workflow
+correctly fails for34 prefill failures, with zero incomplete/output/teacher-score
+failures. Other616 historical prefill records were not rerun; full-panel56 failures
+remain retained. All46 Python and Linux/macOS/Windows native controls pass
+[38870034506](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034506).
+Independent format-aware quality, larger pages, further materialization/default
+adoption, quantization and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
 The iOS standalone-target repair now passes the complete
@@ -158,8 +168,8 @@ removes all 20 strict stage failures when original embeddings are supplied only
 to diagnostic decoder arms; worst F16 key error becomes 0.0000406504. The composed
 baseline exactly reproduces its prior failures. The subsequent fixed-cap decoded
 A/B now passes on the four-document panel while retaining numerical debt. Use the
-faithful attention trace for any new divergence; full receipt, broader accuracy
-and performance remain open.
+faithful attention trace for any new divergence; the receipt now completes, while
+broader accuracy and performance remain open.
 
 LFM2.5 Encoder and EmbeddingGemma typed-decision integration/publication are
 archived as complete, with GPU, independent task-quality and long-context/perf
@@ -167,8 +177,8 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: finish long documents and literal
-transcription, then validate quantization and publication while preserving all
+The next vendor work follows PLAN's order: freeze independent format-aware OCR
+evaluation, then validate quantization and publication while preserving all
 existing numerical failures. The consumer lanes below remain separate, with
 their original verification dates.
 

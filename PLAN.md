@@ -8,11 +8,12 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-The profiling and bounded parallel-F16 trial are complete; their exact array,
-decoded-output and paired timing evidence is in [HISTORY](HISTORY.md) and
-[PERFORMANCE](PERFORMANCE.md). The conversion gate remains default-off. The next
-bounded lane is full receipt decoding and prompt semantics; further performance
-work remains in the portfolio below.
+Profiling, bounded parallel-F16 conversion and fixed-receipt completion/prompt
+checks are complete; evidence is in [HISTORY](HISTORY.md) and
+[PERFORMANCE](PERFORMANCE.md). Image-only/literal runs reach EOS at455/434 tokens
+and match original Python exactly; both still emit HTML tables. The conversion
+gate remains default-off. Next specify independent-document quality evaluation
+before revisiting quantization; further performance work remains below.
 
 For every Qwen lane, preserve all 924 prior prefill records and 56 existing failures
 (20/11/11/14), the 0.002 cache gate and qualified vision/norm budgets. Use the
@@ -21,14 +22,18 @@ probe softmax exp/sum boundaries only where evidence warrants a correction.
 Original arrays stay test-only. Exact Python output on this panel does not waive
 numerical debt or establish transcription accuracy.
 
-1. [ ] **Complete long-document decoding.** Finish the receipt under an adequate
-   explicit cap; test literal transcription prompts separately from upstream
-   figure-description behavior. Extend the1024-patch bound only after memory,
-   geometry and original-reference coverage; never silently downsize production inputs.
+1. [ ] **Freeze independent, format-aware OCR evaluation.** Define plain-text,
+   table/structured-output and reading-order gold independently of candidate
+   outputs; retain raw CER/WER against existing annotations too. The fixed receipt
+   now completes, but the literal prompt still emits HTML. Its lower raw CER is
+   not evidence of improved recognition. Use separate development/evaluation
+   documents and freeze processor, prompt, cap, stop and scoring policies before
+   candidate runs. No default prompt promotion follows from this one receipt.
 2. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
-   Q8/Q6 differs on form/German. Retain all calibration alternatives, separate
-   development/calibration data from evaluation and compare full output plus
-   confidence/CER/WER. High cosine and synthetic matches are not promotion gates.
+   Q8/Q6 differs on form/German. Retain all calibration alternatives and compare
+   full IDs/EOS/text, score errors, confidence and frozen quality measures for
+   F16/Q8/Q8-Q6/Q4 candidates, including adequate receipt caps. High cosine and
+   synthetic matches are not promotion gates.
 3. [ ] **Publish only a validated OCR candidate.** Include source/base license
    provenance, measured precision/size/quality limits, HF card, remote byte/hash
    verification, pinned registry aliases and empty-cache download checks. Complete
@@ -46,7 +51,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
-| 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, full documents, quantized output parity and publication; priorities above |
+| 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Apache-2.0; Qwen3.5-0.8B | ~0.74 GB | Queued after shared backend; verify prompt, preprocessing, EOS, any MTP-only tensors and full decoded output |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -115,6 +120,9 @@ These tasks survive the historical handoffs. First reconcile each brief with
 later code/history; an archived failure or timing is not automatically current.
 The detailed original briefs are indexed below, with all evidence preserved.
 
+- [ ] **Larger Qwen pages:** extend the1024-patch bound only after memory,
+  geometry and original-reference coverage; never silently downsize production
+  inputs. The completed receipt used the existing explicit448×576 derivative.
 - [ ] **Further Qwen latency and default adoption:** profile the accelerated
   path before selecting another optimization. Evaluate bounded F32 reuse/head
   caching with actual memory limits (full head 1,017,118,720 bytes), plus x86/macOS,
@@ -232,5 +240,4 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `ocr-qwen35-receipt` | Complete fixed receipt decoding and compare literal transcription prompt with original Python | Hosted [38870347237](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237) at `a07e83fb`: cap1024, image-only/literal prompts, fresh original captures, old384 prefix and308 receipt prefill controls, strict full teacher-score gates and actual owning API; raw CER/WER; runtime unchanged |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |

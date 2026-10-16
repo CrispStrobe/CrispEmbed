@@ -1,5 +1,46 @@
 # CrispEmbed Performance
 
+## Qwen3.5 completed receipt and literal prompt (2026-10-16)
+
+[Hosted 38870347237](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237)
+at `a07e83fb`, Release ARM64 CPU/four native threads, GGML native/BLAS/Metal off.
+Unchanged 1,918,139,328-byte F16-text/F32-vision checkpoint and explicit 448×576
+receipt derivative/1008 patches; cap 1024. Parallel-F16 is explicitly enabled;
+profiling and other precision gates are off in both full-generation arms.
+[All raw outputs, probabilities, metrics, hashes and source provenance](tests/results/qwen35-ocr/receipt.json).
+
+| Prompt | Tokens / stop | Native vs Python IDs/text/stop | Raw CER | Raw WER | Native recognition seconds | Python generation seconds |
+|---|---|---|---:|---:|---:|---:|
+| Upstream image-only | 455 / EOS|Exact|1.289926|0.771429|409.301|35.868|
+| Explicit literal transcription | 434 / EOS|Exact|1.029484|0.700000|382.574|35.658|
+
+These are single observations, not paired timing or memory benchmarks. Native
+API timing includes image-file preprocessing, vision, prefill and free generation
+after load; Python timing covers generation after processor/load and includes
+score collection. Their spans differ; do not infer a backend speed ratio.
+
+All 889 original-prefix teacher argmaxes and score vectors pass the unchanged
+absolute0.002 / minimum-row-cosine0.99999 gates. Worst generated-score absolute
+errors are 0.00046941638 (upstream) and0.000396966934 (literal); corresponding native/
+reference vector norms are 2401.64795/2401.65723 and 1230.82153/1230.82349. Actual
+per-token probability maximum/mean absolute errors are 1.06506e-5/1.33751e-7 and
+1.68508e-5/1.70649e-7, aligned over all 455/434 identical generated IDs including EOS.
+These probabilities are not calibrated OCR accuracy estimates.
+
+Both outputs contain HTML tables, including the arm explicitly requesting plain
+text. Lower raw CER/WER reflects changed serialization and does not prove improved
+recognition. Raw Unicode-character CER and whitespace-word WER use the unchanged
+plain-text annotation, with no markup stripping or normalization; CER may exceed 1.
+Original/native parity is distinct from annotation accuracy. Specify independent
+format-aware evaluation before judging quantized recognition quality.
+
+The old 384-token prefix / 434 CPU controls and all 308 earlier receipt prefill records
+reproduce exactly. Those records retain 27 failures; 77 new literal baseline records
+add seven, so this workflow correctly fails with 34 prefill failures and zero
+incomplete/output/teacher-score failures. Other 616 historical prefill records were
+not rerun; the archived full-panel total remains 924 records/56 failures. Neither
+the prompt nor the gated conversion path is promoted by this audit.
+
 ## Qwen3.5 bounded parallel F16 materialization (2026-10-16)
 
 [Hosted 38860469683](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860469683)

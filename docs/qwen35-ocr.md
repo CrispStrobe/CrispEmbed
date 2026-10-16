@@ -1850,7 +1850,7 @@ controls pass [38860447197](https://github.com/CrispStrobe/CrispEmbed/actions/ru
 [paired measurements and limits](../PERFORMANCE.md#qwen35-bounded-parallel-f16-materialization-2026-10-16).
 The gate remains default-off; thread-creation failure injection, other-host
 performance and default adoption remain pending. Receipt completion and literal
-transcription prompts are next; no weight/precision/threshold/release promotion.
+transcription prompts are completed in the follow-up below; no weight/precision/threshold/release promotion.
 
 ## Receipt completion and prompt audit
 
@@ -1885,4 +1885,21 @@ raw annotation disagreement; do not strip markup or inject gold to improve a
 verdict. Probabilities are aligned only along identical generated prefixes.
 Reaching the explicit cap is still incomplete. This one-receipt check cannot
 establish a corpus score, default prompt or quantized publication candidate.
-Measurements are pending.
+[Completed hosted audit38870347237](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237)
+at `a07e83fb`: image-only455 tokens/EOS and literal434 tokens/EOS match original
+IDs/text/stops exactly. All889 teacher argmaxes and generated-score vectors pass
+the unchanged gates; maximum score absolute errors are0.00046941638/0.000396966934.
+Native token-probability errors peak at1.06506e-5/1.68508e-5. Both anchors and all
+old384-prefix/434 CPU controls reproduce exactly. Upstream308 prefill records retain
+27 failures; literal77 new records add seven. The model workflow correctly remains
+red for34 prefill failures, with zero incomplete/output/teacher-score failures.
+The other616 historical records were not rerun; full-panel924/56 debt remains.
+
+Both outputs contain HTML tables despite the literal instruction. Raw CER/WER
+are1.289926/0.771429 upstream and1.029484/0.700000 literal. Changed serialization
+prevents a recognition-quality claim. Keep raw metrics; specify independent
+format-aware gold/scoring before quantized evaluation. All46 Python and three-OS
+native controls pass [38870034506](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034506).
+No runtime/default/weight/release/publication change.
+[Full evidence](../tests/results/qwen35-ocr/receipt.json),
+[timing scopes and limits](../PERFORMANCE.md#qwen35-completed-receipt-and-literal-prompt-2026-10-16).
