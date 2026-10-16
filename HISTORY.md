@@ -4,6 +4,50 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Registry artifact identities verified; prompt coverage repaired
+
+The [read-only inventory38908007993](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38908007993)
+at `d8abd928` resolves all304 registered URLs with zero unavailable/unpinnable files.
+It identifies three missing pins (Nomic vision1.5 F16 and Jina OCR Q4/Q8) and three
+changed mutable files (LiquidAI LFM2.5-VL model/projector and Uni-MUMER Qwen3-VL).
+[Discovery evidence](tests/results/registry-pin-audit/discovery.json) retains both
+old/current digests and historical matching revisions. No replacement bytes are
+accepted: the LiquidAI pair remains at `3e0e828198e2abb75a957ad823f5d691c13f0f28`,
+Uni-MUMER at `07f9ae65073bcee635c563d18c694ee4d7d4dfc6`. The three missing-pin
+files also receive immutable URLs, preserving aliases, filenames and license gates.
+
+[Hosted byte verification38909671846](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38909671846)
+at `405ec2ec` independently stream-hashes all six complete artifacts:
+10,110,220,960 bytes total, including exact matches for all three previous digests.
+[Retained complete verification report](docs/evidence/registry-pin-verified.json)
+preserves every raw field, workflow/source, actual byte counts and artifact-report
+SHA256. Only the small report is retrieved locally. This is integrity evidence,
+not new inference, task quality or license/default promotion.
+
+The original [OCR regression38885453135](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38885453135)
+failed because its prompt-engine expectation omitted Qwen3.5/id20. Actual
+orchestrator/raw ABI/setter/CLI forwarding is already present. Regression coverage
+now includes Qwen3.5 and rejects four prompt-loss mutations. A separate size-parser
+bug dropped entries when clang-format split long URLs into adjacent C++ literals;
+the parser now joins them as the hash parser does. Two model-free controls check
+split-URL size coverage, canonical complete pins and all six reviewed identities.
+[Main health38909849571](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38909849571)
+passes both new controls, all five watched-main checks and303 primary size checks.
+Its hash lookup is explicitly inconclusive for six URLs after two HTTP429s;
+workflow success alone is not complete pin evidence. The subsequent
+[strict replay38912573969](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38912573969)
+at `dd58d0bf` resolves all304 URLs with zero missing/changed/removed/unreachable
+entries and exact candidate registry/header hashes.
+[Retained complete freshness report](docs/evidence/registry-pin-current.json).
+The complete [OCR regression38908079332](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38908079332)
+at `96d39fe5` passes smoke, interop, punctuation, scan-cleanup, preflight and full
+CPU inference; this is the actual full conclusion, not only a passing smoke step.
+The source changes are reviewed in [PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61).
+At this checkpoint its native matrix, static guards, WASM, lint and secret checks
+pass; Flutter bundling and PR preflight remain queued. Code is not yet merged.
+No production arithmetic, precision/prompt default, runtime release, app pin or
+model inference quality changes.
+
 ## 2026-10-16 — Frozen book continuation isolates upstream embedding drift
 
 The [completed book continuation audit38892508965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892508965)

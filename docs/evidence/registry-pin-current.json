@@ -1,0 +1,17 @@
+{
+  "source_commit": "dd58d0bfd1f5486a9456a4402ff2a1d7a8ddd591",
+  "registry_sha256": "993d72899fdc6a278a6f02940bde78090a91852806a25889539300819ff1447a",
+  "header_sha256": "e612a4b2c1130c75a1a1b7fef210df61f8d32b40f37739c46a239d6c117bc075",
+  "registered": 304,
+  "resolved": 304,
+  "unreachable": [],
+  "unpinned": [],
+  "added": [],
+  "changed": [],
+  "removed": [],
+  "policy": "Read-only discovery. Changed bytes are not approved. Historical matching LFS metadata is not independent downloaded-byte verification.",
+  "result": "complete metadata inventory; retain old trusted bytes and verify immutable download hashes before changing registry",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38912573969",
+  "workflow_conclusion": "success",
+  "artifact_report_sha256": "4c47568a6b7c43ef3086c8ffbb230cfd23da50ff4026f04c45e292ea3a8c83d4"
+}
