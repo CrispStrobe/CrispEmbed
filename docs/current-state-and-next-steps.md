@@ -154,8 +154,15 @@ remain retained. All46 Python and Linux/macOS/Windows native controls pass
 [38870034506](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034506).
 The [v1 independent quality contract](ocr-quality.md) now freezes two real-document
 transcripts and an owned table before model output, with raw CER/WER, ordered
-content and position-indexed cell comparisons. Preparation checks split/source/
-annotation integrity; unavailable table annotations are explicitly unmeasured.
+content and position-indexed cell comparisons. [Completed x86 preparation](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
+and [independent ARM preparation](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
+produce identical PNG/RGB/font/source/gold/split hashes. All three images are
+visually reviewed; [the retained report](../tests/results/ocr-quality-prepared.json)
+keeps the receipt damage/clipped footer and small book text unchanged. Unavailable
+table annotations stay unmeasured. The guarded original/F16 driver requires those
+reviewed hashes before model imports/downloads; the submitted
+[F16 audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689) has no
+result yet.
 Original/native F16 and quantized quality runs, larger pages, further materialization/
 default adoption and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).

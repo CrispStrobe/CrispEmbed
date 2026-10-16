@@ -129,7 +129,7 @@ positive/negative controls and prepares derivatives on Ubuntu24.04 with
 Pillow11.3.0/CairoSVG2.8.2. It records source revision, policy/scorer/panel/image/RGB
 and DejaVu font hashes. Its small artifact contains only three PNGs and a report;
 no weights/reference probes enter production artifacts. Once the prepared report is retained, CI automatically rejects changes to image/
-RGB/source/gold/font/split hashes before inference. Rendering/library/font changes
+RGB/source/gold/font/split and scorer hashes before inference. Rendering/library/font changes
 require comparing pixels/hashes before claiming the same frozen inputs.
 
 Preparation and visual review are required before model inference. Original/native
@@ -138,8 +138,38 @@ timing and comparative quality are still pending. Do not describe a green
 preparation workflow or scorer control as model parity or recognition improvement.
 
 
-Validation status: all13 model-free controls pass locally, including actual old
-receipt raw-metric reproduction. Hosted
-[controls/preparation38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
-and [weight-free ARM preparation38879334940](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
-are queued. No prepared pixel report or visual-review result is claimed yet.
+Preparation and review are complete:
+[regular38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
+passes all13 controls; [ARM38879334940](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
+produces bit-identical PNG/RGB and matching font/source/gold/split hashes.
+[The retained report](../tests/results/ocr-quality-prepared.json) preserves raw
+fields and report hashes plus review notes for all three actual PNGs. The receipt
+is faint/source-clipped and the book text small; all inputs/gold stay unchanged.
+These are preparation/visual observations, not model recognition scores.
+
+## Held-out F16 audit
+
+`tools/ci-heavy/qwen35_ocr_bootstrap.py --quality` checks the retained report before
+heavyweight imports/downloads: successful public workflow, exact panel/scorer/
+source/gold/split hashes and all three reviewed PNG hashes with notes. It rerenders
+and compares frozen PNG/RGB/font hashes before model work. Preparation replay also
+rejects a changed scorer hash; this closes a validation gap before held-out runs.
+Missing evidence or changed rendering fails immediately. Model runs stay hosted.
+
+The driver freezes all three original captures before any evaluation-native arm.
+It reuses the compact/full anchor, strict prefill and generated-score comparisons,
+ordinary owning-API generation and actual confidence. Native precision, weights
+and runtime source hashes must match the previous F16-text/F32-vision baseline;
+all other precision gates remain off and parallel-F16 conversion is explicitly1.
+Actual processor grids must equal the frozen derivative grid and stay within1024
+patches. Grid mismatch or a cap output stays visible rather than resizing or
+extending the cap after seeing output. All full decoded text and raw/secondary
+scores are retained; separate counters keep numerical, output, completion and
+unsupported-format failures distinct. Original OCR accuracy is measured separately
+from native/original agreement. Historical924/56 prefill debt stays archived, not
+rerun or forgiven here.
+
+All22 local model-free controls pass. Hosted
+[controls38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793)
+and [F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
+at `4c4b3ee4` are pending; no held-out model-quality conclusion is claimed.

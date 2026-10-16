@@ -4,6 +4,46 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — OCR quality preparation reviewed on x86 and ARM; F16 audit wired
+
+[Hosted controls/preparation38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
+at `e1c6c9fa` passes all13 controls and prepares the frozen three cases. Independent
+[ARM preparation38879334940](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
+at `702b9c1c` produces identical PNG/RGB/font/source/gold/split hashes for all three.
+Both use Pillow11.3.0/CairoSVG2.8.2/Cairo1.18.0. Downloaded images are checked
+against their recorded bytes/RGB and visually reviewed before any evaluation
+model output. The historical receipt remains faint with a source-clipped footer;
+the two-column page retains its small text and reading order. The owned5×3 grid
+and all captions are legible. No post-review image/geometry/gold changes.
+[Retained raw fields, artifact hashes, review and cross-host evidence](tests/results/ocr-quality-prepared.json).
+
+Preparation replay now checks the scorer hash as well as image/source/gold/font/
+split hashes. The earlier guard omitted the scorer comparison; this validation
+fix precedes all held-out model runs and changes no production arithmetic or
+existing quality result. A mutated scorer hash is rejected by a regression control.
+
+`qwen35_ocr_bootstrap.py --quality` now requires successful retained preparation,
+all three reviewed PNG hashes and nonempty review notes, then rerenders/checks
+pixels **before heavyweight imports or model downloads**. The model driver
+captures all three independent original outputs before any evaluation-native run.
+It uses the original compact/full anchor, shared native `--prefill-only` and
+`--full-quality`, owning-API free generation, `crispembed-diff`/`qwen35_compare`,
+actual confidence and v1 raw/secondary scores. It retains the earliest qualified
+prefill failure with errors/norms, full logits and separate numerical/output/
+truncation/parse counters. Imperfect gold accuracy does not waive strict failures;
+unknown structural annotation stays unmeasured. No reference array enters ordinary
+native generation. The archived924/56 numerical panel is retained, not rerun by
+this new three-case audit.
+
+All22 scoped controls pass locally (13 scorer/preparation, nine audit guards).
+The actual missing-report entrypoint rejects before dependency/model work; actual
+old receipt prefill records parse with all seven failures retained, earliest
+`prefill.cache.7.keys`, max_abs0.00264263153, native/reference norms547.131104.
+[Updated hosted controls38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793)
+and [held-out F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
+at `4c4b3ee4` are submitted; their conclusions are pending. No new decoded/model
+quality, speed, release, HF upload, precision/prompt default or app-pin promotion.
+
 ## 2026-10-16 — Independent OCR quality protocol and scorer frozen
 
 The [v1 contract](docs/ocr-quality.md) and
@@ -33,15 +73,15 @@ exactly; both parse without inventing missing cell gold. The tracked-file secret
 scan passes four tests with one environment-dependent skip. Existing production
 sources and all historical result/annotation files remain unchanged.
 
-Hosted preparation is **pending runner allocation**, not verified:
+At the initial protocol handoff, hosted preparation was pending runner allocation:
 [regular controls/preparation38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
 at `e1c6c9fa`, and
 [weight-free ARM preparation38879334940](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
 at `702b9c1c` (same panel/scorer/preparer). Superseded queued revisions were
 cancelled before execution; no model failure or output is discarded. Preparation
 records PNG/RGB/font/source/annotation/split hashes and checks TIFF/annotated-PNG
-pixel equality. The retained prepared report, three-image visual review and
-hosted conclusions are still required before native/reference evaluation.
+pixel equality. The follow-up above completes the retained preparation report and three-image
+review; original/native evaluation remains separately gated.
 Original/F16 and quantized runs, actual processor geometry, decoded quality,
 confidence and timing remain pending. No recognition improvement, runtime release,
 weight upload, precision/prompt default or app-pin change is claimed.
