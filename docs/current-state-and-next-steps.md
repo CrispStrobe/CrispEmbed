@@ -202,9 +202,15 @@ reproduces original/F16 controls and all quantized file/protected tensor identit
 Q8 preserves248 IDs/text/EOS,15/15 cells and zero ordered CER/WER, but retains75
 prefill/248 score failures (min cosine0.999256611, worst abs0.440546274). All41
 source controls, frozen preparation and source secret scan pass; all five logs
-independently reparse. PR63 merges asd34a64d2; receipt is running, book queued
-in its isolated CI lane, mixed/Q4 pending. This controlled
-table does not establish natural-document quality, speed or numerical promotion.
+independently reparse. PR63 merges asd34a64d2. The completed
+[Q8 receipt](../tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json)
+atfdf83339/[run38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)
+reproduces original/F16/weight controls and all raw logs, but changes8PK→SPK
+(first token divergence303); content CER/WER worsen3.39%/13.19%→3.52%/13.89%.
+Q8 retains75/473 prefill/score failures versus1/0 for F16. Both reach EOS.
+Book is running in its isolated CI lane, mixed/Q4 pending. The inventory table
+does not establish natural-document quality; the receipt now demonstrates a Q8
+decoded regression. No speed or numerical promotion follows.
 
 The iOS standalone-target repair now passes the complete
 [ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),

@@ -2073,9 +2073,19 @@ error is0.00970283112. Single native recognition observations are225.403216 s F1
 and226.304482 s Q8; no speed or peak-memory claim follows.
 [Detailed measurements](../PERFORMANCE.md).
 
-The next Q8 [receipt38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)
-atfdf83339 and [book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
-ata42a28b7 are running/queued respectively. The optional `isolated_lane` CI input allows independent
+The completed [Q8 receipt38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)
+atfdf83339 reproduces all original/F16/weight controls and independently reparses
+all five logs. Both arms reach EOS, but Q8 emits472 tokens versus473 and changes
+`LGE BRUN 8PK .65` to `LGE BRUN SPK .65`, first divergence index303.
+Content CER/WER worsen0.03385417/0.13194444→0.03515625/0.13888889. F16 retains1/0
+prefill/score failures; Q8 retains75/473, minimum score cosine0.999563456 and worst
+max_abs0.454777241. This is decoded-quality regression under unchanged gates.
+[Complete receipt report](../tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json)
+and [magnitudes/confidence/timing limits](../PERFORMANCE.md). No new recipe selection
+or calibration uses this held-out document.
+
+The Q8 [book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
+ata42a28b7 is running. The optional `isolated_lane` CI input allows independent
 immutable cases with separate runner scratch/artifacts to overlap; empty input
 keeps existing script grouping. Retry the same model/recipe/case with its same
 key. All mixed/Q4 cases remain pending. No new runtime arithmetic, precision/default,

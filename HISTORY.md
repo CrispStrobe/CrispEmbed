@@ -4,6 +4,35 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Independent Q8 receipt audit finds decoded regression
+
+[ARM64 audit38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)
+at `fdf83339f0a99fdc0648eb4a9f00c261c14aae64` completes both1024-cap arms on the
+frozen968-patch historical receipt. Fresh original output/confidence/434 CPU
+records and the entire77-prefill/473-score F16 baseline reproduce. All473 tensor
+schemas,286 protected payloads and the earlier1,213,238,272-byte Q8 file hash
+reproduce. Independent reparse of all five native/quantizer logs verifies every
+raw record and recipe/source provenance. Only1.94MB of reports/logs are retrieved
+from the5.73GB hosted artifact; no local model inference or build runs.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json),
+raw artifact-report SHA256 `c61bbdef5ac8a706316983d3b00e41da4099a6be7e83faa325ceeb66ff85a44d`.
+
+Both arms reach EOS. F16 matches all473 original IDs/text; Q8 emits472 IDs and
+changes `LGE BRUN 8PK .65` to `LGE BRUN SPK .65`, with the first free-token and
+teacher-argmax divergence at index303. Content CER rises0.03385417→0.03515625;
+WER rises0.13194444→0.13888889. Shared original recognition errors, damaged pixels,
+clipped footer and unmeasured table structure remain visible. F16 retains1 prefill
+and0 score failures; Q8 retains75/473 under unchanged0.99999/0.002 gates, without
+calibration allowance. Minimum score cosine0.999563456; worst score max_abs
+0.454777241 at step408, RMS0.064306885, norms2459.40649/2458.35229.
+The completed workflow correctly fails for measured numerical/output debt, not a
+reference/weight replay guard. [Confidence/timing details](PERFORMANCE.md).
+
+The first changed captured metrics are decoder input embeddings; vision merger
+metrics remain identical between arms. Later quantized projections prevent a
+single-operator attribution. Q8 book is still running; mixed/Q4 remain pending.
+No runtime arithmetic/default, artifact publication, alias, release or app-pin change.
+
 ## 2026-10-16 — First independent Q8 inventory audit completes
 
 [ARM64 audit38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127)
