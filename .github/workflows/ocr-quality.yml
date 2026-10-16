@@ -6,6 +6,10 @@ on:
       - '.github/workflows/ocr-quality.yml'
       - 'tools/ocr_quality.py'
       - 'tools/ci-heavy/ocr_quality_prepare.py'
+      - 'tools/ci-heavy/qwen35_quality.py'
+      - 'tools/ci-heavy/qwen35_ocr_bootstrap.py'
+      - 'tests/test_qwen35_quality.py'
+      - 'tests/results/ocr-quality-prepared.json'
       - 'tests/test_ocr_quality.py'
       - 'tests/regression/ocr-quality/**'
       - 'tools/ci-heavy/qwen35_quant_calibration.py'
@@ -20,6 +24,10 @@ on:
       - '.github/workflows/ocr-quality.yml'
       - 'tools/ocr_quality.py'
       - 'tools/ci-heavy/ocr_quality_prepare.py'
+      - 'tools/ci-heavy/qwen35_quality.py'
+      - 'tools/ci-heavy/qwen35_ocr_bootstrap.py'
+      - 'tests/test_qwen35_quality.py'
+      - 'tests/results/ocr-quality-prepared.json'
       - 'tests/test_ocr_quality.py'
       - 'tests/regression/ocr-quality/**'
       - 'tools/ci-heavy/qwen35_quant_calibration.py'
@@ -40,6 +48,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tests/test_ocr_quality.py -v
+      - run: python tests/test_qwen35_quality.py -v
       - run: python -m pip install Pillow==11.3.0 CairoSVG==2.8.2
       - name: Prepare held-out derivatives without model inference
         env:

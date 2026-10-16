@@ -72,7 +72,8 @@ def verify_prepared(previous, current):
         if (report['policy'] != POLICY or len(report['cases']) != 3
                 or len({c['id'] for c in report['cases']}) != 3):
             raise ValueError('Incomplete/repeated prepared cases')
-    if (previous['panel_sha256'] != current['panel_sha256']
+    if (previous['scorer_sha256'] != current['scorer_sha256']
+            or previous['panel_sha256'] != current['panel_sha256']
             or previous['font'] != current['font']
             or previous['split_evidence_sha256'] != current['split_evidence_sha256']
             or [[c[k] for k in keys] for c in previous['cases']]

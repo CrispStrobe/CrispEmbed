@@ -19,6 +19,13 @@ def module(path, name):
 
 
 def main():
+    quality_check = sys.argv[1:] == ["--quality"]
+    if quality_check:
+        quality_repo = Path(__file__).resolve().parents[2]
+        quality = module(quality_repo / "tools/ci-heavy/qwen35_quality.py", "qwen35_quality")
+        # Refuse missing/unreviewed evidence before heavyweight imports or downloads.
+        quality.require_reviewed_preparation(quality_repo)
+        quality.preflight(quality_repo, Path(os.environ["HEAVY_OUT"]) / "quality-inputs")
     import gc
     import gguf
     import numpy as np
@@ -41,7 +48,7 @@ def main():
     profile_check = materialize_check or sys.argv[1:] == ["--profile"]
     decoded_tail = sys.argv[1:] == ["--decoded-panel-tail"]
     decoded_check = decoded_tail or sys.argv[1:] == ["--decoded-panel"]
-    page_check = receipt_check or profile_check or decoded_check or sys.argv[1:] == ["--pages"]
+    page_check = quality_check or receipt_check or profile_check or decoded_check or sys.argv[1:] == ["--pages"]
     cascade_check = sys.argv[1:] == ["--cascade-norm"]
     stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
     attention_trace = sys.argv[1:] == ["--attention-trace"]
@@ -78,6 +85,8 @@ def main():
     try:
         if profile_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
+        if quality_check:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_quality.py"), "-q"], check=True)
         if receipt_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_receipt.py"), "-q"], check=True)
         if materialize_check:
@@ -177,7 +186,7 @@ def main():
                         *(["test-qwen35-profile", "test-qwen35-materialize"] if profile_check else []),
                         *(["test-qwen35-attention-trace"] if attention_trace else ["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
-        if receipt_check:
+        if receipt_check or quality_check:
             controls = subprocess.run([str(build / "test-qwen35-quant"), "--request-controls"], capture_output=True, text=True)
             (out / "receipt-controls.log").write_text(controls.stdout + controls.stderr)
             controls.check_returncode()
@@ -337,7 +346,10 @@ def main():
                     "completed test-only original-embedding isolation; inspect prefill-isolation.json; not composed OCR parity"
                     if isolation_check else "completed fixed-input weight/backend controls; inspect prefill-drift.json")
             elif page_check:
-                if receipt_check:
+                if quality_check:
+                    quality.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    report["quality"] = "completed held-out F16 audit; inspect quality.json, retained strict/output/parse failures and raw/secondary accuracy separately"
+                elif receipt_check:
                     receipt = module(repo / "tools/ci-heavy/qwen35_receipt.py", "qwen35_receipt")
                     receipt.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
                     report["receipt"] = "completed explicit-cap/prompt audit; inspect receipt.json and numerical failures"

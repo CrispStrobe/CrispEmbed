@@ -105,7 +105,7 @@ class Quality(unittest.TestCase):
 
     def test_prepared_pixel_and_annotation_drift_rejected(self):
         # Control reports are independent of renderer/model dependencies.
-        report = dict(policy='crispembed-ocr-quality-v1', panel_sha256='panel',
+        report = dict(policy='crispembed-ocr-quality-v1', panel_sha256='panel', scorer_sha256='scorer',
             font=dict(name='font', sha256='fontsha'), split_evidence_sha256={'reference':'sha'},
             cases=[dict(id=str(i), source_sha256='source', gold_sha256='gold', original_size=[100,200],
                 size=[32,64], png_sha256='png', rgb_sha256='rgb', file=str(i)+'.png', nominal_patches=8)
@@ -117,6 +117,8 @@ class Quality(unittest.TestCase):
         changed = copy.deepcopy(report); changed['cases'].pop()
         with self.assertRaises(ValueError): verify_prepared(report, changed)
         changed = copy.deepcopy(report); changed['cases'][1]['id'] = '0'
+        with self.assertRaises(ValueError): verify_prepared(report, changed)
+        changed = copy.deepcopy(report); changed['scorer_sha256'] = 'changed'
         with self.assertRaises(ValueError): verify_prepared(report, changed)
         changed = copy.deepcopy(report); changed['font']['sha256'] = 'changed'
         with self.assertRaises(ValueError): verify_prepared(report, changed)
