@@ -4,6 +4,91 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Mixed Q8/Q6 book completes the independent mixed panel
+
+[ARM64 audit38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
+at `f43c4b7714da91ad7479120bb3005817c7ae6aed` completes both1024-cap arms on the
+frozen1008-patch two-column book. Original output/confidence/434 CPU records and
+the full77-prefill/683-score F16 baseline reproduce. All473 tensor schemas,286
+protected payloads and the prior1,149,795,328-byte mixed file/hash reproduce.
+Independent reparse verifies all five logs and151 quantized/322 kept records.
+Only2.51MB of reports/logs are retrieved from the6.00GB hosted artifact.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json),
+raw artifact-report SHA256 `2816a0e822744b9cdea408a1608945d147c048d965a0055a851bd4e619f04abc`.
+
+F16 matches683 original IDs/text/EOS; mixed reaches EOS with685 tokens, first
+free-token/teacher-argmax divergence130. Both retain19 lines, with2937/2933
+characters. Content CER increases0.11472660→0.11506206 while WER decreases
+0.17625899→0.17446043; full changed English/French text and shared reference errors
+remain. F16 retains5 prefill/13 score failures; mixed retains75/683. Minimum score
+cosine0.998528719 and worst abs1.22282577 are worse than Q8's0.99960196/0.546159744.
+All0.99999/0.002 gates remain unchanged without generated-score allowance; the
+completed workflow correctly fails for numerical/output debt, not replay guards.
+[Magnitudes/confidence/timing limits](PERFORMANCE.md).
+
+All three mixed cases now reach EOS, with exact original IDs/text only on inventory.
+Receipt text changes with lower CER/unchanged WER; book has higher CER/lower WER.
+Mixed retains225 prefill/1,404 score failures versus F16's6/13 and has worse score
+fidelity than Q8 on each input. Smaller storage and F16 A/B controls do not establish
+a better overall recipe or general OCR quality. Three unchanged Q4 cases are
+queued independently at8bf55424; complete-panel review remains Q8, mixed, then Q4.
+Every case retains original/F16 replay; scheduling overlap changes no recipe.
+No held-out calibration, runtime/default/artifact/alias/release/app-pin change.
+
+## 2026-10-16 — Mixed Q8/Q6 receipt changes text with slightly lower CER
+
+[ARM64 audit38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)
+at `f43c4b7714da91ad7479120bb3005817c7ae6aed` completes both1024-cap arms on the
+frozen968-patch historical receipt. Original output/confidence/434 CPU records and
+the full77-prefill/473-score F16 baseline reproduce. All473 tensor schemas,286
+protected payloads and the previous1,149,795,328-byte mixed file/hash reproduce.
+Independent reparse verifies all five logs and151 quantized/322 kept records.
+Only1.94MB of reports/logs are retrieved from the5.73GB hosted artifact.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json),
+raw artifact-report SHA256 `c0f0398467179fca9855291c5a192849a23bc2d0f631e3aca3644cf58f906e73`.
+
+F16 matches473 original IDs/text/EOS; mixed reaches EOS with471 tokens, first
+free-token/teacher-argmax divergence303. It changes8PK→SPK and drops the bullet in
+`CHEER 962PP499 • 4.29`. Content CER decreases0.03385417→0.03255208 while WER
+stays0.13194444; changed item text and shared recognition errors remain visible.
+This small aggregate improvement does not establish better general recognition.
+F16 retains1 prefill/0 score failures; mixed retains75/473. Minimum score cosine
+0.997738481 and worst max_abs1.08097315 are worse than Q8's0.999563456/0.454777241.
+All0.99999/0.002 gates stay unchanged without generated-score allowance; completed
+workflow failure reflects measured numerical/output debt, not replay guards.
+[Magnitudes/confidence/timing limits](PERFORMANCE.md). Mixed book remains running;
+Q4 follows its review. No held-out calibration or production/publication change.
+
+## 2026-10-16 — Mixed Q8/Q6 inventory audit preserves output, increases score drift
+
+[ARM64 audit38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
+at `f43c4b7714da91ad7479120bb3005817c7ae6aed` completes both1024-cap arms on the
+frozen784-patch inventory. Fresh original output/confidence/434 CPU records and
+the full77-prefill/248-score F16 baseline reproduce. All473 tensor schemas and the
+prior1,149,795,328-byte mixed file/hash reproduce:79 Q8 matrices,72 Q6 FFNs,
+36 F16 A/B controls and286 F32 tensors. All286 protected payload records are exact;
+all151 quantized/322 kept records independently reparse with all five raw logs.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json),
+raw artifact-report SHA256 `9478401f6b728360c206d308496f1c45ec79a51b25e4b34efe0fd582696add4d`.
+Only small reports/logs are retrieved; models/artifacts stay hosted.
+
+Both arms match all248 original IDs/text/EOS/teacher argmaxes,15/15 cells and zero
+ordered-content CER/WER. Mixed still fails75 prefill/248 scores versus F16 zero/zero.
+Minimum score cosine0.998120904 and worst max_abs1.08967495 are worse than Q8's
+0.999256611/0.440546274 on this same inventory. Higher A/B precision and smaller
+storage do not establish improved scores or general OCR quality. All0.99999/0.002
+gates stay unchanged without generated-score allowance; the completed workflow
+correctly fails for numerical debt. [Magnitude/confidence/timing limits](PERFORMANCE.md).
+Receipt/book mixed runs remain active, Q4 pending; no held-out calibration or
+runtime/default/artifact/alias/release/app-pin change.
+
+PR63 source `e12572179cf1b53bbe10c7d8681c43e5c755cacd` passes the complete
+ten-job [Build38933245371](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38933245371),
+including Flutter bundling, now succeeds. Its WASM38933245294, contract38933245383
+and secret scans38933245418/38933239823 also succeed. This closes PR63 source
+validation; newer PR65/merged-main broader checks remain pending. Earlier merged-
+main builds cancelled by superseding documentation pushes are not passing evidence.
+
 ## 2026-10-16 — Independent Q8 book audit completes the three-case panel
 
 [ARM64 audit38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)

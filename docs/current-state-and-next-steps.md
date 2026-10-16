@@ -193,7 +193,9 @@ error0.00268554688 remains and no single causal defect is proved. All280 conditi
 attention vectors pass raw0.002. All34 source controls and frozen preparation
 replay pass; all ten PR62 Build jobs (including Flutter), WASM, contract and
 secret checks now pass at17b4b7dc. [Platform evidence38922363407](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363407).
-Latest PR63/main broader checks remain pending. Continue independent-document
+PR63's complete ten-job Build (including Flutter), WASM, contract and secret checks
+now pass; [platform38933245371](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38933245371).
+Latest PR65/merged-main broader checks remain pending. Continue independent-document
 quantized evaluation while retaining projection/reduction attribution as open
 numerical debt. No runtime/default/weight/release/app-pin promotion.
 The first [independent Q8 inventory audit](../tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
@@ -215,7 +217,30 @@ versus683 tokens, first divergence130; content CER/WER decrease slightly
 11.47%/17.63%→11.20%/17.45%, while text changes and recognition errors remain.
 Q8 retains75/683 prefill/score failures versus F16's5/13. Q8 panel:3/3 EOS,1/3
 original ID/text matches; retain225 prefill/1,404 score failures. Three preselected
-mixed runs are queued atf43c4b77; Q4 follows review. No held-out calibration,
+mixed runs usef43c4b77. The completed
+[mixed inventory](../tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json)
+[run38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
+reproduces all original/F16/weight controls and raw logs, preserving248 IDs/text/EOS
+and15/15 cells. It retains75/248 prefill/score failures, with worse score fidelity
+than Q8 (min cosine0.998120904, worst abs1.08967495). The completed
+[mixed receipt](../tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
+[run38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)
+reproduces all controls/logs, but changes8PK→SPK and drops a bullet, reaching EOS
+with471 versus473 tokens. Content CER decreases3.39%→3.26%; WER stays13.19%.
+Mixed retains75/473 prefill/score failures (min cosine0.997738481, worst abs1.08097315).
+The completed [mixed book](../tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json)
+[run38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
+reproduces all original/F16/weight controls and raw logs. Mixed reaches685 EOS
+tokens versus683, first divergence130; content CER rises11.47%→11.51% while WER
+falls17.63%→17.45%. It retains75/683 prefill/score failures (min cosine0.998528719,
+worst abs1.22282577). Mixed panel:3/3 EOS,1/3 exact original IDs/text,225/1,404
+numerical failures; score fidelity is worse than Q8 on every input. The three
+unchanged Q4 cases are queued independently at
+8bf55424: [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
+[receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
+and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206).
+Every case has its own original/F16 replay; review the complete Q4 panel next.
+Scheduling overlap changes no recipe or quality decision. No held-out calibration,
 corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 
 The iOS standalone-target repair now passes the complete
