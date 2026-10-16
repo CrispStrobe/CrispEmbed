@@ -81,10 +81,13 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Follow the current execution order in [PLAN.md](PLAN.md): gated Qwen F16
-materialization optimization after the [completed attribution audit](tests/results/qwen35-ocr/profiling.json),
-complete long-document decoding, then quantization/publication
-and queued permissive models. The fixed-cap four-arm decoded panel matches all 16
+Follow the current execution order in [PLAN.md](PLAN.md): complete Qwen receipt
+decoding and literal-transcription prompt checks, then quantization/publication
+and queued permissive models. The [parallel-F16 trial](tests/results/qwen35-ocr/f16-materialization.json)
+preserves every converted F32 bit and frozen inference record, with 1.37–1.67×
+paired ARM64 speedups; its gate remains default-off. Further cache/memory and
+other-host/default-adoption work remains pending. The fixed-cap four-arm decoded
+panel matches all 16
 ID/text/stop comparisons; preserve its 56 prefill failures and receipt cap controls.
 Use the validated attention trace for any divergence.
 UltraBERT feasibility is recorded in [docs/ultrabert.md](docs/ultrabert.md); it is

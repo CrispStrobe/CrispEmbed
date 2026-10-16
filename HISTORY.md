@@ -4,6 +4,50 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Qwen3.5 gated parallel F16 materialization validated
+
+Added `CRISPEMBED_QWEN35_PARALLEL_F16=1`: large F16 projection arrays use disjoint
+chunks with the original GGML conversion routine and at most eight workers,
+including the caller. Gate-off, small arrays, single-thread calls, non-F16 types
+and single-thread WASM retain serial conversion. All writers join before finite
+validation/matmul; thread-creation failures join launched writers and redo serial
+conversion. No extra full-sized runtime copy or persistent weight cache.
+
+[Hosted 38860469683](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860469683)
+at `1e75f698` audits all 473 actual checkpoint tensors: all 852,985,920 F32 values
+are bitwise equal to native serial conversion and independent NumPy conversion
+from GGUF storage. Both absolute errors are zero; all per-tensor magnitudes,
+norms, hashes and scheduled worker counts are retained. 151 tensors schedule four
+workers and 322 stay serial. Test-only scratch arrays are removed, never loaded
+into inference as references. This does not assert that F16 storage equals
+original higher-precision checkpoint values.
+
+All 924 earlier prefill records, 1,302 original CPU controls, four full frozen-cap
+baseline decoded/teacher-score controls and 554 teacher argmaxes reproduce exactly.
+All 18 fresh-process unprofiled serial/parallel timing runs preserve original
+Python IDs/text/stops and native per-token/mean confidence exactly. Paired median
+speedups are 1.66525× form, 1.37415× German and 1.41301× for a 32-token receipt prefix;
+API medians fall 225.89→135.21s, 39.16→28.50s and 68.01→48.09s. Peak child RSS spans
+3725.32–3725.36 MiB including model load, with no observed peak increase. These
+measurements do not isolate incremental inference memory or establish other-host
+speed or OCR accuracy. The separate 384-token receipt control remains incomplete.
+All 56 prefill failures remain 20/11/11/14 and keep the model job correctly red.
+
+All 37 Python controls and native controls on Linux/macOS/Windows pass
+[38860447197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860447197),
+including all 65,536 half patterns, finite rejection, odd tails and worker limits.
+[Lint 38860150850](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860150850)
+and [secrets 38860447238](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860447238)
+pass. Native and single-thread-WASM-preprocessor syntax checks pass; the latter
+is not a WASM link or model-inference result. All 173 one-shot test mains satisfy
+the clean-exit guard. Actual matrix records and both benchmark arms reproduce
+the retained fields; eleven malformed actual-log variants are rejected. The gate
+remains default-off; no precision/weight/tolerance,
+release or publication changes. Receipt completion/literal transcription is next;
+further cache/residency, other-host performance and default adoption remain pending.
+[Full retained report](tests/results/qwen35-ocr/f16-materialization.json),
+[measurements and limits](PERFORMANCE.md).
+
 ## 2026-10-16 — Qwen3.5 native profiling completed
 
 Added default-off, caller-owned/thread-local diagnostic timing and logical-byte

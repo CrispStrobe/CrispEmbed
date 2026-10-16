@@ -1796,8 +1796,8 @@ Linux/macOS/Windows counter controls and 23 Python controls pass
 [Full records and source hashes](../tests/results/qwen35-ocr/profiling.json),
 [measurement boundaries and next optimization](../PERFORMANCE.md#qwen35-native-attribution-and-paired-overhead-2026-10-16).
 Production arithmetic and precision defaults are unchanged; no speedup or quality
-promotion follows. The first pending lane is bounded gated F16 materialization,
-with original-reference and unchanged strict/output controls.
+promotion follows from attribution alone. The subsequent bounded parallel-F16
+trial below measures an actual gain while retaining strict/output controls.
 
 ## Gated parallel F16 materialization
 
@@ -1812,7 +1812,7 @@ are unchanged. A single-thread WASM build stays serial even with the gate set.
 All launched writers join before inference continues; if thread creation throws,
 the joined result is overwritten by serial conversion. No persistent weight cache
 or additional full-sized tensor copy is introduced by the runtime alternative.
-Thread stacks and scheduling still require measurement.
+The measured peak-memory scope and scheduling limits are recorded below.
 
 `tools/ci-heavy/qwen35_ocr_bootstrap.py --parallel-f16` first exercises model-free
 controls, then audits serial/parallel conversion on every actual checkpoint
@@ -1823,10 +1823,31 @@ The synthetic controls cover all 65,536 half bit patterns, nonfinite rejection,
 odd tails, small arrays, worker bounds, literal 0, single-thread and F32 behavior.
 
 The candidate must reproduce the frozen four-arm strict-prefill records and the
-four complete-at-frozen-cap baseline decoded/teacher-score controls against fresh
+four baseline decoded/teacher-score controls at their frozen caps against fresh
 original Python captures. The existing 56 failures and incomplete 384-token receipt
 remain failures/limits. Three alternating unprofiled serial/parallel pairs on
 form, German and a labelled 32-token receipt prefix must match IDs/text/stops and
 native per-token/mean confidence exactly; measure native API time and isolated
 child peak RSS including model load. A timing gain does not waive numerical or
-transcription-quality debt. Measurements are pending; the gate remains default-off.
+transcription-quality debt.
+
+[Hosted 38860469683](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860469683)
+at `1e75f698` confirms all 473 tensors/852,985,920 converted F32 values bitwise exact
+to native serial and independent NumPy values, with zero absolute errors. All 924
+prior prefill and 1,302 CPU-control records and four full frozen-cap baseline
+outputs/teacher scores reproduce; all 554 teacher argmaxes match. All 18 unprofiled
+paired runs preserve IDs/text/stops and native probabilities/mean confidence.
+Paired speedups are 1.66525×/1.37415×/1.41301× for form/German/32-token receipt prefix;
+API medians are 225.89→135.21s, 39.16→28.50s and 68.01→48.09s. Peak child RSS is
+3725.32–3725.36 MiB including initialization, with no observed peak increase;
+it does not isolate incremental inference memory or establish other-host speed.
+
+All 56 existing prefill failures remain 20/11/11/14 and correctly fail the model
+workflow. The 384-token receipt correctness control is still incomplete, and
+annotation errors remain unchanged. All 37 Python and Linux/macOS/Windows native
+controls pass [38860447197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860447197).
+[All array/decoded/timing records and provenance](../tests/results/qwen35-ocr/f16-materialization.json),
+[paired measurements and limits](../PERFORMANCE.md#qwen35-bounded-parallel-f16-materialization-2026-10-16).
+The gate remains default-off; thread-creation failure injection, other-host
+performance and default adoption remain pending. Receipt completion and literal
+transcription prompts are next; no weight/precision/threshold/release promotion.

@@ -131,9 +131,18 @@ reproduction failures. All 18 paired runs preserve IDs/text/stops and native
 probabilities. F32 projection materialization consumes 62–88% of profiled wall time;
 head materialization alone 28–40%. Unprofiled medians are 225.81s form, 38.65s German,
 67.33s for a 32-token receipt prefix. Counter overhead is 4.46–9.79%; peak child RSS
-is 3723.38–3725.35 MiB including load. Bounded gated F16 materialization is next;
-these nested timings do not establish a speedup or OCR accuracy.
-Full receipt decoding, materialization performance,
+is 3723.38–3725.35 MiB including load; those nested timings measure attribution.
+The completed [parallel-F16 trial](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860469683)
+at `1e75f698` verifies all 473 converted tensors/852,985,920 F32 values bitwise
+against NumPy and native serial values, with zero new output/reproduction failures.
+All 924 prefill and 1,302 CPU-control records and four baseline full frozen-cap
+outputs reproduce. Unprofiled paired speedups are 1.67× form, 1.37× German and 1.41×
+for a 32-token receipt prefix; medians fall 225.89→135.21s, 39.16→28.50s and 68.01→48.09s.
+Peak child RSS stays around 3725.36 MiB including load; incremental inference memory
+is not isolated. All 37 Python and Linux/macOS/Windows native controls pass;
+all 56 numerical failures and 384-token receipt truncation remain. The conversion
+gate stays default-off. Full receipt/prompt semantics is next.
+Full receipt decoding, further materialization/default-adoption work,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
@@ -158,8 +167,8 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: optimize measured materialization cost, finish
-long documents, then validate quantization and publication while preserving all
+The next vendor work follows PLAN's order: finish long documents and literal
+transcription, then validate quantization and publication while preserving all
 existing numerical failures. The consumer lanes below remain separate, with
 their original verification dates.
 

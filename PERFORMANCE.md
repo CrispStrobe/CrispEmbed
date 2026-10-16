@@ -1,5 +1,61 @@
 # CrispEmbed Performance
 
+## Qwen3.5 bounded parallel F16 materialization (2026-10-16)
+
+[Hosted 38860469683](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860469683)
+at `1e75f698`, Release ARM64 CPU, four native threads, GGML native/BLAS/Metal
+disabled, unchanged 1,918,139,328-byte F16-text/F32-vision checkpoint. The opt-in
+`CRISPEMBED_QWEN35_PARALLEL_F16=1` partitions large F16 conversion into bounded
+chunks using the existing GGML conversion routine. Gate-off remains serial.
+[All per-tensor metrics, outputs, timing, RSS, source hashes and limits](tests/results/qwen35-ocr/f16-materialization.json).
+
+Three alternating serial/parallel pairs per input use fresh processes/contexts
+and a warmed model file cache. **Profiling is disabled in both arms.** API timing
+includes image decode/preprocessing/vision/prefill/free generation after model load;
+printing is excluded. Speedup is the median of paired off/on ratios, not the ratio
+of the two independently computed medians.
+
+| Input | Tokens/stop | Serial median seconds (range) | Parallel median seconds (range) | Paired speedup | Paired time reduction |
+|---|---|---:|---:|---:|---:|
+| Form | 148, EOS | 225.89 (224.95–226.88) | 135.21 (134.62–135.65) | 1.66525× | 39.95% |
+| German header | 17, EOS | 39.16 (39.02–39.49) | 28.50 (28.25–28.55) | 1.37415× | 27.23% |
+| Receipt prefix | 32, cap | 68.01 (67.95–68.30) | 48.09 (47.98–48.63) | 1.41301× | 29.23% |
+
+Peak isolated-child RSS ranges 3,725.32–3,725.36 MiB across all 18 runs. Maximum RSS
+rounds to 3,725.36 MiB in both arms; no peak increase is observed. This includes
+model initialization, which can dominate the peak, and does not isolate incremental
+inference memory or include the original-Python parent. Worker stacks/scheduling
+still add overhead; the runtime adds no persistent cache or extra full-sized copy.
+These are bounded runner/input measurements, not other-platform speed or mobile
+memory guarantees. Full receipt completion and transcription accuracy remain open.
+
+Every one of 473 checkpoint tensors (852,985,920 elements, 3,411,943,680 F32 bytes)
+is bitwise identical between native serial/parallel conversion and independent
+NumPy conversion from GGUF storage. Both maximum absolute errors are zero;
+per-tensor magnitudes, norms and SHA-256 hashes are retained. 151 tensors schedule
+four workers; 322 stay serial. Scratch arrays remain test-only and are removed.
+This verifies storage conversion, not equality between stored F16 and original
+higher-precision weights. All 65,536 half bit patterns, nonfinite rejection, odd
+tails, literal 0, worker limits, small/single-thread/F32 behavior pass controls.
+
+The candidate reproduces all 924 prior prefill and 1,302 original CPU-control
+records, all four full frozen-cap baseline decoded/teacher-score controls and all
+554 teacher argmaxes. All 18 timing runs match Python IDs/text/stops and preserve
+native per-token/mean confidence exactly, including the earlier profiling run's
+outputs. Existing 56 prefill failures remain 20/11/11/14 and correctly fail the
+model workflow. The 384-token receipt correctness control is still truncated;
+its 355.44s native API observation is separate from the paired 32-token benchmark.
+Original form/receipt gold errors remain unchanged. Numerical tolerances,
+precision defaults, weights and release/publication selection are unchanged;
+parallel conversion remains default-off. All 37 Python controls and native
+controls on Linux/macOS/Windows pass [38860447197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38860447197).
+
+Next: complete receipt decoding and evaluate literal transcription prompts against
+fresh originals. Further materialization/cache work needs new attribution on the
+accelerated path and measured memory limits; a full F32 head alone requires
+1,017,118,720 bytes. The scheduling policy's serial fallback on thread-creation
+failure is retained; deterministic OS-failure injection is not claimed.
+
 ## Qwen3.5 native attribution and paired overhead (2026-10-16)
 
 [Hosted 38850631263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850631263)
