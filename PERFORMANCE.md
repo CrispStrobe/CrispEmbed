@@ -1,5 +1,46 @@
 # CrispEmbed Performance
 
+## Qwen3.5 independent Q8 inventory audit (2026-10-16)
+
+[Hosted ARM64 audit38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127)
+at `cbd3852f` compares the frozen784-patch controlled inventory with cap1024.
+Original output/confidence/434 CPU records and the entire previous F16 prefill/
+score/decoded/quality record reproduce; all five native/quantizer logs independently
+reparse. [Complete report](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json).
+
+| Arm | Storage bytes | Tokens / stop | Ordered CER / WER | Cells | Prefill / score failures | Native recognition, single observation |
+| --- | ---: | --- | --- | --- | --- | ---: |
+| F16 text / F32 vision | 1,918,139,328 | 248 / EOS | 0 / 0 | 15/15 | 0 / 0 | 225.403216 s |
+| Q8 / F32 vision | 1,213,238,272 | 248 / EOS | 0 / 0 | 15/15 | 75 / 248 | 226.304482 s |
+
+Both arms match all original IDs/text/EOS and248 teacher argmaxes. Output remains
+459 characters/34 lines with Markdown/HTML, so raw CER/WER are1.781818/1.03125;
+serialization is measured separately from ordered content/cells. This is a single
+owned controlled table, not natural-document or upstream benchmark accuracy.
+Q8's full file hash and all286 protected tensor records reproduce exactly.
+
+First changed captured metrics: `prefill.decoder.inputs_embeds`, F16/Q8 max_abs
+0.000092625618/0.000375747681 and RMS0.000000901090459/0.0000284308717.
+Q8 min-row cosine0.999983013 fails0.99999 even though max_abs is below0.002;
+native/reference norms62.0079422/62.0079269. All vision merger metrics remain
+identical between arms. Later projection weights also quantize; this does not
+isolate a single defective operator or justify selecting a new critical profile.
+
+Q8 minimum score cosine0.999256611 occurs at step0 (max_abs0.412062347,
+RMS0.0936171636, norms1185.48865/1193.97131). Worst absolute error occurs at step19:
+max_abs0.440546274, mean_abs0.0514188819, RMS0.0652295873, norms1479.1814/
+1486.8927. F16 worst score error remains0.00061583519 (step216). Generated scores
+receive no calibrated allowance; all75/248 Q8 failures remain and leave the
+completed diagnostic red. Exact decoded text does not waive numerical debt.
+
+Actual generated mean confidence is0.998262167 F16/0.998296022 Q8. Q8's248-token
+aligned prefix has maximum probability error0.00970283112 and mean0.0000590805352
+against original; F16 max is0.00000730118568. Confidence is not OCR calibration.
+Recognition timing covers image decode/preprocessing/vision/prefill/free greedy
+after context load, with one observation per arm. No speed/RSS/memory conclusion
+or precision/default/publication promotion follows. Receipt/book and mixed/Q4
+runs remain pending, and all earlier924/56 numerical debt is retained.
+
 ## Qwen3.5 frozen book vision trace (2026-10-16)
 
 [Hosted ARM64 audit38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)

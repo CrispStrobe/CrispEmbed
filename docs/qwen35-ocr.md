@@ -2017,3 +2017,66 @@ No book calibration data, generated-logit allowance, production arithmetic,
 precision/default, weight/release/publication or app-pin change. Next preserve
 this diagnostic and audit quantized candidates on the independent documents;
 upstream projection/reduction attribution remains open before numerical promotion.
+
+## Independent-document quantization (in progress)
+
+The bounded `qwen35_ocr_bootstrap.py --quality-quant PROFILE CASE` driver selects
+one of the existing `q8`, `q8-q6` or `q4` recipes and one frozen
+`inventory-table`, `historical-receipt` or `two-column-page` case. These are the
+preselected recipes in the v1 quality contract, not parameters fitted to these
+outputs. Existing calibration alternatives remain retained and unchanged.
+
+Before the candidate runs, the driver requires unchanged reviewed preparation,
+source/gold/scorer/font/split hashes, original processor/prompt/grid/full IDs/EOS/
+text/confidence/CPU controls and the entire original F16 prefill/score/decoded/
+confidence/quality result. Only observed timing fields may differ. Native
+F16 runtime/weight identities remain frozen. The original compact/full anchor
+must pass. Neither gold nor original embeddings enter ordinary native generation.
+
+`crispembed-quantize` reconstructs the existing recipe; all473 tensor names/shapes
+and effective precision rules are checked. Protected vision/vector/convolution
+bytes must remain exact, and the complete candidate byte count/SHA256 must match
+the earlier recipe. Q8 preserves F32 vision; the mixed recipe also keeps its
+existing F16 attention controls and Q6 FFN. No new importance collection, weight
+selection or calibration uses these evaluation documents.
+
+Both F16 and quantized arms retain77 strict prefill records, every original-prefix
+teacher-score vector and argmax, and actual owning-API free generation to the
+frozen1024-token cap. Full IDs/UTF-8/EOS/cap, characters/lines, per-token/mean
+confidence and raw/ordered-content/table-cell quality remain separate. Confidence
+alignment stops at the first ID divergence. Existing0.99999/0.002 gates and all
+raw failures remain; a red numerical verdict does not discard completed decoded
+measurements. Timings are single observations, not a latency/RSS benchmark.
+
+The first [Q8 inventory audit38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127)
+at [sourcecbd3852f](https://github.com/CrispStrobe/CrispEmbed/tree/cbd3852f5dd697f275d3094d101b50e9917350a4)
+completes all guards. All41 [source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781),
+frozen preparation replay and source secret scan pass. The original434 CPU records
+and entire77-prefill/248-score F16 baseline reproduce. Independent reparse of all
+five logs verifies every raw record, the candidate's exact earlier1,213,238,272-byte
+file/hash and all286 protected tensor records.
+[Full retained result](../tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json).
+
+Q8 preserves248 IDs/text/EOS and all teacher argmaxes,15/15 cells and zero ordered
+CER/WER. Raw CER/WER stay1.781818/1.03125 because the unchanged output contains
+Markdown/HTML. This controlled table does not establish real-document accuracy.
+The unchanged gates retain75 prefill and248 score failures: minimum score cosine
+0.999256611; worst max_abs0.440546274 at step19, RMS0.0652295873 and norms
+1479.1814/1486.8927. F16 has zero/zero failures here. The completed workflow
+correctly remains red; decoded parity is not numerical parity.
+
+First changed captured metrics are decoder input embeddings: Q8 max_abs0.000375747681,
+RMS0.0000284308717, min-row cosine0.999983013, norms62.0079422/62.0079269.
+Vision merger metrics are unchanged, while later projection weights also quantize;
+this does not prove a single operator defect. Q8 maximum aligned token-confidence
+error is0.00970283112. Single native recognition observations are225.403216 s F16
+and226.304482 s Q8; no speed or peak-memory claim follows.
+[Detailed measurements](../PERFORMANCE.md).
+
+The next Q8 [receipt38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)
+atfdf83339 and [book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
+ata42a28b7 are queued. The optional `isolated_lane` CI input allows independent
+immutable cases with separate runner scratch/artifacts to overlap; empty input
+keeps existing script grouping. Retry the same model/recipe/case with its same
+key. All mixed/Q4 cases remain pending. No new runtime arithmetic, precision/default,
+weight publication, HF alias, release or app-pin change.

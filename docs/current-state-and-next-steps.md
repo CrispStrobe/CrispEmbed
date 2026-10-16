@@ -194,6 +194,14 @@ attention vectors pass raw0.002. All34 source controls and frozen preparation
 replay pass; PR62 platform/secret checks are queued. Continue independent-document
 quantized evaluation while retaining projection/reduction attribution as open
 numerical debt. No runtime/default/weight/release/app-pin promotion.
+The first [independent Q8 inventory audit](../tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
+atcbd3852f/[run38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127)
+reproduces original/F16 controls and all quantized file/protected tensor identities.
+Q8 preserves248 IDs/text/EOS,15/15 cells and zero ordered CER/WER, but retains75
+prefill/248 score failures (min cosine0.999256611, worst abs0.440546274). All41
+source controls, frozen preparation and source secret scan pass; all five logs
+independently reparse. Receipt/book are queued, mixed/Q4 pending. This controlled
+table does not establish natural-document quality, speed or numerical promotion.
 
 The iOS standalone-target repair now passes the complete
 [ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),
@@ -216,9 +224,9 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: localize the independent book's strict
-upstream vision/embedding drift, then validate
-quantization/publication, UltraBERT and the permissive OCR queue while preserving
+The next vendor work follows PLAN's order: complete the independent-document
+quantization panel and validate publication, then UltraBERT and the permissive OCR
+queue. Projection/reduction attribution remains open independently; preserve
 all existing numerical failures and frozen quality inputs. The consumer lanes below remain separate, with
 their original verification dates.
 

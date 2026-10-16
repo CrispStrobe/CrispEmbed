@@ -18,10 +18,20 @@ def module(path, name):
     return result
 
 
+def quality_quant_request(args):
+    if args[:1] != ["--quality-quant"]:
+        return None
+    if (len(args) != 3 or args[1] not in ("q8", "q8-q6", "q4")
+            or args[2] not in ("inventory-table", "historical-receipt", "two-column-page")):
+        raise ValueError("Use --quality-quant {q8,q8-q6,q4} {inventory-table,historical-receipt,two-column-page}")
+    return args[1], args[2]
+
+
 def main():
+    quality_quant = quality_quant_request(sys.argv[1:])
     book_vision = sys.argv[1:] == ["--book-vision"]
     book_isolation = sys.argv[1:] == ["--book-isolation"]
-    quality_check = book_vision or book_isolation or sys.argv[1:] == ["--quality"]
+    quality_check = quality_quant is not None or book_vision or book_isolation or sys.argv[1:] == ["--quality"]
     if quality_check:
         quality_repo = Path(__file__).resolve().parents[2]
         quality = module(quality_repo / "tools/ci-heavy/qwen35_quality.py", "qwen35_quality")
@@ -89,6 +99,8 @@ def main():
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
         if quality_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_quality.py"), "-q"], check=True)
+        if quality_quant is not None:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_quality_quant.py"), "-q"], check=True)
         if book_vision:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_book_vision.py"), "-q"], check=True)
         if book_isolation:
@@ -361,6 +373,11 @@ def main():
                     book = module(repo / "tools/ci-heavy/qwen35_book_isolation.py", "qwen35_book_isolation")
                     book.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
                     report["book_isolation"] = "completed test-only continuation isolation; inspect book-isolation.json and retained failures"
+                elif quality_quant is not None:
+                    quant_quality = module(repo / "tools/ci-heavy/qwen35_quality_quant.py", "qwen35_quality_quant")
+                    quant_quality.run(repo, build, export, local, out, scratch, module, image_path,
+                                      out / "official-reference.npz", *quality_quant)
+                    report["quality_quant"] = "completed paired quantized document audit; inspect retained failures"
                 elif quality_check:
                     quality.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
                     report["quality"] = "completed held-out F16 audit; inspect quality.json, retained strict/output/parse failures and raw/secondary accuracy separately"

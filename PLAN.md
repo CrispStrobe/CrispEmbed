@@ -50,6 +50,28 @@ numerical debt or establish transcription accuracy.
 5. [ ] **Continue the permissive OCR queue below**, starting with shared small
    backends after the preceding correctness/performance work.
 
+## Independent-document quantization runs
+
+Each cell requires fresh original and exact frozen F16 replay, an unchanged
+preselected quantized recipe, full owning-API output/confidence/gold scoring and
+separate strict teacher-score diagnostics. All use the frozen1024-token cap.
+Verify the inventory driver first, then complete Q8, mixed Q8/Q6 and Q4 in that
+order. Independent cases may overlap on separate hosted runners using the
+optional isolated CI lane key; inputs/recipes remain fixed before evaluation.
+These runs evaluate recipes; they do not calibrate/select weights
+on the evaluation inputs. Publication and numerical promotion remain separate.
+
+| Preselected recipe | Inventory (784 patches) | Historical receipt (968) | Book (1008) |
+| --- | --- | --- | --- |
+| Q8, vision F32 | [Complete248 EOS/15 cells;75 prefill/248 score failures](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [Queued38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914) | [Queued38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995) |
+| Attention Q8 / FFN Q6, vision F32 | Pending | Pending | Pending |
+| Q4, vision F32 | Pending | Pending | Pending |
+
+[PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) implements the bounded
+driver; [41 source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781)
+and frozen preparation replay pass. Source secret scan also passes. A dispatched
+or running model audit is not completed numerical or OCR evidence.
+
 ## Remaining Qwen numerical attribution
 
 - [ ] **Resolve projection/reduction accumulation before numerical promotion.**
@@ -121,10 +143,12 @@ inspection, conversion and inference remain outside the selected scope; its
 
 ## Packaging, releases and consumers
 
-- [ ] **Queued CI conclusions:** inspect PR62 and its merged-main platform,
-  quality-contract and secret workflows after runners start. All34 source controls
-  and the completed ARM64 diagnostic have verified results; queued broader checks
-  are not passing evidence. Record any actual failure before further promotion.
+- [ ] **Latest CI conclusions:** PR62's ten-job Build (including Flutter), WASM,
+  quality contract and secret checks now pass; [completed evidence](HISTORY.md).
+  Inspect the latest merged-main and PR63 platform/secret conclusions after runners
+  start. All41 numerical-driver source controls and the initial ARM64 Q8 audit
+  have verified evidence; queued broader checks are not passing evidence. Record
+  actual failures before further promotion.
 - [ ] **W1:** repair macOS arm64 Python-wheel delocate/deployment-target failure;
   validate installed wheel load, then the full matrix and aggregation.
 - [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes
@@ -267,7 +291,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-quality-quant` | Evaluate frozen independent documents with existing Q8/mixed/Q4 recipes | [Draft PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63), driver sourcecbd3852f. All41 [source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781), frozen preparation replay and source secret scan pass. [Q8 inventory ARM64 audit38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127) running; numerical results pending. Receipt38928823914 queued. Claiming optional isolated-case lane key in heavy-cpu.yml for independent hosted jobs; default grouping retained. Exact replay/full quality, no promotion |
+| 2026-10-16 | `qwen35-quality-quant` | Evaluate frozen independent documents with existing Q8/mixed/Q4 recipes | [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63): inventory Q8 completes with exact248 IDs/text/EOS and15/15 cells, retaining75 prefill/248 score failures; all41 source controls, original/F16/weight replay and independent log audit pass. Receipt38928823914/book38931861995 queued, mixed/Q4 pending. Optional isolated CI key implemented; no promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

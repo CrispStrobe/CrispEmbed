@@ -41,6 +41,11 @@ on:
         default: 'ubuntu-latest'
         type: choice
         options: [ubuntu-latest, ubuntu-24.04-arm, macos-14]
+      isolated_lane:
+        description: 'Optional unique lane for independent inputs and artifacts; empty serializes by script'
+        required: false
+        default: ''
+        type: string
       timeout_minutes:
         description: 'Script timeout in minutes (job hard limit is 360)'
         required: false
@@ -50,9 +55,10 @@ on:
 permissions:
   contents: read
 
-# One run per script at a time; a second dispatch queues instead of racing.
+# Serialize each script by default; independent immutable cases may opt into
+# separate named lanes. Reuse the same lane for retries of the same case.
 concurrency:
-  group: heavy-cpu-${{ inputs.script }}
+  group: heavy-cpu-${{ inputs.isolated_lane || inputs.script }}
   cancel-in-progress: false
 
 jobs:
