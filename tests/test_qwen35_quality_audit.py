@@ -50,6 +50,7 @@ class QualityAudit(unittest.TestCase):
         for mutate in (lambda r: r['reference'].update(generated_ids=[]),
                 lambda r: r['reference'].update(selected_token_confidences=[]),
                 lambda r: r['arms'][0]['decode']['metrics'][0].update(max_abs=10),
+                lambda r: r['arms'][1]['decode']['metrics'][0].update(max_abs=10),
                 lambda r: r['arms'][0]['decode'].update(native_confidences=[]),
                 lambda r: r.update(frozen_f16_exact=False)):
             self.rejected(mutate)

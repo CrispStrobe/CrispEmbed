@@ -53,6 +53,9 @@ def verify_frozen(report, repo, expected_source):
     require(report['reference_quality'] == old['reference_quality'], 'Original quality changed')
     require(report['summary'] == summary(report['arms']), 'Summary contradicts measured arms')
     frozen_baseline(report['arms'][0], old)
+    for arm in report['arms']:
+        require(arm['decode']['metrics'][:len(old['prefill']['metrics'])] == arm['prefill']['metrics'],
+            'Standalone/full-decode prefill disagreement: ' + arm['name'])
     name, kind = PROFILES[report['profile']]
     recipe_path = 'tests/results/qwen35-ocr/' + (
         'ffn-calibration-parity.json' if report['profile'] == 'q4' else 'page-parity.json')
