@@ -169,7 +169,11 @@ unsupported-format failures distinct. Original OCR accuracy is measured separate
 from native/original agreement. Historical924/56 prefill debt stays archived, not
 rerun or forgiven here.
 
-All22 local model-free controls pass. Hosted
-[controls38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793)
-and [F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
-at `4c4b3ee4` are pending; no held-out model-quality conclusion is claimed.
+All22 model-free controls pass on hosted
+[38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793)
+at `4c4b3ee4`; replay reports `frozen_derivatives_exact=true` with all hashes
+unchanged. [The retained evidence](../tests/results/ocr-quality-prepared.json)
+includes the full replay/report SHA and successful
+[secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346446).
+[F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
+at the same source is running; no held-out model-quality conclusion is claimed.

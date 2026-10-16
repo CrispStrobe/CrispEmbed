@@ -40,9 +40,14 @@ The actual missing-report entrypoint rejects before dependency/model work; actua
 old receipt prefill records parse with all seven failures retained, earliest
 `prefill.cache.7.keys`, max_abs0.00264263153, native/reference norms547.131104.
 [Updated hosted controls38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793)
-and [held-out F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
-at `4c4b3ee4` are submitted; their conclusions are pending. No new decoded/model
-quality, speed, release, HF upload, precision/prompt default or app-pin promotion.
+at `4c4b3ee4` pass all22 tests and rerender the reviewed inputs with
+`frozen_derivatives_exact=true`; every frozen image, annotation, font, split and
+scorer hash matches. The entire replay report and raw-report SHA are retained.
+[Secret scan38882346446](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346446)
+also passes. The [held-out F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
+at the same source starts its hosted script at09:58:53UTC; its model conclusion
+remains pending. No new decoded/model quality, speed, release, HF upload,
+precision/prompt default or app-pin promotion.
 
 ## 2026-10-16 — Independent OCR quality protocol and scorer frozen
 

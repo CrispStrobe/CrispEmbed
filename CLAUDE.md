@@ -86,7 +86,8 @@ Follow the current execution order in [PLAN.md](PLAN.md): run the frozen
 quantization/publication and queued permissive models. The contract retains raw
 CER/WER separately from ordered content/table cells; unannotated structure stays
 unmeasured. x86/ARM preparation matches exactly and all three images are reviewed;
-the guarded held-out F16 audit is submitted, with no quality result yet.
+all22 hosted controls and frozen-hash replay pass. The guarded held-out F16 audit
+is running, with no quality result yet.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.

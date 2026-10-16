@@ -160,7 +160,8 @@ produce identical PNG/RGB/font/source/gold/split hashes. All three images are
 visually reviewed; [the retained report](../tests/results/ocr-quality-prepared.json)
 keeps the receipt damage/clipped footer and small book text unchanged. Unavailable
 table annotations stay unmeasured. The guarded original/F16 driver requires those
-reviewed hashes before model imports/downloads; the submitted
+reviewed hashes before model imports/downloads. All22 hosted controls and frozen
+image/scorer/hash replay pass [38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793); the running
 [F16 audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689) has no
 result yet.
 Original/native F16 and quantized quality runs, larger pages, further materialization/
