@@ -1759,13 +1759,13 @@ Inactive timers take no timestamps and allocate no records.
 
 The recognition hierarchy covers file decode, RGB preprocessing, prompt/geometry,
 vision, embedding/splicing, prefill, token selection/confidence, cached-input
-preparation, cached decoding and output tokenization. Projection children cover
+preparation, cached decoding and output tokenization plus call-local state cleanup. Projection children cover
 backend/context setup, graph/input construction, F32 materialization, graph
 compute, output validation/copy and teardown. The compute counter covers the
 whole `ggml_backend_graph_compute` call, including any deferred thread-pool or
 workspace setup; it does not isolate pure kernel time. `tensor_floats` children separate
 raw-buffer allocation/initialization, tensor reads, conversion/copy and finite
-checks; they also include small norm/bias reads outside projections. Per-matrix
+checks plus raw-buffer release; they also include small norm/bias reads outside projections. Per-matrix
 records count actual source bytes, expanded F32 bytes and materialization time.
 The vocabulary head must appear once in prefill and once per cached token.
 Counters are nested: do not add parent/child levels as disjoint wall time.
