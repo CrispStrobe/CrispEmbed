@@ -4,6 +4,37 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Mixed Q8/Q6 book completes the independent mixed panel
+
+[ARM64 audit38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
+at `f43c4b7714da91ad7479120bb3005817c7ae6aed` completes both1024-cap arms on the
+frozen1008-patch two-column book. Original output/confidence/434 CPU records and
+the full77-prefill/683-score F16 baseline reproduce. All473 tensor schemas,286
+protected payloads and the prior1,149,795,328-byte mixed file/hash reproduce.
+Independent reparse verifies all five logs and151 quantized/322 kept records.
+Only2.51MB of reports/logs are retrieved from the6.00GB hosted artifact.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json),
+raw artifact-report SHA256 `2816a0e822744b9cdea408a1608945d147c048d965a0055a851bd4e619f04abc`.
+
+F16 matches683 original IDs/text/EOS; mixed reaches EOS with685 tokens, first
+free-token/teacher-argmax divergence130. Both retain19 lines, with2937/2933
+characters. Content CER increases0.11472660→0.11506206 while WER decreases
+0.17625899→0.17446043; full changed English/French text and shared reference errors
+remain. F16 retains5 prefill/13 score failures; mixed retains75/683. Minimum score
+cosine0.998528719 and worst abs1.22282577 are worse than Q8's0.99960196/0.546159744.
+All0.99999/0.002 gates remain unchanged without generated-score allowance; the
+completed workflow correctly fails for numerical/output debt, not replay guards.
+[Magnitudes/confidence/timing limits](PERFORMANCE.md).
+
+All three mixed cases now reach EOS, with exact original IDs/text only on inventory.
+Receipt text changes with lower CER/unchanged WER; book has higher CER/lower WER.
+Mixed retains225 prefill/1,404 score failures versus F16's6/13 and has worse score
+fidelity than Q8 on each input. Smaller storage and F16 A/B controls do not establish
+a better overall recipe or general OCR quality. Three unchanged Q4 cases are
+queued independently at8bf55424; complete-panel review remains Q8, mixed, then Q4.
+Every case retains original/F16 replay; scheduling overlap changes no recipe.
+No held-out calibration, runtime/default/artifact/alias/release/app-pin change.
+
 ## 2026-10-16 — Mixed Q8/Q6 receipt changes text with slightly lower CER
 
 [ARM64 audit38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)

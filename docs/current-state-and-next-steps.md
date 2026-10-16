@@ -228,12 +228,19 @@ than Q8 (min cosine0.998120904, worst abs1.08967495). The completed
 reproduces all controls/logs, but changes8PK→SPK and drops a bullet, reaching EOS
 with471 versus473 tokens. Content CER decreases3.39%→3.26%; WER stays13.19%.
 Mixed retains75/473 prefill/score failures (min cosine0.997738481, worst abs1.08097315).
-Book is still running. The three unchanged Q4 cases are queued independently at
+The completed [mixed book](../tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json)
+[run38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
+reproduces all original/F16/weight controls and raw logs. Mixed reaches685 EOS
+tokens versus683, first divergence130; content CER rises11.47%→11.51% while WER
+falls17.63%→17.45%. It retains75/683 prefill/score failures (min cosine0.998528719,
+worst abs1.22282577). Mixed panel:3/3 EOS,1/3 exact original IDs/text,225/1,404
+numerical failures; score fidelity is worse than Q8 on every input. The three
+unchanged Q4 cases are queued independently at
 8bf55424: [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
 [receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
 and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206).
-Every case has its own original/F16 replay; review the complete mixed panel before
-Q4 assessment. Scheduling overlap changes no recipe or quality decision. No held-out calibration,
+Every case has its own original/F16 replay; review the complete Q4 panel next.
+Scheduling overlap changes no recipe or quality decision. No held-out calibration,
 corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 
 The iOS standalone-target repair now passes the complete

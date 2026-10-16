@@ -1,5 +1,51 @@
 # CrispEmbed Performance
 
+## Qwen3.5 independent mixed Q8/Q6 book and panel (2026-10-16)
+
+[Hosted ARM64 audit38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
+at `f43c4b77` uses the frozen1008-patch book and1024 cap. Original434 CPU records,
+full F16 baseline, prior mixed file/hash and all473 schemas reproduce; all five
+logs independently reparse.
+[Complete evidence](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json).
+
+| Arm | Tokens / stop | Raw CER / WER | Ordered-content CER / WER | Prefill / score failures | Native recognition, single observation |
+| --- | --- | --- | --- | --- | ---: |
+| F16 text / F32 vision | 683 / EOS | 0.13887957 / 0.17985612 | 0.11472660 / 0.17625899 | 5 / 13 | 622.657834 s |
+| Mixed Q8/Q6 / F16 A/B / F32 vision | 685 / EOS | 0.13921503 / 0.17805755 | 0.11506206 / 0.17446043 | 75 / 683 | 771.077074 s |
+
+F16 matches original IDs/text/stops. Mixed first diverges at free-token/teacher
+argmax130. Both have19 lines, with2937/2933 characters; the full English/French
+text/diff remains retained. Content CER worsens slightly while WER improves slightly;
+shared recognition errors persist. Candidate bytes/types/protected payloads match
+the other mixed cases exactly; no held-out calibration or recipe selection occurs.
+
+First changed captured metric remains decoder input embeddings: mixed max_abs
+0.000789284706, RMS0.0000264551709, min-row cosine0.999983013 and norms97.2482376/
+97.2480927. Merger metrics are unchanged; later projections also quantize, so no
+sole causal operator is established. Worst mixed score step130: max_abs1.22282577,
+mean_abs0.238955155, RMS0.296455652, norms2557.71753/2622.25415. Minimum score cosine
+0.998528719 occurs at step523, max_abs0.609286308, RMS0.132699266 and norms
+1219.15088/1218.89929. Q8 on this book had better score fidelity: min0.99960196,
+worst abs0.546159744. F16 worst abs0.0060377121 reproduces. All75/683 mixed failures
+remain under unchanged0.99999/0.002 gates without generated-score allowance.
+
+Mixed confidence aligns only130 identical-prefix tokens: max error0.05525165169,
+mean0.004964788749; F16 aligns683, max0.0004596538337. Full arrays remain retained;
+confidence is not OCR calibration. Timings are single owning-API observations after
+context load, not paired speed/RSS/memory evidence.
+
+| Completed panel | EOS cases | Exact original IDs/text | Prefill / teacher-score failures | Gold-quality observations |
+| --- | --- | --- | --- | --- |
+| F16 | 3/3 | 3/3 | 6 / 13 | Shared reference recognition errors remain |
+| Q8 | 3/3 | 1/3 | 225 / 1,404 | Exact inventory; receipt regresses; book lower CER/WER |
+| Mixed Q8/Q6 | 3/3 | 1/3 | 225 / 1,404 | Exact inventory; receipt lower CER/same WER; book higher CER/lower WER |
+
+These are three frozen inputs, not corpus/upstream benchmark accuracy. All original/
+F16/weight replays pass; numerical and gold errors stay visible. Mixed score fidelity
+is worse than Q8 on each input. Smaller storage and F16 control tensors do not prove
+a better recipe. Q4 is queued independently; no runtime/default/artifact/alias/release/
+app-pin promotion occurs. Earlier924/56 historical debt remains retained.
+
 ## Qwen3.5 retained recipe storage breakdown (2026-10-16)
 
 Byte sums below come from the full tensor manifests in the verified Q8/mixed

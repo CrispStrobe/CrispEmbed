@@ -2117,8 +2117,8 @@ and worst max_abs1.08967495 versus Q8's0.999256611/0.440546274 on this inventory
 The smaller file and higher A/B precision do not establish score or OCR improvement.
 [Complete report](../tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json)
 and [magnitudes/confidence/timing](../PERFORMANCE.md). All gates and failed alternatives
-remain unchanged; no held-out calibration. Mixed receipt/book are running; Q4
-follows review. No runtime/default/artifact/alias/release/app-pin change.
+remain unchanged; no held-out calibration. All mixed cases are now complete; full panel results follow below, with Q4
+queued for assessment. No runtime/default/artifact/alias/release/app-pin change.
 
 ## Independent mixed Q8/Q6 receipt — 16 October 2026
 
@@ -2131,10 +2131,29 @@ aggregate error decrease, not proof of better item/general recognition. Mixed
 retains75/473 prefill/score failures versus F16's1/0, minimum score cosine0.997738481
 and worst abs1.08097315, worse than Q8's0.999563456/0.454777241. All gates and failed
 alternatives remain. [Full receipt report](../tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
-and [error/confidence/timing limits](../PERFORMANCE.md). Mixed book is running.
+and [error/confidence/timing limits](../PERFORMANCE.md). The mixed book is complete (next section).
 Unchanged Q4 [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
 [receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
 and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206)
 are queued at8bf55424 on independent hosted lanes. Assess the complete mixed panel
 before Q4. Each case replays its own frozen original/F16 controls; overlapping
 preselected evaluation runs does not introduce held-out calibration. No held-out calibration or runtime/publication promotion.
+
+## Independent mixed book and completed panel — 16 October 2026
+
+The completed [book38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
+atf43c4b77 reproduces all original/F16/weight controls and five raw logs. Mixed
+reaches EOS with685 tokens versus683, first free/teacher-argmax divergence130.
+Book content CER rises11.47%→11.51% while WER falls17.63%→17.45%; full text changes
+and shared recognition errors remain. Mixed retains75/683 prefill/score failures
+versus F16's5/13, minimum score cosine0.998528719 and worst abs1.22282577, worse
+than Q8's0.99960196/0.546159744. [Complete book report](../tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json),
+[all magnitudes/confidence/timing and panel comparison](../PERFORMANCE.md).
+
+The mixed panel reaches3/3 EOS and matches original IDs/text only on inventory,
+retaining225 prefill/1,404 score failures versus F16's6/13. Receipt has lower CER/
+unchanged WER; book higher CER/lower WER. Mixed score fidelity is worse than Q8
+on every input; smaller storage and higher control precision do not establish a
+better overall recipe. Q4 cases are queued independently at8bf55424 and are next
+for complete-panel review. No gates are weakened, recipes calibrated on held-out
+inputs, defaults changed or artifacts/aliases/releases/app pins promoted.

@@ -66,26 +66,20 @@ on the evaluation inputs. Publication and numerical promotion remain separate.
 | Preselected recipe | Inventory (784 patches) | Historical receipt (968) | Book (1008) |
 | --- | --- | --- | --- |
 | Q8, vision F32 | [Complete248 EOS/15 cells;75 prefill/248 score failures](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [Complete EOS;8PK→SPK regression;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json) | [Complete EOS;changed text;75/683 failures](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json) |
-| Attention Q8 / FFN Q6, vision F32 | [Complete248 EOS/15 cells;75/248 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json) | [Complete EOS;changed text;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json) | [Running38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059) |
+| Attention Q8 / FFN Q6, vision F32 | [Complete248 EOS/15 cells;75/248 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json) | [Complete EOS;changed text;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json) | [Complete EOS;changed text;75/683 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json) |
 | Q4, vision F32 | [Queued38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054) | [Queued38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308) | [Queued38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206) |
 
 [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) implements the bounded
 driver; [41 source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781)
 and frozen preparation replay pass. Source secret scan also passes. A dispatched
 or running model audit is not completed numerical or OCR evidence.
-Q8 evaluation is complete:3/3 EOS,1/3 original ID/text matches (inventory), receipt
-regression and changed book text with slightly lower aggregate gold errors. All
-original/F16/weight replays pass; retain225 Q8 prefill/1,404 score failures and
-F16's6/13. [Completed panel evidence](HISTORY.md). Three preselected mixed runs
-use source `f43c4b7714da91ad7479120bb3005817c7ae6aed`, unchanged recipes/caps and
-separate immutable hosted lanes. Mixed inventory completes with exact248 IDs/text/
-EOS and15/15 cells, but retains75/248 failures and worse score drift than Q8
-(min cosine0.998120904, worst abs1.08967495). Mixed receipt completes with changed
-text, slightly lower CER/unchanged WER and75/473 numerical failures. Book is
-running. Queue the unchanged Q4 cases independently while retaining panel review
-order. The three Q4 runs use source `8bf5542423f0809a4a2eec4cc170deb0547e7dce`,
-the existing Q4/F32-vision recipe and separate immutable hosted lanes. No held-out
-calibration or recipe selection occurs.
+Q8 and mixed evaluation are complete: each3/3 EOS,1/3 exact original ID/text
+matches. All original/F16/weight replays and raw logs verify. Both retain225
+prefill/1,404 score failures versus F16's6/13. Mixed has worse score fidelity than
+Q8 on every input, with mixed receipt lower CER/same WER and book higher CER/lower
+WER. [Completed evidence and limits](HISTORY.md). Q4 runs use unchanged recipes,
+1024 caps and source `8bf5542423f0809a4a2eec4cc170deb0547e7dce`; review their complete
+panel next. No held-out calibration, optimal-profile selection or promotion.
 
 ## Remaining Qwen numerical attribution
 
@@ -306,7 +300,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8 cases and mixed inventory independently verified; mixed inventory exact248 IDs/text/EOS and15/15 cells, retaining75/248 numerical failures with worse score drift than Q8. Mixed receipt38942903455 completes with changed text/lower CER/unchanged WER and75/473 failures; book38942909059 running atf43c4b77. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups the mixed reports; Q4 inventory38951917054/receipt38951920308/book38951924206 queued at8bf55424 on independent hosted lanes, with full mixed review before Q4 assessment. PR63 full platform/WASM/contract/secret checks now pass; latest main/PR65 checks remain pending. No promotion |
+| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8/all3 mixed cases independently verified; each3/3 EOS and1/3 original ID/text matches, with225/1,404 numerical failures. Mixed score fidelity worse than Q8 on every input. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups complete mixed evidence. Q4 inventory38951917054/receipt38951920308/book38951924206 queued at8bf55424; review next. PR63 full CI passes; newer conclusions remain separate. No promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

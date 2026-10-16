@@ -117,8 +117,11 @@ IDs/text. The [mixed inventory](tests/results/qwen35-ocr/quality-quant-q8-q6-inv
 preserves248 IDs/text/EOS and15/15 cells, but75/248 failures remain with worse score
 drift than Q8 (min cosine0.998120904, worst abs1.08967495). The [mixed receipt](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
 changes text with slightly lower CER/unchanged WER and retains75/473 failures.
-Mixed book is running; three unchanged Q4 cases are queued independently. Review
-the complete mixed panel before Q4 assessment, using the same frozen contract. No default or publication promotion follows from this panel.
+The [mixed book](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json)
+completes with685 EOS tokens, changed text, slightly higher CER/lower WER and75/683
+failures. The complete mixed panel reaches3/3 EOS but matches original IDs/text on1/3;
+all replays verify and mixed score fidelity is worse than Q8 on every input.
+Review the three queued unchanged Q4 cases next using the same frozen contract. No default or publication promotion follows from this panel.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.
