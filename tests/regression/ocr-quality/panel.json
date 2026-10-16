@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "policy": "crispembed-ocr-quality-v1",
+  "purpose": "Small held-out Qwen quantization comparison; not an upstream/corpus benchmark and not guaranteed absent from pretraining.",
+  "selection": "Two existing high-confidence manual annotations not used in prior Qwen four-document development panel, plus owned controlled table. Gold authored independently of OCR output. Full pages explicitly resized for existing native patch bound; no automatic runtime downsizing.",
+  "development_reports": [
+    "tests/results/qwen35-ocr/page-parity.json",
+    "tests/results/qwen35-ocr/receipt.json"
+  ],
+  "calibration_report": "tests/results/qwen35-ocr/ffn-calibration-parity.json",
+  "cases": [
+    {
+      "id": "historical-receipt",
+      "split": "evaluation",
+      "kind": "real-document",
+      "source": "tests/regression/images/cc0/receipt_historical.tif",
+      "source_sha256": "f479c79b45d01b6927887ef979c9d731ea0336134a83809738e7bbcf66e4b3e5",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Alexander%27s_Supermarket_receipt,_late_twentieth_century.tif",
+      "license": "CC0-1.0",
+      "resize": [
+        352,
+        704
+      ],
+      "crop": null,
+      "renderer": "Pillow RGB BICUBIC",
+      "gold": "tests/regression/ocr-quality/historical-receipt.gold.json",
+      "gold_sha256": "e564c36399792f79ba962708352cf75b60b0e52a9a8a8fdceeea2cdc70a44ead",
+      "max_new_tokens": 1024,
+      "prompt": ""
+    },
+    {
+      "id": "two-column-page",
+      "split": "evaluation",
+      "kind": "real-document",
+      "source": "tests/regression/images/cc0/commons_test_ocr_document.jpg",
+      "source_sha256": "92d117d352ed2ebe86efc72e661407761f2747bf44fe7a292facd8d75735e4be",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Test_OCR_document.jpg",
+      "license": "CC0-1.0",
+      "resize": [
+        448,
+        576
+      ],
+      "crop": null,
+      "renderer": "Pillow RGB BICUBIC",
+      "gold": "tests/regression/ocr-quality/two-column-page.gold.json",
+      "gold_sha256": "e0aa049d6eef61b5fa79eebbd6b747f18552d0c670bf44bbf16f067b394c4feb",
+      "max_new_tokens": 1024,
+      "prompt": ""
+    },
+    {
+      "id": "inventory-table",
+      "split": "evaluation",
+      "kind": "owned-controlled-document",
+      "source": "tests/regression/ocr-quality/inventory.svg",
+      "source_sha256": "c4cc20f79a2f9105ad14f6fd8f4d4d1db956b8004854a03d074a528422dcee6a",
+      "source_page": "https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/regression/ocr-quality/inventory.svg",
+      "license": "MIT",
+      "resize": null,
+      "crop": null,
+      "renderer": "CairoSVG 2.8.2 / system DejaVu Sans (font hash recorded by hosted preparation)",
+      "gold": "tests/regression/ocr-quality/inventory.gold.json",
+      "gold_sha256": "801171c1459131e5d34479d6820fcc3dd260c9ea7110b0cbb4a6705e0f729e76",
+      "max_new_tokens": 1024,
+      "prompt": ""
+    }
+  ]
+}

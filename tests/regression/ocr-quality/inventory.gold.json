@@ -1,0 +1,33 @@
+{
+  "text": "Workshop inventory\nMünchen, 14 October 2026\nPart Count Unit EUR\nValve A7 2 12.40\nSeal B4 5 0.85\nCable C9 1 6.30\nBracket D2 3 4.15\nChecked by: R. Keller\nBatch: WX-731",
+  "tables": [
+    [
+      [
+        "Part",
+        "Count",
+        "Unit EUR"
+      ],
+      [
+        "Valve A7",
+        "2",
+        "12.40"
+      ],
+      [
+        "Seal B4",
+        "5",
+        "0.85"
+      ],
+      [
+        "Cable C9",
+        "1",
+        "6.30"
+      ],
+      [
+        "Bracket D2",
+        "3",
+        "4.15"
+      ]
+    ]
+  ],
+  "provenance": "Owned evaluation content, authored before model/reference generation; SVG text and grids manually specified. MIT, same as repository."
+}

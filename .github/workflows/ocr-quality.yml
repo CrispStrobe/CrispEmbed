@@ -1,0 +1,39 @@
+name: OCR quality contract
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ocr-quality.yml'
+      - 'tools/ocr_quality.py'
+      - 'tools/ci-heavy/ocr_quality_prepare.py'
+      - 'tests/test_ocr_quality.py'
+      - 'tests/regression/ocr-quality/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ocr-quality.yml'
+      - 'tools/ocr_quality.py'
+      - 'tools/ci-heavy/ocr_quality_prepare.py'
+      - 'tests/test_ocr_quality.py'
+      - 'tests/regression/ocr-quality/**'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ocr_quality.py -v
+      - run: python -m pip install Pillow==11.3.0 CairoSVG==2.8.2
+      - name: Prepare held-out derivatives without model inference
+        env:
+          HEAVY_OUT: ${{ runner.temp }}/ocr-quality
+        run: python tools/ci-heavy/ocr_quality_prepare.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ocr-quality-contract
+          path: ${{ runner.temp }}/ocr-quality/
+          if-no-files-found: error
+          retention-days: 30
