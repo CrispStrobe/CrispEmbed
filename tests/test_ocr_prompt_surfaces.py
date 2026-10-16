@@ -36,13 +36,14 @@ ORCH_PROMPT = {
     "granite_vision": "vlm_prompt",
     "lfm2_vl": "lfm2_vl_ocr_set_prompt",
     "unified": "crispembed_ocr_model_set_prompt",
+    "qwen35_ocr": "qwen35_ocr_recognize_raw",
 }
 
 # OCR_MODEL_* tags crispembed_ocr_model_set_prompt() must accept.
-ABI_PROMPT = {"QWEN2VL", "INTERNVL2", "LFM2_VL", "GRANITE_VISION"}
+ABI_PROMPT = {"QWEN2VL", "INTERNVL2", "LFM2_VL", "GRANITE_VISION", "QWEN35_OCR"}
 
 # CLI engine ids (eng_id in examples/cli/main.cpp) that accept a prompt.
-CLI_PROMPT_NAMES = {"qwen2vl", "internvl2", "granite-vision", "qwen3vl", "unified", "olmocr", "lfm2-vl"}
+CLI_PROMPT_NAMES = {"qwen2vl", "internvl2", "granite-vision", "qwen3vl", "unified", "olmocr", "lfm2-vl", "qwen35-ocr"}
 
 
 def read(rel: str) -> str:
@@ -57,16 +58,16 @@ def case_body(src: str, eng: str) -> str:
     return m.group(1)
 
 
-def main() -> int:
+def audit(read_source=read) -> list[str]:
     errors: list[str] = []
 
-    orch = read("src/ocr_orchestrator.cpp")
+    orch = read_source("src/ocr_orchestrator.cpp")
     for eng, marker in ORCH_PROMPT.items():
         body = case_body(orch, eng)
         if "vlm_prompt" not in body or marker not in body:
             errors.append(f"run_engine({eng}) does not forward st.params.vlm_prompt via {marker}")
 
-    abi = read("src/crispembed.cpp")
+    abi = read_source("src/crispembed.cpp")
     m = re.search(r"int crispembed_ocr_model_set_prompt\(void \* ctx, const char \* prompt\) \{(.*?)\n\}", abi, re.S)
     if not m:
         errors.append("crispembed_ocr_model_set_prompt not found")
@@ -75,7 +76,7 @@ def main() -> int:
         for tag in sorted(ABI_PROMPT - handled):
             errors.append(f"crispembed_ocr_model_set_prompt() does not handle OCR_MODEL_{tag}")
 
-    cli = read("examples/cli/main.cpp")
+    cli = read_source("examples/cli/main.cpp")
     ids = {name: int(i) for name, i in re.findall(r'if \(n == "([\w-]+)"[^)]*\) return (\d+);', cli)}
     tm = re.search(r"const bool takes_prompt =(.*?);", cli, re.S)
     if not tm:
@@ -91,16 +92,50 @@ def main() -> int:
         errors.append("CLI --ocr lane does not call crispembed_ocr_model_set_prompt")
 
     for rel in ("examples/cli/main.cpp", "examples/server/server.cpp"):
-        src = read(rel)
+        src = read_source(rel)
         if re.search(r"st\.vlm_prompt = nullptr;", src):
             errors.append(f"{rel}: stage builder hardcodes st.vlm_prompt = nullptr")
 
+    raw = re.search(r"case OCR_MODEL_QWEN35_OCR:\s*return qwen35_ocr_recognize_raw\((.*?)\);", abi, re.S)
+    if not raw or "u->prompt" not in raw[1]:
+        errors.append("Qwen3.5 ABI recognize_raw does not forward stored prompt")
+    return errors
+
+
+def negative_controls() -> list[str]:
+    originals = {rel: read(rel) for rel in ("src/crispembed.cpp", "src/ocr_orchestrator.cpp",
+                                            "examples/cli/main.cpp", "examples/server/server.cpp")}
+    mutations = [
+        ("CLI", "examples/cli/main.cpp", " || eid == 20;", ";", "CLI takes_prompt ids"),
+        ("orchestrator", "src/ocr_orchestrator.cpp", "st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str()", "nullptr", "run_engine(qwen35_ocr)"),
+        ("ABI setter", "src/crispembed.cpp", "    case OCR_MODEL_QWEN35_OCR:\n        if (!reset", "    case OCR_MODEL_UNKNOWN_CONTROL:\n        if (!reset", "does not handle OCR_MODEL_QWEN35_OCR"),
+        ("ABI recognition", "src/crispembed.cpp", "return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch,\n                                        u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);", "return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch, nullptr, ol);", "does not forward stored prompt"),
+    ]
+    failures = []
+    for label, rel, old, new, expected in mutations:
+        if old not in originals[rel]:
+            failures.append("negative-control source anchor missing: " + label)
+            continue
+        changed = dict(originals)
+        # The orchestrator expression also occurs in other engines; mutate only its Qwen3.5 case.
+        if label == "orchestrator":
+            body = case_body(changed[rel], "qwen35_ocr")
+            changed[rel] = changed[rel].replace(body, body.replace(old, new))
+        else:
+            changed[rel] = changed[rel].replace(old, new, 1)
+        if not any(expected in error for error in audit(changed.__getitem__)):
+            failures.append("negative mutation accepted: " + label)
+    return failures
+
+
+def main() -> int:
+    errors = audit() + negative_controls()
     if errors:
         for e in errors:
             print("FAIL:", e)
         return 1
     print(f"OCR prompt surfaces OK: {len(ORCH_PROMPT)} orchestrator stages, {len(ABI_PROMPT)} ABI engines, "
-          f"{len(CLI_PROMPT_NAMES)} CLI engine names")
+          f"{len(CLI_PROMPT_NAMES)} CLI engine names; four prompt-loss mutations rejected")
     return 0
 
 
