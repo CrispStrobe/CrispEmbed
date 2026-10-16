@@ -93,6 +93,8 @@ jobs:
         with:
           python-version: '3.12'
 
+      - run: python tests/test_registry_pin_contract.py -v
+
       - run: pip install --disable-pip-version-check huggingface_hub
 
       # Why this lives in the daily job and not in Lint: it asks huggingface.co

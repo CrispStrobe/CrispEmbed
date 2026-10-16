@@ -1218,7 +1218,8 @@ static const ModelEntry k_registry[] = {
       "CLIP ViT-L/14 vision encoder (304M)", "1.2 GB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
 
     { "nomic-embed-vision-v1.5", "nomic-embed-vision-v1.5-f16.gguf",
-      "https://huggingface.co/cstr/nomic-embed-vision-v1.5-GGUF/resolve/main/nomic-embed-vision-v1.5-f16.gguf",
+      "https://huggingface.co/cstr/nomic-embed-vision-v1.5-GGUF/resolve/33579f20a5d69eaecebc6f5e56175af6b2594b67/"
+      "nomic-embed-vision-v1.5-f16.gguf",
       "Nomic Embed Vision v1.5 (ViT-B/16, 92M; same space as nomic-embed-text-v1.5)", "188 MB", "apache-2.0",
       "https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5" },
 
@@ -1599,10 +1600,13 @@ static const ModelEntry k_registry[] = {
     // download, and the engine separately requires CRISPEMBED_ACCEPT_LFM_LICENSE=1
     // to load.
     { "lfm2-vl", "LFM2.5-VL-3B-Q4_K_M.gguf",
-      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/LFM2.5-VL-3B-Q4_K_M.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/"
+      "LFM2.5-VL-3B-Q4_K_M.gguf",
       "LFM2.5-VL document OCR (SigLIP2 NaFlex + LFM2 hybrid conv/attn, 3.4B, Q4_K_M)", "1.67 GB", "lfm1.0",
       "https://huggingface.co/LiquidAI/LFM2.5-VL-3B", nullptr, "mmproj-LFM2.5-VL-3B-F16.gguf",
-      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/mmproj-LFM2.5-VL-3B-F16.gguf", "854 MB" },
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/"
+      "mmproj-LFM2.5-VL-3B-F16.gguf",
+      "854 MB" },
 
     { "pix2struct-base", "pix2struct-base-q8_0.gguf",
       "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
@@ -1638,12 +1642,14 @@ static const ModelEntry k_registry[] = {
     // carries its own prompt layout, rope base 1e6 and plain-greedy decode.
     // CC BY-NC 4.0: flagged, needs --accept-license to auto-download.
     { "jina-ocr-v1", "jina-ocr-v1-q4_k.gguf",
-      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q4_k.gguf",
+      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/b27a3836fdab18dd3f1c51e1d41a5038b406a000/"
+      "jina-ocr-v1-q4_k.gguf",
       "jina-ocr-v1 (DeepSeek-OCR MoE 3.4B / 570M active, doc OCR -> Markdown, Q4_K)", "2.3 GB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-ocr-v1" },
     { "jina-ocr-v1-q8", "jina-ocr-v1-q8_0.gguf",
-      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q8_0.gguf", "jina-ocr-v1 (Q8_0)", "3.6 GB",
-      "cc-by-nc-4.0", "https://huggingface.co/jinaai/jina-ocr-v1" },
+      "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/b27a3836fdab18dd3f1c51e1d41a5038b406a000/"
+      "jina-ocr-v1-q8_0.gguf",
+      "jina-ocr-v1 (Q8_0)", "3.6 GB", "cc-by-nc-4.0", "https://huggingface.co/jinaai/jina-ocr-v1" },
 
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
     // License: Apache-2.0
@@ -1928,7 +1934,8 @@ static const ModelEntry k_registry[] = {
 
     // Uni-MuMER handwritten math OCR (Qwen3-VL / Qwen2.5-VL fine-tunes)
     { "uni-mumer-qwen3-vl-2b", "uni-mumer-qwen3-vl-2b-q4_k.gguf",
-      "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/main/uni-mumer-qwen3-vl-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/07f9ae65073bcee635c563d18c694ee4d7d4dfc6/"
+      "uni-mumer-qwen3-vl-2b-q4_k.gguf",
       "Uni-MuMER handwritten math→LaTeX (Qwen3-VL-2B, 82% CROHME)", "1509 MB", "apache-2.0",
       "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF" },
 
