@@ -13,6 +13,8 @@ on:
       - 'tools/ci-heavy/qwen35_book_isolation.py'
       - 'tools/ci-heavy/qwen35_book_vision.py'
       - 'tests/test_qwen35_book_vision.py'
+      - 'tools/ci-heavy/qwen35_quality_quant.py'
+      - 'tests/test_qwen35_quality_quant.py'
       - 'tools/qwen35_decode_reference.py'
       - 'tools/dump_qwen35_ocr_page_reference.py'
       - 'tests/test_qwen35_quant.cpp'
@@ -38,6 +40,8 @@ on:
       - 'tools/ci-heavy/qwen35_book_isolation.py'
       - 'tools/ci-heavy/qwen35_book_vision.py'
       - 'tests/test_qwen35_book_vision.py'
+      - 'tools/ci-heavy/qwen35_quality_quant.py'
+      - 'tests/test_qwen35_quality_quant.py'
       - 'tools/qwen35_decode_reference.py'
       - 'tools/dump_qwen35_ocr_page_reference.py'
       - 'tests/test_qwen35_quant.cpp'
@@ -65,6 +69,7 @@ jobs:
       - run: python tests/test_qwen35_quality.py -v
       - run: python tests/test_qwen35_book_isolation.py -v
       - run: python tests/test_qwen35_book_vision.py -v
+      - run: python tests/test_qwen35_quality_quant.py -v
       - run: python -m pip install Pillow==11.3.0 CairoSVG==2.8.2
       - name: Prepare held-out derivatives without model inference
         env:
