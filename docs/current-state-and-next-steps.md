@@ -195,7 +195,7 @@ replay pass; all ten PR62 Build jobs (including Flutter), WASM, contract and
 secret checks now pass at17b4b7dc. [Platform evidence38922363407](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363407).
 PR63's complete ten-job Build (including Flutter), WASM, contract and secret checks
 now pass; [platform38933245371](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38933245371).
-Latest PR65/merged-main broader checks remain pending. Continue independent-document
+Latest PR67/merged-main broader checks remain pending. Continue independent-document
 quantized evaluation while retaining projection/reduction attribution as open
 numerical debt. No runtime/default/weight/release/app-pin promotion.
 The first [independent Q8 inventory audit](../tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
@@ -234,14 +234,26 @@ reproduces all original/F16/weight controls and raw logs. Mixed reaches685 EOS
 tokens versus683, first divergence130; content CER rises11.47%→11.51% while WER
 falls17.63%→17.45%. It retains75/683 prefill/score failures (min cosine0.998528719,
 worst abs1.22282577). Mixed panel:3/3 EOS,1/3 exact original IDs/text,225/1,404
-numerical failures; score fidelity is worse than Q8 on every input. The three
-unchanged Q4 cases are queued independently at
-8bf55424: [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
-[receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
-and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206).
-Every case has its own original/F16 replay; review the complete Q4 panel next.
-Scheduling overlap changes no recipe or quality decision. No held-out calibration,
-corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
+numerical failures; score fidelity is worse than Q8 on every input. Q4 [inventory](../tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json),
+[receipt](../tests/results/qwen35-ocr/quality-quant-q4-historical-receipt.json) and
+[book](../tests/results/qwen35-ocr/quality-quant-q4-two-column-page.json) at8bf55424
+are complete measurements. All original/F16/weight records and five logs each verify.
+Inventory preserves248 IDs/text/EOS and15/15 cells. Receipt diverges at25, changes
+to HTML and truncates at1024 without EOS; unclosed HTML leaves content/cells unscored.
+Book reaches693 EOS tokens versus683, diverges at26, has equal content CER11.47%
+and worse WER17.63%→17.81%. Q4 retains225 prefill/1,404 score failures, minimum
+score cosine0.928607225 and worst abs7.40867901; gates/caps remain unchanged.
+
+The full nine-run panel uses three unique inputs. Q8/mixed reach3/3 EOS, Q4 reaches
+2/3; all three quantized recipes match original IDs/text only on inventory. F16
+matches all originals but retains6/13 numerical failures. [Complete comparison](../PERFORMANCE.md)
+and [source/report matrix](../HISTORY.md). The public model-free auditor preserves
+all failures when records verify; all50 hosted controls pass at5dbabaa1/
+[38957526079](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38957526079).
+No candidate is promoted or published, and the app stays on immutable0.17.12.
+UltraBERT is the next independent implementation lane; OCR numerical attribution,
+broader quality and validated publication remain pending. Newer platform CI
+conclusions remain separate from the exact completed source controls above.
 
 The iOS standalone-target repair now passes the complete
 [ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),

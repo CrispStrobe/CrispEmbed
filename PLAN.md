@@ -27,59 +27,41 @@ probe softmax exp/sum boundaries only where evidence warrants a correction.
 Original arrays stay test-only. Exact Python output on this panel does not waive
 numerical debt or establish transcription accuracy.
 
-1. [x] **Complete bounded book vision localization.** [Report](tests/results/qwen35-ocr/book-vision.json)
-   ataccd903c/run38917305082 preserves77 baseline prefill/434 original CPU-control
-   records and24 exact native controls. All712 operator/372 attention vectors pass
-   existing qualified budgets, but raw same-input block11 down error0.00268554688
-   remains. Four existing settings retain5/6/5/8 prefill failures despite smaller
-   alternative merger errors. Full683-token baseline quality is retained, not rerun;
-   no alternative full-generation improvement or single causal defect is proved.
-   [Completed evidence/limits](HISTORY.md). Numerical attribution below remains open.
-2. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
-   Q8/Q6 differs on form/German. Retain all calibration alternatives and compare
-   full IDs/EOS/text, score errors, confidence and frozen quality measures for
-   F16/Q8/Q8-Q6/Q4 candidates, including adequate receipt caps. High cosine and
-   synthetic matches are not promotion gates.
-3. [ ] **Publish only a validated OCR candidate.** Include source/base license
+The bounded book vision trace and all nine independent-document quantization
+measurements are complete; [HISTORY](HISTORY.md) archives their sources, raw
+reports and matrix, and [PERFORMANCE](PERFORMANCE.md) records decoded/numerical/
+confidence/timing limits. Q4 receipt truncates at1024 with unclosed HTML; all
+quantized recipes change receipt/book text and retain numerical failures. No
+candidate is selected for publication or default promotion.
+
+1. [ ] **Publish only a validated OCR candidate.** Include source/base license
    provenance, measured precision/size/quality limits, HF card, remote byte/hash
    verification, pinned registry aliases and empty-cache download checks. Complete
    CrispSorter/CrispCalc provider/catalog work when a validated artifact exists.
    No LightOnOCR-3 HF artifact, production alias or runtime release is selected yet.
-4. [ ] **Implement UltraBERT-Embed-150M**, following the pinned contract below;
+2. [ ] **Implement UltraBERT-Embed-150M**, following the pinned contract below;
    keep its reference environment separate from OCR.
-5. [ ] **Continue the permissive OCR queue below**, starting with shared small
+3. [ ] **Continue the permissive OCR queue below**, starting with shared small
    backends after the preceding correctness/performance work.
 
-## Independent-document quantization runs
+## Quantization and publication follow-up
 
-Each cell requires fresh original and exact frozen F16 replay, an unchanged
-preselected quantized recipe, full owning-API output/confidence/gold scoring and
-separate strict teacher-score diagnostics. All use the frozen1024-token cap.
-Verify the inventory driver first; review complete Q8, mixed Q8/Q6 and Q4 panels
-in that order. Independent immutable cases, including different preselected
-profiles, may overlap on separate hosted runners using isolated CI lane keys;
-inputs/recipes remain fixed before evaluation. Every case has its own original/
-F16 replay guards, so scheduling overlap introduces no adaptive recipe selection.
-These runs evaluate recipes; they do not calibrate/select weights
-on the evaluation inputs. Publication and numerical promotion remain separate.
+Preserve the completed panel's fixed pixels/gold/caps, original/F16 replay,
+raw outputs/confidences and all failed precision/calibration alternatives.
 
-| Preselected recipe | Inventory (784 patches) | Historical receipt (968) | Book (1008) |
-| --- | --- | --- | --- |
-| Q8, vision F32 | [Complete248 EOS/15 cells;75 prefill/248 score failures](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [Complete EOS;8PK→SPK regression;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json) | [Complete EOS;changed text;75/683 failures](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json) |
-| Attention Q8 / FFN Q6, vision F32 | [Complete248 EOS/15 cells;75/248 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json) | [Complete EOS;changed text;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json) | [Complete EOS;changed text;75/683 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json) |
-| Q4, vision F32 | [Queued38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054) | [Queued38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308) | [Queued38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206) |
+- [ ] Further recipe work needs declared development inputs and independent
+  evaluation before candidate selection; do not fit weights/prompts/tolerances
+  or extend the cap to make this held-out panel pass.
+- [ ] Resolve the numerical attribution below and establish an acceptable full-
+  document quality/format/completion candidate before HF publication or aliases.
+  The current panel qualifies none of the tested quantized recipes for promotion.
+  Corpus/upstream benchmark reproduction and larger-page validation remain open.
+- [ ] Inspect latest PR67/merged-main platform conclusions after runners finish.
+  All50 auditor/quality controls pass at5dbabaa1; later report-only changes keep
+  that code/test source unchanged. Evidence verification does not waive model debt.
 
-[PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) implements the bounded
-driver; [41 source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781)
-and frozen preparation replay pass. Source secret scan also passes. A dispatched
-or running model audit is not completed numerical or OCR evidence.
-Q8 and mixed evaluation are complete: each3/3 EOS,1/3 exact original ID/text
-matches. All original/F16/weight replays and raw logs verify. Both retain225
-prefill/1,404 score failures versus F16's6/13. Mixed has worse score fidelity than
-Q8 on every input, with mixed receipt lower CER/same WER and book higher CER/lower
-WER. [Completed evidence and limits](HISTORY.md). Q4 runs use unchanged recipes,
-1024 caps and source `8bf5542423f0809a4a2eec4cc170deb0547e7dce`; review their complete
-panel next. No held-out calibration, optimal-profile selection or promotion.
+Publication is conditional on validation. UltraBERT is the next independent
+implementation lane while the OCR correctness/publication follow-ups remain open.
 
 ## Remaining Qwen numerical attribution
 
@@ -154,9 +136,9 @@ inspection, conversion and inference remain outside the selected scope; its
 
 - [ ] **Latest CI conclusions:** PR62 and PR63 complete ten-job Build (including
   Flutter), WASM, quality contract and secret checks pass; [completed evidence](HISTORY.md).
-  Inspect the latest merged-main and PR65 platform/secret conclusions after runners
-  start. All41 numerical-driver source controls and the initial ARM64 Q8 audit
-  have verified evidence; queued broader checks are not passing evidence. Record
+  Inspect the latest merged-main and PR67 platform/secret conclusions after runners
+  start. All50 quality/auditor controls and all nine paired audits
+  have verified source evidence; queued broader checks are not passing evidence. Record
   actual failures before further promotion.
 - [ ] **W1:** repair macOS arm64 Python-wheel delocate/deployment-target failure;
   validate installed wheel load, then the full matrix and aggregation.
@@ -300,7 +282,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8/all3 mixed cases independently verified; each3/3 EOS and1/3 original ID/text matches, with225/1,404 numerical failures. Mixed score fidelity worse than Q8 on every input. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups complete mixed evidence. Q4 inventory38951917054/receipt38951920308/book38951924206 queued at8bf55424; review next. PR63 full CI passes; newer conclusions remain separate. No promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

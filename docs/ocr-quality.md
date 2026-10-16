@@ -191,3 +191,45 @@ and [quality/timing scopes](../PERFORMANCE.md) are retained. Next localize the
 book divergence with original same-input isolation and faithful attention probes;
 quantization, larger pages and corpus evaluation remain open. No production,
 release, annotation, prompt/default or weight publication change.
+
+## Recheck a saved quantization audit
+
+`tools/audit_qwen35_quality_quant.py` checks one completed Q8, Q8/Q6 or Q4
+report against its five native/quantizer logs, frozen original/F16 records,
+source hashes, preselected precision rules and recorded weight identities/tensor
+manifests. It uses the existing shared parsers and scorer with Python's standard
+library. Keep model weights and large reference archives remote; stage only the
+small report and logs from the matching hosted run.
+
+For the mixed inventory audit, stage `quality-quant-q8-q6-inventory-table.json`,
+`f16-baseline-prefill.log`, `f16-baseline-decode.log`,
+`attention-q8-ffn-q6-prefill.log`, `attention-q8-ffn-q6-decode.log` and
+`quantizer.log` together, then run:
+
+```sh
+python tools/audit_qwen35_quality_quant.py \
+  audit-input/quality-quant-q8-q6-inventory-table.json \
+  --logs audit-input \
+  --source-commit f43c4b7714da91ad7479120bb3005817c7ae6aed
+```
+
+Use the actual workflow source commit. The checkout must preserve every recorded
+runtime/diagnostic source and frozen report/recipe hash; changed sources or missing
+records fail the audit. Raw artifact JSON and the retained augmented JSON are both
+accepted. The output includes the exact input-report, log and auditor hashes.
+
+Exit0 and `evidence_verified=true` mean the saved evidence verifies. The output
+also retains every numerical, output and incomplete-document failure. For example,
+mixed inventory still reports75 prefill/248 score failures even when its evidence
+verifies. This command reparses existing measurements and recorded weight manifests;
+original inference, actual weight-file hashing and generation remain the hosted
+producer's responsibility. Numerical parity, OCR quality and publication each keep
+their own gates. Hosted negative controls cover altered provenance, frozen replay,
+precision/payload claims, quantizer records and missing logs.
+
+All50 hosted quality/auditor controls pass at `5dbabaa15b27d95782e4491bb13efbe775c869c2`
+in [38957526079](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38957526079).
+The tested auditor also verifies the Q4 receipt's incomplete/unclosed-HTML records
+while retaining completion/format/output/numerical failures. [Complete independent
+panel and limits](../PERFORMANCE.md) are measured evidence; no threshold, cap,
+recipe, runtime default or publication choice changes.
