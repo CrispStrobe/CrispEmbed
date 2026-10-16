@@ -177,6 +177,10 @@ def main():
                         *(["test-qwen35-profile", "test-qwen35-materialize"] if profile_check else []),
                         *(["test-qwen35-attention-trace"] if attention_trace else ["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
+        if receipt_check:
+            controls = subprocess.run([str(build / "test-qwen35-quant"), "--request-controls"], capture_output=True, text=True)
+            (out / "receipt-controls.log").write_text(controls.stdout + controls.stderr)
+            controls.check_returncode()
         if profile_check:
             controls = subprocess.run([str(build / "test-qwen35-profile")], capture_output=True, text=True)
             (out / "profile-controls.log").write_text(controls.stdout + controls.stderr)

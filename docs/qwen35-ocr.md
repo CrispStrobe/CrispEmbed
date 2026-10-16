@@ -1851,3 +1851,38 @@ controls pass [38860447197](https://github.com/CrispStrobe/CrispEmbed/actions/ru
 The gate remains default-off; thread-creation failure injection, other-host
 performance and default adoption remain pending. Receipt completion and literal
 transcription prompts are next; no weight/precision/threshold/release promotion.
+
+## Receipt completion and prompt audit
+
+`tools/ci-heavy/qwen35_ocr_bootstrap.py --receipt` keeps the existing frozen
+448×576 receipt derivative and tests an explicit 1024-token cap. The native setter
+already accepts 1..4096 tokens; this extends only the test harness and an explicitly
+selected long-document reference option. Existing compact-reference calls retain
+their 512-token bound. No runtime arithmetic, input geometry, precision or default
+prompt changes. The validated parallel-F16 gate is enabled explicitly for this
+hosted audit; other precision gates and profiling remain off.
+
+Two fresh original Transformers 5.5.4 F32 eager outputs are frozen before receipt
+native runs: upstream image-only and a generic literal plain-text instruction.
+Both use the checkpoint's actual chat template. Prompted and unprompted compact
+captures must match the full original dumper on the small anchor. The image-only
+long run must reproduce the old 384-token original/native prefix, all original
+CPU controls, native score/teacher metrics, native prefix mean confidence and the
+previously captured first 32 native token probabilities exactly.
+
+The four image-only precision arms rerun only the 308 receipt prefill records;
+the other 616 prior records and the full 56-failure historical panel remain retained,
+not claimed as rerun. The literal prompt adds 77 baseline prefill measurements.
+Full runs separately measure original-prefix teacher-forced logits through
+`crispembed-diff` and actual independent owning-API generation. The test-only
+`--full-quality` flag applies the unchanged `qwen35_compare` 0.002 absolute and
+0.99999 row-cosine gates to every generated score vector, without a calibrated
+allowance. It records failed stages rather than waiving them for matching output.
+
+Compare IDs, UTF-8, EOS/cap, lines/characters, native per-token/mean confidence and
+raw CER/WER against the unchanged plain-text gold. Retain structured output and
+raw annotation disagreement; do not strip markup or inject gold to improve a
+verdict. Probabilities are aligned only along identical generated prefixes.
+Reaching the explicit cap is still incomplete. This one-receipt check cannot
+establish a corpus score, default prompt or quantized publication candidate.
+Measurements are pending.
