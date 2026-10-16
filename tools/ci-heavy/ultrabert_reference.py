@@ -2,7 +2,6 @@
 """Hosted-only conversion/reference audit; no registry, upload or runtime changes."""
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 import json
 import os
@@ -47,6 +46,27 @@ def main():
             reader = gguf.GGUFReader(str(path))
             actual = {tensor.name: tensor for tensor in reader.tensors}
             expected = expected_tensors()
+            metadata = {
+                "general.architecture": "ultrabert",
+                "general.license": "apache-2.0",
+                "ultrabert.source.revision": REVISION,
+                "ultrabert.source.weight_sha256": converted["source_weights"],
+                "ultrabert.attention.causal": False,
+                "ultrabert.attention.window_radius": [128, 128, -1] * 8,
+                "ultrabert.rope.freq_base_per_layer": [10000., 10000., 2560000.] * 8,
+                "ultrabert.pooling": "cls",
+                "ultrabert.pooling.normalize_default": False,
+                "tokenizer.ggml.bos_token_id": 0,
+                "tokenizer.ggml.eos_token_id": 0,
+                "tokenizer.ggml.padding_token_id": 0,
+                "tokenizer.ggml.separator_token_id": 15,
+                "tokenizer.ggml.add_bos_token": True,
+                "tokenizer.ggml.add_eos_token": False,
+                "ultrabert.tokenizer.json": (Path(directory) / "tokenizer.json").read_text(),
+            }
+            for key, value in metadata.items():
+                if reader.fields[key].contents() != value:
+                    raise ValueError("GGUF metadata round-trip differs: " + key)
             if set(actual) != {target for target, shape in expected.values()}:
                 raise ValueError("Converted GGUF drops/adds tensors")
             with safe_open(str(Path(directory) / "model.safetensors"), framework="np") as weights:
@@ -57,6 +77,7 @@ def main():
                     if list(reversed(tensor.shape.tolist())) != shape or not np.array_equal(tensor.data.reshape(shape), array.astype(precision)):
                         raise ValueError("GGUF tensor round-trip differs: " + source)
             converted["all_218_roundtrips_exact"] = True
+            converted["metadata_roundtrips_exact"] = True
             report["conversions"].append(converted)
             report_path.write_text(json.dumps(report, indent=2) + "\n")
             del actual, reader

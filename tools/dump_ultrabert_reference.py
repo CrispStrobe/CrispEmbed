@@ -89,12 +89,14 @@ def assert_masks(captured, encoded):
         # same zero ID with an explicit zero mask, never inference from IDs.
         if not torch.all(actual[:, 0, 0, 0] == 0):
             raise ValueError("BOS was masked as padding")
-    if n > 129:
+    boundary_rows = torch.nonzero(keys[:, 129]).flatten() if n > 129 else []
+    if len(boundary_rows):
+        row = int(boundary_rows[0])
         local = captured["layer_0.attention_mask"]
         global_mask = captured["layer_2.attention_mask"]
-        if not (local[0, 0, 0, 127] == 0 and local[0, 0, 0, 128] == 0
-                and local[0, 0, 0, 129] < 0 and local[0, 0, 128, 0] == 0
-                and local[0, 0, 129, 0] < 0 and global_mask[0, 0, 0, 129] == 0):
+        if not (local[row, 0, 0, 127] == 0 and local[row, 0, 0, 128] == 0
+                and local[row, 0, 0, 129] < 0 and local[row, 0, 128, 0] == 0
+                and local[row, 0, 129, 0] < 0 and global_mask[row, 0, 0, 129] == 0):
             raise ValueError("Local/global 127/128/129 boundary differs")
 
 
@@ -147,6 +149,21 @@ def dump(directory, output):
         if not torch.equal(anchor, observed):
             raise ValueError("Reference observation changes ordinary output")
         assert_masks(tensors, encoded)
+        # A real original capture is the positive control. Mask a real BOS to
+        # prove the checker rejects wrong semantics, including a zero-ID BOS.
+        mask = tensors["layer_0.attention_mask"]
+        saved = mask[0, 0, 0, 0].clone()
+        mask[0, 0, 0, 0] = torch.finfo(torch.float32).min
+        rejected = False
+        try:
+            assert_masks(tensors, encoded)
+        except ValueError:
+            rejected = True
+        finally:
+            mask[0, 0, 0, 0] = saved
+        if not rejected:
+            raise ValueError("Mask checker accepted a hidden BOS")
+        assert_masks(tensors, encoded)
         tensors["input_ids"] = encoded["input_ids"].float()
         tensors["attention_mask"] = encoded["attention_mask"].float()
         tensors["cls_raw"] = observed[:, 0, :].detach().clone()
@@ -172,6 +189,7 @@ def dump(directory, output):
                         "attention_mask": encoded["attention_mask"].tolist(),
                         "decoded_input": tokenizer.batch_decode(encoded["input_ids"], skip_special_tokens=False),
                         "neutrality_exact": True, "mask_contract_exact": True,
+                        "wrong_bos_mask_rejected": True,
                         "archive": archive.name, "archive_bytes": archive.stat().st_size,
                         "archive_sha256": sha256(archive),
                         "stages": {name: metrics(array) for name, array in arrays.items()}})
