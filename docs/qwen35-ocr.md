@@ -2084,9 +2084,23 @@ max_abs0.454777241. This is decoded-quality regression under unchanged gates.
 and [magnitudes/confidence/timing limits](../PERFORMANCE.md). No new recipe selection
 or calibration uses this held-out document.
 
-The Q8 [book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
-ata42a28b7 is running. The optional `isolated_lane` CI input allows independent
-immutable cases with separate runner scratch/artifacts to overlap; empty input
-keeps existing script grouping. Retry the same model/recipe/case with its same
-key. All mixed/Q4 cases remain pending. No new runtime arithmetic, precision/default,
-weight publication, HF alias, release or app-pin change.
+The completed [Q8 book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
+ata42a28b7 reproduces original/F16/weight controls and all five raw logs. Q8 reaches
+EOS with684 tokens versus683, first token/teacher-argmax divergence130. Content
+CER/WER decrease slightly11.47%/17.63%→11.20%/17.45%, but English/French text
+changes and shared recognition errors persist. Q8 retains75/683 prefill/score
+failures versus F16's5/13, worst score abs0.546159744, RMS0.119036518 and norms
+2569.29272/2587.71362. [Complete book report](../tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json)
+and [full error/confidence/timing limits](../PERFORMANCE.md).
+
+All Q8 cases reach EOS; only inventory matches original IDs/text. Receipt regresses;
+book changes with slightly lower aggregate gold errors. All225 Q8 prefill/1,404
+teacher-score failures remain under unchanged gates. The three preselected mixed
+Q8/Q6 cases are queued atf43c4b77: [inventory38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105),
+[receipt38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455),
+[book38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059).
+No recipes are selected or calibrated on these inputs. The optional `isolated_lane`
+CI input gives independent immutable cases separate runner scratch/artifacts;
+empty input keeps existing script grouping and retries reuse their case key.
+Q4 follows mixed review. No new runtime arithmetic, precision/default, weight
+publication, HF alias, release or app-pin change.

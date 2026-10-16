@@ -4,6 +4,37 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Independent Q8 book audit completes the three-case panel
+
+[ARM64 audit38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
+at `a42a28b76570c9468add0affd44576fe5ee96881` completes both1024-cap arms on the
+frozen1008-patch two-column book page. Original output/confidence/434 CPU records
+and the entire77-prefill/683-score F16 baseline reproduce. All473 tensor schemas,
+286 protected payloads and the prior1,213,238,272-byte Q8 file hash reproduce.
+Independent reparse of all five logs verifies every raw record and source/recipe
+provenance. Only2.51MB of reports/logs are retrieved from the6.00GB hosted artifact.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json),
+raw artifact-report SHA256 `b5383150b1e5b681a76e1583547f73e271ca768e4608b2c15361f1bb48d1d79f`.
+
+F16 matches all683 original IDs/text/EOS. Q8 reaches EOS with684 tokens, first
+free-token/teacher-argmax divergence130; both retain19 lines, with2937/2931
+characters F16/Q8. Content CER/WER decrease slightly0.11472660/0.17625899→
+0.11204294/0.17446043, while changed text and shared recognition errors remain.
+This one-page decrease is not a general improvement. F16 retains5 prefill/13 score
+failures; Q8 retains75/683. Worst Q8 score error0.546159744 at step511, RMS0.119036518,
+norms2569.29272/2587.71362; minimum score cosine0.99960196. Unchanged0.99999/0.002
+gates and no generated-score allowance keep this completed diagnostic red.
+[Confidence/timing and earlier failures](PERFORMANCE.md).
+
+The Q8 independent panel is now complete: all three reach EOS; only inventory
+matches original IDs/text exactly. Receipt quality regresses; book text changes
+with a small aggregate CER/WER decrease. Original/F16/weight replays pass throughout;
+all225 Q8 prefill and1,404 teacher-score failures remain. This is three controlled
+inputs, not corpus/upstream benchmark reproduction. The three preselected Q8/Q6
+runs are dispatched atf43c4b77, each with an independent hosted lane; Q4 follows
+review of those results. No held-out calibration, runtime/default change, artifact
+publication, alias, release or app-pin change.
+
 ## 2026-10-16 — Independent Q8 receipt audit finds decoded regression
 
 [ARM64 audit38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)

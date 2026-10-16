@@ -110,9 +110,11 @@ preserves248 IDs/text/EOS and15/15 cells, but retains75 prefill/248 score failur
 (min score cosine0.999256611, worst abs0.440546274). Original/F16/quantized-weight
 replay and41 source controls pass. PR63 is merged. The [Q8 receipt](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json)
 completes with8PK→SPK decoded regression and75/473 prefill/score failures;
-original/F16/weight replay and all logs verify. Continue running Q8 book, then preselected
-mixed/Q4 cases with the same frozen quality contract; no promotion follows from
-this single controlled table.
+original/F16/weight replay and all logs verify. The [Q8 book](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json)
+completes with changed text and slightly lower aggregate gold errors, retaining75/683
+prefill/score failures. All three Q8 cases reach EOS; only inventory matches original
+IDs/text. Three preselected mixed cases are queued; review them, then Q4, using the
+same frozen contract. No default or publication promotion follows from this panel.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.
