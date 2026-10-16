@@ -4,6 +4,28 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Qwen3.5 decoded panel, retained incomplete sweep
+
+[Hosted38815606213](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38815606213)
+at `fa5809d8` reaches its120-minute script limit during the final arm. All14
+completed document/setting comparisons match original full IDs, UTF-8 text and
+EOS/cap stops. Baseline, combined F64 and cascade finish all four documents;
+cascade-attention finishes Arabic and form. Its receipt and German comparisons
+remain unfinished. All four original full outputs, 1,302 original CPU-control
+records, 770 completed strict prefill records and all four earlier baseline decode
+measurements reproduce exactly. The completed prefill comparisons retain45
+failures. The initial report is incomplete, not a completed four-arm quality gate.
+
+[All completed raw records](tests/results/qwen35-ocr/decoded-panel-initial.json)
+retain source/weight hashes, confidence, full text/IDs, every score metric and
+available CER/WER. Receipt outputs remain384-token prefixes. Source Python and
+native kernels/defaults/tolerances are unchanged; confidence metadata observes
+actual original scores. Eleven model-free output controls pass both locally and
+in [hosted38815730358](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38815730358).
+The completion driver recaptures and checks the two unfinished original references
+and runs only their cascade-attention comparisons; completed native cases are not
+repeated. Full completion and profiling remain in PLAN.
+
 ## 2026-10-15 — Qwen3.5 attention trace fidelity resolved
 
 [Hosted 38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)

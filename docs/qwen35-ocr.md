@@ -1724,4 +1724,9 @@ strict failure. The receipt remains a384-token prefix/cap control until the
 separate long-document lane. No model, production arithmetic, tolerance, default
 or publication changes are part of this diagnostic driver. Model-free positive
 and malformed-output controls run in `qwen35-decoded-audit.yml` and before the
-hosted model audit. Results are pending; dispatch is not a parity result.
+hosted model audit. The [initial run](../tests/results/qwen35-ocr/decoded-panel-initial.json)
+reaches its120-minute limit after14/16 exact ID/text/stop comparisons and preserves
+770 earlier prefill records with45 failures. `--decoded-panel-tail` completes only
+the missing cascade-attention receipt/German cases, after requiring fresh original
+references, CPU controls and confidence to match the initial capture exactly.
+The two missing outputs remain pending; partial completion is not the full gate.

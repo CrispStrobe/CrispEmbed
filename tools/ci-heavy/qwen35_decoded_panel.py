@@ -53,13 +53,15 @@ def validate(measured, reference, cap):
     return measured
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, tail=False):
     from PIL import Image
     capture = module(repo / 'tools/dump_qwen35_ocr_page_reference.py', 'qwen35_decoded_reference')
     results = repo / 'tests/results/qwen35-ocr'
     frozen = json.loads((results / 'page-parity.json').read_text())
     prior = json.loads((results / 'attention-trace.json').read_text())
-    root = out / 'decoded-panel'
+    initial = json.loads((results / 'decoded-panel-initial.json').read_text()) if tail else None
+    report_name = 'decoded-panel-tail' if tail else 'decoded-panel'
+    root = out / report_name
     root.mkdir(exist_ok=True)
     report = dict(source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip(),
         model=frozen['model'], revision=frozen['revision'],
@@ -67,7 +69,13 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
         reference='Original pinned Transformers5.5.4 F32 eager generate, independently captured before native runs',
         native='Actual owning recognize_file API generates freely; separate teacher-forced and strict prefill diagnostics use crispembed-diff',
         production_changes='none', publication='none', cases=[], arms=[])
-    target = out / 'decoded-panel.json'
+    target = out / (report_name + '.json')
+    if tail:
+        report['scope'] = 'Completion of two unfinished cascade-attention cases only: receipt384-token prefix and German header; fresh original references required to reproduce the incomplete run.'
+        report['completion_of'] = {k: initial[k] for k in ('source_commit', 'workflow', 'artifact_report_sha256')}
+        if (initial['audit_summary']['completed_decode_cases'] != 14
+                or [len(a['cases']) for a in initial['arms']] != [4, 4, 4, 2]):
+            raise ValueError('Unexpected incomplete parent audit')
     try:
         report['production_source_sha256'] = file_sha(repo / 'src/qwen35_vision.cpp')
         report['norm_source_sha256'] = file_sha(repo / 'src/qwen35_norm.cpp')
@@ -82,6 +90,8 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
             max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
         for old in frozen['cases']:
+            if tail and old['name'] not in ('receipt', 'german-header'):
+                continue
             source = repo / old['source']['local_file']
             if old['source']['license'] not in ('CC0-1.0', 'Public-Domain') or file_sha(source) != old['source']['sha256']:
                 raise ValueError('Changed source license/checksum')
@@ -113,10 +123,14 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                 item['prior_original_cpu_controls_exact'] = original['cpu_controls'] == controls
                 if any(len(rows) != 217 for rows in original['cpu_controls'].values()):
                     raise ValueError('Incomplete original CPU controls')
+            if tail:
+                previous = next(c['reference'] for c in initial['cases'] if c['name'] == old['name'])
+                item['initial_reference_exact'] = all(original[k] == previous[k]
+                    for k in (*fields, 'cpu_controls', 'selected_token_confidences', 'mean_confidence'))
             if item['gold']:
                 item['reference_vs_gold'] = errors(item['gold']['text'], original['decoded'])
             gc.collect()
-        for name, norm, attention, cascade in RECIPES:
+        for name, norm, attention, cascade in (RECIPES[-1:] if tail else RECIPES):
             env = dict(os.environ, CRISPEMBED_QWEN35_VISION_PRECISE_NORM=str(int(norm)),
                 CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=str(int(attention)),
                 CRISPEMBED_QWEN35_VISION_CASCADE_NORM=str(int(cascade)),
@@ -156,6 +170,7 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                 print(name, case['name'], 'IDs/text/stop', d['ids_exact'], d['text_exact'], d['same_stop'],
                     'EOS complete', d['complete_document'], 'confidence', d['native_mean_confidence'], flush=True)
         report['reproduction_failures'] = sum(not c['prior_original_output_exact'] or not c.get('prior_original_cpu_controls_exact', True)
+            or not c.get('initial_reference_exact', True)
             for c in report['cases']) + sum(not c.get('prior_baseline_decode_exact', True) or not c.get('prior_prefill_exact', True)
                 or not c.get('decode_prefill_exact', True) for a in report['arms'] for c in a['cases'])
         report['qualified_prefill_failure_count'] = sum(len(c['prefill']['qualified_failed_stages'])

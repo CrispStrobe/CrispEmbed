@@ -36,7 +36,8 @@ def main():
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
-    decoded_check = sys.argv[1:] == ["--decoded-panel"]
+    decoded_tail = sys.argv[1:] == ["--decoded-panel-tail"]
+    decoded_check = decoded_tail or sys.argv[1:] == ["--decoded-panel"]
     page_check = decoded_check or sys.argv[1:] == ["--pages"]
     cascade_check = sys.argv[1:] == ["--cascade-norm"]
     stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
@@ -311,7 +312,7 @@ def main():
             elif page_check:
                 if decoded_check:
                     pages = module(repo / "tools/ci-heavy/qwen35_decoded_panel.py", "qwen35_decoded_panel")
-                    pages.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    pages.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", tail=decoded_tail)
                     report["decoded_panel"] = "completed four-arm decoded panel; inspect decoded-panel.json and retained strict failures"
                 else:
                     pages = module(repo / "tools/ci-heavy/qwen35_page_parity.py", "qwen35_page_parity")
