@@ -7,6 +7,9 @@ on:
       - 'tools/ultrabert_contract.py'
       - 'tools/dump_ultrabert_reference.py'
       - 'tools/ci-heavy/ultrabert_reference.py'
+      - 'tools/ci-heavy/ultrabert_native.py'
+      - 'tests/test_ultrabert_diff.cpp'
+      - 'tests/test_ultrabert_native_log.py'
       - 'models/convert-ultrabert-to-gguf.py'
       - 'tests/test_ultrabert_contract.py'
       - 'tests/results/ultrabert/**'
@@ -16,6 +19,9 @@ on:
       - 'tools/ultrabert_contract.py'
       - 'tools/dump_ultrabert_reference.py'
       - 'tools/ci-heavy/ultrabert_reference.py'
+      - 'tools/ci-heavy/ultrabert_native.py'
+      - 'tests/test_ultrabert_diff.cpp'
+      - 'tests/test_ultrabert_native_log.py'
       - 'models/convert-ultrabert-to-gguf.py'
       - 'tests/test_ultrabert_contract.py'
       - 'tests/results/ultrabert/**'
@@ -30,3 +36,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tests/test_ultrabert_contract.py -v
+      - run: python tests/test_ultrabert_native_log.py -v
