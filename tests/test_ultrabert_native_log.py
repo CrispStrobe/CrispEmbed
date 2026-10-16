@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/ci-heavy"))
-from ultrabert_native import parse_log
+from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, verify_frozen_reference
 
 
 def log(failed=False):
@@ -21,6 +21,15 @@ class NativeLogTest(unittest.TestCase):
         self.assertEqual(parse_log(log())["failures"], 0)
         self.assertEqual(parse_log(log(True))["failures"], 1)
         self.assertFalse(parse_log(log(True))["stages"]["stage_0"]["pass"])
+        baseline = {"source_commit": FROZEN_REFERENCE_SOURCE,
+                    "status": "completed conversion/reference audit; native parity not evaluated",
+                    "reference": {"frozen_arrays": "original SHA"}, "conversions": ["original bytes"]}
+        verify_frozen_reference(baseline, baseline)
+        for changed in ({**baseline, "reference": {}}, {**baseline, "conversions": ["changed"]}):
+            with self.assertRaisesRegex(ValueError, "drifted"):
+                verify_frozen_reference(baseline, changed)
+        with self.assertRaisesRegex(ValueError, "Incomplete"):
+            verify_frozen_reference({**baseline, "status": "started"}, baseline)
 
     def test_missing_stage_rejected(self):
         with self.assertRaisesRegex(ValueError, "Incomplete"):

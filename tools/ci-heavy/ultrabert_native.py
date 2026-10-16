@@ -48,10 +48,25 @@ def parse_log(log):
     return dict(stages=stages, exact=exact, failures=failures)
 
 
+
+def verify_frozen_reference(baseline, current):
+    if (baseline.get("source_commit") != FROZEN_REFERENCE_SOURCE
+            or baseline.get("status") != "completed conversion/reference audit; native parity not evaluated"
+            or not baseline.get("reference") or not baseline.get("conversions")):
+        raise ValueError("Incomplete/wrong-source frozen reference report")
+    if (baseline["reference"] != current.get("reference")
+            or baseline["conversions"] != current.get("conversions")):
+        raise ValueError("Frozen original arrays/conversion records drifted")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-only", action="store_true")
+    parser.add_argument("--frozen-report", type=Path,
+                        help="Reviewed complete original report at the immutable pre-port source")
     args = parser.parse_args()
+    if not args.build_only and (args.frozen_report is None or not args.frozen_report.is_file()):
+        raise ValueError("Review and freeze the completed original report before native model comparisons")
     output = Path(os.environ["HEAVY_OUT"])
     scratch = Path(os.environ["HEAVY_SCRATCH"]) / "ultrabert"
     output.mkdir(parents=True, exist_ok=True)
@@ -96,7 +111,12 @@ def main():
         return
     import ultrabert_reference
     ultrabert_reference.main()
-    reference = json.loads((output / "reference/reference.json").read_text())
+    baseline = json.loads(args.frozen_report.read_text())
+    current = json.loads((output / "ultrabert-reference-audit.json").read_text())
+    verify_frozen_reference(baseline, current)
+    report["frozen_report_sha256"] = sha256(args.frozen_report)
+    report["original_and_conversion_replay_exact"] = True
+    reference = current["reference"]
     env["CRISPEMBED_ULTRABERT"] = "1"
     for dtype in ("f32", "f16"):
         for case in reference["cases"]:

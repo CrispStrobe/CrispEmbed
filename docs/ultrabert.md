@@ -215,3 +215,10 @@ and residual outputs. It does not yet expose the48 original RoPE-table stages
 or post-RoPE Q/K; extend original probes if attribution requires them. Prepared
 IDs do not establish native tokenization, prompts, public encoding or independent
 retrieval quality. Production integration and bindings remain separate work.
+
+Full native runs additionally require `--frozen-report` pointing to the reviewed
+complete original audit at0dddbd2b. All original reference arrays/metadata and
+complete conversion records must replay exactly before native comparisons start.
+The full path fails closed while that original job has not completed; build-only
+CI exercises compilation and default/unset/literal0 gates without model inference.
+Do not waive a reference replay drift caused by a different CPU backend.
