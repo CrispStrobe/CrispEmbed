@@ -175,7 +175,12 @@ prefill debt was not rerun or waived. The completed
 selected-probe failures with original prefill embeddings. Worst isolated score
 error0.00012421608; all683 argmaxes match. This identifies an upstream boundary,
 not a production correction. All30 hosted controls, frozen replay and three-OS
-native controls pass. Next repair bounded CI drift, then trace vision operators. Quantized quality runs,
+native controls pass. Bounded CI drift is now repaired in
+[PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61): all six affected artifacts
+independently byte-verified, previous digests retained, strict304/304 freshness
+replay and all PR build/regression/WASM/packaging checks pass.
+[Verification](evidence/registry-pin-verified.json),
+[complete freshness](evidence/registry-pin-current.json). Next trace vision operators. Quantized quality runs,
 larger pages, further materialization/default adoption and HF publication remain
 open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
@@ -202,7 +207,7 @@ audit and a proposed port order, but no native implementation or weight download
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The next vendor work follows PLAN's order: localize the independent book's strict
-upstream vision/embedding drift after bounded CI repairs, then validate
+upstream vision/embedding drift, then validate
 quantization/publication, UltraBERT and the permissive OCR queue while preserving
 all existing numerical failures and frozen quality inputs. The consumer lanes below remain separate, with
 their original verification dates.

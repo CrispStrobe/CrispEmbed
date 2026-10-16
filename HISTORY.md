@@ -43,8 +43,14 @@ The complete [OCR regression38908079332](https://github.com/CrispStrobe/CrispEmb
 at `96d39fe5` passes smoke, interop, punctuation, scan-cleanup, preflight and full
 CPU inference; this is the actual full conclusion, not only a passing smoke step.
 The source changes are reviewed in [PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61).
-At this checkpoint its native matrix, static guards, WASM, lint and secret checks
-pass; Flutter bundling and PR preflight remain queued. Code is not yet merged.
+[All ten Build jobs38910053810](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38910053810)
+pass, including seven native platforms, sibling shared-library build, static
+guards and Flutter bundling. [PR regression38910053704](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38910053704),
+[WASM38910053674](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38910053674),
+[lint38910053787](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38910053787)
+and [secrets38910053774](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38910053774)
+pass. PR61 merges as `f8aec39912789f72fa0d15bf46ed1dec3a270e4e`, preserving
+all source commits used by the retained audits.
 No production arithmetic, precision/prompt default, runtime release, app pin or
 model inference quality changes.
 

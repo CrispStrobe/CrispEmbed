@@ -27,12 +27,7 @@ probe softmax exp/sum boundaries only where evidence warrants a correction.
 Original arrays stay test-only. Exact Python output on this panel does not waive
 numerical debt or establish transcription accuracy.
 
-1. [ ] **Repair bounded CI issues.** Audit actual Qwen3.5 prompt forwarding and
-   update its missing regression coverage, retaining negative mutation controls.
-   Audit stale registry pins against immutable source revisions and actual remote
-   byte hashes; preserve previously trusted bytes instead of blindly accepting
-   replacements. Re-run hosted OCR regression and Main health on the correction.
-2. [ ] **Trace native vision/embedding drift.** The completed
+1. [ ] **Trace native vision/embedding drift.** The completed
    [book isolation](tests/results/qwen35-ocr/book-isolation.json) removes all5
    book prefill failures and13 score failures with original prefill embeddings;
    150 selected probes pass and worst logit error falls to0.00012421608. The
@@ -43,19 +38,19 @@ numerical debt or establish transcription accuracy.
    frozen pixels/gold/scorer and all924/56 historical debt. Any arithmetic candidate
    stays gated and requires exact native equality controls, original-stage
    magnitudes/errors and full decoded quality/confidence A/B on hosted runners.
-3. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
+2. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
    Q8/Q6 differs on form/German. Retain all calibration alternatives and compare
    full IDs/EOS/text, score errors, confidence and frozen quality measures for
    F16/Q8/Q8-Q6/Q4 candidates, including adequate receipt caps. High cosine and
    synthetic matches are not promotion gates.
-4. [ ] **Publish only a validated OCR candidate.** Include source/base license
+3. [ ] **Publish only a validated OCR candidate.** Include source/base license
    provenance, measured precision/size/quality limits, HF card, remote byte/hash
    verification, pinned registry aliases and empty-cache download checks. Complete
    CrispSorter/CrispCalc provider/catalog work when a validated artifact exists.
    No LightOnOCR-3 HF artifact, production alias or runtime release is selected yet.
-5. [ ] **Implement UltraBERT-Embed-150M**, following the pinned contract below;
+4. [ ] **Implement UltraBERT-Embed-150M**, following the pinned contract below;
    keep its reference environment separate from OCR.
-6. [ ] **Continue the permissive OCR queue below**, starting with shared small
+5. [ ] **Continue the permissive OCR queue below**, starting with shared small
    backends after the preceding correctness/performance work.
 
 ## Permissive OCR queue
@@ -118,8 +113,6 @@ inspection, conversion and inference remain outside the selected scope; its
   with current main and draftPR60 using native/reference/decoded evidence.
 - [ ] **Release metadata:** reconcile source VERSION0.17.11 and published0.17.12
   before a new release; do not change the app's immutable release pin as cleanup.
-- [ ] **Registry audit:** investigate unrelated missing/drifted model hashes;
-  preserve existing pins until changed upstream bytes are independently validated.
 - [ ] **R1:** promote any successor runtime atomically through native/WASM build,
   artifact/hash, regression, model and actual consumer validation.
 - [ ] **O1/O2 handwriting:** diagnose full decoded original-checkpoint behavior
@@ -256,5 +249,10 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `ci-prompt-pin-audit` | Repair prompt-surface coverage and audit registry pin drift | Book diagnostic landed35a08922. [PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61) restores immutable URLs with all six artifacts independently byte-verified (10.11GB), preserves old digests, fixes prompt coverage and split-URL size parsing. Full regression, strict304/304 freshness replay, native matrix and static guards pass. Flutter bundling and PR preflight remain queued; merge before the vision lane. Evidence retained in docs/evidence and HISTORY; arithmetic/defaults unchanged |
+| 2026-10-16 | `qwen35-book-vision` | Trace frozen book vision/embedding drift | Prior diagnostic and CI repair landed (PR61, all checks pass). Reuse original vision/attention hooks, shared diff and native equality controls; reproduce frozen prefill/CPU records, keep numerical gates/defaults unchanged. Implementation/model results pending |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
+
+The registry warning in the SAM ownership row describes the pre-repair state;
+[PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61) resolves those six artifacts
+with preserved digests and complete freshness evidence in HISTORY. SAM quality
+and performance follow-ups remain with their owner.

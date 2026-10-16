@@ -81,8 +81,13 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
+Bounded prompt/registry CI repair is complete in [PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61):
+all six affected artifacts byte-verified, old digests retained, strict304/304
+freshness replay and all PR platform/regression/packaging checks pass.
+
 Follow the current execution order in [PLAN.md](PLAN.md): localize the held-out
-book's upstream vision/embedding drift after bounded CI repairs, then revisit quantization/publication and queued
+book's upstream vision/embedding drift, then revisit quantization/publication,
+UltraBERT and queued
 permissive models. The [independent OCR quality audit](tests/results/qwen35-ocr/quality.json)
 completes all3 EOS outputs with exact1,404 tokens/stops and15/15 inventory cells,
 but retains6 prefill and13 book-logit failures (worst0.0060377121 versus0.002).
