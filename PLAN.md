@@ -121,6 +121,10 @@ inspection, conversion and inference remain outside the selected scope; its
 
 ## Packaging, releases and consumers
 
+- [ ] **Queued CI conclusions:** inspect PR62 and its merged-main platform,
+  quality-contract and secret workflows after runners start. All34 source controls
+  and the completed ARM64 diagnostic have verified results; queued broader checks
+  are not passing evidence. Record any actual failure before further promotion.
 - [ ] **W1:** repair macOS arm64 Python-wheel delocate/deployment-target failure;
   validate installed wheel load, then the full matrix and aggregation.
 - [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes

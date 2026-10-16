@@ -31,6 +31,9 @@ release/publication/app pin remain unchanged. [PR62](https://github.com/CrispStr
 merges as `86e63f932ba1ab73f333e0094216d621809c3995`, preserving audited source
 commits. Broader PR platform/secret checks remain queued at merge; these are not
 reported as passing. Projection/reduction attribution remains open in PLAN.
+The shared vendor snapshot, pending tasks and completed evidence are mirrored in
+[CrispMath documentation commit45368a0a](https://github.com/CrispStrobe/CrispMath/commit/45368a0ad2e2924cde68efcf9660207a855e0006),
+with application-owned state and immutable0.17.12 preserved.
 
 ## 2026-10-16 — Registry artifact identities verified; prompt coverage repaired
 
