@@ -27,8 +27,10 @@ correctly leave the workflow red. No single causal arithmetic defect or decoded
 improvement is established. [Detailed magnitudes and limits](docs/qwen35-ocr.md#frozen-book-vision-trace-completed-diagnostic).
 The cap1 diagnostic retains earlier683-token baseline quality without rerunning
 or inferring alternative full-generation results. Production/default/weights/
-release/publication/app pin remain unchanged; PR62 platform/secret checks are
-pending, and projection/reduction attribution remains open in PLAN.
+release/publication/app pin remain unchanged. [PR62](https://github.com/CrispStrobe/CrispEmbed/pull/62)
+merges as `86e63f932ba1ab73f333e0094216d621809c3995`, preserving audited source
+commits. Broader PR platform/secret checks remain queued at merge; these are not
+reported as passing. Projection/reduction attribution remains open in PLAN.
 
 ## 2026-10-16 — Registry artifact identities verified; prompt coverage repaired
 
