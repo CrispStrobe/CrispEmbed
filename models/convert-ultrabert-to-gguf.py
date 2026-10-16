@@ -41,6 +41,7 @@ def convert(directory, output, dtype):
         writer = gguf.GGUFWriter(str(temporary), arch="ultrabert", use_temp_file=True)
         writer.add_string("general.name", "UltraBERT-Embed-150M")
         writer.add_string("general.license", "apache-2.0")
+        writer.add_uint32("general.file_type", 0 if dtype == "f32" else 1)
         writer.add_string("general.source.url", "https://huggingface.co/" + MODEL)
         writer.add_string("ultrabert.source.revision", REVISION)
         writer.add_string("ultrabert.source.weight_sha256", weights["sha256"])
@@ -67,11 +68,11 @@ def convert(directory, output, dtype):
         writer.add_string("ultrabert.tokenizer.single_template", "<|endoftext|> $A")
         writer.add_string("ultrabert.tokenizer.pair_template", "<|endoftext|> $A <|sep|> $B")
         writer.add_string("tokenizer.ggml.model", "gpt2")
-        writer.add_string("tokenizer.ggml.pre", "gpt-2")
+        writer.add_string("tokenizer.ggml.pre", "gpt2")
         writer.add_array("tokenizer.ggml.tokens", tokens)
         writer.add_array("tokenizer.ggml.merges", merges)
         writer.add_key_value("tokenizer.ggml.token_type", types, gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
-        for key, value in {"bos_token_id": 0, "eos_token_id": 0, "padding_token_id": 0, "separator_token_id": 15, "mask_token_id": 16}.items():
+        for key, value in {"bos_token_id": 0, "eos_token_id": 0, "padding_token_id": 0, "separator_token_id": 15, "sep_token_id": 15, "mask_token_id": 16}.items():
             writer.add_uint32("tokenizer.ggml." + key, value)
         writer.add_bool("tokenizer.ggml.add_bos_token", True)
         writer.add_bool("tokenizer.ggml.add_eos_token", False)

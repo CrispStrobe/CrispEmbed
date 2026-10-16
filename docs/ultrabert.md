@@ -165,3 +165,12 @@ Hosted results are pending. Reference captures and storage round-trips do not
 establish native parity, SentenceTransformer wrapper parity, retrieval quality,
 32K support, speed or quantized quality. The512-token reference guard rejects
 overflow without silently truncating; it is not a native context claim.
+
+Native integration must explicitly preserve CLS: the existing decoder loader's
+`pooling_type` fallback routes CLS to last-token pooling. Its graph also supplies
+one mask across layers. Its per-layer theta scheduling can inform a distinct
+profile, but does not supply UltraBERT's complete contract. The converter writes
+CrispEmbed's recognized `gpt2` pre-tokenizer name and both the standard
+`separator_token_id` and existing `sep_token_id` compatibility key, both15; exact
+original pair IDs remain the acceptance gate. Reusing loader primitives does not
+justify accepting the architecture before the default-off native gate exists.

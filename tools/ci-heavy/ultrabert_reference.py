@@ -49,6 +49,8 @@ def main():
             metadata = {
                 "general.architecture": "ultrabert",
                 "general.license": "apache-2.0",
+                "general.file_type": 0 if dtype == "f32" else 1,
+                "tokenizer.ggml.pre": "gpt2",
                 "ultrabert.source.revision": REVISION,
                 "ultrabert.source.weight_sha256": converted["source_weights"],
                 "ultrabert.attention.causal": False,
@@ -60,6 +62,7 @@ def main():
                 "tokenizer.ggml.eos_token_id": 0,
                 "tokenizer.ggml.padding_token_id": 0,
                 "tokenizer.ggml.separator_token_id": 15,
+                "tokenizer.ggml.sep_token_id": 15,
                 "tokenizer.ggml.add_bos_token": True,
                 "tokenizer.ggml.add_eos_token": False,
                 "ultrabert.tokenizer.json": (Path(directory) / "tokenizer.json").read_text(),
