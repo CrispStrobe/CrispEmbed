@@ -275,8 +275,8 @@ archived as complete, with GPU, independent task-quality and long-context/perf
 follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasibility
 audit and a proposed port order. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
 adds strict conversion and all24-layer original-Python reference captures;
-[hosted verification](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38968978701)
-is queued at e828f233. No native implementation/parity or weight publication is claimed.
+[hosted verification](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
+is queued at 0dddbd2b. No native implementation/parity or weight publication is claimed.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
