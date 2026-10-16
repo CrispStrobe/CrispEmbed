@@ -4,6 +4,39 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — First independent Q8 inventory audit completes
+
+[ARM64 audit38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127)
+at `cbd3852f5dd697f275d3094d101b50e9917350a4` reconstructs the existing1,213,238,272-byte
+Q8/F32-vision recipe with exact earlier SHA256, all473 tensor schemas and286
+protected payload records unchanged. Fresh original output/confidence and434 CPU
+control records reproduce; all77 F16 prefill and248 score records, full IDs/text/
+EOS/confidence/quality reproduce the previous baseline. All41
+[source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781),
+frozen preparation replay and [source secret scan38924267426](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924267426)
+pass. Independent reparse of all five native/quantizer logs verifies every raw
+report field and protected tensor record; only small reports/logs are retrieved
+from the5.16GB hosted artifact.
+[Retained complete report](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json),
+artifact-report SHA256 `dd733df6ac1913d21ff428e7554b2cf9d252611f10410069851c5d5fb2c6414a`.
+
+Q8 preserves all248 generated IDs/text/EOS and teacher argmaxes,15/15 table cells
+and zero ordered-content CER/WER. Raw CER/WER remain1.781818/1.03125 from unchanged
+Markdown/HTML. Numerical parity does not follow: Q8 retains75 prefill and248 score
+failures, versus F16 zero/zero. Minimum score cosine0.999256611; worst score step19
+max_abs0.440546274, mean_abs0.0514188819, RMS0.0652295873 and norms1479.1814/
+1486.8927. Existing0.99999/0.002 gates stay unchanged with no generated calibration
+allowance, so the completed diagnostic correctly concludes failure. The first
+changed captured metrics are decoder input embeddings; unchanged vision merger
+metrics and later quantized projections prevent attributing all drift to one
+operator. [Detailed quality/confidence/timing limits](PERFORMANCE.md).
+
+An optional isolated CI lane key allows independent immutable cases to overlap
+on separate hosted runners, preserving default script serialization. The next
+Q8 receipt/book runs are queued; all mixed/Q4 cases remain pending. This owned
+controlled table is not natural-document/corpus evidence. No production arithmetic,
+default, weight publication/alias, release or app-pin change.
+
 ## 2026-10-16 — Frozen book vision/operator diagnostic completed
 
 [Hosted audit38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)

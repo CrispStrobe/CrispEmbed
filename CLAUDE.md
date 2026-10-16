@@ -105,6 +105,12 @@ attention vectors pass raw0.002, while original-input block11 down error is
 0.00268554688. A single causal defect remains unproved; preserve the remaining
 projection/reduction task in PLAN while moving to independent quantized evaluation.
 Smaller merger errors are not decoded-quality or default-promotion evidence.
+The first [independent Q8 inventory audit](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
+preserves248 IDs/text/EOS and15/15 cells, but retains75 prefill/248 score failures
+(min score cosine0.999256611, worst abs0.440546274). Original/F16/quantized-weight
+replay and41 source controls pass. Continue queued Q8 receipt/book, then preselected
+mixed/Q4 cases with the same frozen quality contract; no promotion follows from
+this single controlled table.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.
