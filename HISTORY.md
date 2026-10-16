@@ -4,6 +4,36 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Mixed Q8/Q6 inventory audit preserves output, increases score drift
+
+[ARM64 audit38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
+at `f43c4b7714da91ad7479120bb3005817c7ae6aed` completes both1024-cap arms on the
+frozen784-patch inventory. Fresh original output/confidence/434 CPU records and
+the full77-prefill/248-score F16 baseline reproduce. All473 tensor schemas and the
+prior1,149,795,328-byte mixed file/hash reproduce:79 Q8 matrices,72 Q6 FFNs,
+36 F16 A/B controls and286 F32 tensors. All286 protected payload records are exact;
+all151 quantized/322 kept records independently reparse with all five raw logs.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json),
+raw artifact-report SHA256 `9478401f6b728360c206d308496f1c45ec79a51b25e4b34efe0fd582696add4d`.
+Only small reports/logs are retrieved; models/artifacts stay hosted.
+
+Both arms match all248 original IDs/text/EOS/teacher argmaxes,15/15 cells and zero
+ordered-content CER/WER. Mixed still fails75 prefill/248 scores versus F16 zero/zero.
+Minimum score cosine0.998120904 and worst max_abs1.08967495 are worse than Q8's
+0.999256611/0.440546274 on this same inventory. Higher A/B precision and smaller
+storage do not establish improved scores or general OCR quality. All0.99999/0.002
+gates stay unchanged without generated-score allowance; the completed workflow
+correctly fails for numerical debt. [Magnitude/confidence/timing limits](PERFORMANCE.md).
+Receipt/book mixed runs remain active, Q4 pending; no held-out calibration or
+runtime/default/artifact/alias/release/app-pin change.
+
+PR63 source `e12572179cf1b53bbe10c7d8681c43e5c755cacd` passes the complete
+ten-job [Build38933245371](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38933245371),
+including Flutter bundling, now succeeds. Its WASM38933245294, contract38933245383
+and secret scans38933245418/38933239823 also succeed. This closes PR63 source
+validation; newer PR65/merged-main broader checks remain pending. Earlier merged-
+main builds cancelled by superseding documentation pushes are not passing evidence.
+
 ## 2026-10-16 — Independent Q8 book audit completes the three-case panel
 
 [ARM64 audit38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)

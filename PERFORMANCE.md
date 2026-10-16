@@ -1,5 +1,42 @@
 # CrispEmbed Performance
 
+## Qwen3.5 independent mixed Q8/Q6 inventory (2026-10-16)
+
+[Hosted ARM64 audit38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
+at `f43c4b77` uses the frozen784-patch inventory and1024 cap. Original434 CPU
+records and the entire F16 baseline reproduce; all five logs independently reparse.
+[Complete evidence](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json).
+
+| Arm | Storage bytes | Tokens / stop | Ordered CER / WER | Cells | Prefill / score failures | Native recognition, single observation |
+| --- | ---: | --- | --- | --- | --- | ---: |
+| F16 text / F32 vision | 1,918,139,328 | 248 / EOS | 0 / 0 | 15/15 | 0 / 0 | 230.267689 s |
+| Q8 attention / Q6 FFN / F16 A/B / F32 vision | 1,149,795,328 | 248 / EOS | 0 / 0 | 15/15 | 75 / 248 | 276.938750 s |
+
+Both arms preserve all original IDs/text/EOS and248 teacher argmaxes. Output has
+459 characters/34 lines, with unchanged Markdown/HTML raw CER/WER1.781818/1.03125.
+The mixed candidate matches its earlier full file/hash, all473 schemas and286
+protected payloads. Effective types:79 Q8_0,72 Q6_K,36 F16 controls and286 F32;
+all151 quantized/322 kept log records verify. The63,442,944-byte saving against
+Q8 is storage only. This controlled table is not corpus/real-document quality.
+
+First changed captured metric remains `prefill.decoder.inputs_embeds`: mixed
+max_abs0.000375747681, RMS0.0000284308717, min-row cosine0.999983013 and norms
+62.0079422/62.0079269. Merger metrics remain unchanged; later projection weights
+also quantize, so this is not sole-cause attribution. Mixed minimum score cosine
+0.998120904 occurs at step0 (max_abs0.684677601, RMS0.147659734, norms1183.87781/
+1193.97131). Worst score step23: max_abs1.08967495, mean_abs0.119765319,
+RMS0.15199247, norms1721.01172/1726.85754. Q8's minimum cosine0.999256611 and
+worst max_abs0.440546274 on this same inventory are better. This mixed recipe
+does not improve score fidelity overall. Gates0.99999/0.002 stay unchanged,
+without generated-score allowance; all75/248 mixed numerical failures remain.
+
+Mixed confidence aligns all248 tokens: max error0.03093031010, mean0.0001664523423;
+F16 max remains0.00000730118568. Confidence is not OCR calibration. One owning-API
+timing per arm excludes context load; no paired speed/RSS/memory conclusion.
+Mixed receipt/book and Q4 remain pending; no production/default/publication promotion
+or calibration on this held-out inventory occurs. Earlier924/56 and F16 panel6/13
+debt remain retained.
+
 ## Qwen3.5 independent Q8 two-column book (2026-10-16)
 
 [Hosted ARM64 audit38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)

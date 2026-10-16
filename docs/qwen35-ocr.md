@@ -2104,3 +2104,18 @@ CI input gives independent immutable cases separate runner scratch/artifacts;
 empty input keeps existing script grouping and retries reuse their case key.
 Q4 follows mixed review. No new runtime arithmetic, precision/default, weight
 publication, HF alias, release or app-pin change.
+
+## Independent mixed Q8/Q6 inventory — 16 October 2026
+
+The completed [inventory38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
+atf43c4b77 reproduces original/F16/weight controls and all five logs. The existing
+1,149,795,328-byte recipe retains79 Q8 matrices,72 Q6 FFNs,36 F16 A/B controls and
+286 F32 tensors, with exact earlier file hash and286 protected payloads. Both arms
+preserve248 original IDs/text/EOS/teacher argmaxes,15/15 cells and zero ordered
+CER/WER. Mixed retains75/248 prefill/score failures, minimum score cosine0.998120904
+and worst max_abs1.08967495 versus Q8's0.999256611/0.440546274 on this inventory.
+The smaller file and higher A/B precision do not establish score or OCR improvement.
+[Complete report](../tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json)
+and [magnitudes/confidence/timing](../PERFORMANCE.md). All gates and failed alternatives
+remain unchanged; no held-out calibration. Mixed receipt/book are running; Q4
+follows review. No runtime/default/artifact/alias/release/app-pin change.

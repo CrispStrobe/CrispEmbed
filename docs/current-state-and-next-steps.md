@@ -193,7 +193,9 @@ error0.00268554688 remains and no single causal defect is proved. All280 conditi
 attention vectors pass raw0.002. All34 source controls and frozen preparation
 replay pass; all ten PR62 Build jobs (including Flutter), WASM, contract and
 secret checks now pass at17b4b7dc. [Platform evidence38922363407](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363407).
-Latest PR63/main broader checks remain pending. Continue independent-document
+PR63's complete ten-job Build (including Flutter), WASM, contract and secret checks
+now pass; [platform38933245371](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38933245371).
+Latest PR65/merged-main broader checks remain pending. Continue independent-document
 quantized evaluation while retaining projection/reduction attribution as open
 numerical debt. No runtime/default/weight/release/app-pin promotion.
 The first [independent Q8 inventory audit](../tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
@@ -215,7 +217,13 @@ versus683 tokens, first divergence130; content CER/WER decrease slightly
 11.47%/17.63%→11.20%/17.45%, while text changes and recognition errors remain.
 Q8 retains75/683 prefill/score failures versus F16's5/13. Q8 panel:3/3 EOS,1/3
 original ID/text matches; retain225 prefill/1,404 score failures. Three preselected
-mixed runs are queued atf43c4b77; Q4 follows review. No held-out calibration,
+mixed runs usef43c4b77. The completed
+[mixed inventory](../tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json)
+[run38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
+reproduces all original/F16/weight controls and raw logs, preserving248 IDs/text/EOS
+and15/15 cells. It retains75/248 prefill/score failures, with worse score fidelity
+than Q8 (min cosine0.998120904, worst abs1.08967495). Mixed receipt/book are running;
+Q4 follows review. No held-out calibration,
 corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 
 The iOS standalone-target repair now passes the complete
