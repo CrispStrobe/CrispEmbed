@@ -114,7 +114,9 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   retrieval, then base150M masked-LM and380M. Verify exact local/global masks,
   per-layer RoPE, BOS/padding IDs, CLS pooling/query prefixes and the untied MLM
   head. Add a gated native architecture/converter/reference/surface pipeline;
-  no implementation, 32K validation or quantized publication is claimed yet.
+  strict conversion/reference implementation is in progress on
+  `feat/ultrabert-reference`; hosted verification is pending. No native implementation,
+  32K validation or quantized publication is claimed yet.
 - [ ] **LFM2.5 Encoder:** validate GPU scheduling, long-context behavior beyond
   the measured suite and independent task quality. F16 remains default; published
   mixed profiles change low-margin predictions. [Usage/evidence](docs/lfm2-encoder.md).
@@ -282,7 +284,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT-Embed-150M pinned schema, strict conversion and original-Python intermediate/reference harness | Active; native architecture, bindings, quantization and publication remain gated follow-ups. Models/builds/tests run only on hosted CI. |
+| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT-Embed-150M pinned schema, strict conversion and original-Python intermediate/reference harness | Strict218-tensor/source/payload guards, F32/F16 converter, original24-layer F32 eager dumper and14 model-free controls implemented; hosted verification pending. Native architecture/bindings/quantization/publication remain follow-ups; no local model/test run. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

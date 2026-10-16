@@ -1,0 +1,32 @@
+name: UltraBERT source contract
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/ultrabert-contract.yml'
+      - 'tools/ultrabert_contract.py'
+      - 'tools/dump_ultrabert_reference.py'
+      - 'tools/ci-heavy/ultrabert_reference.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/test_ultrabert_contract.py'
+      - 'tests/results/ultrabert/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ultrabert-contract.yml'
+      - 'tools/ultrabert_contract.py'
+      - 'tools/dump_ultrabert_reference.py'
+      - 'tools/ci-heavy/ultrabert_reference.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/test_ultrabert_contract.py'
+      - 'tests/results/ultrabert/**'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ultrabert_contract.py -v

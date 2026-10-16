@@ -4,8 +4,9 @@
 checkpoint UltraBERT-Embed-150M, followed by the150M and380M masked encoders.
 They need an explicit architecture path; treating them as stock BERT, ModernBERT
 or an unmodified bidirectional decoder would give different math and masks.
-This audit read public metadata, tokenizer assets and Python source only. No
-weights were downloaded, remote Python executed or inference/benchmark run.
+The initial feasibility audit read public metadata, tokenizer assets and Python
+source only. Conversion/reference implementation is now in progress, as described
+below; no native support or measured parity is claimed.
 
 ## Pinned upstream sources
 
@@ -125,3 +126,42 @@ activations, scores, workspaces or weights; model storage is not runtime RAM.
 The text-only family does not belong in the OCR orchestrator or OCR catalog.
 [Machine-readable source audit](../tests/results/ultrabert/source-audit.json)
 records immutable revisions, metadata totals and inspected-file hashes.
+
+## Conversion/reference lane — 16 October 2026
+
+The pinned retrieval safetensors header contains218 F32 tensors and151,032,576
+parameters, with no prediction head. The file's published LFS identity is
+604,153,320 bytes, SHA256
+`da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c`.
+The exact header hash, shapes, types and offsets are frozen in
+[the weight schema](../tests/results/ultrabert/embed-weight-schema.json).
+Payload hashing is a hosted conversion gate, separate from header inspection.
+
+[The converter](../models/convert-ultrabert-to-gguf.py) accepts only a local
+snapshot at the pinned revision. It checks every inspected source/tokenizer hash,
+full weight-file hash and complete218-tensor schema before loading weights; it
+rejects extra heads, missing tensors, changed shapes/types and overlapping payloads.
+It emits the distinct `ultrabert` architecture, per-layer radius/theta arrays,
+split-half layout, full tokenizer/templates and explicit CLS/query metadata.
+F32 and F16 matrix storage retain F32 norms. Neither format is yet a validated
+native artifact. No runtime path, registry entry or release is added by this lane.
+
+[The original-Python dumper](../tools/dump_ultrabert_reference.py) observes the
+unchanged hash-checked custom source at F32/eager, with forward hooks on all24
+layers: actual masks/positions/RoPE tables, norms, Q/K/V projections, attention,
+FFN and residual outputs, final hidden state, raw CLS and optional L2. Every
+hooked output must equal an ordinary unhooked inference exactly. The frozen
+cases cover empty/BOS, document, explicit query, Unicode, pairs, local-window
+boundaries and a padded batch. Actual original masks must enforce inclusive
+127/128/129 boundaries, the first global layer and attended BOS despite its
+shared pad ID. GGUF stage names feed `crispembed_diff::Ref`; post-RoPE Q/K and
+additional operator probes may be needed when native attribution begins.
+
+The [hosted driver](../tools/ci-heavy/ultrabert_reference.py) verifies complete
+F32/F16 tensor round-trips and saves original reference archives remotely.
+Small [model-free negative controls](../tests/test_ultrabert_contract.py) run
+before downloads and in [contract CI](../.github/workflows/ultrabert-contract.yml).
+Hosted results are pending. Reference captures and storage round-trips do not
+establish native parity, SentenceTransformer wrapper parity, retrieval quality,
+32K support, speed or quantized quality. The512-token reference guard rejects
+overflow without silently truncating; it is not a native context claim.
