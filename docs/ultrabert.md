@@ -174,3 +174,12 @@ CrispEmbed's recognized `gpt2` pre-tokenizer name and both the standard
 `separator_token_id` and existing `sep_token_id` compatibility key, both15; exact
 original pair IDs remain the acceptance gate. Reusing loader primitives does not
 justify accepting the architecture before the default-off native gate exists.
+
+Current hosted validation: [conversion/reference38969507642](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
+and [14 model-free controls38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679),
+both queued at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`. The hosted dependency
+selection is `torch==2.14.0 transformers==5.16.1 gguf==0.19.0
+safetensors==0.7.0 numpy==2.2.6`, separate from OCR. Earlier queued heavy
+dispatches were cancelled before execution after review fixes; no failed
+model result is being replaced. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
+stays draft until the actual conversion/reference results have been reviewed.
