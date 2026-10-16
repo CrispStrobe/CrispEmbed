@@ -118,7 +118,10 @@ def negative_controls() -> list[str]:
             continue
         changed = dict(originals)
         # The orchestrator expression also occurs in other engines; mutate only its Qwen3.5 case.
-        if label == "orchestrator":
+        if label == "CLI":
+            match = re.search(r"const bool takes_prompt =(.*?);", changed[rel], re.S)
+            changed[rel] = changed[rel].replace(match[0], match[0].replace(old, new), 1)
+        elif label == "orchestrator":
             body = case_body(changed[rel], "qwen35_ocr")
             changed[rel] = changed[rel].replace(body, body.replace(old, new))
         else:
