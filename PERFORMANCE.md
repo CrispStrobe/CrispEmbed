@@ -1,5 +1,45 @@
 # CrispEmbed Performance
 
+## Qwen3.5 independent Q8 two-column book (2026-10-16)
+
+[Hosted ARM64 audit38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
+at `a42a28b7` uses the frozen1008-patch book and1024-token cap. All original434 CPU
+records and full F16 baseline replay exactly; all five logs independently reparse.
+[Complete evidence](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json).
+
+| Arm | Tokens / stop | Raw CER / WER | Ordered-content CER / WER | Prefill / score failures | Native recognition, single observation |
+| --- | --- | --- | --- | --- | ---: |
+| F16 text / F32 vision | 683 / EOS | 0.13887957 / 0.17985612 | 0.11472660 / 0.17625899 | 5 / 13 | 598.047962 s |
+| Q8 / F32 vision | 684 / EOS | 0.13619591 / 0.17805755 | 0.11204294 / 0.17446043 | 75 / 683 | 622.676267 s |
+
+F16 matches original IDs/text/stops. Q8's first free-token and teacher-argmax
+divergence is130. For example, `right back close by her` becomes `rise close by her`;
+the retained full text/diff records further English/French changes. Both have19
+lines, with2937/2931 characters. Q8's small aggregate CER/WER decrease on this
+page does not establish general quality improvement; original recognition errors
+and altered text remain visible. Existing candidate file/hash and all286 protected
+payloads reproduce; no precision profile is selected using the book.
+
+First changed captured metric `prefill.decoder.inputs_embeds`: F16/Q8 max_abs is
+0.000789284706 for both; RMS increases0.00000789773094→0.0000264551709;
+Q8 min-row cosine0.999983013, norms97.2482376/97.2480927. Vision merger metrics
+remain identical; later projections also quantize, so sole-cause attribution is
+unproved. Q8 worst score step511: max_abs0.546159744, mean_abs0.094045043,
+RMS0.119036518, norms2569.29272/2587.71362. Minimum score cosine0.99960196 occurs
+at step679, max_abs0.274565101, RMS0.0633724034, norms1118.2395/1116.39856.
+F16 worst score remains0.0060377121 at step240. Original0.99999/0.002 gates stay
+unchanged without generated-score calibration allowance.
+
+Q8 confidence aligns only130 identical-prefix tokens: max error0.03664499031,
+mean0.002938584291. F16 aligns683, max0.0004596538337. Both entire probability
+arrays remain retained; confidence is not OCR calibration. Timings are single
+owning-API observations after context load, not paired speed or memory evidence.
+The complete Q8 panel reaches EOS on3/3 but matches original text on1/3: inventory
+exact, receipt regresses, book differs with slightly lower aggregate gold errors.
+Across the three cases Q8 retains225 prefill/1,404 score failures versus F16's6/13.
+This small panel does not reproduce upstream benchmarks or waive earlier924/56
+debt. Mixed/Q4 evaluation and publication/default decisions remain open.
+
 ## Qwen3.5 independent Q8 historical receipt (2026-10-16)
 
 [Hosted ARM64 audit38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)

@@ -208,9 +208,15 @@ atfdf83339/[run38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/ru
 reproduces original/F16/weight controls and all raw logs, but changes8PK→SPK
 (first token divergence303); content CER/WER worsen3.39%/13.19%→3.52%/13.89%.
 Q8 retains75/473 prefill/score failures versus1/0 for F16. Both reach EOS.
-Book is running in its isolated CI lane, mixed/Q4 pending. The inventory table
-does not establish natural-document quality; the receipt now demonstrates a Q8
-decoded regression. No speed or numerical promotion follows.
+The completed [Q8 book](../tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json)
+ata42a28b7/[run38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
+reproduces original/F16/weight controls and all raw logs. Q8 reaches EOS with684
+versus683 tokens, first divergence130; content CER/WER decrease slightly
+11.47%/17.63%→11.20%/17.45%, while text changes and recognition errors remain.
+Q8 retains75/683 prefill/score failures versus F16's5/13. Q8 panel:3/3 EOS,1/3
+original ID/text matches; retain225 prefill/1,404 score failures. Three preselected
+mixed runs are queued atf43c4b77; Q4 follows review. No held-out calibration,
+corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 
 The iOS standalone-target repair now passes the complete
 [ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),
