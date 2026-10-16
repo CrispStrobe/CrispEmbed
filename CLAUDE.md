@@ -81,8 +81,9 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Follow the current execution order in [PLAN.md](PLAN.md): measured Qwen inference
-profiling/optimization, complete long-document decoding, then quantization/publication
+Follow the current execution order in [PLAN.md](PLAN.md): gated Qwen F16
+materialization optimization after the [completed attribution audit](tests/results/qwen35-ocr/profiling.json),
+complete long-document decoding, then quantization/publication
 and queued permissive models. The fixed-cap four-arm decoded panel matches all 16
 ID/text/stop comparisons; preserve its 56 prefill failures and receipt cap controls.
 Use the validated attention trace for any divergence.

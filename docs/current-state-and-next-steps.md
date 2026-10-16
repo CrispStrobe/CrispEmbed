@@ -124,8 +124,16 @@ prefill failures remain. The first run times out after 14 cases; a bounded
 finishes only the missing two, reproducing original references/confidence/CPU
 controls exactly. Reference parity does not establish transcription accuracy;
 existing form/receipt gold errors remain. Native baseline receipt recognition
-still takes 585.82 s in a single observation; profiling is next.
-Full receipt decoding, materialization/graph performance,
+takes 585.82 s in that single observation. The completed
+[profiling audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850631263)
+at `6895c69a` reproduces all prior controls and 56 failures, with zero output or
+reproduction failures. All 18 paired runs preserve IDs/text/stops and native
+probabilities. F32 projection materialization consumes 62–88% of profiled wall time;
+head materialization alone 28–40%. Unprofiled medians are 225.81s form, 38.65s German,
+67.33s for a 32-token receipt prefix. Counter overhead is 4.46–9.79%; peak child RSS
+is 3723.38–3725.35 MiB including load. Bounded gated F16 materialization is next;
+these nested timings do not establish a speedup or OCR accuracy.
+Full receipt decoding, materialization performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
@@ -150,7 +158,7 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: profile gated runtime changes, finish
+The next vendor work follows PLAN's order: optimize measured materialization cost, finish
 long documents, then validate quantization and publication while preserving all
 existing numerical failures. The consumer lanes below remain separate, with
 their original verification dates.

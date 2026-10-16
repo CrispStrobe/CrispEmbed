@@ -8,11 +8,18 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
-   vision, projection/dequantization, graph creation/allocation and decode cost.
-   Test one gated F32 materialization/graph optimization at a time with the same
-   weights, logits, IDs, EOS and text. Measure peak memory and paired timing;
-   compressed files currently still materialize F32 projection matrices.
+1. [ ] **Optimize measured native Qwen materialization cost.** The completed
+   [profiling audit](tests/results/qwen35-ocr/profiling.json) attributes 62–88% of
+   profiled request wall time to F32 projection materialization, 42–60% to source
+   conversion/copy; head materialization alone accounts for 28–40%. Start with
+   default-off bounded parallel F16 row/chunk conversion using unchanged values
+   and finite validation. Keep non-F16 and gate-off paths intact. Compare exact
+   materialized arrays, logits, IDs, EOS, text and confidence; measure unprofiled
+   paired timing and peak memory. Profile counters add 4.46–9.79% here and are not
+   speedup evidence. Consider a persistent head cache only as a separate measured
+   memory tradeoff: its full F32 copy alone is 1,017,118,720 bytes. Graph setup and
+   graph creation are each below 0.05% on the profiled runner; defer graph reuse
+   until new attribution warrants it.
    The [completed decoded panel](tests/results/qwen35-ocr/decoded-panel.json)
    matches all 16 fixed-cap ID/text/stop comparisons and all 2,216 teacher argmaxes;
    baseline receipt recognition still takes 586 s in a single correctness run.
@@ -226,5 +233,4 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `ocr-qwen35-profile` | Attribute Qwen recognition and projection cost with opt-in counters and paired timing/RSS | Hosted [38850631263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850631263) at `6895c69a`: full baseline outputs, all 924 prior prefill records/56 failures, three alternating on/off timing/RSS pairs on form/German/receipt prefix; no arithmetic/default promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |

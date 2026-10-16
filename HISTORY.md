@@ -4,6 +4,45 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Qwen3.5 native profiling completed
+
+Added default-off, caller-owned/thread-local diagnostic timing and logical-byte
+counters, a native owning-API benchmark, paired hosted driver and model-free
+positive/negative controls. Inactive sessions take no timestamps or record
+allocations; ordinary API calls emit no profiling logs. No arithmetic, weight,
+precision default or reference-tensor production path changes.
+
+[Hosted 38850631263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850631263)
+at `6895c69a` completes all 18 fresh-process benchmark runs and reproduces all four
+baseline full fixed-cap outputs, 924 prior prefill and 1,302 original CPU-control
+records exactly. All 56 numerical failures remain 20/11/11/14 and keep the model
+workflow red. All paired native IDs/text/stops match Python and native token
+probabilities/mean confidence are identical across repeats. The 384-token receipt
+control and 32-token timing prefix remain explicitly incomplete.
+
+Unprofiled median API seconds are 225.81/38.65/67.33 for form/German/receipt prefix;
+paired counter overhead is 9.79/4.46/6.79%. F32 projection materialization consumes
+88.39/62.46/65.78% of profiled wall time; head materialization alone 40.18/28.10/29.83%.
+Peak child RSS spans 3723.38–3725.35 MiB including load. Nested counter boundaries,
+logical-byte limits, raw records and source hashes are retained in the
+[report](tests/results/qwen35-ocr/profiling.json) and [PERFORMANCE](PERFORMANCE.md).
+The next lane is bounded gated F16 conversion/materialization, with exact values,
+finite validation and unchanged numerical/output gates; no measured speedup yet.
+
+All 23 Python controls and Linux/macOS/Windows native counter controls pass
+[38850710098](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850710098).
+The [initial Windows launch failure](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850538046)
+was repaired by supplying the GGML DLL search paths; the corrected matrix passes.
+The [initial model preflight](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850537904)
+was cancelled during dependency setup to
+retain full external timing precision; no model comparison had run.
+[Formatting 38850616636](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850616636)
+passes. Actual benchmark fields and bytes reproduce the retained report; five
+malformed actual-log controls are rejected. Scoped secret checks pass (one
+environment-dependent skip), and all 172 test mains satisfy the teardown guard.
+Full numerical debt, annotation errors, receipt completion, quantization,
+publication and the release/version mismatch remain separate pending tasks.
+
 ## 2026-10-16 — Qwen3.5 four-arm decoded panel completed
 
 [Completion38830295916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830295916)

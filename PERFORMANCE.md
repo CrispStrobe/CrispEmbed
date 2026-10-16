@@ -1,5 +1,61 @@
 # CrispEmbed Performance
 
+## Qwen3.5 native attribution and paired overhead (2026-10-16)
+
+[Hosted 38850631263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850631263)
+at `6895c69a`, Release ARM64 CPU, four native threads, native/BLAS/Metal builds
+disabled, frozen LightOnOCR-3-0.8B F16-text/F32-vision weights. Three alternating
+profile-off/on pairs per input use fresh processes and contexts after correctness
+validation warms the model file cache. [Full records, outputs, counters and hashes](tests/results/qwen35-ocr/profiling.json).
+
+| Input | Generated tokens/stop | Off median seconds (range) | On median seconds (range) | Median paired on/off |
+|---|---|---:|---:|---:|
+| Form | 148, EOS | 225.81 (225.61–226.65) | 247.83 (247.58–247.92) | 1.09788 |
+| German header | 17, EOS | 38.65 (38.62–38.73) | 40.43 (40.34–40.46) | 1.04460 |
+| Receipt prefix | 32, cap | 67.33 (67.15–67.86) | 71.88 (71.71–72.95) | 1.06787 |
+
+All 18 runs match original Python IDs, UTF-8 text and stop; all native per-token
+probabilities and mean confidence match the first native run exactly. Profiling
+costs 4.46–9.79% in these paired medians; this is diagnostic overhead, not a speedup.
+Isolated-child peak RSS spans 3,723.38–3,725.35 MiB across all runs, including model
+load and recognition. Load can dominate the peak; this does not isolate incremental
+inference memory. API timing excludes model load and counter printing.
+
+Pooled percentages below divide summed counter wall time over three profiled runs
+by summed request wall time. Rows are nested and must not be added together.
+
+| Counter | Form | German | Receipt prefix |
+|---|---:|---:|---:|
+| Cached decode | 96.03% | 63.47% | 69.55% |
+| Vision | 2.37% | 25.22% | 22.97% |
+| F32 projection materialization | 88.39% | 62.46% | 65.78% |
+| Source conversion/copy | 59.72% | 42.37% | 44.41% |
+| Source finite checks + raw-buffer release | 16.32% | 11.37% | 12.16% |
+| Vocabulary-head materialization alone | 40.18% | 28.10% | 29.83% |
+| Backend graph-compute call | 3.93% | 9.11% | 7.33% |
+| Projection teardown | 4.02% | 2.91% | 3.06% |
+
+Projection setup and graph construction are each below 0.05% on this runner.
+Graph-compute includes deferred backend workspace/thread-pool setup, not only
+kernel execution. Source counters also include small norm/bias reads outside
+projection. Materialization counts are identical across repeats: form requests
+222.956 GB logical source copies and 445.516 GB F32 expansion, German 25.959/51.524 GB,
+receipt 48.516/96.637 GB. These count requested bytes, not physical disk or bus traffic.
+The head has 254,279,680 elements and a full F32 copy requires 1,017,118,720 bytes.
+
+The evidence selects gated, bounded F16 materialization work before graph reuse:
+try parallel row/chunk conversion with unchanged values and finite validation;
+measure actual memory and unprofiled paired speed. A persistent head cache is a
+separate memory tradeoff, not selected by these timings alone. No optimization,
+arithmetic, threshold, precision default or publication changes are made here.
+
+All four full baseline fixed-cap decode controls, 924 prior prefill records and
+1,302 original CPU-control records reproduce exactly. All 56 existing prefill
+failures remain (20/11/11/14); the model workflow correctly concludes failure.
+The separate 384-token receipt control remains truncated. Form/receipt annotation
+errors are unchanged; exact Python parity does not establish transcription quality.
+[Counter contract and scope](docs/qwen35-ocr.md#gated-native-profiling).
+
 ## Qwen3.5 fixed-cap four-arm decoded panel (2026-10-16)
 
 Pinned LightOnOCR-3-0.8B, F16 text/F32 vision, original Transformers5.5.4 F32 eager,

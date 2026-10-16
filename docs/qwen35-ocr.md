@@ -1781,5 +1781,20 @@ GNU time peak RSS includes model load and recognition; the API timer excludes
 model load. No quantized, full-receipt or speed-promotion claim follows from this
 profiling experiment. Counter gate/nesting/thread isolation controls run without
 weights on Linux, macOS and Windows; Python parser tests reject incomplete,
-dropped, duplicated and inconsistent timing/byte records. Hosted measurements
-are pending; production arithmetic and precision defaults are not changed.
+dropped, duplicated and inconsistent timing/byte records.
+
+[Hosted 38850631263](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850631263)
+at `6895c69a` completes 18 measurements with zero output/reproduction failures;
+all 56 prior numerical failures remain and correctly fail the job. Unprofiled
+median seconds are 225.81/38.65/67.33 for form/German/32-token receipt prefix;
+paired on/off medians show 9.79/4.46/6.79% overhead. F32 materialization accounts
+for 88.39/62.46/65.78% of profiled request wall time, the vocabulary head alone
+40.18/28.10/29.83%. Peak child RSS is 3723.38–3725.35 MiB including load. All token
+probabilities/mean confidence are identical across native repeats. Completed
+Linux/macOS/Windows counter controls and 23 Python controls pass
+[38850710098](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38850710098).
+[Full records and source hashes](../tests/results/qwen35-ocr/profiling.json),
+[measurement boundaries and next optimization](../PERFORMANCE.md#qwen35-native-attribution-and-paired-overhead-2026-10-16).
+Production arithmetic and precision defaults are unchanged; no speedup or quality
+promotion follows. The first pending lane is bounded gated F16 materialization,
+with original-reference and unchanged strict/output controls.
