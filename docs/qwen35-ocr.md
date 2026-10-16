@@ -2119,3 +2119,17 @@ The smaller file and higher A/B precision do not establish score or OCR improvem
 and [magnitudes/confidence/timing](../PERFORMANCE.md). All gates and failed alternatives
 remain unchanged; no held-out calibration. Mixed receipt/book are running; Q4
 follows review. No runtime/default/artifact/alias/release/app-pin change.
+
+## Independent mixed Q8/Q6 receipt — 16 October 2026
+
+The completed [receipt38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)
+atf43c4b77 reproduces all original/F16/weight controls and five raw logs. Mixed
+reaches EOS with471 tokens versus473, first free/teacher-argmax divergence303.
+It changes8PK→SPK and drops the bullet in `CHEER 962PP499 • 4.29`; content CER
+decreases3.39%→3.26% while WER remains13.19%. This is altered text with a small
+aggregate error decrease, not proof of better item/general recognition. Mixed
+retains75/473 prefill/score failures versus F16's1/0, minimum score cosine0.997738481
+and worst abs1.08097315, worse than Q8's0.999563456/0.454777241. All gates and failed
+alternatives remain. [Full receipt report](../tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
+and [error/confidence/timing limits](../PERFORMANCE.md). Mixed book is running;
+Q4 follows its review. No held-out calibration or runtime/publication promotion.

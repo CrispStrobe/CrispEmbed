@@ -4,6 +4,30 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Mixed Q8/Q6 receipt changes text with slightly lower CER
+
+[ARM64 audit38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)
+at `f43c4b7714da91ad7479120bb3005817c7ae6aed` completes both1024-cap arms on the
+frozen968-patch historical receipt. Original output/confidence/434 CPU records and
+the full77-prefill/473-score F16 baseline reproduce. All473 tensor schemas,286
+protected payloads and the previous1,149,795,328-byte mixed file/hash reproduce.
+Independent reparse verifies all five logs and151 quantized/322 kept records.
+Only1.94MB of reports/logs are retrieved from the5.73GB hosted artifact.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json),
+raw artifact-report SHA256 `c0f0398467179fca9855291c5a192849a23bc2d0f631e3aca3644cf58f906e73`.
+
+F16 matches473 original IDs/text/EOS; mixed reaches EOS with471 tokens, first
+free-token/teacher-argmax divergence303. It changes8PK→SPK and drops the bullet in
+`CHEER 962PP499 • 4.29`. Content CER decreases0.03385417→0.03255208 while WER
+stays0.13194444; changed item text and shared recognition errors remain visible.
+This small aggregate improvement does not establish better general recognition.
+F16 retains1 prefill/0 score failures; mixed retains75/473. Minimum score cosine
+0.997738481 and worst max_abs1.08097315 are worse than Q8's0.999563456/0.454777241.
+All0.99999/0.002 gates stay unchanged without generated-score allowance; completed
+workflow failure reflects measured numerical/output debt, not replay guards.
+[Magnitudes/confidence/timing limits](PERFORMANCE.md). Mixed book remains running;
+Q4 follows its review. No held-out calibration or production/publication change.
+
 ## 2026-10-16 — Mixed Q8/Q6 inventory audit preserves output, increases score drift
 
 [ARM64 audit38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)

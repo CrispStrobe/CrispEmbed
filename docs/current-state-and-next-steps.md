@@ -222,8 +222,13 @@ mixed runs usef43c4b77. The completed
 [run38942897105](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942897105)
 reproduces all original/F16/weight controls and raw logs, preserving248 IDs/text/EOS
 and15/15 cells. It retains75/248 prefill/score failures, with worse score fidelity
-than Q8 (min cosine0.998120904, worst abs1.08967495). Mixed receipt/book are running;
-Q4 follows review. No held-out calibration,
+than Q8 (min cosine0.998120904, worst abs1.08967495). The completed
+[mixed receipt](../tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
+[run38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)
+reproduces all controls/logs, but changes8PK→SPK and drops a bullet, reaching EOS
+with471 versus473 tokens. Content CER decreases3.39%→3.26%; WER stays13.19%.
+Mixed retains75/473 prefill/score failures (min cosine0.997738481, worst abs1.08097315).
+Book is still running; Q4 follows its review. No held-out calibration,
 corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 
 The iOS standalone-target repair now passes the complete
