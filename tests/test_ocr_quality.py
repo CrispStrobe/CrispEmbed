@@ -89,6 +89,20 @@ class Quality(unittest.TestCase):
             self.assertFalse(r['exact_quality'])
             self.assertIn('cer', r['raw'])
 
+    def test_actual_development_receipt_keeps_frozen_raw_metrics(self):
+        previous = json.loads((ROOT / 'tests/results/qwen35-ocr/receipt.json').read_text())
+        gold = dict(text=previous['gold']['text'], tables=None)
+        for c in previous['cases']:
+            actual = c['decode']
+            r = score(gold, actual['native_text'], complete=actual['complete_document'])
+            self.assertEqual(r['raw'], actual['native_vs_gold'])
+            self.assertEqual(r['characters'], actual['native_characters'])
+            self.assertEqual(r['lines'], actual['native_lines'])
+            self.assertTrue(r['parse_ok'])
+            self.assertEqual(len(r['parsed_tables']), 1)
+            self.assertIsNone(r['table'])
+            self.assertIsNone(r['exact_quality'])
+
     def test_prepared_pixel_and_annotation_drift_rejected(self):
         # Control reports are independent of renderer/model dependencies.
         report = dict(policy='crispembed-ocr-quality-v1', panel_sha256='panel',
