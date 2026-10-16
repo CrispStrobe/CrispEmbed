@@ -128,8 +128,9 @@ measurements for imperfect, incomplete or unsupported outputs.
 positive/negative controls and prepares derivatives on Ubuntu24.04 with
 Pillow11.3.0/CairoSVG2.8.2. It records source revision, policy/scorer/panel/image/RGB
 and DejaVu font hashes. Its small artifact contains only three PNGs and a report;
-no weights/reference probes enter production artifacts. Rendering/library/font
-changes require comparing pixels/hashes before claiming the same frozen inputs.
+no weights/reference probes enter production artifacts. Once the prepared report is retained, CI automatically rejects changes to image/
+RGB/source/gold/font/split hashes before inference. Rendering/library/font changes
+require comparing pixels/hashes before claiming the same frozen inputs.
 
 Preparation and visual review are required before model inference. Original/native
 F16 and quantized runs, actual processor grids, decoded accuracy, confidence,

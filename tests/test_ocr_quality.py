@@ -8,7 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / 'tools'), str(ROOT / 'tools/ci-heavy')]
 from ocr_quality import parse_document, score
-from ocr_quality_prepare import validate_panel
+from ocr_quality_prepare import validate_panel, verify_prepared
 
 
 class Quality(unittest.TestCase):
@@ -88,6 +88,24 @@ class Quality(unittest.TestCase):
             self.assertIsNone(r['content'])
             self.assertFalse(r['exact_quality'])
             self.assertIn('cer', r['raw'])
+
+    def test_prepared_pixel_and_annotation_drift_rejected(self):
+        # Control reports are independent of renderer/model dependencies.
+        report = dict(policy='crispembed-ocr-quality-v1', panel_sha256='panel',
+            font=dict(name='font', sha256='fontsha'), split_evidence_sha256={'reference':'sha'},
+            cases=[dict(id=str(i), source_sha256='source', gold_sha256='gold', original_size=[100,200],
+                size=[32,64], png_sha256='png', rgb_sha256='rgb', file=str(i)+'.png', nominal_patches=8)
+                for i in range(3)])
+        self.assertTrue(verify_prepared(report, copy.deepcopy(report)))
+        for field in ('png_sha256', 'rgb_sha256', 'gold_sha256', 'source_sha256'):
+            changed = copy.deepcopy(report); changed['cases'][1][field] = 'changed'
+            with self.assertRaises(ValueError): verify_prepared(report, changed)
+        changed = copy.deepcopy(report); changed['cases'].pop()
+        with self.assertRaises(ValueError): verify_prepared(report, changed)
+        changed = copy.deepcopy(report); changed['cases'][1]['id'] = '0'
+        with self.assertRaises(ValueError): verify_prepared(report, changed)
+        changed = copy.deepcopy(report); changed['font']['sha256'] = 'changed'
+        with self.assertRaises(ValueError): verify_prepared(report, changed)
 
     def test_panel_frozen_and_disjoint(self):
         self.assertEqual(len(validate_panel(ROOT)['cases']), 3)

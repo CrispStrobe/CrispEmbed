@@ -63,6 +63,24 @@ def validate_panel(repo, panel=None):
     return panel
 
 
+
+def verify_prepared(previous, current):
+    """Reject changed pixels/annotations before inference, including renderer drift."""
+    keys = ('id', 'source_sha256', 'gold_sha256', 'original_size', 'size',
+            'png_sha256', 'rgb_sha256', 'file', 'nominal_patches')
+    for report in (previous, current):
+        if (report['policy'] != POLICY or len(report['cases']) != 3
+                or len({c['id'] for c in report['cases']}) != 3):
+            raise ValueError('Incomplete/repeated prepared cases')
+    if (previous['panel_sha256'] != current['panel_sha256']
+            or previous['font'] != current['font']
+            or previous['split_evidence_sha256'] != current['split_evidence_sha256']
+            or [[c[k] for k in keys] for c in previous['cases']]
+               != [[c[k] for k in keys] for c in current['cases']]):
+        raise ValueError('Frozen evaluation pixels, annotations, font or split evidence changed')
+    return True
+
+
 def prepare(repo, out):
     import cairosvg
     import PIL
@@ -106,6 +124,9 @@ def prepare(repo, out):
             original_size=original_size, size=list(image.size), png_sha256=sha(path),
             rgb_sha256=hashlib.sha256(image.tobytes()).hexdigest(), file=path.name,
             nominal_patches=image.width * image.height // 256))
+    frozen = repo / 'tests/results/ocr-quality-prepared.json'
+    report['frozen_derivatives_exact'] = (verify_prepared(json.loads(frozen.read_text()), report)
+        if frozen.exists() else None)
     (out / 'prepared.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
     return report
