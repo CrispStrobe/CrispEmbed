@@ -4,6 +4,74 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Independent Q4 receipt/book and nine-case quantization panel complete
+
+[Receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
+and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206)
+at `8bf5542423f0809a4a2eec4cc170deb0547e7dce` complete paired measurements under the
+unchanged1024-token cap. Each reproduces original output/confidence/434 CPU records,
+all77 F16 prefill and473/683 score records, complete F16 decoded/confidence/quality
+records,473 tensor schemas,286 protected payloads and the prior964,430,848-byte Q4
+file/hash. All187 quantized/286 kept records and five logs per case reparse using
+the tested public auditor. Full raw reports, tool source/hash and audit output remain
+retained: [receipt](tests/results/qwen35-ocr/quality-quant-q4-historical-receipt.json),
+artifact SHA256 `8e670d4c82e6887c6f6b58cea68391e0d052df795ff4947a4ed1c63d155064e4`;
+[book](tests/results/qwen35-ocr/quality-quant-q4-two-column-page.json), artifact SHA256
+`9f1be725dd777944c1fb02131a954577b03d0b876a9f5568ad9495d2d7afe31d`.
+Only small reports/logs are retrieved; weights and reference archives stay hosted.
+
+Q4 receipt first diverges at free-token/teacher-argmax25, changes to HTML and reaches
+cap1024 without EOS. Its1771-character/116-line output leaves an unclosed table;
+ordered content and cells remain unscored. No cap extension or new normalization
+hides this failure. Q4 book reaches EOS with693 tokens versus683, first divergence26;
+content CER stays0.11472660 while WER worsens0.17625899→0.17805755. Full changed
+English/French text and shared original recognition errors remain. Receipt/book
+retain75/473 and75/683 prefill/score failures; minimum score cosines0.928607225/
+0.955010712 and worst absolute errors6.59857178/7.40867901. All original0.99999/0.002
+gates remain unchanged without generated-score allowance. Completed workflows
+correctly fail for measured numerical/output/completion/format debt, not replay guards.
+[Errors, norms, correctly aligned confidence and timing limits](PERFORMANCE.md).
+
+| Completed preselected recipe | Inventory | Historical receipt | Two-column book |
+| --- | --- | --- | --- |
+| Q8 / F32 vision | [248 EOS, exact15 cells](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [472 EOS, changed text](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json) | [684 EOS, changed text](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json) |
+| Q8 attention / Q6 FFN / F16 A/B / F32 vision | [248 EOS, exact15 cells](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json) | [471 EOS, changed text](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json) | [685 EOS, changed text](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json) |
+| Q4 / Q8 tied head / F32 vision | [248 EOS, exact15 cells](tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json) | [1024 cap, incomplete HTML](tests/results/qwen35-ocr/quality-quant-q4-historical-receipt.json) | [693 EOS, changed text](tests/results/qwen35-ocr/quality-quant-q4-two-column-page.json) |
+
+All nine paired audits reproduce original/F16/weight controls. Each quantized panel
+matches original IDs/text only on inventory and retains225 prefill/1,404 score
+failures. Q8/mixed reach3/3 EOS, Q4 reaches2/3; F16 matches all three original outputs
+while retaining6/13 numerical failures. These are three unique frozen inputs,
+not nine independent documents or an upstream benchmark. No recipe is calibrated
+or selected on the held-out inputs. Publication remains gated; UltraBERT is the
+next independent implementation lane. All runtime/default/weight/registry/release/
+app-pin state is preserved, including the immutable consumer0.17.12 dependency.
+
+## 2026-10-16 — Public model-free quantization evidence auditor verified
+
+`tools/audit_qwen35_quality_quant.py` exposes the shared raw-log/scorer/source/
+precision/manifest verification without model weights or inference. It checks the
+complete source set, exact recipe claims, original/F16 replay, standalone/full-
+decode prefill equality and every quantizer row/type/copy/count, with bounded inputs.
+JSON includes report/log/auditor hashes and unchanged retained failures; exit0 and
+`evidence_verified=true` mean record verification, not model parity or promotion.
+Actual inference and weight-file hashing remain the hosted producer's responsibility.
+[Usage and scope](docs/ocr-quality.md#recheck-a-saved-quantization-audit).
+
+All50 hosted controls (13+9+8+4+7+9) and preparation succeed in
+[38957526079](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38957526079)
+at `5dbabaa15b27d95782e4491bb13efbe775c869c2`; all frozen preparation hashes also
+independently replay exactly (artifact preparation SHA256
+`977477dc76ca86f85347d5aedaad099de80c0917aaa8b4de35c5197af6a2a158`).
+The nine new controls cover all three
+retained precision manifests and reject altered source/replay/precision/payload/
+gold/summary/prefill records, missing/duplicate/reordered quantizer rows and missing
+logs. The identical-source duplicate push run is cancelled, not additional test
+or failure evidence. Targeted real mixed/Q4 report reparses and false-zero-failure
+CLI rejection pass. No local suite/build/model batch runs. Later evidence-only
+commits leave auditor/test/runtime source bytes unchanged; newer CI conclusions
+remain separate from this exact completed source proof.
+
 ## 2026-10-16 — Independent Q4 inventory preserves decoded cells despite score drift
 
 [ARM64 audit38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054)

@@ -121,11 +121,15 @@ The [mixed book](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.js
 completes with685 EOS tokens, changed text, slightly higher CER/lower WER and75/683
 failures. The complete mixed panel reaches3/3 EOS but matches original IDs/text on1/3;
 all replays verify and mixed score fidelity is worse than Q8 on every input.
-The [Q4 inventory](tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json)
-preserves248 IDs/text/EOS and15/15 cells but retains75/248 failures (min score
-cosine0.939502776, worst abs5.93377972). Review Q4 receipt/book next. Public evidence-
-auditor usage is in [the quality contract](docs/ocr-quality.md); its nine new hosted
-controls are pending in PR67. Evidence verification does not waive model failures. No default or publication promotion follows from this panel.
+All nine independent Q8/mixed/Q4 paired audits now verify original/F16/weight
+replay. Q4 reaches EOS on2/3 and matches original IDs/text only on inventory;
+receipt changes to HTML and truncates at1024, book text changes with equal content
+CER/slightly worse WER. All quantized panels retain225/1,404 prefill/score failures;
+F16 retains6/13. [Final comparison](PERFORMANCE.md), [completed reports](HISTORY.md).
+The [public evidence auditor](tools/audit_qwen35_quality_quant.py) preserves model
+failures when records verify; all50 hosted controls pass at5dbabaa1. No candidate
+is promoted or published. UltraBERT is the next independent implementation lane;
+OCR numerical attribution, broader quality and publication stay pending in PLAN.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.

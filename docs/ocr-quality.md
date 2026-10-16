@@ -226,3 +226,10 @@ original inference, actual weight-file hashing and generation remain the hosted
 producer's responsibility. Numerical parity, OCR quality and publication each keep
 their own gates. Hosted negative controls cover altered provenance, frozen replay,
 precision/payload claims, quantizer records and missing logs.
+
+All50 hosted quality/auditor controls pass at `5dbabaa15b27d95782e4491bb13efbe775c869c2`
+in [38957526079](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38957526079).
+The tested auditor also verifies the Q4 receipt's incomplete/unclosed-HTML records
+while retaining completion/format/output/numerical failures. [Complete independent
+panel and limits](../PERFORMANCE.md) are measured evidence; no threshold, cap,
+recipe, runtime default or publication choice changes.
