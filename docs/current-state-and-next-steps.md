@@ -180,10 +180,20 @@ native controls pass. Bounded CI drift is now repaired in
 independently byte-verified, previous digests retained, strict304/304 freshness
 replay and all PR build/regression/WASM/packaging checks pass.
 [Verification](evidence/registry-pin-verified.json),
-[complete freshness](evidence/registry-pin-current.json). Next trace vision operators. Quantized quality runs,
+[complete freshness](evidence/registry-pin-current.json). Quantized quality runs,
 larger pages, further materialization/default adoption and HF publication remain
 open;1024 patches is the native bound.
-[Detailed evidence](qwen35-ocr.md).
+[Detailed evidence](qwen35-ocr.md). The completed
+[book vision trace](../tests/results/qwen35-ocr/book-vision.json) ataccd903c/
+[run38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)
+passes24 exact native controls, reproduces434 original CPU/77 baseline prefill
+records and independently replays all12 logs. Existing settings retain5/6/5/8
+prefill failures despite improved merger errors; original-input block11 down
+error0.00268554688 remains and no single causal defect is proved. All280 conditional
+attention vectors pass raw0.002. All34 source controls and frozen preparation
+replay pass; PR62 platform/secret checks are queued. Continue independent-document
+quantized evaluation while retaining projection/reduction attribution as open
+numerical debt. No runtime/default/weight/release/app-pin promotion.
 
 The iOS standalone-target repair now passes the complete
 [ten-job main platform workflow](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38697864752),

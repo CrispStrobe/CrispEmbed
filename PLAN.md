@@ -27,17 +27,14 @@ probe softmax exp/sum boundaries only where evidence warrants a correction.
 Original arrays stay test-only. Exact Python output on this panel does not waive
 numerical debt or establish transcription accuracy.
 
-1. [ ] **Trace native vision/embedding drift.** The completed
-   [book isolation](tests/results/qwen35-ocr/book-isolation.json) removes all5
-   book prefill failures and13 score failures with original prefill embeddings;
-   150 selected probes pass and worst logit error falls to0.00012421608. The
-   unchanged composed arm retains13 score/21 probe failures and exact683-token
-   output/confidence. Use original blueprint/operator inputs, faithful attention
-   trace, shared dumper and `crispembed-diff` to identify the earliest responsible
-   vision/embedding boundary. Keep original arrays test-only, gates0.99999/0.002,
-   frozen pixels/gold/scorer and all924/56 historical debt. Any arithmetic candidate
-   stays gated and requires exact native equality controls, original-stage
-   magnitudes/errors and full decoded quality/confidence A/B on hosted runners.
+1. [x] **Complete bounded book vision localization.** [Report](tests/results/qwen35-ocr/book-vision.json)
+   ataccd903c/run38917305082 preserves77 baseline prefill/434 original CPU-control
+   records and24 exact native controls. All712 operator/372 attention vectors pass
+   existing qualified budgets, but raw same-input block11 down error0.00268554688
+   remains. Four existing settings retain5/6/5/8 prefill failures despite smaller
+   alternative merger errors. Full683-token baseline quality is retained, not rerun;
+   no alternative full-generation improvement or single causal defect is proved.
+   [Completed evidence/limits](HISTORY.md). Numerical attribution below remains open.
 2. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
    Q8/Q6 differs on form/German. Retain all calibration alternatives and compare
    full IDs/EOS/text, score errors, confidence and frozen quality measures for
@@ -52,6 +49,23 @@ numerical debt or establish transcription accuracy.
    keep its reference environment separate from OCR.
 5. [ ] **Continue the permissive OCR queue below**, starting with shared small
    backends after the preceding correctness/performance work.
+
+## Remaining Qwen numerical attribution
+
+- [ ] **Resolve projection/reduction accumulation before numerical promotion.**
+  The completed original-embedding isolation removes the book's5 prefill/13 score
+  failures, but the vision trace does not establish a single defective operator.
+  First captured composed raw exceedance is block7 norm1 (0.00275558233 versus
+  original CPU-backend0.00267150998); original-input block11 down projection is
+  0.00268554688 in every arm, norms53287.9883/53287.9922. All280 conditional
+  attention vectors pass raw0.002. Next isolate native/Python linear reduction
+  order and rounding using original inputs, earliest-stage magnitudes and exact
+  native replay controls; do not infer a norm/softmax fix or use the held-out book
+  to select/calibrate quantized weights. Any runtime candidate stays gated and
+  requires full decoded IDs/EOS/text/confidence/quality A/B. Retain0.99999/0.002,
+  all924/56 historical debt, frozen pixels/gold/scorer and all failed alternatives.
+  Quantized evaluation may proceed independently; publication/default promotion
+  still requires its own complete quality and numerical evidence.
 
 ## Permissive OCR queue
 
@@ -249,7 +263,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-book-vision` | Trace frozen book vision/embedding drift | [Draft PR62](https://github.com/CrispStrobe/CrispEmbed/pull/62), driver sourceaccd903c: four existing gated arms,24 native equality controls and frozen77prefill/434original-CPU guards. All34 [hosted controls38917306138](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917306138) and frozen preparation replay pass; [ARM64 audit38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082) running, numerical results pending. No arithmetic/default/weight change |
+| 2026-10-16 | `qwen35-book-vision` | Curate and land frozen book vision diagnostic | [PR62](https://github.com/CrispStrobe/CrispEmbed/pull/62), sourceaccd903c/[run38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082) complete:24 native exact controls,434 original CPU records/77 baseline prefill replay exact; all12 logs independently verified. Retains5/6/5/8 prefill failures; no runtime fix/promotion. All34 hosted controls and preparation replay pass; PR platform/secret checks queued. Evidence/docs being curated |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

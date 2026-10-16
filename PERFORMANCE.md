@@ -1,5 +1,36 @@
 # CrispEmbed Performance
 
+## Qwen3.5 frozen book vision trace (2026-10-16)
+
+[Hosted ARM64 audit38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)
+at `accd903c` uses the frozen1008-patch book and unchanged F16-text/F32-vision
+weights. All24 native equality controls,434 earlier original CPU-control records
+and77 baseline prefill records replay exactly; all12 logs independently reparse.
+[Complete report](tests/results/qwen35-ocr/book-vision.json).
+
+| Existing arithmetic setting | Merger max_abs | Merger RMS | Last decoder hidden max_abs | Qualified prefill failures |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline | 0.000789284706 | 0.00000811414702 | 0.00401428342 | 5 |
+| Precise norm + attention | 0.000419139862 | 0.00000615787485 | 0.00355175138 | 6 |
+| Cascade norm | 0.000440597534 | 0.00000520067715 | 0.003398031 | 5 |
+| Cascade + precise attention | 0.000420331955 | 0.000006308705 | 0.0042052269 | 8 |
+
+Smaller merger errors do not clear the decoder gates. All712 operator and372
+attention vectors pass existing qualified budgets, with raw exceedances retained:
+404 same-input operator vectors include four block11 down projections at
+max_abs0.00268554688, mean_abs0.00000250112953, RMS0.000016772663 and
+norms53287.9883/53287.9922. Original composed backend variation is0.850952148.
+All280 conditional attention vectors pass raw0.002. Baseline original-rotated
+QK scores and original-probability pooling are exact; probability differences
+reach0.00000202655792. First captured composed raw vision exceedance is block7 norm1,
+max_abs0.00275558233 against original-backend0.00267150998; this does not prove
+a local norm defect. Existing qualified budgets and0.99999/0.002 gates are unchanged.
+
+This is cap1 diagnosis; earlier683-token baseline IDs/text/EOS/confidence and
+recognition quality remain retained, not rerun. Alternative full book generation,
+paired latency/RSS and corpus accuracy are unmeasured. All24 prefill failures
+remain and correctly leave the run red. No production/default/weight promotion.
+
 ## Qwen3.5 frozen book continuation isolation (2026-10-16)
 
 [ARM64 run38892508965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892508965),

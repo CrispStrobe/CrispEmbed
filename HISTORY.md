@@ -4,6 +4,32 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Frozen book vision/operator diagnostic completed
+
+[Hosted audit38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)
+at `accd903c6e51f06ce1e66396c3db831b2748a0af` completes four existing arithmetic
+settings with unchanged runtime/weights. Independent replay of all12 native logs
+verifies all712 operator,372 attention and308 prefill vectors,24 exact native
+controls,434 earlier original CPU-control records and the entire77-record frozen
+baseline. All34 [model-free controls38917306138](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917306138)
+and frozen preparation replay pass. [Retained raw report and provenance](tests/results/qwen35-ocr/book-vision.json);
+artifact-report SHA256 `01ea6a9bea8a4ac004231892cf1acb37ee89d00a69ebc495616ad5b5a29a4795`.
+The5.45GB tensor artifact remains hosted; only small reports/logs are retrieved.
+
+First captured composed raw exceedance is block7 norm1 (baseline0.00275558233 versus
+original CPU-backend0.00267150998). All280 conditional attention vectors pass
+raw0.002; four of404 same-input operator vectors exceed it, the same block11
+down projection in every arm (0.00268554688, norms53287.9883/53287.9922).
+All operator/attention vectors pass existing qualified budgets; raw errors are
+retained. Smaller merger errors in precise/cascade arms do not clear numerical
+debt: ordinary prefill failures remain5/6/5/8. All24 retained failures therefore
+correctly leave the workflow red. No single causal arithmetic defect or decoded
+improvement is established. [Detailed magnitudes and limits](docs/qwen35-ocr.md#frozen-book-vision-trace-completed-diagnostic).
+The cap1 diagnostic retains earlier683-token baseline quality without rerunning
+or inferring alternative full-generation results. Production/default/weights/
+release/publication/app pin remain unchanged; PR62 platform/secret checks are
+pending, and projection/reduction attribution remains open in PLAN.
+
 ## 2026-10-16 — Registry artifact identities verified; prompt coverage repaired
 
 The [read-only inventory38908007993](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38908007993)

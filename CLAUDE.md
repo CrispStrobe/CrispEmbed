@@ -85,8 +85,8 @@ Bounded prompt/registry CI repair is complete in [PR61](https://github.com/Crisp
 all six affected artifacts byte-verified, old digests retained, strict304/304
 freshness replay and all PR platform/regression/packaging checks pass.
 
-Follow the current execution order in [PLAN.md](PLAN.md): localize the held-out
-book's upstream vision/embedding drift, then revisit quantization/publication,
+Follow the current execution order in [PLAN.md](PLAN.md): retain the completed
+book vision diagnostic and revisit independent-document quantization/publication,
 UltraBERT and queued
 permissive models. The [independent OCR quality audit](tests/results/qwen35-ocr/quality.json)
 completes all3 EOS outputs with exact1,404 tokens/stops and15/15 inventory cells,
@@ -98,8 +98,13 @@ all22 hosted controls and frozen-hash replay pass. The guarded held-out F16 audi
 correctly concludes failure for those numerical records; exact decoded results
 and cosine rounding to1 do not waive them. The [completed book isolation](tests/results/qwen35-ocr/book-isolation.json) eliminates
 all book prefill/score/probe failures with original prefill embeddings, narrowing
-the upstream boundary. This is diagnostic, not a production fix. Use original
-operator inputs and the faithful attention trace before changing arithmetic.
+the upstream boundary. This is diagnostic, not a production fix. The [completed book vision trace](tests/results/qwen35-ocr/book-vision.json)
+passes24 exact native controls and reproduces434 original CPU/77 baseline prefill
+records. Four existing settings retain5/6/5/8 prefill failures; all280 conditional
+attention vectors pass raw0.002, while original-input block11 down error is
+0.00268554688. A single causal defect remains unproved; preserve the remaining
+projection/reduction task in PLAN while moving to independent quantized evaluation.
+Smaller merger errors are not decoded-quality or default-promotion evidence.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.
