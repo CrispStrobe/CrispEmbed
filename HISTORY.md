@@ -14,8 +14,9 @@ control records reproduce; all77 F16 prefill and248 score records, full IDs/text
 EOS/confidence/quality reproduce the previous baseline. All41
 [source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781),
 frozen preparation replay and [source secret scan38924267426](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924267426)
-pass. Independent reparse of all five native/quantizer logs verifies every raw
-native metric/output/confidence and protected tensor record; only small reports/logs are retrieved
+pass. Independent reparse of all four native logs and473 quantizer records
+verifies native metrics/output/confidence and protected tensor records. Small
+reports/logs are retrieved
 from the5.16GB hosted artifact.
 [Retained complete report](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json),
 artifact-report SHA256 `dd733df6ac1913d21ff428e7554b2cf9d252611f10410069851c5d5fb2c6414a`.
@@ -33,8 +34,11 @@ operator. [Detailed quality/confidence/timing limits](PERFORMANCE.md).
 
 An optional isolated CI lane key allows independent immutable cases to overlap
 on separate hosted runners, preserving default script serialization. The next
-Q8 receipt/book runs are queued; all mixed/Q4 cases remain pending. This owned
-controlled table is not natural-document/corpus evidence. No production arithmetic,
+Q8 panel follow-ups remain in PLAN. This owned controlled table is not natural-
+document/corpus evidence. [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63)
+merges as `d34a64d2234d0bc185d1341fefec37b8356d5c74`, preserving audited source
+commits. Broader latest PR/main checks remain pending, not claimed passing.
+No production arithmetic,
 default, weight publication/alias, release or app-pin change.
 
 ## 2026-10-16 — Frozen book vision/operator diagnostic completed

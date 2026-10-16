@@ -2075,7 +2075,7 @@ and226.304482 s Q8; no speed or peak-memory claim follows.
 
 The next Q8 [receipt38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914)
 atfdf83339 and [book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995)
-ata42a28b7 are queued. The optional `isolated_lane` CI input allows independent
+ata42a28b7 are running/queued respectively. The optional `isolated_lane` CI input allows independent
 immutable cases with separate runner scratch/artifacts to overlap; empty input
 keeps existing script grouping. Retry the same model/recipe/case with its same
 key. All mixed/Q4 cases remain pending. No new runtime arithmetic, precision/default,

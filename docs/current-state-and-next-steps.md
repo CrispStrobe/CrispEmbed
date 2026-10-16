@@ -191,7 +191,9 @@ records and independently replays all12 logs. Existing settings retain5/6/5/8
 prefill failures despite improved merger errors; original-input block11 down
 error0.00268554688 remains and no single causal defect is proved. All280 conditional
 attention vectors pass raw0.002. All34 source controls and frozen preparation
-replay pass; PR62 platform/secret checks are queued. Continue independent-document
+replay pass; all ten PR62 Build jobs (including Flutter), WASM, contract and
+secret checks now pass at17b4b7dc. [Platform evidence38922363407](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363407).
+Latest PR63/main broader checks remain pending. Continue independent-document
 quantized evaluation while retaining projection/reduction attribution as open
 numerical debt. No runtime/default/weight/release/app-pin promotion.
 The first [independent Q8 inventory audit](../tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
@@ -200,7 +202,8 @@ reproduces original/F16 controls and all quantized file/protected tensor identit
 Q8 preserves248 IDs/text/EOS,15/15 cells and zero ordered CER/WER, but retains75
 prefill/248 score failures (min cosine0.999256611, worst abs0.440546274). All41
 source controls, frozen preparation and source secret scan pass; all five logs
-independently reparse. Receipt/book are queued, mixed/Q4 pending. This controlled
+independently reparse. PR63 merges asd34a64d2; receipt is running, book queued
+in its isolated CI lane, mixed/Q4 pending. This controlled
 table does not establish natural-document quality, speed or numerical promotion.
 
 The iOS standalone-target repair now passes the complete
