@@ -22,8 +22,24 @@ person, with GPU sessions used for GPU work.
 gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/qwen3vl_ref_ocr.py \
     -f pip="torch torchvision transformers>=4.57 accelerate pillow"
 gh run watch "$(gh run list -w heavy-cpu.yml -L 1 --json databaseId -q '.[0].databaseId')"
-gh run download <run-id>           # the $HEAVY_OUT artifact
+# Retrieve only needed small reports/images from the run artifact.
 ```
+
+## Independent case lanes
+
+By default, runs of the same script share a concurrency group. For immutable
+reference audits with separate runner scratch space, unique run artifacts and
+no shared publication writes, `-f isolated_lane=qwen35-quality-q8-two-column-page`
+selects an independent group. Reuse the same model/recipe/case key for retries;
+keep the field empty for jobs that share mutable outputs or external writes.
+This permits independent hosted cases to overlap without changing default script
+serialization. Record the exact source commit and input recipe for every run.
+
+[GitHub concurrency documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+describes the default single pending slot: another pending dispatch in the same
+group replaces the earlier pending run. Inspect actual run states rather than
+assuming a batch of dispatches is retained. Keep large artifacts remote and
+retrieve only the reports/images needed for review.
 
 ## Script contract
 

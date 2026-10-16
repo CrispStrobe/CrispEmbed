@@ -55,19 +55,22 @@ numerical debt or establish transcription accuracy.
 Each cell requires fresh original and exact frozen F16 replay, an unchanged
 preselected quantized recipe, full owning-API output/confidence/gold scoring and
 separate strict teacher-score diagnostics. All use the frozen1024-token cap.
-Complete Q8 first, then mixed Q8/Q6, then Q4; within each recipe use inventory,
-receipt, book. These runs evaluate recipes; they do not calibrate/select weights
+Verify the inventory driver first, then complete Q8, mixed Q8/Q6 and Q4 in that
+order. Independent cases may overlap on separate hosted runners using the
+optional isolated CI lane key; inputs/recipes remain fixed before evaluation.
+These runs evaluate recipes; they do not calibrate/select weights
 on the evaluation inputs. Publication and numerical promotion remain separate.
 
 | Preselected recipe | Inventory (784 patches) | Historical receipt (968) | Book (1008) |
 | --- | --- | --- | --- |
-| Q8, vision F32 | [Queued38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127) | Pending | Pending |
+| Q8, vision F32 | [Running38924337127](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924337127) | [Queued38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914) | Pending |
 | Attention Q8 / FFN Q6, vision F32 | Pending | Pending | Pending |
 | Q4, vision F32 | Pending | Pending | Pending |
 
 [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) implements the bounded
 driver; [41 source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781)
-are queued. A dispatched/queued run is not completed numerical or OCR evidence.
+and frozen preparation replay pass. Source secret scan also passes. A dispatched
+or running model audit is not completed numerical or OCR evidence.
 
 ## Remaining Qwen numerical attribution
 
