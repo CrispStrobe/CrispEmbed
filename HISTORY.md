@@ -4,6 +4,48 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Independent OCR quality protocol and scorer frozen
+
+The [v1 contract](docs/ocr-quality.md) and
+[three-case manifest](tests/regression/ocr-quality/panel.json) freeze source/gold
+hashes, full-page derivative recipes, upstream image-only prompt, greedy cap1024
+and scoring before any new model/reference outputs. Two existing high-confidence
+manual transcripts (historical receipt and two-column test page) are unchanged;
+an owned MIT inventory SVG/grid adds independent cell annotations. Named Qwen
+development inputs and six native-calibration examples stay separate. Byte hashes
+and whitespace-normalized transcripts are checked for overlap; this does not
+establish absence from pretraining, semantic overlap or other-model evaluations.
+
+[The scorer](tools/ocr_quality.py) preserves raw CER/WER and separately measures
+ordered visible content and position-indexed rectangular table cells. It keeps
+case, accents, punctuation, repeated words, order and extra content. Unsupported
+markup returns an explicit parse failure with null secondary scores, retaining
+raw measurements. Missing table annotations on the real documents remain unknown,
+not a claim of zero tables. Only the owned grid supplies structural gold.
+Incomplete outputs cannot pass complete-quality diagnostics. This is not TEDS,
+GriTS or an upstream benchmark implementation.
+
+Thirteen model-free controls pass locally: HTML/pipe serialization, raw metrics,
+wrong order/numbers/cells, missing/extra content, Unicode, malformed structure,
+truncation, split/annotation changes and pixel/font drift. Actual old upstream/
+literal receipt outputs reproduce their frozen raw CER/WER and text counts
+exactly; both parse without inventing missing cell gold. The tracked-file secret
+scan passes four tests with one environment-dependent skip. Existing production
+sources and all historical result/annotation files remain unchanged.
+
+Hosted preparation is **pending runner allocation**, not verified:
+[regular controls/preparation38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
+at `e1c6c9fa`, and
+[weight-free ARM preparation38879334940](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
+at `702b9c1c` (same panel/scorer/preparer). Superseded queued revisions were
+cancelled before execution; no model failure or output is discarded. Preparation
+records PNG/RGB/font/source/annotation/split hashes and checks TIFF/annotated-PNG
+pixel equality. The retained prepared report, three-image visual review and
+hosted conclusions are still required before native/reference evaluation.
+Original/F16 and quantized runs, actual processor geometry, decoded quality,
+confidence and timing remain pending. No recognition improvement, runtime release,
+weight upload, precision/prompt default or app-pin change is claimed.
+
 ## 2026-10-16 — Qwen3.5 receipt completion and prompt semantics audited
 
 [Hosted 38870347237](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237)

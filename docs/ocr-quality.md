@@ -136,3 +136,10 @@ Preparation and visual review are required before model inference. Original/nati
 F16 and quantized runs, actual processor grids, decoded accuracy, confidence,
 timing and comparative quality are still pending. Do not describe a green
 preparation workflow or scorer control as model parity or recognition improvement.
+
+
+Validation status: all13 model-free controls pass locally, including actual old
+receipt raw-metric reproduction. Hosted
+[controls/preparation38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)
+and [weight-free ARM preparation38879334940](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879334940)
+are queued. No prepared pixel report or visual-review result is claimed yet.
