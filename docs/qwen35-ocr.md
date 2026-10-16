@@ -1968,3 +1968,29 @@ Next trace vision operators and the embedding assembly against actual original
 inputs. All30 hosted controls and frozen image replay pass; native controls pass
 on Linux/macOS/Windows. Numerical debt/defaults/weights/release remain unchanged.
 [Measurements and limits](../PERFORMANCE.md).
+
+## Frozen book vision trace (in progress)
+
+[Sourceaccd903c](https://github.com/CrispStrobe/CrispEmbed/tree/accd903c6e51f06ce1e66396c3db831b2748a0af)
+adds a bounded `qwen35_ocr_bootstrap.py --book-vision` driver. It reuses the reviewed
+book derivative, original compact/full anchor, original vision/attention observers,
+178 operator comparisons,93 selected-attention comparisons and77 prefill records
+per arm. Baseline, precise-both, cascade and cascade-attention remain the existing
+gated alternatives. The four arms require24 native equality controls; failed
+controls invalidate the interpretation rather than becoming a numerical allowance.
+Production vision and attention must compile without the operator-copy macro.
+
+The original book capture uses cap1 for prefill diagnosis only. The frozen first
+ID/probability, actual grid/prompt/source implementation and434 earlier original
+CPU-control records must reproduce; new attention observations additionally require
+12 exact probability/output and six exact projection-input controls. The ordinary
+baseline's77 prefill records and all magnitudes must reproduce exactly. Merger
+measurements must match ordinary composed prefill in every arm. Raw failures and
+qualified budgets remain visible; no generated-logit allowance is introduced.
+
+Full decoded IDs/EOS/text/confidence and recognition quality remain the previously
+completed683-token result. This prefill experiment does not rerun or infer decoded
+quality from component scores, and does not use the book for weight calibration.
+[ARM64 run38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)
+at sourceaccd903c and34 model-free controls are pending. No new runtime arithmetic,
+precision/default, weight/release/publication or app-pin change.
