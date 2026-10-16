@@ -19,8 +19,9 @@ def module(path, name):
 
 
 def main():
+    book_vision = sys.argv[1:] == ["--book-vision"]
     book_isolation = sys.argv[1:] == ["--book-isolation"]
-    quality_check = book_isolation or sys.argv[1:] == ["--quality"]
+    quality_check = book_vision or book_isolation or sys.argv[1:] == ["--quality"]
     if quality_check:
         quality_repo = Path(__file__).resolve().parents[2]
         quality = module(quality_repo / "tools/ci-heavy/qwen35_quality.py", "qwen35_quality")
@@ -88,6 +89,8 @@ def main():
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
         if quality_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_quality.py"), "-q"], check=True)
+        if book_vision:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_book_vision.py"), "-q"], check=True)
         if book_isolation:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_book_isolation.py"), "-q"], check=True)
         if receipt_check:
@@ -178,7 +181,7 @@ def main():
         build = scratch / "qwen35-native-build"
         subprocess.run(["cmake", "-S", str(repo), "-B", str(build), "-DCMAKE_BUILD_TYPE=Release",
                         "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
-                        *(["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"] if operator_check else []),
+                        *(["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"] if operator_check or book_vision else []),
                         "-DCRISPEMBED_BUILD_SHARED=" + ("ON" if public_check else "OFF")], check=True)
         subprocess.run(["cmake", "--build", str(build), "--target", "test-qwen35-delta",
                         "test-qwen35-linear", "test-qwen35-attention", "test-qwen35-decoder", "test-qwen35-vision",
@@ -187,6 +190,7 @@ def main():
                         *(["test-qwen35-quant", "crispembed-quantize"] if quant_check else []),
                         *(["test-qwen35-imatrix"] if ffn_check else []),
                         *(["test-qwen35-profile", "test-qwen35-materialize"] if profile_check else []),
+                        *(["test-qwen35-vision-ops", "test-qwen35-attention-trace"] if book_vision else []),
                         *(["test-qwen35-attention-trace"] if attention_trace else ["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
         if receipt_check or quality_check:
@@ -336,7 +340,11 @@ def main():
                 print(context_result.stdout + context_result.stderr)
                 report["native_context"] = context_result.returncode == 0
                 context_result.check_returncode()
-            if operator_check:
+            if book_vision:
+                book = module(repo / "tools/ci-heavy/qwen35_book_vision.py", "qwen35_book_vision")
+                book.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                report["book_vision"] = "completed frozen book vision localization; inspect book-vision.json and retained failures"
+            elif operator_check:
                 operators = module(repo / "tools/ci-heavy/qwen35_vision_operators.py", "qwen35_vision_operators")
                 report["vision_audit"] = "selected attention boundaries" if attention_trace else "normalization statistics" if stats_check else "native block replay" if block_check else "same-input operators"
                 operators.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", blocks=block_check, stats=stats_check, cascade=cascade_check, cascade_blocks=cascade_blocks, attention_trace=attention_trace)

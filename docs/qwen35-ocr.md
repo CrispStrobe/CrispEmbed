@@ -1968,3 +1968,52 @@ Next trace vision operators and the embedding assembly against actual original
 inputs. All30 hosted controls and frozen image replay pass; native controls pass
 on Linux/macOS/Windows. Numerical debt/defaults/weights/release remain unchanged.
 [Measurements and limits](../PERFORMANCE.md).
+
+## Frozen book vision trace (completed diagnostic)
+
+The [hosted book audit38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)
+at [sourceaccd903c](https://github.com/CrispStrobe/CrispEmbed/tree/accd903c6e51f06ce1e66396c3db831b2748a0af)
+completes all four existing gated settings. Independent reparse of all12 native
+logs reproduces every report field. All24 native attention equality controls,
+434 earlier original CPU-control records and77 frozen baseline prefill records
+are exact. The original observer adds12 exact probability/output and six exact
+projection-input checks; compilation keeps reference copies out of production.
+All34 [hosted controls38917306138](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917306138)
+and frozen image/source/gold/scorer/font/split replay pass.
+[Full retained report](../tests/results/qwen35-ocr/book-vision.json).
+
+| Existing setting | Merger max_abs | Qualified prefill failures | Raw composed operator exceedances |
+| --- | ---: | ---: | ---: |
+| Baseline | 0.000789284706 | 5 | 20 |
+| Precise norm + attention | 0.000419139862 | 6 | 20 |
+| Cascade norm | 0.000440597534 | 5 | 22 |
+| Cascade + precise attention | 0.000420331955 | 8 | 18 |
+
+The first captured composed raw0.002 exceedance is block7 norm1: baseline0.00275558233,
+mean_abs0.0000086102782, RMS0.0000226430457, norms1353.13245/1353.13232;
+original CPU-backend variation is0.00267150998. Earlier patch embedding already
+differs by0.00000560283661 (norms370.534271/370.534271). This capture identifies
+accumulation boundaries; it does not prove that block7 norm1 itself is defective.
+All712 operator and372 attention vectors pass existing qualified budgets, but
+raw exceedances remain visible. Of404 original-input operator vectors, four
+exceed raw0.002: the same block11 down projection in each arm, max_abs0.00268554688,
+mean_abs0.00000250112953, RMS0.000016772663, norms53287.9883/53287.9922.
+The original composed CPU-backend control for this stage differs by0.850952148;
+that pre-existing calibration does not make the local raw error zero.
+
+All280 conditional attention vectors pass raw0.002. Baseline original-rotated
+Q/K gives exact sampled QK scores; softmax probabilities still differ by up to
+0.00000202655792. Original-probability pooling is exact in baseline/cascade and
+within0.00000810623169 in precise-attention arms. This does not justify a softmax
+patch. Merger errors improve in the alternative settings while prefill failure
+counts remain5/6/5/8: neither higher precision nor higher component cosine proves
+better continuation. All24 qualified failures are ordinary prefill records, so
+the workflow correctly concludes failure after completing the diagnostic.
+
+The original book uses cap1 here for prefill/vision diagnosis only. Full decoded
+IDs/EOS/text/confidence and recognition quality remain the previously completed
+683-token baseline evidence. Alternative full book generation is unmeasured.
+No book calibration data, generated-logit allowance, production arithmetic,
+precision/default, weight/release/publication or app-pin change. Next preserve
+this diagnostic and audit quantized candidates on the independent documents;
+upstream projection/reduction attribution remains open before numerical promotion.
