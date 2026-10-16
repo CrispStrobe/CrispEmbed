@@ -7,6 +7,7 @@ reimplement attention, RMSNorm or the encoder. No native parity is claimed.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -19,7 +20,8 @@ from ultrabert_contract import (MAX_REFERENCE_TOKENS, MODEL, QUERY, REVISION,
 def metrics(array):
     import numpy as np
     x = array.astype(np.float64)
-    return {"shape": list(array.shape), "l2_norm": float(np.linalg.norm(x)),
+    return {"shape": list(array.shape), "payload_sha256": hashlib.sha256(array.tobytes()).hexdigest(),
+            "l2_norm": float(np.linalg.norm(x)),
             "max_abs": float(np.max(np.abs(x))), "rms": float(np.sqrt(np.mean(x*x)))}
 
 

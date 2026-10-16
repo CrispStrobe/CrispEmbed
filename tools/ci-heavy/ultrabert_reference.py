@@ -2,6 +2,7 @@
 """Hosted-only conversion/reference audit; no registry, upload or runtime changes."""
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -77,8 +78,12 @@ def main():
                     array = weights.get_tensor(source)
                     precision = np.float32 if dtype == "f32" or len(shape) == 1 else np.float16
                     tensor = actual[target]
-                    if list(reversed(tensor.shape.tolist())) != shape or not np.array_equal(tensor.data.reshape(shape), array.astype(precision)):
-                        raise ValueError("GGUF tensor round-trip differs: " + source)
+                    expected_type = gguf.GGMLQuantizationType.F32 if precision == np.float32 else gguf.GGMLQuantizationType.F16
+                    if (list(reversed(tensor.shape.tolist())) != shape
+                            or tensor.tensor_type != expected_type
+                            or tensor.data.dtype != np.dtype(precision)
+                            or tensor.data.tobytes() != array.astype(precision).tobytes()):
+                        raise ValueError("GGUF tensor bit/type round-trip differs: " + source)
             converted["all_218_roundtrips_exact"] = True
             converted["metadata_roundtrips_exact"] = True
             report["conversions"].append(converted)
@@ -95,8 +100,11 @@ def main():
                 raise ValueError("Incomplete reference archive")
             for name, values in case["stages"].items():
                 tensor = tensors[name]
-                if list(reversed(tensor.shape.tolist())) != values["shape"] or not np.isfinite(tensor.data).all():
-                    raise ValueError("Reference round-trip shape/finite failure: " + name)
+                if (list(reversed(tensor.shape.tolist())) != values["shape"]
+                        or tensor.tensor_type != gguf.GGMLQuantizationType.F32
+                        or not np.isfinite(tensor.data).all()
+                        or hashlib.sha256(tensor.data.tobytes()).hexdigest() != values["payload_sha256"]):
+                    raise ValueError("Reference round-trip shape/type/payload failure: " + name)
             case["archive_schema_exact"] = True
         (output / "reference/reference.json").write_text(json.dumps(reference, indent=2, ensure_ascii=False) + "\n")
         report["reference"] = reference
