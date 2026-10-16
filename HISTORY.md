@@ -4,6 +4,45 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Frozen book continuation isolates upstream embedding drift
+
+The [completed book continuation audit38892508965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892508965)
+at `4323dc67` reproduces all frozen composed native metrics,683 IDs/text/EOS,
+confidence and quality. Original observer-off replay preserves every generated
+ID and score array exactly. Supplying original prefill embeddings only to the
+test arm removes all five book prefill failures, all13 score failures and all
+150 selected continuation-probe failures; the composed probes retain21 failures.
+Worst isolated score error is0.00012421608 (step529), versus composed0.0060377121
+(step240), with unchanged absolute0.002/min-row-cosine0.99999 and no generated
+calibration allowance. This localizes the upstream input boundary, not a specific
+vision operator or a production correction. The isolated arm is teacher-forced,
+not independent free generation. [Complete retained report](tests/results/qwen35-ocr/book-isolation.json).
+
+At steps94/240, generated token embeddings are already exact in both arms.
+Composed final hidden-state max_abs0.00115358829/0.000540316105 becomes final-norm
+0.00415802002/0.00612354279, norms140.255524/140.252701 and136.436081/136.43811.
+Isolated final-norm errors fall to0.000106811523/0.0000483989716; corresponding
+logits fall0.00223350525→0.0000541210175 and0.0060377121→0.0000381469727.
+The first failing captured continuation hidden/norm boundary is final norm;
+caches retain earlier prefill differences. Capture order is not causal order.
+No decoder norm patch follows from this: same original prefill input already
+passes the ordinary decoder. Next inspect native vision inputs/operators before
+changing arithmetic. Archived924/56 debt and the other two held-out cases were
+not rerun or waived; this replays only book77prefill/683scores.
+
+All actual logs were independently reparsed with the shared continuation,
+prefill, decode/confidence and quality checkers; source/weights/hash guards match.
+Raw artifact report SHA256:
+`d1040792a4e0c986487775bc23af0bdb4f60c0d6d7aaedfd1266d91ce4f58ee5`.
+[All30 hosted controls and frozen replay38892495069](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892495069)
+pass. [Native/Linux/macOS/Windows controls38892310175](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892310175),
+[lint38892310177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892310177)
+and [secret scan38892630039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892630039)
+pass. The model run intentionally fails for retained baseline numerical records.
+The6GB reference artifact stays hosted; only small report/log files were fetched.
+No production arithmetic/default/weight/version/release/publication/app-pin change.
+
+
 ## 2026-10-16 — Independent F16 OCR audit completed; numerical failures retained
 
 [Hosted ARM64 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)

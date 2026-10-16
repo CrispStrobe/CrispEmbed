@@ -1,5 +1,32 @@
 # CrispEmbed Performance
 
+## Qwen3.5 frozen book continuation isolation (2026-10-16)
+
+[ARM64 run38892508965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892508965),
+source `4323dc67`, same frozen1.918GB F16-text/F32-vision weights/runtime and
+448×576/1008-patch book, cap1024. Ordinary composed native output/confidence
+reproduces the frozen683-token EOS result and all quality metrics. Isolated
+continuation consumes original prefill embeddings and prefix IDs for diagnosis;
+it is not a new native free-generation or recognition-quality result.
+
+| Measurement | Composed native | Original prefill embeddings, test-only |
+|---|---:|---:|
+| Qualified prefill failures |5/77|0/77|
+| Strict teacher-score failures |13/683|0/683|
+| Selected layer/cache probe failures |21/150|0/150|
+| Worst score max_abs |0.0060377121 (step240)|0.00012421608 (step529)|
+| Step94 norm / logits max_abs |0.00415802002 /0.00223350525|0.000106811523 /0.0000541210175|
+| Step240 norm / logits max_abs |0.00612354279 /0.0060377121|0.0000483989716 /0.0000381469727|
+
+All683 teacher argmaxes match in both arms. Selected generated-token embeddings
+are exact even in the composed arm; upstream prefill/cache differences persist.
+Original observer-off generation reproduces every ID and score exactly. No gate
+is relaxed and the workflow retains its baseline failures. This narrows the
+upstream boundary, without identifying a specific vision operator. No new paired
+speed/RSS trial, quantized evaluation or default promotion.
+[All magnitudes, norms and controls](tests/results/qwen35-ocr/book-isolation.json).
+
+
 ## Qwen3.5 independent F16 document panel (2026-10-16)
 
 [Run38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689),

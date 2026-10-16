@@ -82,7 +82,7 @@ Two runtime requirements apply to every new path:
 ## Next actions
 
 Follow the current execution order in [PLAN.md](PLAN.md): localize the held-out
-book's strict F16 logit failures, then revisit quantization/publication and queued
+book's upstream vision/embedding drift after bounded CI repairs, then revisit quantization/publication and queued
 permissive models. The [independent OCR quality audit](tests/results/qwen35-ocr/quality.json)
 completes all3 EOS outputs with exact1,404 tokens/stops and15/15 inventory cells,
 but retains6 prefill and13 book-logit failures (worst0.0060377121 versus0.002).
@@ -91,8 +91,10 @@ CER/WER separately from ordered content/table cells; unannotated structure stays
 unmeasured. x86/ARM preparation matches exactly and all three images are reviewed;
 all22 hosted controls and frozen-hash replay pass. The guarded held-out F16 audit
 correctly concludes failure for those numerical records; exact decoded results
-and cosine rounding to1 do not waive them. Use original same-input isolation and
-the faithful attention trace before changing arithmetic.
+and cosine rounding to1 do not waive them. The [completed book isolation](tests/results/qwen35-ocr/book-isolation.json) eliminates
+all book prefill/score/probe failures with original prefill embeddings, narrowing
+the upstream boundary. This is diagnostic, not a production fix. Use original
+operator inputs and the faithful attention trace before changing arithmetic.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.

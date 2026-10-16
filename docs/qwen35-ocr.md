@@ -1945,39 +1945,26 @@ these failures before quantized promotion. All prior924/56 debt remains archived
 not rerun or waived. No incomplete/output/parser failures, numerical/default
 promotion, runtime release, weight upload or app-pin change.
 
-## Frozen book continuation localization (in progress)
+## Frozen book continuation localization (completed)
 
-[Test-only source4323dc67](https://github.com/CrispStrobe/CrispEmbed/tree/4323dc67c8ff7758f2a1a16087f3c00db89ec624)
-extends original-embedding isolation through all683 generated-score vectors,
-with selected original decoder layer/norm/input/cache/logit probes at steps94/240.
-These are the frozen audit's first/worst failing logit steps, selected for diagnosis,
-not a new evaluation split. The shared original dumper observes actual `generate`
-forwards and requires exact full ID/score replay after removing all observers.
-Probe logits must equal the corresponding actual generation scores. The installed
-original modeling source hash is retained; no reconstructed reference operator
-substitutes for the original blueprint.
+The [completed book continuation audit38892508965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892508965)
+at `4323dc67` reproduces all frozen composed native metrics,683 IDs/text/EOS,
+confidence and quality. Original observer-off replay preserves every generated
+ID and score array exactly. Supplying original prefill embeddings only to the
+test arm removes all five book prefill failures, all13 score failures and all
+150 selected continuation-probe failures; the composed probes retain21 failures.
+Worst isolated score error is0.00012421608 (step529), versus composed0.0060377121
+(step240), with unchanged absolute0.002/min-row-cosine0.99999 and no generated
+calibration allowance. This localizes the upstream input boundary, not a specific
+vision operator or a production correction. The isolated arm is teacher-forced,
+not independent free generation. [Complete retained report](../tests/results/qwen35-ocr/book-isolation.json).
 
-The composed arm uses ordinary owning-API free generation plus separate teacher
-scores. It must reproduce all frozen native metrics, teacher argmaxes, decoded
-IDs/text/stops, confidence arrays and raw/secondary quality; timing is measured
-again without an equality requirement. A separate test-only arm replaces prefill
-embeddings with the original values, then consumes the same original-prefix IDs
-through the ordinary decoder/cache implementation. It reports selected-stage
-magnitudes/errors and strict scores without claiming independent free generation.
-An isolated prefill replay must match that arm exactly. Every probe uses the
-shared `crispembed-diff`/`qwen35_compare` without calibration allowance. Source,
-weights, prepared pixels/gold/scorer and previous numerical debt stay frozen.
-
-The earlier book data already show native merger max_abs0.000789284706 versus
-original backend-off variation0.000823020935; layer23 native0.00401428342 versus
-original backend-off0.004280388355. That motivates upstream isolation but does
-not explain the13 generated-logit failures yet. Native cache7 keys0.00228404999
-also compares with original backend variation0.002477645874. None changes a gate.
-
-[Hosted ARM64 investigation38892508965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38892508965)
-is dispatched at source4323dc67. Controls and model results are pending; do not
-claim that isolation resolves the failures. Run with the existing heavy workflow,
-`qwen35_ocr_bootstrap.py --book-isolation` and the pinned reference/render packages
-used by the independent quality audit. Builds, model inference and large tensor
-artifacts remain hosted; retrieve only reports/logs for review. No production
-arithmetic, runtime release, prompt/precision default or publication change.
+At step94 the composed norm max_abs0.00415802002 falls to0.000106811523 with
+original prefill embeddings; step240 falls0.00612354279→0.0000483989716. Logits
+at the same steps fall to0.0000541210175/0.0000381469727. Generated-token
+embeddings themselves are exact in both arms. The ordinary decoder passes with
+original prefill inputs, so do not infer that changing its final norm is the fix.
+Next trace vision operators and the embedding assembly against actual original
+inputs. All30 hosted controls and frozen image replay pass; native controls pass
+on Linux/macOS/Windows. Numerical debt/defaults/weights/release remain unchanged.
+[Measurements and limits](../PERFORMANCE.md).

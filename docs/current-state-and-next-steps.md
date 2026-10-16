@@ -169,8 +169,13 @@ errors shared with Python. The workflow correctly fails for6 new prefill and13
 book-logit failures, worst0.0060377121 against unchanged0.002. Zero incomplete,
 output or quality-parser failures. [Full report](../tests/results/qwen35-ocr/quality.json),
 [raw/secondary scores and timing limits](../PERFORMANCE.md). Archived924/56
-prefill debt was not rerun or waived. Next localize book errors with original
-same-input isolation and the faithful attention trace. Quantized quality runs,
+prefill debt was not rerun or waived. The completed
+[book continuation isolation](../tests/results/qwen35-ocr/book-isolation.json) at
+`4323dc67` reproduces the composed baseline and removes all book prefill/score/
+selected-probe failures with original prefill embeddings. Worst isolated score
+error0.00012421608; all683 argmaxes match. This identifies an upstream boundary,
+not a production correction. All30 hosted controls, frozen replay and three-OS
+native controls pass. Next repair bounded CI drift, then trace vision operators. Quantized quality runs,
 larger pages, further materialization/default adoption and HF publication remain
 open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
@@ -197,7 +202,8 @@ audit and a proposed port order, but no native implementation or weight download
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The next vendor work follows PLAN's order: localize the independent book's strict
-F16 logit failures, then validate quantization and publication while preserving
+upstream vision/embedding drift after bounded CI repairs, then validate
+quantization/publication, UltraBERT and the permissive OCR queue while preserving
 all existing numerical failures and frozen quality inputs. The consumer lanes below remain separate, with
 their original verification dates.
 
