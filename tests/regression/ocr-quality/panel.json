@@ -24,7 +24,7 @@
       "crop": null,
       "renderer": "Pillow RGB BICUBIC",
       "gold": "tests/regression/ocr-quality/historical-receipt.gold.json",
-      "gold_sha256": "e564c36399792f79ba962708352cf75b60b0e52a9a8a8fdceeea2cdc70a44ead",
+      "gold_sha256": "125c47bc521ded86512c6ba3bc85feb1a9a19a371a64bf8a9e8ccb3453d7705e",
       "max_new_tokens": 1024,
       "prompt": ""
     },
@@ -43,7 +43,7 @@
       "crop": null,
       "renderer": "Pillow RGB BICUBIC",
       "gold": "tests/regression/ocr-quality/two-column-page.gold.json",
-      "gold_sha256": "e0aa049d6eef61b5fa79eebbd6b747f18552d0c670bf44bbf16f067b394c4feb",
+      "gold_sha256": "abf6dfbf6d2461f79dd6911b5e7bd259a56fb0fc6534155bc34eb5fce41044b7",
       "max_new_tokens": 1024,
       "prompt": ""
     },

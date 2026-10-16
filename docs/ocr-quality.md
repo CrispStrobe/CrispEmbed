@@ -88,8 +88,12 @@ precision defaults, HF aliases or app pins change under this evaluation contract
   and extra position-indexed cells; row shifts can produce multiple cell errors.
   This is not TEDS, GriTS or a rate normalized across different document sizes.
   Text-only output may have zero content error while failing table structure.
+  The two real transcripts have no independent cell-grid annotation (`tables:null`):
+  table scores and overall exact-quality are unavailable, not zero/perfect. Keep
+  `content_exact` and all actual parsed grids; only the owned grid has structural gold.
 - **Completion:** `exact_quality` requires established EOS, exact ordered content
-  and exact tables. It is a stringent diagnostic, not a requirement that imperfect
+  and exact annotated tables. With unavailable table gold it is null for a completed
+  output (false for incomplete output). It is a stringent diagnostic, not a requirement that imperfect
   original OCR suddenly become accurate. Report native-versus-original parity and
   native/original-versus-gold accuracy separately. Quantization quality requires
   interpreting all per-document changes, not optimizing one aggregate pass bit.

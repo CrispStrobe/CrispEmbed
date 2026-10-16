@@ -46,7 +46,7 @@ def validate_panel(repo, panel=None):
                 or c['source_sha256'] in used_hashes | sources
                 or not gold['text'] or words(gold['text']) in used_text | texts):
             raise ValueError('Changed, duplicate, overlapping or invalid evaluation case')
-        if any(not t or not t[0] or any(len(row) != len(t[0]) or any(not isinstance(cell, str) or words(cell) != cell for cell in row) for row in t) for t in gold['tables']):
+        if any(not t or not t[0] or any(len(row) != len(t[0]) or any(not isinstance(cell, str) or words(cell) != cell for cell in row) for row in t) for t in (gold['tables'] or [])):
             raise ValueError('Invalid rectangular gold table')
         if isinstance(gold['provenance'], dict):
             provenance = gold['provenance']
@@ -79,6 +79,8 @@ def prepare(repo, out):
     if font.name != 'DejaVuSans.ttf':
         raise ValueError('Expected DejaVu Sans renderer font')
     report['font'] = dict(name=font.name, sha256=sha(font))
+    import cairocffi
+    report['cairo'] = cairocffi.cairo_version_string()
     for c in panel['cases']:
         source = local(repo, c['source'])
         path = out / (c['id'] + '.png')

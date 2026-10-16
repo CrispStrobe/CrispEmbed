@@ -33,6 +33,14 @@ class Quality(unittest.TestCase):
         self.assertEqual(r['table']['cell_errors'], 6)
         self.assertFalse(r['exact_quality'])
 
+    def test_unknown_table_gold_is_not_zero_tables(self):
+        r = score(dict(text=self.gold['text'], tables=None), self.html, complete=True)
+        self.assertEqual(r['content']['wer'], 0)
+        self.assertTrue(r['content_exact'])
+        self.assertFalse(r['table_gold_available'])
+        self.assertIsNone(r['table'])
+        self.assertIsNone(r['exact_quality'])
+
     def test_order_not_a_bag_of_words(self):
         text = self.html.replace('<td>Bolt</td><td>2</td>', '<td>Nut</td><td>7</td>', 1)
         r = score(self.gold, text, complete=True)
@@ -91,6 +99,11 @@ class Quality(unittest.TestCase):
             bad = copy.deepcopy(panel); bad['cases'][0][key] = value
             with self.assertRaises(ValueError): validate_panel(ROOT, bad)
         bad = copy.deepcopy(panel); bad['cases'][1] = copy.deepcopy(bad['cases'][0])
+        with self.assertRaises(ValueError): validate_panel(ROOT, bad)
+        development = json.loads((ROOT / panel['development_reports'][0]).read_text())['cases'][0]
+        bad = copy.deepcopy(panel)
+        bad['cases'][0]['source'] = development['source']['local_file']
+        bad['cases'][0]['source_sha256'] = development['source']['sha256']
         with self.assertRaises(ValueError): validate_panel(ROOT, bad)
 
 

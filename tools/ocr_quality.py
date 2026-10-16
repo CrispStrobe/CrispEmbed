@@ -165,6 +165,14 @@ def score(gold, text, *, complete):
         result.update(parse_ok=False, parse_error=str(exc), content=None, table=None, exact_quality=False)
         return result
     expected_tables = gold['tables']
+    expected_content = words(gold['text'])
+    result.update(parse_ok=True, parsed_text=content, parsed_tables=tables,
+                  content=errors(expected_content, content), table_gold_available=expected_tables is not None,
+                  content_exact=complete and content == expected_content)
+    if expected_tables is None:
+        # Unknown table annotation is not a claim that zero tables exist.
+        result.update(table=None, exact_quality=False if not complete else None)
+        return result
     # Position-indexed grids: insertion/deletion cannot be hidden by sorting or matching to gold.
     cell_errors = 0
     cell_total = sum(len(row) for table in expected_tables for row in table)
@@ -176,10 +184,7 @@ def score(gold, text, *, complete):
             gr = got[ri] if ri < len(got) else []
             cell_errors += sum(ci >= len(wr) or ci >= len(gr) or words(wr[ci]) != words(gr[ci])
                 for ci in range(max(len(wr), len(gr))))
-    expected_content = words(gold['text'])
-    result.update(parse_ok=True, parsed_text=content, parsed_tables=tables,
-        content=errors(expected_content, content),
-        table=dict(expected=len(expected_tables), actual=len(tables), expected_cells=cell_total,
+    result.update(table=dict(expected=len(expected_tables), actual=len(tables), expected_cells=cell_total,
                    cell_errors=cell_errors, exact=tables == expected_tables),
         exact_quality=complete and content == expected_content and tables == expected_tables)
     return result

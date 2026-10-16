@@ -8,6 +8,13 @@ on:
       - 'tools/ci-heavy/ocr_quality_prepare.py'
       - 'tests/test_ocr_quality.py'
       - 'tests/regression/ocr-quality/**'
+      - 'tools/ci-heavy/qwen35_quant_calibration.py'
+      - 'tests/regression/images/cc0/ground_truth.json'
+      - 'tests/regression/images/cc0/receipt_historical.*'
+      - 'tests/regression/images/cc0/commons_test_ocr_document.jpg'
+      - 'tests/results/qwen35-ocr/page-parity.json'
+      - 'tests/results/qwen35-ocr/receipt.json'
+      - 'tests/results/qwen35-ocr/ffn-calibration-parity.json'
   pull_request:
     paths:
       - '.github/workflows/ocr-quality.yml'
@@ -15,6 +22,13 @@ on:
       - 'tools/ci-heavy/ocr_quality_prepare.py'
       - 'tests/test_ocr_quality.py'
       - 'tests/regression/ocr-quality/**'
+      - 'tools/ci-heavy/qwen35_quant_calibration.py'
+      - 'tests/regression/images/cc0/ground_truth.json'
+      - 'tests/regression/images/cc0/receipt_historical.*'
+      - 'tests/regression/images/cc0/commons_test_ocr_document.jpg'
+      - 'tests/results/qwen35-ocr/page-parity.json'
+      - 'tests/results/qwen35-ocr/receipt.json'
+      - 'tests/results/qwen35-ocr/ffn-calibration-parity.json'
 permissions:
   contents: read
 jobs:
