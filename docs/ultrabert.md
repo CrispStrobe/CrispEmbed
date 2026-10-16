@@ -183,3 +183,35 @@ safetensors==0.7.0 numpy==2.2.6`, separate from OCR. Earlier queued heavy
 dispatches were cancelled before execution after review fixes; no failed
 model result is being replaced. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
 stays draft until the actual conversion/reference results have been reviewed.
+
+## Prepared-ID ggml prototype — validation pending
+
+The original14 source/schema controls pass in
+[38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
+at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`; the actual log reports14 tests.
+The original-model job remains queued; no reference inference or native cosine
+result is claimed.
+
+[The test-only graph](../tests/test_ultrabert_diff.cpp) implements all24 pre-norm
+blocks, per-layer local/global masks and split-half RoPE, RMSNorm/SwiGLU, final
+norm and raw/optional normalized CLS. It takes the original prepared IDs and
+explicit masks, including padded query positions. `CRISPEMBED_ULTRABERT=1`
+enables this executable; unset and literal0 are checked before model IO. It is
+not compiled into a production model backend and adds no public API/registry.
+
+[The hosted native driver](../tools/ci-heavy/ultrabert_native.py) checks that every
+original/conversion source byte matches the immutable pre-port source0dddbd2b,
+then compares292 numerical stages and50 exact input/mask/position controls per
+case using `crispembed_diff::Ref`. Numerical gates remain0.99999 cosine and0.002
+maximum absolute error, with no environment override. Reports retain mean/RMS,
+both norms and the first failure in original execution order. All F32/F16 cases
+are collected before failed numerical gates return nonzero. Eight additional
+model-free controls reject missing/duplicated stages, forged green verdicts,
+incorrect totals and negative errors, while retaining nonfinite/exact failures.
+The22-test contract and hosted build are pending.
+
+This prototype covers every block's projection, attention, normalization, FFN
+and residual outputs. It does not yet expose the48 original RoPE-table stages
+or post-RoPE Q/K; extend original probes if attribution requires them. Prepared
+IDs do not establish native tokenization, prompts, public encoding or independent
+retrieval quality. Production integration and bindings remain separate work.

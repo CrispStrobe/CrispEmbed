@@ -1,3 +1,15 @@
+## 2026-10-16 — UltraBERT immutable source/schema controls
+
+All14 model-free UltraBERT source/schema controls pass in
+[38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
+at0dddbd2b61740c0f25482b2afb428b815b5c85ac (actual log:14 tests in0.029s).
+Coverage includes complete218-tensor mappings, unsupported heads, shapes/types,
+overlap/offset/payload failures, source changes and output preservation. This is
+a source/format guard result; original-model conversion/inference remains queued.
+No native cosine, retrieval-quality, quantization or publication claim follows.
+The test-only full-layer ggml prototype and its additional controls remain pending
+in [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69).
+
 # CrispEmbed — History
 
 Completed milestones and frozen evidence. Current tasks and ownership live in

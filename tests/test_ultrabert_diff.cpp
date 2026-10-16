@@ -151,14 +151,28 @@ int run(int argc, char ** argv) {
     require(argc == 3, "Usage: test-ultrabert-diff model.gguf reference.gguf");
     crispembed_diff::Ref ref;
     require(ref.load(argv[2]), "Reference load failed");
+    require(ref.meta("ref.revision") == "367d5343b5a0164d57b810cedf5de4b8983d5984" &&
+                ref.meta("ref.model") == "dmis-lab/UltraBERT-Embed-150M",
+            "Wrong original reference source");
     auto * metadata = core_gguf::open_metadata(argv[1]);
     require(metadata != nullptr, "Model metadata load failed");
     const auto windows = core_gguf::kv_i32_array(metadata, "ultrabert.attention.window_radius");
     const auto thetas = core_gguf::kv_f32_array(metadata, "ultrabert.rope.freq_base_per_layer");
-    bool contract = core_gguf::kv_str(metadata, "general.architecture", "") == "ultrabert" &&
-                    core_gguf::kv_str(metadata, "ultrabert.pooling", "") == "cls" &&
-                    !core_gguf::kv_bool(metadata, "ultrabert.attention.causal", true) && windows.size() == 24 &&
-                    thetas.size() == 24;
+    bool contract =
+        core_gguf::kv_u32(metadata, "ultrabert.embedding_length", 0) == 768 &&
+        core_gguf::kv_u32(metadata, "ultrabert.block_count", 0) == 24 &&
+        core_gguf::kv_u32(metadata, "ultrabert.feed_forward_length", 0) == 1024 &&
+        core_gguf::kv_u32(metadata, "ultrabert.attention.head_count", 0) == 6 &&
+        core_gguf::kv_u32(metadata, "ultrabert.attention.head_count_kv", 0) == 6 &&
+        core_gguf::kv_u32(metadata, "ultrabert.attention.key_length", 0) == 128 &&
+        core_gguf::kv_f32(metadata, "ultrabert.attention.layer_norm_rms_epsilon", 0) == 1e-6f &&
+        core_gguf::kv_str(metadata, "ultrabert.rope.layout", "") == "split-half" &&
+        core_gguf::kv_str(metadata, "ultrabert.source.revision", "") == "367d5343b5a0164d57b810cedf5de4b8983d5984" &&
+        !core_gguf::kv_bool(metadata, "ultrabert.pooling.normalize_default", true) &&
+        core_gguf::kv_str(metadata, "general.architecture", "") == "ultrabert" &&
+        core_gguf::kv_str(metadata, "ultrabert.pooling", "") == "cls" &&
+        !core_gguf::kv_bool(metadata, "ultrabert.attention.causal", true) && windows.size() == 24 &&
+        thetas.size() == 24;
     for (int i = 0; contract && i < 24; ++i) {
         contract = windows[i] == (i % 3 == 2 ? -1 : 128) && thetas[i] == (i % 3 == 2 ? 2560000.f : 10000.f);
     }
@@ -218,7 +232,8 @@ int run(int argc, char ** argv) {
             for (float value : values) finite = finite && std::isfinite(value);
             const auto r = ref.compare(name, values.data(), values.size(), 0);
             const bool pass = finite && r.found && std::isfinite(r.cos_min) && std::isfinite(r.max_abs) &&
-                              r.cos_min >= 0.99999 && r.max_abs <= 0.002;
+                              std::isfinite(r.mean_abs) && std::isfinite(r.rms) && std::isfinite(r.mine_norm) &&
+                              std::isfinite(r.ref_norm) && r.cos_min >= 0.99999 && r.max_abs <= 0.002;
             printf("STAGE\t%s\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%d\n", name.c_str(), r.cos_min, r.max_abs,
                    r.mean_abs, r.rms, r.mine_norm, r.ref_norm, pass ? 1 : 0);
             failed += !pass;
