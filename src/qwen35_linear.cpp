@@ -1,5 +1,6 @@
 #include "qwen35_linear.h"
 #include "qwen35_math.h"
+#include "qwen35_profile.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -42,18 +43,23 @@ bool matrix_type_supported(const ggml_tensor * source) {
 }
 bool tensor_floats(ggml_tensor * source, float * target) {
     if (!target || !matrix_type_supported(source)) return false;
+    profile_timer stage(profile_event::source_buffer);
     std::vector<uint8_t> raw(ggml_nbytes(source));
+    stage.next(profile_event::source_read);
     ggml_backend_tensor_get(source, raw.data(), 0, raw.size());
+    stage.next(profile_event::source_convert);
     const size_t count = size_t(ggml_nelements(source));
     if (source->type == GGML_TYPE_F32)
         std::memcpy(target, raw.data(), count * sizeof(float));
     else
         ggml_get_type_traits(source->type)->to_float(raw.data(), target, count);
+    stage.next(profile_event::source_validate);
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
 
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output) {
+    profile_timer total(profile_event::project_total);
     output.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
         width > 32768 || tokens < 1 || tokens > 16384 || threads < 1 || threads > 256)
@@ -71,29 +77,44 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX"))
         for (auto * matrix : matrices)
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
+    profile_timer stage(profile_event::project_setup);
     const size_t memory = 1024 * 1024 + elements * sizeof(float);
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ memory, nullptr, false }), ggml_free);
     std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
     if (!ctx || !backend) return false;
     ggml_backend_cpu_set_n_threads(backend.get(), threads);
+    stage.next(profile_event::project_input);
     auto * input = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, width, tokens);
     std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
     auto * graph = ggml_new_graph(ctx.get());
     std::vector<ggml_tensor *> results;
     for (auto * matrix : matrices) {
+        stage.next(profile_event::project_materialize);
         auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
-        if (!tensor_floats(matrix, static_cast<float *>(weight->data))) return false;
+        {
+            profile_matrix_scope materialize(matrix);
+            if (!tensor_floats(matrix, static_cast<float *>(weight->data))) return false;
+        }
+        stage.next(profile_event::project_graph);
         auto * result = ggml_mul_mat(ctx.get(), weight, input);
         ggml_mul_mat_set_prec(result, GGML_PREC_F32);
         ggml_build_forward_expand(graph, result);
         results.push_back(result);
     }
+    stage.next(profile_event::project_compute);
     if (ggml_backend_graph_compute(backend.get(), graph) != GGML_STATUS_SUCCESS) return false;
+    stage.next(profile_event::project_output);
     for (auto * result : results) {
         auto * values = static_cast<float *>(result->data);
         const size_t count = size_t(ggml_nelements(result));
         if (!std::all_of(values, values + count, [](float x) { return std::isfinite(x); })) return false;
         output.emplace_back(values, values + count);
+    }
+    if (profile_active()) {
+        stage.next(profile_event::project_cleanup);
+        results.clear();
+        backend.reset();
+        ctx.reset();
     }
     return true;
 }

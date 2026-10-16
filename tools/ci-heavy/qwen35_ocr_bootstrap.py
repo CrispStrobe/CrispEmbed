@@ -36,9 +36,10 @@ def main():
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
+    profile_check = sys.argv[1:] == ["--profile"]
     decoded_tail = sys.argv[1:] == ["--decoded-panel-tail"]
     decoded_check = decoded_tail or sys.argv[1:] == ["--decoded-panel"]
-    page_check = decoded_check or sys.argv[1:] == ["--pages"]
+    page_check = profile_check or decoded_check or sys.argv[1:] == ["--pages"]
     cascade_check = sys.argv[1:] == ["--cascade-norm"]
     stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
     attention_trace = sys.argv[1:] == ["--attention-trace"]
@@ -58,6 +59,7 @@ def main():
     os.environ["CRISPEMBED_QWEN35_PRECISE_RMS"] = "1" if frontend_rms else "0"
     os.environ["CRISPEMBED_QWEN35_QUANT"] = "0"
     os.environ["CRISPEMBED_QWEN35_IMATRIX"] = "0"
+    os.environ["CRISPEMBED_QWEN35_PROFILE"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_CASCADE_NORM"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PROBES"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM"] = "0"
@@ -71,6 +73,8 @@ def main():
     report = {"native_parity": "comparisons pending; workflow completion is not a parity claim", "publication": "none",
               "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()}
     try:
+        if profile_check:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
         if decoded_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_decoded_panel.py"), "-q"], check=True)
         api = HfApi()
@@ -163,8 +167,14 @@ def main():
                         *(["test-qwen35-public", "crispembed-cli", "crispembed-server", "crispembed-shared"] if public_check else []),
                         *(["test-qwen35-quant", "crispembed-quantize"] if quant_check else []),
                         *(["test-qwen35-imatrix"] if ffn_check else []),
+                        *(["test-qwen35-profile"] if profile_check else []),
                         *(["test-qwen35-attention-trace"] if attention_trace else ["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
+        if profile_check:
+            controls = subprocess.run([str(build / "test-qwen35-profile")], capture_output=True, text=True)
+            (out / "profile-controls.log").write_text(controls.stdout + controls.stderr)
+            print(controls.stdout + controls.stderr)
+            controls.check_returncode()
         if attention_trace:
             module(repo / "tools/ci-heavy/qwen35_attention_codegen.py", "qwen35_attention_codegen").capture(repo, build, out)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
@@ -310,7 +320,11 @@ def main():
                     "completed test-only original-embedding isolation; inspect prefill-isolation.json; not composed OCR parity"
                     if isolation_check else "completed fixed-input weight/backend controls; inspect prefill-drift.json")
             elif page_check:
-                if decoded_check:
+                if profile_check:
+                    profiler = module(repo / "tools/ci-heavy/qwen35_profiling.py", "qwen35_profiling")
+                    profiler.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    report["profiling"] = "completed diagnostic attribution; inspect profiling.json and retained failures"
+                elif decoded_check:
                     pages = module(repo / "tools/ci-heavy/qwen35_decoded_panel.py", "qwen35_decoded_panel")
                     pages.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", tail=decoded_tail)
                     report["decoded_panel"] = "completed four-arm decoded panel; inspect decoded-panel.json and retained strict failures"

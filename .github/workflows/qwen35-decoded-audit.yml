@@ -9,6 +9,13 @@ on:
       - 'tools/ci-heavy/qwen35_quant_calibration.py'
       - 'tools/ci-heavy/qwen35_vision_operators.py'
       - 'tests/test_qwen35_decoded_panel.py'
+      - 'tests/test_qwen35_profiling.py'
+      - 'tests/test_qwen35_profile.cpp'
+      - 'src/qwen35_profile.*'
+      - 'src/qwen35_linear.cpp'
+      - 'src/qwen35_ocr.cpp'
+      - 'tools/ci-heavy/qwen35_profiling.py'
+      - 'CMakeLists.txt'
       - 'tests/results/qwen35-ocr/page-parity.json'
   pull_request:
     paths:
@@ -18,6 +25,13 @@ on:
       - 'tools/ci-heavy/qwen35_quant_calibration.py'
       - 'tools/ci-heavy/qwen35_vision_operators.py'
       - 'tests/test_qwen35_decoded_panel.py'
+      - 'tests/test_qwen35_profiling.py'
+      - 'tests/test_qwen35_profile.cpp'
+      - 'src/qwen35_profile.*'
+      - 'src/qwen35_linear.cpp'
+      - 'src/qwen35_ocr.cpp'
+      - 'tools/ci-heavy/qwen35_profiling.py'
+      - 'CMakeLists.txt'
       - 'tests/results/qwen35-ocr/page-parity.json'
 
 permissions:
@@ -32,3 +46,25 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tests/test_qwen35_decoded_panel.py -v
+      - run: python tests/test_qwen35_profiling.py -v
+
+  profile-counters:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure portable CPU counters
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+      - name: Build counter controls
+        run: cmake --build build --config Release --target test-qwen35-profile -j4
+      - name: Counter controls (Unix)
+        if: runner.os != 'Windows'
+        run: ./build/test-qwen35-profile
+      - name: Counter controls (Windows)
+        if: runner.os == 'Windows'
+        run: ./build/Release/test-qwen35-profile.exe

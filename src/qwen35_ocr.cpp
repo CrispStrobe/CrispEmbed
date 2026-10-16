@@ -4,6 +4,7 @@
 #include "qwen35_positions.h"
 #include "qwen35_vision.h"
 #include "qwen35_math.h"
+#include "qwen35_profile.h"
 #include "core/env_gate.h"
 #include "ggml-cpu.h"
 #include <algorithm>
@@ -102,6 +103,8 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         while (length <= 65536 && prompt[length]) ++length;
     }
     if (length > 65536) return c.fail("prompt exceeds byte limit");
+    using namespace qwen35_ocr;
+    profile_timer stage(profile_event::preprocess);
     std::vector<uint8_t> rgb;
     if (channels != 3) {
         rgb.resize(size_t(w) * h * 3);
@@ -111,6 +114,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     }
     qwen35_ocr::image_inputs image;
     if (!qwen35_ocr::preprocess_rgb(pixels, h, w, {}, image)) return c.fail("image exceeds native patch bound");
+    stage.next(profile_event::prompt);
     std::vector<int> ids, modalities;
     std::string rendered;
     if (!c.tokenizer.image_prompt(prompt ? std::string(prompt, length) : "", int(image.patches.size() / 1536 / 4), ids,
@@ -118,10 +122,12 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         return c.fail("invalid or oversized image prompt");
     qwen35_ocr::position_outputs pos;
     if (!qwen35_ocr::image_positions(modalities, image.grid, 2, pos)) return c.fail("invalid multimodal positions");
+    stage.next(profile_event::vision, profile_phase::vision);
     qwen35_ocr::vision_outputs visual;
     if (!qwen35_ocr::vision_cpu(c.vision, {}, image.patches.data(), int(image.patches.size() / 1536), image.grid,
                                 c.threads, visual))
         return c.fail("vision inference failed");
+    stage.next(profile_event::embedding, profile_phase::other);
     std::vector<float> hidden;
     if (!qwen35_ocr::embed_cpu(c.decoder.embedding, ids, hidden)) return c.fail("embedding failed");
     size_t image_token = 0;
@@ -133,11 +139,13 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         }
     if (image_token * 1024 != visual.merged.size()) return c.fail("image embedding count mismatch");
     // No cross-request cache: all carried state is local to this recognition.
+    stage.next(profile_event::prefill, profile_phase::prefill);
     qwen35_ocr::decoder_outputs current;
     if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), pos.axes.data(), 1, int(ids.size()), c.threads, nullptr,
                                  current))
         return c.fail("decoder prefill failed");
     for (int step = 0; step < c.max_tokens; ++step) {
+        stage.next(profile_event::selection, profile_phase::other);
         if (current.logits.size() != 248320 ||
             !std::all_of(current.logits.begin(), current.logits.end(), [](float x) { return std::isfinite(x); }))
             return c.fail("nonfinite or missing vocabulary scores");
@@ -159,14 +167,17 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
             c.stop = QWEN35_OCR_CONTEXT_LIMIT;
             break;
         }
+        stage.next(profile_event::cached_prepare, profile_phase::other);
         auto cache = std::move(current.cache);
         std::vector<float> coords;
         if (!qwen35_ocr::embed_cpu(c.decoder.embedding, { id }, hidden) ||
             !qwen35_ocr::cached_positions(cache.tokens, 1, pos.rope_delta, coords))
             return c.fail("cached input preparation failed");
+        stage.next(profile_event::cached_decode, profile_phase::decode);
         if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), coords.data(), 1, 1, c.threads, &cache, current))
             return c.fail("cached decoder failed");
     }
+    stage.next(profile_event::text_decode, profile_phase::other);
     if (!c.tokenizer.decode(c.ids, c.text)) return c.fail("output decoding failed");
     return c.text.c_str();
 }
@@ -210,6 +221,7 @@ extern "C" int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * c) {
 }
 extern "C" const char * qwen35_ocr_recognize_raw(qwen35_ocr_context * c, const uint8_t * p, int w, int h, int ch,
                                                  const char * prompt, int * len) {
+    qwen35_ocr::profile_timer total(qwen35_ocr::profile_event::request_raw);
     if (len) *len = 0;
     if (!c) return nullptr;
     c->clear();
@@ -223,17 +235,20 @@ extern "C" const char * qwen35_ocr_recognize_raw(qwen35_ocr_context * c, const u
 }
 extern "C" const char * qwen35_ocr_recognize_file(qwen35_ocr_context * c, const char * path, const char * prompt,
                                                   int * len) {
+    qwen35_ocr::profile_timer total(qwen35_ocr::profile_event::request_file);
     if (len) *len = 0;
     if (!c) return nullptr;
     c->clear();
     try {
         if (!core_env::on("CRISPEMBED_QWEN35_OCR")) return c->fail("experimental OCR gate is off");
+        qwen35_ocr::profile_timer file_decode(qwen35_ocr::profile_event::file_decode);
         int w = 0, h = 0, ch = 0;
         if (!path || !*path || !stbi_info(path, &w, &h, &ch) || !image_bounds(w, h, 3))
             return c->fail("invalid image file");
         std::unique_ptr<unsigned char, decltype(&stbi_image_free)> pixels(stbi_load(path, &w, &h, &ch, 3),
                                                                           stbi_image_free);
         if (!pixels) return c->fail("image file decoding failed");
+        file_decode.stop();
         return qwen35_ocr_recognize_raw(c, pixels.get(), w, h, 3, prompt, len);
     } catch (...) {
         return c->fail("file recognition exception");
