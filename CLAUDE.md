@@ -108,7 +108,9 @@ Smaller merger errors are not decoded-quality or default-promotion evidence.
 The first [independent Q8 inventory audit](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
 preserves248 IDs/text/EOS and15/15 cells, but retains75 prefill/248 score failures
 (min score cosine0.999256611, worst abs0.440546274). Original/F16/quantized-weight
-replay and41 source controls pass. PR63 is merged; continue Q8 receipt/book, then preselected
+replay and41 source controls pass. PR63 is merged. The [Q8 receipt](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json)
+completes with8PK→SPK decoded regression and75/473 prefill/score failures;
+original/F16/weight replay and all logs verify. Continue running Q8 book, then preselected
 mixed/Q4 cases with the same frozen quality contract; no promotion follows from
 this single controlled table.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)

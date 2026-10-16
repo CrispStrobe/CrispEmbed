@@ -63,7 +63,7 @@ on the evaluation inputs. Publication and numerical promotion remain separate.
 
 | Preselected recipe | Inventory (784 patches) | Historical receipt (968) | Book (1008) |
 | --- | --- | --- | --- |
-| Q8, vision F32 | [Complete248 EOS/15 cells;75 prefill/248 score failures](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [Running38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914) | [Queued38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995) |
+| Q8, vision F32 | [Complete248 EOS/15 cells;75 prefill/248 score failures](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [Complete EOS;8PK→SPK regression;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json) | [Running38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995) |
 | Attention Q8 / FFN Q6, vision F32 | Pending | Pending | Pending |
 | Q4, vision F32 | Pending | Pending | Pending |
 
@@ -291,7 +291,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) merged d34a64d2: inventory Q8 exact248 IDs/text/EOS and15/15 cells, retaining75 prefill/248 score failures; all41 source controls, original/F16/weight replay and independent log audit pass. [Receipt38928823914](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38928823914) running; [book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995) queued in isolated CI lane. Mixed/Q4 pending; no promotion |
+| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) merged d34a64d2: inventory Q8 exact248 IDs/text/EOS and15/15 cells, retaining75 prefill/248 score failures; all41 source controls, original/F16/weight replay and independent log audit pass. Receipt Q8 completes with8PK→SPK decoded regression and75/473 numerical failures; original/F16/weight replay and all log checks pass. [Book38931861995](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38931861995) running in isolated CI lane. Mixed/Q4 pending; no promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
