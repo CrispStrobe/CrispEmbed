@@ -13,8 +13,11 @@ checks are complete; evidence is in [HISTORY](HISTORY.md) and
 [PERFORMANCE](PERFORMANCE.md). Image-only/literal runs reach EOS at455/434 tokens
 and match original Python exactly; both still emit HTML tables. The conversion
 gate remains default-off. Independent-document inputs and scoring are frozen in
-[the v1 quality contract](docs/ocr-quality.md); next run its original/F16 baseline
-before revisiting quantization. Further performance work remains below.
+[the v1 quality contract](docs/ocr-quality.md). Its completed original/F16 audit
+reaches EOS with exact1,404 tokens/stops and15/15 owned table cells, but retains
+six prefill and13 book-logit failures. [Results](tests/results/qwen35-ocr/quality.json)
+and [quality/timing](PERFORMANCE.md) keep recognition errors visible. Localize
+those new strict failures before quantized promotion. Further performance work remains below.
 
 For every Qwen lane, preserve all 924 prior prefill records and 56 existing failures
 (20/11/11/14), the 0.002 cache gate and qualified vision/norm budgets. Use the
@@ -23,17 +26,23 @@ probe softmax exp/sum boundaries only where evidence warrants a correction.
 Original arrays stay test-only. Exact Python output on this panel does not waive
 numerical debt or establish transcription accuracy.
 
-1. [ ] **Run the frozen held-out original/F16 quality baseline.** Use the
-   [v1 evaluation contract](docs/ocr-quality.md): historical receipt, two-column
-   page and owned inventory grid, disjoint from the named Qwen development and
-   calibration sets. [Preparation/review is complete](tests/results/ocr-quality-prepared.json);
-   retain its exact image/RGB/scorer hashes and check actual processor grids,
-   then freeze all original outputs before native runs. Retain the compact/full
-   anchor and ordinary owning-API free generation plus strict intermediate/diff
-   diagnostics, IDs/EOS/text/confidence, raw and secondary quality scores. Missing
-   table annotation remains unmeasured, not a zero-table assertion. Keep initial
-   failures/incomplete outputs and all existing numerical debt. These are small
-   explicitly resized derivatives, not a corpus benchmark or default-prompt gate.
+1. [ ] **Localize the held-out book's strict F16 logit failures.** Follow the
+   pinned Python blueprint, shared intermediates dumper and `crispembed-diff` /
+   `qwen35_compare` through vision, embeddings, cache and decoder stages. Use
+   original-embedding/same-input isolation and the faithful attention trace before
+   changing arithmetic. The [completed audit](tests/results/qwen35-ocr/quality.json)
+   retains6 new prefill failures (receipt1/book5) and13 book score failures:
+   first step 94 max_abs 0.00223350525, worst step 240 max_abs 0.0060377121. Book's first failing
+   captured hidden state is layer23, while the earliest failing cache is layer7;
+   capture order is not causal order. Keep min-row-cosine0.99999 /absolute0.002,
+   no generated-logit calibration allowance, all original CPU controls and frozen
+   image/RGB/scorer/source/gold/split hashes. All3 actual grids match and all3
+   outputs reach EOS; no cap extension is needed for this panel. Preserve full
+   decoded IDs/text/stops/confidence and raw/secondary quality. Inventory content
+   and15 cells are exact; receipt/book recognition errors are shared with Python.
+   Done when the earliest remaining cause has measured same-input evidence and
+   any correction has hosted positive/negative controls plus unchanged decoded
+   results, or a bounded diagnostic result records the unresolved dependency.
 2. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
    Q8/Q6 differs on form/German. Retain all calibration alternatives and compare
    full IDs/EOS/text, score errors, confidence and frozen quality measures for
@@ -245,5 +254,4 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `ocr-quality-contract` | Audit frozen held-out original/F16 results | Preparation/scoring/wiring verified:22 hosted controls, frozen PNG/RGB/scorer/font/source/gold/split replay and secret scan pass; retained report/review complete. [F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689) at `4c4b3ee4` runs since09:58:53UTC; model results pending. Runtime unchanged |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |

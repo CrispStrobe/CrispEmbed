@@ -4,6 +4,62 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Independent F16 OCR audit completed; numerical failures retained
+
+[Hosted ARM64 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
+at `4c4b3ee4fb8a92bd6b6c8991452f388a6100e874` completes all three frozen
+[v1 documents](docs/ocr-quality.md). All original outputs were frozen before any
+evaluation-native run. Original processor grids match the reviewed derivatives:
+receipt352×704/968 patches, book448×576/1008, inventory448×448/784. PNG/RGB/font/
+scorer/source/gold/split hashes, compact/full anchor, runtime sources and all473
+baseline tensors match their frozen evidence. The1,918,139,328-byte export SHA256
+remains `41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4`.
+Release CPU/four threads; parallel-F16 explicitly1, profiling/other precision/
+imatrix gates0. No production/default/version/weight/publication/app-pin change.
+
+Receipt/book/inventory reach EOS at473/683/248 tokens. All1,404 ordinary owning-API
+IDs/text/stops and original-prefix teacher argmaxes match Python exactly. Actual
+confidence vectors and means are checked independently. The owned inventory
+matches all15 position-indexed cells and ordered content exactly; raw CER/WER
+remain1.781818/1.031250 because the output contains Markdown/HTML. Receipt and book
+retain recognition errors shared by Python/native: ordered-content CER/WER are
+0.033854/0.131944 and0.114727/0.176259. Raw scores, full text, missing table gold and
+all timings remain visible in [PERFORMANCE](PERFORMANCE.md) and the
+[complete retained report](tests/results/qwen35-ocr/quality.json). These three small
+resized derivatives establish neither upstream benchmark scores nor corpus quality.
+
+The workflow correctly concludes **failure**:231 new prefill records retain six
+qualified failures (receipt1/book5/inventory0), and1,404 generated-score comparisons
+retain13 strict failures, all on the book. There are zero incomplete, output or
+quality-parser failures. Receipt cache15 keys max_abs0.00343179703, norms
+602.192017/602.192078. Book's first failing captured hidden state is decoder layer23:
+max_abs0.00401428342, mean_abs5.87522572e-6, RMS2.24536288e-5,
+norms186.065216/186.065094; its earliest failing cache is layer7 keys,
+max_abs0.00228404999, norms553.731262/553.731323. Capture order lists hidden
+states before caches and does not establish causal order. Cache11/15 keys and
+cache23 values also fail. The first failing book logit is step94, max_abs0.00223350525,
+mean_abs0.000374286261, RMS0.00047422928, norms2607.20874/2607.17261. Worst step240:
+max_abs0.0060377121, mean_abs0.000730483502, RMS0.000933170551,
+norms2173.17676/2173.32373. Cosine rounds to1; unchanged minimum-row-cosine0.99999 /
+absolute0.002 gates still reject these vectors. Generated logits receive no
+calibrated allowance. Next localize the book divergence with the original blueprint,
+same-input isolation and faithful attention trace before quantized promotion.
+
+The report preserves all raw fields plus source/workflow/build/limit metadata;
+artifact JSON SHA256 is
+`a76edcfbefa36ddb381c0a871440e82b2f560785a8319289d0f8d897cd6dc14d`.
+Every actual-log prefill, score verdict/budget, decoded result, confidence and
+quality score was independently reproduced through the shared parsers/scorer.
+Sixteen actual-log negative mutations reject missing/duplicate/nonfinite confidence,
+wrong mean, missing/duplicate teacher verdicts/budgets, contradictory summary,
+calibration allowance, nonfinite budget and missing/duplicate/nonfinite prefill
+records. Earlier22 hosted controls and frozen replay pass. The1,302 original
+CPU-control records here are new inputs, not reruns of earlier controls. Archived
+924prefill/56failures and the separate ordinary-receipt34failures remain unchanged;
+do not sum overlapping historical experiments as unique cases. Large tensor and
+model artifacts remain in hosted storage; only reports/logs were retrieved.
+
+
 ## 2026-10-16 — OCR quality preparation reviewed on x86 and ARM; F16 audit wired
 
 [Hosted controls/preparation38879605915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38879605915)

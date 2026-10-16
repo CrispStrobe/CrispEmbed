@@ -132,10 +132,10 @@ no weights/reference probes enter production artifacts. Once the prepared report
 RGB/source/gold/font/split and scorer hashes before inference. Rendering/library/font changes
 require comparing pixels/hashes before claiming the same frozen inputs.
 
-Preparation and visual review are required before model inference. Original/native
-F16 and quantized runs, actual processor grids, decoded accuracy, confidence,
-timing and comparative quality are still pending. Do not describe a green
-preparation workflow or scorer control as model parity or recognition improvement.
+Preparation and visual review are required before model inference. The completed
+original/F16 audit below records actual grids, outputs, quality, confidence and
+timing separately from preparation. Quantized quality runs remain pending.
+Preparation/scorer success alone does not establish model parity or recognition improvement.
 
 
 Preparation and review are complete:
@@ -176,4 +176,18 @@ unchanged. [The retained evidence](../tests/results/ocr-quality-prepared.json)
 includes the full replay/report SHA and successful
 [secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346446).
 [F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
-at the same source is running; no held-out model-quality conclusion is claimed.
+at the same source is complete. All3 actual grids match; receipt/book/inventory
+reach EOS at473/683/248 tokens, with exact original/native IDs/text/stops and all
+1,404 teacher argmaxes. Inventory content and all15 cells are exact. Receipt/book
+ordered-content CER/WER remain0.033854/0.131944 and0.114727/0.176259; table gold is
+unavailable there. Inventory raw CER/WER remain1.781818/1.031250 despite perfect
+content/cells. Preserve the frozen serialization policy and all raw errors.
+
+The workflow correctly fails with6 new prefill failures and13 book score failures,
+not incomplete/output/parser failures. Worst book logit max_abs0.0060377121 exceeds
+unchanged0.002 despite cosine rounding to1. Generated logits receive no calibrated
+allowance. [All raw outputs, confidences and numerical records](../tests/results/qwen35-ocr/quality.json)
+and [quality/timing scopes](../PERFORMANCE.md) are retained. Next localize the
+book divergence with original same-input isolation and faithful attention probes;
+quantization, larger pages and corpus evaluation remain open. No production,
+release, annotation, prompt/default or weight publication change.

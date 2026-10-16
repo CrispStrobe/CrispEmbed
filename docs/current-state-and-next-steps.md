@@ -161,11 +161,18 @@ visually reviewed; [the retained report](../tests/results/ocr-quality-prepared.j
 keeps the receipt damage/clipped footer and small book text unchanged. Unavailable
 table annotations stay unmeasured. The guarded original/F16 driver requires those
 reviewed hashes before model imports/downloads. All22 hosted controls and frozen
-image/scorer/hash replay pass [38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793); the running
-[F16 audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689) has no
-result yet.
-Original/native F16 and quantized quality runs, larger pages, further materialization/
-default adoption and HF publication remain open;1024 patches is the native bound.
+image/scorer/hash replay pass [38882346793](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882346793); the completed
+[F16 audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689) at
+`4c4b3ee4` reaches all3 EOS outputs with exact1,404 IDs/text/stops/teacher argmaxes.
+Inventory ordered content and15/15 cells are exact; receipt/book retain recognition
+errors shared with Python. The workflow correctly fails for6 new prefill and13
+book-logit failures, worst0.0060377121 against unchanged0.002. Zero incomplete,
+output or quality-parser failures. [Full report](../tests/results/qwen35-ocr/quality.json),
+[raw/secondary scores and timing limits](../PERFORMANCE.md). Archived924/56
+prefill debt was not rerun or waived. Next localize book errors with original
+same-input isolation and the faithful attention trace. Quantized quality runs,
+larger pages, further materialization/default adoption and HF publication remain
+open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
 The iOS standalone-target repair now passes the complete
@@ -189,9 +196,9 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: run the frozen independent original/F16
-quality baseline, then validate quantization and publication while preserving all
-existing numerical failures. The consumer lanes below remain separate, with
+The next vendor work follows PLAN's order: localize the independent book's strict
+F16 logit failures, then validate quantization and publication while preserving
+all existing numerical failures and frozen quality inputs. The consumer lanes below remain separate, with
 their original verification dates.
 
 ## Recommended order and dependencies

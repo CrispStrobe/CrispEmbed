@@ -1,5 +1,52 @@
 # CrispEmbed Performance
 
+## Qwen3.5 independent F16 document panel (2026-10-16)
+
+[Run38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689),
+source `4c4b3ee4`, ARM64 Release CPU/four threads, GGML native/BLAS/Metal off.
+Frozen F16-text/F32-vision export1,918,139,328 bytes,473 tensors; parallel-F16=1,
+profiling/other precision/imatrix gates off. All3 outputs reach EOS; all1,404 IDs,
+text/stops and teacher argmaxes match Python. Full values/provenance and retained
+failures: [quality.json](tests/results/qwen35-ocr/quality.json).
+
+| Frozen case | Size / patches | Tokens / stop | Raw CER / WER | Ordered-content CER / WER | Table cells | Native API seconds | Python generation seconds |
+|---|---|---|---|---|---|---:|---:|
+| Historical receipt |352×704 /968|473 / EOS|0.140625 /0.131944|0.033854 /0.131944|Unmeasured|429.426|39.213|
+| Two-column page |448×576 /1008|683 / EOS|0.138880 /0.179856|0.114727 /0.176259|Unmeasured|609.753|55.978|
+| Owned inventory |448×448 /784|248 / EOS|1.781818 /1.031250|0 /0|15/15 exact, one5×3 table|226.693|20.594|
+
+Single observations, **not a paired speed/memory benchmark**. Native owning-API
+recognition after load includes image decoding/preprocessing, vision, prefill and
+free generation; separate teacher diagnostics are excluded. Python generation is
+after processor/load and includes original score collection. These spans differ;
+do not infer backend speed ratios. No peak-RSS comparison was performed here.
+The frozen v1 scorer preserves raw Unicode/whitespace-token errors while secondary
+scores parse supported Markdown/HTML and collapse whitespace only. Inventory raw
+CER remains above1 even though ordered content/cells are exact. Real documents
+have no table-cell gold; that quality stays unmeasured. Receipt/book substitutions,
+omissions and reading errors occur identically in Python/native; token agreement
+is not transcription accuracy. This tiny resized panel is not OCRBench,
+OmniDocBench, olmOCRBench or upstream/corpus score reproduction.
+
+Actual generated confidence maximum/mean absolute differences, aligned over all
+identical IDs including EOS: receipt8.15317e-5/1.36934e-6;
+book4.59654e-4/6.87986e-6; inventory7.30119e-6/4.40048e-8.
+These probabilities do not establish calibrated OCR accuracy.
+
+The run fails for **6/231 new prefill comparisons and13/1,404 teacher-score vectors**;
+zero incomplete/output/quality-parser failures. Receipt/book/inventory prefill
+failures1/5/0, score failures0/13/0. Book failing score steps are94,123–127,186,
+196–197,240–241,321–322. First step94 max_abs0.00223350525,
+mean_abs0.000374286261, RMS0.00047422928, native/reference norms2607.20874/2607.17261.
+Worst step240 max_abs0.0060377121, mean_abs0.000730483502, RMS0.000933170551,
+norms2173.17676/2173.32373; cosine rounds to1. Gates remain min-row-cosine0.99999 /
+absolute0.002 with no generated-logit calibration allowance. Receipt worst score
+0.00138044357 and inventory0.00061583519 pass. All prefill failures/magnitudes are
+retained in the report; their localization is next before quantized promotion.
+Archived924/56 prefill debt was not rerun or waived. No precision/prompt/default,
+release or publication promotion follows.
+
+
 ## Qwen3.5 completed receipt and literal prompt (2026-10-16)
 
 [Hosted 38870347237](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870347237)

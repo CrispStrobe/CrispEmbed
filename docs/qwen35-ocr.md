@@ -1912,7 +1912,7 @@ and an owned inventory grid before any new model outputs. The two real transcrip
 remain byte-for-byte the earlier independent manual annotations; the controlled
 grid is authored before inference. Named Qwen development/calibration inputs and
 normalized transcripts are excluded. Explicit derivatives stay within the nominal
-1024-patch bound; actual original processor grids still need model-audit checks.
+1024-patch bound; all actual original processor grids match in the completed audit.
 
 [The scorer](../tools/ocr_quality.py) retains raw CER/WER and separately reports
 ordered content and rectangular table cells, with strict supported serialization
@@ -1921,10 +1921,26 @@ content. Unsupported markup produces explicit missing secondary scores. The real
 transcripts have no cell-grid gold: table accuracy is unmeasured, not asserted to
 be perfect or empty. The owned grid supplies the independent table annotation.
 
-This freezes evaluation policy, not recognition quality. Next capture all original
-outputs with the existing compact/full-anchor check, run ordinary native F16 and
-strict `crispembed-diff` diagnostics, then compare preselected quantization arms.
-Retain all existing failures, full decoded output/stops and actual confidence;
-never treat a prepared image, green scorer control or teacher-forced result as a
-quality improvement. No release, prompt/precision default, weight upload or app-pin
-change follows from this contract.
+[Completed ARM64 F16 audit38882488689](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38882488689)
+at `4c4b3ee4` freezes all original outputs before native generation and checks the
+compact/full anchor and frozen source/weights/pixels/scorer. All three reach EOS
+at473/683/248 tokens;1,404 actual IDs/text/stops/teacher argmaxes are exact.
+Inventory ordered content and all15 cells are exact; its raw CER/WER remain
+1.781818/1.031250 due to serialization. Receipt/book ordered-content CER/WER are
+0.033854/0.131944 and0.114727/0.176259, with recognition errors shared by Python.
+Their table quality is unmeasured. [Full report](../tests/results/qwen35-ocr/quality.json),
+[raw/secondary quality, confidence and timing limits](../PERFORMANCE.md).
+
+Strict `crispembed-diff`/`qwen35_compare` retains6 new prefill failures and13 book
+logit failures; the workflow correctly fails. First failing book score step 94:
+max_abs0.00223350525, norms2607.20874/2607.17261; worst step 240:
+max_abs0.0060377121, mean_abs0.000730483502, RMS0.000933170551,
+norms2173.17676/2173.32373. Cosine rounds to1, but unchanged absolute0.002 /
+minimum-row-cosine0.99999 still rejects these vectors without calibration allowance.
+Book's first failing captured hidden state is layer23 (max_abs0.00401428342), while
+the earliest failing cache is layer7 keys (0.00228404999). Hidden-state/cache
+capture order does not establish causality. Next use the original blueprint,
+original-embedding/same-input isolation and faithful attention trace to localize
+these failures before quantized promotion. All prior924/56 debt remains archived,
+not rerun or waived. No incomplete/output/parser failures, numerical/default
+promotion, runtime release, weight upload or app-pin change.
