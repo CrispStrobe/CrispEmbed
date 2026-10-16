@@ -228,7 +228,12 @@ than Q8 (min cosine0.998120904, worst abs1.08967495). The completed
 reproduces all controls/logs, but changes8PK→SPK and drops a bullet, reaching EOS
 with471 versus473 tokens. Content CER decreases3.39%→3.26%; WER stays13.19%.
 Mixed retains75/473 prefill/score failures (min cosine0.997738481, worst abs1.08097315).
-Book is still running; Q4 follows its review. No held-out calibration,
+Book is still running. The three unchanged Q4 cases are queued independently at
+8bf55424: [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
+[receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
+and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206).
+Every case has its own original/F16 replay; review the complete mixed panel before
+Q4 assessment. Scheduling overlap changes no recipe or quality decision. No held-out calibration,
 corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 
 The iOS standalone-target repair now passes the complete

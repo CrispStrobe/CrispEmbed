@@ -2131,5 +2131,10 @@ aggregate error decrease, not proof of better item/general recognition. Mixed
 retains75/473 prefill/score failures versus F16's1/0, minimum score cosine0.997738481
 and worst abs1.08097315, worse than Q8's0.999563456/0.454777241. All gates and failed
 alternatives remain. [Full receipt report](../tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
-and [error/confidence/timing limits](../PERFORMANCE.md). Mixed book is running;
-Q4 follows its review. No held-out calibration or runtime/publication promotion.
+and [error/confidence/timing limits](../PERFORMANCE.md). Mixed book is running.
+Unchanged Q4 [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
+[receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
+and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206)
+are queued at8bf55424 on independent hosted lanes. Assess the complete mixed panel
+before Q4. Each case replays its own frozen original/F16 controls; overlapping
+preselected evaluation runs does not introduce held-out calibration. No held-out calibration or runtime/publication promotion.
