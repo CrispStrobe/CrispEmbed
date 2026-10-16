@@ -129,7 +129,7 @@ static int benchmark(int argc, char ** argv) {
     }
     std::printf("\nBENCH utf8_hex:");
     for (int i = 0; i < length; ++i) std::printf("%02x", static_cast<unsigned char>(text[i]));
-    std::printf("\nBENCH stop=%d mean_confidence=%.9g bytes=%d load_ms=%.9g recognize_ms=%.9g\n",
+    std::printf("\nBENCH stop=%d mean_confidence=%.9g bytes=%d load_ms=%.17g recognize_ms=%.17g\n",
                 qwen35_ocr_last_stop(context.get()), qwen35_ocr_mean_confidence(context.get()), length, load_ms, ms);
     profile_print(record, active);
     return record.dropped || (!active && !empty(record)) ? 1 : 0;
