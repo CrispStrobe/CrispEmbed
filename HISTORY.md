@@ -15,7 +15,7 @@ EOS/confidence/quality reproduce the previous baseline. All41
 [source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781),
 frozen preparation replay and [source secret scan38924267426](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924267426)
 pass. Independent reparse of all five native/quantizer logs verifies every raw
-report field and protected tensor record; only small reports/logs are retrieved
+native metric/output/confidence and protected tensor record; only small reports/logs are retrieved
 from the5.16GB hosted artifact.
 [Retained complete report](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json),
 artifact-report SHA256 `dd733df6ac1913d21ff428e7554b2cf9d252611f10410069851c5d5fb2c6414a`.
