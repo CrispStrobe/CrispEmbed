@@ -11,6 +11,10 @@ on:
       - 'tests/test_qwen35_decoded_panel.py'
       - 'tests/test_qwen35_profiling.py'
       - 'tests/test_qwen35_profile.cpp'
+      - 'tests/test_qwen35_quant.cpp'
+      - 'tests/test_qwen35_receipt.py'
+      - 'tools/ci-heavy/qwen35_receipt.py'
+      - 'tools/dump_qwen35_ocr_page_reference.py'
       - 'tests/test_qwen35_materialize.cpp'
       - 'tests/test_qwen35_materialization.py'
       - 'tools/ci-heavy/qwen35_materialization.py'
@@ -31,6 +35,10 @@ on:
       - 'tests/test_qwen35_decoded_panel.py'
       - 'tests/test_qwen35_profiling.py'
       - 'tests/test_qwen35_profile.cpp'
+      - 'tests/test_qwen35_quant.cpp'
+      - 'tests/test_qwen35_receipt.py'
+      - 'tools/ci-heavy/qwen35_receipt.py'
+      - 'tools/dump_qwen35_ocr_page_reference.py'
       - 'tests/test_qwen35_materialize.cpp'
       - 'tests/test_qwen35_materialization.py'
       - 'tools/ci-heavy/qwen35_materialization.py'
@@ -56,6 +64,7 @@ jobs:
       - run: python tests/test_qwen35_decoded_panel.py -v
       - run: python tests/test_qwen35_profiling.py -v
       - run: python tests/test_qwen35_materialization.py -v
+      - run: python tests/test_qwen35_receipt.py -v
 
   profile-counters:
     strategy:
@@ -70,12 +79,13 @@ jobs:
       - name: Configure portable CPU counters
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DCRISPEMBED_BUILD_SHARED=OFF
       - name: Build counter controls
-        run: cmake --build build --config Release --target test-qwen35-profile test-qwen35-materialize -j4
+        run: cmake --build build --config Release --target test-qwen35-profile test-qwen35-materialize test-qwen35-quant -j4
       - name: Counter controls (Unix)
         if: runner.os != 'Windows'
         run: |
           ./build/test-qwen35-profile
           ./build/test-qwen35-materialize
+          ./build/test-qwen35-quant --request-controls
       - name: Counter controls (Windows)
         if: runner.os == 'Windows'
         run: |
@@ -83,4 +93,6 @@ jobs:
           & ./build/Release/test-qwen35-profile.exe
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & ./build/Release/test-qwen35-materialize.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./build/Release/test-qwen35-quant.exe --request-controls
           exit $LASTEXITCODE

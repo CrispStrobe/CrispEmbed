@@ -36,11 +36,12 @@ def main():
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
+    receipt_check = sys.argv[1:] == ["--receipt"]
     materialize_check = sys.argv[1:] == ["--parallel-f16"]
     profile_check = materialize_check or sys.argv[1:] == ["--profile"]
     decoded_tail = sys.argv[1:] == ["--decoded-panel-tail"]
     decoded_check = decoded_tail or sys.argv[1:] == ["--decoded-panel"]
-    page_check = profile_check or decoded_check or sys.argv[1:] == ["--pages"]
+    page_check = receipt_check or profile_check or decoded_check or sys.argv[1:] == ["--pages"]
     cascade_check = sys.argv[1:] == ["--cascade-norm"]
     stats_check = cascade_check or sys.argv[1:] == ["--norm-statistics"]
     attention_trace = sys.argv[1:] == ["--attention-trace"]
@@ -77,6 +78,8 @@ def main():
     try:
         if profile_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
+        if receipt_check:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_receipt.py"), "-q"], check=True)
         if materialize_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_materialization.py"), "-q"], check=True)
         if decoded_check:
@@ -330,7 +333,11 @@ def main():
                     "completed test-only original-embedding isolation; inspect prefill-isolation.json; not composed OCR parity"
                     if isolation_check else "completed fixed-input weight/backend controls; inspect prefill-drift.json")
             elif page_check:
-                if profile_check:
+                if receipt_check:
+                    receipt = module(repo / "tools/ci-heavy/qwen35_receipt.py", "qwen35_receipt")
+                    receipt.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    report["receipt"] = "completed explicit-cap/prompt audit; inspect receipt.json and numerical failures"
+                elif profile_check:
                     profiler = module(repo / "tools/ci-heavy/qwen35_profiling.py", "qwen35_profiling")
                     profiler.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", parallel=materialize_check)
                     report["profiling"] = "completed diagnostic attribution; inspect profiling.json and retained failures"

@@ -24,8 +24,8 @@ static void gate(const char * name, const char * value) {
     setenv(name, value, 1);
 #endif
 }
-static bool strict_prefill = false;
-static int strict_prefill_failures = 0;
+static bool strict_prefill = false, strict_scores = false;
+static int strict_prefill_failures = 0, strict_score_failures = 0;
 static bool measure(const crispembed_diff::Ref & ref, const std::string & name, const std::vector<float> & values) {
     const auto r = ref.compare(name, values.data(), values.size());
     if (!r.found || r.n_elem != values.size() || values.empty() ||
@@ -36,23 +36,41 @@ static bool measure(const crispembed_diff::Ref & ref, const std::string & name, 
     std::printf("METRIC %s n=%zu cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g rms=%.9g norms=%.9g/%.9g\n",
                 name.c_str(), r.n_elem, r.cos_min, r.cos_global, r.max_abs, r.mean_abs, r.rms, r.mine_norm, r.ref_norm);
     if (strict_prefill && !qwen35_compare(ref, name, values)) ++strict_prefill_failures;
+    if (strict_scores && name.find("generated.scores.") == 0 && !qwen35_compare(ref, name, values))
+        ++strict_score_failures;
     return true;
 }
 static int best(const std::vector<float> & scores) {
     return int(std::max_element(scores.begin(), scores.end()) - scores.begin());
 }
+static bool requested_cap(const char * value, int & cap) {
+    char * end = nullptr;
+    const long parsed = std::strtol(value, &end, 10);
+    if (!end || end == value || *end || parsed < 1 || parsed > 1024) return false;
+    cap = int(parsed);
+    return true;
+}
+static int request_controls() {
+    int cap = 64;
+    if (!requested_cap("1", cap) || cap != 1 || !requested_cap("512", cap) || cap != 512 ||
+        !requested_cap("1024", cap) || cap != 1024)
+        return 1;
+    for (const char * value : { "", "0", "-1", "1025", "1024x", "nan", "99999999999999999999999999999" })
+        if (requested_cap(value, cap)) return 1;
+    std::puts("RECEIPT_CONTROLS cap_min=1 cap_max=1024 invalid=1 default_cap=64");
+    return 0;
+}
 static int crispembed_test_main(int argc, char ** argv) {
+    if (argc == 2 && std::string(argv[1]) == "--request-controls") return request_controls();
     if (argc < 5 || argc > 7) return 2; // model, image, reference, prompt, optional cap and diagnostic mode
     const bool reference_embeddings = argc == 7 && std::string(argv[6]) == "--prefill-reference-embeddings";
     const bool prefill_only = reference_embeddings || (argc == 7 && std::string(argv[6]) == "--prefill-only");
-    if (argc == 7 && !prefill_only) return 2;
+    strict_scores = argc == 7 && std::string(argv[6]) == "--full-quality";
+    if (argc == 7 && !prefill_only && !strict_scores) return 2;
     strict_prefill = prefill_only;
     int token_cap = 64;
     if (argc >= 6) {
-        char * end = nullptr;
-        const long parsed = std::strtol(argv[5], &end, 10);
-        if (!end || *end || parsed < 1 || parsed > 512) return 2;
-        token_cap = int(parsed);
+        if (!requested_cap(argv[5], token_cap)) return 2;
     }
     gate("CRISPEMBED_QWEN35_OCR", "1");
     gate("CRISPEMBED_QWEN35_QUANT", "1");
@@ -160,6 +178,8 @@ static int crispembed_test_main(int argc, char ** argv) {
             !qwen35_ocr::decoder_cpu(decoder, {}, hidden.data(), coords.data(), 1, 1, 4, &cache, current))
             return 2;
     }
+    if (strict_scores)
+        std::printf("TEACHER_QUALITY stages=%zu strict_failures=%d\n", expected.second, strict_score_failures);
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
     gate("CRISPEMBED_QWEN35_QUANT", "0");
@@ -177,7 +197,9 @@ static int crispembed_test_main(int argc, char ** argv) {
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
     int count = 0;
     const auto * generated = qwen35_ocr_token_ids(context.get(), &count);
-    if (!text || !generated || count < 1 || length < 0) return 2;
+    int probability_count = 0;
+    const auto * probabilities = qwen35_ocr_confidences(context.get(), &probability_count);
+    if (!text || !generated || !probabilities || count < 1 || probability_count != count || length < 0) return 2;
     bool exact_ids = count == int(expected.second);
     for (int i = 0; i < count && i < int(expected.second); ++i) exact_ids &= generated[i] == int(expected.first[i]);
     std::string reference;
@@ -191,6 +213,11 @@ static int crispembed_test_main(int argc, char ** argv) {
     for (size_t i = 0; i < reference_length; ++i) reference.push_back(char(expected_bytes.first[i]));
     std::printf("FREE ids:");
     for (int i = 0; i < count; ++i) std::printf(" %d", generated[i]);
+    std::printf("\nFREE confidences:");
+    for (int i = 0; i < count; ++i) {
+        if (!std::isfinite(probabilities[i]) || probabilities[i] < 0 || probabilities[i] > 1) return 2;
+        std::printf(" %.9g", probabilities[i]);
+    }
     std::printf("\nFREE utf8_hex:");
     for (int i = 0; i < length; ++i) std::printf("%02x", static_cast<unsigned char>(text[i]));
     std::printf("\nFREE ids_exact=%d text_exact=%d stop=%d mean_confidence=%.9g bytes=%d\n", exact_ids,

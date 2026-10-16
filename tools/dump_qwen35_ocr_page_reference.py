@@ -10,8 +10,15 @@ import time
 from pathlib import Path
 
 
+def validate_token_cap(cap, long_document=False):
+    limit = 1024 if long_document else 512
+    if type(cap) is not int or not 1 <= cap <= limit:
+        raise ValueError(f"Page reference token cap outside1..{limit}")
+
+
 def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False,
-                   vision_probes=False, norm_statistics=False, native_geometry=None, attention_trace=False):
+                   vision_probes=False, norm_statistics=False, native_geometry=None, attention_trace=False,
+                   prompt="", long_document=False):
     import gguf
     import numpy as np
     import torch
@@ -22,8 +29,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
 
     if transformers.__version__ != "5.5.4" or tokenizers.__version__ != "0.22.2":
         raise ValueError("Reference requires transformers==5.5.4/tokenizers==0.22.2")
-    if not 1 <= max_new_tokens <= 512:
-        raise ValueError("Page reference token cap outside1..512")
+    validate_token_cap(max_new_tokens, long_document=long_document)
     torch.set_num_threads(4)
     torch.manual_seed(0)
     root, output = Path(model_dir), Path(output)
@@ -31,6 +37,8 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     processor = AutoProcessor.from_pretrained(root, local_files_only=True, trust_remote_code=False)
     image = Image.open(image_path).convert("RGB")
     messages = [{"role": "user", "content": [{"type": "image", "image": image}]}]
+    if prompt:
+        messages[0]["content"].append({"type": "text", "text": prompt})
     rendered = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     inputs = processor(text=[rendered], images=[image], return_tensors="pt", return_mm_token_type_ids=True)
     if inputs["mm_token_type_ids"].shape != inputs["input_ids"].shape:
@@ -247,7 +255,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
               "torch": torch.__version__, "dtype": "float32", "attention": "eager",
               "image_sha256": hashlib.sha256(Path(image_path).read_bytes()).hexdigest(),
               "image_size": list(image.size), "grid": inputs["image_grid_thw"].tolist(), "patches": patches,
-              "prompt": "", "rendered_prompt": rendered, "max_new_tokens": max_new_tokens,
+              "prompt": prompt, "rendered_prompt": rendered, "max_new_tokens": max_new_tokens,
               "generated_ids": generated_ids, "decoded": decoded,
               "eos_ids": eos, "reached_eos": bool(generated_ids and generated_ids[-1] in eos),
               "stop": "eos" if generated_ids and generated_ids[-1] in eos else "max_tokens",
