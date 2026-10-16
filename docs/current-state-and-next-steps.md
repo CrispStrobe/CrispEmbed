@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Consumer snapshot verified5 October2026; vendor roadmap updated15 October2026.
+Consumer snapshot verified5 October2026; vendor roadmap updated 16 October 2026.
 This handoff scopes follow-up work; it does not say the
 lanes below have been implemented. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
@@ -72,7 +72,7 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Vendor status — 15 October 2026
+## Vendor status — 16 October 2026
 
 Use [PLAN.md](../PLAN.md) for active tasks and ownership, [HISTORY.md](../HISTORY.md)
 for completed work and frozen handoffs, and [PERFORMANCE.md](../PERFORMANCE.md)
@@ -114,8 +114,18 @@ validation copy are corrected; production kernels remain unchanged. All 840
 conditional vectors pass raw 0.002. Original-input F32 sampled QK scores and
 original-probability pooling are exact; softmax probability errors reach 1.88e-6.
 The sweep retains 56 prefill failures and passes four small-fixture ID/text/EOS
-arms. Next compare full decoded output on independent documents.
-Full decoding, materialization/graph performance,
+arms. The [completed decoded panel](../tests/results/qwen35-ocr/decoded-panel.json)
+now matches all 16 fixed-cap ID/text/stop comparisons and 2,216 teacher argmaxes
+across all four arithmetic settings. Each arm reaches EOS on three inputs;
+receipt outputs remain 384-token prefixes. Confidence error is at most 3.28822e-6,
+all 924 prefill and 1,302 original CPU-control records remain exact, and all 56
+prefill failures remain. The first run times out after 14 cases; a bounded
+[completion run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830295916)
+finishes only the missing two, reproducing original references/confidence/CPU
+controls exactly. Reference parity does not establish transcription accuracy;
+existing form/receipt gold errors remain. Native baseline receipt recognition
+still takes 585.82 s in a single observation; profiling is next.
+Full receipt decoding, materialization/graph performance,
 quantized quality and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
@@ -129,9 +139,10 @@ installed-plugin/device inference validation.
 The [same-input decoder experiment](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38702930399)
 removes all 20 strict stage failures when original embeddings are supplied only
 to diagnostic decoder arms; worst F16 key error becomes 0.0000406504. The composed
-baseline exactly reproduces its prior failures. Full independent-document decoded
-A/B is now the first pending correctness task, using the faithful attention trace
-for any divergence; component passes do not establish composed OCR parity.
+baseline exactly reproduces its prior failures. The subsequent fixed-cap decoded
+A/B now passes on the four-document panel while retaining numerical debt. Use the
+faithful attention trace for any new divergence; full receipt, broader accuracy
+and performance remain open.
 
 LFM2.5 Encoder and EmbeddingGemma typed-decision integration/publication are
 archived as complete, with GPU, independent task-quality and long-context/perf
@@ -139,10 +150,10 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: isolate larger-input vision operators,
-profile gated runtime changes, finish long documents, then validate quantization
-and publication. The
-consumer lanes below remain separate, with their original verification dates.
+The next vendor work follows PLAN's order: profile gated runtime changes, finish
+long documents, then validate quantization and publication while preserving all
+existing numerical failures. The consumer lanes below remain separate, with
+their original verification dates.
 
 ## Recommended order and dependencies
 

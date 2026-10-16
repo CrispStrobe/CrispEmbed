@@ -4,27 +4,68 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Qwen3.5 four-arm decoded panel completed
+
+[Completion38830295916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830295916)
+at `9ba370a8` finishes only the two cases interrupted in the earlier 120-minute
+sweep. Fresh original receipt/German outputs, confidence and 868 CPU-control
+records reproduce the initial references exactly. The [combined report](tests/results/qwen35-ocr/decoded-panel.json)
+keeps all 14 earlier cases and adds the two completion cases, with per-case source
+commits/workflows and both raw report hashes. The initial timeout report remains.
+
+All 16 document/setting pairs match original generated IDs, UTF-8 text and stops
+at the frozen caps. Each arithmetic arm reaches EOS on Arabic, form and German;
+all four receipt outputs remain 384-token prefixes. All 2,216 teacher-forced
+argmaxes match; paired Python/native CER/WER is zero throughout. Maximum absolute
+mean-confidence difference is 3.28822e-6. All 924 earlier prefill records, 1,302
+original CPU-control records and four prior baseline decode measurements remain
+exact. All 3,448 diagnostic prefill/teacher-forced stage records are retained
+separately from the 924 repeated strict prefill records; these are overlapping
+measurements, not unique model boundaries.
+
+Ordinary prefill still fails 20/11/11/14 stages across baseline/combined F64/cascade/
+cascade-attention. The completion job correctly exits nonzero for 11 retained
+prefill failures; the combined gate still has 56. No production kernel, weight,
+precision default, tolerance, release or publication changes. Original confidence
+metadata observes actual generate scores and does not change generation.
+
+Reference parity does not establish transcription accuracy: unchanged form
+annotation CER/WER is 1.67611/2.02778; the receipt prefix versus full annotation is
+1.27518/0.842857. Arabic and the German crop have no independent gold. Single native
+baseline observations are 10.23/225.93/585.82/39.59s for Arabic/form/receipt/German,
+versus Python generate 1.38/12.34/31.67/3.84s. Scopes differ and there is no controlled
+speed-ratio or peak-memory claim. Profiling materialization, graph/backend setup,
+vision and decode is now the first task in PLAN.
+
+Eleven model-free controls pass on [hosted38830296049](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830296049).
+Actual native decode and strict-prefill logs reproduce their captured fields;
+five malformed actual-log variants are rejected. Python syntax, focused secret
+checks and retained raw-report/source/hash verification pass.
+[Completion records](tests/results/qwen35-ocr/decoded-panel-tail.json),
+[incomplete initial records](tests/results/qwen35-ocr/decoded-panel-initial.json),
+[measured data and limits](PERFORMANCE.md).
+
 ## 2026-10-16 — Qwen3.5 decoded panel, retained incomplete sweep
 
 [Hosted38815606213](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38815606213)
-at `fa5809d8` reaches its120-minute script limit during the final arm. All14
+at `fa5809d8` reaches its 120-minute script limit during the final arm. All 14
 completed document/setting comparisons match original full IDs, UTF-8 text and
 EOS/cap stops. Baseline, combined F64 and cascade finish all four documents;
 cascade-attention finishes Arabic and form. Its receipt and German comparisons
-remain unfinished. All four original full outputs, 1,302 original CPU-control
+were unfinished at the cutoff. All four original full outputs, 1,302 original CPU-control
 records, 770 completed strict prefill records and all four earlier baseline decode
-measurements reproduce exactly. The completed prefill comparisons retain45
+measurements reproduce exactly. The completed prefill comparisons retain 45
 failures. The initial report is incomplete, not a completed four-arm quality gate.
 
 [All completed raw records](tests/results/qwen35-ocr/decoded-panel-initial.json)
 retain source/weight hashes, confidence, full text/IDs, every score metric and
-available CER/WER. Receipt outputs remain384-token prefixes. Source Python and
+available CER/WER. Receipt outputs remain 384-token prefixes. Original model arithmetic and
 native kernels/defaults/tolerances are unchanged; confidence metadata observes
 actual original scores. Eleven model-free output controls pass both locally and
 in [hosted38815730358](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38815730358).
 The completion driver recaptures and checks the two unfinished original references
 and runs only their cascade-attention comparisons; completed native cases are not
-repeated. Full completion and profiling remain in PLAN.
+repeated. The completed two-run panel is recorded above; profiling remains in PLAN.
 
 ## 2026-10-15 — Qwen3.5 attention trace fidelity resolved
 

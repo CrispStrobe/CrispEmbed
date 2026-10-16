@@ -1,5 +1,49 @@
 # CrispEmbed Performance
 
+## Qwen3.5 fixed-cap four-arm decoded panel (2026-10-16)
+
+Pinned LightOnOCR-3-0.8B, F16 text/F32 vision, original Transformers5.5.4 F32 eager,
+ARM64 CPU. The [initial sweep](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38815606213)
+finishes 14 comparisons before its 120-minute limit; [bounded completion](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830295916)
+adds only the two missing cases, with exact fresh-reference/CPU/confidence controls.
+[Combined raw data, full text/IDs and provenance](tests/results/qwen35-ocr/decoded-panel.json).
+
+| Arithmetic | IDs/text/stops exact | Inputs reaching EOS | Receipt prefix | Existing prefill failures | Max mean-confidence error |
+|---|---:|---:|---:|---:|---:|
+| Baseline | 4/4 | 3 | 384 tokens | 20 | 2.45322e-6 |
+| Combined F64 | 4/4 | 3 | 384 tokens | 11 | 3.16922e-6 |
+| Cascade | 4/4 | 3 | 384 tokens | 11 | 3.28822e-6 |
+| Cascade + F64 attention | 4/4 | 3 | 384 tokens | 14 | 3.10922e-6 |
+
+All 2,216 teacher-forced argmaxes match. Python/native paired CER/WER is zero on
+all 16 comparisons. All 924 earlier prefill and 1,302 original CPU-control records
+remain exact; completion reruns 868 of those original CPU controls exactly. The
+3,448 diagnostic prefill/teacher-forced stage records and 924 repeated
+strict prefill records overlap. All 56 prefill failures remain; receipt output is
+incomplete and no precision default changes.
+
+Mean confidence includes EOS and uses original F32 generation scores normalized
+in F64; it is not calibrated OCR accuracy. Existing gold annotations remain
+unchanged: form CER/WER 1.67611/2.02778; receipt prefix versus full annotation
+1.27518/0.842857 for both Python and all native arms. There is no independently
+transcribed Arabic/German-crop gold and no upstream benchmark-score claim.
+
+Single observations from the baseline correctness run:
+
+| Input | Native recognize seconds | Python generate seconds |
+|---|---:|---:|
+| Arabic | 10.23 | 1.38 |
+| Form | 225.93 | 12.34 |
+| Receipt prefix | 585.82 | 31.67 |
+| German header | 39.59 | 3.84 |
+
+Native timing includes image decode/preprocessing, vision, prefill and free greedy
+decode after model load. Python timing covers generate including vision/prefill,
+excludes processor/model load and includes score collection. These are unrepeated
+observations with different scopes, not a controlled speed ratio or peak-memory
+result. They motivate the next gated profiling/materialization/graph lane. No
+kernel, threshold, release, quantized-quality or publication promotion follows.
+
 ## Qwen3.5 faithful selected attention trace (2026-10-15)
 
 [Hosted 38800963470](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38800963470)

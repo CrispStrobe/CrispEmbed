@@ -1693,8 +1693,7 @@ remain visible. Ordinary prefill retains 20/11/11/14 failures across the four ar
 so the workflow correctly fails for 56 prefill verdicts with zero failed native or
 reproduction controls. All 12 first argmaxes and four actual small-fixture complete
 ID/text/EOS arms match. The trace is now suitable for further diagnosis on this
-validated build, but full independent-document decoded A/B remains the next
-quality gate. F64 attention is not uniformly closer to the original F32 result.
+validated build; the subsequent fixed-cap full-output A/B is recorded below. F64 attention is not uniformly closer to the original F32 result.
 
 [Complete final report](../tests/results/qwen35-ocr/attention-trace.json),
 [initial failures](../tests/results/qwen35-ocr/attention-trace-initial.json) and
@@ -1704,7 +1703,7 @@ kernels, precision defaults, weights, thresholds and publication status are unch
 
 ## Four-arm decoded panel driver
 
-`tools/ci-heavy/qwen35_ocr_bootstrap.py --decoded-panel` runs the next quality
+`tools/ci-heavy/qwen35_ocr_bootstrap.py --decoded-panel` runs the fixed-cap decoded
 gate through hosted `heavy-cpu.yml` on the same ARM64 runner and pinned Python
 packages as the attention audit. `qwen35_decoded_panel.py` freezes the original
 Python references first, then compares actual owning-context free generation
@@ -1720,13 +1719,30 @@ The driver also reruns the three larger inputs' strict prefill comparisons with
 the unchanged shared `crispembed-diff`/`qwen35_compare` gates. It checks all 924
 prior records, 1,302 original CPU-control records, original full outputs and the
 previous baseline decode measurements exactly. Exact output cannot waive a
-strict failure. The receipt remains a384-token prefix/cap control until the
+strict failure. The receipt remains a 384-token prefix/cap control until the
 separate long-document lane. No model, production arithmetic, tolerance, default
 or publication changes are part of this diagnostic driver. Model-free positive
 and malformed-output controls run in `qwen35-decoded-audit.yml` and before the
 hosted model audit. The [initial run](../tests/results/qwen35-ocr/decoded-panel-initial.json)
-reaches its120-minute limit after14/16 exact ID/text/stop comparisons and preserves
-770 earlier prefill records with45 failures. `--decoded-panel-tail` completes only
+reaches its 120-minute limit after 14/16 exact ID/text/stop comparisons and preserves
+770 earlier prefill records with 45 failures. `--decoded-panel-tail` completes only
 the missing cascade-attention receipt/German cases, after requiring fresh original
 references, CPU controls and confidence to match the initial capture exactly.
-The two missing outputs remain pending; partial completion is not the full gate.
+The [completion run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830295916)
+at `9ba370a8` finishes both missing cases. [Combined records](../tests/results/qwen35-ocr/decoded-panel.json)
+retain per-case source/workflow provenance and both raw report hashes. All 16
+ID/text/stop comparisons and 2,216 teacher argmaxes match. Each arm reaches EOS
+on Arabic/form/German and the 384-token cap on the receipt. Paired Python/native
+CER/WER is zero; maximum mean-confidence error is 3.28822e-6. All 924 earlier
+prefill records, 1,302 CPU controls and four baseline decode measurements remain
+exact; fresh completion references reproduce 868 original CPU controls plus
+confidence exactly. All 56 prefill failures remain (20/11/11/14); the completion
+workflow correctly fails on its 11 retained stages. The initial timeout remains
+visible. No default, numerical-gate, full-receipt or transcription-quality promotion.
+
+Existing form/receipt annotations still disagree with original Python output;
+reference parity does not establish OCR accuracy. Native receipt-prefix recognition
+is 585.82 s versus original generate 31.67 s in single observations with different
+scopes. [All timing/quality limits](../PERFORMANCE.md) are retained. Profiling
+projection materialization, backend/graph setup, vision and decode is now first
+in PLAN; every change must preserve full outputs and prior numerical records.

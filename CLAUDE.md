@@ -81,9 +81,11 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Follow the current execution order in [PLAN.md](PLAN.md): Qwen larger-input
-full decoded-output A/B using the validated attention trace, measured inference optimization, complete
-long-document decoding, then quantization/publication and queued permissive models.
+Follow the current execution order in [PLAN.md](PLAN.md): measured Qwen inference
+profiling/optimization, complete long-document decoding, then quantization/publication
+and queued permissive models. The fixed-cap four-arm decoded panel matches all 16
+ID/text/stop comparisons; preserve its 56 prefill failures and receipt cap controls.
+Use the validated attention trace for any divergence.
 UltraBERT feasibility is recorded in [docs/ultrabert.md](docs/ultrabert.md); it is
 not native support. Keep its dependency environment separate from pinned OCR references.
 

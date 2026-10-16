@@ -8,43 +8,35 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 
 ## Execution order
 
-1. [ ] **Verify full Qwen3.5 decoded output with the faithful attention trace.**
-   The [completed attention audit](tests/results/qwen35-ocr/attention-trace.json)
-   resolves all 72 native controls and preserves 924 prefill, 108 shared vision
-   and 1,302 original CPU-control records. All 840 conditional vectors pass raw
-   0.002; reported minimum cosine is 1.000000000. Original-input F32 sampled QK
-   scores and original-probability sampled pooling are exact; remaining softmax
-   probability error reaches 1.88e-6. Ordinary prefill still fails 20/11/11/14 stages
-   for baseline/combined F64/cascade/cascade-attention. No path is promoted.
-   Run full generated IDs, text/EOS, confidence and available CER/WER A/B on the
-   independent documents under all four settings. The [incomplete first sweep](tests/results/qwen35-ocr/decoded-panel-initial.json)
-   completes14/16 ID/text/stop comparisons exactly before its120-minute limit;
-   finish only cascade-attention receipt/German with `--decoded-panel-tail`.
-   Retain receipt prefix/cap
-   controls until the long-document lane below. Use the faithful trace for any
-   decoded divergence; capture original softmax exp/sum boundaries and test one
-   gated correction only where the evidence warrants it. Preserve every raw
-   failure, original anchor, 0.002 cache gate and qualified vision/norm budget.
-   Original arrays stay test-only; all precision alternatives stay default-off.
-2. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
+1. [ ] **Profile and optimize native Qwen inference.** Attribute preprocessing,
    vision, projection/dequantization, graph creation/allocation and decode cost.
    Test one gated F32 materialization/graph optimization at a time with the same
    weights, logits, IDs, EOS and text. Measure peak memory and paired timing;
    compressed files currently still materialize F32 projection matrices.
-3. [ ] **Complete long-document decoding.** Finish the receipt under an adequate
+   The [completed decoded panel](tests/results/qwen35-ocr/decoded-panel.json)
+   matches all 16 fixed-cap ID/text/stop comparisons and all 2,216 teacher argmaxes;
+   baseline receipt recognition still takes 586 s in a single correctness run.
+   Preserve the 924 prior prefill records and all 56 existing failures
+   (20/11/11/14), the 0.002 cache gate and qualified vision/norm budgets. Use the
+   faithful attention trace and original-embedding isolation for any new
+   divergence; capture softmax exp/sum boundaries only where evidence warrants
+   a correction. Original arrays stay test-only and precision alternatives
+   default-off. Exact output on this panel does not waive numerical debt or
+   establish broad transcription accuracy.
+2. [ ] **Complete long-document decoding.** Finish the receipt under an adequate
    explicit cap; test literal transcription prompts separately from upstream
    figure-description behavior. Extend the1024-patch bound only after memory,
    geometry and original-reference coverage; never silently downsize production inputs.
-4. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
+3. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
    Q8/Q6 differs on form/German. Retain all calibration alternatives, separate
    development/calibration data from evaluation and compare full output plus
    confidence/CER/WER. High cosine and synthetic matches are not promotion gates.
-5. [ ] **Publish only a validated OCR candidate.** Include source/base license
+4. [ ] **Publish only a validated OCR candidate.** Include source/base license
    provenance, measured precision/size/quality limits, HF card, remote byte/hash
    verification, pinned registry aliases and empty-cache download checks. Complete
    CrispSorter/CrispCalc provider/catalog work when a validated artifact exists.
    No LightOnOCR-3 HF artifact, production alias or runtime release is selected yet.
-6. [ ] **Continue the permissive OCR queue below**, starting with shared small
+5. [ ] **Continue the permissive OCR queue below**, starting with shared small
    backends after the preceding correctness/performance work.
 
 ## Permissive OCR queue
@@ -234,5 +226,4 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-15 | `ocr-qwen35-decoded-panel` | Four-arm full decoded-output audit on the frozen independent-document panel | Initial [38815606213](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38815606213) times out after14/16 exact decoded comparisons; 770 prefill records/45 failures retained. Completion [38830295916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38830295916) runs only cascade-attention receipt/German at `9ba370a8`; no runtime/default change |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
