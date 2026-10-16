@@ -1746,3 +1746,40 @@ is 585.82 s versus original generate 31.67 s in single observations with differe
 scopes. [All timing/quality limits](../PERFORMANCE.md) are retained. Profiling
 projection materialization, backend/graph setup, vision and decode is now first
 in PLAN; every change must preserve full outputs and prior numerical records.
+
+## Gated native profiling
+
+`tools/ci-heavy/qwen35_ocr_bootstrap.py --profile` runs the bounded attribution
+lane on hosted ARM64 CPU. `test-qwen35-profile MODEL IMAGE TOKEN_CAP` creates a
+caller-owned counter session only when `CRISPEMBED_QWEN35_PROFILE=1`; literal0
+and an unset gate leave it inactive. Production API calls do not emit counters.
+The internal session is thread-local, rejects nesting, and stores timing/count/
+byte statistics without model values, reference tensors or an inference cache.
+Inactive timers take no timestamps and allocate no records.
+
+The recognition hierarchy covers file decode, RGB preprocessing, prompt/geometry,
+vision, embedding/splicing, prefill, token selection/confidence, cached-input
+preparation, cached decoding and output tokenization. Projection children cover
+backend/context setup, graph/input construction, F32 materialization, graph
+compute, output validation/copy and teardown. The compute counter covers the
+whole `ggml_backend_graph_compute` call, including any deferred thread-pool or
+workspace setup; it does not isolate pure kernel time. `tensor_floats` children separate
+raw-buffer allocation/initialization, tensor reads, conversion/copy and finite
+checks; they also include small norm/bias reads outside projections. Per-matrix
+records count actual source bytes, expanded F32 bytes and materialization time.
+The vocabulary head must appear once in prefill and once per cached token.
+Counters are nested: do not add parent/child levels as disjoint wall time.
+
+The harness recaptures original Python references before native runs, reproduces
+all four baseline ID/text/stop/teacher-score controls and all 924 four-arm prefill
+records with the existing 56 failures. It then measures three alternating pairs
+of fresh-process profile-off/profile-on runs on form and German at their frozen
+caps and on a separately labelled 32-token receipt prefix. Every run compares
+actual native IDs/text/stops to original Python prefixes and requires native
+per-token probabilities and mean confidence to agree exactly across paired runs.
+GNU time peak RSS includes model load and recognition; the API timer excludes
+model load. No quantized, full-receipt or speed-promotion claim follows from this
+profiling experiment. Counter gate/nesting/thread isolation controls run without
+weights on Linux, macOS and Windows; Python parser tests reject incomplete,
+dropped, duplicated and inconsistent timing/byte records. Hosted measurements
+are pending; production arithmetic and precision defaults are not changed.
