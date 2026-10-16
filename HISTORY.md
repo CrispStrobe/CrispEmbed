@@ -64,6 +64,11 @@ release/publication/app pin remain unchanged. [PR62](https://github.com/CrispStr
 merges as `86e63f932ba1ab73f333e0094216d621809c3995`, preserving audited source
 commits. Broader PR platform/secret checks remain queued at merge; these are not
 reported as passing. Projection/reduction attribution remains open in PLAN.
+Subsequent read-back verifies [all ten PR62 Build jobs38922363407](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363407),
+including Flutter bundling, [WASM38922363747](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363747),
+[quality contract38922363461](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38922363461)
+and both PR secret checks pass at `17b4b7dc2c5d700889008c4b02ef3e020db9544c`.
+The separately queued merged-main workflow is not inferred from these PR results.
 The shared vendor snapshot, pending tasks and completed evidence are mirrored in
 [CrispMath documentation commit45368a0a](https://github.com/CrispStrobe/CrispMath/commit/45368a0ad2e2924cde68efcf9660207a855e0006),
 with application-owned state and immutable0.17.12 preserved.
