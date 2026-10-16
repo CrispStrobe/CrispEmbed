@@ -40,6 +40,8 @@ merges as `d34a64d2234d0bc185d1341fefec37b8356d5c74`, preserving audited source
 commits. Broader latest PR/main checks remain pending, not claimed passing.
 No production arithmetic,
 default, weight publication/alias, release or app-pin change.
+The shared result/todos are mirrored in [CrispMath documentation commit4d63271d](https://github.com/CrispStrobe/CrispMath/commit/4d63271df549b84d155b152cf9caf1d86372b916),
+preserving the consumer's immutable0.17.12 dependency and application-owned lanes.
 
 ## 2026-10-16 — Frozen book vision/operator diagnostic completed
 
