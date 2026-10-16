@@ -39,18 +39,22 @@ def probes(log, steps=STEPS):
             raise ValueError('Missing probe verdict/budget')
         verdict = re.match(r'^(PASS|FAIL) ' + re.escape(name) + r': cos_min=', lines[i + 1])
         budget = re.fullmatch(BUDGET, lines[i + 2])
-        if not verdict or not budget or budget[1] != name:
+        if not verdict or not budget or budget[1] != name or budget[2] not in ('0', '1') or budget[3] not in ('0', '1'):
             raise ValueError('Missing or contradictory probe verdict/budget')
         row = dict(stage=name, **metric(match.groups()[1:]), qualified_pass=verdict[1] == 'PASS',
                    strict_absolute_pass=bool(int(budget[2])), calibrated=bool(int(budget[3])),
                    self_max_abs=float(budget[4]), max_ratio=float(budget[5]))
         if (row['elements'] < 1 or any(not math.isfinite(v) for v in row.values() if isinstance(v, float))
+                or any(row[k] < 0 for k in ('max_abs', 'mean_abs', 'rms', 'native_norm', 'reference_norm'))
                 or row['calibrated'] or row['self_max_abs'] != 0 or row['max_ratio'] < 0
                 or row['strict_absolute_pass'] != (row['max_abs'] <= .002)
-                or row['qualified_pass'] != (row['cos_min'] >= .99999 and row['max_ratio'] <= 1)):
+                or row['qualified_pass'] != (row['cos_min'] >= .99999 and row['max_abs'] <= .002 and row['max_ratio'] <= 1)):
             raise ValueError('Invalid or relaxed probe budget')
         rows.append(row)
-    if [row['stage'] for row in rows] != probe_names(steps):
+    expected = probe_names(steps)
+    verdict_names = [name for _, name in re.findall(r'^(PASS|FAIL) (generated\.probe\.\S+): cos_min=', log, re.M)]
+    budget_names = [m[0] for m in re.findall(BUDGET, log, re.M) if m[0].startswith('generated.probe.')]
+    if [row['stage'] for row in rows] != expected or verdict_names != expected or budget_names != expected:
         raise ValueError('Missing/repeated/out-of-order original decode probes')
     return rows
 

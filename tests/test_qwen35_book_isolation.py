@@ -35,7 +35,11 @@ class Isolation(unittest.TestCase):
                      log.replace('norms=1/1', 'norms=nan/1', 1),
                      log.replace('calibrated=0', 'calibrated=1', 1),
                      log.replace('max_ratio=0', 'max_ratio=2', 1),
-                     log.replace('PASS ', 'FAIL ', 1), log.replace('self_max_abs=0', 'self_max_abs=0.01', 1)):
+                     log.replace('PASS ', 'FAIL ', 1), log.replace('self_max_abs=0', 'self_max_abs=0.01', 1),
+                     log.replace('strict_absolute_pass=1', 'strict_absolute_pass=2', 1),
+                     log.replace('rms=0', 'rms=-1', 1),
+                     log + '\nPASS ' + name + ': cos_min=1',
+                     log + '\nBUDGET ' + name + ': strict_absolute_pass=1 calibrated=0 self_max_abs=0 max_ratio=0'):
             with self.assertRaises(ValueError): probes(text)
 
     def test_failed_numerical_probe_retained(self):
