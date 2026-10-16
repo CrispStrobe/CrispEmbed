@@ -1,0 +1,79 @@
+{
+  "source_commit": "d8abd92883ea26f641eae9f6fb5cc559274a0b2e",
+  "registry_sha256": "d1b9d23f96992e2fc2af8edbaaa155fefc762377b219c2840fc227508198a3e2",
+  "header_sha256": "0185e8b24972264552625aa264e42dce882b74fc2526a7e5e2a088710bd6b9d7",
+  "registered": 304,
+  "resolved": 304,
+  "unreachable": [],
+  "unpinned": [],
+  "added": [
+    {
+      "url": "https://huggingface.co/cstr/nomic-embed-vision-v1.5-GGUF/resolve/main/nomic-embed-vision-v1.5-f16.gguf",
+      "old_sha256": null,
+      "current_sha256": "71cd6bc821b5402dc2d468ec4d45a88a71fef28b51eac640b3ae40cd88fb5d28",
+      "current_revision": "33579f20a5d69eaecebc6f5e56175af6b2594b67",
+      "file": "nomic-embed-vision-v1.5-f16.gguf",
+      "model": "cstr/nomic-embed-vision-v1.5-GGUF"
+    },
+    {
+      "url": "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q4_k.gguf",
+      "old_sha256": null,
+      "current_sha256": "43eb656a033a9d67c0a3c7531130a51e56d3170c6d38d76266c3f09404cb6cd4",
+      "current_revision": "b27a3836fdab18dd3f1c51e1d41a5038b406a000",
+      "file": "jina-ocr-v1-q4_k.gguf",
+      "model": "cstr/jina-ocr-v1-GGUF"
+    },
+    {
+      "url": "https://huggingface.co/cstr/jina-ocr-v1-GGUF/resolve/main/jina-ocr-v1-q8_0.gguf",
+      "old_sha256": null,
+      "current_sha256": "5000242c0b13be4f890172350e61d52ab3fa8351a8260319119c0ba93d382b3a",
+      "current_revision": "b27a3836fdab18dd3f1c51e1d41a5038b406a000",
+      "file": "jina-ocr-v1-q8_0.gguf",
+      "model": "cstr/jina-ocr-v1-GGUF"
+    }
+  ],
+  "changed": [
+    {
+      "url": "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/LFM2.5-VL-3B-Q4_K_M.gguf",
+      "old_sha256": "83c18dfba02c75769cdd63f73e37c343400e82d434ff1b14bcc1cb02fcf2f5f2",
+      "current_sha256": "2436cf4bbac9a16e5dfc7799a140e583c2bc15958f4b24a391f8a8b10ecb8884",
+      "current_revision": "6f730e9a2c454e8af9adc29db58e638e01e5957f",
+      "file": "LFM2.5-VL-3B-Q4_K_M.gguf",
+      "model": "LiquidAI/LFM2.5-VL-3B-GGUF",
+      "searched_commits": 2,
+      "trusted_revision": "3e0e828198e2abb75a957ad823f5d691c13f0f28",
+      "trusted_bytes": 1674454240,
+      "trusted_url": "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q4_K_M.gguf"
+    },
+    {
+      "url": "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/mmproj-LFM2.5-VL-3B-F16.gguf",
+      "old_sha256": "6f912eb9fcef619b31c9afff7662a222da9ce6db89327eb465dbafd2fb6a2d7c",
+      "current_sha256": "74c4b2c095913be3cccce10aefe3b5d6f73aa7b4a15d49a8b68d97c229f8b922",
+      "current_revision": "6f730e9a2c454e8af9adc29db58e638e01e5957f",
+      "file": "mmproj-LFM2.5-VL-3B-F16.gguf",
+      "model": "LiquidAI/LFM2.5-VL-3B-GGUF",
+      "searched_commits": 2,
+      "trusted_revision": "3e0e828198e2abb75a957ad823f5d691c13f0f28",
+      "trusted_bytes": 853993088,
+      "trusted_url": "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/mmproj-LFM2.5-VL-3B-F16.gguf"
+    },
+    {
+      "url": "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/main/uni-mumer-qwen3-vl-2b-q4_k.gguf",
+      "old_sha256": "9bb277fb8f0a3a0e257e0922138b84058c52e3f44a610e1def3a21f366ef2b6b",
+      "current_sha256": "fc3ca5aed4acf3891253c583383f391820e61177cf9f876699bbb72284263a01",
+      "current_revision": "82897a244cae855bcb21227f8207eea33025ebdc",
+      "file": "uni-mumer-qwen3-vl-2b-q4_k.gguf",
+      "model": "cstr/uni-mumer-qwen3-vl-2b-GGUF",
+      "searched_commits": 4,
+      "trusted_revision": "07f9ae65073bcee635c563d18c694ee4d7d4dfc6",
+      "trusted_bytes": 1587738304,
+      "trusted_url": "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/07f9ae65073bcee635c563d18c694ee4d7d4dfc6/uni-mumer-qwen3-vl-2b-q4_k.gguf"
+    }
+  ],
+  "removed": [],
+  "policy": "Read-only discovery. Changed bytes are not approved. Historical matching LFS metadata is not independent downloaded-byte verification.",
+  "result": "complete metadata inventory; retain old trusted bytes and verify immutable download hashes before changing registry",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38908007993",
+  "workflow_conclusion": "success",
+  "artifact_report_sha256": "cee7b73431d5738d39b164598bf273e95aa20184d4322c850d7d14734fb121eb"
+}

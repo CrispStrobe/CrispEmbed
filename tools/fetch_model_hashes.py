@@ -101,6 +101,9 @@ def registry_sizes(cpp_path: Path) -> "OrderedDict[str, tuple]":
     start = text.index("static const ModelEntry k_registry[]")
     end = text.index("\n};", start)
     body = text[start:end]
+    # Match registry_urls(): clang-format splits long immutable URLs into
+    # adjacent literals. Size coverage must not disappear when a URL is pinned.
+    body = re.sub(r'"\s*"', "", body)
 
     out: "OrderedDict[str, tuple]" = OrderedDict()
     for m in ENTRY_RE.finditer(body):
