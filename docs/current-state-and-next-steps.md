@@ -276,7 +276,12 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
 adds strict conversion and all24-layer original-Python reference captures;
 [hosted verification](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
-is queued at 0dddbd2b. No native implementation/parity or weight publication is claimed.
+is queued at0dddbd2b. All14 source/schema controls pass. PR69 also adds a
+test-only all24-layer ggml graph over prepared IDs; its
+[hosted build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497)
+and22-test contract are pending. Full model comparisons require exact frozen
+original-array replay. No production native backend, measured parity or weight
+publication is claimed.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
