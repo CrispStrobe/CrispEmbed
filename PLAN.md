@@ -55,9 +55,11 @@ numerical debt or establish transcription accuracy.
 Each cell requires fresh original and exact frozen F16 replay, an unchanged
 preselected quantized recipe, full owning-API output/confidence/gold scoring and
 separate strict teacher-score diagnostics. All use the frozen1024-token cap.
-Verify the inventory driver first, then complete Q8, mixed Q8/Q6 and Q4 in that
-order. Independent cases may overlap on separate hosted runners using the
-optional isolated CI lane key; inputs/recipes remain fixed before evaluation.
+Verify the inventory driver first; review complete Q8, mixed Q8/Q6 and Q4 panels
+in that order. Independent immutable cases, including different preselected
+profiles, may overlap on separate hosted runners using isolated CI lane keys;
+inputs/recipes remain fixed before evaluation. Every case has its own original/
+F16 replay guards, so scheduling overlap introduces no adaptive recipe selection.
 These runs evaluate recipes; they do not calibrate/select weights
 on the evaluation inputs. Publication and numerical promotion remain separate.
 
@@ -80,7 +82,8 @@ separate immutable hosted lanes. Mixed inventory completes with exact248 IDs/tex
 EOS and15/15 cells, but retains75/248 failures and worse score drift than Q8
 (min cosine0.998120904, worst abs1.08967495). Mixed receipt completes with changed
 text, slightly lower CER/unchanged WER and75/473 numerical failures. Book is
-running; Q4 follows its review. No held-out calibration.
+running. Queue the unchanged Q4 cases independently while retaining panel review
+order; no held-out calibration.
 
 ## Remaining Qwen numerical attribution
 
@@ -301,7 +304,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8 cases and mixed inventory independently verified; mixed inventory exact248 IDs/text/EOS and15/15 cells, retaining75/248 numerical failures with worse score drift than Q8. Mixed receipt38942903455 completes with changed text/lower CER/unchanged WER and75/473 failures; book38942909059 running atf43c4b77. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups the mixed reports; Q4 pending. PR63 full platform/WASM/contract/secret checks now pass; latest main/PR65 checks remain pending. No promotion |
+| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8 cases and mixed inventory independently verified; mixed inventory exact248 IDs/text/EOS and15/15 cells, retaining75/248 numerical failures with worse score drift than Q8. Mixed receipt38942903455 completes with changed text/lower CER/unchanged WER and75/473 failures; book38942909059 running atf43c4b77. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups the mixed reports; preselected Q4 cases may overlap on independent hosted lanes, with full mixed review before Q4 assessment. PR63 full platform/WASM/contract/secret checks now pass; latest main/PR65 checks remain pending. No promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

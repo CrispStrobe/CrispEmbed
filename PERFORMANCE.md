@@ -1,5 +1,22 @@
 # CrispEmbed Performance
 
+## Qwen3.5 retained recipe storage breakdown (2026-10-16)
+
+Byte sums below come from the full tensor manifests in the verified Q8/mixed
+inventory reports and the previously retained Q4 calibration report. The Q4 row
+is an existing artifact budget, not a new held-out quality result. F32 includes
+vision and floating-point vectors; the Q8 embedding is also the tied output head.
+
+| Recipe | F32 payload | Q8 payload | Q6 payload | Q4 payload | F16 payload | Other file bytes | Total bytes |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Q8 / F32 vision | 404,365,568 | 798,887,936 | 0 | 0 | 0 | 9,984,768 | 1,213,238,272 |
+| Q8 attention / Q6 FFN / F16 A/B | 404,365,568 | 517,505,024 | 216,760,320 | 0 | 1,179,648 | 9,984,768 | 1,149,795,328 |
+| Q4 / Q8 tied head / F32 vision | 404,365,568 | 270,172,160 | 0 | 279,908,352 | 0 | 9,984,768 | 964,430,848 |
+
+Other file bytes include metadata/tokenizer and padding. These are storage sums,
+not inference RAM, peak RSS, speed or decoded-quality evidence. Existing recipes,
+critical precision and all failed alternatives remain unchanged.
+
 ## Qwen3.5 independent mixed Q8/Q6 historical receipt (2026-10-16)
 
 [Hosted ARM64 audit38942903455](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942903455)
@@ -39,6 +56,17 @@ remain retained; confidence is not OCR calibration. Timings are one owning-API
 observation each after context load; no paired speed/RSS/memory claim. Mixed book
 and Q4 remain pending; all earlier debt and failed alternatives remain. No held-out
 calibration, runtime/default/artifact/alias/release/app-pin change.
+
+Across the independently verified inventory/receipt reports, Q8 and mixed have
+identical pixel, merger and decoder-input embedding metrics. Their first changed
+captured metric is `prefill.decoder.layer.0`: inventory Q8/mixed max_abs
+0.00663521886/0.0131106973, RMS0.000349882612/0.00071629521 and native norms
+60.4262314/60.4380379 versus reference60.4202538. Receipt max_abs is
+0.00663521886/0.0147602558, RMS0.000356727251/0.000806418248 and native norms
+61.954155/62.002655 versus reference61.9408646. These are metric comparisons,
+not independently dumped equality of all input vectors. They place the additional
+captured drift after the shared input boundary, while Q6 FFNs and F16 A/B controls
+both differ; this does not identify a sole causal operator or justify a new recipe.
 
 ## Qwen3.5 independent mixed Q8/Q6 inventory (2026-10-16)
 
