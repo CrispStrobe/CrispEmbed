@@ -1,6 +1,7 @@
 #pragma once
 #include "core/env_gate.h"
 #include <cmath>
+#include <cstddef>
 #include <vector>
 struct ggml_tensor;
 namespace qwen35_ocr {
@@ -23,7 +24,9 @@ bool matrix_type_supported(const ggml_tensor * source);
 // Registration and invocation require CRISPEMBED_QWEN35_IMATRIX=1. Clear with null.
 using projection_observer = bool (*)(const char *, const float *, int, int, void *);
 bool set_projection_observer(projection_observer observer, void * user);
-bool tensor_floats(ggml_tensor * source, float * target);
+// Bounded scheduling policy for the default-off parallel F16 conversion path.
+int f16_conversion_workers(std::size_t elements, int threads);
+bool tensor_floats(ggml_tensor * source, float * target, int threads = 1);
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output);
 } // namespace qwen35_ocr

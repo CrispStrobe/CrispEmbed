@@ -766,6 +766,8 @@ add_executable(test-qwen35-context tests/test_qwen35_context.cpp tests/qwen35_co
 target_link_libraries(test-qwen35-context PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-quant tests/test_qwen35_quant.cpp)
 target_link_libraries(test-qwen35-quant PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-qwen35-materialize tests/test_qwen35_materialize.cpp)
+target_link_libraries(test-qwen35-materialize PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-profile tests/test_qwen35_profile.cpp)
 target_link_libraries(test-qwen35-profile PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-imatrix tests/test_qwen35_imatrix.cpp)

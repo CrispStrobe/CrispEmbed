@@ -7,9 +7,12 @@
 #include "ggml.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
+#include <exception>
 #include <memory>
+#include <thread>
 
 namespace qwen35_ocr {
 namespace {
@@ -41,7 +44,18 @@ bool matrix_type_supported(const ggml_tensor * source) {
         return false;
     }
 }
-bool tensor_floats(ggml_tensor * source, float * target) {
+int f16_conversion_workers(size_t elements, int threads) {
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    (void)elements;
+    (void)threads;
+    return 1;
+#else
+    constexpr size_t grain = 65536;
+    if (elements < 4 * grain || threads < 2 || !core_env::on("CRISPEMBED_QWEN35_PARALLEL_F16")) return 1;
+    return int(std::min({ size_t(threads), size_t(8), elements / grain }));
+#endif
+}
+bool tensor_floats(ggml_tensor * source, float * target, int threads) {
     if (!target || !matrix_type_supported(source)) return false;
     profile_timer stage(profile_event::source_buffer);
     std::vector<uint8_t> raw(ggml_nbytes(source));
@@ -51,8 +65,32 @@ bool tensor_floats(ggml_tensor * source, float * target) {
     const size_t count = size_t(ggml_nelements(source));
     if (source->type == GGML_TYPE_F32)
         std::memcpy(target, raw.data(), count * sizeof(float));
-    else
-        ggml_get_type_traits(source->type)->to_float(raw.data(), target, count);
+    else {
+        const auto convert = ggml_get_type_traits(source->type)->to_float;
+#if !defined(__EMSCRIPTEN__) || defined(__EMSCRIPTEN_PTHREADS__)
+        const int workers = source->type == GGML_TYPE_F16 ? f16_conversion_workers(count, threads) : 1;
+        if (workers > 1) {
+            std::array<std::thread, 7> jobs;
+            const auto chunk = [&](int index) {
+                const size_t begin = count * size_t(index) / size_t(workers);
+                const size_t end = count * size_t(index + 1) / size_t(workers);
+                convert(raw.data() + begin * sizeof(ggml_fp16_t), target + begin, int64_t(end - begin));
+            };
+            bool fallback = false;
+            try {
+                for (int i = 1; i < workers; ++i) jobs[size_t(i - 1)] = std::thread(chunk, i);
+            } catch (const std::exception &) {
+                // Join every launched writer before safely overwriting serially.
+                fallback = true;
+            }
+            if (!fallback) chunk(0);
+            for (auto & job : jobs)
+                if (job.joinable()) job.join();
+            if (fallback) convert(raw.data(), target, int64_t(count));
+        } else
+#endif
+            convert(raw.data(), target, int64_t(count));
+    }
     stage.next(profile_event::source_validate);
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
@@ -93,7 +131,7 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
         auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
         {
             profile_matrix_scope materialize(matrix);
-            if (!tensor_floats(matrix, static_cast<float *>(weight->data))) return false;
+            if (!tensor_floats(matrix, static_cast<float *>(weight->data), threads)) return false;
         }
         stage.next(profile_event::project_graph);
         auto * result = ggml_mul_mat(ctx.get(), weight, input);

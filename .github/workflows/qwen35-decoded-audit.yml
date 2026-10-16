@@ -11,6 +11,8 @@ on:
       - 'tests/test_qwen35_decoded_panel.py'
       - 'tests/test_qwen35_profiling.py'
       - 'tests/test_qwen35_profile.cpp'
+      - 'tests/test_qwen35_materialize.cpp'
+      - 'src/qwen35_math.h'
       - 'src/qwen35_profile.*'
       - 'src/qwen35_linear.cpp'
       - 'src/qwen35_ocr.cpp'
@@ -27,6 +29,8 @@ on:
       - 'tests/test_qwen35_decoded_panel.py'
       - 'tests/test_qwen35_profiling.py'
       - 'tests/test_qwen35_profile.cpp'
+      - 'tests/test_qwen35_materialize.cpp'
+      - 'src/qwen35_math.h'
       - 'src/qwen35_profile.*'
       - 'src/qwen35_linear.cpp'
       - 'src/qwen35_ocr.cpp'
@@ -61,13 +65,17 @@ jobs:
       - name: Configure portable CPU counters
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DCRISPEMBED_BUILD_SHARED=OFF
       - name: Build counter controls
-        run: cmake --build build --config Release --target test-qwen35-profile -j4
+        run: cmake --build build --config Release --target test-qwen35-profile test-qwen35-materialize -j4
       - name: Counter controls (Unix)
         if: runner.os != 'Windows'
-        run: ./build/test-qwen35-profile
+        run: |
+          ./build/test-qwen35-profile
+          ./build/test-qwen35-materialize
       - name: Counter controls (Windows)
         if: runner.os == 'Windows'
         run: |
           $env:PATH = "$PWD/build/Release;$PWD/build/bin/Release;$PWD/build/bin;$env:PATH"
           & ./build/Release/test-qwen35-profile.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./build/Release/test-qwen35-materialize.exe
           exit $LASTEXITCODE
