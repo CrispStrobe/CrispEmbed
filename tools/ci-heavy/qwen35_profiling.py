@@ -185,6 +185,11 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                     log = p.stdout + p.stderr; (folder / (label + '.log')).write_text(log); p.check_returncode()
                     measured = parse_benchmark(log); check_bytes(measured, schema)
                     measured.update(pair=pair, resources=json.loads(resource_path.read_text()))
+                    resource = measured['resources']
+                    if (type(resource['max_rss_kib']) is not int or resource['max_rss_kib'] <= 0
+                            or any(not math.isfinite(resource[k]) or resource[k] < 0
+                                for k in ('wall_seconds', 'user_seconds', 'system_seconds'))):
+                        raise ValueError('Invalid isolated process resource counters')
                     measured['output_matches_python'] = measured['ids'] == expected_ids and measured['text'] == expected_text and measured['stop'] == expected_stop
                     measured['paired'] = errors(expected_text, measured['text'])
                     measured['output_matches_first_run_exact'] = not item['runs'] or all(measured[k] == item['runs'][0][k] for k in OUTPUT_FIELDS)

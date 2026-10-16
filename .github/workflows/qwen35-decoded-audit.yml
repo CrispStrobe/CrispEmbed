@@ -67,4 +67,7 @@ jobs:
         run: ./build/test-qwen35-profile
       - name: Counter controls (Windows)
         if: runner.os == 'Windows'
-        run: ./build/Release/test-qwen35-profile.exe
+        run: |
+          $env:PATH = "$PWD/build/Release;$PWD/build/bin/Release;$PWD/build/bin;$env:PATH"
+          & ./build/Release/test-qwen35-profile.exe
+          exit $LASTEXITCODE
