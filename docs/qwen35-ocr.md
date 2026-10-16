@@ -1992,5 +1992,7 @@ Full decoded IDs/EOS/text/confidence and recognition quality remain the previous
 completed683-token result. This prefill experiment does not rerun or infer decoded
 quality from component scores, and does not use the book for weight calibration.
 [ARM64 run38917305082](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917305082)
-at sourceaccd903c and34 model-free controls are pending. No new runtime arithmetic,
+at sourceaccd903c is running. All34 [model-free controls38917306138](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38917306138)
+and frozen image/source/gold/scorer/font/split replay pass. Numerical results remain
+pending. No new runtime arithmetic,
 precision/default, weight/release/publication or app-pin change.
