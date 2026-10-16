@@ -121,7 +121,11 @@ The [mixed book](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.js
 completes with685 EOS tokens, changed text, slightly higher CER/lower WER and75/683
 failures. The complete mixed panel reaches3/3 EOS but matches original IDs/text on1/3;
 all replays verify and mixed score fidelity is worse than Q8 on every input.
-Review the three queued unchanged Q4 cases next using the same frozen contract. No default or publication promotion follows from this panel.
+The [Q4 inventory](tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json)
+preserves248 IDs/text/EOS and15/15 cells but retains75/248 failures (min score
+cosine0.939502776, worst abs5.93377972). Review Q4 receipt/book next. Public evidence-
+auditor usage is in [the quality contract](docs/ocr-quality.md); its nine new hosted
+controls are pending in PR67. Evidence verification does not waive model failures. No default or publication promotion follows from this panel.
 The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
 reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
 vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.

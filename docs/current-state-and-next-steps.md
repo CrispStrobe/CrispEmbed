@@ -235,11 +235,18 @@ tokens versus683, first divergence130; content CER rises11.47%→11.51% while WE
 falls17.63%→17.45%. It retains75/683 prefill/score failures (min cosine0.998528719,
 worst abs1.22282577). Mixed panel:3/3 EOS,1/3 exact original IDs/text,225/1,404
 numerical failures; score fidelity is worse than Q8 on every input. The three
-unchanged Q4 cases are queued independently at
+unchanged Q4 cases use source
 8bf55424: [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
 [receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
 and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206).
-Every case has its own original/F16 replay; review the complete Q4 panel next.
+The completed [Q4 inventory](../tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json)
+[run38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054)
+reproduces original/F16/weight controls and five raw logs. Q4 preserves248 IDs/text/
+EOS and15/15 cells, retaining75/248 prefill/score failures (min cosine0.939502776,
+worst abs5.93377972). The previous964,430,848-byte recipe/hash is exact. Public
+model-free audit output is retained with tool source/hash; its nine hosted controls
+are pending in PR67. Evidence verification is separate from model parity. Q4
+receipt/book are running; every case has its own original/F16 replay.
 Scheduling overlap changes no recipe or quality decision. No held-out calibration,
 corpus/upstream benchmark, speed or numerical/default/publication promotion follows.
 

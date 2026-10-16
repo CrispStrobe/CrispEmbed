@@ -2135,8 +2135,8 @@ and [error/confidence/timing limits](../PERFORMANCE.md). The mixed book is compl
 Unchanged Q4 [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054),
 [receipt38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308)
 and [book38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206)
-are queued at8bf55424 on independent hosted lanes. Assess the complete mixed panel
-before Q4. Each case replays its own frozen original/F16 controls; overlapping
+use source8bf55424 on independent hosted lanes. Their measurements follow in
+the Q4 sections after the complete mixed-panel assessment. Each case replays its own frozen original/F16 controls; overlapping
 preselected evaluation runs does not introduce held-out calibration. No held-out calibration or runtime/publication promotion.
 
 ## Independent mixed book and completed panel — 16 October 2026
@@ -2157,3 +2157,21 @@ on every input; smaller storage and higher control precision do not establish a
 better overall recipe. Q4 cases are queued independently at8bf55424 and are next
 for complete-panel review. No gates are weakened, recipes calibrated on held-out
 inputs, defaults changed or artifacts/aliases/releases/app pins promoted.
+
+## Independent Q4 inventory — 16 October 2026
+
+The completed [inventory38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054)
+at8bf55424 reproduces all original/F16/weight controls and five raw logs. The
+964,430,848-byte recipe retains186 Q4_K matrices, one Q8 tied embedding/head and
+286 F32 tensors, with exact earlier file hash and286 protected payloads. Both arms
+preserve248 original IDs/text/EOS/teacher argmaxes,15/15 cells and zero content
+CER/WER, but Q4 retains75/248 prefill/score failures, minimum score cosine0.939502776
+and worst abs5.93377972. Score fidelity and this controlled table's decoded quality
+are separate measurements. [Complete report](../tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json),
+[errors/confidence/timing and recipe comparison](../PERFORMANCE.md).
+
+The new [model-free evidence auditor](../tools/audit_qwen35_quality_quant.py) also
+verifies this report/log bundle, preserving all failures; exact tool source/hash
+and audit output are retained. [Usage/verification scope](ocr-quality.md#recheck-a-saved-quantization-audit).
+Nine new hosted controls remain pending in PR67. Q4 receipt/book are running;
+no held-out calibration, runtime/default/artifact/alias/release/app-pin promotion.

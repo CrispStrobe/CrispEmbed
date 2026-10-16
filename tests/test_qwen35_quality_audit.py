@@ -23,8 +23,8 @@ class QualityAudit(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_frozen(report, ROOT, self.original['source_commit'])
 
-    def test_existing_q8_and_mixed_frozen_controls(self):
-        for profile in ('q8', 'q8-q6'):
+    def test_existing_preselected_frozen_controls(self):
+        for profile in ('q8', 'q8-q6', 'q4'):
             path = ROOT / f'tests/results/qwen35-ocr/quality-quant-{profile}-inventory-table.json'
             report = json.loads(path.read_text())
             old, before = verify_frozen(report, ROOT, report['source_commit'])

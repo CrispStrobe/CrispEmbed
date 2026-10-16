@@ -4,6 +4,31 @@ Completed milestones and frozen evidence. Current tasks and ownership live in
 [PLAN.md](PLAN.md); runtime procedures remain in [AGENTS.md](AGENTS.md),
 [CLAUDE.md](CLAUDE.md) and [contributing](docs/contributing.md).
 
+## 2026-10-16 — Independent Q4 inventory preserves decoded cells despite score drift
+
+[ARM64 audit38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054)
+at `8bf5542423f0809a4a2eec4cc170deb0547e7dce` completes both1024-cap arms on the
+frozen784-patch inventory. Original output/confidence/434 CPU records and the
+full77-prefill/248-score F16 baseline reproduce. All473 tensor schemas,286
+protected payloads and the previous964,430,848-byte Q4 file/hash reproduce:
+186 Q4_K matrices, one Q8 tied embedding/head and286 F32 tensors. All187 quantized/
+286 kept records and five logs independently reparse in the existing reviewer
+and the new public evidence-audit command; the command's exact source/hash and
+result are retained. Its hosted regression suite remains pending separately.
+[Complete report](tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json),
+raw artifact-report SHA256 `580a5efc963d0c80395a4c2cee4ce54ff62d19f81ea15fc3055182e551027d0b`.
+Large models/reference archives remain hosted; only small reports/logs are fetched.
+
+Both arms match248 original IDs/text/EOS/teacher argmaxes,15/15 cells and zero
+ordered-content CER/WER. Q4 still fails75 prefill/248 scores versus F16 zero/zero:
+minimum score cosine0.939502776, worst max_abs5.93377972, RMS0.931151092 and norms
+2034.52698/1996.56006. Exact decoded cells on this controlled table do not establish
+numerical parity or general OCR quality. Existing0.99999/0.002 gates receive no
+generated-score allowance; completed workflow failure retains measured numerical
+debt, not replay guards. [Confidence/timing and recipe comparison](PERFORMANCE.md).
+Q4 receipt/book remain running; no held-out calibration or runtime/default/weight
+publication/alias/release/app-pin change.
+
 ## 2026-10-16 — Mixed Q8/Q6 book completes the independent mixed panel
 
 [ARM64 audit38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)

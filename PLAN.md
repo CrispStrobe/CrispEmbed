@@ -67,7 +67,7 @@ on the evaluation inputs. Publication and numerical promotion remain separate.
 | --- | --- | --- | --- |
 | Q8, vision F32 | [Complete248 EOS/15 cells;75 prefill/248 score failures](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json) | [Complete EOS;8PK→SPK regression;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json) | [Complete EOS;changed text;75/683 failures](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json) |
 | Attention Q8 / FFN Q6, vision F32 | [Complete248 EOS/15 cells;75/248 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json) | [Complete EOS;changed text;75/473 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json) | [Complete EOS;changed text;75/683 failures](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json) |
-| Q4, vision F32 | [Queued38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054) | [Queued38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308) | [Queued38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206) |
+| Q4, vision F32 | [Complete248 EOS/15 cells;75/248 failures](tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json) | [Running38951920308](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951920308) | [Running38951924206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951924206) |
 
 [PR63](https://github.com/CrispStrobe/CrispEmbed/pull/63) implements the bounded
 driver; [41 source controls38924301781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38924301781)
@@ -79,7 +79,11 @@ prefill/1,404 score failures versus F16's6/13. Mixed has worse score fidelity th
 Q8 on every input, with mixed receipt lower CER/same WER and book higher CER/lower
 WER. [Completed evidence and limits](HISTORY.md). Q4 runs use unchanged recipes,
 1024 caps and source `8bf5542423f0809a4a2eec4cc170deb0547e7dce`; review their complete
-panel next. No held-out calibration, optimal-profile selection or promotion.
+panel next. Q4 inventory completes with exact248 IDs/text/EOS and15/15 cells,
+retaining75/248 failures (min score cosine0.939502776, worst abs5.93377972); receipt/
+book are running. The new public model-free report/log auditor and nine controls
+are in [PR67](https://github.com/CrispStrobe/CrispEmbed/pull/67), with hosted CI pending.
+No held-out calibration, optimal-profile selection or promotion.
 
 ## Remaining Qwen numerical attribution
 
@@ -300,7 +304,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8/all3 mixed cases independently verified; each3/3 EOS and1/3 original ID/text matches, with225/1,404 numerical failures. Mixed score fidelity worse than Q8 on every input. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups complete mixed evidence. Q4 inventory38951917054/receipt38951920308/book38951924206 running at8bf55424. Add a model-free public report/log auditor with explicit negative controls on hosted CI while these immutable runs finish; review Q4 next. PR63 full CI passes; newer conclusions remain separate. No promotion |
+| 2026-10-16 | `qwen35-quality-quant` | Complete remaining independent-document quantization audits | All3 Q8/all3 mixed cases independently verified; each3/3 EOS and1/3 original ID/text matches, with225/1,404 numerical failures. Mixed score fidelity worse than Q8 on every input. [PR66](https://github.com/CrispStrobe/CrispEmbed/pull/66) groups complete mixed evidence. Q4 inventory verified:248 IDs/text/EOS and15/15 cells,75/248 failures. Receipt38951920308/book38951924206 running at8bf55424. [PR67](https://github.com/CrispStrobe/CrispEmbed/pull/67) adds public report/log auditor and9 controls; hosted50-test source check pending. PR63 full CI passes; newer conclusions remain separate. No promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

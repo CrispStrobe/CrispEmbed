@@ -1,5 +1,47 @@
 # CrispEmbed Performance
 
+## Qwen3.5 independent Q4 inventory (2026-10-16)
+
+[Hosted ARM64 audit38951917054](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38951917054)
+at `8bf55424` uses the frozen784-patch inventory and1024 cap. Original434 CPU
+records, entire F16 baseline,473 tensor schemas,286 protected payloads and prior
+964,430,848-byte Q4 file/hash reproduce. Both the existing reviewer and public
+model-free auditor independently reparse all five logs; recorded failures remain.
+[Complete evidence](tests/results/qwen35-ocr/quality-quant-q4-inventory-table.json).
+
+| Arm | Tokens / stop | Content CER / WER | Cells | Prefill / score failures | Native recognition, single observation |
+| --- | --- | --- | --- | --- | ---: |
+| F16 text / F32 vision | 248 / EOS | 0 / 0 | 15/15 | 0 / 0 | 223.632008 s |
+| Q4 / Q8 tied head / F32 vision | 248 / EOS | 0 / 0 | 15/15 | 75 / 248 | 238.821982 s |
+
+Both arms preserve all original IDs/text/EOS and248 teacher argmaxes. Output stays
+459 characters/34 lines with Markdown/HTML raw CER/WER1.781818/1.03125. Q4's effective
+types are186 Q4_K, one Q8_0 tied embedding/head and286 F32; all187 quantized/286
+kept records verify. This one controlled inventory is not a corpus accuracy result.
+
+First changed captured metric remains decoder inputs_embeds: Q4 max_abs0.000375747681,
+RMS0.0000284308717, min-row cosine0.999983013, norms62.0079422/62.0079269. Merger
+metrics remain unchanged. Later quantized projections also change; no sole causal
+operator or critical-precision remedy is established. Minimum score cosine0.939502776
+occurs at step141 (max_abs4.65136671, RMS0.931054354, norms1353.97974/1259.64172).
+Worst score step139: max_abs5.93377972, mean_abs0.731245518, RMS0.931151092,
+norms2034.52698/1996.56006. F16 worst abs remains0.00061583519. All75/248 Q4 failures
+remain under unchanged0.99999/0.002 gates without generated-score allowance.
+
+| Inventory recipe | Actual bytes | Minimum teacher-score cosine | Maximum score abs | Exact original IDs/text/EOS and cells |
+| --- | ---: | ---: | ---: | --- |
+| Q8 | 1,213,238,272 | 0.999256611 | 0.440546274 | 248 tokens;15/15 cells |
+| Mixed Q8/Q6 | 1,149,795,328 | 0.998120904 | 1.08967495 | 248 tokens;15/15 cells |
+| Q4 | 964,430,848 | 0.939502776 | 5.93377972 | 248 tokens;15/15 cells |
+
+These unchanged recipes all preserve this inventory's decoded output while their
+score distributions differ. No optimal recipe is selected using this held-out input.
+Q4 confidence aligns all248 tokens: max error0.15686771235, mean0.0007867390508;
+F16 max0.00000730118568. Confidence is not OCR calibration. Timings are one
+owning-API observation per arm after context load, not paired speed/RSS/memory
+proof. Receipt/book remain running; previous924/56 and independent F16 panel6/13
+debt stay retained. No runtime/default/artifact/alias/release/app-pin promotion.
+
 ## Qwen3.5 independent mixed Q8/Q6 book and panel (2026-10-16)
 
 [Hosted ARM64 audit38942909059](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38942909059)
