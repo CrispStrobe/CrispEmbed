@@ -276,11 +276,12 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: complete the independent-document
-quantization panel and validate publication, then UltraBERT and the permissive OCR
-queue. Projection/reduction attribution remains open independently; preserve
-all existing numerical failures and frozen quality inputs. The consumer lanes below remain separate, with
-their original verification dates.
+The independent-document quantization panel is complete. No tested quantized
+recipe qualifies for promotion from this panel; publication remains conditional
+on a validated candidate. UltraBERT is the next independent implementation lane,
+then the permissive OCR queue. Projection/reduction attribution remains open;
+preserve all numerical failures and frozen quality inputs. The consumer lanes
+below remain separate, with their original verification dates.
 
 ## Recommended order and dependencies
 
