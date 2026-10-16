@@ -19,7 +19,8 @@ def module(path, name):
 
 
 def main():
-    quality_check = sys.argv[1:] == ["--quality"]
+    book_isolation = sys.argv[1:] == ["--book-isolation"]
+    quality_check = book_isolation or sys.argv[1:] == ["--quality"]
     if quality_check:
         quality_repo = Path(__file__).resolve().parents[2]
         quality = module(quality_repo / "tools/ci-heavy/qwen35_quality.py", "qwen35_quality")
@@ -87,6 +88,8 @@ def main():
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
         if quality_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_quality.py"), "-q"], check=True)
+        if book_isolation:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_book_isolation.py"), "-q"], check=True)
         if receipt_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_receipt.py"), "-q"], check=True)
         if materialize_check:
@@ -346,7 +349,11 @@ def main():
                     "completed test-only original-embedding isolation; inspect prefill-isolation.json; not composed OCR parity"
                     if isolation_check else "completed fixed-input weight/backend controls; inspect prefill-drift.json")
             elif page_check:
-                if quality_check:
+                if book_isolation:
+                    book = module(repo / "tools/ci-heavy/qwen35_book_isolation.py", "qwen35_book_isolation")
+                    book.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    report["book_isolation"] = "completed test-only continuation isolation; inspect book-isolation.json and retained failures"
+                elif quality_check:
                     quality.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
                     report["quality"] = "completed held-out F16 audit; inspect quality.json, retained strict/output/parse failures and raw/secondary accuracy separately"
                 elif receipt_check:

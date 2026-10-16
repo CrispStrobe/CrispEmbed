@@ -18,7 +18,7 @@ def validate_token_cap(cap, long_document=False):
 
 def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None, prefill_controls=False,
                    vision_probes=False, norm_statistics=False, native_geometry=None, attention_trace=False,
-                   prompt="", long_document=False):
+                   prompt="", long_document=False, decode_probe_steps=()):
     import gguf
     import numpy as np
     import torch
@@ -30,6 +30,11 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     if transformers.__version__ != "5.5.4" or tokenizers.__version__ != "0.22.2":
         raise ValueError("Reference requires transformers==5.5.4/tokenizers==0.22.2")
     validate_token_cap(max_new_tokens, long_document=long_document)
+    import importlib.util
+    probe_spec = importlib.util.spec_from_file_location('qwen35_decode_reference', Path(__file__).with_name('qwen35_decode_reference.py'))
+    decode_observer = importlib.util.module_from_spec(probe_spec)
+    probe_spec.loader.exec_module(decode_observer)
+    decode_probe_steps = decode_observer.validate_steps(decode_probe_steps, max_new_tokens)
     torch.set_num_threads(4)
     torch.manual_seed(0)
     root, output = Path(model_dir), Path(output)
@@ -213,6 +218,10 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
                     raise ValueError("Original block replay differs from unchanged hook")
                 controlled = block(block_input,cu_seqlens=cu,position_embeddings=native_positions)
                 save(f"native_geometry.vision.layer.{i}",controlled)
+        remove_probes, finish_probes = (None, None)
+        if decode_probe_steps:
+            remove_probes, finish_probes = decode_observer.install(model, decode_probe_steps, save)
+            cleanup.callback(remove_probes)
         started = time.perf_counter()
         generated = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                    use_cache=True, return_dict_in_generate=True, output_scores=True)
@@ -221,6 +230,26 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
         save("generated.ids", ids)
         for index, score in enumerate(generated.scores):
             save(f"generated.scores.{index}", score)
+        probe_report = None
+        if decode_probe_steps:
+            remove_probes()
+            probe_report = finish_probes(len(generated.scores))
+            for step in decode_probe_steps:
+                prefix = f'generated.probe.{step}.'
+                if (sum(name.startswith(prefix) for name in arrays) != 75
+                        or not np.array_equal(arrays[prefix + 'logits'], arrays[f'generated.scores.{step}'])):
+                    raise ValueError('Original decode probe fields/logits differ from actual generate scores')
+            replay = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
+                                    use_cache=True, return_dict_in_generate=True, output_scores=True)
+            if (not torch.equal(replay.sequences, generated.sequences)
+                    or len(replay.scores) != len(generated.scores)
+                    or any(not torch.equal(a, b) for a, b in zip(replay.scores, generated.scores))):
+                raise ValueError('Original decode observers changed generated IDs or score arrays')
+            arrays['diagnostic.decode_probe_steps'] = np.asarray(decode_probe_steps, dtype=np.float32)
+            probe_report['observer_off_ids_scores_exact'] = True
+            import inspect
+            probe_report['original_modeling_sha256'] = hashlib.sha256(Path(inspect.getfile(type(model))).read_bytes()).hexdigest()
+            del replay
     # Diagnostic confidence from the actual original generate scores, including
     # EOS. Normalize in F64 as the native public confidence API does; generation
     # and every captured score stay unchanged. This is not an accuracy measure.
@@ -264,6 +293,7 @@ def dump_reference(model_dir, image_path, output, max_new_tokens=64, anchor=None
     result["mean_confidence"] = sum(confidence) / len(confidence)
     result["confidence_scope"] = "Original generated F32 scores, F64 exponential normalization of selected token, includes EOS; no calibration claim"
     result["generation_seconds"] = generation_seconds
+    if decode_probe_steps: result["decode_probes"] = probe_report
     if attention_trace: result["attention_trace"] = attention_result
     if norm_statistics:
         if any(v!=25 for v in statistics_controls.values()) or len(statistics_controls)!=(3 if prefill_controls else 1):

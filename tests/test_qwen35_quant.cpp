@@ -50,6 +50,31 @@ static bool requested_cap(const char * value, int & cap) {
     cap = int(parsed);
     return true;
 }
+struct diagnostic_mode {
+    bool valid = false, reference_embeddings = false, prefill_only = false, strict_scores = false, scores_only = false;
+};
+static diagnostic_mode decode_mode(const std::string & value) {
+    if (value.empty()) return { true, false, false, false, false };
+    if (value == "--prefill-only") return { true, false, true, false, false };
+    if (value == "--prefill-reference-embeddings") return { true, true, true, false, false };
+    if (value == "--full-quality") return { true, false, false, true, false };
+    if (value == "--scores-only") return { true, false, false, true, true };
+    if (value == "--scores-reference-embeddings") return { true, true, false, true, true };
+    return {};
+}
+static bool probe_measure(const crispembed_diff::Ref & ref, const std::string & name,
+                          const std::vector<float> & values) {
+    const auto r = ref.compare(name, values.data(), values.size());
+    if (!r.found || r.n_elem != values.size() || values.empty() ||
+        !std::all_of(values.begin(), values.end(), [](float x) { return std::isfinite(x); }) ||
+        !std::isfinite(r.cos_min) || !std::isfinite(r.cos_global) || !std::isfinite(r.max_abs))
+        return false;
+    std::printf(
+        "PROBE_METRIC %s n=%zu cos_min=%.9f cos_global=%.9f max_abs=%.9g mean_abs=%.9g rms=%.9g norms=%.9g/%.9g\n",
+        name.c_str(), r.n_elem, r.cos_min, r.cos_global, r.max_abs, r.mean_abs, r.rms, r.mine_norm, r.ref_norm);
+    qwen35_compare(ref, name, values); // Keep failed numerical records; driver aggregates them separately.
+    return true;
+}
 static int request_controls() {
     int cap = 64;
     if (!requested_cap("1", cap) || cap != 1 || !requested_cap("512", cap) || cap != 512 ||
@@ -57,16 +82,31 @@ static int request_controls() {
         return 1;
     for (const char * value : { "", "0", "-1", "1025", "1024x", "nan", "99999999999999999999999999999" })
         if (requested_cap(value, cap)) return 1;
+    for (const std::string value : { "", "--prefill-only", "--prefill-reference-embeddings", "--full-quality",
+                                     "--scores-only", "--scores-reference-embeddings" }) {
+        const auto mode = decode_mode(value);
+        if (!mode.valid ||
+            mode.reference_embeddings !=
+                (value == "--prefill-reference-embeddings" || value == "--scores-reference-embeddings") ||
+            mode.prefill_only != (value == "--prefill-only" || value == "--prefill-reference-embeddings") ||
+            mode.scores_only != (value == "--scores-only" || value == "--scores-reference-embeddings") ||
+            mode.strict_scores != (value == "--full-quality" || mode.scores_only))
+            return 1;
+    }
+    for (const std::string value : { "--scores-reference-embeddings=0", "--scores", "--unknown" })
+        if (decode_mode(value).valid) return 1;
+    std::puts("DECODE_MODE_CONTROLS modes=6 invalid=3 test_only=1");
     std::puts("RECEIPT_CONTROLS cap_min=1 cap_max=1024 invalid=1 default_cap=64");
     return 0;
 }
 static int crispembed_test_main(int argc, char ** argv) {
     if (argc == 2 && std::string(argv[1]) == "--request-controls") return request_controls();
     if (argc < 5 || argc > 7) return 2; // model, image, reference, prompt, optional cap and diagnostic mode
-    const bool reference_embeddings = argc == 7 && std::string(argv[6]) == "--prefill-reference-embeddings";
-    const bool prefill_only = reference_embeddings || (argc == 7 && std::string(argv[6]) == "--prefill-only");
-    strict_scores = argc == 7 && std::string(argv[6]) == "--full-quality";
-    if (argc == 7 && !prefill_only && !strict_scores) return 2;
+    const auto mode = decode_mode(argc == 7 ? argv[6] : "");
+    if (!mode.valid) return 2;
+    const bool reference_embeddings = mode.reference_embeddings;
+    const bool prefill_only = mode.prefill_only;
+    strict_scores = mode.strict_scores;
     strict_prefill = prefill_only;
     int token_cap = 64;
     if (argc >= 6) {
@@ -162,11 +202,47 @@ static int crispembed_test_main(int argc, char ** argv) {
         ggml_backend_free(backend);
         return ok ? 0 : 1;
     }
+    std::vector<int> probe_steps;
+    const auto requested_probes = ref.get_f32("diagnostic.decode_probe_steps");
+    if (mode.scores_only || (strict_scores && requested_probes.first)) {
+        if (!requested_probes.first || requested_probes.second < 1 || requested_probes.second > 4) return 2;
+        for (size_t i = 0; i < requested_probes.second; ++i) {
+            const float value = requested_probes.first[i];
+            if (!std::isfinite(value) || value != std::floor(value) || value <= 0 || value >= expected.second ||
+                (!probe_steps.empty() && value <= probe_steps.back()))
+                return 2;
+            probe_steps.push_back(int(value));
+        }
+    }
+    size_t probe_count = 0;
     // Teacher forcing is confined to this diagnostic arm. It keeps each score
     // comparison on the original Python prefix even after a quantized argmax differs.
     // The independent owning-context call below generates freely from image/prompt.
     for (size_t step = 0; step < expected.second; ++step) {
         ok &= measure(ref, "generated.scores." + std::to_string(step), current.logits);
+        if (std::find(probe_steps.begin(), probe_steps.end(), int(step)) != probe_steps.end()) {
+            const auto prefix = "generated.probe." + std::to_string(step) + ".";
+            auto observe = [&](const std::string & label, const std::vector<float> & values) {
+                ++probe_count;
+                ok &= probe_measure(ref, prefix + label, values);
+            };
+            observe("decoder.inputs_embeds", hidden);
+            for (size_t i = 0; i < current.hidden.size(); ++i)
+                observe("decoder.layer." + std::to_string(i), current.hidden[i]);
+            observe("decoder.norm", current.norm);
+            observe("logits", current.logits);
+            for (size_t i = 0; i < current.cache.layers.size(); ++i) {
+                const auto label = "cache." + std::to_string(i);
+                const auto & cache = current.cache.layers[i];
+                if (decoder.layers[i].full_attention) {
+                    observe(label + ".keys", cache.attention.keys);
+                    observe(label + ".values", cache.attention.values);
+                } else {
+                    observe(label + ".conv_states", cache.conv);
+                    observe(label + ".recurrent_states", cache.recurrent);
+                }
+            }
+        }
         const int original = int(expected.first[step]), selected = best(current.logits);
         std::printf("TEACHER step=%zu selected=%d reference=%d same=%d\n", step, selected, original,
                     selected == original);
@@ -182,6 +258,13 @@ static int crispembed_test_main(int argc, char ** argv) {
         std::printf("TEACHER_QUALITY stages=%zu strict_failures=%d\n", expected.second, strict_score_failures);
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
+    if (mode.scores_only) {
+        if (probe_count != 75 * probe_steps.size()) return 2;
+        std::printf(
+            "DECODE_ISOLATION finite=%d reference_embeddings=%d test_only=1 probes=%zu scores=%zu free_generation=0\n",
+            ok, reference_embeddings, probe_count, expected.second);
+        return ok ? 0 : 1;
+    }
     gate("CRISPEMBED_QWEN35_QUANT", "0");
     using owner = std::unique_ptr<qwen35_ocr_context, decltype(&qwen35_ocr_free)>;
     owner disabled(qwen35_ocr_init(argv[1], 4), qwen35_ocr_free);
