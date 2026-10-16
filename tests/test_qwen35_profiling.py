@@ -4,7 +4,7 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools/ci-heavy'))
-from qwen35_profiling import parse_benchmark, check_bytes
+from qwen35_profiling import parse_benchmark, check_bytes, paired_summary
 
 
 def fixture(active=True):
@@ -73,6 +73,32 @@ class Profiling(unittest.TestCase):
         with self.assertRaises(ValueError):
             check_bytes(parse_benchmark(fixture()), {'v.test': dict(shape=[2, 2], dtype='float16'),
                 'l.embed_tokens.weight': dict(shape=[248320, 1024], dtype='float16')})
+
+
+class PairedSummary(unittest.TestCase):
+    def rows(self):
+        return [dict(pair=pair, parallel_f16=enabled, profile_active=False, events=[], matrices=[],
+            recognize_ms=20 if enabled else 30, resources={'max_rss_kib': 100})
+            for pair, enabled in [(0, False), (0, True), (1, True), (1, False), (2, False), (2, True)]]
+
+    def test_unprofiled_conversion_pairs(self):
+        summary = paired_summary(self.rows(), parallel=True)
+        self.assertEqual(summary['parallel_on']['median_ms'], 20)
+        self.assertEqual(summary['parallel_off']['median_ms'], 30)
+        self.assertEqual(summary['median_paired_on_over_off'], 2/3)
+
+    def test_reject_missing_pair(self):
+        with self.assertRaises(ValueError): paired_summary(self.rows()[:-1], parallel=True)
+
+    def test_reject_profiled_conversion(self):
+        rows = self.rows(); rows[0]['profile_active'] = True
+        with self.assertRaises(ValueError): paired_summary(rows, parallel=True)
+
+    def test_historical_profile_summaries(self):
+        import json
+        report = json.loads((Path(__file__).resolve().parent / 'results/qwen35-ocr/profiling.json').read_text())
+        for item in report['benchmarks']:
+            self.assertEqual(paired_summary(item['runs']), item['summary'])
 
 
 if __name__ == '__main__':

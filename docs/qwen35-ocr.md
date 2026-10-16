@@ -1798,3 +1798,35 @@ Linux/macOS/Windows counter controls and 23 Python controls pass
 Production arithmetic and precision defaults are unchanged; no speedup or quality
 promotion follows. The first pending lane is bounded gated F16 materialization,
 with original-reference and unchanged strict/output controls.
+
+## Gated parallel F16 materialization
+
+`CRISPEMBED_QWEN35_PARALLEL_F16=1` opts large F16 projection weights into
+parallel conversion using the same GGML conversion function. The default and
+literal 0 keep the serial path. Only `project_cpu` supplies its requested thread
+count; other tensor reads retain a single worker. Arrays below 262144 elements
+and single-thread calls stay serial. Conversion uses at most eight workers,
+including the caller, with disjoint element ranges and at least 65536 elements
+per worker. Non-F16 conversion, full finite validation and the F32 matmul graph
+are unchanged. A single-thread WASM build stays serial even with the gate set.
+All launched writers join before inference continues; if thread creation throws,
+the joined result is overwritten by serial conversion. No persistent weight cache
+or additional full-sized tensor copy is introduced by the runtime alternative.
+Thread stacks and scheduling still require measurement.
+
+`tools/ci-heavy/qwen35_ocr_bootstrap.py --parallel-f16` first exercises model-free
+controls, then audits serial/parallel conversion on every actual checkpoint
+tensor. Test-only F32 arrays go to hosted scratch and are compared element by
+element, including raw F32 bits, with independent NumPy conversion from the GGUF
+storage. Only small metrics/hashes are retained; scratch arrays are removed.
+The synthetic controls cover all 65,536 half bit patterns, nonfinite rejection,
+odd tails, small arrays, worker bounds, literal 0, single-thread and F32 behavior.
+
+The candidate must reproduce the frozen four-arm strict-prefill records and the
+four complete-at-frozen-cap baseline decoded/teacher-score controls against fresh
+original Python captures. The existing 56 failures and incomplete 384-token receipt
+remain failures/limits. Three alternating unprofiled serial/parallel pairs on
+form, German and a labelled 32-token receipt prefix must match IDs/text/stops and
+native per-token/mean confidence exactly; measure native API time and isolated
+child peak RSS including model load. A timing gain does not waive numerical or
+transcription-quality debt. Measurements are pending; the gate remains default-off.

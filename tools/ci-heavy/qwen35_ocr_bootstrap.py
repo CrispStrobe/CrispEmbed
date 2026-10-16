@@ -36,7 +36,8 @@ def main():
     frontend_keys = sys.argv[1:] == ["--frontend-key-f32"]
     public_check = sys.argv[1:] == ["--public"]
     ffn_check = sys.argv[1:] == ["--ffn"]
-    profile_check = sys.argv[1:] == ["--profile"]
+    materialize_check = sys.argv[1:] == ["--parallel-f16"]
+    profile_check = materialize_check or sys.argv[1:] == ["--profile"]
     decoded_tail = sys.argv[1:] == ["--decoded-panel-tail"]
     decoded_check = decoded_tail or sys.argv[1:] == ["--decoded-panel"]
     page_check = profile_check or decoded_check or sys.argv[1:] == ["--pages"]
@@ -60,6 +61,7 @@ def main():
     os.environ["CRISPEMBED_QWEN35_QUANT"] = "0"
     os.environ["CRISPEMBED_QWEN35_IMATRIX"] = "0"
     os.environ["CRISPEMBED_QWEN35_PROFILE"] = "0"
+    os.environ["CRISPEMBED_QWEN35_PARALLEL_F16"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_CASCADE_NORM"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PROBES"] = "0"
     os.environ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM"] = "0"
@@ -75,6 +77,8 @@ def main():
     try:
         if profile_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_profiling.py"), "-q"], check=True)
+        if materialize_check:
+            subprocess.run([sys.executable, str(repo / "tests/test_qwen35_materialization.py"), "-q"], check=True)
         if decoded_check:
             subprocess.run([sys.executable, str(repo / "tests/test_qwen35_decoded_panel.py"), "-q"], check=True)
         api = HfApi()
@@ -167,7 +171,7 @@ def main():
                         *(["test-qwen35-public", "crispembed-cli", "crispembed-server", "crispembed-shared"] if public_check else []),
                         *(["test-qwen35-quant", "crispembed-quantize"] if quant_check else []),
                         *(["test-qwen35-imatrix"] if ffn_check else []),
-                        *(["test-qwen35-profile"] if profile_check else []),
+                        *(["test-qwen35-profile", "test-qwen35-materialize"] if profile_check else []),
                         *(["test-qwen35-attention-trace"] if attention_trace else ["test-qwen35-norm-statistics"] if stats_check else ["test-qwen35-vision-blocks"] if block_check else ["test-qwen35-vision-ops"] if operator_check else []),
                         "-j", "4"], check=True)
         if profile_check:
@@ -175,6 +179,12 @@ def main():
             (out / "profile-controls.log").write_text(controls.stdout + controls.stderr)
             print(controls.stdout + controls.stderr)
             controls.check_returncode()
+        if materialize_check:
+            controls = subprocess.run([str(build / "test-qwen35-materialize")], capture_output=True, text=True)
+            (out / "materialize-controls.log").write_text(controls.stdout + controls.stderr)
+            controls.check_returncode()
+            arrays = module(repo / "tools/ci-heavy/qwen35_materialization.py", "qwen35_materialization")
+            report["materialized_arrays"] = arrays.audit(repo, build, export, manifest, scratch, out)
         if attention_trace:
             module(repo / "tools/ci-heavy/qwen35_attention_codegen.py", "qwen35_attention_codegen").capture(repo, build, out)
         native = subprocess.run([str(build / "test-qwen35-delta"), str(out / "official-delta.gguf")],
@@ -322,7 +332,7 @@ def main():
             elif page_check:
                 if profile_check:
                     profiler = module(repo / "tools/ci-heavy/qwen35_profiling.py", "qwen35_profiling")
-                    profiler.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz")
+                    profiler.run(repo, build, export, local, out, module, image_path, out / "official-reference.npz", parallel=materialize_check)
                     report["profiling"] = "completed diagnostic attribution; inspect profiling.json and retained failures"
                 elif decoded_check:
                     pages = module(repo / "tools/ci-heavy/qwen35_decoded_panel.py", "qwen35_decoded_panel")

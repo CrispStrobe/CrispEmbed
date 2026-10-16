@@ -12,6 +12,8 @@ on:
       - 'tests/test_qwen35_profiling.py'
       - 'tests/test_qwen35_profile.cpp'
       - 'tests/test_qwen35_materialize.cpp'
+      - 'tests/test_qwen35_materialization.py'
+      - 'tools/ci-heavy/qwen35_materialization.py'
       - 'src/qwen35_math.h'
       - 'src/qwen35_profile.*'
       - 'src/qwen35_linear.cpp'
@@ -30,6 +32,8 @@ on:
       - 'tests/test_qwen35_profiling.py'
       - 'tests/test_qwen35_profile.cpp'
       - 'tests/test_qwen35_materialize.cpp'
+      - 'tests/test_qwen35_materialization.py'
+      - 'tools/ci-heavy/qwen35_materialization.py'
       - 'src/qwen35_math.h'
       - 'src/qwen35_profile.*'
       - 'src/qwen35_linear.cpp'
@@ -51,6 +55,7 @@ jobs:
           python-version: '3.12'
       - run: python tests/test_qwen35_decoded_panel.py -v
       - run: python tests/test_qwen35_profiling.py -v
+      - run: python tests/test_qwen35_materialization.py -v
 
   profile-counters:
     strategy:

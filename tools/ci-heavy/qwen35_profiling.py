@@ -94,24 +94,50 @@ def check_bytes(measured, schema):
             raise ValueError('Vocabulary head materialization count disagrees with generation')
 
 
-def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
+def paired_summary(rows, parallel=False):
+    key = 'parallel_f16' if parallel else 'profile_active'
+    expected = [(0, False), (0, True), (1, True), (1, False), (2, False), (2, True)]
+    if ([(r['pair'], r[key]) for r in rows] != expected
+            or any(type(r[key]) is not bool for r in rows)
+            or (parallel and any(r['profile_active'] or r['events'] or r['matrices'] for r in rows))):
+        raise ValueError('Incomplete/nonalternating pairs or active profiler in conversion benchmark')
+    summary = {}
+    for enabled in (False, True):
+        arm = [r for r in rows if r[key] == enabled]
+        label = ('parallel_' if parallel else 'profile_') + ('on' if enabled else 'off')
+        summary[label] = dict(median_ms=statistics.median(r['recognize_ms'] for r in arm),
+            min_ms=min(r['recognize_ms'] for r in arm), max_ms=max(r['recognize_ms'] for r in arm),
+            peak_rss_kib=max(r['resources']['max_rss_kib'] for r in arm))
+    summary['median_paired_on_over_off'] = statistics.median(
+        next(r['recognize_ms'] for r in rows if r['pair'] == pair and r[key]) /
+        next(r['recognize_ms'] for r in rows if r['pair'] == pair and not r[key]) for pair in range(3))
+    return summary
+
+
+def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz, parallel=False):
     from PIL import Image
     from transformers import AutoProcessor
     capture = module(repo / 'tools/dump_qwen35_ocr_page_reference.py', 'qwen35_profile_reference')
     frozen = json.loads((repo / 'tests/results/qwen35-ocr/decoded-panel.json').read_text())
-    root = out / 'profiling'; root.mkdir(exist_ok=True)
-    target = out / 'profiling.json'
+    label = 'f16-materialization' if parallel else 'profiling'
+    root = out / label; root.mkdir(exist_ok=True)
+    target = out / (label + '.json')
     report = dict(source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=repo, text=True).strip(),
         model=frozen['model'], revision=frozen['revision'],
         scope='Default-off diagnostic counters only, full baseline decoded controls, four-arm strict prefill reproduction, three alternating pairs per measured input; no optimization/default change',
         timing_scope='Fresh process/context each run. API recognize_file includes image decode/preprocess/vision/prefill/free decode, excludes model load and output printing. GNU time peak RSS includes load and recognition.',
         counter_scope='Nested counters: request_file includes request_raw; phase totals include projection totals; source conversion children also include small norms/biases outside projections. Do not sum nested levels.',
         publication='none', cases=[], validation=[], benchmarks=[])
-    env = dict(os.environ, CRISPEMBED_QWEN35_PROFILE='0', CRISPEMBED_QWEN35_VISION_PRECISE_NORM='0',
+    if parallel:
+        report['scope'] = 'Default-off bounded parallel F16 conversion: candidate reproduces frozen four-arm prefill and baseline full decoded records; three alternating unprofiled off/on pairs per input'
+        report['conversion_gate'] = 'CRISPEMBED_QWEN35_PARALLEL_F16'
+        report['counter_scope'] = 'Profiling is disabled for both performance arms; all timing records must have empty events and matrices.'
+        report['validation_gate'] = '1 for candidate strict prefill/full baseline decoding; performance pairs alternate0/1'
+    env = dict(os.environ, CRISPEMBED_QWEN35_PARALLEL_F16=str(int(parallel)), CRISPEMBED_QWEN35_PROFILE='0', CRISPEMBED_QWEN35_VISION_PRECISE_NORM='0',
         CRISPEMBED_QWEN35_VISION_PRECISE_ATTN='0', CRISPEMBED_QWEN35_VISION_CASCADE_NORM='0',
         CRISPEMBED_QWEN35_PRECISE_RMS='0', CRISPEMBED_QWEN35_VISION_PROBES='0', CRISPEMBED_QWEN35_IMATRIX='0')
     try:
-        report['sources'] = {name: file_sha(repo / name) for name in ('src/qwen35_linear.cpp', 'src/qwen35_ocr.cpp',
+        report['sources'] = {name: file_sha(repo / name) for name in ('src/qwen35_math.h', 'src/qwen35_linear.cpp', 'src/qwen35_ocr.cpp',
             'src/qwen35_profile.cpp', 'src/qwen35_profile.h', 'src/qwen35_vision.cpp', 'src/qwen35_norm.cpp', 'tests/qwen35_parity.h')}
         for path, key in [('src/qwen35_vision.cpp', 'production_source_sha256'), ('src/qwen35_norm.cpp', 'norm_source_sha256')]:
             if report['sources'][path] != frozen[key]: raise ValueError('Vision/norm arithmetic changed')
@@ -119,6 +145,10 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
         report['weights'] = dict(bytes=baseline.stat().st_size, sha256=file_sha(baseline), tensor_audit=manifest['records'])
         if report['weights'] != frozen['weights']: raise ValueError('Changed frozen weights')
         schema = {t['name']: t for t in report['weights']['tensor_audit']}
+        if parallel:
+            report['materialized_arrays'] = json.loads((out / 'materialization-arrays.json').read_text())
+            if not report['materialized_arrays']['python_bits_exact']:
+                raise ValueError('Missing exact materialized-array controls')
         report['compact_anchor'] = capture.dump_reference(local, anchor_image, root / 'anchor', max_new_tokens=12, anchor=anchor_npz)
         gc.collect()
         for old in frozen['cases']:
@@ -176,12 +206,12 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
             report['benchmarks'].append(item)
             for pair in range(3):
                 for enabled in ((0, 1) if pair % 2 == 0 else (1, 0)):
-                    label = f'pair-{pair}-profile-{enabled}'
+                    label = f'pair-{pair}-parallel-{enabled}' if parallel else f'pair-{pair}-profile-{enabled}'
                     folder = root / name
                     resource_path = folder / (label + '-resources.json')
                     command = ['/usr/bin/time', '-f', '{"max_rss_kib":%M,"wall_seconds":%e,"user_seconds":%U,"system_seconds":%S}', '-o', str(resource_path),
                         str(build / 'test-qwen35-profile'), str(baseline), str(folder / 'input.png'), str(cap)]
-                    p = subprocess.run(command, capture_output=True, text=True, env=dict(env, CRISPEMBED_QWEN35_PROFILE=str(enabled)))
+                    p = subprocess.run(command, capture_output=True, text=True, env=dict(env, CRISPEMBED_QWEN35_PARALLEL_F16=str(enabled), CRISPEMBED_QWEN35_PROFILE='0') if parallel else dict(env, CRISPEMBED_QWEN35_PROFILE=str(enabled)))
                     log = p.stdout + p.stderr; (folder / (label + '.log')).write_text(log); p.check_returncode()
                     measured = parse_benchmark(log); check_bytes(measured, schema)
                     measured.update(pair=pair, resources=json.loads(resource_path.read_text()))
@@ -193,25 +223,18 @@ def run(repo, build, baseline, local, out, module, anchor_image, anchor_npz):
                     measured['output_matches_python'] = measured['ids'] == expected_ids and measured['text'] == expected_text and measured['stop'] == expected_stop
                     measured['paired'] = errors(expected_text, measured['text'])
                     measured['output_matches_first_run_exact'] = not item['runs'] or all(measured[k] == item['runs'][0][k] for k in OUTPUT_FIELDS)
-                    if measured['profile_active'] != bool(enabled): raise ValueError('Profile gate mismatch')
+                    if measured['profile_active'] != (False if parallel else bool(enabled)): raise ValueError('Profile gate mismatch')
+                    if parallel: measured['parallel_f16'] = bool(enabled)
                     item['runs'].append(measured)
                     target.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
                     print(name, label, 'ms', measured['recognize_ms'], 'RSS KiB', measured['resources']['max_rss_kib'],
                         'exact', measured['output_matches_python'], measured['output_matches_first_run_exact'], flush=True)
-            item['summary'] = {}
-            for enabled in (False, True):
-                rows = [r for r in item['runs'] if r['profile_active'] == enabled]
-                item['summary']['profile_on' if enabled else 'profile_off'] = dict(
-                    median_ms=statistics.median(r['recognize_ms'] for r in rows), min_ms=min(r['recognize_ms'] for r in rows),
-                    max_ms=max(r['recognize_ms'] for r in rows), peak_rss_kib=max(r['resources']['max_rss_kib'] for r in rows))
-            item['summary']['median_paired_on_over_off'] = statistics.median(
-                next(r['recognize_ms'] for r in item['runs'] if r['pair'] == pair and r['profile_active']) /
-                next(r['recognize_ms'] for r in item['runs'] if r['pair'] == pair and not r['profile_active']) for pair in range(3))
+            item['summary'] = paired_summary(item['runs'], parallel=parallel)
         report['reproduction_failures'] = sum(not c['original_reference_exact'] or not c['original_cpu_controls_exact'] for c in report['cases']) + sum(
             not c.get('prior_prefill_exact', True) or not c.get('prior_decode_exact', True) for a in report['validation'] for c in a['cases'])
         report['output_failures'] = sum(not r['output_matches_python'] or not r['output_matches_first_run_exact'] for b in report['benchmarks'] for r in b['runs'])
         report['qualified_prefill_failure_count'] = sum(len(c['prefill']['qualified_failed_stages']) for a in report['validation'] for c in a['cases'] if 'prefill' in c)
-        report['result'] = 'completed diagnostic profiling with paired overhead/RSS and frozen numerical/output controls; no optimization or promotion'
+        report['result'] = ('completed gated F16 materialization paired timing/RSS and frozen numerical/output controls; no default promotion' if parallel else 'completed diagnostic profiling with paired overhead/RSS and frozen numerical/output controls; no optimization or promotion')
         if report['reproduction_failures'] or report['output_failures'] or report['qualified_prefill_failure_count']:
             raise AssertionError(f"Profiling retains {report['qualified_prefill_failure_count']} prefill failures, {report['reproduction_failures']} reproduction failures, {report['output_failures']} output differences")
     finally:
