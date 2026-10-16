@@ -101,7 +101,7 @@ precision defaults, HF aliases or app pins change under this evaluation contract
 Supported HTML tags: `div`, `p`, `h1`…`h6`, `b`, `strong`, `i`, `em`, `br`, `table`,
 `thead`, `tbody`, `tfoot`, `tr`, `th`, `td`. Tables are top-level, cells explicit,
 rows rectangular; only unit `rowspan`/`colspan` attributes are accepted. Other
-attributes, comments, declarations, nesting/repair, non-unit spans, fenced code
+attributes, comments, declarations, nested tables/repair, non-unit spans, fenced code
 and unsupported markup produce `parse_ok=false`, null secondary scores and a
 failed exact-quality diagnostic. Keep raw scores; never substitute zero or silently
 exclude that document from an average. A future format extension requires its own

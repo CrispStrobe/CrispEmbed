@@ -1903,3 +1903,28 @@ native controls pass [38870034506](https://github.com/CrispStrobe/CrispEmbed/act
 No runtime/default/weight/release/publication change.
 [Full evidence](../tests/results/qwen35-ocr/receipt.json),
 [timing scopes and limits](../PERFORMANCE.md#qwen35-completed-receipt-and-literal-prompt-2026-10-16).
+
+
+## Independent quality contract
+
+[OCR quality v1](ocr-quality.md) freezes a historical receipt, a two-column page
+and an owned inventory grid before any new model outputs. The two real transcripts
+remain byte-for-byte the earlier independent manual annotations; the controlled
+grid is authored before inference. Named Qwen development/calibration inputs and
+normalized transcripts are excluded. Explicit derivatives stay within the nominal
+1024-patch bound; actual original processor grids still need model-audit checks.
+
+[The scorer](../tools/ocr_quality.py) retains raw CER/WER and separately reports
+ordered content and rectangular table cells, with strict supported serialization
+rules. It preserves changed numbers, repeated words, punctuation, order and extra
+content. Unsupported markup produces explicit missing secondary scores. The real
+transcripts have no cell-grid gold: table accuracy is unmeasured, not asserted to
+be perfect or empty. The owned grid supplies the independent table annotation.
+
+This freezes evaluation policy, not recognition quality. Next capture all original
+outputs with the existing compact/full-anchor check, run ordinary native F16 and
+strict `crispembed-diff` diagnostics, then compare preselected quantization arms.
+Retain all existing failures, full decoded output/stops and actual confidence;
+never treat a prepared image, green scorer control or teacher-forced result as a
+quality improvement. No release, prompt/precision default, weight upload or app-pin
+change follows from this contract.

@@ -75,6 +75,8 @@ def prepare(repo, out):
         inference='Not run; no weights, native outputs, references or quality scores. Freeze before inference.',
         geometry='Derivative dimensions only; actual pinned AutoProcessor grid must be checked in model audit.',
         split='Source byte hashes and normalized transcripts disjoint from frozen Qwen development/calibration reports; not proof of absence from checkpoint pretraining or other model evaluations.')
+    report['split_evidence_sha256'] = {name: sha(local(repo, name))
+        for name in [*panel['development_reports'], panel['calibration_report']]}
     font = Path(subprocess.check_output(['fc-match', '-f', '%{file}', 'DejaVu Sans'], text=True).strip())
     if font.name != 'DejaVuSans.ttf':
         raise ValueError('Expected DejaVu Sans renderer font')

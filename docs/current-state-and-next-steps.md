@@ -152,8 +152,12 @@ correctly fails for34 prefill failures, with zero incomplete/output/teacher-scor
 failures. Other616 historical prefill records were not rerun; full-panel56 failures
 remain retained. All46 Python and Linux/macOS/Windows native controls pass
 [38870034506](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38870034506).
-Independent format-aware quality, larger pages, further materialization/default
-adoption, quantization and HF publication remain open;1024 patches is the native bound.
+The [v1 independent quality contract](ocr-quality.md) now freezes two real-document
+transcripts and an owned table before model output, with raw CER/WER, ordered
+content and position-indexed cell comparisons. Preparation checks split/source/
+annotation integrity; unavailable table annotations are explicitly unmeasured.
+Original/native F16 and quantized quality runs, larger pages, further materialization/
+default adoption and HF publication remain open;1024 patches is the native bound.
 [Detailed evidence](qwen35-ocr.md).
 
 The iOS standalone-target repair now passes the complete
@@ -177,8 +181,8 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order, but no native implementation or weight download.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
-The next vendor work follows PLAN's order: freeze independent format-aware OCR
-evaluation, then validate quantization and publication while preserving all
+The next vendor work follows PLAN's order: run the frozen independent original/F16
+quality baseline, then validate quantization and publication while preserving all
 existing numerical failures. The consumer lanes below remain separate, with
 their original verification dates.
 

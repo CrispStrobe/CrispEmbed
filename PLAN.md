@@ -12,8 +12,9 @@ Profiling, bounded parallel-F16 conversion and fixed-receipt completion/prompt
 checks are complete; evidence is in [HISTORY](HISTORY.md) and
 [PERFORMANCE](PERFORMANCE.md). Image-only/literal runs reach EOS at455/434 tokens
 and match original Python exactly; both still emit HTML tables. The conversion
-gate remains default-off. Next specify independent-document quality evaluation
-before revisiting quantization; further performance work remains below.
+gate remains default-off. Independent-document inputs and scoring are frozen in
+[the v1 quality contract](docs/ocr-quality.md); next run its original/F16 baseline
+before revisiting quantization. Further performance work remains below.
 
 For every Qwen lane, preserve all 924 prior prefill records and 56 existing failures
 (20/11/11/14), the 0.002 cache gate and qualified vision/norm budgets. Use the
@@ -22,13 +23,16 @@ probe softmax exp/sum boundaries only where evidence warrants a correction.
 Original arrays stay test-only. Exact Python output on this panel does not waive
 numerical debt or establish transcription accuracy.
 
-1. [ ] **Freeze independent, format-aware OCR evaluation.** Define plain-text,
-   table/structured-output and reading-order gold independently of candidate
-   outputs; retain raw CER/WER against existing annotations too. The fixed receipt
-   now completes, but the literal prompt still emits HTML. Its lower raw CER is
-   not evidence of improved recognition. Use separate development/evaluation
-   documents and freeze processor, prompt, cap, stop and scoring policies before
-   candidate runs. No default prompt promotion follows from this one receipt.
+1. [ ] **Run the frozen held-out original/F16 quality baseline.** Use the
+   [v1 evaluation contract](docs/ocr-quality.md): historical receipt, two-column
+   page and owned inventory grid, disjoint from the named Qwen development and
+   calibration sets. Check prepared image/RGB hashes and actual processor grids,
+   then freeze all original outputs before native runs. Retain the compact/full
+   anchor and ordinary owning-API free generation plus strict intermediate/diff
+   diagnostics, IDs/EOS/text/confidence, raw and secondary quality scores. Missing
+   table annotation remains unmeasured, not a zero-table assertion. Keep initial
+   failures/incomplete outputs and all existing numerical debt. These are small
+   explicitly resized derivatives, not a corpus benchmark or default-prompt gate.
 2. [ ] **Revisit quantization on independent documents.** Q8 differs on the form;
    Q8/Q6 differs on form/German. Retain all calibration alternatives and compare
    full IDs/EOS/text, score errors, confidence and frozen quality measures for
