@@ -294,3 +294,20 @@ these targets have different scopes. Strict isolated/full-model anchor modes and
 all ordinary native failures remain preserved. Local-target parsing explicitly
 rejects records presented as frozen-model targets. This mode and its fifth Torch
 control are pending and do not prove public support or full-model parity.
+
+## Independent native tokenizer audit — pending
+
+The separate `audit/ultrabert-tokenizer` branch adds a test-only executable for
+native `BPETokenizer` plus the declared UltraBERT BOS/single/pair template. It
+compares exact IDs/masks on all eight rows in the seven frozen original cases,
+including explicit query text and both padded rows. A metadata-only fixture
+uses the hash-checked original vocabulary/merges; no checkpoint is downloaded.
+The generic BERT pair API appends a terminal separator, so it cannot supply this
+template unchanged. Native mask construction must attend BOS despite its ID0.
+
+Terminal-separator and ID-zero-mask negative controls must fail against original
+IDs/masks; four model-free log controls reject missing/forged evidence. Native
+compilation and full measurements are pending. This is a tokenizer component/
+template audit, not public GGUF model loading, a production tokenizer integration,
+independent retrieval quality or model parity. It leaves the immutable queued
+linear-audit source and all production tokenizers unchanged.

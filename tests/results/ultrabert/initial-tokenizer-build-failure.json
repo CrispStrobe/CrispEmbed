@@ -1,0 +1,13 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903",
+  "source_commit": "0f9d0a4433cdad10bbef1e5f6b26d1a761848858",
+  "status": "C++ build failed before tokenizer measurements",
+  "model_free_controls_passed": 4,
+  "errors": [
+    "core_gguf::load_vocab_array is documentation-only; actual API is kv_str_array",
+    "dynamic metadata keys require const char* via c_str()"
+  ],
+  "log_sha256": "c80c2a5bae28d64c64701e2cb653ea0bbaaf83d2ed1be9369eed1e1a17017d13",
+  "token_ids_measured": false,
+  "scope": "Preserve initial harness compile failure; no tokenizer/model parity claim"
+}

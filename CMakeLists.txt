@@ -1225,3 +1225,7 @@ endif() # NOT iOS: standalone validation executables
 # Test-only UltraBERT prepared-ID graph; no production architecture dispatch.
 add_executable(test-ultrabert-diff tests/test_ultrabert_diff.cpp)
 target_link_libraries(test-ultrabert-diff PRIVATE crispembed-core ggml-cpu)
+
+# Test-only UltraBERT tokenizer profile; does not add production dispatch.
+add_executable(test-ultrabert-tokenizer tests/test_ultrabert_tokenizer.cpp src/tokenizer_bpe.cpp)
+target_link_libraries(test-ultrabert-tokenizer PRIVATE crispembed-core)
