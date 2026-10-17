@@ -21,8 +21,8 @@ int run(int argc, char ** argv) {
     auto * meta = core_gguf::open_metadata(argv[1]);
     require(meta != nullptr, "Fixture load failed");
     std::vector<std::string> vocab, merges;
-    core_gguf::load_vocab_array(meta, "tokenizer.ggml.tokens", vocab);
-    core_gguf::load_vocab_array(meta, "tokenizer.ggml.merges", merges);
+    vocab = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
+    merges = core_gguf::kv_str_array(meta, "tokenizer.ggml.merges");
     require(vocab.size() == 49152 && merges.size() == 48900 && vocab[0] == "<|endoftext|>" && vocab[15] == "<|sep|>" &&
                 core_gguf::kv_str(meta, "ref.revision", "") == "367d5343b5a0164d57b810cedf5de4b8983d5984",
             "Wrong pinned tokenizer fixture");
@@ -36,14 +36,14 @@ int run(int argc, char ** argv) {
     int failures = 0;
     for (uint32_t row = 0; row < rows; ++row) {
         const std::string key = "row." + std::to_string(row) + ".";
-        const std::string text = core_gguf::kv_str(meta, key + "text", "");
-        const std::string pair = core_gguf::kv_str(meta, key + "pair", "");
-        const auto expected = core_gguf::kv_i32_array(meta, key + "ids");
-        const auto expected_mask = core_gguf::kv_i32_array(meta, key + "mask");
+        const std::string text = core_gguf::kv_str(meta, (key + "text").c_str(), "");
+        const std::string pair = core_gguf::kv_str(meta, (key + "pair").c_str(), "");
+        const auto expected = core_gguf::kv_i32_array(meta, (key + "ids").c_str());
+        const auto expected_mask = core_gguf::kv_i32_array(meta, (key + "mask").c_str());
         auto encoded = raw.encode(text);
         std::vector<int32_t> ids = { 0 };
         ids.insert(ids.end(), encoded.ids.begin(), encoded.ids.end());
-        if (core_gguf::kv_bool(meta, key + "has_pair", false)) {
+        if (core_gguf::kv_bool(meta, (key + "has_pair").c_str(), false)) {
             ids.push_back(15);
             encoded = raw.encode(pair);
             ids.insert(ids.end(), encoded.ids.begin(), encoded.ids.end());
