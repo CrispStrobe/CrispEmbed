@@ -23,6 +23,11 @@ on:
         default: false
         required: false
         type: boolean
+      linear_local_audit:
+        description: 'Separate same-input local operator targets; requires linear_audit and excludes full-forward mode'
+        default: false
+        required: false
+        type: boolean
       frozen_report:
         description: 'Reviewed report under tests/results/ultrabert/'
         default: 'tests/results/ultrabert/reference-audit.json'
@@ -44,6 +49,7 @@ jobs:
       OPERATOR_AUDIT: ${{ inputs.operator_audit }}
       LINEAR_AUDIT: ${{ inputs.linear_audit }}
       LINEAR_FORWARD_AUDIT: ${{ inputs.linear_forward_audit }}
+      LINEAR_LOCAL_AUDIT: ${{ inputs.linear_local_audit }}
       FROZEN_REPORT: ${{ inputs.frozen_report }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -98,6 +104,7 @@ jobs:
           if [[ "$OPERATOR_AUDIT" == "true" ]]; then audit_args+=(--operator-audit); fi
           if [[ "$LINEAR_AUDIT" == "true" ]]; then audit_args+=(--linear-audit); fi
           if [[ "$LINEAR_FORWARD_AUDIT" == "true" ]]; then audit_args+=(--linear-forward-audit); fi
+          if [[ "$LINEAR_LOCAL_AUDIT" == "true" ]]; then audit_args+=(--linear-local-audit); fi
           python tools/ci-heavy/ultrabert_native.py --frozen-report "$FROZEN_REPORT" --frozen-artifacts "$FROZEN_ARTIFACTS" "${audit_args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()

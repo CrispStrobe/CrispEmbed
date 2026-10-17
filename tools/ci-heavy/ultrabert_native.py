@@ -58,10 +58,10 @@ def parse_operator_log(log):
     return _parse_replay_log(log, "OPERATOR", expected)
 
 
-def parse_linear_log(log):
+def parse_linear_log(log, local_operators=False):
     return _parse_replay_log(log, "LINEAR", {
         "original_gate/layer_14.silu", "original_gate_up/layer_14.product",
-        "original_product/layer_14.ffn_out",
+        "replayed_product/layer_14.local_down" if local_operators else "original_product/layer_14.ffn_out",
     })
 
 
@@ -158,6 +158,7 @@ def prepare_frozen_artifacts(baseline, directory, scratch):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-only", action="store_true")
+    parser.add_argument("--linear-local-audit", action="store_true", help="Additional same-input local targets; never replace frozen model targets")
     parser.add_argument("--linear-forward-audit", action="store_true", help="Capture extra operators during full original forward")
     parser.add_argument("--linear-audit", action="store_true", help="Observe original SiLU/product and replay isolated down")
     parser.add_argument("--operator-audit", action="store_true", help="Separate original-input RMSNorm/MLP/GLU-down replay")
@@ -166,6 +167,8 @@ def main():
     parser.add_argument("--frozen-artifacts", type=Path,
                         help="Downloaded original artifact; verify every byte instead of rerunning Python")
     args = parser.parse_args()
+    if args.linear_local_audit and (not args.linear_audit or args.linear_forward_audit):
+        raise ValueError("Local operator replay requires linear audit and is separate from full-forward mode")
     if args.linear_forward_audit and not args.linear_audit:
         raise ValueError("Full forward observations require the separate linear audit")
     if args.linear_audit and (not args.operator_audit or args.build_only):
@@ -233,7 +236,7 @@ def main():
         subprocess.run([sys.executable, "tests/test_ultrabert_linear_capture.py", "-v"], cwd=ROOT, check=True)
         from dump_ultrabert_linear_reference import dump_linear
         report["linear_reference"] = dump_linear(current, reference_directory, output / "linear-reference",
-                                                       full_forward=args.linear_forward_audit)
+                                                       full_forward=args.linear_forward_audit, local_operators=args.linear_local_audit)
         target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     env["CRISPEMBED_ULTRABERT"] = "1"
     for dtype in ("f32", "f16"):
@@ -274,7 +277,7 @@ def main():
                     raise ValueError("Operator observation changed ordinary native metrics/exit")
                 audit["operators"] = parse_operator_log(probe.stdout)
                 if args.linear_audit:
-                    audit["linear"] = parse_linear_log(probe.stdout)
+                    audit["linear"] = parse_linear_log(probe.stdout, local_operators=args.linear_local_audit)
                 audit["operator_primary_metrics_exact"] = True
                 audit["operator_log"] = probe_log.name
                 audit["operator_log_sha256"] = sha256(probe_log)

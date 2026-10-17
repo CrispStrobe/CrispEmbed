@@ -1,3 +1,23 @@
+## 2026-10-17 — Full original UltraBERT replay also rejects frozen-anchor drift
+
+[39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
+at504508673a73485fe4c897a23ab7a2bb77e3852c builds and passes25 model-free/four
+Torch controls. Additional-hook on/off captures are bit-exact to each other,
+but287 empty-case stages differ from the frozen source run. First is layer0 Q:
+max error5.960464477539062e-7 on reference maximum2.2762882709503174. Full
+[raw reports/all287 differences](tests/results/ultrabert/full-forward-capture-failure.json)
+retain shapes, payload hashes, norms and absolute errors. No new native arm ran
+or frozen target was changed. The cause remains unproved; drift is also present
+in full forward, not only isolated MLP replay.
+
+An additional opt-in local operator experiment now holds frozen gate/up values
+fixed, calls the original SiLU/down modules, and supplies exactly the same
+replayed product to Python/native down. Its separately named local_down target
+is not the frozen full-model FFN output; both are retained with their discrepancy.
+Ordinary native inference, original model gates and both failed replay modes
+remain unchanged. The local experiment and its fifth Torch control await hosted
+validation; it cannot establish full-model parity or waive numerical debt.
+
 ## 2026-10-17 — macOS repaired wheels pass installed native loading
 
 [Matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)

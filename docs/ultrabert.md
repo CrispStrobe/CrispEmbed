@@ -278,3 +278,19 @@ match each other bit-for-bit. Any drift reports first stage, all differing
 anchors, absolute errors and original/current magnitudes; no arrays are rebased.
 This new mode and its fourth Torch control await hosted validation. The isolated
 mode remains available; its failure is not a numerical or backend diagnosis.
+
+
+Full-forward run39002679659 also rejects old anchors:287 empty-case differences,
+first layer0 Q at5.960464477539062e-7. Added-hook on/off arrays match each other;
+this does not establish the cause of the old/new replay discrepancy.
+[Complete retained failure](../tests/results/ultrabert/full-forward-capture-failure.json).
+
+A separately gated `linear_local_audit` avoids substituting new full-model
+references: it keeps the frozen gate/up/FFN-output arrays intact, calls the
+original SiLU/down modules on fixed inputs, and records additional SiLU/product/
+`local_down` operator targets. Python and native down receive the identical
+replayed product. The report separately records local_down versus old FFN output;
+these targets have different scopes. Strict isolated/full-model anchor modes and
+all ordinary native failures remain preserved. Local-target parsing explicitly
+rejects records presented as frozen-model targets. This mode and its fifth Torch
+control are pending and do not prove public support or full-model parity.

@@ -67,6 +67,12 @@ class NativeLogTest(unittest.TestCase):
                 ("original_product", "layer_14.ffn_out")]
         rows = [f"LINEAR\t{mode}\t{name}\t1\t0\t0\t0\t2\t2\t1" for mode, name in keys]
         self.assertEqual(len(parse_linear_log("\n".join(rows))), 3)
+        local = [row.replace("original_product\tlayer_14.ffn_out", "replayed_product\tlayer_14.local_down") for row in rows]
+        self.assertEqual(len(parse_linear_log("\n".join(local), local_operators=True)), 3)
+        with self.assertRaises(ValueError):
+            parse_linear_log("\n".join(local))
+        with self.assertRaises(ValueError):
+            parse_linear_log("\n".join(rows), local_operators=True)
         failed = rows[:2] + [rows[2].replace("\t1\t0\t0", "\t0.99\t0.01\t0")[:-1] + "0"]
         self.assertFalse(parse_linear_log("\n".join(failed))["original_product/layer_14.ffn_out"]["pass"])
         for bad in (rows[:-1], rows + rows[:1], failed[:2] + [failed[2][:-1] + "1"],

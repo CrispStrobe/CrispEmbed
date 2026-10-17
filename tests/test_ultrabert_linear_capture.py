@@ -5,7 +5,7 @@ import sys
 import unittest
 import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from dump_ultrabert_linear_reference import FrozenForwardDrift, check_full_anchors, observe_mlp
+from dump_ultrabert_linear_reference import FrozenForwardDrift, check_full_anchors, observe_local_operators, observe_mlp
 
 
 class MLP(torch.nn.Module):
@@ -59,6 +59,24 @@ class LinearCaptureTest(unittest.TestCase):
         self.assertEqual(result.exception.drifts[0]["stage"], "first")
         self.assertEqual(result.exception.drifts[0]["max_abs_error"], 1.)
         self.assertEqual(result.exception.drifts[0]["original"], record)
+
+    def test_local_operator_targets_call_original_modules_without_changing_inputs(self):
+        module = MLP().eval()
+        gate = torch.tensor([[[1., -2., 3., 0.]]])
+        up = torch.tensor([[[2., 4., -1., 1.]]])
+        before = gate.clone(), up.clone()
+        calls = []
+        handles = [module.act_fn.register_forward_hook(lambda *args: calls.append("act")),
+                   module.down_proj.register_forward_hook(lambda *args: calls.append("down"))]
+        try:
+            values = observe_local_operators(module, gate, up)
+        finally:
+            for handle in handles:
+                handle.remove()
+        self.assertEqual(calls, ["act", "down"])
+        self.assertEqual(set(values), {"silu", "product", "local_down"})
+        self.assertTrue(torch.equal(gate, before[0]) and torch.equal(up, before[1]))
+        self.assertNotIn("ffn_out", values)
 
     def test_changed_old_anchor_rejected_and_hooks_removed(self):
         module = MLP().eval()

@@ -222,6 +222,9 @@ void replay_linear(Resources & resources, const crispembed_diff::Ref & original,
                 ref.meta("ref.revision") == original.meta("ref.revision") &&
                 ref.meta("ref.case") == original.meta("ref.case"),
             "Wrong additional operator reference");
+    const std::string scope = ref.meta("ref.linear_scope");
+    const bool local = scope == "local-original-operators";
+    require(local || scope == "frozen-model-anchors", "Unknown linear reference scope");
     auto gates = ref.get_f32("layer_14.gate");
     auto ups = ref.get_f32("layer_14.up");
     auto products = ref.get_f32("layer_14.product");
@@ -248,8 +251,10 @@ void replay_linear(Resources & resources, const crispembed_diff::Ref & original,
     auto * multiplied = ggml_mul(g, silu, up);
     auto * down = ggml_mul_mat(g, resources.weights.tensors.at("blk.14.ffn_down.weight"), product);
     const std::vector<ggml_tensor *> nodes = { silu, multiplied, down };
-    const std::vector<std::string> modes = { "original_gate", "original_gate_up", "original_product" };
-    const std::vector<std::string> names = { "layer_14.silu", "layer_14.product", "layer_14.ffn_out" };
+    const std::vector<std::string> modes = { "original_gate", "original_gate_up",
+                                             local ? "replayed_product" : "original_product" };
+    const std::vector<std::string> names = { "layer_14.silu", "layer_14.product",
+                                             local ? "layer_14.local_down" : "layer_14.ffn_out" };
     for (auto * t : nodes) {
         ggml_set_output(t);
         ggml_build_forward_expand(gf, t);

@@ -41,6 +41,19 @@ def observe_mlp(mlp, inputs, expected):
 
 
 
+def observe_local_operators(mlp, gate, up):
+    """Additional same-input operator targets, never frozen full-model targets."""
+    import torch
+    with torch.inference_mode():
+        silu = mlp.act_fn(gate)
+        # This is the product expression in the inspected original MLP forward.
+        # Its result is supplied identically to original down_proj and native down.
+        product = silu * up
+        down = mlp.down_proj(product)
+    return {name: value.detach().float().cpu().contiguous().clone()
+            for name, value in (("silu", silu), ("product", product), ("local_down", down))}
+
+
 class FrozenForwardDrift(ValueError):
     def __init__(self, drifts):
         self.drifts = drifts
@@ -93,7 +106,7 @@ def observe_full(model, encoded, record, tensors):
     return {**extra, **{name: captured["layer_14." + name] for name in ("gate", "up", "ffn_out")}}
 
 
-def dump_linear(current, reference_directory, output, full_forward=False):
+def dump_linear(current, reference_directory, output, full_forward=False, local_operators=False):
     """Run only original layer14 MLP on saved inputs, with full checkpoint guards."""
     from huggingface_hub import snapshot_download
     directory = Path(snapshot_download(MODEL, revision=REVISION,
@@ -121,7 +134,8 @@ def dump_linear(current, reference_directory, output, full_forward=False):
               "torch": torch.__version__, "transformers": transformers.__version__,
               "dumper_sha256": sha256(__file__), "cases": [],
               "scope": "additional original-input MLP observations; frozen encoder anchors unchanged",
-              "mode": "original full forward with all386 anchor checks" if full_forward else "isolated original MLP"}
+              "mode": ("same-input local original operators; not frozen full-model targets" if local_operators else
+                       "original full forward with all386 anchor checks" if full_forward else "isolated original MLP")}
     target = output / "linear-reference.json"
     for case in current["reference"]["cases"]:
         source = Path(reference_directory) / case["archive"]
@@ -138,7 +152,13 @@ def dump_linear(current, reference_directory, output, full_forward=False):
         report["cases"].append(entry)
         target.write_text(json.dumps(report, indent=2) + "\n")
         try:
-            if full_forward:
+            if local_operators:
+                values = {name: original(name) for name in ("gate", "up", "ffn_out")}
+                values.update(observe_local_operators(model.layers[14].mlp, values["gate"], values["up"]))
+                entry["frozen_gate_up_output_retained"] = True
+                entry["target_scope"] = "local_down is an additional same-product operator target; ffn_out remains frozen"
+                entry["local_down_vs_frozen_ffn_out_max_abs"] = float((values["local_down"] - values["ffn_out"]).abs().max())
+            elif full_forward:
                 encoded = {name: torch.from_numpy(tensors[name].data.copy().reshape(case["stages"][name]["shape"])).long()
                            for name in ("input_ids", "attention_mask")}
                 values = observe_full(model, encoded, case, tensors)
@@ -155,6 +175,7 @@ def dump_linear(current, reference_directory, output, full_forward=False):
         archive = output / (case["case"]["id"] + ".gguf")
         writer = gguf.GGUFWriter(str(archive), arch="ultrabert_linear_ref", use_temp_file=True)
         writer.add_string("ref.model", MODEL)
+        writer.add_string("ref.linear_scope", "local-original-operators" if local_operators else "frozen-model-anchors")
         writer.add_string("ref.revision", REVISION)
         writer.add_string("ref.case", json.dumps(case["case"], ensure_ascii=False))
         try:
@@ -175,7 +196,8 @@ def dump_linear(current, reference_directory, output, full_forward=False):
                     or list(reversed(stored.shape.tolist())) != list(tensor.shape)
                     or stored.data.tobytes() != tensor.numpy().tobytes()):
                 raise ValueError("Additional original operator archive bytes differ")
-        entry.update(status="exact old anchors; neutral additional observations", anchor_exact=True,
+        entry.update(status=("frozen gate/up/output retained; additional local targets" if local_operators else
+                             "exact old anchors; neutral additional observations"), anchor_exact=True,
                      archive_payloads_exact=True,
                      archive=archive.name, archive_bytes=archive.stat().st_size, archive_sha256=sha256(archive),
                      stages={"layer_14." + name: metrics(tensor.numpy()) for name, tensor in values.items()})
