@@ -1,3 +1,22 @@
+## 2026-10-17 — UltraBERT capture drift retained; PR68 WASM verified
+
+[39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
+atc7c5ef30254dac9eddc854a8c702f59512a5ee16 compiles the expanded native graph
+and passes25 model-free/three Torch controls. The isolated original MLP then
+fails its first empty-case gate anchor by2.0265579223632812e-6. No new native
+operator/model arm ran, and no frozen array or gate changed. Both complete raw
+reports and original hashes remain in the
+[initial capture failure](https://github.com/CrispStrobe/CrispEmbed/blob/50450867/tests/results/ultrabert/initial-linear-capture-failure.json).
+The separate [source contract39000684136](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000684136)
+passes14+11 tests at the same source; actual logs confirm both totals. The next
+full-forward observer is pending, with old386 stage payloads guarded exactly;
+no floating-point/backend cause has been established.
+
+PR68 [WASM38968549080](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38968549080)
+passes at ebcadb1ffa87750972836dd858fe03e355b0fde0. Its approved native Build
+and secret scan remain pending. No merge/deployment, new release or immutable
+app0.17.12 pin change follows from these results.
+
 ## 2026-10-17 — UltraBERT operator attribution and three-PR source review
 
 The [operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
