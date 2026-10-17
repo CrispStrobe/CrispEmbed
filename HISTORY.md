@@ -1,3 +1,36 @@
+## 2026-10-17 — UltraBERT original references frozen after capture repair
+
+[Reference run38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+passes at0573f1847db68914052a98341a22fceeb1358518 with Transformers5.16.1,
+Torch2.14.0+cpu, safetensors0.8.0, NumPy2.2.6 and gguf0.19.0. The weight-free
+inference-mode regression passes before model loading. All seven original F32
+cases retain390 stages each (2,730 total), exact hooked/unhooked outputs,
+local/global/BOS/padding checks and rejected wrong-BOS controls. Both converted
+218-tensor manifests/types/payloads and tokenizer/metadata round-trips pass.
+The [complete reviewed report](tests/results/ultrabert/reference-audit.json)
+retains all producer fields; raw SHA256 is
+`5ca38964bde9f960b46467e48e0d3123ab67b099ff6567da15b51c2fadea45fc`.
+Tensor archives remain remote; only the1.12MB report was retrieved for review.
+
+The preceding [run38997289196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196)
+verified both conversions, then failed when the negative control tried to mutate
+an inference tensor outside inference mode. Its complete
+[initial record](tests/results/ultrabert/initial-reference-capture-failure.json)
+is preserved. The repair mutates only an independent ordinary clone and explicitly
+allows the already hash-checked local custom config for AutoTokenizer; model
+math, weights, input cases, masks and gates are unchanged. All conversion records
+exactly reproduce that initial run, including both whole GGUF hashes.
+
+All23 stdlib source/log/archive-manifest controls pass in
+[38997900768](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900768)
+atc32ea789. The native audit now consumes the exact original tensor files,
+verifies producer identity/report bytes, every archive/tensor hash and reproduced
+conversion bytes before comparisons. Its first dispatch
+[38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+is pending; no native numerical result is claimed yet. A workflow runner-context
+initialization error was fixed before that dispatch, with no model run at the
+invalid workflow revision. Production integration and publication remain open.
+
 ## 2026-10-17 — UltraBERT prototype build and 22 controls verified
 
 [Hosted build38972505497](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497)

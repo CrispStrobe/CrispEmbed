@@ -1,3 +1,30 @@
+## UltraBERT-Embed-150M conversion and reference storage — 17 October 2026
+
+[Hosted original reference38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+uses the pinned151,032,576-parameter checkpoint at367d5343b5a0164d57b810cedf5de4b8983d5984.
+Every one of218 tensors round-trips exactly at declared storage precision, with
+all49 RMSNorm vectors retained at F32; complete records match the earlier capture-
+failure run. Storage is measured, not estimated runtime RAM or speed:
+
+| Storage | Exact bytes | SHA256 |
+| --- | ---: | --- |
+| Original safetensors F32 | 604,153,320 | `da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c` |
+| GGUF F32 | 609,437,696 | `89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566` |
+| GGUF F16 matrices / F32 norms | 307,447,808 | `93816a0fde522785bb5d6176e850ca8f991afd03f8eb8c301ef7b7373b9b0645` |
+
+F32 cast error is zero. Maximum F16 weight cast error is0.0002409815788269043
+in the token embedding; this is a weight-storage measurement, not output parity.
+The original Python panel covers empty(1 token), document(9), query(24),
+Unicode(21), pair(8), window boundary(262) and padded batch(2×262). All seven
+hook-neutrality/mask controls pass and retain390 original stages each. Raw CLS
+is preserved separately from optional L2; default SentenceTransformer wrapper
+behavior and independent retrieval quality have not yet been exercised.
+
+The [reviewed report](tests/results/ultrabert/reference-audit.json) freezes all
+2,730 original stage hashes/shapes/magnitudes and seven remote archives. Native
+292-numerical/50-exact comparisons per case are pending. No cosine, quantized
+quality, latency, RSS,32K, GPU, or benchmark-reproduction claim is made here.
+
 # CrispEmbed Performance
 
 ## Qwen3.5 final independent Q4 receipt/book and panel (2026-10-16)

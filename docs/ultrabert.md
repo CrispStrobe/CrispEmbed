@@ -1,12 +1,13 @@
-# UltraBERT native-support feasibility — 15 October 2026
+# UltraBERT support contract — updated 17 October 2026
 
 **Feasible, but not currently supported.** The first useful port is the retrieval
 checkpoint UltraBERT-Embed-150M, followed by the150M and380M masked encoders.
 They need an explicit architecture path; treating them as stock BERT, ModernBERT
 or an unmodified bidirectional decoder would give different math and masks.
 The initial feasibility audit read public metadata, tokenizer assets and Python
-source only. Conversion/reference implementation is now in progress, as described
-below; no native support or measured parity is claimed.
+source only. Conversion and original-reference verification are complete, as described below.
+The prepared-ID native prototype is under audit; no public native support or
+measured native parity is claimed.
 
 ## Pinned upstream sources
 
@@ -20,7 +21,8 @@ All three cards declare Apache-2.0, and the authors explicitly describe the
 family as Apache-2.0 in their [release article](https://huggingface.co/blog/dmis-lab/ultrabert).
 The pinned file lists contain no standalone LICENSE; retain the declaration and
 standard license/notice provenance before distributing converted artifacts.
-Parameter totals come from HF safetensors metadata, not loaded weights. The base
+Initial parameter totals came from HF metadata. The retrieval checkpoint now
+also has complete hosted source/schema/payload verification. The base
 model names count the encoder: the serialized MLM checkpoints additionally hold
 an untied vocabulary head and two prediction projections. Published benchmark
 claims are upstream results and have not been reproduced in CrispEmbed.
@@ -97,18 +99,21 @@ precision retention:
 
 Q8 uses34 bytes/32 weights; Q4_K144 bytes/256 weights. Norms remain floating
 point; preserving embedding/head/prediction tensors can increase sizes beyond
-these allowances. No GGUF was produced. A dense32K F16 mask alone is2GiB, before
+these allowances. No quantized GGUF has been validated. Actual F32/F16 export sizes are
+609,437,696/307,447,808 bytes, as recorded in [PERFORMANCE](../PERFORMANCE.md).
+A dense32K F16 mask alone is2GiB, before
 activations, scores, workspaces or weights; model storage is not runtime RAM.
 
 ## Pending implementation and acceptance
 
-- [ ] Freeze the full source/base/license/tokenizer provenance and inspect the
-  actual weight schema before selecting tensor mappings or dropping any heads.
-- [ ] Add a strict GGUF converter with per-layer windows/thetas, token templates,
+- [x] Freeze source/tokenizer and actual complete weight schema/payload identity.
+  All218 retrieval tensors are mapped; no head is discarded.
+- [ ] Complete license/notice packaging for converted-artifact distribution.
+- [x] Add a strict GGUF converter with per-layer windows/thetas, token templates,
   pooling/query metadata and fail-closed shape/type coverage.
 - [ ] Add a default-off `core_env::on` native architecture path; preserve all
   existing encoders and literal0 behavior. Bound supported context honestly.
-- [ ] Run the inspected original custom Python source at its pinned revision on
+- [x] Run the inspected original custom Python source at its pinned revision on
   hosted CI, initially F32 eager. The source was tested upstream with
   Transformers5.16.1/Sentence Transformers6.0.1; pin compatible dependencies
   separately from the existing Qwen5.5.4 environment.
@@ -161,7 +166,8 @@ The [hosted driver](../tools/ci-heavy/ultrabert_reference.py) verifies complete
 F32/F16 tensor round-trips and saves original reference archives remotely.
 Small [model-free negative controls](../tests/test_ultrabert_contract.py) run
 before downloads and in [contract CI](../.github/workflows/ultrabert-contract.yml).
-Hosted results are pending. Reference captures and storage round-trips do not
+The hosted original reference and conversion checks pass. Native comparisons
+remain pending. Reference captures and storage round-trips do not
 establish native parity, SentenceTransformer wrapper parity, retrieval quality,
 32K support, speed or quantized quality. The512-token reference guard rejects
 overflow without silently truncating; it is not a native context claim.
@@ -175,23 +181,22 @@ CrispEmbed's recognized `gpt2` pre-tokenizer name and both the standard
 original pair IDs remain the acceptance gate. Reusing loader primitives does not
 justify accepting the architecture before the default-off native gate exists.
 
-Current hosted validation (17 October): the original model dispatch
-[38969507642](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
-failed before inference because the initial safetensors0.7.0 pin conflicts with
-Transformers5.16.1's >=0.8.0 requirement. The
-[retry38997289196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196)
-uses the same immutable source0dddbd2b with `torch==2.14.0 transformers==5.16.1
-gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6`. No model settings, pixels, masks,
-reference code or gates change. Model results remain pending. PR69 stays draft
-until actual conversion/reference evidence is reviewed.
+Current verified baseline: [38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+at `0573f1847db68914052a98341a22fceeb1358518`. All seven cases,2,730 original
+stages, hook-neutrality/mask controls and complete conversions pass. The
+[reviewed report](../tests/results/ultrabert/reference-audit.json) preserves all
+raw fields and hashes; tensor arrays stay in the remote run artifact. The earlier
+dependency and inference-tensor negative-control failures are retained in HISTORY.
+The corrected environment is `torch==2.14.0 transformers==5.16.1 gguf==0.19.0
+safetensors==0.8.0 numpy==2.2.6`. PR69 remains draft while native evidence is reviewed.
 
 ## Prepared-ID ggml prototype — validation pending
 
 The original14 source/schema controls pass in
 [38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
 at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`; the actual log reports14 tests.
-The corrected original-model retry remains pending; no reference inference or
-native cosine result is claimed.
+The complete original model reference now passes at0573f184; native cosine
+results remain pending.
 
 [The test-only graph](../tests/test_ultrabert_diff.cpp) implements all24 pre-norm
 blocks, per-layer local/global masks and split-half RoPE, RMSNorm/SwiGLU, final
@@ -201,7 +206,7 @@ enables this executable; unset and literal0 are checked before model IO. It is
 not compiled into a production model backend and adds no public API/registry.
 
 [The hosted native driver](../tools/ci-heavy/ultrabert_native.py) checks that every
-original/conversion source byte matches the immutable pre-port source0dddbd2b,
+original/conversion source byte matches the approved reference source0573f184,
 then compares292 numerical stages and50 exact input/mask/position controls per
 case using `crispembed_diff::Ref`. Numerical gates remain0.99999 cosine and0.002
 maximum absolute error, with no environment override. Reports retain mean/RMS,
@@ -209,7 +214,9 @@ both norms and the first failure in original execution order. All F32/F16 cases
 are collected before failed numerical gates return nonzero. Eight additional
 model-free controls reject missing/duplicated stages, forged green verdicts,
 incorrect totals and negative errors, while retaining nonfinite/exact failures.
-All22 controls and the hosted prototype build pass;
+The original22 controls and the hosted prototype build pass; the expanded23
+stdlib controls also pass, including original-manifest byte preservation.
+
 [the retained build record](../tests/results/ultrabert/native-build.json)
 separates compilation/gates from unmeasured model parity.
 
@@ -219,9 +226,15 @@ or post-RoPE Q/K; extend original probes if attribution requires them. Prepared
 IDs do not establish native tokenization, prompts, public encoding or independent
 retrieval quality. Production integration and bindings remain separate work.
 
-Full native runs additionally require `--frozen-report` pointing to the reviewed
-complete original audit at0dddbd2b. All original reference arrays/metadata and
-complete conversion records must replay exactly before native comparisons start.
-The full path fails closed while that original job has not completed; build-only
-CI exercises compilation and default/unset/literal0 gates without model inference.
-Do not waive a reference replay drift caused by a different CPU backend.
+Full native runs require `--frozen-report` pointing to the reviewed complete
+original audit at0573f184. `--frozen-artifacts` consumes its saved tensors directly:
+producer identity, raw report bytes, all archive/tensor hashes and regenerated
+GGUF records/bytes must match before native inference. This avoids changing
+original arrays through a fresh CPU floating-point run. Exact Python replay is
+retained as an alternative and fails on any reference drift.
+
+The [manual hosted audit](../.github/workflows/ultrabert-native.yml) downloads
+only that declared original run on a hosted runner; its token has read-only
+contents/actions permissions. It then runs all14 F32/F16-case arms and preserves
+every failed stage before returning nonzero. [First native audit38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+is pending. No numerical gate is waived by verified reference or build success.
