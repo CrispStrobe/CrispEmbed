@@ -1,3 +1,18 @@
+## Completed build and tokenizer qualification — 17 October 2026
+
+The repaired wheel workflow passes all4 platform legs/23 actual installed native
+loads/C-ABI checks and aggregation. [Evidence](tests/results/packaging/wheel-matrix.json)
+records exact sources/producer hashes and remote-artifact limits; it is no model
+latency/quality result or new runtime release.
+
+UltraBERT native BPE/test-only templates reproduce8/8 original ID/mask rows;
+both wrong terminal-SEP/ID-zero-mask alternatives fail8/8.
+[Report](tests/results/ultrabert/tokenizer-audit.json). Tokenizer parity does not
+waive the ordinary intermediate failures below or establish production loading,
+retrieval quality, long-context behavior, latency or memory. Same-input local
+operator run39008070299 remains queued; strict isolated/full replay failures are
+retained separately, with cause unproved.
+
 ## UltraBERT first native prepared-ID panel — 17 October 2026
 
 [Native audit38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)

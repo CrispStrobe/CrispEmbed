@@ -217,6 +217,9 @@ void replay_operators(Resources & resources, const crispembed_diff::Ref & ref) {
 // Additional original module observations live in a separate archive. No inputs
 // from this archive enter run_row or the six original operator probes.
 void replay_linear(Resources & resources, const crispembed_diff::Ref & original, const char * path) {
+    // Ref::load logs to stderr. Finish buffered TSV records before that write
+    // when the hosted driver merges stdout/stderr into one strict audit log.
+    fflush(stdout);
     crispembed_diff::Ref ref;
     require(ref.load(path) && ref.meta("ref.model") == original.meta("ref.model") &&
                 ref.meta("ref.revision") == original.meta("ref.revision") &&

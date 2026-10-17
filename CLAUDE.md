@@ -81,70 +81,23 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Bounded prompt/registry CI repair is complete in [PR61](https://github.com/CrispStrobe/CrispEmbed/pull/61):
-all six affected artifacts byte-verified, old digests retained, strict304/304
-freshness replay and all PR platform/regression/packaging checks pass.
+Use [the executable next-agent handoff](docs/next-agent-handoff.md) and
+[PLAN](PLAN.md). Completed runs and initial failures belong in HISTORY, measured
+limits in PERFORMANCE. Do not repeat dated historical commands as current tasks.
 
-Follow the current execution order in [PLAN.md](PLAN.md): retain the completed
-book vision diagnostic and revisit independent-document quantization/publication,
-UltraBERT and queued
-permissive models. The [independent OCR quality audit](tests/results/qwen35-ocr/quality.json)
-completes all3 EOS outputs with exact1,404 tokens/stops and15/15 inventory cells,
-but retains6 prefill and13 book-logit failures (worst0.0060377121 versus0.002).
-Receipt/book recognition errors remain shared with Python. The contract retains raw
-CER/WER separately from ordered content/table cells; unannotated structure stays
-unmeasured. x86/ARM preparation matches exactly and all three images are reviewed;
-all22 hosted controls and frozen-hash replay pass. The guarded held-out F16 audit
-correctly concludes failure for those numerical records; exact decoded results
-and cosine rounding to1 do not waive them. The [completed book isolation](tests/results/qwen35-ocr/book-isolation.json) eliminates
-all book prefill/score/probe failures with original prefill embeddings, narrowing
-the upstream boundary. This is diagnostic, not a production fix. The [completed book vision trace](tests/results/qwen35-ocr/book-vision.json)
-passes24 exact native controls and reproduces434 original CPU/77 baseline prefill
-records. Four existing settings retain5/6/5/8 prefill failures; all280 conditional
-attention vectors pass raw0.002, while original-input block11 down error is
-0.00268554688. A single causal defect remains unproved; preserve the remaining
-projection/reduction task in PLAN while moving to independent quantized evaluation.
-Smaller merger errors are not decoded-quality or default-promotion evidence.
-The first [independent Q8 inventory audit](tests/results/qwen35-ocr/quality-quant-q8-inventory-table.json)
-preserves248 IDs/text/EOS and15/15 cells, but retains75 prefill/248 score failures
-(min score cosine0.999256611, worst abs0.440546274). Original/F16/quantized-weight
-replay and41 source controls pass. PR63 is merged. The [Q8 receipt](tests/results/qwen35-ocr/quality-quant-q8-historical-receipt.json)
-completes with8PK→SPK decoded regression and75/473 prefill/score failures;
-original/F16/weight replay and all logs verify. The [Q8 book](tests/results/qwen35-ocr/quality-quant-q8-two-column-page.json)
-completes with changed text and slightly lower aggregate gold errors, retaining75/683
-prefill/score failures. All three Q8 cases reach EOS; only inventory matches original
-IDs/text. The [mixed inventory](tests/results/qwen35-ocr/quality-quant-q8-q6-inventory-table.json)
-preserves248 IDs/text/EOS and15/15 cells, but75/248 failures remain with worse score
-drift than Q8 (min cosine0.998120904, worst abs1.08967495). The [mixed receipt](tests/results/qwen35-ocr/quality-quant-q8-q6-historical-receipt.json)
-changes text with slightly lower CER/unchanged WER and retains75/473 failures.
-The [mixed book](tests/results/qwen35-ocr/quality-quant-q8-q6-two-column-page.json)
-completes with685 EOS tokens, changed text, slightly higher CER/lower WER and75/683
-failures. The complete mixed panel reaches3/3 EOS but matches original IDs/text on1/3;
-all replays verify and mixed score fidelity is worse than Q8 on every input.
-All nine independent Q8/mixed/Q4 paired audits now verify original/F16/weight
-replay. Q4 reaches EOS on2/3 and matches original IDs/text only on inventory;
-receipt changes to HTML and truncates at1024, book text changes with equal content
-CER/slightly worse WER. All quantized panels retain225/1,404 prefill/score failures;
-F16 retains6/13. [Final comparison](PERFORMANCE.md), [completed reports](HISTORY.md).
-The [public evidence auditor](tools/audit_qwen35_quality_quant.py) preserves model
-failures when records verify; all50 hosted controls pass at5dbabaa1. No candidate
-is promoted or published. UltraBERT is the next independent implementation lane;
-OCR numerical attribution, broader quality and publication stay pending in PLAN.
-The [completed receipt audit](tests/results/qwen35-ocr/receipt.json)
-reaches EOS at455/434 tokens with exact Python output and889 passing teacher-score
-vectors; both prompts still emit HTML. Lower raw CER does not prove better OCR.
-The [parallel-F16 trial](tests/results/qwen35-ocr/f16-materialization.json)
-preserves every converted F32 bit and frozen inference record, with 1.37–1.67×
-paired ARM64 speedups; its gate remains default-off. Further cache/memory and
-other-host/default-adoption work remains pending. The fixed-cap four-arm decoded
-panel matches all 16
-ID/text/stop comparisons; preserve its 56 prefill failures and receipt cap controls.
-Use the validated attention trace for any divergence.
-UltraBERT feasibility is recorded in [docs/ultrabert.md](docs/ultrabert.md); it is
-not native support. Keep its dependency environment separate from pinned OCR references.
+The wheel matrix/23 installed native-load checks/aggregation and native tokenizer
+component audit pass. UltraBERT tools are test-only; production model support,
+remaining numerical errors and strict reference-replay drift are unresolved.
+Inspect the corrected local audit after39008070299 failed on interleaved logging. Preserve its
+scoped targets separately from the original frozen full-model references.
 
-Tesseract page/crop/recoder/dictionary work remains in the plan's portfolio backlog.
-Read the archived technical briefs for evidence, then verify current code before
-reviving a historical failure. Move completed lane narratives into HISTORY rather
-than growing PLAN with dated work logs. Do not treat archived machine commands,
-agent assignments or release snapshots as current instructions.
+Read exact contracts before runtime work, use original-module intermediate dumps
+and crispembed-diff, keep gates/old alternatives, and require actual output and
+quality evidence before promotion. OCR quantized publication remains conditional;
+no current candidate qualifies. The permissive queue, encoder follow-ups and
+portfolio tasks remain scoped in PLAN and model documents. SAM work stays with
+its existing owner. The app remains pinned to immutable0.17.12.
+
+This file is tracked public documentation even though an ignore pattern matches
+its name. Never append private environment/access details here. Optional private
+continuity is stored in ignored `.claude/local-handoff/AGENTS.md` when available.

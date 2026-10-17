@@ -1,3 +1,7 @@
+> Historical technical handoff. Check current PLAN, source and later HISTORY
+> before reviving any task or command. Use hosted CI for builds/model batches;
+> machine-specific environment details are intentionally omitted.
+
 # PP-FormulaNet-L Integration Handover
 
 ## Status
@@ -84,10 +88,10 @@ lm_head.weight                                          # (50000, 512)
 - crispembed-diff: encoder + decoder layer comparison
 
 ## Source code references
-- PaddleOCR encoder: `/mnt/volume1/PaddleOCR/ppocr/modeling/backbones/rec_vary_vit.py`
-- PaddleOCR decoder: `/mnt/volume1/PaddleOCR/ppocr/modeling/heads/rec_ppformulanet_head.py`
+- PaddleOCR encoder: `PaddleOCR/ppocr/modeling/backbones/rec_vary_vit.py`
+- PaddleOCR decoder: `PaddleOCR/ppocr/modeling/heads/rec_ppformulanet_head.py`
 - HF transformers: `transformers/models/pp_formulanet/modeling_pp_formulanet.py`
-- PaddleOCR config: `/mnt/volume1/PaddleOCR/configs/rec/PP-FormuaNet/PP-FormulaNet-L.yaml`
+- PaddleOCR config: `PaddleOCR/configs/rec/PP-FormuaNet/PP-FormulaNet-L.yaml`
 
 ## Estimated sizes
 - F32: ~690 MB (too large)

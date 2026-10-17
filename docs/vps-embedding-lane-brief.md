@@ -1,44 +1,15 @@
-# VPS work package — embedding-lane language coverage (E1–E6)
+# Historical embedding language-coverage brief — 8 August 2026
 
-Self-contained brief for an agent running on the **CPU-only VPS**
-(`/mnt/volume1/CrispEmbed`, 7.6 GB RAM, x86_64, **no GPU**). Written
-2026-08-08. Everything here is deliberately chosen to need **no GPU**: it is
-the half of the backlog that this box can finish while the Metal/CUDA lanes
-run elsewhere.
+This technical brief is retained for background. Use [PLAN](../PLAN.md) and the
+[executable handoff](next-agent-handoff.md) for current status, owners and
+acceptance; later tokenizer/language fixes may supersede the tasks below.
+Machine-specific setup and access notes are kept outside tracked documentation.
 
-Read first: `PLAN.md` → "OPEN — embedding-lane language coverage" (items
-E1–E7 with full rationale), `docs/LANGUAGES.md` → "Embedding / retrieval
-models", and **`/mnt/volume1/crispasr-crispembed-dev.md`** (the hard rules and the
-A/B protocol — read it in full and FOLLOW it; it governs everything you do here).
-
-⚠ Use that ABSOLUTE path. The guide sits next to the repo, so `../crispasr-crispembed-dev.md`
-resolves only from the repo root — from your worktree (four levels deeper) it silently does
-not exist, which is exactly how an earlier agent ended up never reading it.
-
-## Ground rules on this box
-
-- **Work in your OWN git worktree — never in `/mnt/volume1/CrispEmbed`
-  directly.** Several agents share this checkout.
-  ```bash
-  cd /mnt/volume1/CrispEmbed
-  git pull --ff-only
-  git worktree add .claude/worktrees/<your-task> -b <branch>
-  cd .claude/worktrees/<your-task>
-  git submodule update --init --recursive     # REQUIRED, cmake fails without it
-  ```
-- **Claim a row in the PLAN.md "Active work in flight" table and push it to
-  `main` BEFORE starting**, and update it at every checkpoint. Parallel agents
-  read that table to avoid collisions.
-- **Never use `/tmp`** (root partition) — use `/mnt/volume1/tmp-overflow`.
-  Don't fill `/mnt/volume1` (~85% full). HF cache →
-  `/mnt/akademie_storage/huggingface/hub/`.
-- **One heavy process at a time** (7.6 GB RAM). `multilingual-e5-large` is the
-  biggest thing here (~600 MB quantized) — comfortably fine alone, not fine
-  three at once.
-- Python: `/opt/miniconda` with `PYTHONNOUSERSITE=1`. Build: ninja + ccache
-  (`CCACHE_DIR=/mnt/volume1/.ccache`), `-j2` if RAM-bound.
-- CPU-only build is CORRECT here — do not chase GPU flags. Embedding parity
-  and tokenizer work are backend-independent.
+Work in an isolated worktree, claim one bounded lane, and run builds, suites,
+model/browser batches on hosted CI or authorized remote GPU infrastructure.
+Inspect shared-host load, memory, swap and free space before costly work; keep
+large models/artifacts remote. Native/Python intermediate and final-output
+comparisons remain mandatory before runtime/default promotion.
 
 ## Why this work exists
 

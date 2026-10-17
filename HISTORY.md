@@ -1,3 +1,37 @@
+## 2026-10-17 — Wrap-up: validated packaging and gated UltraBERT tools consolidated
+
+Wheel [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+now passes all4 platform legs,23 actual installed native-load/C-ABI checks and
+aggregation at e75a32f1. Aggregate inventory matches all23 recorded wheel names;
+[final report](tests/results/packaging/wheel-matrix.json) retains producer/log
+hashes and remote-artifact limits. No runtime/PyPI release was created.
+
+Native UltraBERT tokenizer [39007901207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39007901207)
+passes at d7b84d1d: all8 original text rows match exact IDs/masks; both deliberately
+wrong alternatives fail all8;4 log controls/default/zero gates pass. Three logs
+were independently hash-checked/reparsed against the frozen original rows.
+[Complete report](tests/results/ultrabert/tokenizer-audit.json). Initial build/API
+failures remain retained. This is test-only component/template parity.
+
+Reviewed PR68 is merged after full native/Flutter/WASM/secret success. Packaging
+and UltraBERT branches are consolidated without changing production model
+architecture dispatch, release versions or the app's immutable0.17.12 pin.
+The same-input operator run39008070299 at a349539e passes compilation,25
+model-free/five Torch controls and seven local captures, then aborts on a
+stdout/stderr-interleaved OPERATOR record. The first empty F32 ordinary/probe
+metrics agree; there is no completed14-arm result. The test now flushes stdout
+before loading the auxiliary reference; strict parsing/gates are unchanged.
+[Raw failure report](tests/results/ultrabert/initial-local-audit-failure.json)
+preserves producer fields and log hashes. Ordinary numerical failures and
+strict-reference replay drift remain open. The
+[executable handoff](docs/next-agent-handoff.md) scopes pending acceptance,
+artifact preservation, numerical/runtime/publication and other-front tasks.
+New main integration CI and Pages deployment conclusions are separate follow-ups.
+
+PR67's final sourcebc1d9905 also has successful platform/Flutter/WASM/contract/
+secret conclusions; the old pending-check reminders are retired. This does not
+waive its retained OCR numerical or independent-quality debt.
+
 ## 2026-10-17 — All four corrected wheel legs pass; full UltraBERT drift retained
 
 [Wheel matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)

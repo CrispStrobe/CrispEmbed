@@ -1,7 +1,7 @@
 {
   "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845",
   "source_commit": "e75a32f1882a00389bac1304797f44c08ce372d4",
-  "scope": "All four wheel legs pass actual repaired-wheel install, bundled native load and C ABI; aggregate still queued at capture",
+  "scope": "All four wheel legs and aggregation pass;23 actual installed bundled native-load/C-ABI checks; producer hashes recorded, wheel bytes remain remote",
   "jobs": [
     {
       "name": "windows AMD64",
@@ -188,8 +188,15 @@
       "expired": false
     }
   ],
-  "aggregate_status": "queued",
+  "aggregate_status": "success",
   "wheel_bytes_independently_downloaded": false,
   "published_to_pypi": false,
-  "app_dependency_changed": false
+  "app_dependency_changed": false,
+  "workflow_conclusion": "success",
+  "aggregate": {
+    "job_id": 117322803454,
+    "wheel_count": 23,
+    "inventory_exact": true,
+    "log_sha256": "40796779ef66001b15fd1592fe9e4fcaa2c7173c338cef47bd9d3547faaf658f"
+  }
 }

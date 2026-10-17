@@ -5,6 +5,8 @@ Updated 17 October 2026. Completed work, measurements and dated handoffs belong 
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
 and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming work.
+Start with the [executable next-agent handoff](docs/next-agent-handoff.md), which
+records exact sources, remaining work, acceptance checks and artifact expiry.
 
 ## Execution order
 
@@ -34,15 +36,15 @@ confidence/timing limits. Q4 receipt truncates at1024 with unclosed HTML; all
 quantized recipes change receipt/book text and retain numerical failures. No
 candidate is selected for publication or default promotion.
 
-1. [ ] **Publish only a validated OCR candidate.** Include source/base license
-   provenance, measured precision/size/quality limits, HF card, remote byte/hash
-   verification, pinned registry aliases and empty-cache download checks. Complete
-   CrispSorter/CrispCalc provider/catalog work when a validated artifact exists.
-   No LightOnOCR-3 HF artifact, production alias or runtime release is selected yet.
-2. [ ] **Implement UltraBERT-Embed-150M**, following the pinned contract below;
-   keep its reference environment separate from OCR.
-3. [ ] **Continue the permissive OCR queue below**, starting with shared small
-   backends after the preceding correctness/performance work.
+1. [ ] **Finish UltraBERT attribution/integration:** inspect the corrected
+   same-input operator run after the39008070299 logging failure, then follow U1–U4 in the executable handoff.
+   Native tokenizer component parity is complete; public model support is not.
+2. [ ] **Resolve OCR correctness/independent quality before publication.** Keep
+   existing failed F16/quantized records and held-out gold/caps. HF publication,
+   pinned aliases and consumer catalogs require a validated candidate; none is
+   selected from the completed quantization panel.
+3. [ ] **Continue the permissive OCR queue below**, smallest applicable backend
+   first after the preceding work; source/base-license and blueprint audit first.
 
 ## Quantization and publication follow-up
 
@@ -56,9 +58,6 @@ raw outputs/confidences and all failed precision/calibration alternatives.
   document quality/format/completion candidate before HF publication or aliases.
   The current panel qualifies none of the tested quantized recipes for promotion.
   Corpus/upstream benchmark reproduction and larger-page validation remain open.
-- [ ] Inspect latest PR67/merged-main platform conclusions after runners finish.
-  All50 auditor/quality controls pass at5dbabaa1; later report-only changes keep
-  that code/test source unchanged. Evidence verification does not waive model debt.
 
 Publication is conditional on validation. UltraBERT is the next independent
 implementation lane while the OCR correctness/publication follow-ups remain open.
@@ -109,41 +108,17 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
 
 ## Text encoders and typed decisions
 
-- [ ] **UltraBERT native port:** use the completed pinned-source audit in
-  [docs/ultrabert.md](docs/ultrabert.md). Prefer UltraBERT-Embed-150M first for
-  retrieval, then base150M masked-LM and380M. Verify exact local/global masks,
-  per-layer RoPE, BOS/padding IDs, CLS pooling/query prefixes and the untied MLM
-  head. Both218-tensor conversions and all seven original cases/2,730 stages
-  pass the [frozen reference audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520).
-  The test-only native graph completes all14 arms/700 exact controls, retaining
-  F32/F16 intermediate failures183/1,294 in the
-  [initial panel](https://github.com/CrispStrobe/CrispEmbed/blob/a89949717a81ca79fd2f031b56fdb2ac6ae330db/tests/results/ultrabert/initial-native-parity.json).
-  The completed [original-input operator audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) preserves all ordinary
-  metrics/exits and passes41/42 F32 local probes; Unicode whole-MLP error0.0048828125
-  falls to0.000671386719 with original gate/up. Next capture original SiLU/product/
-  down inputs and isolate projection rounding before selecting a correction.
-  Keep the frozen references, all initial failures and unchanged0.99999/0.002 gates.
-  All24 model-free controls and the operator executable build pass at a8b129f4.
-  [Isolated linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
-  compiles and passes25 model-free/three Torch controls at c7c5ef30, then rejects
-  empty-case original gate drift2.0265579223632812e-6 before new native comparisons.
-  The drift's cause is unproved and the complete failure is retained in PR69.
-  [Full-forward observer39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
-  passes25 model-free/four Torch controls and hook neutrality, then rejects287
-  empty-case old-anchor differences (first layer0 Q5.960464477539062e-7). Retain
-  both strict replay failures; the cause is unproved and no new native arm ran.
-  [Same-input local operator audit39008070299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299)
-  is queued at a349539e: original PyTorch/native modules receive frozen gate/up
-  and identical replayed products. Separately named local_down targets retain
-  their difference from old FFN outputs; they cannot waive model-parity debt.
-  Original gates/arrays and both strict replay modes remain intact; five Torch
-  controls/new compilation and local measurements are pending.
-  Tokenizer39001522903 passes4 controls then fails compilation before measuring
-  IDs. The [repaired tokenizer audit39007901207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39007901207)
-  is queued at d7b84d1d; declared GGUF APIs and c_str keys are fixed. Preserve the
-  initial compile failure and require all8 original rows/negative controls.
-  Native tokenization/public backend, bindings, independent retrieval quality,
-  long-context validation and quantized publication remain pending.
+- [ ] **UltraBERT native port:** follow [U1–U4](docs/next-agent-handoff.md) and
+  [the architecture contract](docs/ultrabert.md). Original reference/conversions
+  and8-row native tokenizer/template parity pass; the test-only native graph
+  retains183 F32/1,294 F16 intermediate failures. Both strict replay failures
+  remain archived. Inspect the corrected local audit after39008070299 failed on
+  interleaved logging; scoped local targets cannot replace old full-model references.
+  Pending: numerical attribution, gated production architecture/text loading,
+  exact prompts/CLS/masks, C ABI/CLI/server/all bindings, independent retrieval,
+  long-context/GPU/performance and validated quantization/publication. Base150M/
+  380M masked-LM heads remain later separate ports. Preserve original arrays
+  remotely before their31 October2026 expiry; exact acceptance is in U1–U4.
 - [ ] **LFM2.5 Encoder:** validate GPU scheduling, long-context behavior beyond
   the measured suite and independent task quality. F16 remains default; published
   mixed profiles change low-margin predictions. [Usage/evidence](docs/lfm2-encoder.md).
@@ -163,27 +138,14 @@ inspection, conversion and inference remain outside the selected scope; its
 
 ## Packaging, releases and consumers
 
-The [three-PR review](docs/pr-review-2026-10-17.md) is complete; evidence and
-limits are archived in HISTORY. Follow-ups:
+Completed wheel validation and PR/source review are in HISTORY. Remaining work:
 
-- [ ] **PR68 deployment follow-up:** reviewed head ebcadb1f now passes full
-  Build/Flutter, WASM and secret checks; completed evidence is in HISTORY.
-  If merged, verify deployed metadata/image. No merge/deployment has occurred.
-- [ ] **PR69:** inspect the actual latest-head platform checks before changing
-  draft/merge status. Expanded native source a8b129f4 compiles and completes the
-  strict audit with retained numerical failures; old119cc1af platform checks are
-  not proof of current expanded C++ on every platform.
-- [ ] **Latest CI conclusions:** PR62 and PR63 complete ten-job Build (including
-  Flutter), WASM, quality contract and secret checks pass; [completed evidence](HISTORY.md).
-  Inspect the latest merged-main and PR67 platform/secret conclusions after runners
-  start. All50 quality/auditor controls and all nine paired audits
-  have verified source evidence; queued broader checks are not passing evidence. Record
-  actual failures before further promotion.
-- [ ] **W1 aggregation:** all four legs/23 installed-wheel native-load/C-ABI
-  checks pass in [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
-  at e75a32f1. Inspect pending aggregation before closing PR70's wheel-validation
-  lane; producer/log evidence is in HISTORY. Preserve both initial failures.
-  Runtime release/version reconciliation and PyPI publication remain separate.
+- [ ] **Merged-main CI:** inspect exact post-integration Build/Flutter, WASM,
+  lint, source/quality/quantizer controls and secret conclusions. Previously
+  passing component sources do not establish the new merge-head result.
+- [ ] **PR68 deployment:** inspect the Pages run for the merge and actual served
+  HTML/PNG response/revision. Full PR checks passed and source is merged;
+  deployment verification is distinct and may still be queued.
 - [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes
   with current main and draftPR60 using native/reference/decoded evidence.
 - [ ] **Release metadata:** reconcile source VERSION0.17.11 and published0.17.12
@@ -324,8 +286,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-17 | `fix/macos-wheel-target` | W1 Python wheel target/load repair | [PR70](https://github.com/CrispStrobe/CrispEmbed/pull/70): all4 wheel legs/23 actual installed native-load/C-ABI checks pass at e75a32f1 in39003273845; aggregation queued. Both initial delocate/pthread failures retained in HISTORY. No runtime release or app update. |
-| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT reference/native audit | [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69): original7-case reference/conversions complete; initial native183 F32/1,294 F16 failures retained. Both strict replay attempts reject anchor drift, detailed evidence in HISTORY. Local same-input operator39008070299 queued at a349539e; repaired tokenizer39007901207 queued at d7b84d1d after retained C++ compile failure. Require untouched original arrays/gates, scoped local targets and full8-row ID/mask/negative controls. Public backend/bindings/quality/publication pending. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

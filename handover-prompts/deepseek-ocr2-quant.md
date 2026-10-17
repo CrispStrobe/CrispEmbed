@@ -1,3 +1,7 @@
+> Historical technical handoff. Check current PLAN, source and later HISTORY
+> before reviving any task or command. Use hosted CI for builds/model batches;
+> machine-specific environment details are intentionally omitted.
+
 # Handover: DeepSeek-OCR-2 GGUF Reconversion + Quantization
 
 ## Current State
@@ -56,7 +60,7 @@ https://www.kaggle.com/code/${KAGGLE_ACCOUNT}/crispembed-deepseek-quant
    ```
 
 3. **ALWAYS bundle `kaggle_harness.py`** in the push directory (copy from
-   `/mnt/volume1/CrispASR/tools/kaggle/kaggle_harness.py`).
+   `https://github.com/CrispStrobe/CrispASR/blob/main/tools/kaggle/kaggle_harness.py`).
 
 4. **NEVER use `huggingface-cli`** — it's deprecated on Kaggle. Use
    `hf_hub_download()` or `snapshot_download()` from Python.

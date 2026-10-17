@@ -1,3 +1,7 @@
+> Historical technical handoff. Check current PLAN, source and later HISTORY
+> before reviving any task or command. Use hosted CI for builds/model batches;
+> machine-specific environment details are intentionally omitted.
+
 # Handover: Pix2Struct Performance Optimization
 
 ## Goal
@@ -113,7 +117,7 @@ Existing models for testing:
 
 - **8GB RAM VPS** — cannot load F16 for models >1B. Use q4_k/q8_0.
 - **Always work in a worktree**: `git worktree add .claude/worktrees/feat-pix2struct-perf -b feat/pix2struct-perf`
-- **Build with ccache**: `CCACHE_DIR=/mnt/volume1/.ccache ninja -j1`
+- **Build with ccache**: `CCACHE_DIR=<operator-configured-path> ninja -j1`
 - **-j1 for builds** — RAM is tight, -j2 can OOM with other processes
 - **Never edit files on main** — always in the feature worktree
 

@@ -1,0 +1,645 @@
+{
+  "source_commit": "a349539e01701f53144b100623b67bcd62489436",
+  "frozen_reference_source": "0573f1847db68914052a98341a22fceeb1358518",
+  "native_cpp_sha256": "67764ce19613110ea2676cb7a1ec91bf340172e41f9bf2cf705da9a74a3a6ebd",
+  "driver_sha256": "4882f2fb4104286f3034f9e8b2afa34a7183c7d5f157fde00032de4eab393c9c",
+  "build_passed": true,
+  "literal_zero_gate_off": true,
+  "default_gate_off": true,
+  "arms": [],
+  "scope": "test-only CPU graph over original prepared IDs; not tokenizer/public API or task quality",
+  "status": "build-only; model parity not evaluated",
+  "reference_mode": "byte-exact original tensor archives; no Python inference replay",
+  "frozen_report_sha256": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+  "original_and_conversion_replay_exact": true,
+  "linear_reference": {
+    "source_files": {
+      "1_Pooling/config.json": "b7703fedc62cbe2d1e4fd47338d5ba9ee5b2107d49fc42e85ae848484fdd08bc",
+      "README.md": "27573272049ca66a4504b7e458887848b0fa0b7a5c6c68edcd774c6ce5070608",
+      "config.json": "4ff3a6cde7f81bca25f687371c809d8109076d71ac9c4882888ba36935a3cbd1",
+      "config_sentence_transformers.json": "1cde78bdb171eaca67f333808a2117a307d43b4e49b28c0706a50980e9606787",
+      "configuration_ultrabert.py": "823d10bda19f5164da4f79f8f9c01e5ebd7a75569abce78c0a26b7674fc78cd9",
+      "modeling_ultrabert.py": "bfca1bd08af72cd170e58b5a048c67b52bc9d06a2a42847c7a387751f527f333",
+      "modules.json": "e4068aab8a95663636c4c28044a95eafdb6492387397ec8283d8f8b31078d645",
+      "tokenizer.json": "cec6e1c25c319d4de7d15e94cc69e95c68d75fee2e20c86c1bdac23b2db4d624",
+      "tokenizer_config.json": "3752ebf4874dca142ab86b273d7c167b5c77aefa444f5ca7ab598592202af97f"
+    },
+    "source_weights": "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
+    "torch": "2.14.0+cpu",
+    "transformers": "5.16.1",
+    "dumper_sha256": "8a29c8a65cd3ca9595d3bb57968de73d6ad681546bb2c2c46e64ebb6284bfaa8",
+    "cases": [
+      {
+        "case": {
+          "id": "empty",
+          "text": ""
+        },
+        "original_archive_sha256": "2ec96e8dc8a5cea459b0e40ede9768801fb64c5ad676804c719d64c488d14226",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "empty.gguf",
+        "archive_bytes": 23264,
+        "archive_sha256": "4ee89f927702a13fdace286f6f6b51a7bdb6528b0f23936c7037c363af42efe3",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              1,
+              1,
+              1024
+            ],
+            "payload_sha256": "6f87ad192ccaa3ec1b23b7bc4b085f9d8d4ee2750dc863b5f02f07cdd08d6ffd",
+            "l2_norm": 14.768346838691906,
+            "max_abs": 4.328166961669922,
+            "rms": 0.46151083870912213
+          },
+          "layer_14.up": {
+            "shape": [
+              1,
+              1,
+              1024
+            ],
+            "payload_sha256": "1a87c13db7eda7206cea12722f69c50ab6d2626b3f23da9d3447238c014ff048",
+            "l2_norm": 11.7772926470453,
+            "max_abs": 2.6973438262939453,
+            "rms": 0.36804039522016563
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              1,
+              1,
+              768
+            ],
+            "payload_sha256": "e4acdd3cdc94fb818ed42dd90e4860f6461ffd16dde308dee84cbe91c1275cad",
+            "l2_norm": 11.268269829975708,
+            "max_abs": 7.1047797203063965,
+            "rms": 0.4066086637273633
+          },
+          "layer_14.silu": {
+            "shape": [
+              1,
+              1,
+              1024
+            ],
+            "payload_sha256": "f8b3f1d9ed11cf7824a71f82421a9d81ea2547f73214088dfe5979ffcdbfde86",
+            "l2_norm": 8.175262160221711,
+            "max_abs": 4.271814346313477,
+            "rms": 0.2554769425069285
+          },
+          "layer_14.product": {
+            "shape": [
+              1,
+              1,
+              1024
+            ],
+            "payload_sha256": "a2f3f8a6a8897f759daacb9bbfc3f7ce10fd71f75c405b13cde5001b15a4cc20",
+            "l2_norm": 12.07214376539752,
+            "max_abs": 11.522552490234375,
+            "rms": 0.3772544926686725
+          },
+          "layer_14.local_down": {
+            "shape": [
+              1,
+              1,
+              768
+            ],
+            "payload_sha256": "e4acdd3cdc94fb818ed42dd90e4860f6461ffd16dde308dee84cbe91c1275cad",
+            "l2_norm": 11.268269829975708,
+            "max_abs": 7.1047797203063965,
+            "rms": 0.4066086637273633
+          }
+        }
+      },
+      {
+        "case": {
+          "id": "document",
+          "text": "Berlin is the capital of Germany."
+        },
+        "original_archive_sha256": "02f4a5221d77b40063fb1ab3cbe713d1c81d754f9e56011574b72ddfdea0e24c",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "document.gguf",
+        "archive_bytes": 203520,
+        "archive_sha256": "9786dfc54d0ff141a43e0f0508a3974c7fe0e15d3bde935ba4aeca22ce0aea62",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              1,
+              9,
+              1024
+            ],
+            "payload_sha256": "8053207100b33e48285fe083aed4788853cc2c6447e21e31d00cd4da8427b5ea",
+            "l2_norm": 132.4388028253019,
+            "max_abs": 65.12081909179688,
+            "rms": 1.3795708627635617
+          },
+          "layer_14.up": {
+            "shape": [
+              1,
+              9,
+              1024
+            ],
+            "payload_sha256": "13924ff8ead1067f9fce161ba44819a7f63e06b2cba998c4d0d47bd14cd43a97",
+            "l2_norm": 132.36878508291812,
+            "max_abs": 87.60700988769531,
+            "rms": 1.378841511280397
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              1,
+              9,
+              768
+            ],
+            "payload_sha256": "bb20d3935a440bc528a909847d533386a0e6eef94ef500a0c9e5681953061bff",
+            "l2_norm": 3105.181704725041,
+            "max_abs": 3047.375244140625,
+            "rms": 37.34953110636882
+          },
+          "layer_14.silu": {
+            "shape": [
+              1,
+              9,
+              1024
+            ],
+            "payload_sha256": "176099e509cca0203f33654bace15ab44e22cd67ebb0fe67b7493069ab928b83",
+            "l2_norm": 101.26027593648887,
+            "max_abs": 65.12081909179688,
+            "rms": 1.0547945410050925
+          },
+          "layer_14.product": {
+            "shape": [
+              1,
+              9,
+              1024
+            ],
+            "payload_sha256": "760082466127ed31ddea6efd70bed35785e62df44fe83253a6cc4ffaf8da7c4c",
+            "l2_norm": 4081.3841241375117,
+            "max_abs": 4057.090087890625,
+            "rms": 42.51441795976574
+          },
+          "layer_14.local_down": {
+            "shape": [
+              1,
+              9,
+              768
+            ],
+            "payload_sha256": "bb20d3935a440bc528a909847d533386a0e6eef94ef500a0c9e5681953061bff",
+            "l2_norm": 3105.181704725041,
+            "max_abs": 3047.375244140625,
+            "rms": 37.34953110636882
+          }
+        }
+      },
+      {
+        "case": {
+          "id": "query",
+          "text": "What is the capital of Germany?",
+          "prompt": "query"
+        },
+        "original_archive_sha256": "19288dfc21532c045fef6b503c11a4038cf35b58489fda4c0cfd48f3daa0db73",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "query.gguf",
+        "archive_bytes": 541440,
+        "archive_sha256": "7553e6284e8f442e60fd29eb4698a4d63c8ecf0bbda65a9679a9259eb6f43f07",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              1,
+              24,
+              1024
+            ],
+            "payload_sha256": "d0a2e767cb0b6f95bc8d1212b2010a59ca95386a0c2818a570cafd00df0139c6",
+            "l2_norm": 181.48911187451193,
+            "max_abs": 65.79423522949219,
+            "rms": 1.1576971821964734
+          },
+          "layer_14.up": {
+            "shape": [
+              1,
+              24,
+              1024
+            ],
+            "payload_sha256": "2e6a30bd8a1d36fed1efe6818d3c63c1c5de1961552e96fac822499432dbe5dc",
+            "l2_norm": 166.09448532575945,
+            "max_abs": 87.75688934326172,
+            "rms": 1.0594967139018199
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              1,
+              24,
+              768
+            ],
+            "payload_sha256": "98fee30437e63974ccb2be43d5e61b60a206acaa492d4a244c13b8ca4bc9dcca",
+            "l2_norm": 3227.124103023188,
+            "max_abs": 3169.950439453125,
+            "rms": 23.770013926856787
+          },
+          "layer_14.silu": {
+            "shape": [
+              1,
+              24,
+              1024
+            ],
+            "payload_sha256": "0e5fe343a8929171d4236977bdf2eda199691aad9e102287bdac05f777040384",
+            "l2_norm": 112.7905472501667,
+            "max_abs": 65.79423522949219,
+            "rms": 0.7194773139900643
+          },
+          "layer_14.product": {
+            "shape": [
+              1,
+              24,
+              1024
+            ],
+            "payload_sha256": "91176f61965b20222f7b3dc7a696322a3988f13179f4f3e14a2f65a06977ac16",
+            "l2_norm": 4227.232846628618,
+            "max_abs": 4194.8369140625,
+            "rms": 26.965009109825345
+          },
+          "layer_14.local_down": {
+            "shape": [
+              1,
+              24,
+              768
+            ],
+            "payload_sha256": "98fee30437e63974ccb2be43d5e61b60a206acaa492d4a244c13b8ca4bc9dcca",
+            "l2_norm": 3227.124103023188,
+            "max_abs": 3169.950439453125,
+            "rms": 23.770013926856787
+          }
+        }
+      },
+      {
+        "case": {
+          "id": "unicode",
+          "text": "Gr\u00fc\u00dfe \u2014 caf\u00e9\n\u6771\u4eac \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \ud83d\udc4b"
+        },
+        "original_archive_sha256": "71d7d8135437b130a4838526a40c06ba6dda1796cb7b7747d19b417937f2015b",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "unicode.gguf",
+        "archive_bytes": 473856,
+        "archive_sha256": "2d10512be9c26fbc01f46a11211e46f31e81d5f26400cfa540e41250f2b8c762",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              1,
+              21,
+              1024
+            ],
+            "payload_sha256": "e7d7658a4601dabc039f11baf19e0ee37870a7e0ba37e11b9052545aa2fe5f32",
+            "l2_norm": 164.4061262181951,
+            "max_abs": 62.05818557739258,
+            "rms": 1.1211361876627128
+          },
+          "layer_14.up": {
+            "shape": [
+              1,
+              21,
+              1024
+            ],
+            "payload_sha256": "58aa579cdeab756ce92e0f554f9046a90c112e8dee12739d6a9fdf1bde4f1109",
+            "l2_norm": 176.10189493252057,
+            "max_abs": 120.98701477050781,
+            "rms": 1.20089324933547
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              1,
+              21,
+              768
+            ],
+            "payload_sha256": "03dce9883fa1424a11a1df04ce98a26a313eba0ea1f91f4ebb0e86a6746ce3be",
+            "l2_norm": 5860.172534387554,
+            "max_abs": 5754.38525390625,
+            "rms": 46.14452132714459
+          },
+          "layer_14.silu": {
+            "shape": [
+              1,
+              21,
+              1024
+            ],
+            "payload_sha256": "18b0d831ef189567ced555be6544d529749f95654bc2401eb3a4d48365b0e7a2",
+            "l2_norm": 104.01266580202063,
+            "max_abs": 62.05818557739258,
+            "rms": 0.7092945152855719
+          },
+          "layer_14.product": {
+            "shape": [
+              1,
+              21,
+              1024
+            ],
+            "payload_sha256": "9b078d404e579fa1afe0ca395fcf1025421c52ad0dce4c8a6fab1a6491cdaf91",
+            "l2_norm": 7575.99429391441,
+            "max_abs": 7508.234375,
+            "rms": 51.66304660180998
+          },
+          "layer_14.local_down": {
+            "shape": [
+              1,
+              21,
+              768
+            ],
+            "payload_sha256": "03dce9883fa1424a11a1df04ce98a26a313eba0ea1f91f4ebb0e86a6746ce3be",
+            "l2_norm": 5860.172534387554,
+            "max_abs": 5754.38525390625,
+            "rms": 46.14452132714459
+          }
+        }
+      },
+      {
+        "case": {
+          "id": "pair",
+          "text": "A question?",
+          "text_pair": "Its answer."
+        },
+        "original_archive_sha256": "b4b6ec320f75ddc73dc95d0faa47611779bce7fa37aec8b12cb1e570e274846f",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "pair.gguf",
+        "archive_bytes": 180992,
+        "archive_sha256": "9aef15b8b9ec3bfc4a94280190c8e98c05d31787c74a5333f8c3c070fd7c51b3",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              1,
+              8,
+              1024
+            ],
+            "payload_sha256": "63f656bf66693c186df1e942c8b045a2a6c0b9549442459f4ae823306bd3b1f4",
+            "l2_norm": 98.38763031925293,
+            "max_abs": 34.87408447265625,
+            "rms": 1.0870400091190457
+          },
+          "layer_14.up": {
+            "shape": [
+              1,
+              8,
+              1024
+            ],
+            "payload_sha256": "06b8704adc8b9ad3569784aeabfc5493e3350ecdd68875e247b7ff1c68edce1e",
+            "l2_norm": 142.5748537145533,
+            "max_abs": 116.66162109375,
+            "rms": 1.5752444670037604
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              1,
+              8,
+              768
+            ],
+            "payload_sha256": "732d7d75170ecda326dacccd0a16f18498bf02f5829ae11f6c9bf5aa1d95f814",
+            "l2_norm": 2985.980221355753,
+            "max_abs": 2926.1591796875,
+            "rms": 38.094416272731046
+          },
+          "layer_14.silu": {
+            "shape": [
+              1,
+              8,
+              1024
+            ],
+            "payload_sha256": "fd55b1842dbe377fc97ba6215a5ed75cd114882ed2dda3d5cd84f69c6fb21c55",
+            "l2_norm": 58.01860001803909,
+            "max_abs": 34.87408447265625,
+            "rms": 0.6410210235578968
+          },
+          "layer_14.product": {
+            "shape": [
+              1,
+              8,
+              1024
+            ],
+            "payload_sha256": "5277cda3d293ee57308fcdabdd9cf9a5f4dd395d1201be80dacee222aa69394d",
+            "l2_norm": 4074.358539301958,
+            "max_abs": 4068.46728515625,
+            "rms": 45.01572737696454
+          },
+          "layer_14.local_down": {
+            "shape": [
+              1,
+              8,
+              768
+            ],
+            "payload_sha256": "732d7d75170ecda326dacccd0a16f18498bf02f5829ae11f6c9bf5aa1d95f814",
+            "l2_norm": 2985.980221355753,
+            "max_abs": 2926.1591796875,
+            "rms": 38.094416272731046
+          }
+        }
+      },
+      {
+        "case": {
+          "id": "window-boundary",
+          "text": "attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention "
+        },
+        "original_archive_sha256": "f954d7a13c2a2d6f29ce5a89feb84ce472a1363c914fd156a04e3771e80a7bbd",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "window-boundary.gguf",
+        "archive_bytes": 5905664,
+        "archive_sha256": "a986de38913181c61a3d06c70a97d4a9ad72831e155d922e84999a67305f57bf",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              1,
+              262,
+              1024
+            ],
+            "payload_sha256": "f246f5410efa38dc560ca76a1a965847ddd80149dff622e1c13d5446dd152cd6",
+            "l2_norm": 503.71015201256057,
+            "max_abs": 15.579874992370605,
+            "rms": 0.9724786599244049
+          },
+          "layer_14.up": {
+            "shape": [
+              1,
+              262,
+              1024
+            ],
+            "payload_sha256": "7da8407100c4b90b0080652ea71d7d0cf2ee9c11161cf3c6470dc1d22ab7d548",
+            "l2_norm": 451.9502082765136,
+            "max_abs": 46.6749153137207,
+            "rms": 0.8725492848243012
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              1,
+              262,
+              768
+            ],
+            "payload_sha256": "1abab6c949fc020a0d3647a5173d07d6a9b68875f7d1e4a1fb9277e9032f3a14",
+            "l2_norm": 484.9803136023012,
+            "max_abs": 287.0970458984375,
+            "rms": 1.0811671814596473
+          },
+          "layer_14.silu": {
+            "shape": [
+              1,
+              262,
+              1024
+            ],
+            "payload_sha256": "3fd4840cadc1e86fffebf3c9c694dfb79c4add016c11bf194455648e77e66bf2",
+            "l2_norm": 196.59168061121755,
+            "max_abs": 8.683080673217773,
+            "rms": 0.37954608091423986
+          },
+          "layer_14.product": {
+            "shape": [
+              1,
+              262,
+              1024
+            ],
+            "payload_sha256": "cf8f4faebfdef7743b58ceda206c5efad05ecf3b4c93bf01a85ffb9d575da3df",
+            "l2_norm": 682.9071214205845,
+            "max_abs": 405.28204345703125,
+            "rms": 1.3184419643687522
+          },
+          "layer_14.local_down": {
+            "shape": [
+              1,
+              262,
+              768
+            ],
+            "payload_sha256": "1abab6c949fc020a0d3647a5173d07d6a9b68875f7d1e4a1fb9277e9032f3a14",
+            "l2_norm": 484.9803136023012,
+            "max_abs": 287.0970458984375,
+            "rms": 1.0811671814596473
+          }
+        }
+      },
+      {
+        "case": {
+          "id": "padded-batch",
+          "text": [
+            "",
+            "attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention attention "
+          ]
+        },
+        "original_archive_sha256": "abe36da85fbc629947058d59abd5f331eb36d5d54965f3e8dca372ef97da4f14",
+        "status": "frozen gate/up/output retained; additional local targets",
+        "frozen_gate_up_output_retained": true,
+        "target_scope": "local_down is an additional same-product operator target; ffn_out remains frozen",
+        "local_down_vs_frozen_ffn_out_max_abs": 0.0,
+        "anchor_exact": true,
+        "archive_payloads_exact": true,
+        "archive": "padded-batch.gguf",
+        "archive_bytes": 11808000,
+        "archive_sha256": "66a6422d020c8ec6d1985ee5fa4adb5cc99a4949c599f54fbbbec675d432a89b",
+        "stages": {
+          "layer_14.gate": {
+            "shape": [
+              2,
+              262,
+              1024
+            ],
+            "payload_sha256": "a21f1c7aae00f243e1dc5355ba3526c20ab23b6046664c10cf753d0f207ea6d4",
+            "l2_norm": 557.5546203126214,
+            "max_abs": 15.579874992370605,
+            "rms": 0.7611527087144391
+          },
+          "layer_14.up": {
+            "shape": [
+              2,
+              262,
+              1024
+            ],
+            "payload_sha256": "9073549ac12bcc98ed25eb375377fe79ac16efbcd50e4c7bfb320105c2fbd13d",
+            "l2_norm": 490.5095234326165,
+            "max_abs": 46.6749153137207,
+            "rms": 0.6696252507092946
+          },
+          "layer_14.ffn_out": {
+            "shape": [
+              2,
+              262,
+              768
+            ],
+            "payload_sha256": "a2ce091af4a5e128602a108f798e2d325f92028e6048e60d78149742b1d59c9d",
+            "l2_norm": 518.1438140374735,
+            "max_abs": 287.0970458984375,
+            "rms": 0.816778061374003
+          },
+          "layer_14.silu": {
+            "shape": [
+              2,
+              262,
+              1024
+            ],
+            "payload_sha256": "db3182c65a594340e95dab341af65104d3c77b5ddc8a801e3e1148a6578e2828",
+            "l2_norm": 236.97894754530745,
+            "max_abs": 8.683080673217773,
+            "rms": 0.32351479345874684
+          },
+          "layer_14.product": {
+            "shape": [
+              2,
+              262,
+              1024
+            ],
+            "payload_sha256": "8d718122721e866968c7b576dbc05b4f35fe6e9782807c7cc575c4bec14bcdc3",
+            "l2_norm": 710.3133653261685,
+            "max_abs": 405.28204345703125,
+            "rms": 0.9696932324781662
+          },
+          "layer_14.local_down": {
+            "shape": [
+              2,
+              262,
+              768
+            ],
+            "payload_sha256": "a2ce091af4a5e128602a108f798e2d325f92028e6048e60d78149742b1d59c9d",
+            "l2_norm": 518.1438140374735,
+            "max_abs": 287.0970458984375,
+            "rms": 0.816778061374003
+          }
+        }
+      }
+    ],
+    "scope": "additional original-input MLP observations; frozen encoder anchors unchanged",
+    "mode": "same-input local original operators; not frozen full-model targets"
+  },
+  "audit_provenance": {
+    "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299",
+    "raw_report_sha256": "5755a99c907d568220d58b9676cf09a9752140ad5cfcab8b65a68170f332c56d",
+    "failure": "Malformed operator record: stdout/stderr interleaving while loading additional reference",
+    "completed_arms": 0,
+    "hosted_controls": {
+      "model_free": 25,
+      "torch": 5
+    },
+    "logs": {
+      "f32-empty.log": "deb4eaf53b38eda55e53c92c46e878151a0bbd2f5f4e3d2f990a67722439f9be",
+      "f32-empty-operators.log": "14e268281a7962c965c1e9e0314f165ff2c6f3842dff413237f361e768633811",
+      "linear-reference.json": "2dffff419e45359d6afdfe35e925681c8a1d75d41acb95431ea2060ec1bf2704"
+    },
+    "scope": "All raw producer fields preserved; no completed native panel; local targets are not frozen full-model references"
+  }
+}

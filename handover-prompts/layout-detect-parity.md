@@ -1,3 +1,7 @@
+> Historical technical handoff. Check current PLAN, source and later HISTORY
+> before reviving any task or command. Use hosted CI for builds/model batches;
+> machine-specific environment details are intentionally omitted.
+
 # Handover: RT-DETRv2 Layout Detection — Score Parity
 
 ## Task
@@ -10,11 +14,11 @@ so that detection scores match the ONNX reference. Python ONNX produces
 
 ## Files
 
-- **C++ implementation**: `/mnt/volume1/CrispEmbed-layout/src/layout_detect.cpp` (1441 lines)
-- **C++ header**: `/mnt/volume1/CrispEmbed-layout/src/layout_detect.h`
-- **Converter**: `/mnt/volume1/CrispEmbed-layout/models/convert-layout-to-gguf.py`
-- **Test binary**: `/mnt/volume1/CrispEmbed-layout/tests/test_layout_detect.cpp`
-- **Python reference dumper**: `/mnt/volume1/CrispEmbed-layout/tools/dump_layout_reference.py`
+- **C++ implementation**: `.-layout/src/layout_detect.cpp` (1441 lines)
+- **C++ header**: `.-layout/src/layout_detect.h`
+- **Converter**: `.-layout/models/convert-layout-to-gguf.py`
+- **Test binary**: `.-layout/tests/test_layout_detect.cpp`
+- **Python reference dumper**: `.-layout/tools/dump_layout_reference.py`
 - **ONNX model**: `/mnt/storage/models/docling-layout-heron/model.onnx` (164 MB, Apache 2.0)
 - **GGUF model**: `/mnt/storage/models/layout-heron-f32.gguf` (161 MB)
 - **Test image**: `/tmp/layout_test_640.png` (640×640 synthetic document)
@@ -22,9 +26,9 @@ so that detection scores match the ONNX reference. Python ONNX produces
 ## Worktree and build
 
 ```bash
-cd /mnt/volume1/CrispEmbed-layout          # worktree on branch feat/layout-detect-fix
+cd .-layout          # worktree on branch feat/layout-detect-fix
 cd build
-CCACHE_DIR=/mnt/volume1/.ccache ninja test-layout-detect   # ~3s incremental
+CCACHE_DIR=<operator-configured-path> ninja test-layout-detect   # ~3s incremental
 timeout 180 ./test-layout-detect /mnt/storage/models/layout-heron-f32.gguf /tmp/layout_test_640.png 0.3
 ```
 

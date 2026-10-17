@@ -1,6 +1,6 @@
 # UltraBERT support contract — updated 17 October 2026
 
-**Feasible, but not currently supported.** The first useful port is the retrieval
+**Production support remains pending; conversion and test-only audits are implemented.** The first useful port is the retrieval
 checkpoint UltraBERT-Embed-150M, followed by the150M and380M masked encoders.
 They need an explicit architecture path; treating them as stock BERT, ModernBERT
 or an unmodified bidirectional decoder would give different math and masks.
@@ -188,126 +188,51 @@ stages, hook-neutrality/mask controls and complete conversions pass. The
 raw fields and hashes; tensor arrays stay in the remote run artifact. The earlier
 dependency and inference-tensor negative-control failures are retained in HISTORY.
 The corrected environment is `torch==2.14.0 transformers==5.16.1 gguf==0.19.0
-safetensors==0.8.0 numpy==2.2.6`. PR69 remains draft while native evidence is reviewed.
+safetensors==0.8.0 numpy==2.2.6`. These tools are integrated on main without production architecture dispatch;
+remaining acceptance work is in the executable handoff.
 
-## Prepared-ID ggml prototype — initial parity and operator audits complete
+## Current test-only implementation and evidence
 
-The original14 source/schema controls pass in
-[38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
-at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`; the actual log reports14 tests.
-The complete original model reference passes at0573f184. The first native
-panel completes all14 arms; detailed metrics and retained failures are in
-[PERFORMANCE](../PERFORMANCE.md).
+The default-off `CRISPEMBED_ULTRABERT` test graph implements all24 blocks,
+per-layer masks/thetas, split-half RoPE, RMSNorm/SwiGLU, residuals and CLS.
+Unset/literal0 are checked before IO. Each case compares292 numerical stages
+and50 exact controls with `crispembed_diff::Ref`;48 original RoPE tables and
+post-RoPE Q/K are not yet compared. No production dispatch/API is added.
 
-[The test-only graph](../tests/test_ultrabert_diff.cpp) implements all24 pre-norm
-blocks, per-layer local/global masks and split-half RoPE, RMSNorm/SwiGLU, final
-norm and raw/optional normalized CLS. It takes the original prepared IDs and
-explicit masks, including padded query positions. `CRISPEMBED_ULTRABERT=1`
-enables this executable; unset and literal0 are checked before model IO. It is
-not compiled into a production model backend and adds no public API/registry.
+| Surface | Result | Evidence |
+| --- | --- | --- |
+| Original source/conversion | 7 cases/2,730 captures,218 tensors per F32/F16 export pass | [reference report](../tests/results/ultrabert/reference-audit.json) |
+| Initial native panel | All14 arms/700 exact controls complete;183 F32/1,294 F16 numerical failures retained | [initial native](../tests/results/ultrabert/initial-native-parity.json), [PERFORMANCE](../PERFORMANCE.md) |
+| Original-input operators | F32 local checks41/42 pass; F16 retains24 failures; ordinary metrics/exits unchanged | [operator report](../tests/results/ultrabert/operator-audit.json) |
+| Isolated original replay | Rejects empty gate anchor drift2.0265579223632812e-6 before new native comparisons | [initial capture failure](../tests/results/ultrabert/initial-linear-capture-failure.json) |
+| Full original replay | Hook neutrality passes;287 empty-case old payloads differ, first Q0 error5.960464477539062e-7 | [all full-replay differences](../tests/results/ultrabert/full-forward-capture-failure.json) |
+| Native BPE/test template | All8 rows exact IDs/masks; terminal-SEP and zero-ID-padding controls each fail8/8;4 log controls pass | [39007901207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39007901207), [report](../tests/results/ultrabert/tokenizer-audit.json) |
+| Same-input local operators | 39008070299 at a349539e: build/25 model-free/five Torch controls/seven captures pass; interleaved logging aborts first arm. Flush correction awaits full hosted result | [run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299) |
 
-[The hosted native driver](../tools/ci-heavy/ultrabert_native.py) checks that every
-original/conversion source byte matches the approved reference source0573f184,
-then compares292 numerical stages and50 exact input/mask/position controls per
-case using `crispembed_diff::Ref`. Numerical gates remain0.99999 cosine and0.002
-maximum absolute error, with no environment override. Reports retain mean/RMS,
-both norms and the first failure in original execution order. All F32/F16 cases
-are collected before failed numerical gates return nonzero. Eight additional
-model-free controls reject missing/duplicated stages, forged green verdicts,
-incorrect totals and negative errors, while retaining nonfinite/exact failures.
-The expanded24 model-free controls pass at a8b129f4, including original-manifest
-byte preservation and the six-record operator parser. The expanded test-only
-executable compiles and runs all14 ordinary/operator arms at the same source.
+The strict replay failures do not establish a CPU/backend cause. Preserve their
+original arrays, source identity and exact checks. The new `linear_local_audit`
+mode calls original SiLU/down modules on fixed frozen gate/up inputs, providing
+identical replayed products to Python/native down. `local_down` is a separately
+labelled local operator target, never a replacement for frozen FFN/model output;
+its discrepancy with that old output is reported. Strict replay alternatives,
+ordinary model comparisons and all original failures remain intact.
 
-[the retained build record](../tests/results/ultrabert/native-build.json)
-separates compilation/gates from unmeasured model parity.
+[The native driver](../tools/ci-heavy/ultrabert_native.py) verifies the original
+producer, report/archive/tensor hashes and byte-exact regenerated conversions
+before comparisons. `--frozen-artifacts` avoids recomputing original arrays;
+strict Python replay remains a separate alternative that fails on drift. The
+[manual workflow](../.github/workflows/ultrabert-native.yml) uses read-only
+contents/actions access and keeps arrays remote. Do not treat a reference or
+local-component success as full-model/independent retrieval quality.
 
-This prototype covers every block's projection, attention, normalization, FFN
-and residual outputs. It does not yet expose the48 original RoPE-table stages
-or post-RoPE Q/K; extend original probes if attribution requires them. Prepared
-IDs do not establish native tokenization, prompts, public encoding or independent
-retrieval quality. Production integration and bindings remain separate work.
+[Native tokenizer test](../tests/test_ultrabert_tokenizer.cpp) uses the real
+BPETokenizer with an explicit test-only UltraBERT template. The generic BERT pair
+API adds a terminal separator; encoder `pre=gpt2` selection and CLS loading need
+explicit production integration. The passed metadata-only fixture is not public
+GGUF model loading. Initial compile/API failure remains retained alongside its
+successful repair. Exact inputs/gold were unchanged.
 
-Full native runs require `--frozen-report` pointing to the reviewed complete
-original audit at0573f184. `--frozen-artifacts` consumes its saved tensors directly:
-producer identity, raw report bytes, all archive/tensor hashes and regenerated
-GGUF records/bytes must match before native inference. This avoids changing
-original arrays through a fresh CPU floating-point run. Exact Python replay is
-retained as an alternative and fails on any reference drift.
-
-The [manual hosted audit](../.github/workflows/ultrabert-native.yml) downloads
-only that declared original run on a hosted runner; its token has read-only
-contents/actions permissions. It then runs all14 F32/F16-case arms and preserves
-every failed stage before returning nonzero. [First native audit38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
-completes all arms and fails the unchanged numerical gates after retaining all
-measurements. All700 exact controls pass. F32 raw CLS cosines round1.0 with worst
-error0.000067234; intermediate failures still start at layer14 FFN output.
-The [separate original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
-completes with unchanged ordinary metrics/exits and all84 local records retained.
-F32 passes41/42 probes: Unicode whole MLP from original norm has error0.0048828125,
-reduced to0.000671386719 using original gate/up. Norm probes pass on all cases;
-projection-error amplification is narrowed, not a single operator defect proven.
-F16 retains24/42 local failures. Next capture original SiLU/product/down inputs
-and inspect projection rounding while preserving the initial frozen references.
-[Raw operator report](../tests/results/ultrabert/operator-audit.json),
-[magnitudes and limits](../PERFORMANCE.md).
-No numerical gate is waived by final-vector, reference or build success.
-
-
-The next opt-in `linear_audit` extends the hosted audit with a separate
-[test-only original MLP observer](../tools/dump_ultrabert_linear_reference.py).
-It feeds frozen layer14 norm values into the original model's actual MLP and
-hooks its SiLU and down-projection input. Original gate/up/output anchors must
-match bit-for-bit, including signed zero; hooked/unhooked outputs must be equal.
-Additional arrays stay in separate remote diagnostic archives, never replacing
-the frozen encoder reference. Three independent native replays then compare
-SiLU from original gate, product from original gate/up, and down projection from
-original product. The ordinary graph and six earlier probes stay intact.
-Compilation, three weight-free capture controls, the expanded25 model-free
-controls and complete linear measurements are pending at this revision.
-
-
-The initial isolated [linear capture39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
-compiles and passes25 model-free/three Torch controls, but rejects empty-case
-gate drift2.0265579223632812e-6 before new native measurements. The complete
-[initial failure](../tests/results/ultrabert/initial-linear-capture-failure.json)
-is retained. A separate `linear_forward_audit` option now attaches the additional
-hooks to the unchanged full original model forward. All386 old captures must
-match frozen payload hashes exactly, and additional-hook on/off captures must
-match each other bit-for-bit. Any drift reports first stage, all differing
-anchors, absolute errors and original/current magnitudes; no arrays are rebased.
-This new mode and its fourth Torch control await hosted validation. The isolated
-mode remains available; its failure is not a numerical or backend diagnosis.
-
-
-Full-forward run39002679659 also rejects old anchors:287 empty-case differences,
-first layer0 Q at5.960464477539062e-7. Added-hook on/off arrays match each other;
-this does not establish the cause of the old/new replay discrepancy.
-[Complete retained failure](../tests/results/ultrabert/full-forward-capture-failure.json).
-
-A separately gated `linear_local_audit` avoids substituting new full-model
-references: it keeps the frozen gate/up/FFN-output arrays intact, calls the
-original SiLU/down modules on fixed inputs, and records additional SiLU/product/
-`local_down` operator targets. Python and native down receive the identical
-replayed product. The report separately records local_down versus old FFN output;
-these targets have different scopes. Strict isolated/full-model anchor modes and
-all ordinary native failures remain preserved. Local-target parsing explicitly
-rejects records presented as frozen-model targets. This mode and its fifth Torch
-control are pending and do not prove public support or full-model parity.
-
-## Independent native tokenizer audit — pending
-
-The separate `audit/ultrabert-tokenizer` branch adds a test-only executable for
-native `BPETokenizer` plus the declared UltraBERT BOS/single/pair template. It
-compares exact IDs/masks on all eight rows in the seven frozen original cases,
-including explicit query text and both padded rows. A metadata-only fixture
-uses the hash-checked original vocabulary/merges; no checkpoint is downloaded.
-The generic BERT pair API appends a terminal separator, so it cannot supply this
-template unchanged. Native mask construction must attend BOS despite its ID0.
-
-Terminal-separator and ID-zero-mask negative controls must fail against original
-IDs/masks; four model-free log controls reject missing/forged evidence. Native
-compilation and full measurements are pending. This is a tokenizer component/
-template audit, not public GGUF model loading, a production tokenizer integration,
-independent retrieval quality or model parity. It leaves the immutable queued
-linear-audit source and all production tokenizers unchanged.
+[Executable U1–U4 tasks](next-agent-handoff.md) define the next result review,
+numerical attribution, production surfaces and independent quality/publication
+gates. All model/tokenizer/control claims must retain their exact source/run
+scope; no32K, GPU, latency, MTEB or quantized-quality claim follows from this panel.

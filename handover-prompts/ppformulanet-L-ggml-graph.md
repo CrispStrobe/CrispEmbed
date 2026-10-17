@@ -1,3 +1,7 @@
+> Historical technical handoff. Check current PLAN, source and later HISTORY
+> before reviving any task or command. Use hosted CI for builds/model batches;
+> machine-specific environment details are intentionally omitted.
+
 # PP-FormulaNet-L: Full ggml Graph Encoder Handover
 
 ## Status
@@ -75,13 +79,13 @@ ggml col-major [hd, k, q] where element (d, k, q) is at d + k*hd + q*aH*hd.
   Fix: single graph per layer, no QKV recomputation
 
 ### Files to edit
-- `/mnt/volume1/CrispEmbed-ppfn/src/ppformulanet_l_ocr.cpp`
+- `.-ppfn/src/ppformulanet_l_ocr.cpp`
   - Add `window_partition`, `window_unpartition`, `reformat_rp_table` helpers
   - Add `build_full_layer_graph` function
   - Modify `run_encoder_graph` to use new function
   - Keep `run_encoder` (CPU scalar) as fallback
 
 ### Reference code
-- Granite RPE pattern: `/mnt/volume1/CrispASR/src/granite_nle.cpp:946-986`
-- MPNet static bias: `/mnt/volume1/CrispEmbed-ppfn/src/crispembed.cpp:728-894`
-- Math OCR DeiT encoder graph: `/mnt/volume1/CrispEmbed-ppfn/src/math_ocr.cpp:281-338`
+- Granite RPE pattern: `<operator-configured-path>`
+- MPNet static bias: `.-ppfn/src/crispembed.cpp:728-894`
+- Math OCR DeiT encoder graph: `.-ppfn/src/math_ocr.cpp:281-338`
