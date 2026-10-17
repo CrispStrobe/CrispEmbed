@@ -296,17 +296,20 @@ Unicode whole-MLP error0.0048828125 falls to0.000671386719 with original gate/up
 local norm probes pass. Next capture original SiLU/product/down inputs and inspect
 projection rounding before selecting a correction; preserve all initial debt.
 The [isolated linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
-is queued at c7c5ef30. It adds separate original-module SiLU/product observations
-with bit-exact old gate/up/output anchors, then isolates native down projection;
-new controls, compilation and measurements are pending.
+compiles and passes25 model-free/three Torch controls, then rejects an empty-case
+original gate drift2.0265579223632812e-6 before new native measurements. The full
+failure is retained; its cause is unproved. The
+[full-forward observer39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
+is queued at50450867: all386 old payloads must remain exact, with added-hook
+neutrality and a fourth Torch control. Isolated mode remains available.
 The separate [native tokenizer audit39001522903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903)
 is queued at0f9d0a44: native BPE plus explicit UltraBERT templates are compared
 against all8 frozen original text rows. It downloads tokenizer assets only and
 requires terminal-SEP and ID-zero-mask negative controls to fail. Four model-free
 log controls and native compilation/parity remain pending; this is no public
 model/tokenizer support claim. The requested
-[three-PR review](pr-review-2026-10-17.md) is complete; PR68 fork CI is now approved
-and queued, PR60 wheel11/12 target inconsistency remains, and PR69 stays draft. Native tokenization, production backend,
+[three-PR review](pr-review-2026-10-17.md) is complete; PR68 WASM passes at ebcadb1f while approved Build/secret checks remain pending;
+PR60 wheel11/12 target correction is under separate validation, and PR69 stays draft. Native tokenization, production backend,
 public interfaces, task retrieval, quantized quality and publication remain open.
 The independently scoped [wheel repairPR70](https://github.com/CrispStrobe/CrispEmbed/pull/70)
 sets cibuildwheel to the existing macOS12.0 native floor and verifies actual
