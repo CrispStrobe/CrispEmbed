@@ -179,7 +179,10 @@ limits are archived in HISTORY. Follow-ups:
   cibuildwheel with the existing macOS12.0 native target and makes installed-wheel
   checks actually load the bundled library/call the C ABI. Full four-platform
   matrix/installed-load/aggregation [39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
-  is queued at56b5af0c. Preserve initial run37222310629 and do not claim a repaired
+  at56b5af0c exposes ARM64 standalone Qwen3.5-test linkage failure for
+  `pthread_create` while other legs continue. The diagnostic static target now
+  declares its missing transitive `Threads::Threads`; fresh matrix evidence is
+  pending. Preserve runs37222310629/39001056271 and do not claim a repaired
   wheel until actual artifacts and installed checks pass.
 - [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes
   with current main and draftPR60 using native/reference/decoded evidence.

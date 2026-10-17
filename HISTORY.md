@@ -1,3 +1,16 @@
+## 2026-10-17 — Initial repaired-target wheel matrix exposes ARM64 thread linkage
+
+[Wheel matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
+at56b5af0c6464047f774de5ad6a7ba7da8bb2b157 reaches actual compilation. Linux
+ARM64's completed [job117303866137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271/job/117303866137)
+fails linking `test-qwen35-context`/`test-qwen35-quant` with unresolved
+`pthread_create@@GLIBC_2.17`. The shared runtime itself builds. The diagnostic
+`crispembed-qwen35-delta` static target uses `std::thread` in `qwen35_linear.cpp`
+but omitted `Threads::Threads`; the main runtime already declares it. The patch
+adds that transitive dependency rather than omitting tests from the build.
+Other initial matrix legs and the correction's hosted matrix remain pending.
+No local build, runtime-source/default/version/release or app dependency change.
+
 ## 2026-10-17 — UltraBERT capture drift retained; PR68 WASM verified
 
 [39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)

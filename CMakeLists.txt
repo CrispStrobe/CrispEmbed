@@ -759,7 +759,8 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 # full OCR engine is wired. No production C ABI or registry exposure yet.
 add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 target_include_directories(crispembed-qwen35-delta PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core)
+# qwen35_linear.cpp uses std::thread; older manylinux glibc needs explicit pthread linkage.
+target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)
 add_executable(test-qwen35-public tests/test_qwen35_public.cpp)
 target_link_libraries(test-qwen35-public PRIVATE crispembed crispembed-core)
 add_executable(test-qwen35-context tests/test_qwen35_context.cpp tests/qwen35_context_header.c)
