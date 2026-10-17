@@ -46,8 +46,9 @@ buffered OPERATOR record before parsing. No completed 14-arm result exists.
 retain this failure. The correction flushes stdout before the auxiliary reference
 loader writes stderr; strict parsing and all numerical gates remain unchanged.
 
-A corrected hosted run is requested from integrated main. Inspect the latest
-workflow-dispatch run and exact source before dispatching anything:
+Corrected [run39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
+is queued at integrated source `f6f84aba6ba22b27b9f15cfc08f1d182524062d2`.
+Inspect this run and exact source before dispatching anything:
 
 ```sh
 gh run list --workflow ultrabert-native.yml --limit 5

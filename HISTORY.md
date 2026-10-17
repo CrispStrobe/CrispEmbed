@@ -26,7 +26,10 @@ preserves producer fields and log hashes. Ordinary numerical failures and
 strict-reference replay drift remain open. The
 [executable handoff](docs/next-agent-handoff.md) scopes pending acceptance,
 artifact preservation, numerical/runtime/publication and other-front tasks.
-New main integration CI and Pages deployment conclusions are separate follow-ups.
+Corrected local audit [39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
+is queued at integrated sourcef6f84aba. PR69/70 are merged alongside PR68; PR60
+remains draft for selective runtime backport. New main integration CI and Pages
+deployment conclusions are separate follow-ups.
 
 PR67's final sourcebc1d9905 also has successful platform/Flutter/WASM/contract/
 secret conclusions; the old pending-check reminders are retired. This does not
