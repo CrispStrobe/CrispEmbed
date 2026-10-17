@@ -74,6 +74,7 @@ jobs:
         run: |
           mkdir -p _site/threaded _site/proxy _site/webgpu _site/webgpu-compat
           cp examples/wasm-ocr/index.html _site/
+          cp examples/wasm-ocr/og-image.png _site/
           cp examples/wasm-ocr/ocr-worker.js _site/
           cp examples/wasm-ocr/coi-sw.js _site/
           cp build-wasm/crispembed_ocr.js _site/
