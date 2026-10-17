@@ -117,7 +117,7 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   pass the [frozen reference audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520).
   The test-only native graph completes all14 arms/700 exact controls, retaining
   F32/F16 intermediate failures183/1,294 in the
-  [initial panel](tests/results/ultrabert/initial-native-parity.json).
+  [initial panel](https://github.com/CrispStrobe/CrispEmbed/blob/a89949717a81ca79fd2f031b56fdb2ac6ae330db/tests/results/ultrabert/initial-native-parity.json).
   Complete the queued [original-input operator audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
   before choosing a correction; all24 model-free harness controls pass at a8b129f4.
   Native tokenization/public backend, bindings, independent retrieval quality,
