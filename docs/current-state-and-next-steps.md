@@ -276,14 +276,19 @@ follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasi
 audit and a proposed port order. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
 adds strict conversion and all24-layer original-Python reference captures;
 [hosted build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497)
-and all22 source/log controls pass. The first original-model dispatch failed pip
-resolution; corrected run38997289196 verifies both218-tensor conversions, then
-finds a negative-control inference-tensor mutation. The
-[retry38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
-uses an independent negative mask clone and a weight-free regression at0573f184.
-All24-layer Python captures and342-per-case native comparisons remain pending.
-Saved original arrays and conversion bytes must remain exact. No production
-native backend, measured parity or weight publication is claimed.
+and23 source/log controls pass. The
+[complete original panel38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+freezes all seven cases/2,730 stages and both218-tensor conversions after repairing
+a negative-control inference-tensor mutation. The
+[first native panel38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+completes all14 arms and700 exact controls. F32 final CLS cosines round1.0, worst
+raw error0.000067234;183 intermediate failures first exceed budget at layer14
+FFN output. F16 retains1,294 failures and worse raw CLS errors. All measurements
+and unchanged0.99999/0.002 failures remain in PR69; no candidate is promoted.
+The [original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
+is pending. It must preserve ordinary native metrics/exit while narrowing local
+error versus upstream amplification. Native tokenization, production backend,
+public interfaces, task retrieval, quantized quality and publication remain open.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
