@@ -83,13 +83,12 @@ skip = ["*-win32", "*-manylinux_i686", "pp*", "*musllinux*"]
 build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 build-verbosity = 1
 test-requires = ["pytest>=7"]
-# Smoke test: import + load native lib. TOML single-quote string holds
-# the literal double-quoted python -c argument, so the same line works
-# under both /bin/sh (Linux/macOS) and cmd.exe (Windows). cmd.exe does
-# NOT understand single quotes as delimiters — that was the v0.3.1
-# Windows wheel failure ("SyntaxError: EOL while scanning string
-# literal").
-test-command = 'python -c "from crispembed import CrispEmbed; from crispembed._binding import _find_lib; print(_find_lib())"'
+# Load the actual installed native library and call a model-free C ABI function.
+# _find_lib() alone only returns a filename, even if loading would fail. Require
+# the bundled library beside the installed binding so a build-tree/system copy
+# cannot hide missing wheel dependencies. TOML single quotes preserve the outer
+# double-quoted Python argument on Unix and Windows shells.
+test-command = 'python -c "from pathlib import Path; import crispembed._binding as b; p = Path(b._find_lib()).resolve(); assert p.parent == Path(b.__file__).resolve().parent, p; lib = b._load_library(str(p)); assert lib.crispembed_is_offline() in (0, 1); print(p, lib)"'
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
@@ -109,21 +108,19 @@ archs = ["x86_64", "aarch64"]
 #
 # `--exclude` nothing: libggml*.so are staged into the package directory
 # on purpose and must stay resolvable next to libcrispembed.so. The
-# cibuildwheel test-command imports the package and calls _find_lib(), so
-# a repair that relocated them would fail the build rather than ship a
-# broken wheel.
+# cibuildwheel test-command loads the installed native library and calls a
+# C ABI function, so unresolved bundled dependencies fail before artifact upload.
 repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
-# Match cibuildwheel's macOS arm64 floor (11.0 Big Sur). Set BEFORE the
-# cmake configure step on the host runner so the dylib's LC_BUILD_VERSION
-# records 11.0; otherwise delocate-wheel rejects with "Library
-# dependencies do not satisfy target MacOS version 11.0".
-environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
+# Match the existing host CMake target and ggml Metal API floor. Both the
+# staged dylibs and repaired wheel must require macOS 12.0; claiming 11.0 here
+# overrides the workflow environment inside cibuildwheel and breaks delocate.
+environment = { MACOSX_DEPLOYMENT_TARGET = "12.0" }
 # delocate-wheel works on macOS — no override needed. Bundled libcrispembed
 # + libggml*.dylib are inside the package, so --ignore-missing-dependencies
-# in release.yml's CIBW_REPAIR_WHEEL_COMMAND_MACOS handles them.
+# in python-wheels.yml's CIBW_REPAIR_WHEEL_COMMAND_MACOS handles them.
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
