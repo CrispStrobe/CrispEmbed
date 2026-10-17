@@ -123,7 +123,10 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   falls to0.000671386719 with original gate/up. Next capture original SiLU/product/
   down inputs and isolate projection rounding before selecting a correction.
   Keep the frozen references, all initial failures and unchanged0.99999/0.002 gates.
-  All24 model-free controls and the expanded executable build pass at a8b129f4.
+  All24 model-free controls and the operator executable build pass at a8b129f4.
+  The additional original-module SiLU/product observer and three isolated native
+  replays are implemented test-only; their25 model-free/three Torch controls,
+  compilation and full hosted measurements are pending.
   Native tokenization/public backend, bindings, independent retrieval quality,
   long-context validation and quantized publication remain pending.
 - [ ] **LFM2.5 Encoder:** validate GPU scheduling, long-context behavior beyond

@@ -13,6 +13,11 @@ on:
         default: false
         required: false
         type: boolean
+      linear_audit:
+        description: 'Observe original SiLU/product inputs and isolate down; requires operator_audit'
+        default: false
+        required: false
+        type: boolean
       frozen_report:
         description: 'Reviewed report under tests/results/ultrabert/'
         default: 'tests/results/ultrabert/reference-audit.json'
@@ -32,6 +37,7 @@ jobs:
     env:
       REFERENCE_RUN: ${{ inputs.reference_run }}
       OPERATOR_AUDIT: ${{ inputs.operator_audit }}
+      LINEAR_AUDIT: ${{ inputs.linear_audit }}
       FROZEN_REPORT: ${{ inputs.frozen_report }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -69,6 +75,11 @@ jobs:
           PY
       - name: Install conversion and archive-reader dependencies
         run: python -m pip install gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6 huggingface-hub==1.33.0
+      - name: Install frozen original operator environment
+        if: inputs.linear_audit
+        run: |
+          python -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1
       - uses: actions/download-artifact@v4
         with:
           name: heavy-${{ inputs.reference_run }}
@@ -79,6 +90,7 @@ jobs:
         run: |
           audit_args=()
           if [[ "$OPERATOR_AUDIT" == "true" ]]; then audit_args+=(--operator-audit); fi
+          if [[ "$LINEAR_AUDIT" == "true" ]]; then audit_args+=(--linear-audit); fi
           python tools/ci-heavy/ultrabert_native.py --frozen-report "$FROZEN_REPORT" --frozen-artifacts "$FROZEN_ARTIFACTS" "${audit_args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()

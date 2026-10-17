@@ -252,3 +252,16 @@ and inspect projection rounding while preserving the initial frozen references.
 [Raw operator report](../tests/results/ultrabert/operator-audit.json),
 [magnitudes and limits](../PERFORMANCE.md).
 No numerical gate is waived by final-vector, reference or build success.
+
+
+The next opt-in `linear_audit` extends the hosted audit with a separate
+[test-only original MLP observer](../tools/dump_ultrabert_linear_reference.py).
+It feeds frozen layer14 norm values into the original model's actual MLP and
+hooks its SiLU and down-projection input. Original gate/up/output anchors must
+match bit-for-bit, including signed zero; hooked/unhooked outputs must be equal.
+Additional arrays stay in separate remote diagnostic archives, never replacing
+the frozen encoder reference. Three independent native replays then compare
+SiLU from original gate, product from original gate/up, and down projection from
+original product. The ordinary graph and six earlier probes stay intact.
+Compilation, three weight-free capture controls, the expanded25 model-free
+controls and complete linear measurements are pending at this revision.

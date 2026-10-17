@@ -213,11 +213,78 @@ void replay_operators(Resources & resources, const crispembed_diff::Ref & ref) {
     resources.graph = nullptr;
 }
 
+
+// Additional original module observations live in a separate archive. No inputs
+// from this archive enter run_row or the six original operator probes.
+void replay_linear(Resources & resources, const crispembed_diff::Ref & original, const char * path) {
+    crispembed_diff::Ref ref;
+    require(ref.load(path) && ref.meta("ref.model") == original.meta("ref.model") &&
+                ref.meta("ref.revision") == original.meta("ref.revision") &&
+                ref.meta("ref.case") == original.meta("ref.case"),
+            "Wrong additional operator reference");
+    auto gates = ref.get_f32("layer_14.gate");
+    auto ups = ref.get_f32("layer_14.up");
+    auto products = ref.get_f32("layer_14.product");
+    require(gates.first && ups.first && products.first && gates.second > 0 && gates.second % 1024 == 0 &&
+                ups.second == gates.second && products.second == gates.second && gates.second / 1024 <= 1024,
+            "Invalid linear replay inputs");
+    for (const auto & name : { "layer_14.gate", "layer_14.up", "layer_14.ffn_out" }) {
+        auto anchor = original.get_f32(name);
+        auto added = ref.get_f32(name);
+        require(anchor.first && added.first && anchor.second == added.second &&
+                    std::equal(anchor.first, anchor.first + anchor.second, added.first),
+                "Additional operator archive changed an original anchor");
+    }
+    resources.graph = ggml_init({ 8 * 1024 * 1024, nullptr, true });
+    require(resources.graph != nullptr, "Linear metadata allocation failed");
+    auto * g = resources.graph;
+    auto * gf = ggml_new_graph_custom(g, 512, false);
+    const int64_t rows = (int64_t)gates.second / 1024;
+    auto * gate = ggml_new_tensor_2d(g, GGML_TYPE_F32, 1024, rows);
+    auto * up = ggml_new_tensor_2d(g, GGML_TYPE_F32, 1024, rows);
+    auto * product = ggml_new_tensor_2d(g, GGML_TYPE_F32, 1024, rows);
+    for (auto * t : { gate, up, product }) ggml_set_input(t);
+    auto * silu = ggml_silu(g, gate);
+    auto * multiplied = ggml_mul(g, silu, up);
+    auto * down = ggml_mul_mat(g, resources.weights.tensors.at("blk.14.ffn_down.weight"), product);
+    const std::vector<ggml_tensor *> nodes = { silu, multiplied, down };
+    const std::vector<std::string> modes = { "original_gate", "original_gate_up", "original_product" };
+    const std::vector<std::string> names = { "layer_14.silu", "layer_14.product", "layer_14.ffn_out" };
+    for (auto * t : nodes) {
+        ggml_set_output(t);
+        ggml_build_forward_expand(gf, t);
+    }
+    resources.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(resources.backend));
+    require(resources.allocator && ggml_gallocr_alloc_graph(resources.allocator, gf), "Linear allocation failed");
+    ggml_backend_tensor_set(gate, gates.first, 0, gates.second * sizeof(float));
+    ggml_backend_tensor_set(up, ups.first, 0, ups.second * sizeof(float));
+    ggml_backend_tensor_set(product, products.first, 0, products.second * sizeof(float));
+    require(ggml_backend_graph_compute(resources.backend, gf) == GGML_STATUS_SUCCESS, "Linear compute failed");
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        std::vector<float> values((size_t)ggml_nelements(nodes[i]));
+        ggml_backend_tensor_get(nodes[i], values.data(), 0, values.size() * sizeof(float));
+        const auto report = ref.compare(names[i], values.data(), values.size(), 0);
+        bool finite = true;
+        for (float value : values) finite = finite && std::isfinite(value);
+        const bool pass = finite && report.found && std::isfinite(report.cos_min) && std::isfinite(report.max_abs) &&
+                          std::isfinite(report.mean_abs) && std::isfinite(report.rms) &&
+                          std::isfinite(report.mine_norm) && std::isfinite(report.ref_norm) &&
+                          report.cos_min >= 0.99999 && report.max_abs <= 0.002;
+        printf("LINEAR\t%s\t%s\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%d\n", modes[i].c_str(), names[i].c_str(),
+               report.cos_min, report.max_abs, report.mean_abs, report.rms, report.mine_norm, report.ref_norm,
+               pass ? 1 : 0);
+    }
+    ggml_gallocr_free(resources.allocator);
+    resources.allocator = nullptr;
+    ggml_free(resources.graph);
+    resources.graph = nullptr;
+}
+
 int run(int argc, char ** argv) {
     // Explicit test-only opt-in, with zero behaving as off. Gate checked before IO.
     if (!core_env::on("CRISPEMBED_ULTRABERT")) return 2;
-    require(argc == 3 || (argc == 4 && std::string(argv[3]) == "--operator-audit"),
-            "Usage: test-ultrabert-diff model.gguf reference.gguf [--operator-audit]");
+    require(argc == 3 || ((argc == 4 || argc == 5) && std::string(argv[3]) == "--operator-audit"),
+            "Usage: test-ultrabert-diff model.gguf reference.gguf [--operator-audit [linear-reference.gguf]]");
     crispembed_diff::Ref ref;
     require(ref.load(argv[2]), "Reference load failed");
     require(ref.meta("ref.revision") == "367d5343b5a0164d57b810cedf5de4b8983d5984" &&
@@ -311,7 +378,8 @@ int run(int argc, char ** argv) {
     }
     require(numeric == 292 && exact == 50, "Incomplete native stage comparisons");
     printf("TOTAL\t%d\t%d\t%d\n", numeric, exact, failed);
-    if (argc == 4) replay_operators(resources, ref);
+    if (argc >= 4) replay_operators(resources, ref);
+    if (argc == 5) replay_linear(resources, ref, argv[4]);
     return failed ? 1 : 0;
 }
 } // namespace

@@ -55,10 +55,21 @@ def parse_operator_log(log):
         "original_ffn_norm/layer_14.gate", "original_ffn_norm/layer_14.up",
         "original_ffn_norm/layer_14.ffn_out", "original_gate_up/layer_14.ffn_out",
     }
+    return _parse_replay_log(log, "OPERATOR", expected)
+
+
+def parse_linear_log(log):
+    return _parse_replay_log(log, "LINEAR", {
+        "original_gate/layer_14.silu", "original_gate_up/layer_14.product",
+        "original_product/layer_14.ffn_out",
+    })
+
+
+def _parse_replay_log(log, tag, expected):
     result = {}
     for line in log.splitlines():
         fields = line.split("\t")
-        if fields[0] != "OPERATOR":
+        if fields[0] != tag:
             continue
         if len(fields) != 10:
             raise ValueError("Malformed operator record")
@@ -147,12 +158,15 @@ def prepare_frozen_artifacts(baseline, directory, scratch):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-only", action="store_true")
+    parser.add_argument("--linear-audit", action="store_true", help="Observe original SiLU/product and replay isolated down")
     parser.add_argument("--operator-audit", action="store_true", help="Separate original-input RMSNorm/MLP/GLU-down replay")
     parser.add_argument("--frozen-report", type=Path,
                         help="Reviewed complete original report at the immutable pre-port source")
     parser.add_argument("--frozen-artifacts", type=Path,
                         help="Downloaded original artifact; verify every byte instead of rerunning Python")
     args = parser.parse_args()
+    if args.linear_audit and (not args.operator_audit or args.build_only):
+        raise ValueError("Linear audit requires the full separate operator audit")
     if not args.build_only and (args.frozen_report is None or not args.frozen_report.is_file()):
         raise ValueError("Review and freeze the completed original report before native model comparisons")
     output = Path(os.environ["HEAVY_OUT"])
@@ -212,6 +226,11 @@ def main():
     report["frozen_report_sha256"] = sha256(args.frozen_report)
     report["original_and_conversion_replay_exact"] = True
     reference = current["reference"]
+    if args.linear_audit:
+        subprocess.run([sys.executable, "tests/test_ultrabert_linear_capture.py", "-v"], cwd=ROOT, check=True)
+        from dump_ultrabert_linear_reference import dump_linear
+        report["linear_reference"] = dump_linear(current, reference_directory, output / "linear-reference")
+        target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     env["CRISPEMBED_ULTRABERT"] = "1"
     for dtype in ("f32", "f16"):
         for case in reference["cases"]:
@@ -241,6 +260,8 @@ def main():
             if args.operator_audit:
                 command = [str(binary), str(scratch / (dtype + ".gguf")),
                            str(reference_directory / case["archive"]), "--operator-audit"]
+                if args.linear_audit:
+                    command.append(str(output / "linear-reference" / case["archive"]))
                 probe = subprocess.run(command, env=env, stdout=subprocess.PIPE,
                                        stderr=subprocess.STDOUT, text=True)
                 probe_log = output / (dtype + "-" + case["case"]["id"] + "-operators.log")
@@ -248,6 +269,8 @@ def main():
                 if probe.returncode != proc.returncode or parse_log(probe.stdout) != parse_log(proc.stdout):
                     raise ValueError("Operator observation changed ordinary native metrics/exit")
                 audit["operators"] = parse_operator_log(probe.stdout)
+                if args.linear_audit:
+                    audit["linear"] = parse_linear_log(probe.stdout)
                 audit["operator_primary_metrics_exact"] = True
                 audit["operator_log"] = probe_log.name
                 audit["operator_log_sha256"] = sha256(probe_log)
@@ -259,7 +282,10 @@ def main():
     report["operator_failures"] = sum(not row["pass"] for arm in report["arms"]
                                       for row in arm.get("operators", {}).values())
     target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    if report["failures"] or report["operator_failures"]:
+    report["linear_failures"] = sum(not row["pass"] for arm in report["arms"]
+                                    for row in arm.get("linear", {}).values())
+    target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    if report["failures"] or report["operator_failures"] or report["linear_failures"]:
         raise AssertionError("UltraBERT strict native comparisons failed; see retained report/logs")
 
 

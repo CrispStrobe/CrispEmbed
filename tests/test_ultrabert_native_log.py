@@ -7,7 +7,7 @@ import tempfile
 import sys
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/ci-heavy"))
-from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, parse_operator_log, read_frozen_manifest, verify_frozen_reference
+from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, parse_operator_log, parse_linear_log, read_frozen_manifest, verify_frozen_reference
 
 
 def log(failed=False):
@@ -61,6 +61,18 @@ class NativeLogTest(unittest.TestCase):
                     [rows[0].replace("\t1\t0\t0", "\t0.9\t0.1\t0")] + rows[1:]):
             with self.assertRaises(ValueError):
                 parse_operator_log("\n".join(bad))
+
+    def test_linear_records_keep_failed_verdicts_and_reject_forgery(self):
+        keys = [("original_gate", "layer_14.silu"), ("original_gate_up", "layer_14.product"),
+                ("original_product", "layer_14.ffn_out")]
+        rows = [f"LINEAR\t{mode}\t{name}\t1\t0\t0\t0\t2\t2\t1" for mode, name in keys]
+        self.assertEqual(len(parse_linear_log("\n".join(rows))), 3)
+        failed = rows[:2] + [rows[2].replace("\t1\t0\t0", "\t0.99\t0.01\t0")[:-1] + "0"]
+        self.assertFalse(parse_linear_log("\n".join(failed))["original_product/layer_14.ffn_out"]["pass"])
+        for bad in (rows[:-1], rows + rows[:1], failed[:2] + [failed[2][:-1] + "1"],
+                    [rows[0].replace("layer_14.silu", "wrong")] + rows[1:]):
+            with self.assertRaises(ValueError):
+                parse_linear_log("\n".join(bad))
 
     def test_missing_stage_rejected(self):
         with self.assertRaisesRegex(ValueError, "Incomplete"):
