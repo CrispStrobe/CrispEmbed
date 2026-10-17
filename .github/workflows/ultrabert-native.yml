@@ -8,6 +8,11 @@ on:
         description: 'Successful original reference workflow run (must match the reviewed record)'
         required: true
         type: string
+      operator_audit:
+        description: 'Replay original-input operators separately; preserve ordinary metrics'
+        default: false
+        required: false
+        type: boolean
       frozen_report:
         description: 'Reviewed report under tests/results/ultrabert/'
         default: 'tests/results/ultrabert/reference-audit.json'
@@ -26,6 +31,7 @@ jobs:
     timeout-minutes: 60
     env:
       REFERENCE_RUN: ${{ inputs.reference_run }}
+      OPERATOR_AUDIT: ${{ inputs.operator_audit }}
       FROZEN_REPORT: ${{ inputs.frozen_report }}
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -70,7 +76,10 @@ jobs:
           github-token: ${{ github.token }}
           path: ${{ env.FROZEN_ARTIFACTS }}
       - name: Compare full native graph with original tensor archives
-        run: python tools/ci-heavy/ultrabert_native.py --frozen-report "$FROZEN_REPORT" --frozen-artifacts "$FROZEN_ARTIFACTS"
+        run: |
+          audit_args=()
+          if [[ "$OPERATOR_AUDIT" == "true" ]]; then audit_args+=(--operator-audit); fi
+          python tools/ci-heavy/ultrabert_native.py --frozen-report "$FROZEN_REPORT" --frozen-artifacts "$FROZEN_ARTIFACTS" "${audit_args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

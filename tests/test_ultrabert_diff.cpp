@@ -145,10 +145,79 @@ void run_row(Resources & resources, const std::vector<int32_t> & ids, const std:
     resources.graph = nullptr;
 }
 
+// Separate graphs over frozen original inputs. These never feed ordinary inference.
+void replay_operators(Resources & resources, const crispembed_diff::Ref & ref) {
+    auto embedding = ref.get_f32("emb_out");
+    auto residual = ref.get_f32("layer_14.post_attn_residual");
+    auto normalized = ref.get_f32("layer_14.ffn_norm");
+    auto gates = ref.get_f32("layer_14.gate");
+    auto ups = ref.get_f32("layer_14.up");
+    require(normalized.second > 0 && normalized.second % 768 == 0 && embedding.second == normalized.second &&
+                residual.second == normalized.second && gates.second == normalized.second / 768 * 1024 &&
+                ups.second == gates.second,
+            "Invalid original operator inputs");
+    const int64_t rows = (int64_t)normalized.second / 768;
+    require(rows <= 1024, "Operator replay row bound exceeded");
+    resources.graph = ggml_init({ 8 * 1024 * 1024, nullptr, true });
+    require(resources.graph != nullptr, "Operator metadata allocation failed");
+    auto * g = resources.graph;
+    auto * gf = ggml_new_graph_custom(g, 512, false);
+    auto * e = ggml_new_tensor_2d(g, GGML_TYPE_F32, 768, rows);
+    auto * r = ggml_new_tensor_2d(g, GGML_TYPE_F32, 768, rows);
+    auto * n = ggml_new_tensor_2d(g, GGML_TYPE_F32, 768, rows);
+    auto * original_gate = ggml_new_tensor_2d(g, GGML_TYPE_F32, 1024, rows);
+    auto * original_up = ggml_new_tensor_2d(g, GGML_TYPE_F32, 1024, rows);
+    for (auto * t : { e, r, n, original_gate, original_up }) ggml_set_input(t);
+    const auto & weights = resources.weights.tensors;
+    auto * first_norm = ggml_mul(g, ggml_rms_norm(g, e, 1e-6f), weights.at("blk.0.attn_norm.weight"));
+    auto * norm = ggml_mul(g, ggml_rms_norm(g, r, 1e-6f), weights.at("blk.14.ffn_norm.weight"));
+    auto * gate = ggml_mul_mat(g, weights.at("blk.14.ffn_gate.weight"), n);
+    auto * up = ggml_mul_mat(g, weights.at("blk.14.ffn_up.weight"), n);
+    auto * mlp = ggml_mul_mat(g, weights.at("blk.14.ffn_down.weight"), ggml_mul(g, ggml_silu(g, gate), up));
+    auto * glu_down =
+        ggml_mul_mat(g, weights.at("blk.14.ffn_down.weight"), ggml_mul(g, ggml_silu(g, original_gate), original_up));
+    const std::vector<ggml_tensor *> nodes = { first_norm, norm, gate, up, mlp, glu_down };
+    const std::vector<std::string> modes = { "original_embedding", "original_residual", "original_ffn_norm",
+                                             "original_ffn_norm",  "original_ffn_norm", "original_gate_up" };
+    const std::vector<std::string> names = { "layer_0.attn_norm", "layer_14.ffn_norm", "layer_14.gate",
+                                             "layer_14.up",       "layer_14.ffn_out",  "layer_14.ffn_out" };
+    for (auto * t : nodes) {
+        ggml_set_output(t);
+        ggml_build_forward_expand(gf, t);
+    }
+    resources.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(resources.backend));
+    require(resources.allocator && ggml_gallocr_alloc_graph(resources.allocator, gf), "Operator allocation failed");
+    ggml_backend_tensor_set(e, embedding.first, 0, embedding.second * sizeof(float));
+    ggml_backend_tensor_set(r, residual.first, 0, residual.second * sizeof(float));
+    ggml_backend_tensor_set(n, normalized.first, 0, normalized.second * sizeof(float));
+    ggml_backend_tensor_set(original_gate, gates.first, 0, gates.second * sizeof(float));
+    ggml_backend_tensor_set(original_up, ups.first, 0, ups.second * sizeof(float));
+    require(ggml_backend_graph_compute(resources.backend, gf) == GGML_STATUS_SUCCESS, "Operator compute failed");
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        std::vector<float> values((size_t)ggml_nelements(nodes[i]));
+        ggml_backend_tensor_get(nodes[i], values.data(), 0, values.size() * sizeof(float));
+        const auto report = ref.compare(names[i], values.data(), values.size(), 0);
+        bool finite = true;
+        for (float value : values) finite = finite && std::isfinite(value);
+        const bool pass = finite && report.found && std::isfinite(report.cos_min) && std::isfinite(report.max_abs) &&
+                          std::isfinite(report.mean_abs) && std::isfinite(report.rms) &&
+                          std::isfinite(report.mine_norm) && std::isfinite(report.ref_norm) &&
+                          report.cos_min >= 0.99999 && report.max_abs <= 0.002;
+        printf("OPERATOR\t%s\t%s\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%d\n", modes[i].c_str(), names[i].c_str(),
+               report.cos_min, report.max_abs, report.mean_abs, report.rms, report.mine_norm, report.ref_norm,
+               pass ? 1 : 0);
+    }
+    ggml_gallocr_free(resources.allocator);
+    resources.allocator = nullptr;
+    ggml_free(resources.graph);
+    resources.graph = nullptr;
+}
+
 int run(int argc, char ** argv) {
     // Explicit test-only opt-in, with zero behaving as off. Gate checked before IO.
     if (!core_env::on("CRISPEMBED_ULTRABERT")) return 2;
-    require(argc == 3, "Usage: test-ultrabert-diff model.gguf reference.gguf");
+    require(argc == 3 || (argc == 4 && std::string(argv[3]) == "--operator-audit"),
+            "Usage: test-ultrabert-diff model.gguf reference.gguf [--operator-audit]");
     crispembed_diff::Ref ref;
     require(ref.load(argv[2]), "Reference load failed");
     require(ref.meta("ref.revision") == "367d5343b5a0164d57b810cedf5de4b8983d5984" &&
@@ -242,6 +311,7 @@ int run(int argc, char ** argv) {
     }
     require(numeric == 292 && exact == 50, "Incomplete native stage comparisons");
     printf("TOTAL\t%d\t%d\t%d\n", numeric, exact, failed);
+    if (argc == 4) replay_operators(resources, ref);
     return failed ? 1 : 0;
 }
 } // namespace

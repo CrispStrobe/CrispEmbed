@@ -49,6 +49,36 @@ def parse_log(log):
 
 
 
+def parse_operator_log(log):
+    expected = {
+        "original_embedding/layer_0.attn_norm", "original_residual/layer_14.ffn_norm",
+        "original_ffn_norm/layer_14.gate", "original_ffn_norm/layer_14.up",
+        "original_ffn_norm/layer_14.ffn_out", "original_gate_up/layer_14.ffn_out",
+    }
+    result = {}
+    for line in log.splitlines():
+        fields = line.split("\t")
+        if fields[0] != "OPERATOR":
+            continue
+        if len(fields) != 10:
+            raise ValueError("Malformed operator record")
+        key = fields[1] + "/" + fields[2]
+        if key not in expected or key in result:
+            raise ValueError("Unexpected/duplicate operator record")
+        values = [float(v) for v in fields[3:9]]
+        if any(math.isfinite(v) and v < 0 for v in values[1:]):
+            raise ValueError("Negative operator error/norm")
+        passed = all(math.isfinite(v) for v in values) and values[0] >= 0.99999 and values[1] <= 0.002
+        if fields[9] not in ("0", "1") or int(fields[9]) != int(passed):
+            raise ValueError("Operator verdict mismatch")
+        result[key] = dict(zip(("cos_min", "max_abs", "mean_abs", "rms", "native_norm", "reference_norm"),
+                               [v if math.isfinite(v) else None for v in values]))
+        result[key]["pass"] = passed
+    if set(result) != expected:
+        raise ValueError("Incomplete operator audit")
+    return result
+
+
 def verify_frozen_reference(baseline, current):
     if (baseline.get("source_commit") != FROZEN_REFERENCE_SOURCE
             or baseline.get("status") != "completed conversion/reference audit; native parity not evaluated"
@@ -117,6 +147,7 @@ def prepare_frozen_artifacts(baseline, directory, scratch):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-only", action="store_true")
+    parser.add_argument("--operator-audit", action="store_true", help="Separate original-input RMSNorm/MLP/GLU-down replay")
     parser.add_argument("--frozen-report", type=Path,
                         help="Reviewed complete original report at the immutable pre-port source")
     parser.add_argument("--frozen-artifacts", type=Path,
@@ -207,12 +238,28 @@ def main():
                          reference_archive_sha256=case["archive_sha256"], log=log.name,
                          log_sha256=sha256(log), compared_order=ordered,
                          uncaptured_native_stages=[name for name in case["stages"] if name not in ordered])
+            if args.operator_audit:
+                command = [str(binary), str(scratch / (dtype + ".gguf")),
+                           str(reference_directory / case["archive"]), "--operator-audit"]
+                probe = subprocess.run(command, env=env, stdout=subprocess.PIPE,
+                                       stderr=subprocess.STDOUT, text=True)
+                probe_log = output / (dtype + "-" + case["case"]["id"] + "-operators.log")
+                probe_log.write_text(probe.stdout)
+                if probe.returncode != proc.returncode or parse_log(probe.stdout) != parse_log(proc.stdout):
+                    raise ValueError("Operator observation changed ordinary native metrics/exit")
+                audit["operators"] = parse_operator_log(probe.stdout)
+                audit["operator_primary_metrics_exact"] = True
+                audit["operator_log"] = probe_log.name
+                audit["operator_log_sha256"] = sha256(probe_log)
             report["arms"].append(audit)
             target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     report["status"] = "completed prepared-ID native comparisons; all failures retained"
     report["failures"] = sum(arm["failures"] for arm in report["arms"])
     target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    if report["failures"]:
+    report["operator_failures"] = sum(not row["pass"] for arm in report["arms"]
+                                      for row in arm.get("operators", {}).values())
+    target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    if report["failures"] or report["operator_failures"]:
         raise AssertionError("UltraBERT strict native comparisons failed; see retained report/logs")
 
 

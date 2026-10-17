@@ -7,7 +7,7 @@ import tempfile
 import sys
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/ci-heavy"))
-from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, read_frozen_manifest, verify_frozen_reference
+from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, parse_operator_log, read_frozen_manifest, verify_frozen_reference
 
 
 def log(failed=False):
@@ -50,6 +50,17 @@ class NativeLogTest(unittest.TestCase):
             path.write_bytes(raw)
             with self.assertRaisesRegex(ValueError, "report bytes"):
                 read_frozen_manifest(raw_record, Path(directory))
+
+    def test_operator_records_and_wrong_verdicts(self):
+        keys = [("original_embedding", "layer_0.attn_norm"), ("original_residual", "layer_14.ffn_norm"),
+                ("original_ffn_norm", "layer_14.gate"), ("original_ffn_norm", "layer_14.up"),
+                ("original_ffn_norm", "layer_14.ffn_out"), ("original_gate_up", "layer_14.ffn_out")]
+        rows = [f"OPERATOR\t{mode}\t{name}\t1\t0\t0\t0\t2\t2\t1" for mode, name in keys]
+        self.assertEqual(len(parse_operator_log("\n".join(rows))), 6)
+        for bad in (rows[:-1], rows + rows[:1],
+                    [rows[0].replace("\t1\t0\t0", "\t0.9\t0.1\t0")] + rows[1:]):
+            with self.assertRaises(ValueError):
+                parse_operator_log("\n".join(bad))
 
     def test_missing_stage_rejected(self):
         with self.assertRaisesRegex(ValueError, "Incomplete"):
