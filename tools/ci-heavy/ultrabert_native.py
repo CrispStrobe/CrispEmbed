@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tools"))
 from ultrabert_contract import sha256
 
-FROZEN_REFERENCE_SOURCE = "0dddbd2b61740c0f25482b2afb428b815b5c85ac"
+FROZEN_REFERENCE_SOURCE = "0573f1847db68914052a98341a22fceeb1358518"
 
 
 def parse_log(log):
@@ -59,11 +59,68 @@ def verify_frozen_reference(baseline, current):
         raise ValueError("Frozen original arrays/conversion records drifted")
 
 
+
+def read_frozen_manifest(baseline, directory):
+    manifest = directory / "ultrabert-reference-audit.json"
+    expected_raw_sha = baseline.get("audit_provenance", {}).get("raw_report_sha256")
+    if not expected_raw_sha or sha256(manifest) != expected_raw_sha:
+        raise ValueError("Original artifact report bytes differ from reviewed producer")
+    current = json.loads(manifest.read_text())
+    verify_frozen_reference(baseline, current)
+    return current
+
+
+def prepare_frozen_artifacts(baseline, directory, scratch):
+    """Consume original tensor files without rerunning floating-point Python."""
+    current = read_frozen_manifest(baseline, directory)
+    import importlib.util
+    import gguf
+    import numpy as np
+    from huggingface_hub import snapshot_download
+    from ultrabert_contract import MODEL, REVISION, profile
+
+    reference_dir = directory / "reference"
+    for case in current["reference"]["cases"]:
+        name = case["archive"]
+        if Path(name).name != name or name != case["case"]["id"] + ".gguf":
+            raise ValueError("Unexpected original archive name")
+        path = reference_dir / name
+        if path.stat().st_size != case["archive_bytes"] or sha256(path) != case["archive_sha256"]:
+            raise ValueError("Frozen original archive bytes differ: " + name)
+        reader = gguf.GGUFReader(str(path))
+        actual = {tensor.name: tensor for tensor in reader.tensors}
+        if set(actual) != set(case["stages"]):
+            raise ValueError("Frozen original archive stage set differs")
+        for stage, record in case["stages"].items():
+            tensor = actual[stage]
+            if (tensor.tensor_type != gguf.GGMLQuantizationType.F32
+                    or list(reversed(tensor.shape.tolist())) != record["shape"]
+                    or not np.isfinite(tensor.data).all()
+                    or hashlib.sha256(tensor.data.tobytes()).hexdigest() != record["payload_sha256"]):
+                raise ValueError("Frozen original tensor differs: " + stage)
+        del actual, reader
+    model_dir = snapshot_download(MODEL, revision=REVISION,
+                                 allow_patterns=list(profile()["inspected_file_sha256"]) + ["model.safetensors"])
+    spec = importlib.util.spec_from_file_location("ultrabert_converter", ROOT / "models/convert-ultrabert-to-gguf.py")
+    converter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(converter)
+    for frozen in current["conversions"]:
+        dtype = frozen["dtype"]
+        if dtype not in ("f32", "f16"):
+            raise ValueError("Unexpected frozen precision")
+        converted = converter.convert(model_dir, scratch / (dtype + ".gguf"), dtype)
+        if any(value != frozen.get(key) for key, value in converted.items()):
+            raise ValueError("Frozen conversion bytes/records differ: " + dtype)
+    return current, reference_dir
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-only", action="store_true")
     parser.add_argument("--frozen-report", type=Path,
                         help="Reviewed complete original report at the immutable pre-port source")
+    parser.add_argument("--frozen-artifacts", type=Path,
+                        help="Downloaded original artifact; verify every byte instead of rerunning Python")
     args = parser.parse_args()
     if not args.build_only and (args.frozen_report is None or not args.frozen_report.is_file()):
         raise ValueError("Review and freeze the completed original report before native model comparisons")
@@ -79,6 +136,7 @@ def main():
     # Freeze the original and conversion code before the first native output.
     for name in ("tools/ultrabert_contract.py", "models/convert-ultrabert-to-gguf.py",
                  "tools/dump_ultrabert_reference.py", "tools/ci-heavy/ultrabert_reference.py",
+                 "tests/test_ultrabert_inference_capture.py",
                  "tests/results/ultrabert/source-audit.json", "tests/results/ultrabert/embed-weight-schema.json"):
         old = subprocess.check_output(["git", "show", FROZEN_REFERENCE_SOURCE + ":" + name], cwd=ROOT)
         if hashlib.sha256(old).hexdigest() != sha256(ROOT / name):
@@ -109,11 +167,17 @@ def main():
     target.write_text(json.dumps(report, indent=2) + "\n")
     if args.build_only:
         return
-    import ultrabert_reference
-    ultrabert_reference.main()
     baseline = json.loads(args.frozen_report.read_text())
-    current = json.loads((output / "ultrabert-reference-audit.json").read_text())
-    verify_frozen_reference(baseline, current)
+    if args.frozen_artifacts is not None:
+        current, reference_directory = prepare_frozen_artifacts(baseline, args.frozen_artifacts, scratch)
+        report["reference_mode"] = "byte-exact original tensor archives; no Python inference replay"
+    else:
+        import ultrabert_reference
+        ultrabert_reference.main()
+        current = json.loads((output / "ultrabert-reference-audit.json").read_text())
+        verify_frozen_reference(baseline, current)
+        reference_directory = output / "reference"
+        report["reference_mode"] = "exact Python inference and conversion replay"
     report["frozen_report_sha256"] = sha256(args.frozen_report)
     report["original_and_conversion_replay_exact"] = True
     reference = current["reference"]
@@ -121,7 +185,7 @@ def main():
     for dtype in ("f32", "f16"):
         for case in reference["cases"]:
             proc = subprocess.run([str(binary), str(scratch / (dtype + ".gguf")),
-                                   str(output / "reference" / case["archive"])],
+                                   str(reference_directory / case["archive"])],
                                   env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             log = output / (dtype + "-" + case["case"]["id"] + ".log")
             log.write_text(proc.stdout)

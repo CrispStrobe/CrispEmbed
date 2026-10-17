@@ -1,0 +1,77 @@
+name: UltraBERT frozen native audit
+on:
+  push:
+    paths: ['.github/workflows/ultrabert-native.yml']
+  workflow_dispatch:
+    inputs:
+      reference_run:
+        description: 'Successful original reference workflow run (must match the reviewed record)'
+        required: true
+        type: string
+      frozen_report:
+        description: 'Reviewed report under tests/results/ultrabert/'
+        default: 'tests/results/ultrabert/reference-audit.json'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-frozen-native-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      REFERENCE_RUN: ${{ inputs.reference_run }}
+      FROZEN_REPORT: ${{ inputs.frozen_report }}
+      GH_TOKEN: ${{ github.token }}
+      HEAVY_OUT: ${{ runner.temp }}/out
+      HEAVY_SCRATCH: ${{ runner.temp }}/scratch
+      FROZEN_ARTIFACTS: ${{ runner.temp }}/frozen
+      HF_HOME: ${{ runner.temp }}/hf
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check original run identity against the reviewed record
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          run = os.environ['REFERENCE_RUN']
+          if not run.isdigit():
+              raise ValueError('Expected numeric original run ID')
+          path = Path(os.environ['FROZEN_REPORT'])
+          if path.is_absolute() or '..' in path.parts or path.parts[:3] != ('tests', 'results', 'ultrabert'):
+              raise ValueError('Expected a reviewed UltraBERT report path')
+          record = json.loads(path.read_text())
+          expected = 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + run
+          if record.get('audit_provenance', {}).get('workflow') != expected:
+              raise ValueError('Original run does not match reviewed provenance')
+          meta = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + run]))
+          if meta['conclusion'] != 'success' or meta['head_sha'] != record['source_commit']:
+              raise ValueError('Original run is not a successful frozen source')
+          PY
+      - name: Install conversion and archive-reader dependencies
+        run: python -m pip install gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6 huggingface-hub==1.33.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: heavy-${{ inputs.reference_run }}
+          run-id: ${{ inputs.reference_run }}
+          github-token: ${{ github.token }}
+          path: ${{ env.FROZEN_ARTIFACTS }}
+      - name: Compare full native graph with original tensor archives
+        run: python tools/ci-heavy/ultrabert_native.py --frozen-report "$FROZEN_REPORT" --frozen-artifacts "$FROZEN_ARTIFACTS"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-native-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 30

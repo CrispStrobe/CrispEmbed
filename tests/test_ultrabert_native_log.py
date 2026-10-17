@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Model-free controls: a malformed or failing native audit cannot look green."""
 from pathlib import Path
+import hashlib
+import json
+import tempfile
 import sys
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools/ci-heavy"))
-from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, verify_frozen_reference
+from ultrabert_native import FROZEN_REFERENCE_SOURCE, parse_log, read_frozen_manifest, verify_frozen_reference
 
 
 def log(failed=False):
@@ -30,6 +33,23 @@ class NativeLogTest(unittest.TestCase):
                 verify_frozen_reference(baseline, changed)
         with self.assertRaisesRegex(ValueError, "Incomplete"):
             verify_frozen_reference({**baseline, "status": "started"}, baseline)
+
+    def test_original_manifest_bytes_are_frozen_before_heavy_imports(self):
+        raw_record = {"source_commit": FROZEN_REFERENCE_SOURCE,
+                      "status": "completed conversion/reference audit; native parity not evaluated",
+                      "reference": {"arrays": "original"}, "conversions": ["original"]}
+        raw = json.dumps(raw_record).encode()
+        baseline = {**raw_record, "audit_provenance": {"raw_report_sha256": hashlib.sha256(raw).hexdigest()}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ultrabert-reference-audit.json"
+            path.write_bytes(raw)
+            self.assertEqual(read_frozen_manifest(baseline, Path(directory)), raw_record)
+            path.write_bytes(raw + b"\n")
+            with self.assertRaisesRegex(ValueError, "report bytes"):
+                read_frozen_manifest(baseline, Path(directory))
+            path.write_bytes(raw)
+            with self.assertRaisesRegex(ValueError, "report bytes"):
+                read_frozen_manifest(raw_record, Path(directory))
 
     def test_missing_stage_rejected(self):
         with self.assertRaisesRegex(ValueError, "Incomplete"):
