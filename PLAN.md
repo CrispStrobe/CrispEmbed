@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 16 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 17 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -113,10 +113,15 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   [docs/ultrabert.md](docs/ultrabert.md). Prefer UltraBERT-Embed-150M first for
   retrieval, then base150M masked-LM and380M. Verify exact local/global masks,
   per-layer RoPE, BOS/padding IDs, CLS pooling/query prefixes and the untied MLM
-  head. Add a gated native architecture/converter/reference/surface pipeline;
-  strict conversion/reference implementation is in progress on
-  `feat/ultrabert-reference`; hosted verification is pending. No native implementation,
-  32K validation or quantized publication is claimed yet.
+  head. Both218-tensor conversions and all seven original cases/2,730 stages
+  pass the [frozen reference audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520).
+  The test-only native graph completes all14 arms/700 exact controls, retaining
+  F32/F16 intermediate failures183/1,294 in the
+  [initial panel](tests/results/ultrabert/initial-native-parity.json).
+  Complete the queued [original-input operator audit](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
+  before choosing a correction; all24 model-free harness controls pass at a8b129f4.
+  Native tokenization/public backend, bindings, independent retrieval quality,
+  long-context validation and quantized publication remain pending.
 - [ ] **LFM2.5 Encoder:** validate GPU scheduling, long-context behavior beyond
   the measured suite and independent task quality. F16 remains default; published
   mixed profiles change low-margin predictions. [Usage/evidence](docs/lfm2-encoder.md).
@@ -135,6 +140,11 @@ inspection, conversion and inference remain outside the selected scope; its
 [port contract](docs/indra-ocr/PLAN.md) is retained for a future eligible lane.
 
 ## Packaging, releases and consumers
+
+- [ ] **Review the three open PRs after the UltraBERT lane.** Confirm the open
+  set at review time (currently PR60, PR68 and PR69), inspect source diffs,
+  review comments and actual CI conclusions, and record concrete fixes or
+  unresolved dependencies. Keep the app's immutable0.17.12 pin unchanged.
 
 - [ ] **Latest CI conclusions:** PR62 and PR63 complete ten-job Build (including
   Flutter), WASM, quality contract and secret checks pass; [completed evidence](HISTORY.md).
@@ -284,7 +294,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT reference/native audit | [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69): all seven original cases/2,730 stages and both218-tensor conversions PASS [38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520); 23 harness controls/builds pass. [First native panel38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303) completes all14 arms and700 exact controls: F32 final CLS cosine rounds1.0 (worst absolute0.000067234), but183 intermediate failures start at layer14 FFN output; F16 retains1,294 failures. [Original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) is pending at a8b129f4: initial/layer14 norms, MLP and SwiGLU-down replay, with unchanged ordinary metric/exit controls. Public tokenizer/backend/bindings/quality/publication remain pending. |
+| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT reference/native audit | [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69): all seven original cases/2,730 stages and both218-tensor conversions PASS [38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520); 24 model-free harness controls pass at a8b129f4; initial native build verified. [First native panel38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303) completes all14 arms and700 exact controls: F32 final CLS cosine rounds1.0 (worst absolute0.000067234), but183 intermediate failures start at layer14 FFN output; F16 retains1,294 failures. [Original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) is pending at a8b129f4: initial/layer14 norms, MLP and SwiGLU-down replay, with unchanged ordinary metric/exit controls. Public tokenizer/backend/bindings/quality/publication remain pending. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
