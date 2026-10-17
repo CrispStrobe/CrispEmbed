@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Consumer snapshot verified5 October2026; vendor roadmap updated 16 October 2026.
+Consumer snapshot verified5 October2026; vendor roadmap updated 17 October 2026.
 This handoff scopes follow-up work; it does not say the
 lanes below have been implemented. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
@@ -76,7 +76,7 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Vendor status — 16 October 2026
+## Vendor status — 17 October 2026
 
 Use [PLAN.md](../PLAN.md) for active tasks and ownership, [HISTORY.md](../HISTORY.md)
 for completed work and frozen handoffs, and [PERFORMANCE.md](../PERFORMANCE.md)
@@ -298,7 +298,13 @@ projection rounding before selecting a correction; preserve all initial debt.
 The [isolated linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
 is queued at c7c5ef30. It adds separate original-module SiLU/product observations
 with bit-exact old gate/up/output anchors, then isolates native down projection;
-new controls, compilation and measurements are pending. The requested
+new controls, compilation and measurements are pending.
+The separate [native tokenizer audit39001522903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903)
+is queued at0f9d0a44: native BPE plus explicit UltraBERT templates are compared
+against all8 frozen original text rows. It downloads tokenizer assets only and
+requires terminal-SEP and ID-zero-mask negative controls to fail. Four model-free
+log controls and native compilation/parity remain pending; this is no public
+model/tokenizer support claim. The requested
 [three-PR review](pr-review-2026-10-17.md) is complete; PR68 fork CI is now approved
 and queued, PR60 wheel11/12 target inconsistency remains, and PR69 stays draft. Native tokenization, production backend,
 public interfaces, task retrieval, quantized quality and publication remain open.
