@@ -77,3 +77,15 @@ jobs:
             build-wasm/crispembed_ocr.wasm
             wasm/crispembed-ocr.js
           retention-days: 30
+
+      - name: Fingerprint actual WASM runtime artifacts
+        run: |
+          mkdir -p .ci/wasm-products
+          cp build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm wasm/crispembed-ocr.js .ci/wasm-products/
+          python3 tools/runtime_artifact_manifest.py --artifact-root .ci/wasm-products --output wasm-artifact-manifest.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm-artifact-provenance
+          path: wasm-artifact-manifest.json
+          retention-days: 14
