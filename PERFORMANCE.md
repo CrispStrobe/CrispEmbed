@@ -31,13 +31,33 @@ the worst cosine0.999478936 is layer15 FFN output on boundary/padded. All raw CL
 absolute-error gates fail, despite close cosines and normalized-vector errors.
 No weight profile/default/artifact is promoted using this panel.
 
-The next [original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
-is pending. It isolates the first norm plus layer14 norm/MLP and native
-SwiGLU+down projection from frozen original gate/up values. The latter remains a
-compound replay, not an isolated down projection with captured Python input.
-Ordinary native metrics/exit must be identical with probes on/off. Task retrieval,
-SentenceTransformer wrapper, native tokenization, public APIs, long context,
-quantized profiles, latency and RSS remain unverified.
+The completed [original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) at a8b129f4
+reproduces every ordinary metric from the first panel and passes all700 exact
+controls. Probe-on/off metrics and exits match on all14 arms. All28 raw logs
+and84 operator records independently verify; the
+[complete report](tests/results/ultrabert/operator-audit.json) retains25 local
+operator failures, separately from unchanged1,477 ordinary failures.
+
+| Original-input probe | Worst F32 abs | F32 failures /7 | Worst F16 abs | F16 failures /7 |
+| --- | ---: | ---: | ---: | ---: |
+| Embedding → layer0 attention norm | 0.00000190734863 | 0 | 0.00000190734863 | 0 |
+| Residual → layer14 FFN norm | 0.0000152587891 | 0 | 0.0000152587891 | 0 |
+| FFN norm → layer14 gate | 0.0000419616699 | 0 | 0.0167541504 | 6 |
+| FFN norm → layer14 up | 0.0000457763672 | 0 | 0.00855636597 | 6 |
+| FFN norm → layer14 whole MLP | 0.0048828125 | 1 | 0.592590332 | 6 |
+| Gate/up → layer14 SiLU/product/down | 0.00146484375 | 0 | 1.12451172 | 6 |
+
+F32 Unicode's whole-MLP error0.0048828125 becomes0.000671386719 with original
+gate/up, narrowing local projection-error amplification. Boundary's MLP error
+from original norm is0.000122070312, versus composed0.00816345215; upstream
+accumulation remains relevant. Passing local norms does not prove every norm
+operation exact. The gate/up replay remains compound: it includes native SiLU,
+multiplication and down projection, not a captured original down input. F16 also
+uses converted down weights there. Next inspect those original inputs and linear
+rounding without changing the frozen anchors or strict gates. No recipe is
+selected from these seven cases. Task retrieval, SentenceTransformer wrapper,
+native tokenization, public APIs, long context, quantized profiles, latency and
+RSS remain unverified.
 
 ## UltraBERT-Embed-150M conversion and reference storage — 17 October 2026
 

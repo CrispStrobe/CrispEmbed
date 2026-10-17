@@ -190,7 +190,7 @@ dependency and inference-tensor negative-control failures are retained in HISTOR
 The corrected environment is `torch==2.14.0 transformers==5.16.1 gguf==0.19.0
 safetensors==0.8.0 numpy==2.2.6`. PR69 remains draft while native evidence is reviewed.
 
-## Prepared-ID ggml prototype — validation pending
+## Prepared-ID ggml prototype — initial parity and operator audits complete
 
 The original14 source/schema controls pass in
 [38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
@@ -215,8 +215,9 @@ both norms and the first failure in original execution order. All F32/F16 cases
 are collected before failed numerical gates return nonzero. Eight additional
 model-free controls reject missing/duplicated stages, forged green verdicts,
 incorrect totals and negative errors, while retaining nonfinite/exact failures.
-The original22 controls and the hosted prototype build pass; the expanded23
-stdlib controls also pass, including original-manifest byte preservation.
+The expanded24 model-free controls pass at a8b129f4, including original-manifest
+byte preservation and the six-record operator parser. The expanded test-only
+executable compiles and runs all14 ordinary/operator arms at the same source.
 
 [the retained build record](../tests/results/ultrabert/native-build.json)
 separates compilation/gates from unmeasured model parity.
@@ -242,5 +243,12 @@ completes all arms and fails the unchanged numerical gates after retaining all
 measurements. All700 exact controls pass. F32 raw CLS cosines round1.0 with worst
 error0.000067234; intermediate failures still start at layer14 FFN output.
 The [separate original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
-is pending; its probes must leave all ordinary native metrics and exit identical.
+completes with unchanged ordinary metrics/exits and all84 local records retained.
+F32 passes41/42 probes: Unicode whole MLP from original norm has error0.0048828125,
+reduced to0.000671386719 using original gate/up. Norm probes pass on all cases;
+projection-error amplification is narrowed, not a single operator defect proven.
+F16 retains24/42 local failures. Next capture original SiLU/product/down inputs
+and inspect projection rounding while preserving the initial frozen references.
+[Raw operator report](../tests/results/ultrabert/operator-audit.json),
+[magnitudes and limits](../PERFORMANCE.md).
 No numerical gate is waived by final-vector, reference or build success.

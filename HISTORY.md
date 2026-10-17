@@ -1,3 +1,29 @@
+## 2026-10-17 — UltraBERT original-input operator attribution complete
+
+[Operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) at
+`a8b129f467c443f10fc9dd8d3504f0f566643ab2` compiles the expanded test-only
+executable and retains all14 ordinary arms unchanged from the initial panel.
+All700 exact controls pass, all probe-on/off ordinary metrics and exits match,
+and every original archive/conversion identity verifies. All28 raw logs were
+independently hash-checked and reparsed, including84 operator records. The
+[complete report](tests/results/ultrabert/operator-audit.json) retains every raw
+producer field; original report SHA256 is
+`a9d66194f69a9e25aefd528e24fea0203e43a0933bb81f22e420a70dee9eb367`.
+All24 model-free controls pass at this same source in
+[38998432321](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432321).
+
+F32 passes41/42 local operator checks. Unicode layer14 MLP from original norm
+retains max error0.0048828125, while replay from original gate/up reduces it to
+0.000671386719. Both local norm probes pass on every case. Boundary MLP from
+original norm has error0.000122070312, versus composed0.00816345215. These
+observations narrow projection-error amplification; they do not prove a single
+faulty reduction or justify a tolerance waiver. F16 passes18/42 local checks;
+its original-gate/up replay still includes converted down weights and has worst
+error1.12451172. All initial183 F32/1,294 F16 ordinary failures remain unchanged.
+Original SiLU/product/down inputs and projection rounding are the next bounded
+attribution task. Production/tokenization/bindings, retrieval quality and
+publication stay pending; no runtime release or app dependency changes.
+
 ## 2026-10-17 — Initial complete UltraBERT native panel retained
 
 [38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
