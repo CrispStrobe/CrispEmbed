@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Consumer snapshot verified5 October2026; vendor roadmap updated 16 October 2026.
+Consumer snapshot verified5 October2026; vendor roadmap updated 17 October 2026.
 This handoff scopes follow-up work; it does not say the
 lanes below have been implemented. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
@@ -36,7 +36,11 @@ the exact latest workflow reports when recording new totals.
   Original training-checkpoint/full-sequence parity remains unproved.
 - CrispEmbed Python-wheel run 37222310629 failed on macOS arm64 during wheel
   repair. Linux x86_64/aarch64 and Windows builds passed; aggregation skipped.
-  This is separate from successful app native/WASM release assets.
+  This is separate from successful app native/WASM release assets. The
+  [bounded repairPR70](https://github.com/CrispStrobe/CrispEmbed/pull/70) aligns
+  cibuildwheel with the existing12.0 native target and actually loads the
+  installed bundled library. [Full wheel matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
+  is queued at56b5af0c; repaired artifacts/installed checks remain unverified.
 - The minimal runtime correction is published but its draft PR 60 remains open.
   Before this Markdown update, vendor code baseline 28d5a61 and release 78493a3
   diverge: main has 64
@@ -72,7 +76,7 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Vendor status — 16 October 2026
+## Vendor status — 17 October 2026
 
 Use [PLAN.md](../PLAN.md) for active tasks and ownership, [HISTORY.md](../HISTORY.md)
 for completed work and frozen handoffs, and [PERFORMANCE.md](../PERFORMANCE.md)
@@ -290,8 +294,25 @@ completes at a8b129f4 with all ordinary metrics/exits reproduced exactly. All28
 logs/84 local records verify: F32 passes41/42 probes and F16 retains24 failures.
 Unicode whole-MLP error0.0048828125 falls to0.000671386719 with original gate/up;
 local norm probes pass. Next capture original SiLU/product/down inputs and inspect
-projection rounding before selecting a correction; preserve all initial debt. Native tokenization, production backend,
+projection rounding before selecting a correction; preserve all initial debt.
+The [isolated linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
+is queued at c7c5ef30. It adds separate original-module SiLU/product observations
+with bit-exact old gate/up/output anchors, then isolates native down projection;
+new controls, compilation and measurements are pending.
+The separate [native tokenizer audit39001522903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903)
+is queued at0f9d0a44: native BPE plus explicit UltraBERT templates are compared
+against all8 frozen original text rows. It downloads tokenizer assets only and
+requires terminal-SEP and ID-zero-mask negative controls to fail. Four model-free
+log controls and native compilation/parity remain pending; this is no public
+model/tokenizer support claim. The requested
+[three-PR review](pr-review-2026-10-17.md) is complete; PR68 fork CI is now approved
+and queued, PR60 wheel11/12 target inconsistency remains, and PR69 stays draft. Native tokenization, production backend,
 public interfaces, task retrieval, quantized quality and publication remain open.
+The independently scoped [wheel repairPR70](https://github.com/CrispStrobe/CrispEmbed/pull/70)
+sets cibuildwheel to the existing macOS12.0 native floor and verifies actual
+installed native loading/C-ABI use. [Four-platform matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
+is queued at56b5af0c; wheel repair/aggregation is not yet verified. No release or
+app pin change accompanies this patch.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
