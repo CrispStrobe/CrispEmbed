@@ -17,6 +17,7 @@ from ultrabert_contract import MODEL, REVISION, expected_tensors, profile, sha25
 
 def main():
     subprocess.run([sys.executable, "tests/test_ultrabert_contract.py", "-v"], cwd=ROOT, check=True)
+    subprocess.run([sys.executable, "tests/test_ultrabert_inference_capture.py", "-v"], cwd=ROOT, check=True)
     from huggingface_hub import snapshot_download
     from safetensors import safe_open
     import gguf

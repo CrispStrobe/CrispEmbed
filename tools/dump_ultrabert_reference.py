@@ -102,6 +102,24 @@ def assert_masks(captured, encoded):
             raise ValueError("Local/global 127/128/129 boundary differs")
 
 
+
+def check_bos_negative(captured, encoded):
+    import torch
+    # Captures made under inference_mode are immutable outside that context.
+    # Clone outside it and alter only the negative control, never the originals.
+    mask = captured["layer_0.attention_mask"].clone()
+    negative = {**captured, "layer_0.attention_mask": mask}
+    mask[0, 0, 0, 0] = torch.finfo(torch.float32).min
+    rejected = False
+    try:
+        assert_masks(negative, encoded)
+    except ValueError:
+        rejected = True
+    if not rejected:
+        raise ValueError("Mask checker accepted a hidden BOS")
+    assert_masks(captured, encoded)
+
+
 def dump(directory, output):
     directory, output = Path(directory), Path(output)
     sources = validate_sources(directory)
@@ -115,7 +133,7 @@ def dump(directory, output):
     if transformers.__version__ != "5.16.1":
         raise ValueError("Use the separately pinned Transformers 5.16.1 environment")
     torch.set_num_threads(2)
-    tokenizer = AutoTokenizer.from_pretrained(directory, local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(directory, local_files_only=True, trust_remote_code=True)
     model, loading = AutoModel.from_pretrained(
         directory, local_files_only=True, trust_remote_code=True,
         attn_implementation="eager", dtype=torch.float32, output_loading_info=True)
@@ -151,21 +169,7 @@ def dump(directory, output):
         if not torch.equal(anchor, observed):
             raise ValueError("Reference observation changes ordinary output")
         assert_masks(tensors, encoded)
-        # A real original capture is the positive control. Mask a real BOS to
-        # prove the checker rejects wrong semantics, including a zero-ID BOS.
-        mask = tensors["layer_0.attention_mask"]
-        saved = mask[0, 0, 0, 0].clone()
-        mask[0, 0, 0, 0] = torch.finfo(torch.float32).min
-        rejected = False
-        try:
-            assert_masks(tensors, encoded)
-        except ValueError:
-            rejected = True
-        finally:
-            mask[0, 0, 0, 0] = saved
-        if not rejected:
-            raise ValueError("Mask checker accepted a hidden BOS")
-        assert_masks(tensors, encoded)
+        check_bos_negative(tensors, encoded)
         tensors["input_ids"] = encoded["input_ids"].float()
         tensors["attention_mask"] = encoded["attention_mask"].float()
         tensors["cls_raw"] = observed[:, 0, :].detach().clone()
