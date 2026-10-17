@@ -1,3 +1,23 @@
+## 2026-10-17 — Initial complete UltraBERT native panel retained
+
+[38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+completes all14 prepared-ID F32/F16 arms atc32ea789. All700 exact controls pass;
+original artifacts and converted bytes reproduce exactly. Independent reparsing
+of every native log confirms183 F32 and1,294 F16 failed numerical stages. Every
+raw report field is retained in [initial-native-parity.json](tests/results/ultrabert/initial-native-parity.json),
+raw SHA256 `500238ca9ce7b068285c3b409d50cd29246a5dd372f06c0eef565eb6c967ab72`.
+F32 final CLS cosines round1.0, worst raw error0.0000672340393; strict intermediate
+failure first appears at layer14 FFN output. F16 minimum raw CLS cosine is
+0.999999642, worst raw error0.0185089111; this does not waive its larger stage debt.
+Full errors/magnitudes and quality limits are in PERFORMANCE. No production
+backend or candidate publication follows from these numbers.
+
+The [operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
+is pending at a8b129f4: separate graphs use original embedding/residual/norm or
+gate/up inputs, with ordinary native metric/exit equality controls. Earlier
+native outputs are frozen; no source weight, prompt, case, cap or tolerance is
+changed. Local work remains report/log verification, edits and formatting only.
+
 ## 2026-10-17 — UltraBERT original references frozen after capture repair
 
 [Reference run38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)

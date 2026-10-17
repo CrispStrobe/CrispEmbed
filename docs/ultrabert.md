@@ -6,8 +6,8 @@ They need an explicit architecture path; treating them as stock BERT, ModernBERT
 or an unmodified bidirectional decoder would give different math and masks.
 The initial feasibility audit read public metadata, tokenizer assets and Python
 source only. Conversion and original-reference verification are complete, as described below.
-The prepared-ID native prototype is under audit; no public native support or
-measured native parity is claimed.
+The prepared-ID native prototype has a complete initial parity audit with
+retained intermediate failures. No public native backend is supported yet.
 
 ## Pinned upstream sources
 
@@ -167,7 +167,7 @@ F32/F16 tensor round-trips and saves original reference archives remotely.
 Small [model-free negative controls](../tests/test_ultrabert_contract.py) run
 before downloads and in [contract CI](../.github/workflows/ultrabert-contract.yml).
 The hosted original reference and conversion checks pass. Native comparisons
-remain pending. Reference captures and storage round-trips do not
+retain183 F32/1,294 F16 stage failures. Reference captures and storage round-trips do not
 establish native parity, SentenceTransformer wrapper parity, retrieval quality,
 32K support, speed or quantized quality. The512-token reference guard rejects
 overflow without silently truncating; it is not a native context claim.
@@ -195,8 +195,9 @@ safetensors==0.8.0 numpy==2.2.6`. PR69 remains draft while native evidence is re
 The original14 source/schema controls pass in
 [38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
 at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`; the actual log reports14 tests.
-The complete original model reference now passes at0573f184; native cosine
-results remain pending.
+The complete original model reference passes at0573f184. The first native
+panel completes all14 arms; detailed metrics and retained failures are in
+[PERFORMANCE](../PERFORMANCE.md).
 
 [The test-only graph](../tests/test_ultrabert_diff.cpp) implements all24 pre-norm
 blocks, per-layer local/global masks and split-half RoPE, RMSNorm/SwiGLU, final
@@ -237,4 +238,9 @@ The [manual hosted audit](../.github/workflows/ultrabert-native.yml) downloads
 only that declared original run on a hosted runner; its token has read-only
 contents/actions permissions. It then runs all14 F32/F16-case arms and preserves
 every failed stage before returning nonzero. [First native audit38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
-is pending. No numerical gate is waived by verified reference or build success.
+completes all arms and fails the unchanged numerical gates after retaining all
+measurements. All700 exact controls pass. F32 raw CLS cosines round1.0 with worst
+error0.000067234; intermediate failures still start at layer14 FFN output.
+The [separate original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
+is pending; its probes must leave all ordinary native metrics and exit identical.
+No numerical gate is waived by final-vector, reference or build success.
