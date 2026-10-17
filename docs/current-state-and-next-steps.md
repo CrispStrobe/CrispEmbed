@@ -100,7 +100,9 @@ in U1–U4 of the executable handoff. Other portfolio/app owners remain separate
 
 ## Recommended order and dependencies
 
-Start W1 (wheel repair) and V1 (vendor reconciliation) as separate changes.
+W1 packaging is complete and archived in [HISTORY](../HISTORY.md).
+Continue vendor UltraBERT tasks from [the executable handoff](next-agent-handoff.md);
+V1 (selective PosFormer reconciliation) remains a separate bounded change.
 M1 (fresh mathematics) and U1 (UX coverage) can proceed independently on hosted
 runners. O1 can extend diagnostics now; O2 waits for checkpoint/license/access
 requirements. P1 waits for a device session; A1 follows P1 and final metadata
@@ -108,38 +110,16 @@ review. R1 is used only when a production app change is ready to ship. C1 and
 F1 require an explicit backend/product decision. B1 is an optional bounded
 math-engine investigation, not a reason to rebuild everything immediately.
 
-### W1 — Repair macOS arm64 Python-wheel packaging
-
-**Repository:** CrispEmbed. **Ready now.**
-
-First inspect the exact [failed wheel run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/37222310629).
-The failure is in delocate repair and reports staged dylibs with minimum target
-12.0; the log asks to align MACOSX_DEPLOYMENT_TARGET. Treat this as a packaging
-lead, not a proven complete fix.
-
-Work in the [wheel workflow](https://github.com/CrispStrobe/CrispEmbed/blob/main/.github/workflows/python-wheels.yml)
-and Python build/package configuration. Compare CMake/ggml deployment settings,
-wheel tags, cibuildwheel environment and every bundled dylib's minimum OS target.
-Reproduce one failing Python version first, align the supported minimum honestly,
-then run the complete wheel matrix. Do not simply change a filename or suppress
-repair errors. Test an installed wheel's actual library load and an available
-small public API operation on the declared platform.
-
-**Done when:** Mac wheels repair/load successfully, other three platform jobs
-remain green and aggregation succeeds, with source/version/artifact provenance.
-The workflow produces preview artifacts; it does not currently publish to PyPI.
-Do not overwrite published app archives or claim PyPI publication.
-
 ### V1 — Reconcile the released hotfix with vendor main
 
-**Repository:** CrispEmbed. **Ready now; keep separate from W1.**
+**Repository:** CrispEmbed. **Ready now; isolated runtime patch.**
 
-Start with [draft PR 60](https://github.com/CrispStrobe/CrispEmbed/pull/60)
-and the [release-to-main comparison](https://github.com/CrispStrobe/CrispEmbed/compare/78493a31fc3043f3af4ab6fd2f197a32da6f07f0...28d5a61ce45af6a3a547802e82b8e553c6fe3d5d).
-Inventory the seven release-side commits and identify the two runtime repairs,
-their tests, release/provenance work and any already-equivalent main changes.
-Port only necessary fixes to current main and resolve conflicts against the
-actual [PosFormer implementation](https://github.com/CrispStrobe/CrispEmbed/blob/main/src/posformer_ocr.cpp).
+Start with [draft PR60](https://github.com/CrispStrobe/CrispEmbed/pull/60),
+source `78493a31fc3043f3af4ab6fd2f197a32da6f07f0`, and current main.
+Port only the trained decoder input LayerNorm and missing-edge ceil-pooling
+corrections, with their meaningful positive/negative controls, into the current
+[PosFormer implementation](https://github.com/CrispStrobe/CrispEmbed/blob/main/src/posformer_ocr.cpp).
+Do not merge the historical release branch wholesale or copy release metadata.
 Preserve independent concurrent vendor features. Follow the vendor version-bump
 procedure for an actual new release; do not move the existing release tag.
 
