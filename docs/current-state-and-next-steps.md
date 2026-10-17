@@ -275,13 +275,15 @@ archived as complete, with GPU, independent task-quality and long-context/perf
 follow-ups in PLAN. [UltraBERT](ultrabert.md) has a pinned source/metadata feasibility
 audit and a proposed port order. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
 adds strict conversion and all24-layer original-Python reference captures;
-[hosted verification](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
-is queued at0dddbd2b. All14 source/schema controls pass. PR69 also adds a
-test-only all24-layer ggml graph over prepared IDs; its
 [hosted build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497)
-and22-test contract are pending. Full model comparisons require exact frozen
-original-array replay. No production native backend, measured parity or weight
-publication is claimed.
+and all22 source/log controls pass. The first original-model dispatch failed pip
+resolution; corrected run38997289196 verifies both218-tensor conversions, then
+finds a negative-control inference-tensor mutation. The
+[retry38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+uses an independent negative mask clone and a weight-free regression at0573f184.
+All24-layer Python captures and342-per-case native comparisons remain pending.
+Saved original arrays and conversion bytes must remain exact. No production
+native backend, measured parity or weight publication is claimed.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
