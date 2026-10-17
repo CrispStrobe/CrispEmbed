@@ -1,3 +1,27 @@
+## 2026-10-17 — UltraBERT operator attribution and three-PR source review
+
+The [operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
+completes at a8b129f467c443f10fc9dd8d3504f0f566643ab2: all14 ordinary arms/700
+exact controls and every ordinary metric reproduce the initial panel; all28 raw
+logs/84 local records independently hash-verify and reparse. All24 model-free
+controls pass at the same source. F32 passes41/42 local probes; Unicode whole-MLP
+error0.0048828125 from original norm becomes0.000671386719 with original gate/up.
+All183 F32/1,294 F16 ordinary failures and25 local failures remain under unchanged
+gates. The [full retained report](https://github.com/CrispStrobe/CrispEmbed/blob/3fa075dd94f895584a9b5ceff0101e0f7f826000/tests/results/ultrabert/operator-audit.json)
+preserves every producer field and raw SHA256
+`a9d66194f69a9e25aefd528e24fea0203e43a0933bb81f22e420a70dee9eb367`.
+Projection-error amplification is narrowed, not a single defect proven; production
+support and further original-input attribution remain open.
+
+The requested [three-PR review](docs/pr-review-2026-10-17.md) then confirmed the
+open set60/68/69 and examined their diffs, comments, actual check conclusions and
+bounded evidence. PR60 remains draft with a verified macOS wheel11/12 target
+mismatch; its native/WASM release checks passed separately. PR68's metadata/image
+static and visual review found no blocking defect; its three previously held
+fork workflows were approved and are queued. PR69 stays draft with the numerical
+and production limitations above and latest-head checks pending. No PR merge,
+new runtime release, published weights or immutable app0.17.12 pin change.
+
 # CrispEmbed — History
 
 Completed milestones and frozen evidence. Current tasks and ownership live in
