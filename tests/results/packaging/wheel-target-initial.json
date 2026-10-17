@@ -1,0 +1,59 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271",
+  "source_commit": "56b5af0c6464047f774de5ad6a7ba7da8bb2b157",
+  "scope": "Preview wheels; macOS job passed, Linux ARM64 diagnostic linking failed; other legs/aggregate pending at capture",
+  "macos": {
+    "job": 117303865879,
+    "conclusion": "success",
+    "wheel_count": 5,
+    "wheels": [
+      {
+        "python": "cp39",
+        "file": "crispembed-0.17.11-cp39-cp39-macosx_12_0_arm64.whl",
+        "sha256": "579126a4fd7dd16ebcb4b20891eef7015dbbe6873b8bb8fa4f0f2402802c3848"
+      },
+      {
+        "python": "cp310",
+        "file": "crispembed-0.17.11-cp310-cp310-macosx_12_0_arm64.whl",
+        "sha256": "6ffed982479539daa68aa3da835e4363d33fe1ab307aacfb2439c903c27a9370"
+      },
+      {
+        "python": "cp311",
+        "file": "crispembed-0.17.11-cp311-cp311-macosx_12_0_arm64.whl",
+        "sha256": "c2f176387fb849ce22b7318ad97aaff2694dba23a8226e6f33d462035241d188"
+      },
+      {
+        "python": "cp312",
+        "file": "crispembed-0.17.11-cp312-cp312-macosx_12_0_arm64.whl",
+        "sha256": "acec46eaa9ea98d59a2587036a7ee0fc42eb549ea2b8aed22f1dc3107bcef433"
+      },
+      {
+        "python": "cp313",
+        "file": "crispembed-0.17.11-cp313-cp313-macosx_12_0_arm64.whl",
+        "sha256": "b4a2d96df581206e9966656a655a0497a250cb59835d29d92e4d2d4632cb67b9"
+      }
+    ],
+    "installed_bundled_native_loads": 5,
+    "installed_c_abi_checks": 5,
+    "log_sha256": "bf2027ab11c7c319cb4c3bd31f35c2be2cbd4deb0d5bc849f0a9590bb71a60c2",
+    "artifact": {
+      "name": "wheels-macos-arm64",
+      "id": 12089014558,
+      "compressed_bytes": 58519372,
+      "downloaded": false
+    }
+  },
+  "linux_arm64": {
+    "job": 117303866137,
+    "conclusion": "failure",
+    "stage": "standalone Qwen3.5 diagnostic executable linkage",
+    "missing_symbol": "pthread_create@@GLIBC_2.17",
+    "shared_runtime_build_passed": true,
+    "log_sha256": "484c7ed886e4e8a712b44bb3e9657cbb7b6dbc838ae2d70e0ef663c6994fda54"
+  },
+  "followup": {
+    "source_commit": "e75a32f1882a00389bac1304797f44c08ce372d4",
+    "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845",
+    "status": "queued; results pending"
+  }
+}

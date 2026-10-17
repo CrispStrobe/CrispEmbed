@@ -1,3 +1,27 @@
+## 2026-10-17 — macOS repaired wheels pass installed native loading
+
+[Matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
+at56b5af0c6464047f774de5ad6a7ba7da8bb2b157 completes its macOS ARM64 job.
+All five CPython3.9–3.13 wheels repair with macosx_12_0_arm64 tags, install and
+load the bundled native library beside the installed binding, then call the
+model-free C ABI successfully. Five producer wheel hashes and reviewed log
+hashes are retained in [the initial matrix record](tests/results/packaging/wheel-target-initial.json).
+The58,519,372-byte compressed wheel artifact remains remote; wheel bytes were
+not independently downloaded/hash-verified here. These are preview0.17.11
+wheels from current main, not a new runtime release or PyPI publication.
+
+The same initial matrix's Linux ARM64 job fails linking standalone Qwen3.5
+tests with unresolved pthread_create, although the shared runtime builds.
+`qwen35_linear.cpp` uses std::thread, so PR70 adds the missing transitive
+Threads::Threads dependency to its diagnostic static target. The fresh
+[matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+at e75a32f1882a00389bac1304797f44c08ce372d4 is queued; other initial legs and
+full corrected-matrix/aggregation results remain pending. The old failed
+macOS37222310629 and this ARM64 failure remain visible.
+
+PR68 secret scan38968549043 passes at ebcadb1f, alongside its verified WASM
+build. Its native Build remains pending; no PR merge or app0.17.12 pin change.
+
 ## 2026-10-17 — UltraBERT capture drift retained; PR68 WASM verified
 
 [39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)

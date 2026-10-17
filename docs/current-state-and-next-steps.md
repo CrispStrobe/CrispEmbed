@@ -40,7 +40,11 @@ the exact latest workflow reports when recording new totals.
   [bounded repairPR70](https://github.com/CrispStrobe/CrispEmbed/pull/70) aligns
   cibuildwheel with the existing12.0 native target and actually loads the
   installed bundled library. [Full wheel matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
-  is queued at56b5af0c; repaired artifacts/installed checks remain unverified.
+  passes all five macOS CPython3.9–3.13 repaired-wheel installs/native loads/C-ABI
+  calls at56b5af0c. Initial ARM64 standalone tests fail pthread linkage; PR70 adds
+  the missing diagnostic-target Threads dependency. Fresh
+  [full matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+  is queued at e75a32f1; full matrix/aggregation remain unverified.
 - The minimal runtime correction is published but its draft PR 60 remains open.
   Before this Markdown update, vendor code baseline 28d5a61 and release 78493a3
   diverge: main has 64
@@ -308,14 +312,17 @@ against all8 frozen original text rows. It downloads tokenizer assets only and
 requires terminal-SEP and ID-zero-mask negative controls to fail. Four model-free
 log controls and native compilation/parity remain pending; this is no public
 model/tokenizer support claim. The requested
-[three-PR review](pr-review-2026-10-17.md) is complete; PR68 WASM passes at ebcadb1f while approved Build/secret checks remain pending;
+[three-PR review](pr-review-2026-10-17.md) is complete; PR68 WASM and secret scan pass at ebcadb1f while approved native Build remains pending;
 PR60 wheel11/12 target correction is under separate validation, and PR69 stays draft. Native tokenization, production backend,
 public interfaces, task retrieval, quantized quality and publication remain open.
 The independently scoped [wheel repairPR70](https://github.com/CrispStrobe/CrispEmbed/pull/70)
-sets cibuildwheel to the existing macOS12.0 native floor and verifies actual
-installed native loading/C-ABI use. [Four-platform matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
-is queued at56b5af0c; wheel repair/aggregation is not yet verified. No release or
-app pin change accompanies this patch.
+passes all five repaired macOS CPython3.9–3.13 wheel installs/native loads/C-ABI
+checks in39001056271 at56b5af0c. [Initial evidence](../tests/results/packaging/wheel-target-initial.json)
+records producer hashes and retained ARM64 standalone-test pthread-linkage failure.
+PR70 adds the diagnostic static target's missing Threads dependency; the
+[fresh matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+is queued at e75a32f1. Other initial legs/full aggregation remain pending; wheel
+artifacts stay remote, and no runtime release or app pin changes.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
