@@ -265,3 +265,21 @@ SiLU from original gate, product from original gate/up, and down projection from
 original product. The ordinary graph and six earlier probes stay intact.
 Compilation, three weight-free capture controls, the expanded25 model-free
 controls and complete linear measurements are pending at this revision.
+
+
+## Independent native tokenizer audit — pending
+
+The separate `audit/ultrabert-tokenizer` branch adds a test-only executable for
+native `BPETokenizer` plus the declared UltraBERT BOS/single/pair template. It
+compares exact IDs/masks on all eight rows in the seven frozen original cases,
+including explicit query text and both padded rows. A metadata-only fixture
+uses the hash-checked original vocabulary/merges; no checkpoint is downloaded.
+The generic BERT pair API appends a terminal separator, so it cannot supply this
+template unchanged. Native mask construction must attend BOS despite its ID0.
+
+Terminal-separator and ID-zero-mask negative controls must fail against original
+IDs/masks; four model-free log controls reject missing/forged evidence. Native
+compilation and full measurements are pending. This is a tokenizer component/
+template audit, not public GGUF model loading, a production tokenizer integration,
+independent retrieval quality or model parity. It leaves the immutable queued
+linear-audit source and all production tokenizers unchanged.
