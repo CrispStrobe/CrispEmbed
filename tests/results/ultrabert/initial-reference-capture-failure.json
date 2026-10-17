@@ -1,0 +1,4309 @@
+{
+  "source_commit": "0dddbd2b61740c0f25482b2afb428b815b5c85ac",
+  "model": "dmis-lab/UltraBERT-Embed-150M",
+  "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+  "driver_sha256": "00de4093736da1035acf6b17077239df5e73184a4d5b655ee5bad4308a2c735d",
+  "tool_sha256": {
+    "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+    "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+    "tools/dump_ultrabert_reference.py": "602ef956bdd25cc1b9aead161d84a11ef3668624f4b961c1668ed7195e95a738",
+    "tests/test_ultrabert_contract.py": "2a568e801505bdbfcf6752c4b96a93de7bf0d947ebe240b7ef66653d04584846"
+  },
+  "conversions": [
+    {
+      "model": "dmis-lab/UltraBERT-Embed-150M",
+      "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+      "source_weights": "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
+      "dtype": "f32",
+      "bytes": 609437696,
+      "sha256": "89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566",
+      "tensors": [
+        {
+          "source": "embed_tokens.weight",
+          "target": "token_embd.weight",
+          "shape": [
+            49152,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "norm.weight",
+          "target": "output_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.input_layernorm.weight",
+          "target": "blk.0.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.post_attention_layernorm.weight",
+          "target": "blk.0.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.self_attn.q_proj.weight",
+          "target": "blk.0.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.self_attn.k_proj.weight",
+          "target": "blk.0.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.self_attn.v_proj.weight",
+          "target": "blk.0.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.self_attn.o_proj.weight",
+          "target": "blk.0.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.mlp.gate_proj.weight",
+          "target": "blk.0.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.mlp.up_proj.weight",
+          "target": "blk.0.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.mlp.down_proj.weight",
+          "target": "blk.0.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.input_layernorm.weight",
+          "target": "blk.1.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.post_attention_layernorm.weight",
+          "target": "blk.1.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.self_attn.q_proj.weight",
+          "target": "blk.1.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.self_attn.k_proj.weight",
+          "target": "blk.1.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.self_attn.v_proj.weight",
+          "target": "blk.1.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.self_attn.o_proj.weight",
+          "target": "blk.1.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.mlp.gate_proj.weight",
+          "target": "blk.1.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.mlp.up_proj.weight",
+          "target": "blk.1.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.mlp.down_proj.weight",
+          "target": "blk.1.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.input_layernorm.weight",
+          "target": "blk.2.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.post_attention_layernorm.weight",
+          "target": "blk.2.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.self_attn.q_proj.weight",
+          "target": "blk.2.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.self_attn.k_proj.weight",
+          "target": "blk.2.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.self_attn.v_proj.weight",
+          "target": "blk.2.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.self_attn.o_proj.weight",
+          "target": "blk.2.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.mlp.gate_proj.weight",
+          "target": "blk.2.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.mlp.up_proj.weight",
+          "target": "blk.2.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.mlp.down_proj.weight",
+          "target": "blk.2.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.input_layernorm.weight",
+          "target": "blk.3.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.post_attention_layernorm.weight",
+          "target": "blk.3.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.self_attn.q_proj.weight",
+          "target": "blk.3.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.self_attn.k_proj.weight",
+          "target": "blk.3.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.self_attn.v_proj.weight",
+          "target": "blk.3.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.self_attn.o_proj.weight",
+          "target": "blk.3.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.mlp.gate_proj.weight",
+          "target": "blk.3.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.mlp.up_proj.weight",
+          "target": "blk.3.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.mlp.down_proj.weight",
+          "target": "blk.3.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.input_layernorm.weight",
+          "target": "blk.4.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.post_attention_layernorm.weight",
+          "target": "blk.4.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.self_attn.q_proj.weight",
+          "target": "blk.4.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.self_attn.k_proj.weight",
+          "target": "blk.4.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.self_attn.v_proj.weight",
+          "target": "blk.4.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.self_attn.o_proj.weight",
+          "target": "blk.4.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.mlp.gate_proj.weight",
+          "target": "blk.4.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.mlp.up_proj.weight",
+          "target": "blk.4.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.mlp.down_proj.weight",
+          "target": "blk.4.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.input_layernorm.weight",
+          "target": "blk.5.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.post_attention_layernorm.weight",
+          "target": "blk.5.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.self_attn.q_proj.weight",
+          "target": "blk.5.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.self_attn.k_proj.weight",
+          "target": "blk.5.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.self_attn.v_proj.weight",
+          "target": "blk.5.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.self_attn.o_proj.weight",
+          "target": "blk.5.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.mlp.gate_proj.weight",
+          "target": "blk.5.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.mlp.up_proj.weight",
+          "target": "blk.5.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.mlp.down_proj.weight",
+          "target": "blk.5.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.input_layernorm.weight",
+          "target": "blk.6.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.post_attention_layernorm.weight",
+          "target": "blk.6.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.self_attn.q_proj.weight",
+          "target": "blk.6.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.self_attn.k_proj.weight",
+          "target": "blk.6.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.self_attn.v_proj.weight",
+          "target": "blk.6.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.self_attn.o_proj.weight",
+          "target": "blk.6.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.mlp.gate_proj.weight",
+          "target": "blk.6.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.mlp.up_proj.weight",
+          "target": "blk.6.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.mlp.down_proj.weight",
+          "target": "blk.6.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.input_layernorm.weight",
+          "target": "blk.7.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.post_attention_layernorm.weight",
+          "target": "blk.7.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.self_attn.q_proj.weight",
+          "target": "blk.7.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.self_attn.k_proj.weight",
+          "target": "blk.7.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.self_attn.v_proj.weight",
+          "target": "blk.7.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.self_attn.o_proj.weight",
+          "target": "blk.7.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.mlp.gate_proj.weight",
+          "target": "blk.7.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.mlp.up_proj.weight",
+          "target": "blk.7.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.mlp.down_proj.weight",
+          "target": "blk.7.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.input_layernorm.weight",
+          "target": "blk.8.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.post_attention_layernorm.weight",
+          "target": "blk.8.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.self_attn.q_proj.weight",
+          "target": "blk.8.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.self_attn.k_proj.weight",
+          "target": "blk.8.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.self_attn.v_proj.weight",
+          "target": "blk.8.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.self_attn.o_proj.weight",
+          "target": "blk.8.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.mlp.gate_proj.weight",
+          "target": "blk.8.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.mlp.up_proj.weight",
+          "target": "blk.8.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.mlp.down_proj.weight",
+          "target": "blk.8.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.input_layernorm.weight",
+          "target": "blk.9.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.post_attention_layernorm.weight",
+          "target": "blk.9.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.self_attn.q_proj.weight",
+          "target": "blk.9.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.self_attn.k_proj.weight",
+          "target": "blk.9.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.self_attn.v_proj.weight",
+          "target": "blk.9.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.self_attn.o_proj.weight",
+          "target": "blk.9.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.mlp.gate_proj.weight",
+          "target": "blk.9.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.mlp.up_proj.weight",
+          "target": "blk.9.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.mlp.down_proj.weight",
+          "target": "blk.9.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.input_layernorm.weight",
+          "target": "blk.10.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.post_attention_layernorm.weight",
+          "target": "blk.10.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.self_attn.q_proj.weight",
+          "target": "blk.10.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.self_attn.k_proj.weight",
+          "target": "blk.10.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.self_attn.v_proj.weight",
+          "target": "blk.10.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.self_attn.o_proj.weight",
+          "target": "blk.10.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.mlp.gate_proj.weight",
+          "target": "blk.10.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.mlp.up_proj.weight",
+          "target": "blk.10.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.mlp.down_proj.weight",
+          "target": "blk.10.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.input_layernorm.weight",
+          "target": "blk.11.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.post_attention_layernorm.weight",
+          "target": "blk.11.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.self_attn.q_proj.weight",
+          "target": "blk.11.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.self_attn.k_proj.weight",
+          "target": "blk.11.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.self_attn.v_proj.weight",
+          "target": "blk.11.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.self_attn.o_proj.weight",
+          "target": "blk.11.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.mlp.gate_proj.weight",
+          "target": "blk.11.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.mlp.up_proj.weight",
+          "target": "blk.11.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.mlp.down_proj.weight",
+          "target": "blk.11.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.input_layernorm.weight",
+          "target": "blk.12.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.post_attention_layernorm.weight",
+          "target": "blk.12.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.self_attn.q_proj.weight",
+          "target": "blk.12.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.self_attn.k_proj.weight",
+          "target": "blk.12.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.self_attn.v_proj.weight",
+          "target": "blk.12.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.self_attn.o_proj.weight",
+          "target": "blk.12.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.mlp.gate_proj.weight",
+          "target": "blk.12.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.mlp.up_proj.weight",
+          "target": "blk.12.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.mlp.down_proj.weight",
+          "target": "blk.12.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.input_layernorm.weight",
+          "target": "blk.13.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.post_attention_layernorm.weight",
+          "target": "blk.13.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.self_attn.q_proj.weight",
+          "target": "blk.13.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.self_attn.k_proj.weight",
+          "target": "blk.13.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.self_attn.v_proj.weight",
+          "target": "blk.13.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.self_attn.o_proj.weight",
+          "target": "blk.13.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.mlp.gate_proj.weight",
+          "target": "blk.13.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.mlp.up_proj.weight",
+          "target": "blk.13.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.mlp.down_proj.weight",
+          "target": "blk.13.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.input_layernorm.weight",
+          "target": "blk.14.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.post_attention_layernorm.weight",
+          "target": "blk.14.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.self_attn.q_proj.weight",
+          "target": "blk.14.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.self_attn.k_proj.weight",
+          "target": "blk.14.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.self_attn.v_proj.weight",
+          "target": "blk.14.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.self_attn.o_proj.weight",
+          "target": "blk.14.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.mlp.gate_proj.weight",
+          "target": "blk.14.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.mlp.up_proj.weight",
+          "target": "blk.14.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.mlp.down_proj.weight",
+          "target": "blk.14.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.input_layernorm.weight",
+          "target": "blk.15.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.post_attention_layernorm.weight",
+          "target": "blk.15.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.self_attn.q_proj.weight",
+          "target": "blk.15.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.self_attn.k_proj.weight",
+          "target": "blk.15.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.self_attn.v_proj.weight",
+          "target": "blk.15.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.self_attn.o_proj.weight",
+          "target": "blk.15.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.mlp.gate_proj.weight",
+          "target": "blk.15.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.mlp.up_proj.weight",
+          "target": "blk.15.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.mlp.down_proj.weight",
+          "target": "blk.15.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.input_layernorm.weight",
+          "target": "blk.16.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.post_attention_layernorm.weight",
+          "target": "blk.16.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.self_attn.q_proj.weight",
+          "target": "blk.16.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.self_attn.k_proj.weight",
+          "target": "blk.16.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.self_attn.v_proj.weight",
+          "target": "blk.16.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.self_attn.o_proj.weight",
+          "target": "blk.16.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.mlp.gate_proj.weight",
+          "target": "blk.16.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.mlp.up_proj.weight",
+          "target": "blk.16.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.mlp.down_proj.weight",
+          "target": "blk.16.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.input_layernorm.weight",
+          "target": "blk.17.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.post_attention_layernorm.weight",
+          "target": "blk.17.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.self_attn.q_proj.weight",
+          "target": "blk.17.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.self_attn.k_proj.weight",
+          "target": "blk.17.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.self_attn.v_proj.weight",
+          "target": "blk.17.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.self_attn.o_proj.weight",
+          "target": "blk.17.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.mlp.gate_proj.weight",
+          "target": "blk.17.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.mlp.up_proj.weight",
+          "target": "blk.17.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.mlp.down_proj.weight",
+          "target": "blk.17.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.input_layernorm.weight",
+          "target": "blk.18.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.post_attention_layernorm.weight",
+          "target": "blk.18.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.self_attn.q_proj.weight",
+          "target": "blk.18.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.self_attn.k_proj.weight",
+          "target": "blk.18.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.self_attn.v_proj.weight",
+          "target": "blk.18.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.self_attn.o_proj.weight",
+          "target": "blk.18.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.mlp.gate_proj.weight",
+          "target": "blk.18.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.mlp.up_proj.weight",
+          "target": "blk.18.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.mlp.down_proj.weight",
+          "target": "blk.18.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.input_layernorm.weight",
+          "target": "blk.19.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.post_attention_layernorm.weight",
+          "target": "blk.19.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.self_attn.q_proj.weight",
+          "target": "blk.19.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.self_attn.k_proj.weight",
+          "target": "blk.19.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.self_attn.v_proj.weight",
+          "target": "blk.19.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.self_attn.o_proj.weight",
+          "target": "blk.19.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.mlp.gate_proj.weight",
+          "target": "blk.19.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.mlp.up_proj.weight",
+          "target": "blk.19.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.mlp.down_proj.weight",
+          "target": "blk.19.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.input_layernorm.weight",
+          "target": "blk.20.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.post_attention_layernorm.weight",
+          "target": "blk.20.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.self_attn.q_proj.weight",
+          "target": "blk.20.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.self_attn.k_proj.weight",
+          "target": "blk.20.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.self_attn.v_proj.weight",
+          "target": "blk.20.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.self_attn.o_proj.weight",
+          "target": "blk.20.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.mlp.gate_proj.weight",
+          "target": "blk.20.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.mlp.up_proj.weight",
+          "target": "blk.20.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.mlp.down_proj.weight",
+          "target": "blk.20.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.input_layernorm.weight",
+          "target": "blk.21.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.post_attention_layernorm.weight",
+          "target": "blk.21.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.self_attn.q_proj.weight",
+          "target": "blk.21.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.self_attn.k_proj.weight",
+          "target": "blk.21.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.self_attn.v_proj.weight",
+          "target": "blk.21.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.self_attn.o_proj.weight",
+          "target": "blk.21.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.mlp.gate_proj.weight",
+          "target": "blk.21.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.mlp.up_proj.weight",
+          "target": "blk.21.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.mlp.down_proj.weight",
+          "target": "blk.21.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.input_layernorm.weight",
+          "target": "blk.22.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.post_attention_layernorm.weight",
+          "target": "blk.22.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.self_attn.q_proj.weight",
+          "target": "blk.22.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.self_attn.k_proj.weight",
+          "target": "blk.22.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.self_attn.v_proj.weight",
+          "target": "blk.22.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.self_attn.o_proj.weight",
+          "target": "blk.22.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.mlp.gate_proj.weight",
+          "target": "blk.22.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.mlp.up_proj.weight",
+          "target": "blk.22.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.mlp.down_proj.weight",
+          "target": "blk.22.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.input_layernorm.weight",
+          "target": "blk.23.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.post_attention_layernorm.weight",
+          "target": "blk.23.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.self_attn.q_proj.weight",
+          "target": "blk.23.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.self_attn.k_proj.weight",
+          "target": "blk.23.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.self_attn.v_proj.weight",
+          "target": "blk.23.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.self_attn.o_proj.weight",
+          "target": "blk.23.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.mlp.gate_proj.weight",
+          "target": "blk.23.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.mlp.up_proj.weight",
+          "target": "blk.23.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.mlp.down_proj.weight",
+          "target": "blk.23.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        }
+      ],
+      "native_parity": "not evaluated",
+      "all_218_roundtrips_exact": true,
+      "metadata_roundtrips_exact": true
+    },
+    {
+      "model": "dmis-lab/UltraBERT-Embed-150M",
+      "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+      "source_weights": "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
+      "dtype": "f16",
+      "bytes": 307447808,
+      "sha256": "93816a0fde522785bb5d6176e850ca8f991afd03f8eb8c301ef7b7373b9b0645",
+      "tensors": [
+        {
+          "source": "embed_tokens.weight",
+          "target": "token_embd.weight",
+          "shape": [
+            49152,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.0002409815788269043
+        },
+        {
+          "source": "norm.weight",
+          "target": "output_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.input_layernorm.weight",
+          "target": "blk.0.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.post_attention_layernorm.weight",
+          "target": "blk.0.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.0.self_attn.q_proj.weight",
+          "target": "blk.0.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 8.222460746765137e-05
+        },
+        {
+          "source": "layers.0.self_attn.k_proj.weight",
+          "target": "blk.0.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.096065044403076e-05
+        },
+        {
+          "source": "layers.0.self_attn.v_proj.weight",
+          "target": "blk.0.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 2.7216970920562744e-05
+        },
+        {
+          "source": "layers.0.self_attn.o_proj.weight",
+          "target": "blk.0.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.008148193359375e-05
+        },
+        {
+          "source": "layers.0.mlp.gate_proj.weight",
+          "target": "blk.0.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.417533874511719e-05
+        },
+        {
+          "source": "layers.0.mlp.up_proj.weight",
+          "target": "blk.0.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.21242618560791e-05
+        },
+        {
+          "source": "layers.0.mlp.down_proj.weight",
+          "target": "blk.0.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00015813112258911133
+        },
+        {
+          "source": "layers.1.input_layernorm.weight",
+          "target": "blk.1.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.post_attention_layernorm.weight",
+          "target": "blk.1.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.1.self_attn.q_proj.weight",
+          "target": "blk.1.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00012162327766418457
+        },
+        {
+          "source": "layers.1.self_attn.k_proj.weight",
+          "target": "blk.1.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00012180209159851074
+        },
+        {
+          "source": "layers.1.self_attn.v_proj.weight",
+          "target": "blk.1.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0465424060821533e-05
+        },
+        {
+          "source": "layers.1.self_attn.o_proj.weight",
+          "target": "blk.1.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.861588478088379e-05
+        },
+        {
+          "source": "layers.1.mlp.gate_proj.weight",
+          "target": "blk.1.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.9604644775390625e-05
+        },
+        {
+          "source": "layers.1.mlp.up_proj.weight",
+          "target": "blk.1.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.4971704483032227e-05
+        },
+        {
+          "source": "layers.1.mlp.down_proj.weight",
+          "target": "blk.1.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.097555160522461e-05
+        },
+        {
+          "source": "layers.2.input_layernorm.weight",
+          "target": "blk.2.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.post_attention_layernorm.weight",
+          "target": "blk.2.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.2.self_attn.q_proj.weight",
+          "target": "blk.2.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011476874351501465
+        },
+        {
+          "source": "layers.2.self_attn.k_proj.weight",
+          "target": "blk.2.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 7.149577140808105e-05
+        },
+        {
+          "source": "layers.2.self_attn.v_proj.weight",
+          "target": "blk.2.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0443072319030762e-05
+        },
+        {
+          "source": "layers.2.self_attn.o_proj.weight",
+          "target": "blk.2.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.7056546211242676e-05
+        },
+        {
+          "source": "layers.2.mlp.gate_proj.weight",
+          "target": "blk.2.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0617923736572266e-05
+        },
+        {
+          "source": "layers.2.mlp.up_proj.weight",
+          "target": "blk.2.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.961954593658447e-05
+        },
+        {
+          "source": "layers.2.mlp.down_proj.weight",
+          "target": "blk.2.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.0001189112663269043
+        },
+        {
+          "source": "layers.3.input_layernorm.weight",
+          "target": "blk.3.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.post_attention_layernorm.weight",
+          "target": "blk.3.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.3.self_attn.q_proj.weight",
+          "target": "blk.3.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.1005353927612305e-05
+        },
+        {
+          "source": "layers.3.self_attn.k_proj.weight",
+          "target": "blk.3.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.669759750366211e-05
+        },
+        {
+          "source": "layers.3.self_attn.v_proj.weight",
+          "target": "blk.3.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.007054328918457e-05
+        },
+        {
+          "source": "layers.3.self_attn.o_proj.weight",
+          "target": "blk.3.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.626810550689697e-05
+        },
+        {
+          "source": "layers.3.mlp.gate_proj.weight",
+          "target": "blk.3.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.868077278137207e-05
+        },
+        {
+          "source": "layers.3.mlp.up_proj.weight",
+          "target": "blk.3.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.5180320739746094e-05
+        },
+        {
+          "source": "layers.3.mlp.down_proj.weight",
+          "target": "blk.3.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.446242332458496e-05
+        },
+        {
+          "source": "layers.4.input_layernorm.weight",
+          "target": "blk.4.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.post_attention_layernorm.weight",
+          "target": "blk.4.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.4.self_attn.q_proj.weight",
+          "target": "blk.4.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.058812141418457e-05
+        },
+        {
+          "source": "layers.4.self_attn.k_proj.weight",
+          "target": "blk.4.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.563565254211426e-05
+        },
+        {
+          "source": "layers.4.self_attn.v_proj.weight",
+          "target": "blk.4.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.9443373680114746e-05
+        },
+        {
+          "source": "layers.4.self_attn.o_proj.weight",
+          "target": "blk.4.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.844235420227051e-05
+        },
+        {
+          "source": "layers.4.mlp.gate_proj.weight",
+          "target": "blk.4.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.85019588470459e-05
+        },
+        {
+          "source": "layers.4.mlp.up_proj.weight",
+          "target": "blk.4.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.811452865600586e-05
+        },
+        {
+          "source": "layers.4.mlp.down_proj.weight",
+          "target": "blk.4.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00010633468627929688
+        },
+        {
+          "source": "layers.5.input_layernorm.weight",
+          "target": "blk.5.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.post_attention_layernorm.weight",
+          "target": "blk.5.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.5.self_attn.q_proj.weight",
+          "target": "blk.5.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.048381328582764e-05
+        },
+        {
+          "source": "layers.5.self_attn.k_proj.weight",
+          "target": "blk.5.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.102025508880615e-05
+        },
+        {
+          "source": "layers.5.self_attn.v_proj.weight",
+          "target": "blk.5.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0338764190673828e-05
+        },
+        {
+          "source": "layers.5.self_attn.o_proj.weight",
+          "target": "blk.5.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.663931369781494e-05
+        },
+        {
+          "source": "layers.5.mlp.gate_proj.weight",
+          "target": "blk.5.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.125471115112305e-05
+        },
+        {
+          "source": "layers.5.mlp.up_proj.weight",
+          "target": "blk.5.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.096065044403076e-05
+        },
+        {
+          "source": "layers.5.mlp.down_proj.weight",
+          "target": "blk.5.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.051361560821533e-05
+        },
+        {
+          "source": "layers.6.input_layernorm.weight",
+          "target": "blk.6.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.post_attention_layernorm.weight",
+          "target": "blk.6.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.6.self_attn.q_proj.weight",
+          "target": "blk.6.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.00665807723999e-05
+        },
+        {
+          "source": "layers.6.self_attn.k_proj.weight",
+          "target": "blk.6.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0185790061950684e-05
+        },
+        {
+          "source": "layers.6.self_attn.v_proj.weight",
+          "target": "blk.6.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.039836883544922e-05
+        },
+        {
+          "source": "layers.6.self_attn.o_proj.weight",
+          "target": "blk.6.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.9890408515930176e-05
+        },
+        {
+          "source": "layers.6.mlp.gate_proj.weight",
+          "target": "blk.6.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 7.843971252441406e-05
+        },
+        {
+          "source": "layers.6.mlp.up_proj.weight",
+          "target": "blk.6.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0692429542541504e-05
+        },
+        {
+          "source": "layers.6.mlp.down_proj.weight",
+          "target": "blk.6.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.085634231567383e-05
+        },
+        {
+          "source": "layers.7.input_layernorm.weight",
+          "target": "blk.7.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.post_attention_layernorm.weight",
+          "target": "blk.7.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.7.self_attn.q_proj.weight",
+          "target": "blk.7.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.063282489776611e-05
+        },
+        {
+          "source": "layers.7.self_attn.k_proj.weight",
+          "target": "blk.7.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.0001068115234375
+        },
+        {
+          "source": "layers.7.self_attn.v_proj.weight",
+          "target": "blk.7.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.6581029891967773e-05
+        },
+        {
+          "source": "layers.7.self_attn.o_proj.weight",
+          "target": "blk.7.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.939602851867676e-05
+        },
+        {
+          "source": "layers.7.mlp.gate_proj.weight",
+          "target": "blk.7.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00010466575622558594
+        },
+        {
+          "source": "layers.7.mlp.up_proj.weight",
+          "target": "blk.7.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.804002285003662e-05
+        },
+        {
+          "source": "layers.7.mlp.down_proj.weight",
+          "target": "blk.7.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.0001195371150970459
+        },
+        {
+          "source": "layers.8.input_layernorm.weight",
+          "target": "blk.8.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.post_attention_layernorm.weight",
+          "target": "blk.8.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.8.self_attn.q_proj.weight",
+          "target": "blk.8.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.063282489776611e-05
+        },
+        {
+          "source": "layers.8.self_attn.k_proj.weight",
+          "target": "blk.8.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.03795051574707e-05
+        },
+        {
+          "source": "layers.8.self_attn.v_proj.weight",
+          "target": "blk.8.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0465424060821533e-05
+        },
+        {
+          "source": "layers.8.self_attn.o_proj.weight",
+          "target": "blk.8.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.644559860229492e-05
+        },
+        {
+          "source": "layers.8.mlp.gate_proj.weight",
+          "target": "blk.8.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.051361560821533e-05
+        },
+        {
+          "source": "layers.8.mlp.up_proj.weight",
+          "target": "blk.8.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.097555160522461e-05
+        },
+        {
+          "source": "layers.8.mlp.down_proj.weight",
+          "target": "blk.8.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.718537330627441e-05
+        },
+        {
+          "source": "layers.9.input_layernorm.weight",
+          "target": "blk.9.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.post_attention_layernorm.weight",
+          "target": "blk.9.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.9.self_attn.q_proj.weight",
+          "target": "blk.9.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.082653999328613e-05
+        },
+        {
+          "source": "layers.9.self_attn.k_proj.weight",
+          "target": "blk.9.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.9917569160461426e-05
+        },
+        {
+          "source": "layers.9.self_attn.v_proj.weight",
+          "target": "blk.9.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.091990947723389e-05
+        },
+        {
+          "source": "layers.9.self_attn.o_proj.weight",
+          "target": "blk.9.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.649294376373291e-05
+        },
+        {
+          "source": "layers.9.mlp.gate_proj.weight",
+          "target": "blk.9.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.091594696044922e-05
+        },
+        {
+          "source": "layers.9.mlp.up_proj.weight",
+          "target": "blk.9.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.097555160522461e-05
+        },
+        {
+          "source": "layers.9.mlp.down_proj.weight",
+          "target": "blk.9.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 8.499622344970703e-05
+        },
+        {
+          "source": "layers.10.input_layernorm.weight",
+          "target": "blk.10.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.post_attention_layernorm.weight",
+          "target": "blk.10.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.10.self_attn.q_proj.weight",
+          "target": "blk.10.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.021559238433838e-05
+        },
+        {
+          "source": "layers.10.self_attn.k_proj.weight",
+          "target": "blk.10.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.060302257537842e-05
+        },
+        {
+          "source": "layers.10.self_attn.v_proj.weight",
+          "target": "blk.10.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0487775802612305e-05
+        },
+        {
+          "source": "layers.10.self_attn.o_proj.weight",
+          "target": "blk.10.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.43743371963501e-05
+        },
+        {
+          "source": "layers.10.mlp.gate_proj.weight",
+          "target": "blk.10.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.006261825561523e-05
+        },
+        {
+          "source": "layers.10.mlp.up_proj.weight",
+          "target": "blk.10.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.012618541717529e-05
+        },
+        {
+          "source": "layers.10.mlp.down_proj.weight",
+          "target": "blk.10.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.771087646484375e-05
+        },
+        {
+          "source": "layers.11.input_layernorm.weight",
+          "target": "blk.11.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.post_attention_layernorm.weight",
+          "target": "blk.11.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.11.self_attn.q_proj.weight",
+          "target": "blk.11.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.875527858734131e-05
+        },
+        {
+          "source": "layers.11.self_attn.k_proj.weight",
+          "target": "blk.11.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.084144115447998e-05
+        },
+        {
+          "source": "layers.11.self_attn.v_proj.weight",
+          "target": "blk.11.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.048032522201538e-05
+        },
+        {
+          "source": "layers.11.self_attn.o_proj.weight",
+          "target": "blk.11.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.079673767089844e-05
+        },
+        {
+          "source": "layers.11.mlp.gate_proj.weight",
+          "target": "blk.11.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0498714447021484e-05
+        },
+        {
+          "source": "layers.11.mlp.up_proj.weight",
+          "target": "blk.11.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011450052261352539
+        },
+        {
+          "source": "layers.11.mlp.down_proj.weight",
+          "target": "blk.11.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00012010335922241211
+        },
+        {
+          "source": "layers.12.input_layernorm.weight",
+          "target": "blk.12.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.post_attention_layernorm.weight",
+          "target": "blk.12.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.12.self_attn.q_proj.weight",
+          "target": "blk.12.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 8.168816566467285e-05
+        },
+        {
+          "source": "layers.12.self_attn.k_proj.weight",
+          "target": "blk.12.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.918741226196289e-05
+        },
+        {
+          "source": "layers.12.self_attn.v_proj.weight",
+          "target": "blk.12.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.039836883544922e-05
+        },
+        {
+          "source": "layers.12.self_attn.o_proj.weight",
+          "target": "blk.12.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0517578125e-05
+        },
+        {
+          "source": "layers.12.mlp.gate_proj.weight",
+          "target": "blk.12.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00012138485908508301
+        },
+        {
+          "source": "layers.12.mlp.up_proj.weight",
+          "target": "blk.12.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0692429542541504e-05
+        },
+        {
+          "source": "layers.12.mlp.down_proj.weight",
+          "target": "blk.12.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.0002256631851196289
+        },
+        {
+          "source": "layers.13.input_layernorm.weight",
+          "target": "blk.13.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.post_attention_layernorm.weight",
+          "target": "blk.13.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.13.self_attn.q_proj.weight",
+          "target": "blk.13.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.987286567687988e-05
+        },
+        {
+          "source": "layers.13.self_attn.k_proj.weight",
+          "target": "blk.13.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.5208802223205566e-05
+        },
+        {
+          "source": "layers.13.self_attn.v_proj.weight",
+          "target": "blk.13.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0517578125e-05
+        },
+        {
+          "source": "layers.13.self_attn.o_proj.weight",
+          "target": "blk.13.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.990266799926758e-05
+        },
+        {
+          "source": "layers.13.mlp.gate_proj.weight",
+          "target": "blk.13.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.183981895446777e-05
+        },
+        {
+          "source": "layers.13.mlp.up_proj.weight",
+          "target": "blk.13.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0752034187316895e-05
+        },
+        {
+          "source": "layers.13.mlp.down_proj.weight",
+          "target": "blk.13.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011992454528808594
+        },
+        {
+          "source": "layers.14.input_layernorm.weight",
+          "target": "blk.14.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.post_attention_layernorm.weight",
+          "target": "blk.14.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.14.self_attn.q_proj.weight",
+          "target": "blk.14.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.8844685554504395e-05
+        },
+        {
+          "source": "layers.14.self_attn.k_proj.weight",
+          "target": "blk.14.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.058812141418457e-05
+        },
+        {
+          "source": "layers.14.self_attn.v_proj.weight",
+          "target": "blk.14.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0413269996643066e-05
+        },
+        {
+          "source": "layers.14.self_attn.o_proj.weight",
+          "target": "blk.14.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.9857964515686035e-05
+        },
+        {
+          "source": "layers.14.mlp.gate_proj.weight",
+          "target": "blk.14.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00012189149856567383
+        },
+        {
+          "source": "layers.14.mlp.up_proj.weight",
+          "target": "blk.14.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00021880865097045898
+        },
+        {
+          "source": "layers.14.mlp.down_proj.weight",
+          "target": "blk.14.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00021576881408691406
+        },
+        {
+          "source": "layers.15.input_layernorm.weight",
+          "target": "blk.15.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.post_attention_layernorm.weight",
+          "target": "blk.15.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.15.self_attn.q_proj.weight",
+          "target": "blk.15.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.512901306152344e-05
+        },
+        {
+          "source": "layers.15.self_attn.k_proj.weight",
+          "target": "blk.15.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.780160427093506e-05
+        },
+        {
+          "source": "layers.15.self_attn.v_proj.weight",
+          "target": "blk.15.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0502676963806152e-05
+        },
+        {
+          "source": "layers.15.self_attn.o_proj.weight",
+          "target": "blk.15.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.082653999328613e-05
+        },
+        {
+          "source": "layers.15.mlp.gate_proj.weight",
+          "target": "blk.15.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.102025508880615e-05
+        },
+        {
+          "source": "layers.15.mlp.up_proj.weight",
+          "target": "blk.15.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0886144638061523e-05
+        },
+        {
+          "source": "layers.15.mlp.down_proj.weight",
+          "target": "blk.15.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 9.781122207641602e-05
+        },
+        {
+          "source": "layers.16.input_layernorm.weight",
+          "target": "blk.16.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.post_attention_layernorm.weight",
+          "target": "blk.16.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.16.self_attn.q_proj.weight",
+          "target": "blk.16.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00010636448860168457
+        },
+        {
+          "source": "layers.16.self_attn.k_proj.weight",
+          "target": "blk.16.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.957484245300293e-05
+        },
+        {
+          "source": "layers.16.self_attn.v_proj.weight",
+          "target": "blk.16.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0517578125e-05
+        },
+        {
+          "source": "layers.16.self_attn.o_proj.weight",
+          "target": "blk.16.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.060302257537842e-05
+        },
+        {
+          "source": "layers.16.mlp.gate_proj.weight",
+          "target": "blk.16.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011733174324035645
+        },
+        {
+          "source": "layers.16.mlp.up_proj.weight",
+          "target": "blk.16.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.918741226196289e-05
+        },
+        {
+          "source": "layers.16.mlp.down_proj.weight",
+          "target": "blk.16.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011754035949707031
+        },
+        {
+          "source": "layers.17.input_layernorm.weight",
+          "target": "blk.17.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.post_attention_layernorm.weight",
+          "target": "blk.17.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.17.self_attn.q_proj.weight",
+          "target": "blk.17.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.057322025299072e-05
+        },
+        {
+          "source": "layers.17.self_attn.k_proj.weight",
+          "target": "blk.17.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.698204040527344e-05
+        },
+        {
+          "source": "layers.17.self_attn.v_proj.weight",
+          "target": "blk.17.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.049522638320923e-05
+        },
+        {
+          "source": "layers.17.self_attn.o_proj.weight",
+          "target": "blk.17.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.091594696044922e-05
+        },
+        {
+          "source": "layers.17.mlp.gate_proj.weight",
+          "target": "blk.17.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0930848121643066e-05
+        },
+        {
+          "source": "layers.17.mlp.up_proj.weight",
+          "target": "blk.17.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.97834587097168e-05
+        },
+        {
+          "source": "layers.17.mlp.down_proj.weight",
+          "target": "blk.17.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 8.291006088256836e-05
+        },
+        {
+          "source": "layers.18.input_layernorm.weight",
+          "target": "blk.18.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.post_attention_layernorm.weight",
+          "target": "blk.18.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.18.self_attn.q_proj.weight",
+          "target": "blk.18.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00010514259338378906
+        },
+        {
+          "source": "layers.18.self_attn.k_proj.weight",
+          "target": "blk.18.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.85019588470459e-05
+        },
+        {
+          "source": "layers.18.self_attn.v_proj.weight",
+          "target": "blk.18.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0517578125e-05
+        },
+        {
+          "source": "layers.18.self_attn.o_proj.weight",
+          "target": "blk.18.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.8904290199279785e-05
+        },
+        {
+          "source": "layers.18.mlp.gate_proj.weight",
+          "target": "blk.18.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.039440631866455e-05
+        },
+        {
+          "source": "layers.18.mlp.up_proj.weight",
+          "target": "blk.18.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.0111284255981445e-05
+        },
+        {
+          "source": "layers.18.mlp.down_proj.weight",
+          "target": "blk.18.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011798739433288574
+        },
+        {
+          "source": "layers.19.input_layernorm.weight",
+          "target": "blk.19.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.post_attention_layernorm.weight",
+          "target": "blk.19.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.19.self_attn.q_proj.weight",
+          "target": "blk.19.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.0001157224178314209
+        },
+        {
+          "source": "layers.19.self_attn.k_proj.weight",
+          "target": "blk.19.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.536045551300049e-05
+        },
+        {
+          "source": "layers.19.self_attn.v_proj.weight",
+          "target": "blk.19.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0517578125e-05
+        },
+        {
+          "source": "layers.19.self_attn.o_proj.weight",
+          "target": "blk.19.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.708634853363037e-05
+        },
+        {
+          "source": "layers.19.mlp.gate_proj.weight",
+          "target": "blk.19.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.060302257537842e-05
+        },
+        {
+          "source": "layers.19.mlp.up_proj.weight",
+          "target": "blk.19.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.3585896492004395e-05
+        },
+        {
+          "source": "layers.19.mlp.down_proj.weight",
+          "target": "blk.19.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.300210952758789e-05
+        },
+        {
+          "source": "layers.20.input_layernorm.weight",
+          "target": "blk.20.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.post_attention_layernorm.weight",
+          "target": "blk.20.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.20.self_attn.q_proj.weight",
+          "target": "blk.20.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.982816219329834e-05
+        },
+        {
+          "source": "layers.20.self_attn.k_proj.weight",
+          "target": "blk.20.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.982816219329834e-05
+        },
+        {
+          "source": "layers.20.self_attn.v_proj.weight",
+          "target": "blk.20.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.963444709777832e-05
+        },
+        {
+          "source": "layers.20.self_attn.o_proj.weight",
+          "target": "blk.20.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.8203935623168945e-05
+        },
+        {
+          "source": "layers.20.mlp.gate_proj.weight",
+          "target": "blk.20.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.084144115447998e-05
+        },
+        {
+          "source": "layers.20.mlp.up_proj.weight",
+          "target": "blk.20.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.049522638320923e-05
+        },
+        {
+          "source": "layers.20.mlp.down_proj.weight",
+          "target": "blk.20.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011053681373596191
+        },
+        {
+          "source": "layers.21.input_layernorm.weight",
+          "target": "blk.21.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.post_attention_layernorm.weight",
+          "target": "blk.21.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.21.self_attn.q_proj.weight",
+          "target": "blk.21.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.3256750106811523e-05
+        },
+        {
+          "source": "layers.21.self_attn.k_proj.weight",
+          "target": "blk.21.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.583465099334717e-05
+        },
+        {
+          "source": "layers.21.self_attn.v_proj.weight",
+          "target": "blk.21.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0510127544403076e-05
+        },
+        {
+          "source": "layers.21.self_attn.o_proj.weight",
+          "target": "blk.21.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.7340989112854004e-05
+        },
+        {
+          "source": "layers.21.mlp.gate_proj.weight",
+          "target": "blk.21.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.377829074859619e-05
+        },
+        {
+          "source": "layers.21.mlp.up_proj.weight",
+          "target": "blk.21.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 8.907914161682129e-05
+        },
+        {
+          "source": "layers.21.mlp.down_proj.weight",
+          "target": "blk.21.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011843442916870117
+        },
+        {
+          "source": "layers.22.input_layernorm.weight",
+          "target": "blk.22.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.post_attention_layernorm.weight",
+          "target": "blk.22.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.22.self_attn.q_proj.weight",
+          "target": "blk.22.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.9545040130615234e-05
+        },
+        {
+          "source": "layers.22.self_attn.k_proj.weight",
+          "target": "blk.22.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.494058132171631e-05
+        },
+        {
+          "source": "layers.22.self_attn.v_proj.weight",
+          "target": "blk.22.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.217028617858887e-05
+        },
+        {
+          "source": "layers.22.self_attn.o_proj.weight",
+          "target": "blk.22.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 3.0510127544403076e-05
+        },
+        {
+          "source": "layers.22.mlp.gate_proj.weight",
+          "target": "blk.22.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.936622619628906e-05
+        },
+        {
+          "source": "layers.22.mlp.up_proj.weight",
+          "target": "blk.22.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.665421485900879e-05
+        },
+        {
+          "source": "layers.22.mlp.down_proj.weight",
+          "target": "blk.22.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011906027793884277
+        },
+        {
+          "source": "layers.23.input_layernorm.weight",
+          "target": "blk.23.attn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.post_attention_layernorm.weight",
+          "target": "blk.23.ffn_norm.weight",
+          "shape": [
+            768
+          ],
+          "dtype": "float32",
+          "max_abs_conversion_error": 0.0
+        },
+        {
+          "source": "layers.23.self_attn.q_proj.weight",
+          "target": "blk.23.attn_q.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.786120891571045e-05
+        },
+        {
+          "source": "layers.23.self_attn.k_proj.weight",
+          "target": "blk.23.attn_k.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.917251110076904e-05
+        },
+        {
+          "source": "layers.23.self_attn.v_proj.weight",
+          "target": "blk.23.attn_v.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.091594696044922e-05
+        },
+        {
+          "source": "layers.23.self_attn.o_proj.weight",
+          "target": "blk.23.attn_output.weight",
+          "shape": [
+            768,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 6.084144115447998e-05
+        },
+        {
+          "source": "layers.23.mlp.gate_proj.weight",
+          "target": "blk.23.ffn_gate.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 5.537271499633789e-05
+        },
+        {
+          "source": "layers.23.mlp.up_proj.weight",
+          "target": "blk.23.ffn_up.weight",
+          "shape": [
+            1024,
+            768
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 4.228949546813965e-05
+        },
+        {
+          "source": "layers.23.mlp.down_proj.weight",
+          "target": "blk.23.ffn_down.weight",
+          "shape": [
+            768,
+            1024
+          ],
+          "dtype": "float16",
+          "max_abs_conversion_error": 0.00011739134788513184
+        }
+      ],
+      "native_parity": "not evaluated",
+      "all_218_roundtrips_exact": true,
+      "metadata_roundtrips_exact": true
+    }
+  ],
+  "native_parity": "not evaluated",
+  "status": "started",
+  "audit_provenance": {
+    "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196",
+    "raw_report_sha256": "80c2aed0ec565573fe589a17f9627582080f40afdb2fafa21829e35b8be099df",
+    "failure": "negative BOS control attempted in-place mutation of an inference tensor outside inference mode; no full reference panel completed"
+  }
+}

@@ -1,0 +1,115 @@
+name: UltraBERT frozen native audit
+on:
+  push:
+    paths: ['.github/workflows/ultrabert-native.yml']
+  workflow_dispatch:
+    inputs:
+      reference_run:
+        description: 'Successful original reference workflow run (must match the reviewed record)'
+        required: true
+        type: string
+      operator_audit:
+        description: 'Replay original-input operators separately; preserve ordinary metrics'
+        default: false
+        required: false
+        type: boolean
+      linear_audit:
+        description: 'Observe original SiLU/product inputs and isolate down; requires operator_audit'
+        default: false
+        required: false
+        type: boolean
+      linear_forward_audit:
+        description: 'Observe extra operators in the full original forward; requires linear_audit'
+        default: false
+        required: false
+        type: boolean
+      linear_local_audit:
+        description: 'Separate same-input local operator targets; requires linear_audit and excludes full-forward mode'
+        default: false
+        required: false
+        type: boolean
+      frozen_report:
+        description: 'Reviewed report under tests/results/ultrabert/'
+        default: 'tests/results/ultrabert/reference-audit.json'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-frozen-native-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      REFERENCE_RUN: ${{ inputs.reference_run }}
+      OPERATOR_AUDIT: ${{ inputs.operator_audit }}
+      LINEAR_AUDIT: ${{ inputs.linear_audit }}
+      LINEAR_FORWARD_AUDIT: ${{ inputs.linear_forward_audit }}
+      LINEAR_LOCAL_AUDIT: ${{ inputs.linear_local_audit }}
+      FROZEN_REPORT: ${{ inputs.frozen_report }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare audit directories
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/frozen" "$RUNNER_TEMP/hf"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "FROZEN_ARTIFACTS=$RUNNER_TEMP/frozen" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
+      - name: Check original run identity against the reviewed record
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          from pathlib import Path
+          run = os.environ['REFERENCE_RUN']
+          if not run.isdigit():
+              raise ValueError('Expected numeric original run ID')
+          path = Path(os.environ['FROZEN_REPORT'])
+          if path.is_absolute() or '..' in path.parts or path.parts[:3] != ('tests', 'results', 'ultrabert'):
+              raise ValueError('Expected a reviewed UltraBERT report path')
+          record = json.loads(path.read_text())
+          expected = 'https://github.com/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + run
+          if record.get('audit_provenance', {}).get('workflow') != expected:
+              raise ValueError('Original run does not match reviewed provenance')
+          meta = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + run]))
+          if meta['conclusion'] != 'success' or meta['head_sha'] != record['source_commit']:
+              raise ValueError('Original run is not a successful frozen source')
+          PY
+      - name: Install conversion and archive-reader dependencies
+        run: python -m pip install gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6 huggingface-hub==1.33.0
+      - name: Install frozen original operator environment
+        if: inputs.linear_audit
+        run: |
+          python -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1
+      - uses: actions/download-artifact@v4
+        with:
+          name: heavy-${{ inputs.reference_run }}
+          run-id: ${{ inputs.reference_run }}
+          github-token: ${{ github.token }}
+          path: ${{ env.FROZEN_ARTIFACTS }}
+      - name: Compare full native graph with original tensor archives
+        run: |
+          audit_args=()
+          if [[ "$OPERATOR_AUDIT" == "true" ]]; then audit_args+=(--operator-audit); fi
+          if [[ "$LINEAR_AUDIT" == "true" ]]; then audit_args+=(--linear-audit); fi
+          if [[ "$LINEAR_FORWARD_AUDIT" == "true" ]]; then audit_args+=(--linear-forward-audit); fi
+          if [[ "$LINEAR_LOCAL_AUDIT" == "true" ]]; then audit_args+=(--linear-local-audit); fi
+          python tools/ci-heavy/ultrabert_native.py --frozen-report "$FROZEN_REPORT" --frozen-artifacts "$FROZEN_ARTIFACTS" "${audit_args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-native-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 30

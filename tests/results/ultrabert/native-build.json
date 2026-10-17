@@ -1,0 +1,17 @@
+{
+  "source_commit": "5caa5017e104c92dab694bba5f531b22164099ef",
+  "frozen_reference_source": "0dddbd2b61740c0f25482b2afb428b815b5c85ac",
+  "native_cpp_sha256": "dffdd6aea0d33f1da83461dd91b7389cd49f99e908a73bd552f4bbef1d14b9b0",
+  "driver_sha256": "904de1705cb5ee4515e90d98a9ad912fc35d22d3be5577ac14daaca501079ed5",
+  "build_passed": true,
+  "literal_zero_gate_off": true,
+  "default_gate_off": true,
+  "arms": [],
+  "scope": "test-only CPU graph over original prepared IDs; not tokenizer/public API or task quality",
+  "status": "build-only; model parity not evaluated",
+  "audit_provenance": {
+    "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497",
+    "raw_report_sha256": "f1903c6306d6b9dc34a0bb2410a95de8f0e90a2b64cb72b78a31b852052c8095",
+    "review": "C++ source matches the built file exactly; no native model inference was performed."
+  }
+}

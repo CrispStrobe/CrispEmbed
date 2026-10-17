@@ -1,3 +1,91 @@
+## UltraBERT first native prepared-ID panel — 17 October 2026
+
+[Native audit38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+atc32ea78915074f27648e578f3c50684459230228 completes all14 arms over seven
+frozen original cases. Original run identity, complete archive/tensor payloads
+and both whole GGUF files reproduce exactly. All700 input/mask/position controls
+pass. All14 raw logs independently reparse; the complete initial report and
+all1,477 failed numerical stages remain in
+[initial-native-parity.json](tests/results/ultrabert/initial-native-parity.json).
+The workflow fails the unchanged0.99999/0.002 gates after collecting all arms.
+
+| Storage | Failed numerical stages | Minimum stage cosine | Worst stage abs | Minimum raw CLS cosine | Worst raw CLS abs | Worst normalized CLS abs |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| F32 | 183 | 0.999999762 | 0.0183315277 | 1.0 | 6.72340393e-05 | 5.94183803e-07 |
+| F16 | 1294 | 0.999478936 | 1.43066406 | 0.999999642 | 0.0185089111 | 0.000181317329 |
+
+F32 final CLS cosine rounds to1.0 in every case, but only empty/query have zero
+intermediate failures. Document, Unicode and pair retain29 each; boundary/padded
+retain48 each. First captured nonzero errors occur at layer0 Q projections or
+attention norm (roughly3.6e-7–1.9e-6), before the first budget exceedance at
+layer14 FFN output. Unicode's FFN-output error is0.00439453125 against reference
+maximum magnitude5754.38525390625 and norms5860.17676/5860.17236. On the boundary
+case, layer14 input-norm/gate/up errors are0.000340461731/0.0002617836/0.000640869141;
+its FFN-output error becomes0.00816345215. Later layer17 norm reaches0.0183315277,
+with native/reference norms both657.698669 at printed precision. These are
+attribution observations, not a demonstrated defective operator or FP diagnosis.
+
+F16 retains116/147/191/216/184/219/221 failures for empty/document/query/Unicode/
+pair/boundary/padded. Its worst1.43066406 error is Unicode layer14 FFN output;
+the worst cosine0.999478936 is layer15 FFN output on boundary/padded. All raw CLS
+absolute-error gates fail, despite close cosines and normalized-vector errors.
+No weight profile/default/artifact is promoted using this panel.
+
+The completed [original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) at a8b129f4
+reproduces every ordinary metric from the first panel and passes all700 exact
+controls. Probe-on/off metrics and exits match on all14 arms. All28 raw logs
+and84 operator records independently verify; the
+[complete report](tests/results/ultrabert/operator-audit.json) retains25 local
+operator failures, separately from unchanged1,477 ordinary failures.
+
+| Original-input probe | Worst F32 abs | F32 failures /7 | Worst F16 abs | F16 failures /7 |
+| --- | ---: | ---: | ---: | ---: |
+| Embedding → layer0 attention norm | 0.00000190734863 | 0 | 0.00000190734863 | 0 |
+| Residual → layer14 FFN norm | 0.0000152587891 | 0 | 0.0000152587891 | 0 |
+| FFN norm → layer14 gate | 0.0000419616699 | 0 | 0.0167541504 | 6 |
+| FFN norm → layer14 up | 0.0000457763672 | 0 | 0.00855636597 | 6 |
+| FFN norm → layer14 whole MLP | 0.0048828125 | 1 | 0.592590332 | 6 |
+| Gate/up → layer14 SiLU/product/down | 0.00146484375 | 0 | 1.12451172 | 6 |
+
+F32 Unicode's whole-MLP error0.0048828125 becomes0.000671386719 with original
+gate/up, narrowing local projection-error amplification. Boundary's MLP error
+from original norm is0.000122070312, versus composed0.00816345215; upstream
+accumulation remains relevant. Passing local norms does not prove every norm
+operation exact. The gate/up replay remains compound: it includes native SiLU,
+multiplication and down projection, not a captured original down input. F16 also
+uses converted down weights there. Next inspect those original inputs and linear
+rounding without changing the frozen anchors or strict gates. No recipe is
+selected from these seven cases. Task retrieval, SentenceTransformer wrapper,
+native tokenization, public APIs, long context, quantized profiles, latency and
+RSS remain unverified.
+
+## UltraBERT-Embed-150M conversion and reference storage — 17 October 2026
+
+[Hosted original reference38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+uses the pinned151,032,576-parameter checkpoint at367d5343b5a0164d57b810cedf5de4b8983d5984.
+Every one of218 tensors round-trips exactly at declared storage precision, with
+all49 RMSNorm vectors retained at F32; complete records match the earlier capture-
+failure run. Storage is measured, not estimated runtime RAM or speed:
+
+| Storage | Exact bytes | SHA256 |
+| --- | ---: | --- |
+| Original safetensors F32 | 604,153,320 | `da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c` |
+| GGUF F32 | 609,437,696 | `89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566` |
+| GGUF F16 matrices / F32 norms | 307,447,808 | `93816a0fde522785bb5d6176e850ca8f991afd03f8eb8c301ef7b7373b9b0645` |
+
+F32 cast error is zero. Maximum F16 weight cast error is0.0002409815788269043
+in the token embedding; this is a weight-storage measurement, not output parity.
+The original Python panel covers empty(1 token), document(9), query(24),
+Unicode(21), pair(8), window boundary(262) and padded batch(2×262). All seven
+hook-neutrality/mask controls pass and retain390 original stages each. Raw CLS
+is preserved separately from optional L2; default SentenceTransformer wrapper
+behavior and independent retrieval quality have not yet been exercised.
+
+The [reviewed report](tests/results/ultrabert/reference-audit.json) freezes all
+2,730 original stage hashes/shapes/magnitudes and seven remote archives. Native
+292-numerical/50-exact comparisons per case are pending. No cosine, quantized
+quality, latency, RSS,32K, GPU, or benchmark-reproduction claim is made here.
+
 # CrispEmbed Performance
 
 ## Qwen3.5 final independent Q4 receipt/book and panel (2026-10-16)

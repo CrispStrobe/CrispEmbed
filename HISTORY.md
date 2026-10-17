@@ -25,6 +25,26 @@ Tokenizer39001522903 passes4 evidence controls, then fails C++ metadata API call
 before token measurements; [initial failure](https://github.com/CrispStrobe/CrispEmbed/blob/d7b84d1d4714b0d906518bbbbda21aa558d54a74/tests/results/ultrabert/initial-tokenizer-build-failure.json)
 is retained. Declared API/key-string repairs are pushed; fresh validation pending.
 
+## 2026-10-17 — Full original UltraBERT replay also rejects frozen-anchor drift
+
+[39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
+at504508673a73485fe4c897a23ab7a2bb77e3852c builds and passes25 model-free/four
+Torch controls. Additional-hook on/off captures are bit-exact to each other,
+but287 empty-case stages differ from the frozen source run. First is layer0 Q:
+max error5.960464477539062e-7 on reference maximum2.2762882709503174. Full
+[raw reports/all287 differences](tests/results/ultrabert/full-forward-capture-failure.json)
+retain shapes, payload hashes, norms and absolute errors. No new native arm ran
+or frozen target was changed. The cause remains unproved; drift is also present
+in full forward, not only isolated MLP replay.
+
+An additional opt-in local operator experiment now holds frozen gate/up values
+fixed, calls the original SiLU/down modules, and supplies exactly the same
+replayed product to Python/native down. Its separately named local_down target
+is not the frozen full-model FFN output; both are retained with their discrepancy.
+Ordinary native inference, original model gates and both failed replay modes
+remain unchanged. The local experiment and its fifth Torch control await hosted
+validation; it cannot establish full-model parity or waive numerical debt.
+
 ## 2026-10-17 — macOS repaired wheels pass installed native loading
 
 [Matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)
@@ -68,6 +88,28 @@ passes at ebcadb1ffa87750972836dd858fe03e355b0fde0. Its approved native Build
 and secret scan remain pending. No merge/deployment, new release or immutable
 app0.17.12 pin change follows from these results.
 
+## 2026-10-17 — UltraBERT isolated capture guard rejects original anchor drift
+
+[Linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
+atc7c5ef30254dac9eddc854a8c702f59512a5ee16 builds the expanded executable and
+passes all25 model-free plus3 weight-free Torch controls. Original producer/
+archive/conversion identities verify. The first isolated original-MLP capture
+then fails the empty-case frozen gate anchor with max error2.0265579223632812e-6.
+No new native model/operator arm ran and no frozen anchor was replaced.
+[Both complete raw reports](tests/results/ultrabert/initial-linear-capture-failure.json)
+retain their fields and raw hashes. The separate model-free contract
+[39000684136](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000684136)
+also passes14+11 controls at that same source. The drift's cause is unproved;
+small magnitude is not permission to accept a changed reference.
+
+The next opt-in mode observes SiLU/product during the actual original full
+forward, requires all386 existing stage payloads bit-exact, and records every
+anchor drift's magnitude/hash plus the earliest stage. Added-hook on/off stage
+identity is checked separately. Isolated MLP replay remains available and its
+failure remains archived. New full-forward mode and fourth Torch control are
+pending hosted validation. Original model/converter/frozen dumper bytes remain
+unchanged; production support, ordinary numerical debt and app pin are unchanged.
+
 ## 2026-10-17 — UltraBERT operator attribution and three-PR source review
 
 The [operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
@@ -91,6 +133,116 @@ static and visual review found no blocking defect; its three previously held
 fork workflows were approved and are queued. PR69 stays draft with the numerical
 and production limitations above and latest-head checks pending. No PR merge,
 new runtime release, published weights or immutable app0.17.12 pin change.
+
+## 2026-10-17 — UltraBERT original-input operator attribution complete
+
+[Operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) at
+`a8b129f467c443f10fc9dd8d3504f0f566643ab2` compiles the expanded test-only
+executable and retains all14 ordinary arms unchanged from the initial panel.
+All700 exact controls pass, all probe-on/off ordinary metrics and exits match,
+and every original archive/conversion identity verifies. All28 raw logs were
+independently hash-checked and reparsed, including84 operator records. The
+[complete report](tests/results/ultrabert/operator-audit.json) retains every raw
+producer field; original report SHA256 is
+`a9d66194f69a9e25aefd528e24fea0203e43a0933bb81f22e420a70dee9eb367`.
+All24 model-free controls pass at this same source in
+[38998432321](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432321).
+
+F32 passes41/42 local operator checks. Unicode layer14 MLP from original norm
+retains max error0.0048828125, while replay from original gate/up reduces it to
+0.000671386719. Both local norm probes pass on every case. Boundary MLP from
+original norm has error0.000122070312, versus composed0.00816345215. These
+observations narrow projection-error amplification; they do not prove a single
+faulty reduction or justify a tolerance waiver. F16 passes18/42 local checks;
+its original-gate/up replay still includes converted down weights and has worst
+error1.12451172. All initial183 F32/1,294 F16 ordinary failures remain unchanged.
+Original SiLU/product/down inputs and projection rounding are the next bounded
+attribution task. Production/tokenization/bindings, retrieval quality and
+publication stay pending; no runtime release or app dependency changes.
+
+## 2026-10-17 — Initial complete UltraBERT native panel retained
+
+[38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+completes all14 prepared-ID F32/F16 arms atc32ea789. All700 exact controls pass;
+original artifacts and converted bytes reproduce exactly. Independent reparsing
+of every native log confirms183 F32 and1,294 F16 failed numerical stages. Every
+raw report field is retained in [initial-native-parity.json](tests/results/ultrabert/initial-native-parity.json),
+raw SHA256 `500238ca9ce7b068285c3b409d50cd29246a5dd372f06c0eef565eb6c967ab72`.
+F32 final CLS cosines round1.0, worst raw error0.0000672340393; strict intermediate
+failure first appears at layer14 FFN output. F16 minimum raw CLS cosine is
+0.999999642, worst raw error0.0185089111; this does not waive its larger stage debt.
+Full errors/magnitudes and quality limits are in PERFORMANCE. No production
+backend or candidate publication follows from these numbers.
+
+The [operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)
+is pending at a8b129f4: separate graphs use original embedding/residual/norm or
+gate/up inputs, with ordinary native metric/exit equality controls. Earlier
+native outputs are frozen; no source weight, prompt, case, cap or tolerance is
+changed. Local work remains report/log verification, edits and formatting only.
+
+## 2026-10-17 — UltraBERT original references frozen after capture repair
+
+[Reference run38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520)
+passes at0573f1847db68914052a98341a22fceeb1358518 with Transformers5.16.1,
+Torch2.14.0+cpu, safetensors0.8.0, NumPy2.2.6 and gguf0.19.0. The weight-free
+inference-mode regression passes before model loading. All seven original F32
+cases retain390 stages each (2,730 total), exact hooked/unhooked outputs,
+local/global/BOS/padding checks and rejected wrong-BOS controls. Both converted
+218-tensor manifests/types/payloads and tokenizer/metadata round-trips pass.
+The [complete reviewed report](tests/results/ultrabert/reference-audit.json)
+retains all producer fields; raw SHA256 is
+`5ca38964bde9f960b46467e48e0d3123ab67b099ff6567da15b51c2fadea45fc`.
+Tensor archives remain remote; only the1.12MB report was retrieved for review.
+
+The preceding [run38997289196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196)
+verified both conversions, then failed when the negative control tried to mutate
+an inference tensor outside inference mode. Its complete
+[initial record](tests/results/ultrabert/initial-reference-capture-failure.json)
+is preserved. The repair mutates only an independent ordinary clone and explicitly
+allows the already hash-checked local custom config for AutoTokenizer; model
+math, weights, input cases, masks and gates are unchanged. All conversion records
+exactly reproduce that initial run, including both whole GGUF hashes.
+
+All23 stdlib source/log/archive-manifest controls pass in
+[38997900768](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900768)
+atc32ea789. The native audit now consumes the exact original tensor files,
+verifies producer identity/report bytes, every archive/tensor hash and reproduced
+conversion bytes before comparisons. Its first dispatch
+[38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303)
+is pending; no native numerical result is claimed yet. A workflow runner-context
+initialization error was fixed before that dispatch, with no model run at the
+invalid workflow revision. Production integration and publication remain open.
+
+## 2026-10-17 — UltraBERT prototype build and 22 controls verified
+
+[Hosted build38972505497](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497)
+passes at5caa5017e104c92dab694bba5f531b22164099ef, including default/unset and
+literal-zero gate checks. The [raw build record](tests/results/ultrabert/native-build.json)
+retains every producer field and original report SHA; current C++ matches its
+recorded hash exactly. [Contract38972615928](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972615928)
+passes all14 source/schema plus8 native-log/frozen-replay controls at68639fe8.
+Later documentation changes preserve that test/driver source exactly.
+PR69 head119cc1af also passes the full ten-job Build (including Flutter), WASM,
+style, contract and secret checks; this is distinct from model parity.
+
+Original-model run38969507642 failed during pip resolution: Transformers5.16.1
+requires safetensors>=0.8.0, conflicting with the initial0.7.0 pin. No conversion
+or inference ran. [Retry38997289196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196)
+keeps immutable source0dddbd2b and all model/reference settings, correcting only
+the dispatch dependency to safetensors0.8.0. Actual reference/model validation
+remains pending; no cosine, retrieval quality or production backend is claimed.
+
+## 2026-10-16 — UltraBERT immutable source/schema controls
+
+All14 model-free UltraBERT source/schema controls pass in
+[38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
+at0dddbd2b61740c0f25482b2afb428b815b5c85ac (actual log:14 tests in0.029s).
+Coverage includes complete218-tensor mappings, unsupported heads, shapes/types,
+overlap/offset/payload failures, source changes and output preservation. This is
+a source/format guard result; original-model conversion/inference remains queued.
+No native cosine, retrieval-quality, quantization or publication claim follows.
+The test-only full-layer ggml prototype and its additional controls remain pending
+in [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69).
 
 # CrispEmbed — History
 
