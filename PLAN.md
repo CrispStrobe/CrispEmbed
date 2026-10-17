@@ -129,14 +129,19 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   empty-case original gate drift2.0265579223632812e-6 before new native comparisons.
   The drift's cause is unproved and the complete failure is retained in PR69.
   [Full-forward observer39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
-  is queued at50450867: all386 old stage payloads must match exactly and extra
-  hooks must preserve ordinary captures; a fourth Torch control covers drift
-  evidence. Isolated mode remains available. Keep all frozen arrays/gates intact.
-  The independent [tokenizer/template audit39001522903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903)
-  is queued at0f9d0a44: all8 original rows, negative terminal-SEP/zero-ID-mask
-  controls and4 model-free evidence controls, with no weights. Its test-only
-  template preserves one BOS and no terminal separator; public integration is
-  still pending. Do not route through generic BERT pair wrapping unchanged.
+  passes25 model-free/four Torch controls and hook neutrality, then rejects287
+  empty-case old-anchor differences (first layer0 Q5.960464477539062e-7). Retain
+  both strict replay failures; the cause is unproved and no new native arm ran.
+  [Same-input local operator audit39008070299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299)
+  is queued at a349539e: original PyTorch/native modules receive frozen gate/up
+  and identical replayed products. Separately named local_down targets retain
+  their difference from old FFN outputs; they cannot waive model-parity debt.
+  Original gates/arrays and both strict replay modes remain intact; five Torch
+  controls/new compilation and local measurements are pending.
+  Tokenizer39001522903 passes4 controls then fails compilation before measuring
+  IDs. The [repaired tokenizer audit39007901207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39007901207)
+  is queued at d7b84d1d; declared GGUF APIs and c_str keys are fixed. Preserve the
+  initial compile failure and require all8 original rows/negative controls.
   Native tokenization/public backend, bindings, independent retrieval quality,
   long-context validation and quantized publication remain pending.
 - [ ] **LFM2.5 Encoder:** validate GPU scheduling, long-context behavior beyond
@@ -161,10 +166,9 @@ inspection, conversion and inference remain outside the selected scope; its
 The [three-PR review](docs/pr-review-2026-10-17.md) is complete; evidence and
 limits are archived in HISTORY. Follow-ups:
 
-- [ ] **PR68:** WASM [38968549080](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38968549080)
-  passes at ebcadb1f. Secret scan38968549043 also passes at that source. Inspect the still-pending
-  approved native Build conclusion before merge consideration. Verify deployed metadata/image
-  after any merge/deployment. No merge has occurred.
+- [ ] **PR68 deployment follow-up:** reviewed head ebcadb1f now passes full
+  Build/Flutter, WASM and secret checks; completed evidence is in HISTORY.
+  If merged, verify deployed metadata/image. No merge/deployment has occurred.
 - [ ] **PR69:** inspect the actual latest-head platform checks before changing
   draft/merge status. Expanded native source a8b129f4 compiles and completes the
   strict audit with retained numerical failures; old119cc1af platform checks are
@@ -175,14 +179,11 @@ limits are archived in HISTORY. Follow-ups:
   start. All50 quality/auditor controls and all nine paired audits
   have verified source evidence; queued broader checks are not passing evidence. Record
   actual failures before further promotion.
-- [ ] **W1:** [PR70](https://github.com/CrispStrobe/CrispEmbed/pull/70) fixes
-  macOS12.0 packaging and installed bundled-library/C-ABI checks. All five macOS
-  CPython3.9–3.13 wheels pass at56b5af0c in39001056271; evidence is in HISTORY.
-  Its ARM64 standalone tests expose missing pthread linkage; the diagnostic
-  target now declares Threads::Threads. Fresh full four-platform/installed-load/
-  aggregation [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
-  is queued at e75a32f1882a00389bac1304797f44c08ce372d4. Preserve both initial
-  failures and inspect remaining initial legs; no full-matrix or release claim.
+- [ ] **W1 aggregation:** all four legs/23 installed-wheel native-load/C-ABI
+  checks pass in [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+  at e75a32f1. Inspect pending aggregation before closing PR70's wheel-validation
+  lane; producer/log evidence is in HISTORY. Preserve both initial failures.
+  Runtime release/version reconciliation and PyPI publication remain separate.
 - [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes
   with current main and draftPR60 using native/reference/decoded evidence.
 - [ ] **Release metadata:** reconcile source VERSION0.17.11 and published0.17.12
@@ -323,8 +324,8 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-17 | `fix/macos-wheel-target` | W1 Python wheel target/load repair | Align cibuildwheel macOS target with the existing12.0 CMake/native floor; require actual installed native-library load, then hosted four-platform matrix/aggregation. Preserve initial failed run37222310629, immutable0.17.12 and other runtime work. [PR70](https://github.com/CrispStrobe/CrispEmbed/pull/70): all5 macOS CPython3.9–3.13 repaired wheels install/load/call the C ABI at56b5af0c. Initial ARM64 standalone Qwen3.5 tests fail missing pthread linkage; shared runtime builds. Added transitive Threads::Threads at e75a32f1; [fresh full matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845) queued. Preserve initial failures; full matrix/aggregation unverified. |
-| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT reference/native audit | [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69): all seven original cases/2,730 stages and both218-tensor conversions PASS [38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520); 24 model-free harness controls pass at a8b129f4; initial native build verified. [First native panel38997900303](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997900303) completes all14 arms and700 exact controls: F32 final CLS cosine rounds1.0 (worst absolute0.000067234), but183 intermediate failures start at layer14 FFN output; F16 retains1,294 failures. [Original-input operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137) completes at a8b129f4: all84 operator records/28 logs verify; F32 passes41/42 local checks, F16 retains24 failures. All ordinary metrics/exits reproduce exactly. The [isolated linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936) compiles and passes25+3 controls, then rejects empty-case gate drift2.0265579223632812e-6 before native measurements. The [full-forward observer39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659) is queued at50450867 and requires all386 old payloads exact plus hook neutrality; isolated mode/failure retained. Preserve initial numerical debt. The separate [native tokenizer audit39001522903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903) is queued at0f9d0a4433cdad10bbef1e5f6b26d1a761848858 on `audit/ultrabert-tokenizer`: native BPE/explicit templates versus all8 original text rows, with terminal-SEP/zero-ID-mask negatives and4 log controls. Metadata-only/no checkpoint weights; compile/parity pending. Generic BERT pair termination and encoder GPT-2 selector require explicit future integration. Public tokenizer/backend/bindings/quality/publication remain pending. |
+| 2026-10-17 | `fix/macos-wheel-target` | W1 Python wheel target/load repair | [PR70](https://github.com/CrispStrobe/CrispEmbed/pull/70): all4 wheel legs/23 actual installed native-load/C-ABI checks pass at e75a32f1 in39003273845; aggregation queued. Both initial delocate/pthread failures retained in HISTORY. No runtime release or app update. |
+| 2026-10-16 | `feat/ultrabert-reference` | UltraBERT reference/native audit | [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69): original7-case reference/conversions complete; initial native183 F32/1,294 F16 failures retained. Both strict replay attempts reject anchor drift, detailed evidence in HISTORY. Local same-input operator39008070299 queued at a349539e; repaired tokenizer39007901207 queued at d7b84d1d after retained C++ compile failure. Require untouched original arrays/gates, scoped local targets and full8-row ID/mask/negative controls. Public backend/bindings/quality/publication pending. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

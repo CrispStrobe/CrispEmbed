@@ -1,3 +1,30 @@
+## 2026-10-17 — All four corrected wheel legs pass; full UltraBERT drift retained
+
+[Wheel matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+at e75a32f1882a00389bac1304797f44c08ce372d4 passes Windows AMD64, Linux x86_64,
+Linux ARM64 and macOS ARM64. All23 repaired wheels install, load the bundled
+native library and pass the C ABI check:6/6/6/5 by platform. Actual completed-job
+logs were independently reviewed for every wheel/tag/load, with producer wheel
+hashes and log hashes in [the matrix record](tests/results/packaging/wheel-matrix.json).
+Artifacts remain remote and wheel bytes were not independently downloaded/hash-
+verified here. Aggregation is still queued; no full-workflow/release claim yet.
+The initial delocate and pthread-link failures remain archived.
+
+PR68's [full ten-job Build38968548958](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38968548958)
+passes, including Flutter bundling, at ebcadb1ffa87750972836dd858fe03e355b0fde0.
+WASM38968549080 and secret38968549043 also pass. The reviewed PR has no remaining
+CI blocker; no merge/Pages deployment has occurred.
+
+UltraBERT [full replay39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
+at50450867 passes25 model-free/four Torch controls and hook neutrality, then
+rejects287 empty-case old-anchor differences, first layer0 Q error5.960464477539062e-7
+versus reference magnitude2.2762882709503174. All [raw differences](https://github.com/CrispStrobe/CrispEmbed/blob/a349539e01701f53144b100623b67bcd62489436/tests/results/ultrabert/full-forward-capture-failure.json)
+are retained; no new native arm ran. Cause remains unproved. Separate local
+operator targets are pending and do not replace any original model reference.
+Tokenizer39001522903 passes4 evidence controls, then fails C++ metadata API calls
+before token measurements; [initial failure](https://github.com/CrispStrobe/CrispEmbed/blob/d7b84d1d4714b0d906518bbbbda21aa558d54a74/tests/results/ultrabert/initial-tokenizer-build-failure.json)
+is retained. Declared API/key-string repairs are pushed; fresh validation pending.
+
 ## 2026-10-17 — macOS repaired wheels pass installed native loading
 
 [Matrix39001056271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001056271)

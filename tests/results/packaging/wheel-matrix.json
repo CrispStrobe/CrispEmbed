@@ -1,0 +1,195 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845",
+  "source_commit": "e75a32f1882a00389bac1304797f44c08ce372d4",
+  "scope": "All four wheel legs pass actual repaired-wheel install, bundled native load and C ABI; aggregate still queued at capture",
+  "jobs": [
+    {
+      "name": "windows AMD64",
+      "job_id": 117310477836,
+      "conclusion": "success",
+      "installed_native_loads": 6,
+      "installed_c_abi_checks": 6,
+      "log_sha256": "8a16e852cce15b70cab80f74dde891d3a7f57eb01a66a401ebed460b7b1da002",
+      "wheels": [
+        {
+          "python": "cp38",
+          "file": "crispembed-0.17.11-cp38-cp38-win_amd64.whl",
+          "producer_sha256": "db1910559425964a60dcc213a480ee42ab93c9b37040ed834f850beed481ff22"
+        },
+        {
+          "python": "cp39",
+          "file": "crispembed-0.17.11-cp39-cp39-win_amd64.whl",
+          "producer_sha256": "c5346c277b2c16adcfbb0ba608ee2d63e255eb17731796548cabb8bf3a72c7bd"
+        },
+        {
+          "python": "cp310",
+          "file": "crispembed-0.17.11-cp310-cp310-win_amd64.whl",
+          "producer_sha256": "eaf8420c86b4011d452efa0a00ad5d4b030d02d7df0d8e5c5fe6fc2a24ec9783"
+        },
+        {
+          "python": "cp311",
+          "file": "crispembed-0.17.11-cp311-cp311-win_amd64.whl",
+          "producer_sha256": "b461280c84edb3afbd47d742b2d14ab4e9e7f47fe1dec9e65cfadcb19eb3e7ce"
+        },
+        {
+          "python": "cp312",
+          "file": "crispembed-0.17.11-cp312-cp312-win_amd64.whl",
+          "producer_sha256": "e1cd13ea755beeb44c74a53e2a2b84093a6185ed4d15b2dd9d480c3a68505c3f"
+        },
+        {
+          "python": "cp313",
+          "file": "crispembed-0.17.11-cp313-cp313-win_amd64.whl",
+          "producer_sha256": "743a9638ac1862c0506752015f48e36f275b85def9c1cbb4d859f10fb775a5b7"
+        }
+      ]
+    },
+    {
+      "name": "linux aarch64",
+      "job_id": 117310477983,
+      "conclusion": "success",
+      "installed_native_loads": 6,
+      "installed_c_abi_checks": 6,
+      "log_sha256": "5625b075b4f5a7eb5e2f020848b8478a465d915f07d9f46273d64d66f92282d8",
+      "wheels": [
+        {
+          "python": "cp38",
+          "file": "crispembed-0.17.11-cp38-cp38-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "producer_sha256": "be5766deb484f5e89b27be7fd9963f2234c79d651aa23edd8c28b263bc284450"
+        },
+        {
+          "python": "cp39",
+          "file": "crispembed-0.17.11-cp39-cp39-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "producer_sha256": "0a807eaea1893d8e641589f51b8f4731b899dfdf071338994886c31eac05c576"
+        },
+        {
+          "python": "cp310",
+          "file": "crispembed-0.17.11-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "producer_sha256": "eb4afcdcdb9af888a713b78b5688755f62bdb7dedb93cbd69e1416a837a94299"
+        },
+        {
+          "python": "cp311",
+          "file": "crispembed-0.17.11-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "producer_sha256": "9fd03a0aa1248a5f891530dc743276cf72663c9a73c1c48ca7c3308f395fae07"
+        },
+        {
+          "python": "cp312",
+          "file": "crispembed-0.17.11-cp312-cp312-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "producer_sha256": "d584388a46246d4bc003b0aaabcacee207c735d9cffea6bd812e6267daeecc85"
+        },
+        {
+          "python": "cp313",
+          "file": "crispembed-0.17.11-cp313-cp313-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl",
+          "producer_sha256": "fa41970cafa128f7e2d88d1a6a255e814f06fd7204e3d4437849a662f35fa729"
+        }
+      ]
+    },
+    {
+      "name": "macos arm64",
+      "job_id": 117310478024,
+      "conclusion": "success",
+      "installed_native_loads": 5,
+      "installed_c_abi_checks": 5,
+      "log_sha256": "96b992c7e770698e4b8acce443c1a4dd5e5c2119b8be7ddd9f09829a67760217",
+      "wheels": [
+        {
+          "python": "cp39",
+          "file": "crispembed-0.17.11-cp39-cp39-macosx_12_0_arm64.whl",
+          "producer_sha256": "fdb589ddabe3e9bdebfb4874ff30b5cbfdcb6d47e744b5316a8993d67bfecb4d"
+        },
+        {
+          "python": "cp310",
+          "file": "crispembed-0.17.11-cp310-cp310-macosx_12_0_arm64.whl",
+          "producer_sha256": "42006b4d1612b697ed2b38e545487d8f9c86efabe990501b57019ba4b105bd63"
+        },
+        {
+          "python": "cp311",
+          "file": "crispembed-0.17.11-cp311-cp311-macosx_12_0_arm64.whl",
+          "producer_sha256": "dea4ea2f93fb23441ec26e6e15912df864551b2c62b9f6c190d42d268da51320"
+        },
+        {
+          "python": "cp312",
+          "file": "crispembed-0.17.11-cp312-cp312-macosx_12_0_arm64.whl",
+          "producer_sha256": "0fdbf1404f3e082bdd5164c09688b7cd68fd0b8f3ea18906caa0df9166ad8e5c"
+        },
+        {
+          "python": "cp313",
+          "file": "crispembed-0.17.11-cp313-cp313-macosx_12_0_arm64.whl",
+          "producer_sha256": "9d34f6d342ea6ed41f9ce8b5c681ea7e2c04c1590714e2247049ff902eec1035"
+        }
+      ]
+    },
+    {
+      "name": "linux x86_64",
+      "job_id": 117310478040,
+      "conclusion": "success",
+      "installed_native_loads": 6,
+      "installed_c_abi_checks": 6,
+      "log_sha256": "8e59ec2768e86ab22ab7f933d5778e42d25a1befb3f3aefb26bbc563ae7541e4",
+      "wheels": [
+        {
+          "python": "cp38",
+          "file": "crispembed-0.17.11-cp38-cp38-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "producer_sha256": "d1c6fd4c158415f6721cefc2fa5967d0be6f26789704ca51fa7ca6aeff4cfa94"
+        },
+        {
+          "python": "cp39",
+          "file": "crispembed-0.17.11-cp39-cp39-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "producer_sha256": "ada94375a5d4da14865d017ac6bd763038fea457c0f4b603618becfbb6793e46"
+        },
+        {
+          "python": "cp310",
+          "file": "crispembed-0.17.11-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "producer_sha256": "dd5f8b0ede85c0c611006410b6b19d8976bead3db126d2f28e00e6a7775cdad7"
+        },
+        {
+          "python": "cp311",
+          "file": "crispembed-0.17.11-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "producer_sha256": "d3291054e2a007639280cb109c5c97de780b0574b97083ff035b7adff8dab22d"
+        },
+        {
+          "python": "cp312",
+          "file": "crispembed-0.17.11-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "producer_sha256": "4d13fbdc1ef36eb6015f69e4e051773cbf6ab15d7f31e9c0db52e27717674b1f"
+        },
+        {
+          "python": "cp313",
+          "file": "crispembed-0.17.11-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+          "producer_sha256": "dd92424dd8a7665c0a588bedc24880564b97829b7ca85834f80077a415a8f229"
+        }
+      ]
+    }
+  ],
+  "wheel_count": 23,
+  "installed_native_loads": 23,
+  "installed_c_abi_checks": 23,
+  "artifacts": [
+    {
+      "name": "wheels-linux-x86_64",
+      "id": 12091835156,
+      "compressed_bytes": 84127776,
+      "expired": false
+    },
+    {
+      "name": "wheels-macos-arm64",
+      "id": 12091795076,
+      "compressed_bytes": 58519421,
+      "expired": false
+    },
+    {
+      "name": "wheels-linux-aarch64",
+      "id": 12090482005,
+      "compressed_bytes": 72177973,
+      "expired": false
+    },
+    {
+      "name": "wheels-windows-AMD64",
+      "id": 12090404852,
+      "compressed_bytes": 18414854,
+      "expired": false
+    }
+  ],
+  "aggregate_status": "queued",
+  "wheel_bytes_independently_downloaded": false,
+  "published_to_pypi": false,
+  "app_dependency_changed": false
+}

@@ -302,27 +302,23 @@ projection rounding before selecting a correction; preserve all initial debt.
 The [isolated linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
 compiles and passes25 model-free/three Torch controls, then rejects an empty-case
 original gate drift2.0265579223632812e-6 before new native measurements. The full
-failure is retained; its cause is unproved. The
-[full-forward observer39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
-is queued at50450867: all386 old payloads must remain exact, with added-hook
-neutrality and a fourth Torch control. Isolated mode remains available.
-The separate [native tokenizer audit39001522903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39001522903)
-is queued at0f9d0a44: native BPE plus explicit UltraBERT templates are compared
-against all8 frozen original text rows. It downloads tokenizer assets only and
-requires terminal-SEP and ID-zero-mask negative controls to fail. Four model-free
-log controls and native compilation/parity remain pending; this is no public
-model/tokenizer support claim. The requested
-[three-PR review](pr-review-2026-10-17.md) is complete; PR68 WASM and secret scan pass at ebcadb1f while approved native Build remains pending;
-PR60 wheel11/12 target correction is under separate validation, and PR69 stays draft. Native tokenization, production backend,
-public interfaces, task retrieval, quantized quality and publication remain open.
+failure is retained; its cause is unproved. The [full-forward observer39002679659](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39002679659)
+also rejects frozen anchors:287 empty-case differences, first layer0 Q at
+5.960464477539062e-7, despite hook neutrality and25+4 passing controls. Cause is
+unproved. [Local operator39008070299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299)
+is queued at a349539e: same inputs for original/native operators, separately
+labelled local_down targets, all frozen full-model references/gates retained.
+Tokenizer39001522903 fails compilation after4 controls; the
+[API repair39007901207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39007901207)
+is queued at d7b84d1d before any token-parity claim. The
+[three-PR review](pr-review-2026-10-17.md) now has full Build/Flutter, WASM and
+secret passes for PR68 at ebcadb1f. No merge/deployment has occurred; PR69 stays draft.
 The independently scoped [wheel repairPR70](https://github.com/CrispStrobe/CrispEmbed/pull/70)
-passes all five repaired macOS CPython3.9–3.13 wheel installs/native loads/C-ABI
-checks in39001056271 at56b5af0c. [Initial evidence](../tests/results/packaging/wheel-target-initial.json)
-records producer hashes and retained ARM64 standalone-test pthread-linkage failure.
-PR70 adds the diagnostic static target's missing Threads dependency; the
-[fresh matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
-is queued at e75a32f1. Other initial legs/full aggregation remain pending; wheel
-artifacts stay remote, and no runtime release or app pin changes.
+passes all4 platform legs and23 actual installed native-load/C-ABI checks in
+[39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
+at e75a32f1. [Matrix evidence](../tests/results/packaging/wheel-matrix.json) keeps
+producer wheel/log hashes and remote-artifact limits. Aggregation remains queued;
+old delocate/pthread failures are retained. No release, PyPI or app pin changes.
 Indra remains public-code analysis only under the selected permissive-model scope.
 
 The independent-document quantization panel is complete. No tested quantized
