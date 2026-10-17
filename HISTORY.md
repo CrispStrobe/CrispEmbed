@@ -1,3 +1,22 @@
+## 2026-10-17 — UltraBERT prototype build and 22 controls verified
+
+[Hosted build38972505497](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972505497)
+passes at5caa5017e104c92dab694bba5f531b22164099ef, including default/unset and
+literal-zero gate checks. The [raw build record](tests/results/ultrabert/native-build.json)
+retains every producer field and original report SHA; current C++ matches its
+recorded hash exactly. [Contract38972615928](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38972615928)
+passes all14 source/schema plus8 native-log/frozen-replay controls at68639fe8.
+Later documentation changes preserve that test/driver source exactly.
+PR69 head119cc1af also passes the full ten-job Build (including Flutter), WASM,
+style, contract and secret checks; this is distinct from model parity.
+
+Original-model run38969507642 failed during pip resolution: Transformers5.16.1
+requires safetensors>=0.8.0, conflicting with the initial0.7.0 pin. No conversion
+or inference ran. [Retry38997289196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196)
+keeps immutable source0dddbd2b and all model/reference settings, correcting only
+the dispatch dependency to safetensors0.8.0. Actual reference/model validation
+remains pending; no cosine, retrieval quality or production backend is claimed.
+
 ## 2026-10-16 — UltraBERT immutable source/schema controls
 
 All14 model-free UltraBERT source/schema controls pass in

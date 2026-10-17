@@ -175,22 +175,23 @@ CrispEmbed's recognized `gpt2` pre-tokenizer name and both the standard
 original pair IDs remain the acceptance gate. Reusing loader primitives does not
 justify accepting the architecture before the default-off native gate exists.
 
-Current hosted validation: [conversion/reference38969507642](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
-and [14 model-free controls38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679),
-both queued at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`. The hosted dependency
-selection is `torch==2.14.0 transformers==5.16.1 gguf==0.19.0
-safetensors==0.7.0 numpy==2.2.6`, separate from OCR. Earlier queued heavy
-dispatches were cancelled before execution after review fixes; no failed
-model result is being replaced. [PR69](https://github.com/CrispStrobe/CrispEmbed/pull/69)
-stays draft until the actual conversion/reference results have been reviewed.
+Current hosted validation (17 October): the original model dispatch
+[38969507642](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969507642)
+failed before inference because the initial safetensors0.7.0 pin conflicts with
+Transformers5.16.1's >=0.8.0 requirement. The
+[retry38997289196](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997289196)
+uses the same immutable source0dddbd2b with `torch==2.14.0 transformers==5.16.1
+gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6`. No model settings, pixels, masks,
+reference code or gates change. Model results remain pending. PR69 stays draft
+until actual conversion/reference evidence is reviewed.
 
 ## Prepared-ID ggml prototype — validation pending
 
 The original14 source/schema controls pass in
 [38969505679](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38969505679)
 at `0dddbd2b61740c0f25482b2afb428b815b5c85ac`; the actual log reports14 tests.
-The original-model job remains queued; no reference inference or native cosine
-result is claimed.
+The corrected original-model retry remains pending; no reference inference or
+native cosine result is claimed.
 
 [The test-only graph](../tests/test_ultrabert_diff.cpp) implements all24 pre-norm
 blocks, per-layer local/global masks and split-half RoPE, RMSNorm/SwiGLU, final
@@ -208,7 +209,9 @@ both norms and the first failure in original execution order. All F32/F16 cases
 are collected before failed numerical gates return nonzero. Eight additional
 model-free controls reject missing/duplicated stages, forged green verdicts,
 incorrect totals and negative errors, while retaining nonfinite/exact failures.
-The22-test contract and hosted build are pending.
+All22 controls and the hosted prototype build pass;
+[the retained build record](../tests/results/ultrabert/native-build.json)
+separates compilation/gates from unmeasured model parity.
 
 This prototype covers every block's projection, attention, normalization, FFN
 and residual outputs. It does not yet expose the48 original RoPE-table stages
