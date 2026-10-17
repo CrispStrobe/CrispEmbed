@@ -1,0 +1,53 @@
+{
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936",
+  "scope": "Initial isolated original-module replay rejected frozen gate drift before any new native comparison; both complete raw reports retained",
+  "reports": {
+    "ultrabert-native.json": {
+      "raw_report": {
+        "source_commit": "c7c5ef30254dac9eddc854a8c702f59512a5ee16",
+        "frozen_reference_source": "0573f1847db68914052a98341a22fceeb1358518",
+        "native_cpp_sha256": "40a6be84961463b65dc856e19e0863df0f700f050aa0130ac0834de2fc43ac07",
+        "driver_sha256": "eb2f64563d0b3cb8e448879d46cb38b6cb4214156f413ab71263cbff23abef27",
+        "build_passed": true,
+        "literal_zero_gate_off": true,
+        "default_gate_off": true,
+        "arms": [],
+        "scope": "test-only CPU graph over original prepared IDs; not tokenizer/public API or task quality",
+        "status": "build-only; model parity not evaluated"
+      },
+      "raw_report_sha256": "64f1eaf672c154ec20d3209efc0c99a293052235ef04e9940b74cc4ff576d643"
+    },
+    "linear-reference.json": {
+      "raw_report": {
+        "source_files": {
+          "1_Pooling/config.json": "b7703fedc62cbe2d1e4fd47338d5ba9ee5b2107d49fc42e85ae848484fdd08bc",
+          "README.md": "27573272049ca66a4504b7e458887848b0fa0b7a5c6c68edcd774c6ce5070608",
+          "config.json": "4ff3a6cde7f81bca25f687371c809d8109076d71ac9c4882888ba36935a3cbd1",
+          "config_sentence_transformers.json": "1cde78bdb171eaca67f333808a2117a307d43b4e49b28c0706a50980e9606787",
+          "configuration_ultrabert.py": "823d10bda19f5164da4f79f8f9c01e5ebd7a75569abce78c0a26b7674fc78cd9",
+          "modeling_ultrabert.py": "bfca1bd08af72cd170e58b5a048c67b52bc9d06a2a42847c7a387751f527f333",
+          "modules.json": "e4068aab8a95663636c4c28044a95eafdb6492387397ec8283d8f8b31078d645",
+          "tokenizer.json": "cec6e1c25c319d4de7d15e94cc69e95c68d75fee2e20c86c1bdac23b2db4d624",
+          "tokenizer_config.json": "3752ebf4874dca142ab86b273d7c167b5c77aefa444f5ca7ab598592202af97f"
+        },
+        "source_weights": "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
+        "torch": "2.14.0+cpu",
+        "transformers": "5.16.1",
+        "dumper_sha256": "7d3b1a6229dd944db95f2e3a2224b73931a6dc6b6fdc2196507401429c40d0d5",
+        "cases": [
+          {
+            "case": {
+              "id": "empty",
+              "text": ""
+            },
+            "original_archive_sha256": "2ec96e8dc8a5cea459b0e40ede9768801fb64c5ad676804c719d64c488d14226",
+            "status": "failed; frozen anchors preserved",
+            "error": "Frozen MLP anchor drift: gate; max_abs=2.0265579223632812e-06"
+          }
+        ],
+        "scope": "additional original-input MLP observations; frozen encoder anchors unchanged"
+      },
+      "raw_report_sha256": "9ac5fa218ddfeea12d5ee1a393265277e419365b4a5c4cf46f465c43a2a4d4bc"
+    }
+  }
+}

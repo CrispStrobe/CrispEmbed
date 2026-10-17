@@ -265,3 +265,16 @@ SiLU from original gate, product from original gate/up, and down projection from
 original product. The ordinary graph and six earlier probes stay intact.
 Compilation, three weight-free capture controls, the expanded25 model-free
 controls and complete linear measurements are pending at this revision.
+
+
+The initial isolated [linear capture39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
+compiles and passes25 model-free/three Torch controls, but rejects empty-case
+gate drift2.0265579223632812e-6 before new native measurements. The complete
+[initial failure](../tests/results/ultrabert/initial-linear-capture-failure.json)
+is retained. A separate `linear_forward_audit` option now attaches the additional
+hooks to the unchanged full original model forward. All386 old captures must
+match frozen payload hashes exactly, and additional-hook on/off captures must
+match each other bit-for-bit. Any drift reports first stage, all differing
+anchors, absolute errors and original/current magnitudes; no arrays are rebased.
+This new mode and its fourth Torch control await hosted validation. The isolated
+mode remains available; its failure is not a numerical or backend diagnosis.

@@ -1,3 +1,25 @@
+## 2026-10-17 — UltraBERT isolated capture guard rejects original anchor drift
+
+[Linear audit39000683936](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000683936)
+atc7c5ef30254dac9eddc854a8c702f59512a5ee16 builds the expanded executable and
+passes all25 model-free plus3 weight-free Torch controls. Original producer/
+archive/conversion identities verify. The first isolated original-MLP capture
+then fails the empty-case frozen gate anchor with max error2.0265579223632812e-6.
+No new native model/operator arm ran and no frozen anchor was replaced.
+[Both complete raw reports](tests/results/ultrabert/initial-linear-capture-failure.json)
+retain their fields and raw hashes. The separate model-free contract
+[39000684136](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39000684136)
+also passes14+11 controls at that same source. The drift's cause is unproved;
+small magnitude is not permission to accept a changed reference.
+
+The next opt-in mode observes SiLU/product during the actual original full
+forward, requires all386 existing stage payloads bit-exact, and records every
+anchor drift's magnitude/hash plus the earliest stage. Added-hook on/off stage
+identity is checked separately. Isolated MLP replay remains available and its
+failure remains archived. New full-forward mode and fourth Torch control are
+pending hosted validation. Original model/converter/frozen dumper bytes remain
+unchanged; production support, ordinary numerical debt and app pin are unchanged.
+
 ## 2026-10-17 — UltraBERT operator attribution and three-PR source review
 
 The [operator audit38998432137](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38998432137)

@@ -5,7 +5,7 @@ import sys
 import unittest
 import torch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from dump_ultrabert_linear_reference import observe_mlp
+from dump_ultrabert_linear_reference import FrozenForwardDrift, check_full_anchors, observe_mlp
 
 
 class MLP(torch.nn.Module):
@@ -43,6 +43,22 @@ class LinearCaptureTest(unittest.TestCase):
         self.assertTrue(torch.equal(expected['gate'], module.gate_proj(x)))
         with self.assertRaisesRegex(ValueError, 'Frozen MLP anchor drift: gate; max_abs=0.0'):
             observe_mlp(module, x, expected)
+
+    def test_full_forward_anchor_drift_keeps_first_stage_and_magnitude(self):
+        import hashlib
+        from types import SimpleNamespace
+        old = torch.tensor([[0., 2.]])
+        record = {"shape": [1, 2], "payload_sha256": hashlib.sha256(old.numpy().tobytes()).hexdigest()}
+        records = {"first": record, "second": record}
+        tensors = {name: SimpleNamespace(data=old.numpy()) for name in records}
+        check_full_anchors({name: old for name in records}, records, tensors)
+        changed = old.clone()
+        changed[0, 1] = 3.
+        with self.assertRaises(FrozenForwardDrift) as result:
+            check_full_anchors({"first": changed, "second": old}, records, tensors)
+        self.assertEqual(result.exception.drifts[0]["stage"], "first")
+        self.assertEqual(result.exception.drifts[0]["max_abs_error"], 1.)
+        self.assertEqual(result.exception.drifts[0]["original"], record)
 
     def test_changed_old_anchor_rejected_and_hooks_removed(self):
         module = MLP().eval()

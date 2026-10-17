@@ -35,12 +35,65 @@ def observe_mlp(mlp, inputs, expected):
     for name in ("gate", "up", "ffn_out"):
         actual, frozen = captures[name], expected[name]
         if actual.shape != frozen.shape or not torch.equal(actual.view(torch.int32), frozen.view(torch.int32)):
-            error = float((actual - frozen).abs().max()) if actual.shape == frozen.shape else None
+            error = float((actual - frozen.detach()).abs().max()) if actual.shape == frozen.shape else None
             raise ValueError("Frozen MLP anchor drift: " + name + "; max_abs=" + str(error))
     return captures
 
 
-def dump_linear(current, reference_directory, output):
+
+class FrozenForwardDrift(ValueError):
+    def __init__(self, drifts):
+        self.drifts = drifts
+        super().__init__("Full original forward anchor drift: " + drifts[0]["stage"] +
+                         "; max_abs=" + str(drifts[0]["max_abs_error"]))
+
+
+def check_full_anchors(captured, records, tensors):
+    import hashlib
+    from dump_ultrabert_reference import metrics
+    drifts = []
+    for name, value in captured.items():
+        array = value.numpy()
+        expected = records[name]
+        digest = hashlib.sha256(array.tobytes()).hexdigest()
+        if list(array.shape) != expected["shape"] or digest != expected["payload_sha256"]:
+            original = tensors[name].data.reshape(expected["shape"])
+            drifts.append({"stage": name,
+                           "max_abs_error": float(abs(array - original).max()) if array.shape == original.shape else None,
+                           "actual": metrics(array), "original": expected})
+    if drifts:
+        raise FrozenForwardDrift(drifts)
+
+
+def observe_full(model, encoded, record, tensors):
+    """Attach two additional hooks to the unchanged original full forward."""
+    import torch
+    from dump_ultrabert_reference import capture
+    extra, handles = {}, []
+    def save(name, value):
+        if name in extra or not torch.isfinite(value).all():
+            raise ValueError("Invalid extra full-forward observation")
+        extra[name] = value.detach().float().cpu().contiguous().clone()
+    mlp = model.layers[14].mlp
+    handles.append(mlp.act_fn.register_forward_hook(lambda module, args, output: save("silu", output)))
+    handles.append(mlp.down_proj.register_forward_pre_hook(lambda module, args: save("product", args[0])))
+    try:
+        observed, captured = capture(model, encoded)
+    finally:
+        for handle in handles:
+            handle.remove()
+    ordinary, neutral = capture(model, encoded)
+    if (not torch.equal(observed, ordinary) or set(captured) != set(neutral)
+            or any(not torch.equal(value.view(torch.int32), neutral[name].view(torch.int32))
+                   for name, value in captured.items())):
+        raise ValueError("Additional full-forward hooks changed an original stage")
+    if len(captured) != 386 or set(extra) != {"silu", "product"}:
+        raise ValueError("Incomplete full original forward observation")
+    check_full_anchors(captured, record["stages"], tensors)
+    return {**extra, **{name: captured["layer_14." + name] for name in ("gate", "up", "ffn_out")}}
+
+
+def dump_linear(current, reference_directory, output, full_forward=False):
     """Run only original layer14 MLP on saved inputs, with full checkpoint guards."""
     from huggingface_hub import snapshot_download
     directory = Path(snapshot_download(MODEL, revision=REVISION,
@@ -67,7 +120,8 @@ def dump_linear(current, reference_directory, output):
     report = {"source_files": sources, "source_weights": weights["sha256"],
               "torch": torch.__version__, "transformers": transformers.__version__,
               "dumper_sha256": sha256(__file__), "cases": [],
-              "scope": "additional original-input MLP observations; frozen encoder anchors unchanged"}
+              "scope": "additional original-input MLP observations; frozen encoder anchors unchanged",
+              "mode": "original full forward with all386 anchor checks" if full_forward else "isolated original MLP"}
     target = output / "linear-reference.json"
     for case in current["reference"]["cases"]:
         source = Path(reference_directory) / case["archive"]
@@ -84,10 +138,18 @@ def dump_linear(current, reference_directory, output):
         report["cases"].append(entry)
         target.write_text(json.dumps(report, indent=2) + "\n")
         try:
-            values = observe_mlp(model.layers[14].mlp, original("ffn_norm"),
-                                 {name: original(name) for name in ("gate", "up", "ffn_out")})
+            if full_forward:
+                encoded = {name: torch.from_numpy(tensors[name].data.copy().reshape(case["stages"][name]["shape"])).long()
+                           for name in ("input_ids", "attention_mask")}
+                values = observe_full(model, encoded, case, tensors)
+                entry["full_forward_anchors_exact"] = True
+                entry["full_forward_anchor_count"] = 386
+            else:
+                values = observe_mlp(model.layers[14].mlp, original("ffn_norm"),
+                                     {name: original(name) for name in ("gate", "up", "ffn_out")})
         except ValueError as error:
-            entry.update(status="failed; frozen anchors preserved", error=str(error))
+            entry.update(status="failed; frozen anchors preserved", error=str(error),
+                         anchor_drifts=getattr(error, "drifts", None))
             target.write_text(json.dumps(report, indent=2) + "\n")
             raise
         archive = output / (case["case"]["id"] + ".gguf")

@@ -158,6 +158,7 @@ def prepare_frozen_artifacts(baseline, directory, scratch):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-only", action="store_true")
+    parser.add_argument("--linear-forward-audit", action="store_true", help="Capture extra operators during full original forward")
     parser.add_argument("--linear-audit", action="store_true", help="Observe original SiLU/product and replay isolated down")
     parser.add_argument("--operator-audit", action="store_true", help="Separate original-input RMSNorm/MLP/GLU-down replay")
     parser.add_argument("--frozen-report", type=Path,
@@ -165,6 +166,8 @@ def main():
     parser.add_argument("--frozen-artifacts", type=Path,
                         help="Downloaded original artifact; verify every byte instead of rerunning Python")
     args = parser.parse_args()
+    if args.linear_forward_audit and not args.linear_audit:
+        raise ValueError("Full forward observations require the separate linear audit")
     if args.linear_audit and (not args.operator_audit or args.build_only):
         raise ValueError("Linear audit requires the full separate operator audit")
     if not args.build_only and (args.frozen_report is None or not args.frozen_report.is_file()):
@@ -229,7 +232,8 @@ def main():
     if args.linear_audit:
         subprocess.run([sys.executable, "tests/test_ultrabert_linear_capture.py", "-v"], cwd=ROOT, check=True)
         from dump_ultrabert_linear_reference import dump_linear
-        report["linear_reference"] = dump_linear(current, reference_directory, output / "linear-reference")
+        report["linear_reference"] = dump_linear(current, reference_directory, output / "linear-reference",
+                                                       full_forward=args.linear_forward_audit)
         target.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     env["CRISPEMBED_ULTRABERT"] = "1"
     for dtype in ("f32", "f16"):
