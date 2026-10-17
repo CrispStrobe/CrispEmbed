@@ -145,11 +145,16 @@ inspection, conversion and inference remain outside the selected scope; its
 
 ## Packaging, releases and consumers
 
-- [ ] **Review the three open PRs after the completed UltraBERT operator-audit lane.** Confirm the open
-  set at review time (currently PR60, PR68 and PR69), inspect source diffs,
-  review comments and actual CI conclusions, and record concrete fixes or
-  unresolved dependencies. Keep the app's immutable0.17.12 pin unchanged.
+The [three-PR review](docs/pr-review-2026-10-17.md) is complete; evidence and
+limits are archived in HISTORY. Follow-ups:
 
+- [ ] **PR68:** inspect the approved fork Build/WASM/secret workflow conclusions
+  at ebcadb1f; they were queued after approval. Verify deployed metadata/image
+  after any merge/deployment. No merge has occurred.
+- [ ] **PR69:** inspect the actual latest-head platform checks before changing
+  draft/merge status. Expanded native source a8b129f4 compiles and completes the
+  strict audit with retained numerical failures; old119cc1af platform checks are
+  not proof of current expanded C++ on every platform.
 - [ ] **Latest CI conclusions:** PR62 and PR63 complete ten-job Build (including
   Flutter), WASM, quality contract and secret checks pass; [completed evidence](HISTORY.md).
   Inspect the latest merged-main and PR67 platform/secret conclusions after runners
