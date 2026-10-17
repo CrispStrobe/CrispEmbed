@@ -28,10 +28,6 @@ jobs:
       REFERENCE_RUN: ${{ inputs.reference_run }}
       FROZEN_REPORT: ${{ inputs.frozen_report }}
       GH_TOKEN: ${{ github.token }}
-      HEAVY_OUT: ${{ runner.temp }}/out
-      HEAVY_SCRATCH: ${{ runner.temp }}/scratch
-      FROZEN_ARTIFACTS: ${{ runner.temp }}/frozen
-      HF_HOME: ${{ runner.temp }}/hf
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,6 +35,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Prepare audit directories
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/frozen" "$RUNNER_TEMP/hf"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "FROZEN_ARTIFACTS=$RUNNER_TEMP/frozen" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
       - name: Check original run identity against the reviewed record
         run: |
           python - <<'PY'
