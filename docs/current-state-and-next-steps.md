@@ -44,7 +44,8 @@ the exact latest workflow reports when recording new totals.
   calls at56b5af0c. Initial ARM64 standalone tests fail pthread linkage; PR70 adds
   the missing diagnostic-target Threads dependency. Fresh
   [full matrix39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)
-  is queued at e75a32f1; full matrix/aggregation remain unverified.
+  at e75a32f1 now passes all4 build legs/23 installed native-load/C-ABI checks;
+  aggregation remains queued. No new runtime/PyPI release or app pin change.
 - The minimal runtime correction is published but its draft PR 60 remains open.
   Before this Markdown update, vendor code baseline 28d5a61 and release 78493a3
   diverge: main has 64
