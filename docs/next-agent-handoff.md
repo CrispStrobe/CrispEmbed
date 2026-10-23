@@ -102,7 +102,12 @@ rejects. Public pairs, reserved-token inputs, F16/quantized/GPU/Matryoshka remai
 excluded. Historical183/1294 intermediate failures and strict replay failures
 are unchanged; F16 raw CLS0.0185 still fails all seven original cases.
 
-Next bounded task: use the existing hosted model/API workflow and preserved
+Active [draftPR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) atd01249af
+implements actual wrapper consumers and a `bindings_only` workflow arm.
+Hosted39972325056 is queued; inspect instead of dispatching again. Four binding
+output/numerical controls plus five API parser groups pass locally. No actual
+Rust/Dart model-backed success is claimed until full returned evidence is checked.
+The bounded task uses the existing hosted model/API workflow and preserved
 F32 conversion to exercise actual Rust and Dart generic bindings on the same
 frozen text/ID/vector cases, explicit query/document prefixes and failure
 recovery. Assert the loaded library/model hashes and unchanged budgets; retain
@@ -185,7 +190,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | MTP declaration/schema, missing metadata, actual prompt/pixels/EOS and current geometry/identity checks block aliasing; no weight/inference run. Xiaomi follows; Indra stays public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | Pinned vLLM source/isolated dual-stop probe complete. Weight-free HF metadata/meta-schema/processor39974181719 at60679016 is queued; inspect/preserve before any pinned MTP/stop-set profile or weight run. Xiaomi follows; Indra stays public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired latency, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 

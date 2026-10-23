@@ -129,3 +129,10 @@ state dictionary to all473 header tensors. Two owned synthetic RGB fixtures
 preserve original packed arrays/IDs/grid plus exact repeat checks remotely.
 It executes no model forward and does not install or qualify a complete vLLM
 runtime. Inspect the full report and retain any failure before a profile change.
+
+Initial hosted metadata run39974181719 is queued at60679016; inspect it rather
+than dispatching another copy. Push-only duplicates39974180947/39974177044 were
+cancelled before execution; the manual run retains its required controls.
+The source blueprint was also independently reviewed with read-only web tools;
+its installed-vLLM qualification caveat remains. Prior header and source audits
+are preserved, not repeated in response to generic review suggestions.
