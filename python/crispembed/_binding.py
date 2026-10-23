@@ -1853,6 +1853,9 @@ class CrispOcrModel:
     InternVL2.5/2-1B (VLM, EN+DE),
     GLM-OCR (VLM, 8 langs, OmniDocBench #1).
     Experimental Qwen3.5/LightOnOCR-3-0.8B requires CRISPEMBED_QWEN35_OCR=1.
+    Experimental OvisOCR2 format2 requires that gate plus
+    CRISPEMBED_OVISOCR2_FRONTEND=1 and CRISPEMBED_OVISOCR2_INFERENCE=1,
+    an explicit local GGUF path, and the pinned built-in prompt.
     Auto-detects architecture from GGUF metadata.
 
     Usage::
@@ -4158,7 +4161,7 @@ class _CrispOcrPipelineParams(ctypes.Structure):
 
 
 class _CrispOcrStage(ctypes.Structure):
-    """Exact native stage layout; engine20 selects experimental Qwen3.5 OCR."""
+    """Exact native stage layout; engine20 is Qwen3.5, engine21 is gated OvisOCR2."""
     _fields_ = [
         ("source_type", ctypes.c_int),
         ("engine", ctypes.c_int),
