@@ -259,6 +259,37 @@ def gpu_gate(report):
         raise ValueError('Inconclusive: driver below conservative CUDA 12.9 gate; no minor-compatibility assumption')
 
 
+
+def cuda_link_environment(report, env):
+    """Expose the installed real driver to JIT linkers without system changes."""
+    output = subprocess.check_output(['ldconfig', '-p'], text=True, timeout=15)
+    candidates = []
+    for line in output.splitlines():
+        if re.match(r'\s*libcuda\.so\.1\s', line) and '=>' in line:
+            path = Path(line.split('=>', 1)[1].strip()).resolve(strict=True)
+            if 'stubs' not in path.parts and path.is_file():
+                candidates.append(path)
+    candidates = sorted(set(candidates))
+    if len(candidates) != 1:
+        raise ValueError('Expected one installed real CUDA driver library')
+    target = candidates[0]
+    directory = SCRATCH / 'cuda-driver-link'
+    directory.mkdir(exist_ok=True)
+    link = directory / 'libcuda.so'
+    if link.is_symlink():
+        link.unlink()
+    elif link.exists():
+        raise ValueError('Unexpected file in task-owned CUDA link directory')
+    link.symlink_to(target)
+    result = dict(env)
+    result['LIBRARY_PATH'] = str(directory) + (
+        ':' + result['LIBRARY_PATH'] if result.get('LIBRARY_PATH') else '')
+    report['cuda_driver_link'] = {'target': str(target), 'sha256': digest(target),
+                                  'link': str(link), 'system_files_modified': False}
+    save(report)
+    return result
+
+
 def isolated_environment(report):
     # Debian's interpreter can create a venv even when its ensurepip is absent.
     # The base pip --python option targets only this task-owned environment.
@@ -334,6 +365,7 @@ def main():
         report['phase'] = 'original-gpu-reference'; save(report)
         env = dict(os.environ, CUDA_VISIBLE_DEVICES='0', OVIS_OUT=str(OUT), OVIS_SCRATCH=str(SCRATCH),
                    OVIS_PROOF_COMMIT=PROOF_COMMIT, OVIS_CHECKPOINT_SHA=CHECKPOINT_SHA)
+        env = cuda_link_environment(report, env)
         run('original-vllm-worker', [python, str(worker)], report, env=env, timeout=3600)
         worker_result = json.loads((OUT / 'ovisocr2-vllm-worker.json').read_text())
         report['worker'] = worker_result

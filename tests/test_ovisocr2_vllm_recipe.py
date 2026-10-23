@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import urllib.request
 import unittest
+import tempfile
 from unittest import mock
 
 
@@ -29,6 +30,33 @@ class RecipeControls(unittest.TestCase):
             self.assertEqual(argv[3:5], ['--python', python])
             self.assertEqual(argv[-1], 'pip==' + recipe.ISOLATED_PIP_VERSION)
             self.assertEqual(report['isolated_pip_version'], recipe.ISOLATED_PIP_VERSION)
+
+    def test_cuda_link_uses_real_driver_and_task_owned_directory_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            driver = root / 'libcuda.so.580.178.04'
+            driver.write_bytes(b'controlled-driver-fixture')
+            output = ' libcuda.so.1 (libc6,x86-64) => ' + str(driver) + '\n'
+            original = {'LIBRARY_PATH': '/existing', 'OTHER': 'unchanged'}
+            with mock.patch.object(recipe, 'SCRATCH', root), \
+                    mock.patch.object(recipe.subprocess, 'check_output', return_value=output), \
+                    mock.patch.object(recipe, 'save'):
+                report = {}
+                env = recipe.cuda_link_environment(report, original)
+                link = root / 'cuda-driver-link/libcuda.so'
+                self.assertTrue(link.is_symlink())
+                self.assertEqual(link.resolve(), driver)
+                self.assertEqual(env['LIBRARY_PATH'], str(link.parent) + ':/existing')
+                self.assertEqual(original['LIBRARY_PATH'], '/existing')
+                self.assertEqual(env['OTHER'], 'unchanged')
+                self.assertFalse(report['cuda_driver_link']['system_files_modified'])
+                self.assertEqual(report['cuda_driver_link']['sha256'], recipe.digest(driver))
+                recipe.cuda_link_environment({}, {})  # repeat replaces only own symlink
+            for bad in ('', ' libcuda.so (libc6) => ' + str(driver),
+                        ' libcuda.so.1 (libc6) => ' + str(root / 'missing')):
+                with mock.patch.object(recipe.subprocess, 'check_output', return_value=bad):
+                    with self.assertRaises((ValueError, FileNotFoundError)):
+                        recipe.cuda_link_environment({}, {})
 
     @classmethod
     def setUpClass(cls):
