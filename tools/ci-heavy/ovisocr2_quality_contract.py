@@ -192,11 +192,29 @@ def score_case(gold, output, cap=256):
     raw = output['raw_text']
     processed = output['processed_text']
     ids = output['token_ids']
-    if not isinstance(raw, str) or not isinstance(processed, str) or not isinstance(ids, list):
+    if (not isinstance(raw, str) or not isinstance(processed, str) or not isinstance(ids, list)
+            or type(cap) is not int or cap < 1 or not 0 < len(ids) <= cap
+            or any(type(token) is not int or not 0 <= token < 248320 for token in ids)):
         raise ValueError('Incomplete OCR output record')
     clean = lambda text: unicodedata.normalize('NFC', text.replace('\r\n', '\n')).strip()
     reference, actual = clean(gold), clean(processed)
     stop = output.get('stop_id', output.get('stop_reason'))
+    finish = output.get('finish_reason')
+    native_stop = output.get('stop_kind')
+    reached_eos = ids[-1] in STOPS
+    native_disagrees = native_stop is not None and (type(native_stop) is not int
+                                                   or native_stop not in (1, 2, 3)
+                                                   or (native_stop == 1) != reached_eos)
+    if (stop != (ids[-1] if reached_eos else None)
+            or ('stop_id' in output and 'stop_reason' in output
+                and output['stop_id'] != output['stop_reason'])
+            or any(token in STOPS for token in ids[:-1])
+            or finish != ('stop' if reached_eos else 'length')
+            or native_disagrees):
+        raise ValueError('Contradictory OvisOCR2 generated IDs/EOS/finish reason')
+    if not reached_eos and ((native_stop is None and len(ids) != cap)
+                            or (native_stop == 2 and len(ids) != cap)):
+        raise ValueError('Unexplained OvisOCR2 length stop before cap')
     issues = []
     if not actual:
         issues.append('empty')
@@ -206,16 +224,14 @@ def score_case(gold, output, cap=256):
         issues.append('control-character')
     if actual.count('```') % 2:
         issues.append('unclosed-code-fence')
-    if isinstance(stop, int) and stop not in STOPS:
-        issues.append('unexpected-stop-id')
-    cap_hit = output.get('finish_reason') == 'length' or len(ids) >= cap
-    completed = not cap_hit and not issues and (output.get('finish_reason') == 'stop' or stop in STOPS)
+    cap_hit = not reached_eos and len(ids) == cap
+    completed = reached_eos and not issues
     return {'raw_text': raw, 'processed_text': processed, 'gold': gold,
             'raw_exact': clean(raw) == reference, 'processed_exact': actual == reference,
             'cer': _distance(reference, actual) / max(1, len(reference)),
             'wer': _distance(reference.split(), actual.split()) / max(1, len(reference.split())),
             'generated_tokens': len(ids), 'cap_hit': cap_hit, 'completed': completed,
-            'stop_id': stop, 'finish_reason': output.get('finish_reason'),
+            'stop_id': stop, 'finish_reason': finish, 'stop_kind': native_stop,
             'format_issues': issues}
 
 

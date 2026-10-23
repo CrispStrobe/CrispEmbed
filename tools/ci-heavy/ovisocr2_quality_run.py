@@ -782,12 +782,13 @@ def score_outputs(contract, rendered, cases, outputs):
                 (ROOT / 'tests/regression/ocr-quality/panel.json').read_text())['cases']
                 if row['id'] == case['id'])
             gold = json.loads((ROOT / gold_path).read_text())
+            scored = contract.score_case(case['gold'], record, case['cap'])
             structure = ocr_quality.score(
                 gold, record['processed_text'],
-                complete=record['finish_reason'] == 'stop' and len(record['token_ids']) < case['cap'])
+                complete=scored['completed'])
             documents.append({'id': case['id'], 'license': case['license'],
                               'rgb_sha256': case['rgb_sha256'],
-                              **contract.score_case(case['gold'], record, case['cap']),
+                              **scored,
                               'structure': structure})
     if len(documents) != 3:
         raise ValueError('Realistic OCR document coverage differs')

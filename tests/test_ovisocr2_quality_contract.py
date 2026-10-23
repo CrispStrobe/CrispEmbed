@@ -53,11 +53,39 @@ class OvisQualityContract(unittest.TestCase):
         self.assertTrue(contract.paired_quality_screen(reference, candidate)['screen_passed'])
         changed = json.loads(json.dumps(outputs))
         changed['hold-batch']['processed_text'] = ''
+        changed['hold-batch']['token_ids'] = [12] * panel['max_new_tokens']
         changed['hold-batch']['finish_reason'] = 'length'
+        changed['hold-batch']['stop_reason'] = None
         failed = contract.score_panel(rendered, changed)
         self.assertFalse(contract.paired_quality_screen(reference, failed)['screen_passed'])
         self.assertEqual(failed['summary']['heldout']['cap_hits'], 1)
         self.assertEqual(failed['cases'][4]['raw_text'], panel['cases'][4]['gold'])
+
+    def test_eos_on_last_allowed_token_is_complete_without_waiving_cap(self):
+        text = 'Hello OCR'
+        eos = {'raw_text': text, 'processed_text': text, 'token_ids': [42, 248046],
+               'stop_id': 248046, 'finish_reason': 'stop', 'stop_kind': 1}
+        scored = contract.score_case(text, eos, 2)
+        self.assertTrue(scored['completed'])
+        self.assertFalse(scored['cap_hit'])
+        capped = {**eos, 'token_ids': [42, 43], 'stop_id': None,
+                  'finish_reason': 'length', 'stop_kind': 2}
+        scored = contract.score_case(text, capped, 2)
+        self.assertFalse(scored['completed'])
+        self.assertTrue(scored['cap_hit'])
+        with self.assertRaises(ValueError):
+            contract.score_case(text, {**eos, 'token_ids': [42, 43, 248046]}, 2)
+        with self.assertRaises(ValueError):
+            contract.score_case(text, {**eos, 'finish_reason': 'length'}, 2)
+        with self.assertRaises(ValueError):
+            contract.score_case(text, {**eos, 'token_ids': [42, 43], 'stop_id': 248046}, 2)
+        with self.assertRaises(ValueError):
+            contract.score_case(text, {**eos, 'stop_reason': 248044}, 2)
+        with self.assertRaises(ValueError):
+            contract.score_case(text, {**eos, 'token_ids': [248044, 248046]}, 2)
+        with self.assertRaises(ValueError):
+            contract.score_case(text, {**eos, 'token_ids': [42], 'stop_id': None,
+                                       'finish_reason': 'length', 'stop_kind': 2}, 2)
 
     def test_no_model_framework_import(self):
         import sys

@@ -6,6 +6,7 @@ import json
 import hashlib
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -92,6 +93,32 @@ class OvisOCR2Parser:
                                    ([248320], [0.5]), ([], [])):
             with self.assertRaises(ValueError):
                 driver.validate_selected_confidences(ids, probabilities, 16)
+
+    def test_realistic_document_completion_uses_eos_even_at_cap(self):
+        contract = driver.load_module('ovis_quality_test_contract',
+                                      ROOT / 'tools/ci-heavy/ovisocr2_quality_contract.py')
+        panel = json.loads((ROOT / 'tests/regression/ocr-quality/panel.json').read_text())
+        cases, outputs = [], {}
+        for spec in panel['cases']:
+            case = {'id': spec['id'], 'split': 'realistic-evaluation', 'kind': spec['kind'],
+                    'license': spec['license'], 'gold': 'x', 'cap': 2,
+                    'rgb_sha256': 'a' * 64, 'png_sha256': 'b' * 64}
+            cases.append(case)
+            outputs[case['id']] = {'input_rgb_sha256': case['rgb_sha256'],
+                                   'input_png_sha256': case['png_sha256'],
+                                   'raw_text': 'x', 'processed_text': 'x',
+                                   'token_ids': [42, 248046], 'stop_id': 248046,
+                                   'finish_reason': 'stop'}
+        scorer = SimpleNamespace(score=lambda _gold, _text, *, complete: {'complete': complete})
+        with patch.object(contract, 'score_panel', return_value={}), \
+                patch.object(driver, 'load_module', return_value=scorer):
+            result = driver.score_outputs(contract, None, cases, outputs)
+            self.assertTrue(all(row['structure']['complete'] for row in result['realistic_documents']))
+            outputs['inventory-table']['token_ids'] = [42, 43]
+            outputs['inventory-table']['stop_id'] = None
+            outputs['inventory-table']['finish_reason'] = 'length'
+            result = driver.score_outputs(contract, None, cases, outputs)
+            self.assertFalse(result['realistic_documents'][2]['structure']['complete'])
 
     def test_native_precision_env_has_explicit_calibrated_gate(self):
         self.assertEqual(driver.native_environment('f16')['CRISPEMBED_QWEN35_QUANT'], '0')
