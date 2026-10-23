@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Bounded public-ABI probe for actual released/development PosFormer libraries.
+
+Run separate processes for each library and set its LD_LIBRARY_PATH externally;
+never mix different ggml libraries in one process. This does not rebuild or
+instrument a production library. Existing native step diagnostics supply IDs.
+"""
+import argparse
+import ctypes as C
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+import re
+import resource
+import time
+
+MODEL_SHA = '450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4'
+MANIFEST_SHA = 'a2edabf8937298a52f072c41917bf4a8022ecaee9a50d00dcc1d52934b711109'
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--library', type=Path, required=True)
+    p.add_argument('--library-source', required=True)
+    p.add_argument('--model', type=Path, required=True)
+    p.add_argument('--corpus', type=Path, required=True)
+    p.add_argument('--frozen-report', type=Path, required=True)
+    p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--logs', type=Path, required=True)
+    p.add_argument('--limit', type=int, choices=(1,50), default=50)
+    args = p.parse_args()
+    from PIL import Image
+    if not re.fullmatch('[0-9a-f]{40}',args.library_source):raise ValueError('Unpinned library source')
+    if sha(args.model)!=MODEL_SHA or sha(args.corpus/'manifest.json')!=MANIFEST_SHA:
+        raise ValueError('Original model/manifest bytes changed')
+    frozen=json.loads(args.frozen_report.read_text())['reports']['original-baseline.json']['report']
+    cases=frozen['cases']
+    if len(cases)!=50:raise ValueError('Incomplete original case panel')
+    for case in cases:
+        if sha(args.corpus/(case['id']+'.png'))!=case['image_sha256']:
+            raise ValueError('Original image bytes changed')
+    if os.environ.get('POSFORMER_SCALAR_ENCODER') is not None:
+        raise ValueError('Requires ordinary encoder, with scalar override unset')
+    lib=C.CDLL(str(args.library.resolve()))
+    lib.crispembed_math_ocr_init.argtypes=[C.c_char_p,C.c_int];lib.crispembed_math_ocr_init.restype=C.c_void_p
+    lib.crispembed_math_ocr_free.argtypes=[C.c_void_p];lib.crispembed_math_ocr_free.restype=None
+    lib.crispembed_math_ocr_recognize.argtypes=[C.c_void_p,C.POINTER(C.c_uint8),C.c_int,C.c_int,C.c_int,C.POINTER(C.c_int)]
+    lib.crispembed_math_ocr_recognize.restype=C.c_void_p
+    lib.crispembed_math_ocr_confidences.argtypes=[C.c_void_p,C.POINTER(C.c_int)]
+    lib.crispembed_math_ocr_confidences.restype=C.POINTER(C.c_float)
+    lib.crispembed_math_ocr_mean_confidence.argtypes=[C.c_void_p];lib.crispembed_math_ocr_mean_confidence.restype=C.c_float
+    report=dict(library=args.library.name,library_source=args.library_source,library_sha256=sha(args.library),
+                tool_sha256=sha(__file__),model_sha256=MODEL_SHA,manifest_sha256=MANIFEST_SHA,threads=2,
+                trained_forward_env=os.environ.get('CRISPEMBED_POSFORMER_TRAINED_FORWARD'),
+                scope='Actual binary public API/step diagnostics, frozen50 cases; no independent quality claim',cases=[])
+    args.logs.mkdir(parents=True,exist_ok=True);args.output.parent.mkdir(parents=True,exist_ok=True)
+    def save():args.output.write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
+    save();ctx=lib.crispembed_math_ocr_init(os.fsencode(args.model),2)
+    if not ctx:raise ValueError('Actual library/model initialization failed')
+    try:
+        for case in cases[:args.limit]:
+            image=Image.open(args.corpus/(case['id']+'.png')).convert('RGB')
+            pixels=image.tobytes();buffer=(C.c_uint8*len(pixels)).from_buffer_copy(pixels)
+            log=args.logs/(case['id']+'.log');old=C.c_int();length=C.c_int()
+            fd=os.open(log,os.O_CREAT|os.O_TRUNC|os.O_WRONLY,0o600);old_fd=os.dup(2)
+            started=time.monotonic()
+            try:
+                os.dup2(fd,2)
+                result=lib.crispembed_math_ocr_recognize(ctx,buffer,image.width,image.height,3,C.byref(length))
+            finally:
+                os.dup2(old_fd,2);os.close(old_fd);os.close(fd)
+            if not result or not 0<=length.value<=1000000:raise ValueError('Invalid native output')
+            text=C.string_at(result,length.value).decode('utf-8',errors='strict')
+            steps=[(int(a),int(b)) for a,b in re.findall(r'\bstep (\d+): token=(\d+)',log.read_text())]
+            if not steps or [x[0] for x in steps]!=list(range(len(steps))):
+                raise ValueError('Incomplete actual native token diagnostics')
+            n=C.c_int();ptr=lib.crispembed_math_ocr_confidences(ctx,C.byref(n))
+            if not 0<=n.value<=200 or (n.value and not ptr):raise ValueError('Invalid confidence buffer')
+            confidence=[float(ptr[i]) for i in range(n.value)]
+            mean=float(lib.crispembed_math_ocr_mean_confidence(ctx))
+            if not all(math.isfinite(x) and 0<=x<=1 for x in confidence+[mean]):
+                raise ValueError('Invalid native confidence')
+            report['cases'].append(dict(id=case['id'],image_sha256=case['image_sha256'],text=text,
+                token_ids=[x[1] for x in steps],stop='eos' if steps[-1][1]==2 else 'length',
+                confidence=confidence,mean_confidence=mean,elapsed_seconds=time.monotonic()-started,
+                log_sha256=sha(log)))
+            save()
+    finally:lib.crispembed_math_ocr_free(ctx)
+    report.update(completed=True,peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
+    save();print('Completed',len(report['cases']),'bounded actual-library cases')
+
+
+if __name__=='__main__':main()
