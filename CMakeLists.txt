@@ -334,7 +334,7 @@ list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
-list(APPEND CRISPEMBED_SOURCES src/lfm2_embed.cpp src/gemma_decision.cpp)
+list(APPEND CRISPEMBED_SOURCES src/lfm2_embed.cpp src/gemma_decision.cpp src/ultrabert_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
@@ -1223,6 +1223,12 @@ target_link_libraries(test-qwen35-frontend PRIVATE crispembed-qwen35-delta crisp
 endif() # NOT iOS: standalone validation executables
 
 # Test-only UltraBERT prepared-ID graph; no production architecture dispatch.
+add_executable(test-ultrabert-api tests/test_ultrabert_api.cpp)
+target_link_libraries(test-ultrabert-api PRIVATE crispembed)
+
+add_executable(test-ultrabert-profile tests/test_ultrabert_profile.cpp src/tokenizer_bpe.cpp)
+target_link_libraries(test-ultrabert-profile PRIVATE crispembed-core)
+
 add_executable(test-ultrabert-diff tests/test_ultrabert_diff.cpp)
 target_link_libraries(test-ultrabert-diff PRIVATE crispembed-core ggml-cpu)
 

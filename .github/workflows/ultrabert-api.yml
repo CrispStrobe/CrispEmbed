@@ -1,0 +1,67 @@
+name: UltraBERT F32 public text API
+on:
+  push:
+    branches: ['feat/ultrabert-f32-api']
+    paths: ['.github/workflows/ultrabert-api.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-f32-api-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  evidence-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ultrabert_api_log.py -v
+  api:
+    if: github.event_name == 'workflow_dispatch'
+    needs: evidence-controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare isolated directories and check preserved source identity
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/frozen"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
+          python - <<'PY'
+          import json, subprocess
+          query=lambda run:json.loads(subprocess.check_output(['gh','api','repos/CrispStrobe/CrispEmbed/actions/runs/'+run]))
+          original=query('38997562520');copy=query('39913800444')
+          assert original['conclusion']=='success' and original['head_sha']=='0573f1847db68914052a98341a22fceeb1358518'
+          assert copy['conclusion']=='success' and copy['path']=='.github/workflows/preserve-ultrabert-reference.yml'
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ultrabert-original-38997562520-preserved-39913800444
+          run-id: 39913800444
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/frozen
+      - name: Install bounded conversion and Python binding dependencies
+        run: python -m pip install gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6 huggingface-hub==1.33.0
+      - name: Actual public text, pooled diff, batch, failure and consumer surfaces
+        run: python tools/ci-heavy/ultrabert_api.py "$RUNNER_TEMP/frozen"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-f32-api-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
