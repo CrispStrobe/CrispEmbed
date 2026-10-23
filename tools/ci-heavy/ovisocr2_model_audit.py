@@ -386,8 +386,42 @@ def native_arms(precision, build, model, readable, reference):
     return arms
 
 
-def run_native_matrix(build, models, readable, reference, out, report, save, precisions=("f32", "f16")):
+def raw_diff_manifest(folder, stages, metric_lines, label):
+    """Inventory task-owned raw Ref.compare vectors against captured source shapes."""
+    names = set(re.findall(r"^(?:PASS|FAIL) ([A-Za-z0-9_.]+): cos_min=",
+                           "\n".join(metric_lines), re.M))
+    required = {f"{phase}.decoder.layer.{layer}" for phase in
+                ("prefill", "cached", "full_prefix") for layer in range(24)}
+    required.add("generated.scores.0")
+    required |= names
+    records, invalid = [], []
+    for path in sorted(folder.glob("*.f32")):
+        stage = path.name.removesuffix(".f32")
+        shape = stages.get(stage)
+        if (not isinstance(shape, list) or any(type(dim) is not int or dim < 1 for dim in shape)
+                or not shape):
+            invalid.append(stage + ": original source shape absent")
+            continue
+        expected_bytes = math.prod(shape) * 4
+        if path.stat().st_size != expected_bytes:
+            invalid.append(stage + ": raw F32 byte count differs")
+        records.append({"stage": stage, "file": "native-diff/" + label + "/" + path.name,
+                        "bytes": path.stat().st_size, "sha256": sha(path),
+                        "original_source_shape": shape, "expected_bytes": expected_bytes})
+    actual = {row["stage"] for row in records}
+    missing = sorted(required - actual)
+    return {"arm": label, "metric_stage_count": len(names),
+            "required_stage_count": len(required), "file_count": len(records),
+            "missing_stages": missing, "invalid_files": invalid,
+            "coverage_complete": bool(names) and not missing and not invalid,
+            "files": records,
+            "scope": "Actual native Ref.compare float32 vectors; original source stage shapes only"}
+
+
+def run_native_matrix(build, models, readable, reference, out, scratch, report, save,
+                      precisions=("f32", "f16")):
     env = dict(os.environ, **NATIVE_ENV)
+    env.pop("CRISPEMBED_DIFF_DUMP_DIR", None)
     report["native_environment"] = NATIVE_ENV
     for precision in precisions:
         model = models.get(precision)
@@ -398,9 +432,27 @@ def run_native_matrix(build, models, readable, reference, out, report, save, pre
             if not Path(args[0]).is_file():
                 report.setdefault("failures", []).append("missing-native-target-" + label)
                 continue
-            if not command(label, args, out, report, env=env, timeout=1800):
+            arm_env = env.copy()
+            dump = None
+            if label == precision + "-decoder-native-frontend":
+                dump = scratch / "native-diff" / label
+                dump.mkdir(parents=True, exist_ok=True)
+                arm_env["CRISPEMBED_DIFF_DUMP_DIR"] = str(dump)
+            if not command(label, args, out, report, env=arm_env, timeout=1800):
                 report.setdefault("failures", []).append(label)
             entry = report["commands"][label]
+            if dump is not None:
+                manifest = raw_diff_manifest(dump, report["original_capture"]["stages"],
+                                             entry["metric_lines"], label)
+                manifest["original_capture_sha256"] = report["original_capture"]["sha256"]
+                manifest_path = out / (label + "-raw-diff-manifest.json")
+                manifest_path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
+                entry["raw_diff_manifest"] = manifest_path.name
+                entry["raw_diff_manifest_sha256"] = sha(manifest_path)
+                entry["raw_diff_coverage_complete"] = manifest["coverage_complete"]
+                if not manifest["coverage_complete"]:
+                    entry["passed"] = False
+                    report.setdefault("failures", []).append(label + "-missing-raw-diff-coverage")
             if entry["exit_code"] == 0:
                 metrics = "\n".join(entry["metric_lines"])
                 layers = re.findall(r"^(?:PASS|FAIL) (?:prefill|cached|full_prefix)\.decoder\.layer\.\d+:", metrics, re.M)
@@ -433,7 +485,13 @@ def run_main(preflight_only=False):
                   "tools/dump_qwen35_ocr_reference.py", "models/qwen35_ovis_profile.py",
                   "models/convert-qwen35-ocr-to-gguf.py")}}
     report["native_source_sha256"] = {str(path.relative_to(ROOT)): sha(path) for path in
-        sorted((ROOT / "src").glob("qwen35*")) if path.is_file() and path.suffix in (".cpp", ".h")}
+        [*sorted((ROOT / "src").glob("qwen35*")),
+         *(ROOT / name for name in (
+             "src/crispembed_diff.h", "tests/qwen35_parity.h",
+             "tests/test_qwen35_decoder.cpp", "tests/test_qwen35_vision.cpp",
+             "tests/test_qwen35_delta.cpp", "tests/test_ovisocr2_context.cpp",
+             "tests/ovisocr2_quality_run.cpp"))]
+        if path.is_file() and path.suffix in (".cpp", ".h")}
 
     def save():
         report_path.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
@@ -550,8 +608,25 @@ def run_main(preflight_only=False):
             save()
             # Finish the basic F32 arm before the F16 conversion. A failed
             # native comparison does not suppress later diagnostic arms.
-            run_native_matrix(build, models, readable, reference_gguf, out, report, save,
+            run_native_matrix(build, models, readable, reference_gguf, out, scratch, report, save,
                               precisions=(precision,))
+            if (precision == "f32" and model in models.values()
+                    and all(label in report["commands"] for label in
+                            native_arms("f32", build, model, readable, reference_gguf))
+                    and model.resolve().is_relative_to(scratch.resolve())
+                    and model.stat().st_size == report["exports"]["f32"]["bytes"]):
+                # This exact reconstructed F32 file was already full-SHA
+                # verified against the retained upstream export before arms.
+                model.unlink()
+                models.pop("f32", None)
+                report["f32_reconstruction_cleanup"] = {
+                    "removed_after_all_seven_arms": True,
+                    "verified_model_sha256": report["exports"]["f32"]["model_sha256"],
+                    "verified_bytes": report["exports"]["f32"]["bytes"],
+                    "durable_source_export_run": SERVICES["export"][0],
+                    "retained_manifest": manifest.name,
+                    "scope": "Only task-owned reconstructed F32 GGUF removed; original export remains remote"}
+                save()
         report["status"] = "completed with failures" if report["failures"] else "completed diagnostic audit"
         save()
         if report["failures"]:

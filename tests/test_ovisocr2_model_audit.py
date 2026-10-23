@@ -94,6 +94,31 @@ class HostedAuditTest(unittest.TestCase):
             self.assertFalse(audit.command("false-pass", [sys.executable, "-c", "print('FAIL decoded')"], root, report))
             self.assertEqual(report["commands"]["false-pass"]["first_failure"], "FAIL decoded")
 
+    def test_raw_diff_manifest_requires_all_hidden_and_score_vectors(self):
+        with tempfile.TemporaryDirectory() as temp:
+            folder = Path(temp)
+            stages = {f"{phase}.decoder.layer.{layer}": [1] for phase in
+                      ("prefill", "cached", "full_prefix") for layer in range(24)}
+            stages["generated.scores.0"] = [1]
+            for stage in stages:
+                (folder / (stage + ".f32")).write_bytes(b"\0" * 4)
+            lines = ["PASS prefill.decoder.layer.0: cos_min=1 max_abs=0",
+                     "PASS generated.scores.0: cos_min=1 max_abs=0"]
+            receipt = audit.raw_diff_manifest(folder, stages, lines, "f16-decoder-native-frontend")
+            self.assertTrue(receipt["coverage_complete"])
+            self.assertEqual(receipt["file_count"], 73)
+            self.assertEqual(receipt["files"][0]["original_source_shape"], [1])
+            (folder / "cached.decoder.layer.3.f32").unlink()
+            receipt = audit.raw_diff_manifest(folder, stages, lines, "f16-decoder-native-frontend")
+            self.assertFalse(receipt["coverage_complete"])
+            self.assertIn("cached.decoder.layer.3", receipt["missing_stages"])
+            (folder / "cached.decoder.layer.3.f32").write_bytes(b"\0" * 8)
+            receipt = audit.raw_diff_manifest(folder, stages, lines, "f16-decoder-native-frontend")
+            self.assertFalse(receipt["coverage_complete"])
+            self.assertIn("cached.decoder.layer.3: raw F32 byte count differs", receipt["invalid_files"])
+            self.assertFalse(audit.raw_diff_manifest(folder, stages, [],
+                                                      "f16-decoder-native-frontend")["coverage_complete"])
+
     def test_export_requires_qualified_file_and_manifest_sha(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
