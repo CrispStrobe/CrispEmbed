@@ -32,9 +32,11 @@ class ReleasedControls(unittest.TestCase):
             with self.subTest(mode=mode),self.assertRaises(ValueError):compare_release_records(old,new)
 
     def test_nonfinite_confidence_and_changed_model_rejected(self):
-        for mode in ('nan','model','manifest','source'):
+        for mode in ('nan','zero','shape','model','manifest','source'):
             old,new=self.records()
             if mode=='nan':new['cases'][0]['confidence'][0]=float('nan')
+            elif mode=='zero':new['cases'][0]['confidence'][0]=0.0
+            elif mode=='shape':new['cases'][0]['confidence'].pop()
             elif mode=='model':new['model_sha256']='0'*64
             elif mode=='manifest':new['manifest_sha256']='0'*64
             else:old['library_source']='0'*40

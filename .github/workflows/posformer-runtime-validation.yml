@@ -117,7 +117,7 @@ jobs:
           export CRISPMATH_HANDWRITING_REPORT="$GITHUB_WORKSPACE/.ci/reports/original-corrected.json"
           flutter test --reporter expanded native_test/handwriting_quality_test.dart
           python3 "$GITHUB_WORKSPACE/tools/validate_posformer_runtime.py" compare --app-root . --baseline "$GITHUB_WORKSPACE/.ci/reports/original-baseline.json" --corrected "$GITHUB_WORKSPACE/.ci/reports/original-corrected.json" --provenance "$GITHUB_WORKSPACE/.ci/reports/production-provenance.json" --output "$GITHUB_WORKSPACE/.ci/reports/original-paired.json"
-      - name: Prove unset and literal-zero preserve baseline public outputs
+      - name: Prove default/explicit-one agreement and literal-zero legacy outputs
         working-directory: .ci/CrispMath
         run: |
           export CRISPMATH_OCR_MODEL="$PWD/posformer-q8.gguf"

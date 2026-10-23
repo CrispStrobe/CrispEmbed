@@ -40,7 +40,10 @@ def compare_release_records(released, candidate):
             if old[key] != new[key]:raise ValueError('Released output changed: '+key)
         if len(old['confidence']) != len(new['confidence']):raise ValueError('Confidence shape changed')
         for record in (old, new):
-            if not all(math.isfinite(x) and 0 <= x <= 1 for x in record['confidence']+[record['mean_confidence']]):
+            if (not all(math.isfinite(x) and 0 < x <= 1 for x in record['confidence'])
+                    or not math.isfinite(record['mean_confidence'])
+                    or not 0 <= record['mean_confidence'] <= 1
+                    or (record['confidence'] and record['mean_confidence'] == 0)):
                 raise ValueError('Nonfinite/invalid confidence')
         confidence_max = max([confidence_max]+[abs(x-y) for x,y in zip(old['confidence'],new['confidence'])])
         mean_max = max(mean_max,abs(old['mean_confidence']-new['mean_confidence']))
