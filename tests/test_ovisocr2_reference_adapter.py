@@ -112,6 +112,7 @@ class ReferenceAdapterTest(unittest.TestCase):
         for name in ("prefill.vision.layer.11", "prefill.vision.position",
                      "prefill.decoder.layer.23", "cached.cache.0.conv_states",
                      "cached.delta.initial_state", "generated.2.decoder.position_ids",
+                     "generated.scores.0", "generated.scores.2",
                      "input.prompt_length", "input.rendered_prompt_length",
                      "input.decoded_length", "input.raw_decoded_length"):
             self.assertIn(name, stages)

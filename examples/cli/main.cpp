@@ -10,6 +10,7 @@
 #include "core/token_utf8.h"
 #include "core/clean_exit.h"
 #include "core/gguf_loader.h"
+#include "core/env_gate.h"
 #include "core/json.h"
 #include "core/image_out.h"
 #include "core/provenance.h"
@@ -124,7 +125,7 @@ static void print_usage(const char * prog) {
             "  --ocr FILE       OCR → text (auto-detect: "
             "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
             "tromr(music)/flova(music)/transcoda(music)/"
-            "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/lfm2-vl/unlimited-ocr)\n");
+            "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/ovisocr2/lfm2-vl/unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
     fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --ocr-prompt TEXT   custom instruction for prompt-following VLM OCR engines\n");
@@ -168,7 +169,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr,
             "       --ocr-engine N  primary engine "
-            "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|qwen3vl|"
+            "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|ovisocr2|qwen3vl|"
             "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
@@ -1295,6 +1296,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "granite-vision" || n == "granite_vision") return 10;
             if (n == "lightonocr") return 11;
             if (n == "qwen35-ocr" || n == "qwen35_ocr") return 20;
+            if (n == "ovisocr2") return 21;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
             if (n == "unified") return 14;
@@ -1331,13 +1333,13 @@ static int cli_main(int argc, char ** argv) {
             // no tokenizer, null patch embedding) and failed inside the vision
             // graph rather than at load.
             const bool is_vlm =
-                (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 19 || eid == 20;
+                (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 19 || eid == 20 || eid == 21;
             // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
             // internvl2, granite-vision, qwen3vl, unified (model-dependent),
             // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
             const bool takes_prompt =
                 eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 || eid == 19 || eid == 20;
-            if (!ocr_prompt.empty() && !takes_prompt) {
+            if (!ocr_prompt.empty() && !takes_prompt && eid != 21) {
                 fprintf(stderr,
                         "warning: --ocr-prompt ignored: --ocr-engine %s runs a fixed task prompt "
                         "(custom prompts: qwen2vl, qwen3vl, olmocr, internvl2, lfm2-vl, granite-vision)\n",
@@ -1345,6 +1347,13 @@ static int cli_main(int argc, char ** argv) {
             }
             if (eid == 20 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: experimental qwen35-ocr requires --ocr-rec FILE\n");
+                return 1;
+            }
+            if (eid == 21 && (ocr_rec_path.empty() || !ocr_prompt.empty() ||
+                              !core_env::on("CRISPEMBED_QWEN35_OCR") ||
+                              !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
+                              !core_env::on("CRISPEMBED_OVISOCR2_INFERENCE"))) {
+                fprintf(stderr, "error: experimental ovisocr2 needs --ocr-rec FILE, an empty custom prompt, and all three gates\n");
                 return 1;
             }
             if (eid == 14 && ocr_rec_path.empty()) {

@@ -5732,6 +5732,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::lfm2_vl;
     case 20:
         return E::qwen35_ocr;
+    case 21:
+        return E::ovisocr2;
     default:
         return E::dbnet_trocr;
     }

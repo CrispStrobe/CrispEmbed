@@ -281,6 +281,9 @@ def verify_original_capture(path, profile, report):
         raise ValueError("Original generated ID shape differs")
     last = generated_ids[0][-1] if generated_ids[0] else None
     reached = last in (248044, 248046)
+    stages = data.get("stages", {})
+    scores_complete = all(stages.get(f"generated.scores.{index}") == [1, 248320]
+                          for index in range(len(generated_ids[0])))
     if (data.get("source_model") != MODEL or data.get("source_revision") != REVISION
             or data.get("checkpoint_sha256") != profile["checkpoint_sha256"]
             or data.get("loaded_source_sha256") != profile["qualification"]["loaded_source_sha256"]
@@ -294,6 +297,8 @@ def verify_original_capture(path, profile, report):
             or data["cached_vs_full_prefix_max_abs"] > 0.002
             or gate.get("max_new_tokens") != 12 or gate.get("eos_ids") != [248044, 248046]
             or gate.get("generated_token_count") != len(generated_ids[0])
+            or gate.get("score_count") != len(generated_ids[0])
+            or not scores_complete
             or gate.get("reached_eos") is not reached
             or gate.get("stop_id") != (last if reached else None)
             or gate.get("length_limited") is not (len(generated_ids[0]) == 12 and not reached)

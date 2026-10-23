@@ -126,7 +126,8 @@ def required_stages(config, score_count=0):
             if label != "full_prefix":
                 fields = ["conv_states", "recurrent_states"] if kind == "linear_attention" else ["keys", "values"]
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
-    required += [f"generated.{index}.decoder.position_ids" for index in range(score_count)]
+    for index in range(score_count):
+        required += [f"generated.{index}.decoder.position_ids", f"generated.scores.{index}"]
     return sorted(set(required))
 
 
@@ -176,6 +177,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     arrays = {}
     phase = ["prefill"]
     generation_step = [None]
+    expected_score_count = [0]
 
     def save(name, tensor):
         if name.startswith("generated.") and ".decoder.position_ids" not in name and ".scores." not in name and name != "generated.ids":
@@ -195,7 +197,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             "source_model": profile["source_model"], "source_revision": profile["source_revision"],
             "checkpoint_sha256": profile["checkpoint_sha256"], "loaded_source_sha256": source_hashes,
             "stages": {name: list(value.shape) for name, value in arrays.items()},
-            "missing_stages": sorted(set(required_stages(model.config)) - set(arrays)),
+            "missing_stages": sorted(set(required_stages(model.config, expected_score_count[0])) - set(arrays)),
         }, indent=2) + "\n")
 
     save("input.rgb", torch.from_numpy(np.array(image, dtype=np.uint8).copy()))
@@ -420,8 +422,13 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             phase[0] = None
             generation_step[0] = None
             ids = generated.sequences[:, inputs["input_ids"].shape[1]:]
+            expected_score_count[0] = ids.shape[1]
             save("generated.ids", ids)
+            if len(generated.scores) != expected_score_count[0]:
+                raise ValueError("Original generated score count differs from generated ID count")
             for index, score in enumerate(generated.scores):
+                if tuple(score.shape) != (ids.shape[0], model.config.text_config.vocab_size):
+                    raise ValueError(f"Original generated score shape differs at step {index}")
                 save(f"generated.scores.{index}", score)
     except Exception as exc:
         save_partial(exc)
