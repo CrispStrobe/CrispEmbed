@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header and [weight-free metadata/schema/processor39983101540](../tests/results/qwen35-ocr/ovisocr2-metadata.json) pass; [contract](ovisocr2.md) | [PR77](https://github.com/CrispStrobe/CrispEmbed/pull/77) implements the pinned experimental profile at 5e197bae; full-payload [export39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147) is queued. Inspect F32/F16 roundtrip reports before qualification; no native alias/decoded parity. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header, original metadata39983101540 and [full F32/F16 export39992662147](../tests/results/qwen35-ocr/ovisocr2-export.json) pass; PR77 merged2f8b5354 | [PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78) adds separately gated frontend at48aefc30; hosted40004747653 queued. Inspect original/native packed-pixel, grid, ID/mask/modality/template and stop/profile/gate results before merge. No native model alias/decoded parity. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -233,3 +233,28 @@ passes Linux/macOS/Windows desktop configure/build/smoke/install jobs; all three
 pin both native-off options and pass the release CPU-baseline checker before
 compilation. [Reviewed flags and log hashes](../tests/results/packaging/development-cpu-baseline.json).
 Cross-host installed bundle reuse and successor release assets remain separate.
+
+## Claimed Ovis frontend lane — exact execution gate
+
+[PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78), source
+`48aefc3018697431882b42f933e06a71fb870bcb`, runs
+[40004747653](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40004747653)
+through `ovisocr2-metadata.yml`, `phase=frontend`. The duplicate push-only
+controls40004747058 were cancelled before execution; the manual job retains
+all18 model-free control groups. Do not duplicate the manual run.
+
+Review `ovisocr2-frontend-RUN` small reference/log/report artifact. The driver
+verifies original run39983101540, artifact ZIP, NPZ fields and deterministic RGB
+before preparing a reference GGUF. The hosted native test uses crispembed-diff
+and all three original captures. Require exact grids/IDs/attention masks/
+modalities/template, packed pixel max absolute error≤1.2e-7, both stops,15
+wrong-profile rejections, clearing after errors, both gates=0, custom-prompt and
+unsupported-resolution rejection. Keep any first failing artifact and absolute
+errors before fixing arithmetic. No weights are downloaded for this lane.
+
+The C++ prompt is independently625-byte identical to the original template.
+`CRISPEMBED_OVISOCR2_FRONTEND=1` plus the master gate is required; native OCR
+initialization still admits format1 only. Successful frontend comparison would
+not qualify an Ovis model alias. Subsequent model work must capture original
+modules/all layers/caches/logits and actual vLLM raw IDs/stops/decoded and
+cleaned outputs, preserving current LightOn failures and the1024-patch limit.
