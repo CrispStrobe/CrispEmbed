@@ -88,6 +88,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     owner a(qwen35_ocr_init(argv[1], 2), qwen35_ocr_free);
     owner b(single ? nullptr : qwen35_ocr_init(argv[1], 2), qwen35_ocr_free);
     if (!a || (!single && !b)) return 2;
+    ok &= qwen35_ocr_is_ovisocr2(a.get()) == 1 && qwen35_ocr_is_ovisocr2(nullptr) == 0;
+    if (b) ok &= qwen35_ocr_is_ovisocr2(b.get()) == 1;
     int w = 0, h = 0, channels = 0;
     std::unique_ptr<unsigned char, decltype(&stbi_image_free)> pixels(stbi_load(argv[2], &w, &h, &channels, 3),
                                                                       stbi_image_free);

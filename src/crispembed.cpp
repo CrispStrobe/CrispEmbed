@@ -5162,6 +5162,7 @@ extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) 
         });
     }
     case OCR_MODEL_QWEN35_OCR:
+        if (!reset && qwen35_ocr_is_ovisocr2((const qwen35_ocr_context *)u->ctx)) return 0;
         if (!reset && strlen(prompt) > 65536) return 0;
         u->prompt = reset ? std::string() : std::string(prompt);
         return 1;

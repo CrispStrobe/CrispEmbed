@@ -1582,6 +1582,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             if (meta) core_gguf::free_metadata(meta);
             if (!exact_profile) return {};
         }
+        if (!ovis) {
+            auto * meta = core_gguf::open_metadata(st.model_a.c_str());
+            const bool legacy_profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 1;
+            if (meta) core_gguf::free_metadata(meta);
+            if (!legacy_profile) return {};
+        }
         auto *& selected = ovis ? ctx->ovis : ctx->qwen35;
         if (!selected) {
             if (st.model_a.empty()) {

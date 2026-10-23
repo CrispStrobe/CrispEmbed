@@ -40,6 +40,7 @@
 #include <numeric>
 #include "core/json.h"
 #include "core/env_gate.h"
+#include "core/gguf_loader.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "core/image_out.h"
@@ -1427,6 +1428,16 @@ int main(int argc, char ** argv) {
              !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") || !core_env::on("CRISPEMBED_OVISOCR2_INFERENCE"))) {
             fprintf(stderr, "error: ovisocr2 requires an empty custom prompt and all three experimental gates\n");
             return 1;
+        }
+        if (eid == 21) {
+            auto * meta = core_gguf::open_metadata(ocr_rec_model_path.c_str());
+            const bool profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 2 &&
+                                 core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr2";
+            if (meta) core_gguf::free_metadata(meta);
+            if (!profile) {
+                fprintf(stderr, "error: ovisocr2 requires an exact Ovis format-2 model file\n");
+                return 1;
+            }
         }
         auto resolve = [](const std::string & name) {
             std::string r = crispembed_mgr::resolve_model(name, true);

@@ -1358,6 +1358,16 @@ static int cli_main(int argc, char ** argv) {
                     "error: experimental ovisocr2 needs --ocr-rec FILE, an empty custom prompt, and all three gates\n");
                 return 1;
             }
+            if (eid == 21) {
+                auto * meta = core_gguf::open_metadata(ocr_rec_path.c_str());
+                const bool profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 2 &&
+                                     core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr2";
+                if (meta) core_gguf::free_metadata(meta);
+                if (!profile) {
+                    fprintf(stderr, "error: ovisocr2 requires an exact Ovis format-2 model file\n");
+                    return 1;
+                }
+            }
             if (eid == 14 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: --ocr-engine unified dispatches on GGUF metadata; provide the model "
                                 "via --ocr-rec FILE\n");
