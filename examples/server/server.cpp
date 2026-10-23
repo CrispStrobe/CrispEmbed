@@ -40,6 +40,7 @@
 #include <numeric>
 #include "core/json.h"
 #include "core/env_gate.h"
+#include "core/gguf_loader.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "core/image_out.h"
@@ -676,9 +677,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "                      POST /ocr/model also takes a per-request \"prompt\"\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
-        fprintf(
-            stderr,
-            "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, qwen35-ocr, ovisocr2, ...);\n");
+        fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, "
+                        "qwen35-ocr, ovisocr2, ...);\n");
         fprintf(stderr, "                    engine names and model defaults match the CLI's --ocr-engine\n");
         fprintf(stderr, "  --ocr-cls MODEL   optional PP-LCNet 0/180 line-orientation classifier\n");
         fprintf(stderr, "  --table MODEL     Tesseract-LSTM table-cell model (optional)\n");
@@ -1417,16 +1417,27 @@ int main(int argc, char ** argv) {
             return 0; // dbnet_trocr
         };
         const int eid = eng_id(ocr_engine_name);
-        const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20 || eid == 21;
+        const bool is_vlm =
+            (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20 || eid == 21;
         if ((eid == 14 || eid == 15 || eid == 20 || eid == 21) && ocr_rec_model_path.empty()) {
             fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
             return 1;
         }
-        if (eid == 21 && (!ocr_prompt.empty() || !core_env::on("CRISPEMBED_QWEN35_OCR") ||
-                          !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
-                          !core_env::on("CRISPEMBED_OVISOCR2_INFERENCE"))) {
+        if (eid == 21 &&
+            (!ocr_prompt.empty() || !core_env::on("CRISPEMBED_QWEN35_OCR") ||
+             !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") || !core_env::on("CRISPEMBED_OVISOCR2_INFERENCE"))) {
             fprintf(stderr, "error: ovisocr2 requires an empty custom prompt and all three experimental gates\n");
             return 1;
+        }
+        if (eid == 21) {
+            auto * meta = core_gguf::open_metadata(ocr_rec_model_path.c_str());
+            const bool profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 2 &&
+                                 core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr2";
+            if (meta) core_gguf::free_metadata(meta);
+            if (!profile) {
+                fprintf(stderr, "error: ovisocr2 requires an exact Ovis format-2 model file\n");
+                return 1;
+            }
         }
         auto resolve = [](const std::string & name) {
             std::string r = crispembed_mgr::resolve_model(name, true);
