@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header, original metadata39983101540 and [full F32/F16 export39992662147](../tests/results/qwen35-ocr/ovisocr2-export.json) pass; PR77 merged2f8b5354 | [PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78) adds separately gated frontend atccb6059a; hosted40017014043 queued. Inspect original/native packed-pixel, grid, ID/mask/modality/template and stop/profile/gate results before merge. No native model alias/decoded parity. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header, original metadata39983101540 and [full F32/F16 export39992662147](../tests/results/qwen35-ocr/ovisocr2-export.json) pass; PR77 merged2f8b5354 | [PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78) adds separately gated frontend atccb6059a; hosted40017014043 passes; PR78 merged918c1c8d. Inspect original/native packed-pixel, grid, ID/mask/modality/template and stop/profile/gate results before merge. No native model alias/decoded parity. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -291,3 +291,26 @@ The native audit compares them with both legacy marks-override values. Image
 fixtures and numeric budgets are unchanged. The replacement40017014043 is
 queued; duplicate push-only controls40017015075 were cancelled before execution.
 No corrected native parity is claimed until the replacement completes.
+
+## Current Ovis execution checkpoint
+
+Frontend PR78 merged918c1c8d after exact processor/tokenizer parity and all
+platform checks. See the active five-step sequence in [PLAN](../PLAN.md).
+Original GPU attempt50ce5e52 installed the pinned stack, passed all three
+processor anchors and actual FP16 CUDA control, then failed FlashInfer JIT
+linking `-lcuda` before decoded generation. Initial transport, ensurepip and
+linker receipts are retained in `tests/results/qwen35-ocr/initial-ovisocr2-vllm-*-failure.json`.
+Corrected source05e51484 resolves the actually loaded driver before packages,
+without model/dtype/kernel changes. DraftPR79 at3cbcae76 prepares phase=model;
+its preflight requires a reviewed positive original-GPU receipt before weights.
+No native alias, independent OCR-quality qualification or model publication yet.
+Earlier queued/source-only descriptions above are historical; use this checkpoint.
+
+The subsequent driver-cache discovery failure is preserved in
+`initial-ovisocr2-vllm-driver-cache-failure.json`; actual source05e51484 and
+its deployed retry are pending. DraftPR79 now includes explicit pipeline
+selection, prepared actual public-surface checks and frozen quality/quantization
+contracts. None is a model-backed result. The optional
+[Apple build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/3cbcae76/docs/handover-m1-ovisocr2.md)
+provides bounded build work while hosted jobs wait. Keep actual model/reference
+artifacts remote and continue the active PLAN sequence through qualification.

@@ -380,3 +380,26 @@ production service, with deterministic concurrent-edit and recovery tests.
 **Done when:** the prototype has reviewed semantics and real two-client tests;
 a production rollout has its own authorized scope, migration and device gates.
 Do not treat this longer-term idea as an unfinished build 23 feature.
+
+## Current Ovis execution checkpoint
+
+Frontend PR78 merged918c1c8d after exact processor/tokenizer parity and all
+platform checks. See the active five-step sequence in [PLAN](../PLAN.md).
+Original GPU attempt50ce5e52 installed the pinned stack, passed all three
+processor anchors and actual FP16 CUDA control, then failed FlashInfer JIT
+linking `-lcuda` before decoded generation. Initial transport, ensurepip and
+linker receipts are retained in `tests/results/qwen35-ocr/initial-ovisocr2-vllm-*-failure.json`.
+Corrected source05e51484 resolves the actually loaded driver before packages,
+without model/dtype/kernel changes. DraftPR79 at3cbcae76 prepares phase=model;
+its preflight requires a reviewed positive original-GPU receipt before weights.
+No native alias, independent OCR-quality qualification or model publication yet.
+Earlier queued/source-only descriptions above are historical; use this checkpoint.
+
+The subsequent driver-cache discovery failure is preserved in
+`initial-ovisocr2-vllm-driver-cache-failure.json`; actual source05e51484 and
+its deployed retry are pending. DraftPR79 now includes explicit pipeline
+selection, prepared actual public-surface checks and frozen quality/quantization
+contracts. None is a model-backed result. The optional
+[Apple build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/3cbcae76/docs/handover-m1-ovisocr2.md)
+provides bounded build work while hosted jobs wait. Keep actual model/reference
+artifacts remote and continue the active PLAN sequence through qualification.

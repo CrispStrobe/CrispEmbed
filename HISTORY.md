@@ -1,3 +1,48 @@
+## 2026-10-23 — Native Ovis candidate and audits prepared; driver-cache failure retained
+
+Native draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) prepares
+triple-gated owning inference, explicit pipeline engine21, C/Python/CLI/HTTP/
+Rust/Dart audits and frozen independent quality/critical-tensor quantization
+contracts. The combined model-free controls pass65 groups at3cbcae76; no
+model-backed native/public/quality result is inferred. The public prompt setter
+rejects nonempty Ovis prompts without mutation, and both explicit selectors
+reject mismatched profile files at startup. A test-only runner preserves actual
+IDs/stops/raw UTF-8/confidence and timing separately from the generic public API.
+
+GPU retryc819ea5a installs the pinned stack but stops before its worker because
+the mounted driver is absent from the ldconfig cache.
+[Unchanged producer and retained hashes](tests/results/qwen35-ocr/initial-ovisocr2-vllm-driver-cache-failure.json).
+Corrected05e51484 resolves the actual dynamically loaded driver, checks its API
+and exposes it to the linker before package installation. Nine pure controls
+pass; the single submitted retry remains pending. No device/dtype/kernel change.
+The [bounded Apple handoff](https://github.com/CrispStrobe/CrispEmbed/blob/3cbcae76/docs/handover-m1-ovisocr2.md)
+offers a model-free build while hosted checks are queued. No local shared-host
+build/inference or new runtime/model publication occurred.
+
+## 2026-10-23 — Ovis frontend merged; actual original stack reaches GPU startup
+
+[PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78) merged at
+918c1c8db5d67b3e33343b31343f82e0afc75624 after all exact-source platform,
+Flutter, WASM, style and guard checks passed. The original/native frontend
+receipt remains unchanged: packed pixels0 maximum error, exact IDs/grids/masks/
+modalities/template and all Unicode/profile/gate controls.
+
+The second original-vLLM attempt failed during isolated ensurepip bootstrap,
+before packages or weights. [Unchanged producer and logs](tests/results/qwen35-ocr/initial-ovisocr2-vllm-ensurepip-failure.json).
+The corrected isolated pip bootstrap and pinned installation succeeded in the
+third attempt50ce5e52. All three processor anchors match exactly across the
+original Torch2.14 and actual Torch2.11 stack; actual FP16 CUDA control passes
+and checkpoint bytes match the pinned SHA. vLLM selects torch.float16 and
+Triton GDN, but FlashInfer sampling JIT fails linking `-lcuda` during engine
+initialization. No decoded inference result is qualified.
+[Original producer/worker, command hashes and initial failure](tests/results/qwen35-ocr/initial-ovisocr2-vllm-cuda-link-failure.json).
+
+Recipec819ea5a exposes the installed real driver through a task-owned
+`libcuda.so` symlink and `LIBRARY_PATH`, with no system-file, dtype, kernel or
+model change. Nine model-free controls pass. Original all-layer HF capture,
+full native F32/F16 audit and independent quality/quantization remain pending;
+frontend and hardware success do not qualify a registry alias or publication.
+
 ## 2026-10-23 — Original GPU hardware qualifies; processor-fixture transport corrected
 
 The first original-vLLM GPU attempt atd024a00d received T4/SM7.5 with
