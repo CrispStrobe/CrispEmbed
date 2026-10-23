@@ -1,0 +1,261 @@
+"""Frozen OvisOCR2 OCR panel and candidate quantization contract.
+
+This module imports only the standard library. Hosted drivers render images,
+run the pinned original and native models, and supply actual tensor records.
+No result from this helper alone qualifies an alias or a public model.
+"""
+
+import fnmatch
+import hashlib
+import importlib.metadata
+import json
+from pathlib import Path
+import unicodedata
+
+
+ROOT = Path(__file__).resolve().parents[2]
+PANEL_PATH = ROOT / 'tests/results/qwen35-ocr/ovisocr2-quality-panel.json'
+EVIDENCE_PATH = ROOT / 'tests/results/qwen35-ocr/ovisocr2-metadata.json'
+PANEL_SHA = '0bec97a7a04683c7c0aec95063aa01cf9a73bcf78db61f433d7d66d89588f212'
+PRODUCER_SHA = '233dc37fdaa2ff6b4a8b3ca3832b578305b5f3b6ed4d0d88d54c73591626b372'
+STOPS = {248044, 248046}
+
+# Every recipe starts with original F16 vision/embedding and recurrent gates.
+# One bounded Q8 candidate precedes any more aggressive Q4 exploration.
+RECIPES = {
+    'q8-protected': ('q8_0', (
+        'v.*=f16', 'l.embed_tokens.weight=f16',
+        'l.layers.*.linear_attn.in_proj_a.weight=f16',
+        'l.layers.*.linear_attn.in_proj_b.weight=f16',
+    )),
+    'q4-attention-q8': ('q4_k', (
+        'v.*=f16', 'l.embed_tokens.weight=f16',
+        'l.layers.*.self_attn.*.weight=q8_0',
+        'l.layers.*.linear_attn.in_proj_qkv.weight=q8_0',
+        'l.layers.*.linear_attn.in_proj_z.weight=q8_0',
+        'l.layers.*.linear_attn.out_proj.weight=q8_0',
+        'l.layers.*.linear_attn.in_proj_a.weight=f16',
+        'l.layers.*.linear_attn.in_proj_b.weight=f16',
+    )),
+}
+
+
+def canonical_sha(value):
+    payload = json.dumps(value, sort_keys=True, separators=(',', ':'),
+                         ensure_ascii=True, allow_nan=False).encode('utf-8')
+    return hashlib.sha256(payload).hexdigest()
+
+
+def load_panel(path=PANEL_PATH):
+    panel = json.loads(Path(path).read_text())
+    if canonical_sha(panel) != PANEL_SHA or panel['license'] != 'CC0-1.0':
+        raise ValueError('Frozen OvisOCR2 quality panel differs')
+    rows = panel['cases']
+    if (len(rows) != 8 or len({row['id'] for row in rows}) != 8
+            or [row['split'] for row in rows] != ['development'] * 4 + ['heldout'] * 4
+            or len({row['gold'] for row in rows}) != 8
+            or panel['max_new_tokens'] != 256):
+        raise ValueError('OvisOCR2 development/heldout panel contract differs')
+    return panel
+
+
+def render_panel(destination, panel=None):
+    """Render once on hosted CPU before any model result; save exact RGB/PNG hashes."""
+    panel = load_panel() if panel is None else panel
+    if canonical_sha(panel) != PANEL_SHA:
+        raise ValueError('Unreviewed quality panel')
+    if importlib.metadata.version('Pillow') != panel['renderer']['version']:
+        raise ValueError('Pillow renderer version differs')
+    from PIL import Image, ImageDraw
+
+    root = Path(destination)
+    root.mkdir(parents=True, exist_ok=True)
+    records = []
+    for row in panel['cases']:
+        image = Image.new('RGB', tuple(panel['renderer']['size']), panel['renderer']['background'])
+        ImageDraw.Draw(image).text((row['x'], row['y']), row['gold'],
+                                   fill=panel['renderer']['fill'], font_size=row['font_size'])
+        file = root / (row['id'] + '.png')
+        image.save(file)
+        records.append({'id': row['id'], 'split': row['split'], 'gold': row['gold'],
+                        'rgb_sha256': hashlib.sha256(image.tobytes()).hexdigest(),
+                        'png_sha256': hashlib.sha256(file.read_bytes()).hexdigest(),
+                        'file': file.name})
+    receipt = {'panel_canonical_sha256': PANEL_SHA, 'renderer_version': panel['renderer']['version'],
+               'license': panel['license'], 'cases': records,
+               'status': 'rendered before any candidate outputs'}
+    (root / 'rendered-panel.json').write_text(json.dumps(receipt, indent=2, allow_nan=False) + '\n')
+    return receipt
+
+
+def source_schema(path=EVIDENCE_PATH):
+    evidence = json.loads(Path(path).read_text())
+    producer = evidence['producer']
+    if (canonical_sha(producer) != PRODUCER_SHA or evidence['run'] != 39983101540
+            or producer['schema']['checkpoint_tensors'] != 473
+            or producer['schema']['tied_head_absent'] is not True):
+        raise ValueError('Original OvisOCR2 schema proof differs')
+    mapping = {}
+    for name, shape in producer['schema']['official_state_dict'].items():
+        if name == 'lm_head.weight':
+            continue
+        if name.startswith('model.visual.'):
+            mapped = 'v.' + name.removeprefix('model.visual.')
+        elif name.startswith('model.language_model.'):
+            mapped = 'l.' + name.removeprefix('model.language_model.')
+        else:
+            raise ValueError('Unknown original OvisOCR2 tensor: ' + name)
+        mapping[mapped] = shape
+    if len(mapping) != 473:
+        raise ValueError('OvisOCR2 mapped schema differs')
+    return mapping
+
+
+def quant_command(binary, baseline, candidate, recipe, schema=None):
+    if recipe not in RECIPES:
+        raise ValueError('Unknown OvisOCR2 quantization recipe')
+    schema = source_schema() if schema is None else schema
+    kind, overrides = RECIPES[recipe]
+    for rule in overrides:
+        pattern, _ = rule.rsplit('=', 1)
+        if not any(fnmatch.fnmatchcase(name, pattern) for name in schema):
+            raise ValueError('Unmatched OvisOCR2 quantization rule: ' + pattern)
+    command = [str(binary), str(baseline), str(candidate), kind]
+    for rule in overrides:
+        command += ['--tensor-type', rule]
+    return command
+
+
+def _protected(name, shape):
+    return (len(shape) != 2 or name.startswith('v.') or name == 'l.embed_tokens.weight'
+            or '.norm.' in name or 'layernorm' in name
+            or name.endswith(('.linear_attn.in_proj_a.weight', '.linear_attn.in_proj_b.weight')))
+
+
+def validate_quant_tensors(before, after, recipe, schema=None):
+    """Check actual GGUF name/shape/type/raw-byte hashes after quantization."""
+    if recipe not in RECIPES:
+        raise ValueError('Unknown OvisOCR2 quantization recipe')
+    schema = source_schema() if schema is None else schema
+    if set(before) != set(schema) or set(after) != set(schema):
+        raise ValueError('OvisOCR2 quantized tensor coverage differs')
+    kind, overrides = RECIPES[recipe]
+    changed = 0
+    for name, old in before.items():
+        new = after[name]
+        if old['shape'] != new['shape'] or len(old['shape']) != len(schema[name]):
+            raise ValueError('OvisOCR2 quantized tensor shape differs: ' + name)
+        if _protected(name, schema[name]):
+            if new != old:
+                raise ValueError('Protected OvisOCR2 tensor bytes/type differ: ' + name)
+            continue
+        expected = kind.upper()
+        for rule in overrides:
+            pattern, precision = rule.rsplit('=', 1)
+            if fnmatch.fnmatchcase(name, pattern):
+                expected = precision.upper()
+        allowed = {expected}
+        if expected == 'Q4_K':
+            allowed.add('Q4_0')  # Quantizer's explicit non-256-row fallback.
+        if new['type'].upper() not in allowed:
+            raise ValueError('OvisOCR2 quantized tensor precision differs: ' + name)
+        if new['sha256'] != old['sha256']:
+            changed += 1
+    if changed == 0:
+        raise ValueError('No OvisOCR2 matrix payload was quantized')
+    return {'recipe': recipe, 'tensor_count': len(schema), 'changed_matrix_count': changed,
+            'protected_byte_exact': True}
+
+
+def _distance(left, right):
+    previous = list(range(len(right) + 1))
+    for index, a in enumerate(left, 1):
+        row = [index]
+        for j, b in enumerate(right, 1):
+            row.append(min(row[-1] + 1, previous[j] + 1, previous[j - 1] + (a != b)))
+        previous = row
+    return previous[-1]
+
+
+def score_case(gold, output, cap=256):
+    """Keep raw output and separately score visible text and stop/format gates."""
+    raw = output['raw_text']
+    processed = output['processed_text']
+    ids = output['token_ids']
+    if not isinstance(raw, str) or not isinstance(processed, str) or not isinstance(ids, list):
+        raise ValueError('Incomplete OCR output record')
+    clean = lambda text: unicodedata.normalize('NFC', text.replace('\r\n', '\n')).strip()
+    reference, actual = clean(gold), clean(processed)
+    stop = output.get('stop_id', output.get('stop_reason'))
+    issues = []
+    if not actual:
+        issues.append('empty')
+    if '<img src="images/bbox_' in actual:
+        issues.append('unexpected-image-tag')
+    if any(ord(char) < 32 and char not in '\n\t' for char in actual):
+        issues.append('control-character')
+    if actual.count('```') % 2:
+        issues.append('unclosed-code-fence')
+    if isinstance(stop, int) and stop not in STOPS:
+        issues.append('unexpected-stop-id')
+    cap_hit = output.get('finish_reason') == 'length' or len(ids) >= cap
+    completed = not cap_hit and not issues and (output.get('finish_reason') == 'stop' or stop in STOPS)
+    return {'raw_text': raw, 'processed_text': processed, 'gold': gold,
+            'raw_exact': clean(raw) == reference, 'processed_exact': actual == reference,
+            'cer': _distance(reference, actual) / max(1, len(reference)),
+            'wer': _distance(reference.split(), actual.split()) / max(1, len(reference.split())),
+            'generated_tokens': len(ids), 'cap_hit': cap_hit, 'completed': completed,
+            'stop_id': stop, 'finish_reason': output.get('finish_reason'),
+            'format_issues': issues}
+
+
+def score_panel(rendered, outputs, panel=None):
+    panel = load_panel() if panel is None else panel
+    if (canonical_sha(panel) != PANEL_SHA or rendered['panel_canonical_sha256'] != PANEL_SHA
+            or [row['id'] for row in rendered['cases']] != [row['id'] for row in panel['cases']]
+            or set(outputs) != {row['id'] for row in panel['cases']}):
+        raise ValueError('OvisOCR2 rendered/evaluated case set differs')
+    scores = []
+    for spec, image in zip(panel['cases'], rendered['cases']):
+        output = outputs[spec['id']]
+        if (output.get('input_rgb_sha256') != image['rgb_sha256']
+                or output.get('input_png_sha256') != image['png_sha256']):
+            raise ValueError('OvisOCR2 quality input bytes differ: ' + spec['id'])
+        scores.append({'id': spec['id'], 'split': spec['split'],
+                       'input_rgb_sha256': image['rgb_sha256'],
+                       **score_case(spec['gold'], output, panel['max_new_tokens'])})
+    summary = {}
+    for split in ('development', 'heldout'):
+        group = [row for row in scores if row['split'] == split]
+        summary[split] = {'cases': len(group), 'complete': sum(row['completed'] for row in group),
+                          'exact': sum(row['processed_exact'] for row in group),
+                          'cap_hits': sum(row['cap_hit'] for row in group),
+                          'format_failures': sum(bool(row['format_issues']) for row in group),
+                          'mean_cer': sum(row['cer'] for row in group) / len(group),
+                          'mean_wer': sum(row['wer'] for row in group) / len(group)}
+    return {'panel_canonical_sha256': PANEL_SHA, 'license': panel['license'],
+            'cases': scores, 'summary': summary,
+            'scope': 'Self-authored short synthetic text only; not representative document OCR quality'}
+
+
+def paired_quality_screen(reference, candidate):
+    """Strict heldout screen; a pass still requires separate numerical/release review."""
+    if (reference['panel_canonical_sha256'] != PANEL_SHA
+            or candidate['panel_canonical_sha256'] != PANEL_SHA
+            or [row['id'] for row in reference['cases']] != [row['id'] for row in candidate['cases']]):
+        raise ValueError('OvisOCR2 paired quality panels differ')
+    failures = []
+    for old, new in zip(reference['cases'], candidate['cases']):
+        if old['input_rgb_sha256'] != new['input_rgb_sha256']:
+            raise ValueError('OvisOCR2 paired input pixels differ')
+        if old['split'] != 'heldout':
+            continue
+        if not old['completed'] or old['format_issues']:
+            failures.append(old['id'] + ': original reference incomplete or malformed')
+        if not new['completed'] or new['format_issues']:
+            failures.append(new['id'] + ': candidate incomplete or malformed')
+        if new['cer'] > old['cer'] or new['wer'] > old['wer']:
+            failures.append(new['id'] + ': heldout OCR error increased')
+    return {'screen_passed': not failures, 'failures': failures,
+            'requires_separate_numerical_and_release_review': True,
+            'scope': 'Paired heldout nonregression on four short owned synthetic pages only'}
