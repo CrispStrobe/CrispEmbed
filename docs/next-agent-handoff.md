@@ -258,6 +258,11 @@ all scores and actual decoded IDs/text/EOS; retain all failures and raw strict
 flags. Existing vision/final-norm original backend controls are captured before
 candidate outputs, with unchanged hidden/cache/logit thresholds.
 
+The eleven-case original GPU quality reference is complete and
+[preserved](../tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json). All
+cases reach EOS; all eight authored texts have WER0. Strict-v1 table border
+attribute failures remain retained. Original HF and native quality are separate.
+
 Actual public C/Python/CLI/HTTP/Rust/Dart, independent quality, protected Q8/Q4
 and development-only calibration workflows are prepared in draftPR79. They
 require reviewed predecessor evidence; none has a model-backed result yet.

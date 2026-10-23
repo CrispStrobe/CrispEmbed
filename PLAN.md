@@ -356,7 +356,9 @@ The original automatic FlashInfer T4 failure remains retained. Continue:
    profile guards, prompt/gate resets, ABI/layout, source/library identity,
    independent contexts and multiple Ovis stage model paths. No invented URL,
    checksum, registry default or production alias before qualified artifacts.
-3. **Independent quality:** run original HF once on the frozen four-development/
+3. **Independent quality:** the eleven-case original controlled GPU reference
+   is complete ([evidence](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json));
+   retain its strict table-attribute parse failures. Run original HF once on the frozen four-development/
    four-heldout synthetic inputs and three separately licensed documents, then
    retain its exact artifact/source/hash and reuse it for precision arms.
    Require raw/cleaned CER/WER, completion/EOS/caps, format, fifteen owned table

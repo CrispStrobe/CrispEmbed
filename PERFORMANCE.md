@@ -1,3 +1,21 @@
+## 2026-10-23 — Ovis controlled original GPU quality, bounded timing only
+
+The eleven-case original T4/FP16 quality reference completes every EOS within
+256-token authored/1024-token document caps. Per-case forward wall times include
+31.292s for the first short case with compilation/warmup; subsequent authored
+cases take0.163–0.265s. The receipt/two-column/inventory calls take9.121/7.190/1.805s.
+These are one unpaired session with different output lengths, not a speedup or
+throughput benchmark. Initialization/package installation is separate.
+
+Reported maximum RSS3,049,472KiB is for the calling process; it excludes the
+separate vLLM engine child. Its Torch CUDA allocator figure likewise excludes
+that child. Device snapshots11971MiB include the engine's reserved arena and
+are neither model-weight size nor measured peak memory. Preserve those scopes.
+All eight authored cases have WER0 with paragraph-break CER; document quality
+and the initial strict table-attribute parse failures are in the
+[full original reference](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json).
+No native or quantized quality/performance is established by this measurement.
+
 ## Original/native Ovis frontend parity — 23 October2026
 
 Hosted40017014043 atccb6059a compares784/840/864 original packed-image patches
