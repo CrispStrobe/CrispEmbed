@@ -173,6 +173,17 @@ jobs:
             ${{ runner.temp }}/scratch/ovis-model/UPSTREAM_README.md
           if-no-files-found: warn
           retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-diff-reference-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ovis-model/official-delta.gguf
+            ${{ runner.temp }}/scratch/ovis-model/ovisocr2-original.json
+            ${{ runner.temp }}/scratch/ovis-model/owned-readable.png
+            ${{ runner.temp }}/scratch/ovis-model/LICENSE
+          if-no-files-found: warn
+          retention-days: 90
   export:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'export'
     needs: controls
