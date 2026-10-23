@@ -35,10 +35,10 @@ the exact latest workflow reports when recording new totals.
   candidate 0/50, despite 49/50 references being lexically representable.
   Corrections establish bounded forward correctness, not improved recognition.
   Original training-checkpoint/full-sequence parity remains unproved.
-- The selective PosFormer source backport is merged via PR72; historical PR60 is
-  closed. Published0.17.12 and the opt-in candidate agree on all50 frozen case
-  IDs/text/EOS stops. PR73 restores that released default while retaining literal0;
-  exact-source default/reference and platform CI remain required before merge.
+- The selective PosFormer source/default restoration is merged via PR72/PR73;
+  historical PR60 is closed. Linux published0.17.12 and the current default match
+  all50 frozen IDs/text/EOS. A successor release still needs actual portable
+  artifacts/hashes and consumer qualification; the app remains pinned0.17.12.
 - No production cloud backend is selected. Provisioning one is optional future
   work, not a blocker for offline use or App Review demonstration.
 
@@ -90,7 +90,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
 | Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | MTP/schema/missing-metadata and actual prompt/pixel/EOS profile before conversion/native alias; Indra public-code-only |
-| PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default/reference39933245147 passes; final platform CI pending. PR74 CPU/F32 UltraBERT API job39939481805 queued; no release/consumer upgrade |
+| PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
 the remote copy expires21 January2027. Original producer/manifest/payload
@@ -98,8 +98,9 @@ identities remain unchanged. [Preservation provenance](../tests/results/ultraber
 Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
-handoff. DraftPR74 at0e615ea4 adds the gated CPU/F32 public-text profile; hosted
-39939481805 is queued. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
+handoff. DraftPR74 at4be9f864 adds the gated CPU/F32 public-text profile; hosted
+39943940607 is queued after a CLI-output-name harness correction. The initial
+build passed; no public API comparison ran before that structural failure. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
 is frozen before task outputs; actual SentenceTransformer/native scoring remains
 pending. The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
 complementary Apple coverage, with no repeated Python audit. Original-backend reproducibility39915714794 completes all four controls without
@@ -111,8 +112,8 @@ Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is
 merged at7f1ecd33 after full sourcef7c53803 platform/Flutter/style/security and
 bounded original/exported-weight reference success. PR60 is closed. Development
 manifests0.17.13 are not a release or app upgrade. The new main integration runs
-are separate checks. Released-binary compatibility is measured; successor default
-validation is tracked in PR73, followed by atomic release/consumer qualification.
+are separate checks. Released-binary compatibility is measured; PR73 default restoration merged75e87ea6 after full exact-source CI. Atomic
+release/consumer qualification remains open.
 Other portfolio/app owners remain separate.
 
 ## Recommended order and dependencies
@@ -127,36 +128,35 @@ review. R1 is used only when a production app change is ready to ship. C1 and
 F1 require an explicit backend/product decision. B1 is an optional bounded
 math-engine investigation, not a reason to rebuild everything immediately.
 
-### V1 — Qualify successor release defaults and consumer behavior
+### V1 — Qualify actual successor assets and consumer behavior
 
-**Repository:** CrispEmbed. **Selective source backport complete; release gate open.**
+**Repository:** CrispEmbed. **Source/default restoration complete; release gate open.**
 
-PR72 is merged at `7f1ecd33c6a8881cfd0b0c35dc8c32f0cb3ca262` after all exact-source
-f7c53803 platform/Flutter/style/security and original/reference checks pass.
-Historical PR60 is closed without merging its release branch wholesale or
-moving the0.17.12 tag. The old and corrected math remain selectable:
-`CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` selects the trained forward at model init;
-unset/zero preserve the former vendor-main path. Both50-case public-API/gate arms
-and both bounded reference paths pass; recognition remains7/50.
+Selective source PR72 merged7f1ecd33; historical PR60 closed without merging its
+old release branch or moving the0.17.12 tag. [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73)
+merged at `75e87ea6d0a5bbb1b3fb06362e05135b0a77b47d` after all exact-source790f9a6b
+platform/style/security/WASM and ten [Build/Flutter jobs39933251542](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39933251542)
+pass. `CRISPEMBED_POSFORMER_TRAINED_FORWARD` is captured at model init: unset/1
+select the trained correction, matching published0.17.12; literal0 retains legacy.
 
-The actual published Linux0.17.12 binary and candidate opt-in match all50
-IDs/text/EOS sequences, with identical confidence shapes. Maximum confidence
-absolute difference is2.0265579223632812e-6; no bitwise claim or fitted tolerance.
-[Actual-binary provenance and raw measurements](../tests/results/posformer/released-compatibility.json)
-retain library/model/image/manifest hashes and native token-log checks.
+[Hosted39933245147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39933245147)
+and independent raw-report review pass actual unset/released Linux0.17.12
+IDs/text/EOS/confidence for all50 cases, unset/1 and zero/legacy agreement,
+public API/printed regressions, primitive controls and both five-case/five-step
+exported-F32/original-code reference paths. Recognition remains7/50; original
+training-checkpoint/BN and unrestricted full-sequence parity are unproved.
+[All raw reports/limits](../tests/results/posformer/released-default-validation.json).
+Earlier actual-binary comparison retains up to2.0265579223632812e-6 confidence
+drift, without fitting a tolerance or claiming general bitwise parity.
 
-[PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) at790f9a6b changes only the
-initial default selection: unset/1 trained, literal0 legacy. Model-free controls
-reject changed IDs/text/stops/images/coverage and invalid confidence. Its successful hosted39933245147 validation proves actual unset Linux outputs
-match the frozen released binary records, unset/1 and zero/legacy agreement, both
-bounded reference paths and normal API/printed regressions. [All raw reports](../tests/results/posformer/released-default-validation.json).
-Final platform CI remains pending before merge. Apple has separate gate/output checks;
-the Linux release oracle does not certify a released Apple binary.
-Inspect existing exact-source runs rather than dispatching duplicates. Merge
-only after all affected checks pass, then update source/evidence here and in PLAN.
-No development-version tag, package publication or app pin change follows from
-source success. A successor release separately requires atomic actual artifacts,
-hashes and consumer qualification. The app stays on immutable0.17.12.
+Before a successor tag, build portable native/WASM release assets using the
+release workflow's CPU-baseline gate; verify archive/library hashes and normal
+consumer behavior on each affected platform. Include an actual Apple released/
+new-default binary comparison; Linux evidence does not certify an Apple asset.
+Preserve native per-case logs in future producer artifacts; this run retains
+hashes but did not upload those logs. Exact source checks do not replace actual
+artifact qualification. Development0.17.13 creates no tag, publication or app pin
+change; the app remains on immutable0.17.12.
 
 ### M1 — Fifty new independent mathematical problems and systemic repairs
 

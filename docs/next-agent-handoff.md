@@ -91,8 +91,10 @@ anchors or call U1 local targets full-model parity.
 ### U3 — Scope a gated F32 pooled-output profile; retain full-model audit failures
 
 Implementation [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) is
-at0e615ea4; hosted [39939481805](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39939481805)
-is queued. Inspect existing exact-source CI; do not dispatch duplicates. This
+at4be9f864; hosted [39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)
+is queued after the initial harness-only CLI-name failure (build passed; no API
+comparison ran). [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
+Inspect existing exact-source CI; do not dispatch duplicates. This
 initial profile covers ordinary text and sequential batches, while public pairs,
 reserved-token surfaces, F16/quantized/GPU/Matryoshka remain explicitly excluded.
 Generic bindings route through the shared ABI; model-backed Rust/Dart checks and
@@ -137,6 +139,9 @@ The independent [owned retrieval smoke](ultrabert-retrieval-smoke.md) is frozen
 at80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4: eight
 queries/24 documents and prospective numerical/ranking/gold gates. Its executable
 scorer and four meaningful control groups pass; no actual task outputs exist.
+[Original-first producer d69e1b90](https://github.com/CrispStrobe/CrispEmbed/tree/d69e1b90df79ad7d33c9e996605a4aa704ee0f29)
+and six guard groups are prepared; it requires successful API/source/artifact
+qualification before models/builds. Preserve first original records on retries.
 This is a bounded smoke, not representative MTEB/BEIR qualification. Run the
 pinned original SentenceTransformer first, then native API, preserve misses and
 all full score matrices; do not fit this panel after observing outputs.
@@ -194,8 +199,8 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | --- | --- | --- |
 | Integration CI | Completed39009694933 at f6f84aba: all10 Build jobs including Flutter; WASM/lint/contracts pass | Scheduled health/OCR regression green through22 October; rerun affected checks for new code |
 | PR68 deployment | Completed39009694992; live metadata/PNG verified23 October | Deployment revision f6f84aba; no new app/runtime release |
-| PosFormer PR73 | PR72 merged7f1ecd33; actual released/candidate50-case IDs/text/EOS match. Default restoration790f9a6b passes dedicated39933245147 in [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) | Require full exact-source checks, Linux actual-default/release oracle, gate and bounded reference reports before merge;7/50 quality unchanged |
-| Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 proposes restoring the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
+| PosFormer PR73 | Merged75e87ea6 after source790f9a6b all checks, Build/Flutter39933251542 and dedicated39933245147 pass | Source/default lane complete; actual successor assets/consumer qualification and original-checkpoint diagnosis remain;7/50 unchanged |
+| Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
 | Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | MTP declaration/schema, missing metadata, actual prompt/pixels/EOS and current geometry/identity checks block aliasing; no weight/inference run. Xiaomi follows; Indra stays public-code-only |
