@@ -4,7 +4,9 @@ The source/license/header and original metadata audits pass. Experimental F32/F1
 conversion and all473-tensor roundtrips pass39992662147; PR77 is merged.
 [Export producer and independent review](../tests/results/qwen35-ocr/ovisocr2-export.json)
 record exact sources, payload/manifest hashes, artifact expiry and review limits.
-Model payloads remain remote. Native model inference and decoded quality are pending.
+Model payloads remain remote. Exact frontend parity passes40017014043; PR78
+merged918c1c8d. Native draftPR79 prepares inference and audits; model-backed
+numerical/decoded and independent quality results remain pending.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
 
 Sources inspected23 October2026:
@@ -25,7 +27,9 @@ Sharing dimensions does not qualify an alias.
 The473-entry safetensors header describes852,985,920 stored parameters in a
 1,706,030,496-byte file. Only two HTTP206 byte ranges were read:0–7 and8–58655.
 The58,648-byte header hash and complete names/shapes/dtypes/offsets are retained.
-No tensor value, tied-head equality or native schema roundtrip was checked.
+That initial range-only source audit did not inspect payloads. The later
+qualified export39992662147 independently accounts for and roundtrips every
+original/cast tensor; its complete evidence is linked above.
 
 ## Initial blockers and original blueprint differences
 
@@ -234,3 +238,30 @@ punctuation, whitespace, emoji and special tokens. Native comparisons exercise
 both values of the older marks override without overriding Ovis's source
 contract. Original packed-image captures and the1.2e-7 budget remain unchanged.
 Actual corrected frontend parity awaits a hosted retry.
+
+## Current execution sequence
+
+Use the active completion sequence in [PLAN](../PLAN.md) and draft
+[PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79). Frontend qualification
+is complete; original vLLM engine startup is the next measured gate. Retain
+all initial GPU transport/bootstrap/linker/discovery failures. Corrected recipe
+05e51484 uses the actual loaded CUDA driver without changing dtype or kernels.
+Only a reviewed positive GPU receipt unlocks the prepared original HF CPU/F32
+capture and native F32/F16 `ovisocr2-metadata.yml`, phase=model.
+
+The candidate's explicit selector is engine21 (`ovisocr2`) with an exact model
+file and all three gates: `CRISPEMBED_QWEN35_OCR`,
+`CRISPEMBED_OVISOCR2_FRONTEND`, `CRISPEMBED_OVISOCR2_INFERENCE`. It has no
+registry default. Actual public C/Python/CLI/HTTP/Rust/Dart checks are prepared,
+not executed. Generic APIs expose text/confidence; actual IDs/stops are retained
+by the separate test-only owning runner and model audit.
+
+Quality work freezes development/heldout synthetic inputs and reuses the
+separately licensed three-document corpus. Original inference must precede
+candidate outputs, with unchanged gold, pixels, caps and metric/format gates.
+The Q8 protected and Q4 attention-Q8 recipes retain vision, tied embedding/head,
+norms and recurrent gates. A separate development-only importance arm must
+never consume heldout documents or pixels. Completed tools are not quality or
+calibration results. Publication remains conditional on numerical, decoded and
+independent quality qualification, license/card/provenance, hashes and actual
+empty-cache downloads; no Ovis weights are published yet.

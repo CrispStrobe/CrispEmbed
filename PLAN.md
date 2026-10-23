@@ -335,11 +335,11 @@ and performance follow-ups remain with their owner.
 ## Active Ovis completion sequence — one coordinated lane
 
 1. Original GPU reference: recipe branch `test/ovisocr2-vllm-reference`,
-   corrected sourcec819ea5a; verify actual deployed bytes and one free authorized
+   corrected source05e51484; verify actual deployed bytes and one free authorized
    GPU slot. Retain initial transport/bootstrap/linker failures. Require positive
    original model forward, actual dtype/stops/prompt/processor and raw IDs/text/
    EOS/cap plus original cleanup. T4 auto-FP16 is separate from CPU F32.
-2. Full model audit: `test/ovisocr2-native-parity` atbd4b1033 prepares
+2. Full model audit: `test/ovisocr2-native-parity` at3cbcae76 (draftPR79) prepares
    `ovisocr2-metadata.yml`, phase=model. The driver refuses before weights until
    a reviewed positive original-GPU receipt exists. Capture actual original
    modules, every vision/text layer, caches, logits and all generated scores;
