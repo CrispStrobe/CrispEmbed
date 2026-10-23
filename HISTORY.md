@@ -1,3 +1,22 @@
+## 2026-10-23 — Ovis native audit initial processor guard failure retained
+
+[40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
+at468f5504 passes all three original processor field hashes and framework source
+hashes, then stops before original/native forward at the combined processor/EOS
+comparison. Pinned Transformers5.16.1 standardizes mean/std lists to tuples;
+`to_dict()` retains them while the original producer serializes JSON arrays.
+Correction d0f64542 compares exact JSON values and records each field/type;
+changed means, patch sizes, backends and EOS still reject. Ninety-seven pure
+controls pass. [Initial report/log identity and replay hashes](tests/results/qwen35-ocr/initial-ovisocr2-model-processor-contract-failure.json).
+Retry40039159696 is dispatched; no native parity or model qualification is implied.
+
+The three realistic evaluation PNGs and original prepared report are preserved
+byte-for-byte at fixture dataset057e1266, ZIP724,951 bytes/SHA a890c3ad…0ca9cc.
+[Preservation proof](tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json).
+Quality tooling now reuses those bytes rather than rerendering. A separate
+original T4 quality reference is running on the frozen eight authored images
+plus three documents; no quality result is claimed before reviewing its output.
+
 ## 2026-10-23 — Controlled original Ovis GPU execution qualifies
 
 Recipe5fe3fc90 with immutable worker4b4293d9 completes on T4. The actual
