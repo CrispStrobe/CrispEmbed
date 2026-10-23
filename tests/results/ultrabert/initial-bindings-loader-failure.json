@@ -1,0 +1,43 @@
+{
+  "run": 39972325056,
+  "source": "d01249af8410b0b18a9b648afafe3af5ee0a74dd",
+  "producer": {
+    "source_commit": "d01249af8410b0b18a9b648afafe3af5ee0a74dd",
+    "driver_sha256": "5ad045e2664a68f8b9f283f8b74e3ab1736b81a7f1b79084a2f3d5c4df93041f",
+    "status": "failed producer",
+    "surfaces": {},
+    "api_qualification": {
+      "run": "39943940607",
+      "source": "4be9f864e0e7bc154325e1edc1bdf29a12210a69",
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607",
+      "artifact_id": 12499556021,
+      "artifact_zip_sha256": "76c8de310eef62249bda6fa91a2ad51db3b9a2c9ad2eab190a13aa5df31e11c7",
+      "receipt_sha256": "41ac5dc18e4ef35ae9c4a7ca954e69ae053a39161e22893c6f618694f328f320"
+    },
+    "native_source_sha256": {
+      "src/ultrabert_embed.cpp": "1bc4b04421234373b2568b12cb0de89055231596888795f34e7ef199d70bbd18",
+      "src/ultrabert_profile.h": "1ad434a05dc2261dda652f0f1fca5905ba6ee80435d2f4b2184ee0b252004aa7",
+      "src/crispembed.cpp": "9d389c82926a26646cc554fccd45ff1887a96e00915be3fbae78967849f2f3d3",
+      "tests/test_ultrabert_api.cpp": "06d74770e0e271ffe5527a46d22931ace1b4d8dfa05e5c3f6d6164b5ae5ee41e"
+    },
+    "model_sha256": "89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566",
+    "original_source": "0573f1847db68914052a98341a22fceeb1358518",
+    "expected_sha256": "cac88ed8536a6add3bba66f4199130871e43df0cf5cbae378cbf209fcba5e70d",
+    "library_sha256": "558d12478f579e4910427b304ec243b19cc8b176b37cbcd57252da43e69a90e4",
+    "error_type": "ValueError"
+  },
+  "raw_report_sha256": "fe1b3c48e4071a4f064af8c59679708a3fa26d31ca605634063f92b4838ddf05",
+  "failure": "Loader checker only matched unversioned SONAME; actual dependency libcrispembed.so.0 resolved within the fresh build.",
+  "phase": "After portable library and Rust consumer build; before Rust/Dart model inference",
+  "file_sha256": {
+    "build.log": "2c85ac0e44ae6ee5d0fccfd9fa31932a1574d12f7d6e0d27c9c5469fe98fe615",
+    "rust-build.log": "83b4cfb416fa61a5b3241a19783d733faebef40c942915eb8de7cfd7f6232504",
+    "qualified-api.json": "41ac5dc18e4ef35ae9c4a7ca954e69ae053a39161e22893c6f618694f328f320",
+    "cpu-baseline.log": "7a6054bd747fa00c7a4912a9b260f58b0d05f9507cb40843ad1b90f26a9da761",
+    "rust-loaded-library.log": "b747138be5dc66b6b701a31254dac8db228ba7aeae46fc3a0c4a10d5c4f3b348",
+    "expected-pooled.json": "cac88ed8536a6add3bba66f4199130871e43df0cf5cbae378cbf209fcba5e70d",
+    "configure.log": "3de43110269cd4b9264b491dd4d2e286fd8b648084fdaa8de10bb420974211fc",
+    "ultrabert-bindings.json": "fe1b3c48e4071a4f064af8c59679708a3fa26d31ca605634063f92b4838ddf05"
+  },
+  "correction": "Accept numerical SONAME version suffixes; retain exact resolved-file identity, reject missing/duplicate/wrong-file dependencies. No arithmetic, model, source anchors or numerical gate changes."
+}

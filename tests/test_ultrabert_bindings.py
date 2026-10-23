@@ -18,6 +18,19 @@ def records():
 
 
 class BindingControls(unittest.TestCase):
+    def test_versioned_loader_names_and_fallback_rejection(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as name:
+            folder=Path(name);library=folder/'libcrispembed.so.0.17.13';library.touch()
+            link=folder/'libcrispembed.so.0';link.symlink_to(library)
+            for soname in ['libcrispembed.so','libcrispembed.so.0','libcrispembed.so.0.17.13']:
+                p.checked_loaded_library(f'{soname} => {link} (0x123)',library)
+            for log in ['libcrispembed.so.0 => not found', 'libother.so => /tmp/other (0x1)',
+                        'libcrispembed.so.bad => /tmp/other (0x1)',
+                        'libcrispembed.so.0 => /tmp/other (0x1)',
+                        f'libcrispembed.so => {link} (0x1)\nlibcrispembed.so.0 => {link} (0x1)']:
+                with self.assertRaises(ValueError):p.checked_loaded_library(log,library)
+
     def test_complete_outputs_and_magnitudes(self):
         a,b=records();metrics=p.compare(a,b)
         self.assertEqual(len(metrics),3)

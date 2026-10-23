@@ -4,6 +4,7 @@ import importlib.util
 import json
 import math
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -43,6 +44,18 @@ def compare(expected, actual):
                 rms=math.sqrt(math.fsum((x-y)**2 for x,y in zip(a,b))/768),
                 native_norm=bn,reference_norm=an,passed=cosine>=.99999 and error<=.002))
     return result
+
+
+def checked_loaded_library(ldd, library):
+    resolved=[]
+    for line in ldd.splitlines():
+        parts=line.strip().split()
+        if parts and re.fullmatch(r'libcrispembed\.so(?:\.[0-9]+)*',parts[0]):
+            if len(parts)<3 or parts[1]!='=>' or parts[2]=='not':
+                raise ValueError('Rust shared library unresolved')
+            resolved.append(Path(parts[2]).resolve())
+    if len(resolved)!=1 or resolved[0]!=library.resolve():
+        raise ValueError('Rust library fallback')
 
 
 def main():
@@ -99,8 +112,7 @@ def main():
         run(['cargo','build','--manifest-path',rust/'Cargo.toml'],'rust-build',env)
         rust_binary=rust/'target/debug/ultrabert-probe'
         ldd=run(['ldd',rust_binary],'rust-loaded-library',env)
-        resolved=[line.split('=>',1)[1].strip().split()[0] for line in ldd.splitlines() if 'libcrispembed.so =>' in line]
-        if len(resolved)!=1 or Path(resolved[0]).resolve()!=lib:raise ValueError('Rust library fallback')
+        checked_loaded_library(ldd,lib)
         dart=scratch/'dart';(dart/'lib').mkdir(parents=True)
         for name in ('crispembed.dart','crispembed_bindings.dart'):
             shutil.copy(ROOT/'flutter/crispembed/lib/src'/name,dart/'lib'/name)

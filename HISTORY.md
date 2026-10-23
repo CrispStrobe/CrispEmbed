@@ -1,3 +1,15 @@
+## 2026-10-23 — Binding loader identity guard corrected before inference
+
+Hosted39972325056 atd01249af builds the portable library and actual Rust wrapper,
+then stops before any binding model inference: the guard searched unversioned
+libcrispembed.so while the correct loader dependency is libcrispembed.so.0.
+[Initial producer/source/log hashes](tests/results/ultrabert/initial-bindings-loader-failure.json)
+are retained. The checker now accepts numerical version suffixes and still
+requires exactly one dependency resolving to the freshly built file. Regression
+controls reject unresolved, wrong-file, duplicate and malformed-name dependencies.
+Five binding control groups pass; no model/reference/math/budget was changed.
+Corrected hosted model execution and exact-source platform checks remain pending.
+
 ## 2026-10-23 — Paired LFM2 F16 CPU/CUDA performance producer submitted
 
 The account-neutral `lfm2-encoder-cuda-performance-v1` recipe at9fd70ce5 pins
