@@ -1,0 +1,164 @@
+{
+  "scope": "Public-code/metadata analysis and isolated original stop-method probe only; no vLLM installation, GPU/model execution, weights, meta-schema or processor roundtrip",
+  "vllm_tag": "v0.22.1",
+  "vllm_revision": "0decac0d96c42b49572498019f0a0e3600f50398",
+  "vllm_sources": [
+    {
+      "path": "vllm/model_executor/models/qwen3_5.py",
+      "sha256": "eaf9885c0dc2be01cbce6b8d3ce9ad051074f098f61bcc4e3826ada566940e1e",
+      "bytes": 29610,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/model_executor/models/qwen3_5.py"
+    },
+    {
+      "path": "vllm/transformers_utils/config.py",
+      "sha256": "f0350704a6d30caf9209ae498424935fef3d2746bfae6f4ea9f83798f93b52c5",
+      "bytes": 48753,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/transformers_utils/config.py"
+    },
+    {
+      "path": "vllm/config/model.py",
+      "sha256": "183b4a3e6b7f281e8fbce498c171da725d6231c49c9a47ac105534e8afef6d6f",
+      "bytes": 91959,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/config/model.py"
+    },
+    {
+      "path": "vllm/transformers_utils/processor.py",
+      "sha256": "2fcb10ba2355ba5f6a554c0f8d0b811bfc06c9dccf035096b098ee52332386c0",
+      "bytes": 20227,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/transformers_utils/processor.py"
+    },
+    {
+      "path": "vllm/sampling_params.py",
+      "sha256": "c5f9be229115230eccc33788d30fb2b399d71d7c1093962e9bf8f125fceb19a6",
+      "bytes": 41401,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/sampling_params.py"
+    },
+    {
+      "path": "requirements/common.txt",
+      "sha256": "1a7756ccf44fc5f6c1c2ccd0ef2f698c79a41824aab6fc87a2d3b63d46e20c43",
+      "bytes": 3073,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/requirements/common.txt"
+    },
+    {
+      "path": "vllm/model_executor/models/qwen3_next.py",
+      "sha256": "8d614ce262ab9340585f9a2ad4ab117228f076e3672fcb5f04930ff0a38223ae",
+      "bytes": 30278,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/model_executor/models/qwen3_next.py"
+    },
+    {
+      "path": "vllm/model_executor/models/qwen3_vl.py",
+      "sha256": "9f8e813db5b367af6396aa659dcfd3a338ba3b77476718ab464b4c9f9a6ea542",
+      "bytes": 111369,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/model_executor/models/qwen3_vl.py"
+    },
+    {
+      "path": "vllm/renderers/base.py",
+      "sha256": "de90d9db76ea3d3eef11a8440e3c565267df0304152bd92d2406d979f89893c9",
+      "bytes": 36270,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/renderers/base.py"
+    },
+    {
+      "path": "vllm/config/speculative.py",
+      "sha256": "536d9ed7ef910207259efdb8cf370fbfa3e6b81794c271d575fa6b9bb13d41fd",
+      "bytes": 47903,
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/config/speculative.py"
+    }
+  ],
+  "metadata_sources": [
+    {
+      "file": "hf-config.json",
+      "url": "https://huggingface.co/ATH-MaaS/OvisOCR2/resolve/cbdede82e048659b83310476ff807da825f8fe78/config.json",
+      "sha256": "b90b86f35c8e6925ef74ee04d0e758f0a845c83a42089ad82bbaa948de9b4204",
+      "bytes": 2907
+    },
+    {
+      "file": "hf-preprocessor_config.json",
+      "url": "https://huggingface.co/ATH-MaaS/OvisOCR2/resolve/cbdede82e048659b83310476ff807da825f8fe78/preprocessor_config.json",
+      "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+      "bytes": 390
+    },
+    {
+      "file": "hf-tokenizer_config.json",
+      "url": "https://huggingface.co/ATH-MaaS/OvisOCR2/resolve/cbdede82e048659b83310476ff807da825f8fe78/tokenizer_config.json",
+      "sha256": "49e2b6e395f959f077f1e992b338919c0d4a9732fc6e613995e06557f843500c",
+      "bytes": 16709
+    },
+    {
+      "file": "hf-README.md",
+      "url": "https://huggingface.co/ATH-MaaS/OvisOCR2/resolve/cbdede82e048659b83310476ff807da825f8fe78/README.md",
+      "sha256": "f2510d6d02471c01a2808102da79cb47106963f18486f2ac05dd5c0b53fc1c7a",
+      "bytes": 7945
+    },
+    {
+      "file": "transformers-generation.py",
+      "url": "https://raw.githubusercontent.com/huggingface/transformers/v5.16.1/src/transformers/generation/configuration_utils.py",
+      "sha256": "427f7e57922fb58c3b321f5e5837ee782bd640cd5b22833029b16f9d4b9c4cdb",
+      "bytes": 100500
+    },
+    {
+      "file": "vllm-input-processor.py",
+      "url": "https://raw.githubusercontent.com/vllm-project/vllm/0decac0d96c42b49572498019f0a0e3600f50398/vllm/v1/engine/input_processor.py",
+      "sha256": "f3a1c74f59d767a20c9b3eb8f7d2d854b740924b40656e66636f2c9b4ec4764e",
+      "bytes": 20351
+    },
+    {
+      "file": "transformers-qwen35.py",
+      "url": "https://github.com/huggingface/transformers/blob/v5.16.1/src/transformers/models/qwen3_5/modeling_qwen3_5.py",
+      "sha256": "788d4bad50a8d39be2fe79125f0f40134773cd23b1791606fb6b3ab0bc6d2263",
+      "bytes": 88587
+    }
+  ],
+  "findings": {
+    "mtp": "Ordinary conditional forward calls language_model.model; loader skips mtp prefix. MTP state additions depend on explicit speculative_config. The inspected HF model only references mtp in unexpected-key ignore lists. This supports a separately pinned non-speculative policy, not broad MTP/unknown-weight acceptance.",
+    "generation": "Missing generation file falls back to GenerationConfig.from_model_config. Inspected Transformers5.16.1 fills unset values from text_config; Ovis text EOS is248044, tokenizer primary EOS248046. Actual installed configuration resolution remains to capture.",
+    "stop": "Original SamplingParams method combines tokenizer primary248046 with derived generation stop248044 under ordinary ignore_eos=False. Native frontend currently fixes one EOS248046.",
+    "processor": "vLLM checks processor_config, preprocessor_config then tokenizer_config for processor_class and delegates to AutoProcessor. Existing preprocessor declares Qwen3VLProcessor/Qwen2VLImageProcessorFast; absent processor_config alone does not prove unloadability. Runtime processor class and packed pixels remain unqualified.",
+    "dependencies": "vLLM requirement is a Transformers version range with exclusions, not an exact version. Inspected5.16.1 source is a candidate to lock/qualify, not a claim about upstream installed environment."
+  },
+  "stop_source_probe": {
+    "scope": "Original AST method executed in isolation using supplied generation fields; no installed vLLM/model/processor qualification",
+    "method_sha256": "3110d1b12e040ba7dda67aad3d65a4ab22246fcdf9aa678652832742a8d8e56d",
+    "cases": [
+      {
+        "generation": {
+          "eos_token_id": 248044
+        },
+        "tokenizer_eos": 248046,
+        "primary_eos": 248046,
+        "additional_stop_ids": [
+          248044
+        ],
+        "all_stop_ids": [
+          248044,
+          248046
+        ]
+      },
+      {
+        "generation": {},
+        "tokenizer_eos": 248046,
+        "primary_eos": 248046,
+        "additional_stop_ids": [],
+        "all_stop_ids": [
+          248046
+        ]
+      },
+      {
+        "generation": {
+          "eos_token_id": 248046
+        },
+        "tokenizer_eos": 248046,
+        "primary_eos": 248046,
+        "additional_stop_ids": [],
+        "all_stop_ids": [
+          248046
+        ]
+      }
+    ]
+  },
+  "next_gates": [
+    "Lock actual installed vLLM/Transformers source bytes; metadata-only original resolution of full generation config, primary/additional stops and processor class.",
+    "Exact official meta state schema vs all473 header tensors; permit pinned non-speculative MTP declaration only if no extra/dropped tensor.",
+    "Pinned profile metadata with explicit stop set and missing-source provenance; preserve existing LightOn profile and all wrong/unknown-source failures.",
+    "Actual rendered prompt, packed RGB/grid/positions under example pixel overrides, then remote original/native intermediates and final IDs/EOS/cleanup; no alias/publication from source analysis."
+  ]
+}

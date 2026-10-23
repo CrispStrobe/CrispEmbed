@@ -1,3 +1,15 @@
+## 2026-10-23 — OvisOCR2 execution-source blockers narrowed
+
+Pinned vLLM0.22.1/0decac0d source inspection distinguishes ordinary forward from
+MTP/speculative execution, traces missing generation/processor metadata fallback
+and identifies primary248046 plus derived248044 stopping. An isolated original
+SamplingParams method probe verifies that stop union and two negative controls;
+it does not load an installed model/configuration. [Full source fingerprints and
+probe](tests/results/qwen35-ocr/ovisocr2-vllm-blueprint.json), [contract](docs/ovisocr2.md).
+No weights, conversion, vLLM installation or inference occurred. Next hosted
+metadata-only original generation/processor/prompt/pixel and official meta-schema
+capture precedes a pinned profile; existing LightOn source/gates remain unchanged.
+
 ## 2026-10-23 — Gated UltraBERT F32 API merged; original-first retrieval passes
 
 [PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) merged at3f3d023a after
