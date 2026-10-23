@@ -199,3 +199,17 @@ GPU resources. On shared infrastructure, first inspect load/RAM/swap/free space.
 Use isolated worktrees, preserve unrelated files/owners, and keep private machine
 setup/access notes ignored. Optional ignored environment notes may supplement
 this public handoff; the task definitions above do not depend on them.
+
+## Active paired GPU performance follow-up
+
+`tools/kaggle/lfm2-encoder-cuda-performance/` recipe9fd70ce5/versionv1 was
+submitted once on a free authorized GPU slot. Inspect the current private run
+locator; do not resubmit an active kernel or redraw unsupported hardware. The
+public script pins the audited runtime898af2c2, F16/modelbb26e78c and complete
+original fixturee3599a94 hashes. CPU/CUDA/CUDA/CPU processes retain all per-case
+seven-repeat latencies after two warmups, initialization separately, exact IDs
+and original CLS gates. Scheduler probes require actual CUDA use and CPU
+control isolation. Peak RSS includes initialization/quality probes; no VRAM
+peak, throughput, full GPU residency or general speedup claim is justified.
+Fetch only `lfm2-cuda-performance.json`, block JSONs and selected logs. Preserve
+any inconclusive/failed result before a justified new recipe; no defaults move.

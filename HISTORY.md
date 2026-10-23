@@ -1,3 +1,16 @@
+## 2026-10-23 — Paired LFM2 F16 CPU/CUDA performance producer submitted
+
+The account-neutral `lfm2-encoder-cuda-performance-v1` recipe at9fd70ce5 pins
+previously audited runtime898af2c2, official F16/modelbb26e78c and exact original
+fixturee3599a94 hashes. One authorized GPU slot was submitted after checking
+recent sessions were terminal; no quota workaround or device redraw is used.
+CPU/CUDA/CUDA/CPU blocks measure actual dense C ABI/Python calls with two
+warmups/seven timed repeats per unchanged15-case panel, exact input IDs and
+original CLS numerical gates. Actual ordinary CUDA matmul placement is required.
+All models/references/builds stay remote; kernel and embedded worker syntax pass.
+No performance or speedup is claimed before completed reports and source review.
+[Protocol and scope](tools/kaggle/lfm2-encoder-cuda-performance/README.md).
+
 ## 2026-10-23 — Weight-free Ovis metadata producer prepared
 
 The hosted producer now captures actual pinned HF configuration/generation,
