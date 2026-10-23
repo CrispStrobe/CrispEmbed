@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -74,11 +75,16 @@ def main():
                 loaded[key + '.' + suffix] = hashlib.sha256(original.tobytes()).hexdigest()
     report = dict(source_commit=os.environ['GITHUB_SHA'], original_source=frozen['source_commit'],
                   scope='Original module/backend reproducibility only; no native correction or replacement targets',
+                  tool_sha256=sha256(__file__),
                   source_files=sources, source_weights=weights['sha256'], loaded_parameter_sha256=loaded,
                   environment=dict(python=sys.version, platform=platform.platform(), processor=platform.processor(),
                                    torch=torch.__version__, transformers=transformers.__version__,
                                    torch_config=torch.__config__.show(), cpu_capability=torch.backends.cpu.get_cpu_capability(),
-                                   cpuinfo=Path('/proc/cpuinfo').read_text(),
+                                   cpuinfo=(Path('/proc/cpuinfo').read_text() if Path('/proc/cpuinfo').exists()
+                                            else subprocess.check_output(['sysctl','-n','machdep.cpu.brand_string'],text=True)
+                                            if sys.platform == 'darwin' else platform.processor()),
+                                   mkldnn_available=torch.backends.mkldnn.is_available(),
+                                   float32_matmul_precision=torch.get_float32_matmul_precision(),
                                    relevant_env={k:v for k,v in os.environ.items() if k in
                                        ('OMP_NUM_THREADS','MKL_NUM_THREADS','OPENBLAS_NUM_THREADS','ATEN_CPU_CAPABILITY','MKL_CBWR')}),
                   arms=[])
