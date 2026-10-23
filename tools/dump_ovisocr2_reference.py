@@ -108,6 +108,34 @@ def check_framework_sources(profile, transformers, tokenizers, torch, processor,
     return actual
 
 
+def processor_contract(processor, profile):
+    """Compare the original processor using the evidence's JSON representation.
+
+    Transformers standardizes mean/std lists to tuples during construction;
+    the original metadata producer serializes those tuples as JSON arrays.
+    Preserve every value/key and check classes, backend and EOS independently.
+    """
+    config = processor.image_processor.to_dict()
+    actual = {
+        "class_name": type(processor).__module__ + "." + type(processor).__name__,
+        "image_class": type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__,
+        "image_backend": getattr(processor.image_processor, "backend", None),
+        "image_config": json.loads(json.dumps(config, allow_nan=False)),
+    }
+    checks = {name: actual[name] == expected for name, expected in profile["processor"].items()}
+    checks["primary_eos"] = processor.tokenizer.eos_token_id == profile["primary_eos"]
+    report = {"checks": checks, "actual": actual,
+              "primary_eos": processor.tokenizer.eos_token_id,
+              "image_config_native_equal": config == profile["processor"]["image_config"],
+              "image_config_python_types": {key: type(value).__name__ for key, value in config.items()},
+              "comparison": "Exact JSON values, matching original metadata serialization; no numeric tolerance"}
+    print("OVIS_PROCESSOR_CONTRACT " + json.dumps(report, sort_keys=True, allow_nan=False), flush=True)
+    if not all(checks.values()):
+        raise ValueError("OvisOCR2 original processor contract differs: "
+                         + ", ".join(key for key, passed in checks.items() if not passed))
+    return report
+
+
 def observed_visual_positions(frame, event, arg, visual, save, phase):
     """Read the real local variable at the original forward return boundary."""
     if event == "return" and frame.f_locals.get("self") is visual:
@@ -189,13 +217,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     processor = AutoProcessor.from_pretrained(root, local_files_only=True, trust_remote_code=False)
     source_hashes = check_framework_sources(profile, transformers, tokenizers, torch,
                                             processor, Qwen3_5ForConditionalGeneration)
-    if (processor.tokenizer.eos_token_id != profile["primary_eos"]
-            or type(processor).__module__ + "." + type(processor).__name__ != profile["processor"]["class_name"]
-            or type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__
-            != profile["processor"]["image_class"]
-            or getattr(processor.image_processor, "backend", None) != profile["processor"]["image_backend"]
-            or processor.image_processor.to_dict() != profile["processor"]["image_config"]):
-        raise ValueError("OvisOCR2 original processor or EOS differs")
+    processor_check = processor_contract(processor, profile)
     image = Image.open(image_path).convert("RGB")
     rendered = profile["rendered_prompt"]
     inputs = processor(text=[rendered], images=[image], return_tensors="pt",
@@ -567,6 +589,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         "resolved_processor": type(processor).__module__ + "." + type(processor).__name__,
         "resolved_image_processor": type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__,
         "resolved_image_backend": getattr(processor.image_processor, "backend", None),
+        "processor_contract": processor_check,
         "generation_config": model.generation_config.to_dict(),
         "generation_override": {"eos_token_id": profile["stop_ids"],
                                 "reason": "pinned original vLLM effective stop set; missing generation_config.json"},
