@@ -138,6 +138,9 @@ class HostedAuditTest(unittest.TestCase):
             names += [f"vision.{name}" for name in (
                 "patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
                 "merger.norm", "merger.up", "merger.activation", "merger", "output")]
+            names += [f"vision.probe.{index}.{field}" for index in (5, 11)
+                      for field in ("norm1", "qkv", "pooled", "attention",
+                                    "norm2", "up", "activation", "down")]
             names += ["decoder.norm", "logits", "argmax_id"]
             magnitudes = {}
             for label, baseline in (("backend_off", "prefill"),
@@ -153,12 +156,14 @@ class HostedAuditTest(unittest.TestCase):
                 "raw_decoded": ["text"], "stage_max_abs": magnitudes}
             path.write_text(json.dumps(payload))
             self.assertEqual(audit.verify_original_capture(path, profile, {})["generated_ids"], [[17, 248044]])
-            for change in ("missing_position", "mismatched_shape", "nan_magnitude",
+            for change in ("missing_position", "missing_probe", "mismatched_shape", "nan_magnitude",
                            "changed_ids", "not_disabled"):
                 changed = copy.deepcopy(payload)
                 key = "backend_off.vision.position"
                 if change == "missing_position":
                     del changed["stages"][key]
+                elif change == "missing_probe":
+                    del changed["stages"]["backend_off_full_prefix.vision.probe.11.pooled"]
                 elif change == "mismatched_shape":
                     changed["stages"][key] = [2, 1]
                 elif change == "nan_magnitude":
