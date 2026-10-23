@@ -1,11 +1,12 @@
 name: PosFormer runtime validation
 on:
   push:
-    branches: ['fix/posformer-main-backport']
+    branches: ['main', 'fix/posformer-main-backport', 'fix/posformer-released-default']
+    paths: ['src/posformer_ocr.cpp', 'tools/*posformer*', 'tests/test_posformer_release_compat.py', 'tests/results/posformer/released-compatibility.json', '.github/workflows/posformer-runtime-validation.yml']
   workflow_dispatch:
     inputs:
       include_macos:
-        description: 'Repeat Apple public API validation (runtime unchanged since reviewed macOS source)'
+        description: 'Repeat Apple public API and unset/one/zero gate validation'
         type: boolean
         default: false
 permissions:
@@ -14,7 +15,17 @@ concurrency:
   group: posformer-runtime-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_posformer_release_compat.py -v
   native:
+    if: github.event_name == 'workflow_dispatch' || github.ref != 'refs/heads/main'
+    needs: controls
     name: Original model and reference (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -106,7 +117,7 @@ jobs:
           export CRISPMATH_HANDWRITING_REPORT="$GITHUB_WORKSPACE/.ci/reports/original-corrected.json"
           flutter test --reporter expanded native_test/handwriting_quality_test.dart
           python3 "$GITHUB_WORKSPACE/tools/validate_posformer_runtime.py" compare --app-root . --baseline "$GITHUB_WORKSPACE/.ci/reports/original-baseline.json" --corrected "$GITHUB_WORKSPACE/.ci/reports/original-corrected.json" --provenance "$GITHUB_WORKSPACE/.ci/reports/production-provenance.json" --output "$GITHUB_WORKSPACE/.ci/reports/original-paired.json"
-      - name: Prove unset and literal-zero preserve baseline public outputs
+      - name: Prove default/explicit-one agreement and literal-zero legacy outputs
         working-directory: .ci/CrispMath
         run: |
           export CRISPMATH_OCR_MODEL="$PWD/posformer-q8.gguf"
@@ -133,8 +144,27 @@ jobs:
               rows = json.loads((root / name).read_text())['cases']
               assert len(rows) == 50
               return [(x['id'], x['latex'], x['status']) for x in rows]
-          assert outputs('original-baseline.json') == outputs('original-unset.json') == outputs('original-zero.json')
-          (root / 'gate-controls.json').write_text(json.dumps({'cases':50,'unset_matches_baseline':True,'zero_matches_baseline':True}))
+          assert outputs('original-corrected.json') == outputs('original-unset.json')
+          assert outputs('original-baseline.json') == outputs('original-zero.json')
+          (root / 'gate-controls.json').write_text(json.dumps({'cases':50,'unset_matches_corrected':True,'zero_matches_baseline':True}))
+          PYCODE
+      - name: Actual default matches the frozen published0.17.12 Linux output oracle
+        if: runner.os == 'Linux'
+        working-directory: .ci/CrispMath
+        run: |
+          unset CRISPEMBED_POSFORMER_TRAINED_FORWARD POSFORMER_SCALAR_ENCODER
+          python3 "$GITHUB_WORKSPACE/tools/probe_posformer_release.py" --library "$PRODUCTION_LIBRARY" --library-source "$GITHUB_SHA" --model posformer-q8.gguf --corpus .dart_tool/inference/handwriting-corpus --frozen-report "$GITHUB_WORKSPACE/tests/results/posformer/main-backport-reference.json" --output "$GITHUB_WORKSPACE/.ci/reports/released-default.json" --logs "$RUNNER_TEMP/released-default-logs"
+          export PYTHONPATH="$GITHUB_WORKSPACE/tools"
+          python3 - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          from probe_posformer_release import compare_release_records
+          root=Path(os.environ['GITHUB_WORKSPACE'])
+          released=json.loads((root/'tests/results/posformer/released-compatibility.json').read_text())['released']
+          current=json.loads((root/'.ci/reports/released-default.json').read_text())
+          assert current['trained_forward_env'] is None
+          result=compare_release_records(released,current)
+          (root/'.ci/reports/released-default-comparison.json').write_text(json.dumps(result,indent=2))
           PYCODE
       - name: Printed OCR and calculator handoff regression
         working-directory: .ci/CrispMath
