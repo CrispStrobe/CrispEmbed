@@ -161,7 +161,9 @@ Require affected exact-source checks again for each new implementation change.
   actual released/current opt-in comparison now matches all50
   IDs/text/EOS sequences, with measured confidence drift retained in HISTORY.
   PR73 at790f9a6b tests actual unset outputs against that frozen Linux release
-  oracle and retains literal0. Wait for exact-source default/reference/platform CI
+  oracle and retains literal0. Dedicated39933245147 is successful; full raw reports
+  and independent review are archived. Platform CI still pending; wait for all
+  exact-source default/reference/platform checks
   and independently review raw reports before merging. Published0.17.12
   already enables trained-forward math; current development main preserves its
   legacy default. Decide/default-test this explicitly while retaining `=0`.
@@ -309,7 +311,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `feat/ultrabert-f32-api` | Default-off CPU/F32 UltraBERT pooled text profile using existing exact tokenizer and graph math; public API/CLI/bindings and hosted frozen-output controls | Implement bounded512-token profile; preserve strict intermediate audit, reject F16/unsupported modes; independent retrieval remains separate. |
+| 2026-10-23 | `feat/ultrabert-f32-api` | Default-off CPU/F32 UltraBERT pooled text profile using existing exact tokenizer and graph math; public API/CLI/bindings and hosted frozen-output controls | [Draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) at17b668c0; [hosted API39938024529](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39938024529) queued. Public pair/Rust/Dart model-backed and independent retrieval remain open; strict intermediate audit retained. |
 | 2026-10-23 | `fix/posformer-released-default` | Restore the published0.17.12 trained-forward default, preserve literal0, test actual default against frozen released token/text/EOS records | [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) at790f9a6b; CI queued. Actual-default Linux oracle, unset/one and zero/legacy controls plus unchanged bounded reference checks. No confidence tolerance fitting or release tag/app change. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 

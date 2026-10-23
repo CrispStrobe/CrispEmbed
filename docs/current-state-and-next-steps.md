@@ -90,7 +90,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
 | Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | MTP/schema/missing-metadata and actual prompt/pixel/EOS profile before conversion/native alias; Indra public-code-only |
-| PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default restoration awaits exact-source CI; release/consumer qualification remains separate |
+| PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default/reference39933245147 passes; final platform CI pending. PR74 CPU/F32 UltraBERT API job39938024529 queued; no release/consumer upgrade |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
 the remote copy expires21 January2027. Original producer/manifest/payload

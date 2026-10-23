@@ -1,3 +1,25 @@
+## 2026-10-23 — Actual released-default PosFormer and bounded reference checks pass
+
+At790f9a6b, [39933245147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39933245147)
+passes actual unset versus published Linux0.17.12: all50 IDs/text/EOS stops and
+confidence values agree on this run. Unset/explicit1 and zero/legacy controls
+pass, original7/50 recognition is preserved, and both five-case/five-step
+original-code/exported-F32 reference arms and primitive controls pass. Independent
+review revalidates all15 raw JSON reports, source/library identities, paired
+outputs and every reference verdict. [Full retained evidence](tests/results/posformer/released-default-validation.json).
+Per-case native logs were not uploaded by this producer; their hashes are retained
+without claiming independent log reparsing. Preserve them on future runs.
+PR73 remains draft pending final platform checks; no tag or app pin change.
+
+UltraBERT [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) at17b668c0
+adds a separate default-off CPU/F32 text backend and ordinary ABI routes, strict
+pre-allocation metadata/schema validation, bounded512-token rejection and hosted
+pooled-output/consumer checks. Local four parser-control groups, changed-file
+syntax/format checks and177 clean-exit guards pass. Hosted39938024529 is queued;
+no new model-backed qualification is claimed until its reports are reviewed.
+Strict183/1294 intermediate failures, pair/Rust/Dart model-backed and independent
+retrieval/SentenceTransformer qualification remain explicit separate tasks.
+
 ## 2026-10-23 — M1 original replay independently checked; pooled F32 scope clarified
 
 The returned M1 diagnostic atf0dbe58d completes four arms/seven cases in63.45s,

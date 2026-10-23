@@ -90,6 +90,15 @@ anchors or call U1 local targets full-model parity.
 
 ### U3 — Scope a gated F32 pooled-output profile; retain full-model audit failures
 
+Implementation [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) is
+at17b668c0; hosted [39938024529](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39938024529)
+is queued. Inspect existing exact-source CI; do not dispatch duplicates. This
+initial profile covers ordinary text and sequential batches, while public pairs,
+reserved-token surfaces, F16/quantized/GPU/Matryoshka remain explicitly excluded.
+Generic bindings route through the shared ABI; model-backed Rust/Dart checks and
+independent retrieval/SentenceTransformer qualification remain pending.
+
+
 M1 original Python also exceeds the unchanged full-hidden0.002 budget; this does
 not identify native correctness from a single maximum. Existing native F32 raw/
 normalized CLS pass all seven fixed-output cases (max6.72e-5/5.94e-7; reported
@@ -175,7 +184,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | --- | --- | --- |
 | Integration CI | Completed39009694933 at f6f84aba: all10 Build jobs including Flutter; WASM/lint/contracts pass | Scheduled health/OCR regression green through22 October; rerun affected checks for new code |
 | PR68 deployment | Completed39009694992; live metadata/PNG verified23 October | Deployment revision f6f84aba; no new app/runtime release |
-| PosFormer PR73 | PR72 merged7f1ecd33; actual released/candidate50-case IDs/text/EOS match. Default restoration790f9a6b is queued in [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) | Require full exact-source checks, Linux actual-default/release oracle, gate and bounded reference reports before merge;7/50 quality unchanged |
+| PosFormer PR73 | PR72 merged7f1ecd33; actual released/candidate50-case IDs/text/EOS match. Default restoration790f9a6b passes dedicated39933245147 in [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) | Require full exact-source checks, Linux actual-default/release oracle, gate and bounded reference reports before merge;7/50 quality unchanged |
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 proposes restoring the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
