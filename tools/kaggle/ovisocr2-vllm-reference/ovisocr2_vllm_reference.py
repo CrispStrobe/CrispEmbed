@@ -52,11 +52,13 @@ WORKER_SHA = 'dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af'
 WORKER_URL = (f'https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/{WORKER_COMMIT}'
               '/tools/kaggle/ovisocr2-vllm-reference/worker.py')
 DRIVER_MIN = (575, 51, 3)  # NVIDIA CUDA 12.9 GA corresponding Linux driver.
+ISOLATED_PIP_VERSION = '26.2.2'
 SOURCES = {
     'readme': f'https://huggingface.co/{MODEL}/blob/{REVISION}/README.md',
     'vllm_release': 'https://github.com/vllm-project/vllm/releases/tag/v0.22.1',
     'driver': 'https://docs.nvidia.com/cuda/archive/12.9.0/cuda-toolkit-release-notes/index.html',
     'gpu': 'https://docs.vllm.ai/en/v0.22.1/getting_started/installation/gpu/',
+    'isolated_pip': 'https://pip.pypa.io/en/stable/topics/python-option/',
 }
 
 
@@ -257,6 +259,18 @@ def gpu_gate(report):
         raise ValueError('Inconclusive: driver below conservative CUDA 12.9 gate; no minor-compatibility assumption')
 
 
+def isolated_environment(report):
+    # Debian's interpreter can create a venv even when its ensurepip is absent.
+    # The base pip --python option targets only this task-owned environment.
+    venv.EnvBuilder(with_pip=False, clear=True).create(VENV)
+    python = str(VENV / 'bin/python')
+    run('bootstrap-isolated-pip', [sys.executable, '-m', 'pip', '--python', python,
+        'install', 'pip==' + ISOLATED_PIP_VERSION], report, timeout=300)
+    report['isolated_pip_version'] = ISOLATED_PIP_VERSION
+    save(report)
+    return python
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     LOGS.mkdir(parents=True, exist_ok=True)
@@ -294,8 +308,7 @@ def main():
         report['phase'] = 'original-artifact'; save(report)
         original_arrays(evidence, report)
         report['phase'] = 'isolated-packages'; save(report)
-        venv.EnvBuilder(with_pip=True, clear=True).create(VENV)
-        python = str(VENV / 'bin/python')
+        python = isolated_environment(report)
         wheel = SCRATCH / WHEEL_NAME
         fetch(WHEEL_URL, wheel, timeout=900)
         if wheel.stat().st_size != WHEEL_BYTES or digest(wheel) != WHEEL_SHA:

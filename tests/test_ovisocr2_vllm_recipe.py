@@ -17,6 +17,19 @@ spec.loader.exec_module(recipe)
 
 
 class RecipeControls(unittest.TestCase):
+    def test_isolated_pip_does_not_depend_on_ensurepip_or_modify_base_environment(self):
+        with mock.patch.object(recipe.venv, 'EnvBuilder') as builder, \
+                mock.patch.object(recipe, 'run') as run, mock.patch.object(recipe, 'save'):
+            report = {}
+            python = recipe.isolated_environment(report)
+            builder.assert_called_once_with(with_pip=False, clear=True)
+            builder.return_value.create.assert_called_once_with(recipe.VENV)
+            argv = run.call_args.args[1]
+            self.assertEqual(argv[:3], [recipe.sys.executable, '-m', 'pip'])
+            self.assertEqual(argv[3:5], ['--python', python])
+            self.assertEqual(argv[-1], 'pip==' + recipe.ISOLATED_PIP_VERSION)
+            self.assertEqual(report['isolated_pip_version'], recipe.ISOLATED_PIP_VERSION)
+
     @classmethod
     def setUpClass(cls):
         cls.evidence = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-metadata.json').read_text())
