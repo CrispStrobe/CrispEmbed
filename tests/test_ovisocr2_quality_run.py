@@ -6,6 +6,7 @@ import json
 import hashlib
 from pathlib import Path
 import tempfile
+import zipfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -19,6 +20,50 @@ spec.loader.exec_module(driver)
 
 
 class QualityDriverControls(unittest.TestCase):
+    def test_immutable_prepared_zip_members_and_path_tamper(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            archive = folder/'prepared.zip'
+            cases = [{'id': name, 'file': name+'.png',
+                      'png_sha256': hashlib.sha256(name.encode()).hexdigest()}
+                     for name in ('historical-receipt', 'two-column-page', 'inventory-table')]
+            prepared = json.dumps({'cases': cases}).encode()
+            prior = {'artifact_report_sha256': hashlib.sha256(prepared).hexdigest()}
+            def create(entries):
+                with zipfile.ZipFile(archive, 'w') as zipped:
+                    for name, value in entries:
+                        zipped.writestr(name, value)
+                return {'bytes': archive.stat().st_size, 'sha256': driver.sha(archive),
+                        'source': {'case_inputs': cases}}
+            entries = [('prepared.json', prepared)] + [
+                (case['file'], case['id'].encode()) for case in cases]
+            receipt = create(entries)
+            actual, members = driver.verify_prepared_archive(archive, receipt, prior)
+            self.assertEqual(actual['cases'], cases)
+            self.assertEqual(set(members), {name for name, _ in entries})
+            changed = {**receipt, 'sha256': '0'*64}
+            with self.assertRaisesRegex(ValueError, 'ZIP size/SHA'):
+                driver.verify_prepared_archive(archive, changed, prior)
+            receipt = create(entries + [('../escape.png', b'bad')])
+            with self.assertRaisesRegex(ValueError, 'members/path'):
+                driver.verify_prepared_archive(archive, receipt, prior)
+            traversal_cases = json.loads(json.dumps(cases))
+            traversal_cases[-1]['file'] = '../inventory-table.png'
+            traversal_prepared = json.dumps({'cases': traversal_cases}).encode()
+            traversal_prior = {'artifact_report_sha256': hashlib.sha256(traversal_prepared).hexdigest()}
+            receipt = create([('prepared.json', traversal_prepared),
+                              *[(case['file'], case['id'].encode()) for case in traversal_cases]])
+            receipt['source']['case_inputs'] = traversal_cases
+            with self.assertRaisesRegex(ValueError, 'members/path'):
+                driver.verify_prepared_archive(archive, receipt, traversal_prior)
+            receipt = create(entries[:-1] + [(cases[-1]['file'], b'changed')])
+            with self.assertRaisesRegex(ValueError, 'member SHA'):
+                driver.verify_prepared_archive(archive, receipt, prior)
+            receipt = create(entries)
+            with self.assertRaisesRegex(ValueError, 'member SHA'):
+                driver.verify_prepared_archive(archive, receipt,
+                                               {'artifact_report_sha256': '0'*64})
+
     def test_original_readme_ast_prompt_filter_and_cleanup(self):
         source = '''```python
 class OvisOCR2Parser:

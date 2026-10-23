@@ -1,0 +1,87 @@
+{
+  "repo": "cstr/crispembed-regression-fixtures",
+  "revision": "057e12668bf8109ec83c65929c9b8d6cb99ca566",
+  "file": "ocr-quality-v1/prepared-38879605915/prepared.zip",
+  "url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/057e12668bf8109ec83c65929c9b8d6cb99ca566/ocr-quality-v1/prepared-38879605915/prepared.zip",
+  "sha256": "a890c3ad8151706948d3d89529e5f5716405e5f790a3749436f36d78f20ca9cc",
+  "bytes": 724951,
+  "anonymous_immutable_readback_verified": true,
+  "source": {
+    "original_run": 38879605915,
+    "original_artifact_id": 12037153992,
+    "artifact_name": "ocr-quality-contract",
+    "original_zip_sha256": "a890c3ad8151706948d3d89529e5f5716405e5f790a3749436f36d78f20ca9cc",
+    "original_zip_bytes": 724951,
+    "case_inputs": [
+      {
+        "id": "historical-receipt",
+        "source_sha256": "f479c79b45d01b6927887ef979c9d731ea0336134a83809738e7bbcf66e4b3e5",
+        "gold_sha256": "125c47bc521ded86512c6ba3bc85feb1a9a19a371a64bf8a9e8ccb3453d7705e",
+        "original_size": [
+          768,
+          1552
+        ],
+        "size": [
+          352,
+          704
+        ],
+        "png_sha256": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b",
+        "rgb_sha256": "34260ff707cfb3628e622007464cdeb32a960cd66c03eb34a36044f0e2c2dca4",
+        "file": "historical-receipt.png",
+        "nominal_patches": 968
+      },
+      {
+        "id": "two-column-page",
+        "source_sha256": "92d117d352ed2ebe86efc72e661407761f2747bf44fe7a292facd8d75735e4be",
+        "gold_sha256": "abf6dfbf6d2461f79dd6911b5e7bd259a56fb0fc6534155bc34eb5fce41044b7",
+        "original_size": [
+          1920,
+          2485
+        ],
+        "size": [
+          448,
+          576
+        ],
+        "png_sha256": "36a6ca6306a9f74ceee06b1a5268c8eae354b53212417d3eac0f2b70b2bada21",
+        "rgb_sha256": "3a462c9b8a913ffd4102fe8fd3b9bc2eac103a0c855c83b68c929a844d900290",
+        "file": "two-column-page.png",
+        "nominal_patches": 1008
+      },
+      {
+        "id": "inventory-table",
+        "source_sha256": "c4cc20f79a2f9105ad14f6fd8f4d4d1db956b8004854a03d074a528422dcee6a",
+        "gold_sha256": "801171c1459131e5d34479d6820fcc3dd260c9ea7110b0cbb4a6705e0f729e76",
+        "original_size": null,
+        "size": [
+          448,
+          448
+        ],
+        "png_sha256": "1e7a3073bd158dc87613463e45eafc52cec0c48f3655a6937a583767e26f4b4f",
+        "rgb_sha256": "9ac5313218d0c513e4312cf5669ea6def4c77d32562f317d8b1367b7b2b273a4",
+        "file": "inventory-table.png",
+        "nominal_patches": 784
+      }
+    ],
+    "licenses": [
+      {
+        "id": "historical-receipt",
+        "license": "CC0-1.0",
+        "gold": "tests/regression/ocr-quality/historical-receipt.gold.json",
+        "max_new_tokens": 1024
+      },
+      {
+        "id": "two-column-page",
+        "license": "CC0-1.0",
+        "gold": "tests/regression/ocr-quality/two-column-page.gold.json",
+        "max_new_tokens": 1024
+      },
+      {
+        "id": "inventory-table",
+        "license": "MIT",
+        "gold": "tests/regression/ocr-quality/inventory.gold.json",
+        "max_new_tokens": 1024
+      }
+    ],
+    "scope": "Byte-identical original reviewed PNG/prepared JSON archive, no rerender/model inference or weights."
+  }
+}

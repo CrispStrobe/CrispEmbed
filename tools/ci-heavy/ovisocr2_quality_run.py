@@ -18,9 +18,11 @@ from pathlib import Path
 import re
 import resource
 import shutil
+import stat
 import subprocess
 import sys
 import time
+import urllib.request
 import zipfile
 
 
@@ -30,6 +32,10 @@ BASELINE = EVIDENCE / 'ovisocr2-model-audit.json'
 Q8_REVIEW = EVIDENCE / 'ovisocr2-q8-quality.json'
 ORIGINAL_REVIEW = EVIDENCE / 'ovisocr2-original-quality.json'
 EXPORT = EVIDENCE / 'ovisocr2-export.json'
+PREPARED_PRESERVATION = EVIDENCE / 'ovisocr2-quality-prepared-preservation.json'
+PREPARED_PRESERVATION_SHA = '6cf0c8750202b0c11480ac7a22970ed2e9d1dd40121c7ba185cc46b916aef46f'
+PREPARED_ARCHIVE_SHA = 'a890c3ad8151706948d3d89529e5f5716405e5f790a3749436f36d78f20ca9cc'
+PREPARED_ARCHIVE_BYTES = 724951
 F16_SHA = 'd3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db'
 F16_BYTES = 1717222848
 MODEL = 'ATH-MaaS/OvisOCR2'
@@ -724,17 +730,104 @@ def cabi_smoke(library, model, case, quantized=False):
         lib.crispembed_ocr_model_free(ctx)
 
 
-def prepare_documents(out):
-    """Freeze the previously reviewed realistic derivatives with their original renderer."""
-    if importlib.metadata.version('Pillow') != '11.3.0' or importlib.metadata.version('CairoSVG') != '2.8.2':
-        raise ValueError('Reviewed document renderer versions differ')
+def prepared_preservation():
+    """Pin the public, anonymously reverified original preparation archive."""
+    if not PREPARED_PRESERVATION.is_file() or sha(PREPARED_PRESERVATION) != PREPARED_PRESERVATION_SHA:
+        raise ValueError('Original quality preparation preservation receipt missing/altered')
+    receipt = json.loads(PREPARED_PRESERVATION.read_text())
+    source = receipt.get('source', {})
+    if (receipt.get('repo') != 'cstr/crispembed-regression-fixtures'
+            or receipt.get('revision') != '057e12668bf8109ec83c65929c9b8d6cb99ca566'
+            or receipt.get('file') != 'ocr-quality-v1/prepared-38879605915/prepared.zip'
+            or receipt.get('url') != 'https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/057e12668bf8109ec83c65929c9b8d6cb99ca566/ocr-quality-v1/prepared-38879605915/prepared.zip'
+            or receipt.get('sha256') != PREPARED_ARCHIVE_SHA
+            or receipt.get('bytes') != PREPARED_ARCHIVE_BYTES
+            or receipt.get('anonymous_immutable_readback_verified') is not True
+            or source.get('original_run') != 38879605915
+            or source.get('original_artifact_id') != 12037153992
+            or source.get('artifact_name') != 'ocr-quality-contract'
+            or source.get('original_zip_sha256') != PREPARED_ARCHIVE_SHA
+            or source.get('original_zip_bytes') != PREPARED_ARCHIVE_BYTES):
+        raise ValueError('Original quality preparation mirror/source pin differs')
+    return receipt
+
+
+def verify_prepared_archive(archive, receipt, prior):
+    """Read exactly four pinned members without extracting any archive path."""
+    if Path(archive).stat().st_size != receipt['bytes'] or sha(archive) != receipt['sha256']:
+        raise ValueError('Original prepared ZIP size/SHA differs')
+    cases = receipt['source']['case_inputs']
+    if len(cases) != 3 or len({case['id'] for case in cases}) != 3:
+        raise ValueError('Original prepared ZIP case list differs')
+    expected = {'prepared.json': prior['artifact_report_sha256']}
+    expected.update({case['file']: case['png_sha256'] for case in cases})
+    if len(expected) != 4:
+        raise ValueError('Original prepared ZIP member names overlap')
+    with zipfile.ZipFile(archive) as zipped:
+        infos = zipped.infolist()
+        if (len(infos) != 4 or {item.filename for item in infos} != set(expected)
+                or any(item.filename != Path(item.filename).name or item.is_dir()
+                       or item.flag_bits & 1 or stat.S_ISLNK(item.external_attr >> 16)
+                       or item.file_size > PREPARED_ARCHIVE_BYTES for item in infos)):
+            raise ValueError('Original prepared ZIP members/path contract differs')
+        members = {}
+        for item in infos:
+            content = zipped.read(item)
+            if hashlib.sha256(content).hexdigest() != expected[item.filename]:
+                raise ValueError('Original prepared ZIP member SHA differs: ' + item.filename)
+            members[item.filename] = content
+    prepared = json.loads(members['prepared.json'])
+    if prepared.get('cases') != cases:
+        raise ValueError('Original prepared ZIP case metadata differs from preservation')
+    return prepared, members
+
+
+def prepare_documents(out, archive=None):
+    """Reuse byte-identical reviewed derivatives; never rerender evaluation PNGs."""
+    receipt = prepared_preservation()
     preparation = load_module('ovis_quality_preparation', ROOT / 'tools/ci-heavy/ocr_quality_prepare.py')
     quality = load_module('ovis_quality_preparation_gate', ROOT / 'tools/ci-heavy/qwen35_quality.py')
     quality.require_reviewed_preparation(ROOT)
-    result = preparation.prepare(ROOT, out / 'documents')
-    if result['frozen_derivatives_exact'] is not True:
-        raise ValueError('Reviewed document derivatives changed')
-    return result
+    panel = preparation.validate_panel(ROOT)
+    prior = json.loads((ROOT / 'tests/results/ocr-quality-prepared.json').read_text())
+    if (sha(ROOT / preparation.PANEL) != prior['panel_sha256']
+            or sha(ROOT / 'tools/ocr_quality.py') != prior['scorer_sha256']
+            or [case['id'] for case in panel['cases']] != [case['id'] for case in receipt['source']['case_inputs']]
+            or any(sha(ROOT / name) != value
+                   for name, value in prior['split_evidence_sha256'].items())):
+        raise ValueError('Reviewed document source/scorer/split contract differs')
+    if archive is None:
+        archive = Path(os.environ['HEAVY_SCRATCH']) / 'ovis-quality' / 'prepared.zip'
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        with urllib.request.urlopen(receipt['url'], timeout=90) as response, archive.open('xb') as output:
+            while block := response.read(1024 * 1024):
+                output.write(block)
+                if output.tell() > PREPARED_ARCHIVE_BYTES:
+                    raise ValueError('Original prepared ZIP exceeds pinned byte count')
+    prepared, members = verify_prepared_archive(archive, receipt, prior)
+    preparation.verify_prepared(prior, prepared)
+    if (prepared.get('source_commit') != prior['source_commit']
+            or prepared.get('pillow') != '11.3.0' or prepared.get('cairosvg') != '2.8.2'
+            or prepared.get('cairo') != '1.18.0' or prepared.get('font') != prior['font']):
+        raise ValueError('Original reviewed renderer provenance differs')
+    for spec, frozen in zip(panel['cases'], prepared['cases']):
+        if (spec['id'] != frozen['id'] or spec['source_sha256'] != frozen['source_sha256']
+                or spec['gold_sha256'] != frozen['gold_sha256']
+                or spec['license'] != next(row['license'] for row in receipt['source']['licenses']
+                                           if row['id'] == spec['id'])):
+            raise ValueError('Original prepared source/license binding differs')
+    destination = out / 'documents'
+    destination.mkdir(parents=True, exist_ok=False)
+    for name, content in members.items():
+        (destination / name).write_bytes(content)
+    return prepared, {'mirror_revision': receipt['revision'], 'mirror_file': receipt['file'],
+                      'zip_sha256': receipt['sha256'], 'zip_bytes': receipt['bytes'],
+                      'preservation_receipt_sha256': PREPARED_PRESERVATION_SHA,
+                      'original_run': receipt['source']['original_run'],
+                      'original_artifact_id': receipt['source']['original_artifact_id'],
+                      'prepared_json_sha256': prior['artifact_report_sha256'],
+                      'member_sha256': {name: hashlib.sha256(content).hexdigest()
+                                        for name, content in members.items()}}
 
 
 def frozen_cases(out, contract):
@@ -829,6 +922,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
                   'tools/ci-heavy/ovisocr2_quality_contract.py',
+                  'tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json',
                   'models/qwen35_ovis_profile.py',
                   'models/convert-qwen35-ocr-to-gguf.py')},
               'limits': ['Experimental OvisOCR2 profile only; native alias remains blocked',
@@ -848,8 +942,13 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         contract.source_schema()
         quality = load_module('ovis_quality_preflight', ROOT / 'tools/ci-heavy/qwen35_quality.py')
         reviewed = quality.require_reviewed_preparation(ROOT)
+        preserved = prepared_preservation()
         report['reviewed_documents_sha256'] = sha(ROOT / 'tests/results/ocr-quality-prepared.json')
         report['reviewed_document_ids'] = reviewed['visual_review']['reviewed_case_ids']
+        report['prepared_archive_pin'] = {'revision': preserved['revision'],
+            'file': preserved['file'], 'zip_sha256': preserved['sha256'],
+            'zip_bytes': preserved['bytes'],
+            'receipt_sha256': PREPARED_PRESERVATION_SHA}
         report['phase'] = 'preflight-complete'
         save()
         if preflight:
@@ -859,14 +958,26 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         if documents:
             report['phase'] = 'freeze-reviewed-documents'
             save()
-            prepared = prepare_documents(out)
+            prepared, proof = prepare_documents(out)
             report['prepared_documents_sha256'] = sha(out / 'documents/prepared.json')
+            report['prepared_archive_verified'] = proof
+            (out / 'documents/archive-proof.json').write_text(json.dumps(proof, indent=2) + '\n')
             report['document_renderer'] = {key: prepared[key] for key in ('pillow', 'cairosvg', 'cairo', 'font')}
             report['status'] = 'documents frozen before model outputs'
             save()
             return report
         if not (out / 'documents/prepared.json').is_file():
             raise ValueError('Frozen reviewed documents absent before model download')
+        proof_path = out / 'documents/archive-proof.json'
+        if not proof_path.is_file():
+            raise ValueError('Verified prepared archive proof absent before model download')
+        proof = json.loads(proof_path.read_text())
+        if (proof.get('zip_sha256') != PREPARED_ARCHIVE_SHA
+                or proof.get('zip_bytes') != PREPARED_ARCHIVE_BYTES
+                or proof.get('preservation_receipt_sha256') != PREPARED_PRESERVATION_SHA
+                or proof.get('prepared_json_sha256') != sha(out / 'documents/prepared.json')):
+            raise ValueError('Prepared archive proof differs before model download')
+        report['prepared_archive_verified'] = proof
         report['phase'] = 'freeze-synthetic-and-verify-documents'
         save()
         rendered, cases, prepared = frozen_cases(out, contract)
@@ -881,7 +992,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         source, profile = download_original(report, save, checkpoint=phase == 'original')
         report['versions'] = {name: importlib.metadata.version(name) for name in
                               ('torch', 'transformers', 'tokenizers', 'numpy', 'gguf', 'Pillow',
-                               'huggingface-hub', 'safetensors', 'CairoSVG')}
+                               'huggingface-hub', 'safetensors')}
         if phase == 'original':
             report['phase'] = 'original-hf-f32-on-frozen-pixels'
             save()
