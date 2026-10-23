@@ -380,3 +380,17 @@ production service, with deterministic concurrent-edit and recovery tests.
 **Done when:** the prototype has reviewed semantics and real two-client tests;
 a production rollout has its own authorized scope, migration and device gates.
 Do not treat this longer-term idea as an unfinished build 23 feature.
+
+## Current Ovis execution checkpoint
+
+Frontend PR78 merged918c1c8d after exact processor/tokenizer parity and all
+platform checks. See the active five-step sequence in [PLAN](../PLAN.md).
+Original GPU attempt50ce5e52 installed the pinned stack, passed all three
+processor anchors and actual FP16 CUDA control, then failed FlashInfer JIT
+linking `-lcuda` before decoded generation. Initial transport, ensurepip and
+linker receipts are retained in `tests/results/qwen35-ocr/initial-ovisocr2-vllm-*-failure.json`.
+Corrected sourcec819ea5a exposes the installed driver to the linker without
+changing model/dtype/kernels. Native candidatebd4b1033 prepares phase=model;
+its preflight requires a reviewed positive original-GPU receipt before weights.
+No native alias, independent OCR-quality qualification or model publication yet.
+Earlier queued/source-only descriptions above are historical; use this checkpoint.
