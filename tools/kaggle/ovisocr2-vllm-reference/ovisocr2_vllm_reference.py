@@ -48,8 +48,8 @@ MIRROR_URL = (f'https://huggingface.co/datasets/{MIRROR_REPO}/resolve/{MIRROR_RE
               '/qwen35-ovisocr2/original-processor/metadata.zip')
 MIRROR_BYTES = 524058
 MIRROR_SHA = 'e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5'
-WORKER_COMMIT = '2dc537902e72a5f706850cd75afc3dc14e498295'
-WORKER_SHA = 'dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af'
+WORKER_COMMIT = '4b4293d92a4f388315ebf5be4e5cd56f44e31816'
+WORKER_SHA = 'daaade86dbae60b7aecd5ecd9dc1e87a0e49e091361fa00441a437e27f2ee1df'
 WORKER_URL = (f'https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/{WORKER_COMMIT}'
               '/tools/kaggle/ovisocr2-vllm-reference/worker.py')
 DRIVER_MIN = (575, 51, 3)  # NVIDIA CUDA 12.9 GA corresponding Linux driver.
@@ -316,8 +316,8 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     LOGS.mkdir(parents=True, exist_ok=True)
     SCRATCH.mkdir(parents=True, exist_ok=True)
-    report = {'recipe': 'ovisocr2-original-vllm-t4-v1', 'status': 'started', 'phase': 'frontend-gate',
-              'scope': 'Original vLLM auto-FP16 T4 path and bounded greedy prefix; no BF16 parity or task-quality claim',
+    report = {'recipe': 'ovisocr2-controlled-vllm-t4-triton-attn-v2', 'status': 'started', 'phase': 'frontend-gate',
+              'scope': 'Original vLLM controlled TRITON_ATTN decoder, T4 auto-FP16; README auto-FlashInfer failed; no backend-equivalence/BF16/quality claim',
               'pins': {'model': MODEL, 'revision': REVISION, 'metadata_run': METADATA_RUN,
                        'frontend_run': FRONTEND_RUN, 'proof_commit': PROOF_COMMIT,
                        'vllm_version': '0.22.1', 'vllm_commit': VLLM_COMMIT,
@@ -328,7 +328,8 @@ def main():
                        'original_mirror_zip_sha256': MIRROR_SHA,
                        'transformers': '5.16.1', 'tokenizers': '0.23.3'},
               'sources': SOURCES, 'commands': [],
-              'limits': ['Published vLLM v0.22.1 release has no cu128 wheel; this recipe uses pinned cu129 only after an actual qualified driver check.',
+              'limits': ['Decoder attention is explicitly TRITON_ATTN after retained README auto-FlashInfer T4 warmup failure; vision and GDN selections unchanged. Auto-backend equivalence is unproved.',
+                         'Published vLLM v0.22.1 release has no cu128 wheel; this recipe uses pinned cu129 only after an actual qualified driver check.',
                          'The README leaves dtype=auto; vLLM resolves Ovis BF16 config to FP16 on T4.',
                          'A bounded 256-token output is an explicitly labeled cap versus README max_tokens=16384.']}
     save(report)

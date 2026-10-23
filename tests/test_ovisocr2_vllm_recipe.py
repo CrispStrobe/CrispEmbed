@@ -144,6 +144,8 @@ class RecipeControls(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         kwargs = {key.arg: key.value for key in calls[0].keywords}
         self.assertNotIn('dtype', kwargs)
+        self.assertEqual(ast.literal_eval(kwargs['attention_config']), {'backend': 'TRITON_ATTN'})
+        self.assertNotIn('enforce_eager', kwargs)
         self.assertEqual(ast.literal_eval(kwargs['tensor_parallel_size']), 1)
         self.assertEqual(ast.literal_eval(kwargs['gpu_memory_utilization']), 0.8)
         self.assertEqual(ast.literal_eval(kwargs['gdn_prefill_backend']), 'triton')
