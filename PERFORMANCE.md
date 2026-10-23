@@ -1,3 +1,16 @@
+## UltraBERT actual F32 public-text pooled parity — 23 October2026
+
+Hosted39943940607 at4be9f864 uses normal model loading and actual text APIs on
+six original cases/seven rows, including explicit query/Unicode/empty/window and
+sequential padded-batch inputs. All twelve raw/normalized CLS comparisons pass
+unchanged0.99999/0.002: raw max6.72340393e-5, normalized5.94183803e-7, minimum
+reported cosine1.0 (rounded, not bitwise equality). Repeat/batch/context/prefix,
+rejection/recovery and actual Python/CLI/HTTP checks pass. [Raw report and limits](tests/results/ultrabert/public-f32-api.json).
+This is a bounded CPU/F32 profile with512 tokens; no pair/reserved-token/F16/
+quantized/GPU/Matryoshka or broad retrieval quality claim follows. Existing strict
+183 F32/1294 F16 failures remain. The independent owned retrieval run39949129060
+is separate and pending; it must pass original/native vector/ranking/gold checks.
+
 ## PosFormer released-default parity — 23 October2026
 
 Source790f9a6b, now merged via75e87ea6, passes actual Linux unset/default versus

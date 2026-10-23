@@ -1,3 +1,24 @@
+## 2026-10-23 — Actual UltraBERT F32 public text API and consumer checks pass
+
+[39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)
+at4be9f864 passes all six original cases/seven text rows, twelve pooled
+comparisons, repeated/batch/two-context/prefix/failure contracts, default/zero and
+F16 rejection, fourteen malformed-schema controls and actual Python/CLI/HTTP
+consumers. Raw CLS max6.72340393e-5 and normalized max5.94183803e-7 retain the
+original0.99999/0.002 gates; reported minimum cosine rounds1.0 for both.
+[Full producer fields and independent review](tests/results/ultrabert/public-f32-api.json).
+All six case logs/IDs/reference hashes, four native fingerprints, driver hash,
+CLI JSON and actual API artifact ZIP/receipt are independently checked. No model
+or consumer inference was rerun on the shared host. Initial CLI-name failure is
+retained; runtime arithmetic, references and limits were not changed to pass.
+
+This qualifies the bounded experimental CPU/F32 public path;183/1294 strict
+intermediate failures, public pair/Rust/Dart model-backed and independent task
+quality remain separate. PR74 still awaits its final platform checks before merge.
+The prepared original-first retrieval job39949129060 is dispatched once at
+producer2f871a3e against qualified native4be9f864. It preserves first wrapper
+vectors/rankings before candidate inference; no retrieval score is claimed yet.
+
 ## 2026-10-23 — Actual binding/library identity guarded before retrieval inference
 
 Producer71daebea verifies that the native Python class and loaded library resolve

@@ -92,8 +92,11 @@ anchors or call U1 local targets full-model parity.
 
 Implementation [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) is
 at4be9f864; hosted [39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)
-awaits its model-backed conclusion after the initial harness-only CLI-name failure (build passed; no API
-comparison ran). [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
+passes after the initial harness-only CLI-name failure (build passed; no API
+comparison ran before that failure). [Actual public API evidence](../tests/results/ultrabert/public-f32-api.json).
+All twelve pooled checks/seven actual text rows and Python/CLI/HTTP pass; final
+platform checks remain before merge. Original-first retrieval39949129060 is
+dispatched once at producer2f871a3e, native4be9f864; inspect instead of duplicating. [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
 Inspect existing exact-source CI; do not dispatch duplicates. This
 initial profile covers ordinary text and sequential batches, while public pairs,
 reserved-token surfaces, F16/quantized/GPU/Matryoshka remain explicitly excluded.
