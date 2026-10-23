@@ -61,7 +61,7 @@ class RecipeControls(unittest.TestCase):
     def test_driver_gate_precedes_gpu_and_installation(self):
         source = SCRIPT.read_text()
         self.assertLess(source.index("service_gate(FRONTEND_RUN"), source.index('        gpu_gate(report)'))
-        self.assertLess(source.index('        gpu_gate(report)'), source.index('        venv.EnvBuilder('))
+        self.assertLess(source.index('        gpu_gate(report)'), source.index('        python = isolated_environment(report)'))
         self.assertEqual(recipe.DRIVER_MIN, (575, 51, 3))
         self.assertIn('+cu129', recipe.WHEEL_NAME)
         self.assertEqual(len(recipe.WHEEL_SHA), 64)
