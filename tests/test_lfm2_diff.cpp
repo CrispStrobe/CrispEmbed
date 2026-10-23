@@ -12,6 +12,8 @@
 #endif
 
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -21,6 +23,27 @@
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
+
+// Explicit audit requests must never fall back to another device. The legacy
+// Metal/CPU selection remains the default for existing reference invocations.
+static ggml_backend_t audit_backend() {
+    const char * requested = std::getenv("CRISPEMBED_TEST_BACKEND");
+    if (requested && std::strcmp(requested, "cpu") == 0) return ggml_backend_cpu_init();
+    if (requested && std::strcmp(requested, "cuda") == 0) {
+        ggml_backend_load_all();
+        auto reg = ggml_backend_reg_by_name("CUDA");
+        if (!reg || ggml_backend_reg_dev_count(reg) == 0) return nullptr;
+        return ggml_backend_dev_init(ggml_backend_reg_dev_get(reg, 0), nullptr);
+    }
+    if (requested) {
+        fprintf(stderr, "Unknown audit backend: %s\n", requested);
+        return nullptr;
+    }
+#ifdef GGML_USE_METAL
+    if (auto backend = ggml_backend_metal_init()) return backend;
+#endif
+    return ggml_backend_cpu_init();
+}
 
 static void check_cos(const char * label, float cos_min, float thresh = 0.999f) {
     bool ok = cos_min >= thresh;
@@ -33,6 +56,13 @@ static void check_cos(const char * label, float cos_min, float thresh = 0.999f) 
 }
 
 static int crispembed_test_main(int argc, char ** argv) {
+    if (argc == 2 && std::strcmp(argv[1], "--backend-probe") == 0) {
+        auto backend = audit_backend();
+        if (!backend) return 2;
+        printf("AUDIT_BACKEND\t%s\n", ggml_backend_name(backend));
+        ggml_backend_free(backend);
+        return 0;
+    }
     if (argc < 3) {
         fprintf(stderr, "Usage: %s model.gguf ref.gguf [\"text\"]\n", argv[0]);
         return 1;
@@ -51,15 +81,12 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
 
     // Backend
-    ggml_backend_t backend = nullptr;
-#ifdef GGML_USE_METAL
-    backend = ggml_backend_metal_init();
-#endif
-    if (!backend) backend = ggml_backend_cpu_init();
+    ggml_backend_t backend = audit_backend();
     if (!backend) {
         fprintf(stderr, "No backend\n");
         return 1;
     }
+    printf("AUDIT_BACKEND\t%s\n", ggml_backend_name(backend));
 
     // Load model
     lfm2_embed_ctx * ctx = lfm2_embed_load(model_path, backend);
