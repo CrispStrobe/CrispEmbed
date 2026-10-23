@@ -1,3 +1,21 @@
+## 2026-10-23 — Original backend controls complete; M1 follow-up prepared
+
+[Reproducibility39915714794](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39915714794)
+at8031ae1c completes four thread/MKLDNN arms,28 case executions/10808 captured
+stage records and112 same-input projection records. All selected loaded parameter
+bits match the source checkpoint. Each case retains287 bitwise anchor differences,
+first layer0 Q. MKLDNN switches are identical; one/two threads change document
+outputs but recover no frozen reference. F64 diagnostics also fail exact replay.
+[Complete report](tests/results/ultrabert/reproducibility.json) preserves norms,
+absolute errors, hashes and original CPU/library fingerprints. This is not a
+native parity pass or a proven hardware/reduction cause.
+
+The portable diagnostic records Apple CPU fingerprints and actual MKLDNN
+availability. [M1 handover](docs/handover-m1-validation.md) gives pinned source,
+commands, resource bounds and acceptance. No remote Mac session is assumed.
+Thirty existing small model-free/Torch controls also pass locally under one
+thread after resource inspection; no local model inference/build batch was run.
+
 ## 2026-10-23 — Bounded follow-up sources queued
 
 Original-module/backend reproducibility [39915714794](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39915714794)

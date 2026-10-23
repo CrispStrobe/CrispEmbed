@@ -33,7 +33,7 @@ UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
   tasks and permissive OCR queue remain in PLAN. PR67 platform/Flutter/WASM/
   contract/secret checks pass at `bc1d990504a7816bfec93277ba0096fc4efa7cd4`.
 
-## Start here: verify the corrected audit, then one bounded correction
+## Start here: attribute original projection drift, then one bounded correction
 
 ### U1 — Completed local audit; preservation and attribution next
 
@@ -141,11 +141,19 @@ without rerunning original inference. Do not use the preservation run as a new
 reference producer or silently substitute recomputed arrays.
 
 Bounded reproducibility [39915714794](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39915714794)
-is queued at8031ae1c. It compares original full-forward anchors and same-input
-Q/gate/up/down modules across threads1/2 and MKLDNN on/off, fingerprints loaded
-weights/backends, and reports F64/F16-weight diagnostic alternatives separately.
-No native correction, new full-model reference or relaxed threshold is implied.
-Inspect its report before repeating the experiment.
+completed at8031ae1c. [Full report](../tests/results/ultrabert/reproducibility.json)
+retains four arms ×seven cases ×386 captured stages and112 same-input projection
+records. Every case first differs at layer0 Q;287 stages differ in every arm.
+All selected loaded weight bits match the pinned checkpoint. MKLDNN on/off is
+identical at fixed thread count; threads1/2 change document projections/full
+outputs, but neither reproduces frozen anchors. F64 projections do not restore
+all frozen values either. This narrows controls without establishing a cause.
+
+Next use the [bounded M1 handover](handover-m1-validation.md) for an independent
+CPU/BLAS comparison, or a separately justified process-level linear-dispatch
+experiment. Record actual CPU/library dispatch before attribution; do not repeat
+thread/MKLDNN settings or choose new reference arrays from the alternatives.
+The original .99999/.002 gates and native183/1294 failures remain unchanged.
 
 ## Other executable fronts and boundaries
 
