@@ -38,3 +38,22 @@ licensed representative benchmark after this bounded check. No model publication
 registry alias, release or app upgrade follows from smoke success alone.
 All model-backed work runs on appropriate hosted resources or the authorized M1
 with its resource checks; retain large payloads outside Git.
+
+## Executable scorer and controls
+
+`tools/ultrabert_retrieval.py FIXTURE ORIGINAL.json NATIVE.json REPORT.json`
+checks the exact fixture hash,32 ordered vectors, CLS/query/document metadata,
+finite768-wide raw/normalized features and normalization consistency (max1e-6,
+declared before model-backed task outputs). Each producer record has `pooling`,
+`query_prompt`, `document_prompt`, `fixture_sha256`, and an ordered `vectors` list
+of `{id, raw_cls, normalized_cls}`. This format validates records; source/model/
+module/API provenance still needs the separate original/native producer audit.
+The scorer exits nonzero on failed vector, top1 or gold-quality gates and retains
+complete rankings/errors in the output JSON.
+
+`python tests/test_ultrabert_retrieval.py -v` passes four model-free control
+groups: valid synthetic vectors, a real vector/ranking error, identical but
+poor-quality retrieval, wrong pooling/prefix/order/coverage and invalid values.
+Synthetic control vectors are never model results. The lightweight
+`ultrabert-retrieval.yml` workflow registers these controls; actual original
+SentenceTransformer/native task execution remains pending.

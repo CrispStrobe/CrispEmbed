@@ -1,3 +1,15 @@
+## 2026-10-23 — Independent owned retrieval gold and scorer frozen before outputs
+
+Eight owned English questions/24 documents, relevance judgements, query/document
+prompts and numerical/ranking/quality acceptance are frozen at SHA256
+80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4.
+[Contract and executable scorer](docs/ultrabert-retrieval-smoke.md). Four model-free
+control groups reject vector/ranking errors, identical poor retrieval, wrong
+pooling/prefix/order/coverage and invalid vectors. Synthetic control scores are
+not model results; original SentenceTransformer/native task execution and broad
+retrieval quality remain pending. The optional M1 handover is for new native
+public-API coverage; it explicitly excludes repeating the completed Python arms.
+
 ## 2026-10-23 — Actual released-default PosFormer and bounded reference checks pass
 
 At790f9a6b, [39933245147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39933245147)

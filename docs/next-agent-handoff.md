@@ -133,6 +133,16 @@ only as needed and check old anchors before relying on added arrays.
 
 ### U4 — Independent quality, quantization and publication
 
+The independent [owned retrieval smoke](ultrabert-retrieval-smoke.md) is frozen
+at80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4: eight
+queries/24 documents and prospective numerical/ranking/gold gates. Its executable
+scorer and four meaningful control groups pass; no actual task outputs exist.
+This is a bounded smoke, not representative MTEB/BEIR qualification. Run the
+pinned original SentenceTransformer first, then native API, preserve misses and
+all full score matrices; do not fit this panel after observing outputs.
+An optional [M1 native API handover](handover-m1-ultrabert-f32-api.md) supplies
+complementary Apple CPU coverage without repeating the completed Python audit.
+
 After U3, execute the SentenceTransformer wrapper and compare raw CLS, optional
 normalization, named/default prompts and ordering. Freeze independent retrieval
 inputs/gold before candidate outputs; report task metrics separately from numerical
