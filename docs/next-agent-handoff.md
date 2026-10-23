@@ -147,7 +147,8 @@ The original-first producer is integrated at40ff3d6c; controls-only hosted
 producer groups, including actual binding/library identity. API39943940607
 succeeds at4be9f864. Original-first39949129060 at2f871a3e failed before model load on wheel/tag
 line endings. Exact wheel-byte hashes are corrected; no original task vectors
-were produced. Retain initial-retrieval-producer-failure.json on retry.
+were produced. Retain initial-retrieval-producer-failure.json; retry39950831201 is dispatched
+once at812e56e5 against qualified native4be9f864.
 API/source/artifact qualification precedes models/builds. Preserve first original
 records on retries.
 This is a bounded smoke, not representative MTEB/BEIR qualification. Run the

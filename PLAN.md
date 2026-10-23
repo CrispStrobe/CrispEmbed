@@ -126,7 +126,8 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   ([frozen owned smoke/scorer and original-first producer](docs/ultrabert-retrieval-smoke.md),
   integrated at40ff3d6c with hosted guard success; binding-identity guard71daebea
   passes hosted39947939925; original-first39949129060 failed before model load because wheel sources use
-  CRLF; exact wheel-byte hashes are corrected, with no task outputs yet),
+  CRLF; exact wheel-byte hashes are corrected. Retry39950831201 at812e56e5
+  against native4be9f864 is queued, with no task outputs yet),
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
