@@ -1,0 +1,21 @@
+name: UltraBERT retrieval smoke scorer controls
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ultrabert_retrieval.py'
+      - 'tests/test_ultrabert_retrieval.py'
+      - 'tests/regression/ultrabert/retrieval-smoke-v1.json'
+      - '.github/workflows/ultrabert-retrieval.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ultrabert_retrieval.py -v
