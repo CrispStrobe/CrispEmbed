@@ -84,7 +84,9 @@ bool frontend_tokenizer::load(gguf_context * meta) {
                      std::vector<std::string>{ "processor_config.json", "generation_config.json" }))
         return false;
     const std::string actual_pattern =
-        R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)";
+        ovis
+            ? R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+|\p{N}| ?[^\s\p{L}\p{M}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)"
+            : R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)";
     if (core_gguf::kv_str(meta, "qwen35_ocr.normalizer", "") != "NFC" ||
         core_gguf::kv_str(meta, "qwen35_ocr.pretokenizer_pattern", "") != actual_pattern)
         return false;
@@ -149,7 +151,7 @@ bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids
         const auto ordinary = core_bpe::tokenize_pretokenized(
             tokens_, merges_,
             core_bpe::bytelevel_pretokenize(core_nfc::normalize(replace_invalid_utf8(text.substr(start, next - start))),
-                                            1, core_env::on("CRISPEMBED_QWEN35_TOKENIZER_MARKS")));
+                                            1, ovis_ || core_env::on("CRISPEMBED_QWEN35_TOKENIZER_MARKS")));
         ids.insert(ids.end(), ordinary.begin(), ordinary.end());
         if (added < 0) break;
         ids.push_back(added);

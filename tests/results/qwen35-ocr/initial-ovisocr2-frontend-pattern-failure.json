@@ -1,0 +1,119 @@
+{
+  "run": 40004747653,
+  "source_commit": "48aefc3018697431882b42f933e06a71fb870bcb",
+  "conclusion": "failure before numerical comparisons",
+  "producer": {
+    "source_commit": "48aefc3018697431882b42f933e06a71fb870bcb",
+    "driver_sha256": "a4b25039dc65c32c2d58305cae2c03553647dc8e1b2d8c7d43e39d148cab03d7",
+    "status": "failed frontend comparison",
+    "phase": "native-test",
+    "metadata_run": 39983101540,
+    "scope": "Frozen original processor arrays and tokenizer metadata versus one hosted native frontend target; no checkpoint weights or decoded model-quality claim",
+    "metadata_artifact": {
+      "id": 12515557390,
+      "sha256": "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5",
+      "expires_at": "2027-01-21T16:00:21Z"
+    },
+    "qualification": {
+      "run_id": 39983101540,
+      "source_commit": "ca3d096fe673f3554e95ef8e5f534b597564233e",
+      "producer_canonical_sha256": "233dc37fdaa2ff6b4a8b3ca3832b578305b5f3b6ed4d0d88d54c73591626b372",
+      "transformers_version": "5.16.1",
+      "loaded_source_sha256": {
+        "generation": "427f7e57922fb58c3b321f5e5837ee782bd640cd5b22833029b16f9d4b9c4cdb",
+        "model": "788d4bad50a8d39be2fe79125f0f40134773cd23b1791606fb6b3ab0bc6d2263",
+        "processor": "8ce525e56e0ddade5a665a70f0727b5576f6f51610d068ddfaf4cc60333415f0",
+        "image_processor": "4e1da45f9e7e157ca08aa88243fcc1495ea6a333e40e0c5035ef17ef2747a97d",
+        "tokenizer": "fac4e6576bfe2369731be147a4e530f262bdf32f2ac50436f96f0d8bdd2fc628"
+      }
+    },
+    "fixtures": [
+      {
+        "case": "square",
+        "rgb_sha256": "4dd1fbcee4478a68292626ff443ecb4366517dc9ae239726edf175e767f81c95",
+        "archive_sha256": "e4dc5b80d0533672fc04ef4a85c75173aac8d6eaf2490b704bfdb71d140eb0d1",
+        "field_sha256": {
+          "input_ids": "71d69ebc2e0d1acf2a14ed999feba309e7ccdac1aea62ea693a2128d8494e126",
+          "attention_mask": "fa1a669c24af08351c3ae28ab3078dedb157707bd2d15f663faf5488ede2a76f",
+          "mm_token_type_ids": "1967bddd57243aa07e314e90148c3f991cb599ddccd95657bc5b990ee67a6bd2",
+          "pixel_values": "d06c03388b4dea9c1b426b62f8734a8f1f33a84c88feb614ffd1953ce0d00288",
+          "image_grid_thw": "4f4e4125b4f4650e669e646443bb6c1468449f2366872edb060aa01bb4b30f19"
+        },
+        "grid": [
+          [
+            1,
+            28,
+            28
+          ]
+        ],
+        "ids_count": 323
+      },
+      {
+        "case": "odd",
+        "rgb_sha256": "83bd1a3ed321ae72766afc09ce92bbf8cce010ed989022a127ed5d19d9d806ed",
+        "archive_sha256": "b15a06d8c00b5c6f00ca059626ca5b330a7718c51209fe9fe5b377cedd2f7656",
+        "field_sha256": {
+          "input_ids": "d6e27f74e70d41856748180b6f1c36cf9a0d5d4b32f377e8f5b0578159e07990",
+          "attention_mask": "3893896ef9babeab3dccc2a87f08e459cec58b7f66947a1f3ecd054ae5bd65e4",
+          "mm_token_type_ids": "834f4cb4f26479bdb0a7925da6eb5043d6e20210efc28039dcdc718109e225ae",
+          "pixel_values": "069a2a278022d3a6a1ab2858dc15978822f37ecb6d1c8c481e17b631bb793ea8",
+          "image_grid_thw": "e6638e4689cb2afa2b27ae0bc53848c173bf6e613c223105ac14720e9dff2f84"
+        },
+        "grid": [
+          [
+            1,
+            28,
+            30
+          ]
+        ],
+        "ids_count": 337
+      },
+      {
+        "case": "small-control",
+        "rgb_sha256": "6c1c58974370dd156e9083af8703edd71032e81f5e8446a9df1e48ec53d54f63",
+        "archive_sha256": "e2fbeece97a6219eeb33457a68c25db50270dc58738be76ab1e95d45ffff0a95",
+        "field_sha256": {
+          "input_ids": "d1de74742190f9089ee8805d0353d2a8f5da5bc5754b249a5aef821ad2cae9f3",
+          "attention_mask": "f80dd88b3cde9e67cc4b75bdf83007bd7e31d76c8a3dd475ace9375582657407",
+          "mm_token_type_ids": "7da2096e2e79cc98ef34713787f682921f084dc10367d0c5bc42d44bb40a5509",
+          "pixel_values": "f8cb274f27cf90198f5bf936f761658a8fdcf514d85a4c819d7f5aebb3317e18",
+          "image_grid_thw": "1da2d6f9854f29be93c29858c984c29543598cb4777b538ebc4a99493a02dab3"
+        },
+        "grid": [
+          [
+            1,
+            24,
+            36
+          ]
+        ],
+        "ids_count": 343
+      }
+    ],
+    "reference_sha256": "2b5c2d15bbd5e7b5803e1673aa6e0e721bb5b055b765e1d3a0d39bbb78abe9da",
+    "reference_bytes": 30005216,
+    "error_type": "ValueError"
+  },
+  "logs_sha256": {
+    "native-test.log": "66b6b3639f2c6dbde6ca34d60ed21fa8cb400d956eab29b0843f8ea42c4b7f2b",
+    "build.log": "db306c1bee5f492ddc4249c7fed3bc45d0a9658713631c104dedd45fd384b0b8",
+    "configure.log": "bf8fd3c2cf58e1aea5dced0b05bbc7c8c109f1db3eb59045381f564649800d37",
+    "cpu-baseline.log": "1e2ad2abe7d1157014265ef03d6974e47568db9e22bce427412d6faf7287f0bb",
+    "environment.txt": "56f18a700edd26d64d3a3dfa3d4096a13ed353738644eb9057025dc17a00f33c"
+  },
+  "artifact": {
+    "id": 12524883230,
+    "name": "ovisocr2-frontend-40004747653",
+    "service_zip_sha256": "986c43350859024b33c116627f2414adbb7406996880bafbe28eba57a29e54f7",
+    "expires_at": "2027-01-21T18:36:59Z"
+  },
+  "review": {
+    "build_succeeded": true,
+    "cpu_baseline_check_succeeded": true,
+    "original_artifact_and_npz_hash_checks_completed": true,
+    "image_or_text_numerical_comparisons_executed": false,
+    "earliest_difference": "Native tokenizer loader expected the LightOn regex without combining-mark classes; the qualified Ovis tokenizer regex includes Unicode marks in letter runs and excludes them from punctuation.",
+    "fix_scope": "Select exact Ovis regex and existing letter_marks pretokenizer behavior by pinned profile; retain LightOn behavior and all original numeric budgets.",
+    "original_reference_retained": true,
+    "native_test_exit_code_inferred_from_control_flow": 2
+  }
+}

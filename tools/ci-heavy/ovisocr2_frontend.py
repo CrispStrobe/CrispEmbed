@@ -9,6 +9,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -18,6 +19,21 @@ ROOT = Path(__file__).resolve().parents[2]
 METADATA_RUN = 39983101540
 METADATA_SOURCE = "ca3d096fe673f3554e95ef8e5f534b597564233e"
 CASES = (("square", 448, 448), ("odd", 449, 417), ("small-control", 96, 64))
+TOKENIZERS_VERSION = "0.23.3"
+TEXT_PROBES = (
+    ("ascii", "Plain OCR text, 123."),
+    ("composed", "caf\u00e9 r\u00e9sum\u00e9"),
+    ("decomposed", "cafe\u0301 re\u0301sume\u0301"),
+    ("leading-mark", "\u0301abc \u0308Z"),
+    ("mark-punctuation", "a\u0301,b\u0327!"),
+    ("devanagari", "नमस्ते दुनिया।"),
+    ("arabic-marks", "سَلَامٌ، عالم"),
+    ("cjk-marks", "漢字\u0301、かな"),
+    ("whitespace", "  first\n\tsecond  \r\nthird"),
+    ("emoji-joiner", "👩‍💻 + 🧑🏽‍🔬"),
+    ("control-specials", "<|im_start|>user\nHello<|im_end|>"),
+    ("eot-special", "<|endoftext|>next"),
+)
 
 
 def sha(path):
@@ -112,7 +128,35 @@ def verified_inputs(original, producer):
         yield label, rgb, arrays, row
 
 
-def write_reference(destination, source, producer, profile, originals):
+def capture_text_probes(source):
+    import tokenizers
+
+    if tokenizers.__version__ != TOKENIZERS_VERSION:
+        raise ValueError("Original tokenizers version differs")
+    tokenizer = tokenizers.Tokenizer.from_file(str(source / "tokenizer.json"))
+    if tokenizer.normalizer is None or tokenizer.pre_tokenizer is None:
+        raise ValueError("Original tokenizer normalizer or pre-tokenizer missing")
+    records = []
+    for label, text in TEXT_PROBES:
+        normalized = tokenizer.normalizer.normalize_str(text)
+        chunks = tokenizer.pre_tokenizer.pre_tokenize_str(normalized)
+        ids = tokenizer.encode(text, add_special_tokens=False).ids
+        decoded = tokenizer.decode(ids, skip_special_tokens=True)
+        if not ids or any(not isinstance(value, int) or value < 0 for value in ids):
+            raise ValueError("Original token probe IDs invalid: " + label)
+        chunks_json = json.dumps(chunks, ensure_ascii=True, separators=(",", ":"))
+        records.append({
+            "case": label, "input": text, "ids": ids, "decoded": decoded,
+            "normalized": normalized, "pretokenized": chunks,
+            "input_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "normalized_sha256": hashlib.sha256(normalized.encode("utf-8")).hexdigest(),
+            "pretokenized_sha256": hashlib.sha256(chunks_json.encode("utf-8")).hexdigest(),
+            "decoded_sha256": hashlib.sha256(decoded.encode("utf-8")).hexdigest(),
+        })
+    return records
+
+
+def write_reference(destination, source, producer, profile, originals, text_probes):
     import gguf
     import numpy as np
 
@@ -141,6 +185,7 @@ def write_reference(destination, source, producer, profile, originals):
     metadata = exporter.read_tokenizer_metadata(source, 248320, profile["generation"])
     exporter.write_tokenizer_metadata(writer, metadata)
     writer.add_uint32("test.image_count", len(CASES))
+    writer.add_uint32("test.text_count", len(text_probes))
 
     def save(key, value):
         array = np.ascontiguousarray(value, dtype=np.float32)
@@ -149,6 +194,14 @@ def write_reference(destination, source, producer, profile, originals):
         writer.add_tensor(key, array)
 
     rendered = profile["rendered_prompt"].encode("utf-8")
+    for index, probe in enumerate(text_probes):
+        label = f"text.{index}"
+        for field in ("input", "decoded"):
+            value = probe[field].encode("utf-8")
+            save(label + "." + field, list(value) or [0])
+            writer.add_uint32(label + "." + field + ".length", len(value))
+        save(label + ".ids", probe["ids"])
+        writer.add_uint32(label + ".ids.length", len(probe["ids"]))
     fixture_records = []
     for index, (case, rgb, arrays, row) in enumerate(originals):
         label = f"image.{index}"
@@ -180,7 +233,7 @@ def run_logged(command, log, timeout):
     with log.open("w") as output:
         result = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT, timeout=timeout)
     if result.returncode:
-        raise ValueError("Hosted frontend command failed: " + command[0] + " (see retained log)")
+        raise subprocess.CalledProcessError(result.returncode, command)
 
 
 def main():
@@ -194,6 +247,9 @@ def main():
     report = {"source_commit": os.environ["GITHUB_SHA"], "driver_sha256": sha(__file__),
               "status": "started", "phase": "preflight", "metadata_run": METADATA_RUN,
               "scope": "Frozen original processor arrays and tokenizer metadata versus one hosted native frontend target; no checkpoint weights or decoded model-quality claim"}
+    report["native_source_sha256"] = {name: sha(ROOT / name) for name in (
+        "src/qwen35_frontend.h", "src/qwen35_tokenizer.cpp", "src/qwen35_image.cpp",
+        "src/core/bpe.h", "tests/test_ovisocr2_frontend.cpp")}
 
     def save():
         (out / "ovisocr2-frontend.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
@@ -219,11 +275,24 @@ def main():
                                         allow_patterns=list(policy.metadata_files())))
         profile = policy.load_profile(source, policy.MODEL, policy.REVISION)
         report["qualification"] = profile["qualification"]
+        report["source_files_sha256"] = {name: sha(source / name) for name in policy.metadata_files()}
+        report["reference_helper_sha256"] = {
+            name: sha(ROOT / name) for name in (
+                "models/qwen35_ovis_profile.py", "models/convert-qwen35-ocr-to-gguf.py")
+        }
+        for name in ("LICENSE", "README.md"):
+            shutil.copyfile(source / name, out / name)
+        report["attribution_files_sha256"] = {name: sha(out / name) for name in ("LICENSE", "README.md")}
+        report["phase"] = "original-tokenizer"
+        save()
+        probes = capture_text_probes(source)
+        report["tokenizers_version"] = TOKENIZERS_VERSION
+        report["text_probes"] = probes
         report["phase"] = "reference"
         save()
         reference = out / "ovisocr2-frontend-reference.gguf"
         report["fixtures"] = write_reference(reference, source, evidence["producer"], profile,
-                                              verified_inputs(original, evidence["producer"]))
+                                              verified_inputs(original, evidence["producer"]), probes)
         report["reference_sha256"] = sha(reference)
         report["reference_bytes"] = reference.stat().st_size
         report["phase"] = "native-build"
@@ -239,7 +308,21 @@ def main():
                    out / "build.log", 1800)
         report["phase"] = "native-test"
         save()
-        run_logged([str(build / "test-ovisocr2-frontend"), str(reference)], out / "native-test.log", 600)
+        native_log = out / "native-test.log"
+        try:
+            run_logged([str(build / "test-ovisocr2-frontend"), str(reference)], native_log, 600)
+            report["native_test_exit_code"] = 0
+        except subprocess.CalledProcessError as error:
+            report["native_test_exit_code"] = error.returncode
+            raise
+        finally:
+            if native_log.exists():
+                lines = native_log.read_text(errors="replace").splitlines()
+                report["native_test"] = {
+                    "log_file": "native-test.log", "log_sha256": sha(native_log),
+                    "result_lines": [line for line in lines if line.startswith(("PASS ", "FAIL "))],
+                }
+                save()
         report["status"] = "completed frozen original frontend/native comparison; model decode remains unqualified"
         report["phase"] = "complete"
         save()

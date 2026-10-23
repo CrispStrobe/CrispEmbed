@@ -37,7 +37,10 @@ static int crispembed_test_main(int argc, char ** argv) {
     crispembed_diff::Ref ref;
     auto * meta = core_gguf::open_metadata(argv[1]);
     qwen35_ocr::frontend_tokenizer tokenizer;
-    if (!ref.load(argv[1]) || !meta || !tokenizer.load(meta)) return 2;
+    if (!ref.load(argv[1]) || !meta || !tokenizer.load(meta)) {
+        std::printf("FAIL reference open or pinned tokenizer metadata contract\n");
+        return 2;
+    }
     bool ok = core_gguf::kv_u32(meta, "test.image_count", 0) == 3;
     for (int i = 0; i < 3; ++i) {
         const std::string label = "image." + std::to_string(i);
@@ -69,6 +72,23 @@ static int crispembed_test_main(int argc, char ** argv) {
                     std::sqrt(reference_norm));
         ok &= match;
     }
+    const int text_count = int(core_gguf::kv_u32(meta, "test.text_count", 0));
+    if (text_count < 10 || text_count > 50) return 2;
+    for (int i = 0; i < text_count; ++i) {
+        const std::string label = "text." + std::to_string(i);
+        std::vector<int> ids;
+        std::string decoded;
+        bool match = true;
+        for (const char * value : { "0", "1" }) {
+            gate("CRISPEMBED_QWEN35_TOKENIZER_MARKS", value);
+            match &= tokenizer.encode(bytes(ref, meta, label + ".input"), ids) && exact(ref, label + ".ids", ids) &&
+                     tokenizer.decode(ids, decoded) && decoded == bytes(ref, meta, label + ".decoded");
+        }
+        std::printf("%s %s original Unicode IDs/decode exact tokens=%zu marks-override=0/1\n", match ? "PASS" : "FAIL",
+                    label.c_str(), ids.size());
+        ok &= match;
+    }
+    gate("CRISPEMBED_QWEN35_TOKENIZER_MARKS", "0");
     std::vector<int> ids, types;
     std::string text;
     bool controls = tokenizer.eos() == 248046 && tokenizer.is_stop(248044) && tokenizer.is_stop(248046) &&
@@ -79,6 +99,7 @@ static int crispembed_test_main(int argc, char ** argv) {
                     !tokenizer.image_prompt("", 1025, ids, types, text);
     // Wrong source/profile contracts must reset a previously loaded tokenizer.
     const std::vector<std::function<void(gguf_context *)>> corruptions = {
+        [](auto * m) { gguf_set_val_str(m, "qwen35_ocr.pretokenizer_pattern", "wrong"); },
         [](auto * m) { gguf_set_val_str(m, "general.source.huggingface.repository", "unknown/model"); },
         [](auto * m) { gguf_set_val_str(m, "general.source.huggingface.revision", "wrong"); },
         [](auto * m) { gguf_set_val_u32(m, "qwen35_ocr.format_version", 1); },

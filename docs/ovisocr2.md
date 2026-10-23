@@ -210,9 +210,27 @@ and every frozen NPZ/RGB/field hash, then writes a test-only GGUF and builds
 `test-ovisocr2-frontend` on hosted CI. Three original packed-image cases cover
 784/840/864 patches; the native test compares grids, packed values with the
 unchanged1.2e-7 absolute budget, exact IDs/masks/modalities/template, dual stops
-and15 wrong-profile mutations. Oversized images are rejected at the unchanged
+and16 wrong-profile mutations. Oversized images are rejected at the unchanged
 1024-patch bound; the upstream maximum is not silently resized to that bound.
-Three driver service/artifact controls run without model-framework imports.
+Six driver service/artifact controls run without model-framework imports.
 Run `ovisocr2-metadata.yml` with `phase=frontend` at the pinned feature source.
 Retain the original reference, failed output and earliest absolute errors before
 fixing any mismatch; no model-forward quality claim follows from frontend parity.
+
+### Initial frontend failure and tokenizer correction
+
+Run40004747653 at48aefc30 compiled and passed CPU-baseline checks, but exited
+before numerical comparisons. The Ovis source regex contains combining marks
+(`\p{M}`) in letter runs and excludes them from punctuation; the initial loader
+expected LightOn's different regex. The
+[initial receipt](../tests/results/qwen35-ocr/initial-ovisocr2-frontend-pattern-failure.json)
+preserves the original report, log hashes and30MB reference hash/artifact.
+
+The correction selects Ovis's exact pattern and the existing mark-aware BPE
+path by source profile; LightOn retains its original pattern and gated
+alternative. Twelve new original `tokenizers==0.23.3` probes capture NFC,
+pre-tokenizer chunks, IDs and decoded text for combining marks, Indic/Arabic,
+punctuation, whitespace, emoji and special tokens. Native comparisons exercise
+both values of the older marks override without overriding Ovis's source
+contract. Original packed-image captures and the1.2e-7 budget remain unchanged.
+Actual corrected frontend parity awaits a hosted retry.

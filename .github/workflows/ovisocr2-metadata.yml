@@ -97,7 +97,7 @@ jobs:
           echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
           echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
           HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_frontend.py --preflight
-          python -m pip install numpy==2.2.6 gguf==0.19.0 huggingface-hub==1.33.0
+          python -m pip install numpy==2.2.6 gguf==0.19.0 huggingface-hub==1.33.0 tokenizers==0.23.3
           python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
       - name: Frozen original packed inputs versus gated native frontend
         run: python tools/ci-heavy/ovisocr2_frontend.py

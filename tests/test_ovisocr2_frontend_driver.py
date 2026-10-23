@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -63,6 +64,42 @@ class FrontendDriverControls(unittest.TestCase):
         import sys
         for name in ("torch", "transformers", "gguf", "numpy", "huggingface_hub"):
             self.assertNotIn(name, sys.modules)
+
+    def test_original_text_probe_set_covers_marks_and_controls(self):
+        cases = dict(driver.TEXT_PROBES)
+        self.assertGreaterEqual(len(cases), 10)
+        self.assertEqual(len(cases), len(driver.TEXT_PROBES))
+        self.assertIn("\u0301", cases["decomposed"])
+        self.assertTrue(cases["leading-mark"].startswith("\u0301"))
+        self.assertIn("\u0327!", cases["mark-punctuation"])
+        self.assertIn("<|im_start|>", cases["control-specials"])
+        self.assertIn("<|endoftext|>", cases["eot-special"])
+
+    def test_original_tokenizers_version_checked_before_capture(self):
+        fake = SimpleNamespace(__version__="wrong", Tokenizer=mock.Mock())
+        with mock.patch.dict("sys.modules", {"tokenizers": fake}):
+            with self.assertRaisesRegex(ValueError, "version differs"):
+                driver.capture_text_probes(Path("unused"))
+            fake.Tokenizer.from_file.assert_not_called()
+
+    def test_original_tokenizer_probe_records_preserve_offsets_and_decoded(self):
+        original = SimpleNamespace(
+            normalizer=SimpleNamespace(normalize_str=lambda text: text),
+            pre_tokenizer=SimpleNamespace(pre_tokenize_str=lambda text: [(text, (0, len(text)))]),
+            encode=lambda text, add_special_tokens: SimpleNamespace(ids=[ord(text[0])]),
+            decode=lambda ids, skip_special_tokens: chr(ids[0]),
+        )
+        fake = SimpleNamespace(__version__=driver.TOKENIZERS_VERSION,
+                               Tokenizer=SimpleNamespace(from_file=lambda path: original))
+        with mock.patch.dict("sys.modules", {"tokenizers": fake}):
+            records = driver.capture_text_probes(Path("unused"))
+        self.assertEqual([record["case"] for record in records],
+                         [label for label, _ in driver.TEXT_PROBES])
+        self.assertEqual(records[0]["ids"], [ord("P")])
+        self.assertEqual(records[0]["decoded"], "P")
+        self.assertEqual(records[0]["pretokenized"], [(driver.TEXT_PROBES[0][1],
+                                                      (0, len(driver.TEXT_PROBES[0][1])))])
+        self.assertEqual(len(records[0]["pretokenized_sha256"]), 64)
 
 
 if __name__ == "__main__":
