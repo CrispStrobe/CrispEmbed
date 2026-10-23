@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'tools/ultrabert_retrieval.py'
+      - 'tools/ci-heavy/ultrabert_retrieval.py'
+      - 'tests/test_ultrabert_retrieval_producer.py'
+      - '.github/workflows/ultrabert-retrieval-model.yml'
       - 'tests/test_ultrabert_retrieval.py'
       - 'tests/regression/ultrabert/retrieval-smoke-v1.json'
       - '.github/workflows/ultrabert-retrieval.yml'
@@ -18,4 +21,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python tests/test_ultrabert_retrieval.py -v
+      - run: |
+          python tests/test_ultrabert_retrieval.py -v
+          python tests/test_ultrabert_retrieval_producer.py -v

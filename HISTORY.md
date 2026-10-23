@@ -1,3 +1,21 @@
+## 2026-10-23 — Original-first retrieval producer prepared with immutable reuse
+
+The owned retrieval producer verifies the completed exact-source API service run,
+artifact SHA256, all six/seven-row pooled checks and consumer/source fingerprints
+before models or builds. Original SentenceTransformer6.0.1 wrapper/Pooling source
+is pinned tob0acd1a4, with actual installed source hashes, CLS/ID observations,
+hook neutrality and explicit query/document/normalization behavior. Original
+vectors and rankings precede a fresh portable CPU build of the qualified source.
+The full numerical/ranking/gold scorer preserves all misses and failed budgets.
+
+Six producer guard groups pass locally; the actual failed API39939481805 also
+rejects before any model download or native build. Four scorer groups remain
+passing and now retain per-vector mean/RMS/norm magnitudes in addition to cosine/
+max error. Original-record reuse checks exact bytes,32 input hashes/IDs/masks and
+all model/wrapper provenance, avoiding new original inference on retries.
+No model-backed retrieval run is dispatched while API39943940607 is pending.
+[Executable contract and commands](docs/ultrabert-retrieval-smoke.md).
+
 ## 2026-10-23 — PosFormer released-default restoration merged after complete CI
 
 [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) merges at75e87ea6 after
