@@ -73,8 +73,7 @@ source patch is necessary for the bounded Apple checks below.
    archive payloads local or remote, outside Git. Public reports must remove
    machine/access/operator paths, retaining unmodified private raw copies/hashes.
 
-This is F32 pooled-output qualification only. The public pair API, literal
-special-token matching, F16/quantized/GPU/Matryoshka, independently scored retrieval
+This is F32 pooled-output qualification only. The public pair API, any input containing the literal `<|` prefix, F16/quantized/GPU/Matryoshka, independently scored retrieval
 and official SentenceTransformer behavior remain open. The original full-stage
 183/1294 native failures and original strict replay reports stay unchanged.
 Python/CLI/HTTP checks belong to the hosted Linux run; model-backed Rust/Dart

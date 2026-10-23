@@ -13972,3 +13972,17 @@ the pattern first.
   are justified from geometry alone.
 
 </details>
+
+## 2026-10-23 — Bounded source review of the experimental UltraBERT API
+
+A read-only review was checked against the full call sites and pinned ggml890278a8.
+Raw-token error dimensions/IDs are already reset before the new branch; the
+hyperparameter helper has an internal non-null call site. ggml ADD explicitly
+supports dimension repetition and NEOX rotates half-vector pairs, matching the
+already audited graph. Those review concerns do not justify arithmetic changes.
+The initial tokenizer deliberately rejects every input containing `<|`, including
+partial/literal prefixes; this limitation remains explicit rather than claiming
+complete reserved-token handling. The helper review is not model-backed evidence.
+One duplicate source-push API-control job and two duplicate lint/Qwen controls
+were cancelled, retaining corresponding PR/manual checks. PR74 runtime source
+17b668c0 remains unchanged; actual hosted model-backed results are pending.

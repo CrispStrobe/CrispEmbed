@@ -98,7 +98,11 @@ identities remain unchanged. [Preservation provenance](../tests/results/ultraber
 Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
-handoff. Original-backend reproducibility39915714794 completes all four controls without
+handoff. DraftPR74 at17b668c0 adds the gated CPU/F32 public-text profile; hosted
+39938024529 is queued. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
+is frozen before task outputs; actual SentenceTransformer/native scoring remains
+pending. The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
+complementary Apple coverage, with no repeated Python audit. Original-backend reproducibility39915714794 completes all four controls without
 recovering frozen anchors. The [M1 follow-up](handover-m1-validation.md) is complete:
 raw/normalized CLS max6.52e-5/6.41e-7, long hidden0.00579. Independent review
 checks all returned stage identities and same-input hashes. Preserve the full audit
@@ -143,10 +147,10 @@ retain library/model/image/manifest hashes and native token-log checks.
 
 [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) at790f9a6b changes only the
 initial default selection: unset/1 trained, literal0 legacy. Model-free controls
-reject changed IDs/text/stops/images/coverage and invalid confidence. Its queued
-hosted validation must prove actual unset Linux outputs match the frozen released
-binary records, unset/1 and zero/legacy agreement, both bounded reference paths,
-and normal API/printed regressions. Apple has separate gate/output checks;
+reject changed IDs/text/stops/images/coverage and invalid confidence. Its successful hosted39933245147 validation proves actual unset Linux outputs
+match the frozen released binary records, unset/1 and zero/legacy agreement, both
+bounded reference paths and normal API/printed regressions. [All raw reports](../tests/results/posformer/released-default-validation.json).
+Final platform CI remains pending before merge. Apple has separate gate/output checks;
 the Linux release oracle does not certify a released Apple binary.
 Inspect existing exact-source runs rather than dispatching duplicates. Merge
 only after all affected checks pass, then update source/evidence here and in PLAN.
