@@ -1,3 +1,14 @@
+## 2026-10-23 — Weight-free Ovis metadata producer prepared
+
+The hosted producer now captures actual pinned HF configuration/generation,
+processor classes/prompt/packed synthetic RGB inputs and official meta-model
+schema against the473-tensor header. No weights or model forward are allowed.
+Three model-free groups pass: tied-head versus unknown/missing/wrong-shape
+rejection, literal original prompt versus executable/ambiguous alternatives,
+and no model-framework imports in controls. Actual pinned README prompt parses.
+Hosted original resolution remains pending; source-only dual-stop evidence is
+not relabelled installed vLLM or decoded parity. [Protocol](docs/ovisocr2.md).
+
 ## 2026-10-23 — OvisOCR2 execution-source blockers narrowed
 
 Pinned vLLM0.22.1/0decac0d source inspection distinguishes ordinary forward from

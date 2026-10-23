@@ -119,3 +119,13 @@ and packed synthetic RGB/grid/positions under the example overrides. Then audit
 meta schema and add model-free pinned-profile/missing-source/dual-stop controls.
 The unchanged LightOn converter/frontend and their failed numerical/quality
 records remain intact. Weight-backed parity still needs the actual vLLM path.
+
+The next probe is executable in `tools/ci-heavy/ovisocr2_metadata.py` through
+`ovisocr2-metadata.yml` (manual heavy job, push runs only three model-free controls).
+It pins CPU Torch2.14.0/TorchVision0.29.0/Transformers5.16.1, downloads only
+audited metadata/tokenizer files, rejects fabricated missing-source files,
+checks loaded model/generation source hashes and compares a meta-only official
+state dictionary to all473 header tensors. Two owned synthetic RGB fixtures
+preserve original packed arrays/IDs/grid plus exact repeat checks remotely.
+It executes no model forward and does not install or qualify a complete vLLM
+runtime. Inspect the full report and retain any failure before a profile change.

@@ -1,0 +1,55 @@
+name: OvisOCR2 weight-free metadata and schema
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, test/ovisocr2-metadata]
+    paths:
+      - '.github/workflows/ovisocr2-metadata.yml'
+      - 'tools/ci-heavy/ovisocr2_metadata.py'
+      - 'tests/test_ovisocr2_metadata.py'
+permissions:
+  contents: read
+concurrency:
+  group: ovisocr2-metadata-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ovisocr2_metadata.py -v
+  metadata:
+    if: github.event_name == 'workflow_dispatch'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Isolated directories and pinned CPU metadata environment
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
+          python -m pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0
+          python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
+      - name: Original configuration, stop method, meta schema and processor inputs
+        run: python tools/ci-heavy/ovisocr2_metadata.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-metadata-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
