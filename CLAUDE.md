@@ -86,18 +86,23 @@ Use [the executable next-agent handoff](docs/next-agent-handoff.md) and
 limits in PERFORMANCE. Do not repeat dated historical commands as current tasks.
 
 The wheel matrix/23 installed native-load checks/aggregation and native tokenizer
-component audit pass. UltraBERT default-off CPU/F32 text API is merged viaPR74,
-with actual C API/Python/CLI/HTTP and owned retrieval smoke passing. Remaining
-binding/representative-quality/release gates, numerical errors and strict
-reference-replay drift are unresolved.
+component audit pass. UltraBERT default-off CPU/F32 text API is merged viaPR74;
+PR75 merges the actual Rust/Dart wrappers after [39979622930](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979622930)
+passes all42 pooled checks. C API/Python/CLI/HTTP and owned retrieval smoke pass.
+Public pairs, representative quality and release gates, numerical errors and
+strict reference-replay drift remain unresolved.
 Corrected local audit39009703362 completed with retained numerical failures. Preserve its
 scoped targets separately from the original frozen full-model references.
 
 Read exact contracts before runtime work, use original-module intermediate dumps
 and crispembed-diff, keep gates/old alternatives, and require actual output and
 quality evidence before promotion. OCR quantized publication remains conditional;
-no current candidate qualifies. The permissive queue, encoder follow-ups and
-portfolio tasks remain scoped in PLAN and model documents. SAM work stays with
+no current candidate qualifies. OvisOCR2 metadata/schema/processor capture
+passes; experimental full-weight export is queued without a native alias or
+decoded-quality claim. Development CPU-baseline PR76 is merged, with actual
+three-platform desktop jobs passing; successor release assets remain separate.
+The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
+PLAN and model documents. SAM work stays with
 its existing owner. The app remains pinned to immutable0.17.12.
 
 This file is tracked public documentation even though an ignore pattern matches

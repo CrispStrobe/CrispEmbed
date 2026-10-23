@@ -1,3 +1,48 @@
+## 2026-10-23 — PR75/PR76 integrated; Ovis export and paired GPU timing remain gated
+
+[PR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) integrated at
+`2f07840643408a31f55c4813dd460cd125947f80` after the actual
+[Rust/Dart run39979622930](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979622930).
+Both generic bindings pass seven frozen text rows, all42 raw/dense/normalized-token
+CLS metrics and14 ID rows, batch/repeat/context/prefix/recovery contracts and
+unset/zero/F16 gates. Independent artifact/source/metric review is retained in
+[public-bindings.json](tests/results/ultrabert/public-bindings.json). Raw,
+dense and normalized-token maxima are6.723403930664062e-5,
+5.941838026046753e-7 and6.07222318649292e-7; minimum cosine is
+0.999999999994188. The initial SONAME failure remains below. The original
+183 F32/1,294 F16 intermediate failures, strict replay drift, public pairs,
+representative retrieval, GPU/performance and release gates remain open.
+
+[PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged at
+`1f8ff4d50c12abf9881be7b791ffaac66cde5bcf`. Actual desktop
+[39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916)
+passes Linux, macOS and Windows configure/build/smoke/install jobs with both
+native-off flags and the release CPU-baseline checker before compilation.
+[Archived platform flags and log digests](tests/results/packaging/development-cpu-baseline.json).
+This is development bundle qualification, not a successor release or cross-host
+model consumer result; the app remains pinned0.17.12.
+
+Ovis [metadata/schema/processor39983101540](tests/results/qwen35-ocr/ovisocr2-metadata.json)
+passes with473 exact checkpoint shapes and only the tied head absent from the
+official474-state schema. The experimental, proof-bound export implementation
+is `a005de0b` on [PR77](https://github.com/CrispStrobe/CrispEmbed/pull/77);
+full-payload F32/F16 [roundtrip39991277170](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39991277170)
+is queued. No conversion result, installed-vLLM/native inference, decoded
+quality, alias or publication is claimed. LFM2 paired-performance v1 timed out
+before inference; v2 recipe`7a17864f` completes four blocks/15 cases. Independent
+review verifies the pinned recipe/embedded worker and18 frozen file declarations,
+selected build/configure/placement log hashes, four raw-block SHA/content pairs,
+all60 timing rows and420 samples. Scheduler `MUL_MAT` assignments are CPU0 versus
+CUDA180. Pooled14-sample median CPU/CUDA latency is136.5423/4.88886 ms for9
+tokens,304.819/11.0264 ms for20 and9667.336/80.4885 ms for649, ratios
+27.93x/27.64x/120.11x. All15 cases are faster on CUDA (3.48–120.11x) in this
+one T4 session. CPU/CUDA process peak RSS is1,136,992/788,272 KiB, including
+initialization and quality probes, not VRAM. Reported CLS minimum cosine
+0.999999241/0.999996043 and maximum relative error0.00126959/0.00290247
+pass the original gate, but raw CLS arrays were not retained in this performance
+artifact for independent numerical recomputation. The prior594-stage audit
+remains separate. No wider hardware, throughput, task-quality or default claim.
+
 ## 2026-10-23 — Ovis weight-free metadata/schema/processor qualification passes
 
 Hosted39983101540 atca3d096f passes actual HF5.16.1 config/generation/processor
