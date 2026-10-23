@@ -1,0 +1,25 @@
+# PosFormer selective main backport
+
+The source is selectively ported from PR60 at78493a31 onto current main; the old
+release branch, release workflow changes and tag are not merged. The trained
+decoder applies embedding LayerNorm, positional encoding, then input LayerNorm.
+The fixed2×2/stride2 encoder pools duplicate missing edge samples for PyTorch
+ceil-mode valid-sample max/mean behavior.
+
+`CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` opts into both corrections. The value is
+captured at model initialization; unset/literal0 preserve the existing main path.
+The prior path remains available. Required trained norm/position tensors are
+validated only for the opted-in path. Test probes are added only to a separate
+hosted test library and must be absent from the production library.
+
+Hosted `posformer-runtime-validation.yml` checks original exported weights,
+normal public API transcription on all50 frozen cases (prior result7/50),
+Linux/macOS, scalar/default reference encoders, meaningful wrong normalization/
+pooling controls, gate-unset/zero baseline output equality and printed OCR.
+A passing component test is not recognition improvement. All source/model/corpus
+identities are pinned; any missing artifact or changed anchor is a failure.
+
+The development manifests are synchronized to0.17.13 for this actual runtime
+addition. No release tag, package publication, default promotion or app pin change
+is implied. Merge only after actual exact-source checks and report review. PR60
+can be reconciled after this main backport proves equivalent opted-in behavior.
