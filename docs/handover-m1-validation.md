@@ -1,4 +1,4 @@
-# M1 16GB: bounded UltraBERT original-projection audit
+# M1 16GB: completed UltraBERT original-projection audit
 
 This task is authorized for the available M1 machine. It supplements the Linux
 reference-reproducibility investigation; it does not substitute Apple outputs
@@ -6,6 +6,24 @@ for the frozen original arrays or qualify production UltraBERT support.
 Read [AGENTS](../AGENTS.md), [the executable handoff](next-agent-handoff.md),
 [the architecture contract](ultrabert.md) and [contributing](contributing.md).
 Machine/access details belong in local ignored notes, never in this document.
+
+## Completed result — do not repeat these four arms
+
+[Returned summary](../tests/results/ultrabert/m1-validation.json),
+[full original-module report](../tests/results/ultrabert/reproducibility-m1.json)
+and [independent structural/hash review](../tests/results/ultrabert/m1-independent-review.json)
+are integrated. Four arms/seven cases take63.45s,1.90GiB peak RSS, zero new system
+swapouts. Sources/selected weight bits/same-input hashes match Linux. All arms
+are identical; MKLDNN is unavailable. Nonempty cases first differ at RoPE
+cosine5.96e-8; worst final-hidden0.005791664 exceeds the original0.002 audit cap.
+Raw CLS max6.52e-5 and normalized6.41e-7 remain close. This is Python-versus-frozen
+Python reproducibility, not new C++ parity or independent task accuracy.
+
+Next preserve the unchanged audit, and scope F32 pooled-output/API/retrieval
+qualification separately. Do not spend another Mac run repeating threads/MKLDNN
+or regenerate the original anchors. The instructions below document the completed
+experiment and its immutable evidence. Further local work needs a new bounded
+handover and fresh resource inspection.
 
 ## Scope and immutable sources
 

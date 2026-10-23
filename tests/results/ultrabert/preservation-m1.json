@@ -1,0 +1,51 @@
+{
+  "original_source": "0573f1847db68914052a98341a22fceeb1358518",
+  "original_run": 38997562520,
+  "raw_manifest_sha256": "5ca38964bde9f960b46467e48e0d3123ab67b099ff6567da15b51c2fadea45fc",
+  "cases": 7,
+  "stages": 2730,
+  "conversion_records_exact": true,
+  "scope": "Byte-exact reference copy; no model inference or regenerated conversions",
+  "files": {
+    "reference/document.gguf": {
+      "bytes": 8730528,
+      "sha256": "02f4a5221d77b40063fb1ab3cbe713d1c81d754f9e56011574b72ddfdea0e24c"
+    },
+    "reference/empty.gguf": {
+      "bytes": 1005088,
+      "sha256": "2ec96e8dc8a5cea459b0e40ede9768801fb64c5ad676804c719d64c488d14226"
+    },
+    "reference/padded-batch.gguf": {
+      "bytes": 512274624,
+      "sha256": "abe36da85fbc629947058d59abd5f331eb36d5d54965f3e8dca372ef97da4f14"
+    },
+    "reference/pair.gguf": {
+      "bytes": 7762784,
+      "sha256": "b4b6ec320f75ddc73dc95d0faa47611779bce7fa37aec8b12cb1e570e274846f"
+    },
+    "reference/query.gguf": {
+      "bytes": 23247392,
+      "sha256": "19288dfc21532c045fef6b503c11a4038cf35b58489fda4c0cfd48f3daa0db73"
+    },
+    "reference/reference.json": {
+      "bytes": 941603,
+      "sha256": "fe8aeed818d4d186c09ffebf06525c16bddfbfcb8dc7c85b847c0c7f37e7262a"
+    },
+    "reference/unicode.gguf": {
+      "bytes": 20341280,
+      "sha256": "71d7d8135437b130a4838526a40c06ba6dda1796cb7b7747d19b417937f2015b"
+    },
+    "reference/window-boundary.gguf": {
+      "bytes": 259387488,
+      "sha256": "f954d7a13c2a2d6f29ce5a89feb84ce472a1363c914fd156a04e3771e80a7bbd"
+    },
+    "summary.md": {
+      "bytes": 413,
+      "sha256": "a31041faa10461c4ff57b52af9a95902e8266d8cee5df7872318a8fbbadc1ed2"
+    },
+    "ultrabert-reference-audit.json": {
+      "bytes": 1122670,
+      "sha256": "5ca38964bde9f960b46467e48e0d3123ab67b099ff6567da15b51c2fadea45fc"
+    }
+  }
+}

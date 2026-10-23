@@ -1,3 +1,46 @@
+## 2026-10-23 — M1 original replay independently checked; pooled F32 scope clarified
+
+The returned M1 diagnostic atf0dbe58d completes four arms/seven cases in63.45s,
+peak RSS1.90GiB and zero new system swapouts. Original seven archives/2730
+payloads and selected loaded weights verify; source/weight/input hashes match
+Linux. Independent structural review rechecks10808 stage payload identities,
+112 identical-input projection records and56 raw/normalized CLS comparisons.
+[Returned report](tests/results/ultrabert/m1-validation.json),
+[full producer diagnostic](tests/results/ultrabert/reproducibility-m1.json),
+[independent review](tests/results/ultrabert/m1-independent-review.json).
+Returned JSON is retained byte-for-byte, including the resource-stopped initial
+attempt. Unreturned private execution logs remain hash references, not independently
+verified runtime evidence.
+
+M1 empty first differs at layer0 Q; six nonempty cases first differ at original
+RoPE cosine by5.960464477539063e-8. All arms are identical; unavailable MKLDNN is
+duplicated control, not extra backend coverage. Worst final-hidden error0.005791664
+is original Python versus frozen Python (Linux0.007454872), not a new native
+measurement. Raw CLS max6.5207481e-5/normalized6.4133201e-7 remain very close.
+This establishes platform-sensitive original reproducibility, without isolating
+one cause or validating retrieval quality. Strict audit/reference gates remain.
+
+Reinspection of the existing native panel finds F32 raw CLS max6.72340393e-5,
+normalized5.94183803e-7, reported cosine1.0 and zero final-vector failures in all
+seven cases. Intermediate183 failures remain. F16 raw CLS reaches0.0185089111
+and fails all seven raw-vector checks despite normalized cosine0.999999642.
+A separately scoped gated F32 pooled-output qualification can proceed with
+public API/independent retrieval checks; intermediate failures are not relabelled
+as passed and F16 is not included in that qualification.
+
+## 2026-10-23 — OvisOCR2 public source/license/header audit complete
+
+Pinned OvisOCR2/base Apache-2.0 texts, configs and473-tensor/852,985,920-parameter
+header are retained in the [source report](tests/results/qwen35-ocr/ovisocr2-source-contract.json).
+Only metadata/two bounded HTTP ranges were fetched, with no weight payloads or
+inference. Existing converter correctly rejects MTP1; no MTP-named weights exist
+in the inspected header. Missing generation/processor configs, effective stop
+policy, actual prompt/pixels/cleanup and LightOn-only frontend identity prevent
+an alias. [Exact next implementation and acceptance](docs/ovisocr2.md).
+OvisOCR3's Apache/base declaration and small config are observed separately;
+its full terms/schema/blueprint audit is still pending. No native support,
+benchmark reproduction, registry alias or publication is claimed.
+
 ## 2026-10-23 — Released-default restoration prepared with independent controls
 
 [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) at790f9a6b changes the

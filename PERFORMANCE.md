@@ -1,3 +1,22 @@
+## UltraBERT M1 original replay and pooled-output limits — 23 October2026
+
+M1 CPU/Accelerate, Torch2.14.0/Transformers5.16.1: four arms ×seven cases in63.45s,
+peak RSS1.90GiB, no new system swapouts. All arms identical; MKLDNN unavailable.
+Final-hidden error reaches0.005791664 versus frozen Python (Linux0.007454872),
+while raw CLS max is6.5207481e-5 and normalized6.4133201e-7. These are original
+Python reproducibility measurements, not new native or task measurements.
+Full [producer](tests/results/ultrabert/reproducibility-m1.json) and
+[review](tests/results/ultrabert/m1-independent-review.json) preserve all stages.
+No cosine was measured by the M1 diagnostic.
+
+Existing native F32 seven-case pooled vectors have reported minimum cosine1.0,
+raw max6.72340393e-5 and normalized max5.94183803e-7; both pass original budgets.
+F32 final-hidden reaches0.0083770752 and183 intermediate failures remain.
+F16 raw CLS max0.0185089111 fails seven cases, normalized max0.000181317329
+passes; cosine alone conceals that distinction. Its1294 intermediate failures
+remain. Small pooled F32 errors justify a separately scoped public-API/retrieval
+qualification, not silent relaxation of the full-model audit or F16 promotion.
+
 ## 23 October2026 — CUDA F16 and actual released-runtime compatibility
 
 LFM2 Encoder's frozen15-case F16 audit passes297 direct checks each on CPU and

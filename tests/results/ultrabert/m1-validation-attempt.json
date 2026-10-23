@@ -1,0 +1,280 @@
+{
+  "status": "resource_stopped_before_stage_report",
+  "scope": "One bounded original CPU projection attempt; preservation and environment verified, numerical reproducibility unmeasured",
+  "source_commit": "f0dbe58d441db7f52269ff03d49af4749d57ef8b",
+  "source_verified_against_remote": true,
+  "remote_main_at_start": "daa76ee2469d064abafef738352a347296e7372f",
+  "tool_sha256": "279b171cd7f72090bd763c4269f495a84476926e11d1ad696712673e69ba2945",
+  "original_run": 38997562520,
+  "preservation_run": 39913800444,
+  "preservation_artifact": "ultrabert-original-38997562520-preserved-39913800444",
+  "preservation_report": "preservation-m1.json",
+  "preservation_sha256": "0d6214a277732b6d55853c7c0f14a8fc3c29a90e2f33dcb96af55f2148be82ea",
+  "environment": {
+    "python": "3.12.10 (main, Apr  8 2025, 11:35:47) [Clang 17.0.0 (clang-1700.0.13.3)]",
+    "architecture": "arm64",
+    "packages": {
+      "torch": "2.14.0",
+      "transformers": "5.16.1",
+      "gguf": "0.19.0",
+      "numpy": "2.2.6",
+      "safetensors": "0.8.0",
+      "huggingface-hub": "1.33.0"
+    },
+    "mkldnn_available": false,
+    "torch_config": "PyTorch built with:\n  - GCC 4.2\n  - C++ Version: 202002\n  - clang 21.0.0\n  - OpenMP 202011\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: DEFAULT\n  - Build settings: BLAS_INFO=accelerate, BUILD_TYPE=Release, COMMIT_SHA=08187d9e0fba026dc8217405802ab5381dc88d90, CUDA_FLAGS= -DLIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS -Xfatbin -compress-all  -Wno-deprecated-gpu-targets --expt-extended-lambda -DCUB_WRAPPED_NAMESPACE=at_cuda_detail -DDISABLE_CUSPARSE_DEPRECATED -DCUDA_HAS_FP16=1 -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -DC10_NODEPRECATED, CXX_COMPILER=/usr/bin/c++, CXX_FLAGS= -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DUSE_PYTORCH_QNNPACK -DAT_BUILD_ARM_VEC256_WITH_SLEEF -DUSE_PYTORCH_METAL_EXPORT -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -DUSE_COREML_DELEGATE -O2 -fPIC -DC10_NODEPRECATED -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=braced-scalar-init -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wvla-extension -Wsuggest-override -Wnewline-eof -Winconsistent-missing-override -Winconsistent-missing-destructor-override -Wno-pass-failed -Wno-error=old-style-cast -Wconstant-conversion -Qunused-arguments -faligned-new -fno-math-errno -fno-trapping-math -Werror=format -fclang-abi-compat=17 -DUSE_MPS -Wno-missing-braces, LAPACK_INFO=accelerate, TORCH_VERSION=2.14.0, USE_CUDA=OFF, USE_CUDNN=OFF, USE_CUSPARSELT=OFF, USE_EIGEN_FOR_BLAS=ON, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_HIPSPARSELT=OFF, USE_MKL=OFF, USE_MKLDNN=OFF, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, USE_XCCL=OFF, USE_XPU=OFF, \n",
+    "cpu": "Apple M1",
+    "memory_bytes": 17179869184,
+    "macos": "26.2"
+  },
+  "checkpoint_integrity": {
+    "scope": "Post-stop streaming source/checkpoint integrity only; no model loading or inference",
+    "model": "dmis-lab/UltraBERT-Embed-150M",
+    "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+    "source_files": {
+      "1_Pooling/config.json": "b7703fedc62cbe2d1e4fd47338d5ba9ee5b2107d49fc42e85ae848484fdd08bc",
+      "README.md": "27573272049ca66a4504b7e458887848b0fa0b7a5c6c68edcd774c6ce5070608",
+      "config.json": "4ff3a6cde7f81bca25f687371c809d8109076d71ac9c4882888ba36935a3cbd1",
+      "config_sentence_transformers.json": "1cde78bdb171eaca67f333808a2117a307d43b4e49b28c0706a50980e9606787",
+      "configuration_ultrabert.py": "823d10bda19f5164da4f79f8f9c01e5ebd7a75569abce78c0a26b7674fc78cd9",
+      "modeling_ultrabert.py": "bfca1bd08af72cd170e58b5a048c67b52bc9d06a2a42847c7a387751f527f333",
+      "modules.json": "e4068aab8a95663636c4c28044a95eafdb6492387397ec8283d8f8b31078d645",
+      "tokenizer.json": "cec6e1c25c319d4de7d15e94cc69e95c68d75fee2e20c86c1bdac23b2db4d624",
+      "tokenizer_config.json": "3752ebf4874dca142ab86b273d7c167b5c77aefa444f5ca7ab598592202af97f"
+    },
+    "weight_sha256": "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
+    "weight_bytes": 604153320,
+    "tensors": 218
+  },
+  "command": "GITHUB_SHA=f0dbe58d441db7f52269ff03d49af4749d57ef8b OMP_NUM_THREADS=2 OPENBLAS_NUM_THREADS=2 MKL_NUM_THREADS=2 VECLIB_MAXIMUM_THREADS=2 NUMEXPR_NUM_THREADS=2 /usr/bin/time -l python tools/ci-heavy/ultrabert_reproducibility.py <frozen> <output>",
+  "execution": {
+    "elapsed_seconds": 85.28605512506329,
+    "exit_code": -15,
+    "termination_signal": "SIGTERM",
+    "finished_at_utc": "2026-10-23T08:14:37.660087+00:00",
+    "raw_timestamp_note": "The private execution record labels its completion timestamp started_at; it was captured after process termination.",
+    "thread_environment": {
+      "OMP_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2",
+      "VECLIB_MAXIMUM_THREADS": "2",
+      "NUMEXPR_NUM_THREADS": "2"
+    },
+    "initial_memory": {
+      "swapouts": 60392465,
+      "swapins": 49063365,
+      "headroom_percent": 44
+    },
+    "final_memory": {
+      "swapouts": 60411957,
+      "swapins": 49065521,
+      "headroom_percent": 32
+    },
+    "samples": [
+      {
+        "elapsed_seconds": 0.01,
+        "swapouts": 60392465,
+        "swapins": 49063385,
+        "headroom_percent": 44,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 5.02,
+        "swapouts": 60392465,
+        "swapins": 49063413,
+        "headroom_percent": 48,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 10.03,
+        "swapouts": 60392465,
+        "swapins": 49063461,
+        "headroom_percent": 48,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 15.04,
+        "swapouts": 60392465,
+        "swapins": 49063509,
+        "headroom_percent": 47,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 20.06,
+        "swapouts": 60392465,
+        "swapins": 49063608,
+        "headroom_percent": 48,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 25.07,
+        "swapouts": 60392465,
+        "swapins": 49063852,
+        "headroom_percent": 46,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 30.08,
+        "swapouts": 60392465,
+        "swapins": 49063856,
+        "headroom_percent": 45,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 35.09,
+        "swapouts": 60392465,
+        "swapins": 49064678,
+        "headroom_percent": 41,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 40.11,
+        "swapouts": 60392465,
+        "swapins": 49064766,
+        "headroom_percent": 40,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 45.13,
+        "swapouts": 60392465,
+        "swapins": 49065382,
+        "headroom_percent": 39,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 50.14,
+        "swapouts": 60392465,
+        "swapins": 49065394,
+        "headroom_percent": 37,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 55.17,
+        "swapouts": 60392465,
+        "swapins": 49065434,
+        "headroom_percent": 36,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 60.19,
+        "swapouts": 60392465,
+        "swapins": 49065485,
+        "headroom_percent": 37,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 65.22,
+        "swapouts": 60392465,
+        "swapins": 49065497,
+        "headroom_percent": 45,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 70.24,
+        "swapouts": 60392465,
+        "swapins": 49065505,
+        "headroom_percent": 42,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 75.25,
+        "swapouts": 60392465,
+        "swapins": 49065505,
+        "headroom_percent": 45,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 80.26,
+        "swapouts": 60392465,
+        "swapins": 49065517,
+        "headroom_percent": 42,
+        "swapout_delta_bytes": 0
+      },
+      {
+        "elapsed_seconds": 85.27,
+        "swapouts": 60411957,
+        "swapins": 49065521,
+        "headroom_percent": 32,
+        "swapout_delta_bytes": 319356928
+      }
+    ],
+    "resource_policy": {
+      "sampling_seconds": 5,
+      "minimum_headroom_percent": 20,
+      "maximum_new_swapout_bytes": 268435456
+    },
+    "stop_trigger": {
+      "new_swapout_bytes": 319356928,
+      "headroom_percent": 32
+    },
+    "peak_rss_bytes": null,
+    "time_l_note": "Process-group termination also stopped time; no time -l footer or peak RSS was captured."
+  },
+  "acceptance": {
+    "original_manifest_verified": true,
+    "archives_verified": 7,
+    "tensor_payloads_verified": 2730,
+    "conversion_records_verified": true,
+    "pinned_dependencies_verified": true,
+    "checkpoint_bytes_verified_after_stop": true,
+    "loaded_selected_parameter_bits_verified": false,
+    "complete_arms": 0,
+    "complete_cases": 0,
+    "forward_stage_records": 0,
+    "cls_records": 0,
+    "same_input_projection_records": 0
+  },
+  "conclusions": [
+    "Preserved reference bytes and all mandatory package versions verify on native ARM64 Python3.12.",
+    "MKLDNN is unavailable; requested MKLDNN on/off arms would be duplicated controls.",
+    "System-wide new swapouts rose 319356928 bytes at the 85.27-second sample, exceeding the 256 MiB stop policy; this does not attribute all host swap activity to the diagnostic.",
+    "No diagnostic JSON was produced; loaded parameter checks and every numerical acceptance gate remain unverified.",
+    "No M1/Linux stage, raw/normalized CLS, same-input projection, F64 or F16-weight numerical conclusion is available.",
+    "Linux first layer_0.q divergence, 287 differing stages/case and existing native183 F32/1294 F16 failures remain unchanged; original cosine0.99999/max_abs0.002 budgets remain.",
+    "No immediate inference retry, native build, MPS/Rosetta execution, new reference, release or app pin change was performed."
+  ],
+  "next_action": "Resume only with adequate measured host headroom, retaining the exact source, dependencies, preserved references and all numerical gates; complete four arms/seven cases/386 stages plus CLS and projection records before comparing Linux.",
+  "private_raw_evidence": {
+    "preflight.raw.json": {
+      "bytes": 2474,
+      "sha256": "d90e36387a78ae33c244e19023f15fe27a7d3acdceed730b1a6aa0aa720b0cb9"
+    },
+    "install-base.raw.log": {
+      "bytes": 5035,
+      "sha256": "245ccc80802f7f688b6239db0c8882a6dd6f94fc4569f8a40de8e17d2832492b"
+    },
+    "install-torch.raw.log": {
+      "bytes": 8055,
+      "sha256": "aa67651c8f8951e4dbe7b373f6b2d26c1a4599e996c57774bca6adcfa557a16b"
+    },
+    "dependencies.raw.json": {
+      "bytes": 2238,
+      "sha256": "3e941c83aacffd3fd8e2c3a7a1dffda030b16ab5ce936f2f4d63727cba35f74a"
+    },
+    "preservation.raw.json": {
+      "bytes": 1830,
+      "sha256": "0d6214a277732b6d55853c7c0f14a8fc3c29a90e2f33dcb96af55f2148be82ea"
+    },
+    "preservation.raw.log": {
+      "bytes": 76,
+      "sha256": "1b041d8f0159e57dd34745b5ee11ff5954795beb89192dc89a08aa6977d684f9"
+    },
+    "diagnostic.raw.log": {
+      "bytes": 677,
+      "sha256": "a0b07685be7e0da5dbe7c6884cdf1ef13378be47069c776d73cc9520571b8364"
+    },
+    "execution.raw.json": {
+      "bytes": 3837,
+      "sha256": "43810d028dc333790bff541026ef56e8ea0948a7576c5b8d3d61f3173911aece"
+    },
+    "run_monitored.py": {
+      "bytes": 2418,
+      "sha256": "3db1ad3db8d52506f40f3ceafd0ed8d2adc50ecb04ce3bab88bfdbefcc64ee76"
+    },
+    "checkpoint-integrity.raw.json": {
+      "bytes": 1213,
+      "sha256": "e2a1f5fffcc0f21f1b29695792a61ce7a303717c429706099ba5824820c66be7"
+    }
+  },
+  "public_provenance": "Host paths and operator identities omitted; unmodified private originals retained outside Git with hashes above."
+}

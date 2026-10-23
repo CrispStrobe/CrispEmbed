@@ -1,0 +1,60 @@
+{
+  "scope": "Independent structural/hash replay of returned M1 JSON, not rerun inference or verification of private unreturned logs",
+  "original_source": "0573f1847db68914052a98341a22fceeb1358518",
+  "tool_source": "f0dbe58d441db7f52269ff03d49af4749d57ef8b",
+  "tool_sha256": "279b171cd7f72090bd763c4269f495a84476926e11d1ad696712673e69ba2945",
+  "returned_files": {
+    "m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370",
+    "m1-validation-attempt.json": "930c20c6ca2b5fda215ef408cc7395984c5d53491b5bbcf710173e9d2b2b2a77",
+    "reproducibility-m1.json": "89bf497f6cce868cef0d5cfbff3b2b02feacbbfa03d8ebcbfcbc43e16bd49b76",
+    "preservation-m1.json": "0d6214a277732b6d55853c7c0f14a8fc3c29a90e2f33dcb96af55f2148be82ea"
+  },
+  "verified_forward_stage_records": 10808,
+  "verified_same_input_projection_records": 112,
+  "verified_final_vector_comparisons": 56,
+  "all_four_arms_identical": true,
+  "linux_raw_sha256": "70cb0e4f68dd7de28c3d7f61999d160733530390fd565902883ad2e1e7dea405",
+  "loaded_weights_and_source_file_hashes_match_linux": true,
+  "native_precision_summary": {
+    "f32": {
+      "cls_raw": {
+        "reported_cos_min": 1.0,
+        "max_abs": 6.72340393e-05,
+        "failed_cases": 0,
+        "cases": 7
+      },
+      "cls_normalized": {
+        "reported_cos_min": 1.0,
+        "max_abs": 5.94183803e-07,
+        "failed_cases": 0,
+        "cases": 7
+      },
+      "final_hidden": {
+        "reported_cos_min": 0.99999994,
+        "max_abs": 0.0083770752,
+        "failed_cases": 2,
+        "cases": 7
+      }
+    },
+    "f16": {
+      "cls_raw": {
+        "reported_cos_min": 0.999999642,
+        "max_abs": 0.0185089111,
+        "failed_cases": 7,
+        "cases": 7
+      },
+      "cls_normalized": {
+        "reported_cos_min": 0.999999642,
+        "max_abs": 0.000181317329,
+        "failed_cases": 0,
+        "cases": 7
+      },
+      "final_hidden": {
+        "reported_cos_min": 0.999869704,
+        "max_abs": 0.394523621,
+        "failed_cases": 7,
+        "cases": 7
+      }
+    }
+  }
+}

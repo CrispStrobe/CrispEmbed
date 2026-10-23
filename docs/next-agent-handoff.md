@@ -33,7 +33,7 @@ UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
   tasks and permissive OCR queue remain in PLAN. PR67 platform/Flutter/WASM/
   contract/secret checks pass at `bc1d990504a7816bfec93277ba0096fc4efa7cd4`.
 
-## UltraBERT attribution — M1 experiment owned externally
+## UltraBERT attribution — M1 evidence complete; F32 output qualification next
 
 ### U1 — Completed local audit; preservation and attribution next
 
@@ -52,9 +52,9 @@ This does not identify a broken activation or establish full-model parity.
 The red job is the expected strict numerical conclusion, not structural failure.
 Do not repeat it without a justified new experiment.
 
-The user is executing the bounded M1 audit atf0dbe58d; await its raw reports and
-check every original-stage/projection and raw/normalized CLS record. Do not
-duplicate that experiment. Next isolate original projection/reduction reproducibility using fixed input
+The bounded M1 audit atf0dbe58d is complete and independently reviewed; see the
+[returned report](../tests/results/ultrabert/m1-validation.json). Do not repeat its
+threads/MKLDNN arms. Next isolate original projection/reduction reproducibility using fixed input
 arrays, checked loaded weights and backend/CPU/thread fingerprints. Compare
 original module outputs, F64 diagnostics and frozen anchors separately; backend
 alternatives must not silently become new full-model references. All strict
@@ -88,7 +88,17 @@ check loaded tensor bits and earliest operator inputs before attributing cause.
 Both strict replay modes must remain available; never silently regenerate their
 anchors or call U1 local targets full-model parity.
 
-### U3 — Wire a production UltraBERT profile after numerical qualification
+### U3 — Scope a gated F32 pooled-output profile; retain full-model audit failures
+
+M1 original Python also exceeds the unchanged full-hidden0.002 budget; this does
+not identify native correctness from a single maximum. Existing native F32 raw/
+normalized CLS pass all seven fixed-output cases (max6.72e-5/5.94e-7; reported
+cosine1.0). A gated F32 public-API profile and independent retrieval qualification
+may proceed separately, while183 intermediate failures remain visible. Do not
+promote F16: raw CLS max0.0185 fails all seven cases. Before release, freeze and
+execute independent retrieval inputs/gold and score/ranking acceptance, plus the
+actual SentenceTransformer prompt/normalization contract. No production-quality
+claim follows from the seven prepared-ID cases.
 
 Use [the pinned architecture contract](ultrabert.md) and all contributing surfaces:
 new default-off `core_env::on` backend, architecture detection, C ABI, CLI/server,
@@ -151,11 +161,13 @@ identical at fixed thread count; threads1/2 change document projections/full
 outputs, but neither reproduces frozen anchors. F64 projections do not restore
 all frozen values either. This narrows controls without establishing a cause.
 
-Next use the [bounded M1 handover](handover-m1-validation.md) for an independent
-CPU/BLAS comparison, or a separately justified process-level linear-dispatch
-experiment. Record actual CPU/library dispatch before attribution; do not repeat
-thread/MKLDNN settings or choose new reference arrays from the alternatives.
-The original .99999/.002 gates and native183/1294 failures remain unchanged.
+The [M1 handover](handover-m1-validation.md) records the completed independent
+CPU/BLAS comparison. Full returned diagnostics preserve earliest RoPE differences,
+original projection inputs and raw/normalized CLS. Worst raw CLS6.52e-5 and
+normalized6.41e-7 do not imply every hidden state passes: long/padded hidden
+error0.005791664 remains. Retain original0.99999/0.002 gates and native183/1294
+failures. Next use the scoped F32 output lane U3 rather than rerunning unchanged
+backend controls; any further attribution experiment needs a distinct hypothesis.
 
 ## Other executable fronts and boundaries
 
@@ -167,7 +179,7 @@ The original .99999/.002 gates and native183/1294 failures remain unchanged.
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 proposes restoring the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | Audit and reuse the smallest applicable shared backend, starting OvisOCR2/Xiaomi-OCR-0 | PLAN gives licenses/storage/dependencies; recheck exact checkpoint/base terms and original blueprint before weights; Indra stays public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | MTP declaration/schema, missing metadata, actual prompt/pixels/EOS and current geometry/identity checks block aliasing; no weight/inference run. Xiaomi follows; Indra stays public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired latency, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 

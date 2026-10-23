@@ -236,3 +236,35 @@ successful repair. Exact inputs/gold were unchanged.
 numerical attribution, production surfaces and independent quality/publication
 gates. All model/tokenizer/control claims must retain their exact source/run
 scope; no32K, GPU, latency, MTEB or quantized-quality claim follows from this panel.
+
+## M1 evidence and the bounded F32 output lane — 23 October2026
+
+The [completed M1 audit](../tests/results/ultrabert/m1-validation.json) runs the
+original Python CPU model against frozen Python, with pinned source/dependencies,
+identical selected weight/input hashes and all four arms/seven cases retained.
+Nonempty cases first differ at original RoPE cosine by5.96e-8; long/padded
+final-hidden error reaches0.005791664 (Linux0.007454872). All arms are identical;
+MKLDNN is unavailable. Raw CLS max6.52e-5/normalized6.41e-7 are much smaller.
+[Full producer JSON](../tests/results/ultrabert/reproducibility-m1.json) and
+[independent structural review](../tests/results/ultrabert/m1-independent-review.json)
+retain the evidence; no new inference was run during report review.
+
+This supports distinguishing original-platform reproducibility from native
+implementation defects. It does not prove that every failed native stage is
+benign, identify one backend cause or establish task accuracy. Preserve the
+original strict replay and0.99999/0.002 full-model audit without new references.
+
+Existing native F32 pooled outputs pass both raw/normalized fixed-vector gates in
+all seven cases: max6.72e-5/5.94e-7, reported cosine1.0. F16 raw CLS max0.0185
+fails all seven cases, despite its normalized cosine0.999999642. Do not combine
+these precision conclusions or promote F16 from cosine alone.
+
+Next implement and qualify a separate default-off **F32 pooled-embedding profile**:
+actual text IDs/masks, prompts/normalization, raw and normalized CLS, repeat/batch/
+context isolation and all contributing API/binding surfaces. Freeze independent
+retrieval queries/documents/gold and score/ranking acceptance before candidates;
+run original SentenceTransformer and native outputs on suitable resources. Keep
+all183/1294 intermediate failures visible. Until those public-API/task checks pass,
+this remains an experimental integration lane, with no supported registry alias,
+release or HF quantized publication. Further original attribution can continue
+independently using a distinct hypothesis, without repeating the completed arms.

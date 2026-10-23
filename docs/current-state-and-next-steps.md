@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | Source/license/architecture/size roadmap retained in PLAN | Re-audit pinned source/base terms; smallest shared backend next; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | MTP/schema/missing-metadata and actual prompt/pixel/EOS profile before conversion/native alias; Indra public-code-only |
 | PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default restoration awaits exact-source CI; release/consumer qualification remains separate |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
@@ -99,8 +99,10 @@ Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
 handoff. Original-backend reproducibility39915714794 completes all four controls without
-recovering frozen anchors; the user is running the [M1 follow-up](handover-m1-validation.md).
-Do not duplicate that original CPU/BLAS experiment.
+recovering frozen anchors. The [M1 follow-up](handover-m1-validation.md) is complete:
+raw/normalized CLS max6.52e-5/6.41e-7, long hidden0.00579. Independent review
+checks all returned stage identities and same-input hashes. Preserve the full audit
+and scope F32 pooled-output/API/retrieval qualification separately; no repeated arms.
 Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is
 merged at7f1ecd33 after full sourcef7c53803 platform/Flutter/style/security and
 bounded original/exported-weight reference success. PR60 is closed. Development
