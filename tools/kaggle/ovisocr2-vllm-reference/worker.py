@@ -52,26 +52,20 @@ def original_prompt(readme):
     return found[0]
 
 
-def clean_truncated_repeats(text, min_text_len=8000, max_period=200,
-                            min_period=1, min_repeat_chars=100, min_repeat_times=5):
-    n = len(text)
-    if n < min_text_len:
-        return text
-    max_period = min(max_period, n - 1)
-    for unit_len in range(min_period, max_period + 1):
-        if text[n - 1] != text[n - 1 - unit_len]:
-            continue
-        match_len = 1
-        idx = n - 2
-        while idx >= unit_len and text[idx] == text[idx - unit_len]:
-            match_len += 1
-            idx -= 1
-        total_len = match_len + unit_len
-        repeat_times = total_len // unit_len
-        tail_len = total_len % unit_len
-        if repeat_times >= min_repeat_times and total_len >= min_repeat_chars:
-            return text[: n - total_len + unit_len] + text[n - tail_len:]
-    return text
+def original_cleanup(readme):
+    methods = []
+    for block in re.findall(r'```python\s*\n(.*?)```', readme, re.S):
+        tree = ast.parse(block)
+        for cls in (node for node in tree.body if isinstance(node, ast.ClassDef)
+                    and node.name == 'OvisOCR2Parser'):
+            methods.extend(node for node in cls.body if isinstance(node, ast.FunctionDef)
+                           and node.name == '_clean_truncated_repeats')
+    if len(methods) != 1:
+        raise ValueError('Original README repeat-cleaner ambiguous')
+    namespace = {}
+    code = ast.fix_missing_locations(ast.Module(body=methods, type_ignores=[]))
+    exec(compile(code, 'pinned-original-README-cleaner', 'exec'), namespace)
+    return lambda text: namespace['_clean_truncated_repeats'](None, text)
 
 
 def main():
@@ -80,7 +74,7 @@ def main():
     import torch
     import transformers
     import tokenizers
-    from PIL import Image
+    from PIL import Image, ImageDraw
     from huggingface_hub import hf_hub_download, snapshot_download
     from transformers import AutoProcessor
 
@@ -118,7 +112,10 @@ def main():
             raise ValueError('Pinned metadata file differs: ' + name)
     REPORT['metadata_files_sha256'] = producer['checkpoint_files_sha256']
     processor = AutoProcessor.from_pretrained(source, local_files_only=True, trust_remote_code=False)
-    prompt = original_prompt((source / 'README.md').read_text())
+    readme = (source / 'README.md').read_text()
+    prompt = original_prompt(readme)
+    clean_repeats = original_cleanup(readme)
+    REPORT['original_readme_sha256'] = sha(source / 'README.md')
     messages = [{'role': 'user', 'content': [{'type': 'image'}, {'type': 'text', 'text': prompt}]}]
     rendered = processor.tokenizer.apply_chat_template(messages, tokenize=False,
                                                          add_generation_prompt=True, enable_thinking=False)
@@ -165,6 +162,22 @@ def main():
         if label == 'square':
             first_image = image
 
+    REPORT['phase'] = 'owned-readable-fixture'; save()
+    readable = Image.new('RGB', (448, 448), 'white')
+    ImageDraw.Draw(readable).text((30, 80), 'Hello OCR\n12345', fill='black', font_size=24)
+    readable_rgb_sha = hashlib.sha256(np.asarray(readable).tobytes()).hexdigest()
+    readable_path = OUT / 'owned-readable.png'
+    readable.save(readable_path)
+    readable_inputs = processor(text=[rendered], images=[readable], return_tensors='pt',
+                                images_kwargs={'min_pixels': 448 * 448, 'max_pixels': 2880 * 2880})
+    readable_ids = readable_inputs['input_ids'].detach().cpu().numpy().tolist()[0]
+    readable_grid = readable_inputs['image_grid_thw'].detach().cpu().numpy().tolist()
+    REPORT['owned_readable'] = {'case': 'readable', 'gold_smoke_only': 'Hello OCR\n12345',
+                                'rgb_sha256': readable_rgb_sha, 'png_sha256': sha(readable_path),
+                                'width': 448, 'height': 448,
+                                'hf_prompt_ids': readable_ids, 'hf_grid': readable_grid,
+                                'recipe': "Image.new('RGB',(448,448),'white'); ImageDraw.Draw(image).text((30,80),'Hello OCR\\n12345',fill='black',font_size=24)"}
+    save()
     REPORT['phase'] = 'checkpoint'; save()
     checkpoint = Path(hf_hub_download(MODEL, 'model.safetensors', revision=REVISION))
     if checkpoint.stat().st_size != 1706030496 or sha(checkpoint) != os.environ['OVIS_CHECKPOINT_SHA']:
@@ -181,8 +194,16 @@ def main():
     vllm_tokenizer = model.get_tokenizer()
     if vllm_tokenizer.eos_token_id != 248046:
         raise ValueError('Original vLLM tokenizer EOS differs')
-    REPORT['source_stop_contract'] = {'tokenizer_eos': 248046, 'generation_eos': 248044,
-                                      'derived_stop_ids': [248044, 248046]}
+    runtime_generation = model.model_config.try_get_generation_config()
+    probe = SamplingParams(max_tokens=256, temperature=0.0)
+    probe.update_from_generation_config(runtime_generation, vllm_tokenizer.eos_token_id)
+    REPORT['runtime_stop_probe'] = {'source': 'installed vLLM 0.22.1 SamplingParams.update_from_generation_config',
+                                    'generation_config': runtime_generation,
+                                    'primary_eos': probe._eos_token_id,
+                                    'additional_stop_ids': sorted(probe.stop_token_ids),
+                                    'all_stop_ids': sorted(probe._all_stop_token_ids)}
+    if (probe._eos_token_id != 248046 or sorted(probe._all_stop_token_ids) != [248044, 248046]):
+        raise ValueError('Original installed vLLM stop resolution differs')
     generated_prompt = vllm_tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
     if generated_prompt != rendered:
@@ -190,32 +211,34 @@ def main():
     REPORT['phase'] = 'bounded-greedy'; save()
     cap = 256  # Explicit bounded departure from README's 16384; greedy settings unchanged.
     sampling = SamplingParams(max_tokens=cap, temperature=0.0)
-    item = {'prompt': generated_prompt, 'multi_modal_data': {'image': first_image},
-            'mm_processor_kwargs': {'images_kwargs': {'min_pixels': 448 * 448,
-                                                      'max_pixels': 2880 * 2880}}}
-    outputs = model.generate([item], sampling)
-    if len(outputs) != 1 or len(outputs[0].outputs) != 1:
+    items = [{'prompt': generated_prompt, 'multi_modal_data': {'image': image},
+              'mm_processor_kwargs': {'images_kwargs': {'min_pixels': 448 * 448,
+                                                        'max_pixels': 2880 * 2880}}}
+             for image in (first_image, readable)]
+    outputs = model.generate(items, sampling)
+    if len(outputs) != 2 or any(len(output.outputs) != 1 for output in outputs):
         raise ValueError('Original vLLM output count differs')
-    result = outputs[0].outputs[0]
-    raw_text = result.text
-    stripped = raw_text.strip()
-    filtered = '\n\n'.join(block for block in stripped.split('\n\n')
-                           if not block.strip().startswith('<img src="images/bbox_'))
-    processed = clean_truncated_repeats(filtered)
-    REPORT['generation'] = {'case': 'square', 'readme_max_tokens': 16384,
-                            'bounded_max_tokens': cap, 'temperature': 0.0,
-                            'dtype_policy': 'README auto -> T4 FP16',
-                            'gdn_prefill_backend': 'triton',
-                            'prompt_token_ids': (list(outputs[0].prompt_token_ids)
-                                                 if outputs[0].prompt_token_ids is not None else None),
-                            'token_ids': list(result.token_ids),
-                            'finish_reason': result.finish_reason,
-                            'stop_reason': result.stop_reason,
-                            'raw_text': raw_text, 'stripped_text': stripped,
-                            'processed_text': processed,
-                            'raw_text_sha256': hashlib.sha256(raw_text.encode()).hexdigest(),
-                            'processed_text_sha256': hashlib.sha256(processed.encode()).hexdigest(),
-                            'limits': 'One synthetic image; 256-token cap; no decoded-quality or BF16 parity claim'}
+    REPORT['generations'] = []
+    for label, output in zip(('square', 'readable'), outputs):
+        expected_ids = rows['square']['ids'][0] if label == 'square' else readable_ids
+        if output.prompt_token_ids is None or list(output.prompt_token_ids) != expected_ids:
+            raise ValueError('vLLM expanded prompt IDs differ from original HF processor: ' + label)
+        result = output.outputs[0]
+        raw_text = result.text
+        stripped = raw_text.strip()
+        filtered = '\n\n'.join(block for block in stripped.split('\n\n')
+                               if not block.strip().startswith('<img src="images/bbox_'))
+        processed = clean_repeats(filtered)
+        REPORT['generations'].append({'case': label, 'readme_max_tokens': 16384,
+            'bounded_max_tokens': cap, 'temperature': 0.0, 'dtype_policy': 'README auto -> T4 FP16',
+            'gdn_prefill_backend': 'triton',
+            'prompt_token_ids': list(output.prompt_token_ids) if output.prompt_token_ids is not None else None,
+            'token_ids': list(result.token_ids), 'finish_reason': result.finish_reason,
+            'stop_reason': result.stop_reason, 'raw_text': raw_text, 'stripped_text': stripped,
+            'processed_text': processed, 'raw_text_sha256': hashlib.sha256(raw_text.encode()).hexdigest(),
+            'processed_text_sha256': hashlib.sha256(processed.encode()).hexdigest(),
+            'limits': '256-token cap; synthetic image; no OCR quality or BF16 parity claim'})
+        save()
     REPORT['status'] = 'completed bounded original vLLM reference'
     REPORT['phase'] = 'complete'; save()
 
