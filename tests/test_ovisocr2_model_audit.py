@@ -30,6 +30,8 @@ def good_receipt():
                          "worker": {"status": "completed bounded original vLLM reference",
                                     "gpu_control": {"passed": True},
                                     "resolved_vllm_dtype": "torch.float16",
+                                    "resolved_decoder_attention_backend": "TRITON_ATTN",
+                                    "attention_backend_override": {"readme_auto_backend_equivalence_qualified": False},
                                     "runtime_stop_probe": {"all_stop_ids": [248044, 248046]},
                                     "generations": [{"case": "square"}, {"case": "readable"}],
                                     "owned_readable": {"case": "readable", "rgb_sha256": "a" * 64}}},

@@ -56,6 +56,8 @@ def review(directory, metadata, recipe_sha, worker_sha):
             or producer.get('worker') != worker or producer.get('script_sha256') != recipe_sha
             or producer.get('worker_sha256') != worker_sha
             or worker.get('resolved_vllm_dtype') != 'torch.float16'
+            or worker.get('resolved_decoder_attention_backend') != 'TRITON_ATTN'
+            or worker.get('attention_backend_override', {}).get('readme_auto_backend_equivalence_qualified') is not False
             or worker.get('checkpoint_sha256') != metadata['checkpoint_lfs_declaration']['file']['lfs']['sha256']
             or worker.get('gpu_control', {}).get('passed') is not True
             or worker.get('runtime_stop_probe', {}).get('all_stop_ids') != [248044, 248046]):
@@ -101,7 +103,9 @@ def review(directory, metadata, recipe_sha, worker_sha):
         if row['exit_code'] != 0 or row['timed_out'] or sha(path) != row['log_sha256']:
             raise ValueError('Original command exit/log differs')
     return {'genuine_gpu_forward_completed': True, 'all_three_processor_arrays_rehashed': True,
-            'actual_dtype': worker['resolved_vllm_dtype'], 'stops': [248044, 248046],
+            'actual_dtype': worker['resolved_vllm_dtype'],
+            'decoder_attention_backend': 'TRITON_ATTN',
+            'readme_auto_backend_equivalence_qualified': False, 'stops': [248044, 248046],
             'raw_ids_prompt_text_completion_checked': True,
             'recipe_sha256': recipe_sha, 'worker_sha256': worker_sha,
             'files': {str(p.relative_to(root)): sha(p) for p in sorted(root.rglob('*')) if p.is_file()},

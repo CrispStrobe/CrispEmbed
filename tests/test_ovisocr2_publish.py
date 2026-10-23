@@ -26,7 +26,7 @@ def fixtures(folder, precision='f16'):
                        'gpu_control': {'passed': True},
                        'runtime_stop_probe': {'all_stop_ids': [248044, 248046]}}},
            'independent_review': {'genuine_gpu_forward_completed': True}}
-    write(folder, 'ovisocr2-vllm-reference.json', gpu)
+    gpu_sha = write(folder, 'ovisocr2-vllm-reference.json', gpu)
     model = {'run': 123,
              'artifact': {'id': 1001, 'zip_sha256': HASH,
                           'name': 'ovisocr2-model-reports-123'},
@@ -34,6 +34,7 @@ def fixtures(folder, precision='f16'):
                                     'name': 'ovisocr2-model-reference-123'},
              'producer': {'status': 'completed diagnostic audit', 'failures': [],
                           'source_commit': HEAD,
+                          'gpu_prerequisite': {'receipt_sha256': gpu_sha},
                           'exports': {'f16': {'model_sha256': subject.F16_SHA}},
                           'reference_artifacts': {'gguf': {'sha256': HASH}},
                           'original_capture': {'cached_vs_full_prefix_same_argmax': True,
@@ -122,6 +123,15 @@ class PublicationGate(unittest.TestCase):
     def tearDown(self):
         subject.EVIDENCE = self.old
         self.temp.cleanup()
+
+    def test_native_review_is_bound_to_exact_original_gpu_receipt(self):
+        fixtures(self.folder)
+        file = self.folder/'ovisocr2-vllm-reference.json'
+        altered = json.loads(file.read_text())
+        altered['producer']['different_reference'] = True
+        write(self.folder, file.name, altered)
+        with self.assertRaises(ValueError):
+            subject.require_receipts('f16')
 
     def test_f16_positive_exact_receipts(self):
         fixtures(self.folder)

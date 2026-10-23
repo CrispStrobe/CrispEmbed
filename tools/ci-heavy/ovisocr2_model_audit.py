@@ -32,7 +32,7 @@ MIRROR_FILE = "qwen35-ovisocr2/original-processor/metadata.zip"
 MIRROR_BYTES = 524058
 MIRROR_SHA = "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5"
 VLLM_COMMIT = "0decac0d96c42b49572498019f0a0e3600f50398"
-WORKER_SHA = "dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af"
+WORKER_SHA = "daaade86dbae60b7aecd5ecd9dc1e87a0e49e091361fa00441a437e27f2ee1df"
 SERVICES = {
     "metadata": (39983101540, "ca3d096fe673f3554e95ef8e5f534b597564233e",
                  ".github/workflows/ovisocr2-metadata.yml"),
@@ -91,6 +91,8 @@ def require_gpu_receipt(receipt):
             or worker.get("status") != "completed bounded original vLLM reference"
             or not isinstance(gpu_control, dict) or gpu_control.get("passed") is not True
             or worker.get("resolved_vllm_dtype") != "torch.float16"
+            or worker.get("resolved_decoder_attention_backend") != "TRITON_ATTN"
+            or worker.get("attention_backend_override", {}).get("readme_auto_backend_equivalence_qualified") is not False
             or not isinstance(stop_probe, dict) or stop_probe.get("all_stop_ids") != [248044, 248046]
             or {case.get("case") for case in worker.get("generations", [])} != {"square", "readable"}):
         raise ValueError("Original vLLM T4 forward receipt lacks positive reviewed execution")
@@ -112,6 +114,8 @@ def require_gpu_receipt(receipt):
     return {"producer_status": producer["status"], "independent_review": True,
             "readable_rgb_sha256": readable["rgb_sha256"],
             "gpu_dtype": worker["resolved_vllm_dtype"],
+            "decoder_attention_backend": worker["resolved_decoder_attention_backend"],
+            "readme_auto_backend_equivalence_qualified": False,
             "worker_source_sha256": producer["worker_sha256"],
             "vllm_commit": pins["vllm_commit"],
             "readable_generation": {key: readable_generation.get(key) for key in

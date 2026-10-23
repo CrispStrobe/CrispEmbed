@@ -93,6 +93,7 @@ def require_receipts(precision, destination=DESTINATION):
     f16 = mp.get('exports', {}).get('f16', {})
     if (type(model_run) is not int or model_run < 1 or not source_head(mp.get('source_commit'))
             or mp.get('status') != 'completed diagnostic audit' or mp.get('failures') != []
+            or mp.get('gpu_prerequisite', {}).get('receipt_sha256') != gpu_sha
             or type(model_artifact.get('id')) is not int
             or not sha_field(model_artifact.get('zip_sha256'))
             or model_artifact.get('name') not in (None, f'ovisocr2-model-reports-{model_run}')
