@@ -119,11 +119,14 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   with six F16 down failures; scoped local targets cannot replace old full-model references.
   M1 original replay is complete; retain its RoPE/hidden differences and small
   CLS errors. Next separately qualify the gated F32 pooled profile; F16 raw CLS
-  fails all seven cases. Pending: numerical attribution, gated architecture/text loading,
-  exact prompts/CLS/masks, C ABI/CLI/server/all bindings, independent retrieval
+  fails all seven cases. Public API39943940607 passes the gated F32 text/CLS/mask,
+  C ABI/Python/CLI/HTTP checks at4be9f864; PR74 remains draft pending final
+  platform CI. Pending: numerical attribution, source integration, actual
+  model-backed Rust/Dart and public pair support, independent retrieval
   ([frozen owned smoke/scorer and original-first producer](docs/ultrabert-retrieval-smoke.md),
   integrated at40ff3d6c with hosted guard success; binding-identity guard71daebea
-  also passes locally; model outputs pending),
+  passes hosted39947939925; queued original-first model39949129060 at
+  producer2f871a3e/native4be9f864 has no task outputs yet),
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
