@@ -54,6 +54,41 @@ class ReferenceAdapterTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "torch==2.11.0"):
                 ovis.check_framework_sources(profile, *modules, processor, object)
 
+    def test_processor_contract_matches_json_arrays_and_rejects_value_changes(self):
+        class ImageProcessor:
+            backend = "torchvision"
+
+            def to_dict(self):
+                return {"image_mean": (0.5, 0.5, 0.5), "patch_size": 16}
+
+        class Processor:
+            image_processor = ImageProcessor()
+            tokenizer = types.SimpleNamespace(eos_token_id=248046)
+
+        processor = Processor()
+        profile = {"primary_eos": 248046, "processor": {
+            "class_name": type(processor).__module__ + "." + type(processor).__name__,
+            "image_class": type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__,
+            "image_backend": "torchvision",
+            "image_config": {"image_mean": [0.5, 0.5, 0.5], "patch_size": 16}}}
+        with mock.patch("sys.stdout", new_callable=io.StringIO):
+            report = ovis.processor_contract(processor, profile)
+            self.assertTrue(all(report["checks"].values()))
+            self.assertFalse(report["image_config_native_equal"])
+            self.assertEqual(report["image_config_python_types"]["image_mean"], "tuple")
+            for key, changed in (("image_mean", [0.500001, 0.5, 0.5]), ("patch_size", 14)):
+                with mock.patch.object(processor.image_processor, "to_dict", return_value={
+                        **profile["processor"]["image_config"], key: changed}):
+                    with self.assertRaisesRegex(ValueError, "image_config"):
+                        ovis.processor_contract(processor, profile)
+            processor.tokenizer.eos_token_id = 248044
+            with self.assertRaisesRegex(ValueError, "primary_eos"):
+                ovis.processor_contract(processor, profile)
+            processor.tokenizer.eos_token_id = 248046
+            processor.image_processor.backend = "pil"
+            with self.assertRaisesRegex(ValueError, "image_backend"):
+                ovis.processor_contract(processor, profile)
+
     def test_generation_bound_reports_both_eos_ids_and_length_cap(self):
         eos_ids = [248044, 248046]
         for stop_id in eos_ids:
