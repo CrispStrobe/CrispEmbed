@@ -149,6 +149,7 @@ try:
                   qualification='pass' if not failures else 'failed; no default promotion')
     save()
     print('Qualification:',report['qualification'],flush=True)
+    if failures: raise SystemExit(1)
 except Exception as error:
     report.update(status='failed structurally; retained logs',error_type=type(error).__name__,error=str(error)[:300],conclusive=False)
     save();print('Audit failed:',type(error).__name__,flush=True)
