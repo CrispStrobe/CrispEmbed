@@ -1,3 +1,23 @@
+## 2026-10-23 — PosFormer API/gates verified; trace anchor corrected separately
+
+At0b73f5f9, Linux and macOS normal public API runs preserve all seven original
+matches out of50. Opt-in changes38 transcriptions; unset/literal0 retain every
+baseline output. Actual source/model/corpus/library identities were independently
+revalidated for all six paired reports. macOS job and printed OCR pass; Linux
+reference instrumentation rejects the new gated pooling-call anchor before any
+reference inference. Pending formatting is cancelled by the corrective push.
+[All raw reports/hashes and initial failure](tests/results/posformer/main-backport-initial.json).
+
+Atf7c53803, the test-only adapter temporarily presents the direct-call anchor to
+the unchanged pinned instrumenter, then restores both exact production branch
+selections before compilation. Runtime C++ is byte-identical to0b73f5f9. The
+actual instrumenter accepts the full gated source and all seven dependency-light
+controls pass, including missing/duplicate/operator-changing rejection. Gate
+reports now receive full provenance validation inside the workflow too.
+[Linux retry39918191021](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39918191021)
+is queued; the completed macOS API batch is not repeated. PR72 stays draft until
+reference/required source checks pass. No native numerical gate was changed.
+
 ## 2026-10-23 — Original backend controls complete; M1 follow-up prepared
 
 [Reproducibility39915714794](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39915714794)

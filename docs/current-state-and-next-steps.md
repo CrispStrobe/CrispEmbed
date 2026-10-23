@@ -97,9 +97,11 @@ identities remain unchanged. [Preservation provenance](../tests/results/ultraber
 Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
-handoff. Bounded original-backend reproducibility39915714794 is queued; selective
-PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is draft with
-fresh hosted validation pending. Other portfolio/app owners remain separate.
+handoff. Original-backend reproducibility39915714794 completes all four controls without
+recovering frozen anchors; [M1 follow-up](handover-m1-validation.md) is ready.
+Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is
+draft: both50-case API/gate arms pass, corrected Linux reference39918191021 is
+queued after retained test-only anchor failure. Other portfolio/app owners remain separate.
 
 ## Recommended order and dependencies
 

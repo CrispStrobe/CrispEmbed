@@ -13,7 +13,7 @@ Machine/access details belong in local ignored notes, never in this document.
 - Verified copy39913800444: artifact
   `ultrabert-original-38997562520-preserved-39913800444`, expiry21 January2027.
   [Inventory](../tests/results/ultrabert/reference-preservation.json).
-- Portable diagnostic source `1796bd54262ae24c8b9d2a9459696ec544a82066`.
+- Portable diagnostic source `f0dbe58d441db7f52269ff03d49af4749d57ef8b`.
   Verify this commit against remote before execution; never silently substitute
   arbitrary main. The pinned HF checkpoint and dependency versions are checked
   by the script itself.
@@ -35,7 +35,7 @@ above before creating the worktree. Example portable commands:
 
 ```sh
 git fetch origin main
-git worktree add --detach ../crispembed-m1-audit 1796bd54262ae24c8b9d2a9459696ec544a82066
+git worktree add --detach ../crispembed-m1-audit f0dbe58d441db7f52269ff03d49af4749d57ef8b
 cd ../crispembed-m1-audit
 python3.12 -m venv ../crispembed-m1-python
 . ../crispembed-m1-python/bin/activate
@@ -61,7 +61,7 @@ remote artifacts, outside Git.
 
 Require the preserved manifest hash, all seven archive hashes/2730 tensor payloads,
 original conversion records and loaded selected-parameter bits to verify first.
-Require four complete arms × seven cases ×386 forward-stage records and all
+Require four complete arms × seven cases ×386 forward-stage records, explicit raw/normalized CLS comparisons and all
 same-input Q/gate/up/down records; original inputs and weights must remain fixed.
 Record whether MKLDNN is actually available on this platform. An unavailable
 backend is a duplicated control, not distinct backend coverage.
@@ -69,6 +69,8 @@ backend is a duplicated control, not distinct backend coverage.
 Compare first differing stages, absolute errors/RMS/norms, raw/normalized CLS
 boundaries and payload hashes with the Linux report. Distinguish bit-exact frozen
 replay, original same-input projection, F64 diagnostic and F16-weight diagnostic.
+The prior Linux report has final-hidden metrics but no separate CLS metrics;
+the updated portable script explicitly records both final CLS comparisons.
 A successful diagnostic exit means measurement completed; it does not mean the
 287 differences or existing strict native failures passed. Keep every failure
 and original0.99999/0.002 budget. No new references or threshold fitting.
