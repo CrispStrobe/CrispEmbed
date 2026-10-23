@@ -1,3 +1,15 @@
+## 2026-10-23 — Ovis processor minimum-pixel counterfactual added
+
+Read-only Sol review identified an evidence gap: the initial processor probe
+checked repeats but could pass without establishing the README overrides. The
+producer adds a96×64 owned image and separate fresh default processor, preserves
+both packed outputs/grids, and requires the explicit448² minimum to change
+packing. It labels maximum-limit coverage unverified; no native alias or
+processor/model parity is inferred. Earliest-phase and sanitized failure details
+are retained. Five model-free groups and syntax checks pass, without model
+framework imports or local inference. Initial39974181719 was cancelled while
+queued, before metadata execution; no original arrays were replaced.
+
 ## 2026-10-23 — Versioned Rust loader failure preserved; portability fix prepared
 
 Initial binding39972325056 builds the fresh portable library and Rust consumer,

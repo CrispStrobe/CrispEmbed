@@ -20,6 +20,22 @@ class MetadataControls(unittest.TestCase):
         self.assertEqual(p.original_prompt("```python\nprompt = 'a' + 'b'\n```"),'ab')
         for source in ["prompt = open('x').read()", "prompt = 'a'\nprompt = 'b'", 'pass']:
             with self.assertRaises(ValueError):p.original_prompt('```python\n'+source+'\n```')
+    def test_pixel_override_must_change_small_default_grid(self):
+        result=p.pixel_override_evidence([[1,14,20]],[[1,24,36]])
+        self.assertTrue(result['min_override_effect_proved'])
+        for before,after in [([[1,14,20]],[[1,14,20]]),([[1,28,28]],[[1,28,28]]),
+                             ([[1,14,20]],[[1,12,16]]),([[1,14,20]],[[1,200,200]]),
+                             ([[1,14,20]],[[2,24,36]]),([[1,14,20]],[[1,23,36]])]:
+            with self.assertRaises(ValueError):p.pixel_override_evidence(before,after)
+    def test_failure_summary_redacts_urls_credentials_and_host_paths(self):
+        secret='hf_'+'x'*40
+        detail=p.failure_detail(ValueError('source https://example.org/x?token='+secret+' file /private/operator/model '+secret))
+        self.assertNotIn(secret,detail)
+        self.assertNotIn('/private/operator',detail)
+        self.assertNotIn('example.org',detail)
+        self.assertIn('source',detail)
+        self.assertLessEqual(len(p.failure_detail(ValueError('x'*1000))),800)
+
     def test_no_model_imports_when_loading_controls(self):
         import sys
         self.assertNotIn('torch',sys.modules)

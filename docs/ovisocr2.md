@@ -125,7 +125,7 @@ The next probe is executable in `tools/ci-heavy/ovisocr2_metadata.py` through
 It pins CPU Torch2.14.0/TorchVision0.29.0/Transformers5.16.1, downloads only
 audited metadata/tokenizer files, rejects fabricated missing-source files,
 checks loaded model/generation source hashes and compares a meta-only official
-state dictionary to all473 header tensors. Two owned synthetic RGB fixtures
+state dictionary to all473 header tensors. Three owned synthetic RGB fixtures
 preserve original packed arrays/IDs/grid plus exact repeat checks remotely.
 It executes no model forward and does not install or qualify a complete vLLM
 runtime. Inspect the full report and retain any failure before a profile change.
@@ -136,3 +136,13 @@ cancelled before execution; the manual run retains its required controls.
 The source blueprint was also independently reviewed with read-only web tools;
 its installed-vLLM qualification caveat remains. Prior header and source audits
 are preserved, not repeated in response to generic review suggestions.
+
+The initial39974181719 was superseded while still queued, before processor
+execution or original captures. A read-only Sol review found that repeat equality
+alone did not prove example pixel overrides. The corrected producer adds a
+96×64 owned image and a freshly constructed default processor control, saves
+both packed arrays/grids before checking the minimum-pixel branch, and rejects
+ignored overrides. This demonstrates the448² minimum only; the2880² maximum
+remains unexercised and is labelled accordingly. No large local image/model
+work is introduced. Phase checkpoints and bounded URL/token/path-redacted error
+details preserve the earliest failure. Five model-free groups pass locally.

@@ -56,12 +56,33 @@ def stop_probe(source, generation, tokenizer_eos):
     return dict(primary_eos=obj._eos_token_id,additional_stop_ids=sorted(obj.stop_token_ids),all_stop_ids=sorted(obj._all_stop_token_ids))
 
 
+def pixel_override_evidence(default_grid, explicit_grid):
+    def area(grid):
+        if (len(grid)!=1 or len(grid[0])!=3 or grid[0][0]!=1
+                or any(type(x) is not int or x<=0 for x in grid[0])
+                or any(x%2 for x in grid[0][1:])):
+            raise ValueError('Invalid single-image patch grid')
+        return grid[0][1]*grid[0][2]*16*16
+    before,after=area(default_grid),area(explicit_grid)
+    if not before<448*448<=after<=2880*2880 or explicit_grid==default_grid:
+        raise ValueError('Example pixel overrides were not demonstrated')
+    return dict(default_pixels=before,explicit_pixels=after,min_override_effect_proved=True)
+
+
+def failure_detail(error):
+    message=str(error)
+    message=re.sub(r'https?://\S+','<url>',message)
+    message=re.sub(r'(?:hf_|gh[pousr]_)[A-Za-z0-9]+','<credential>',message)
+    message=re.sub(r'(?<![A-Za-z0-9])/(?:[^\s\]\)]+)','<path>',message)
+    return message[:800]
+
+
 def main():
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH']);out.mkdir(parents=True,exist_ok=True)
     report=dict(source_commit=os.environ['GITHUB_SHA'],driver_sha256=sha(__file__),status='started',
         scope='Weight-free original HF metadata/processor and meta-schema; isolated pinned vLLM stop method, no installed vLLM/GPU/model forward or decoded-quality claim')
     def save():(out/'ovisocr2-metadata.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
-    save()
+    report['phase']='environment';save()
     try:
         import numpy as np
         import torch,torchvision,transformers
@@ -77,6 +98,7 @@ def main():
         if inspected['revision']!=REVISION:raise ValueError('Checkpoint source changed')
         names=['LICENSE','README.md','config.json','preprocessor_config.json','tokenizer_config.json',
                'chat_template.jinja','tokenizer.json','merges.txt','vocab.json','video_preprocessor_config.json']
+        report['phase']='source-download';save()
         directory=Path(snapshot_download(MODEL,revision=REVISION,allow_patterns=names))
         if any(directory.glob('*.safetensors')):raise ValueError('Unexpected weight payload')
         for name,digest in inspected['downloaded_file_sha256'].items():
@@ -85,13 +107,16 @@ def main():
         if (directory/'generation_config.json').exists() or (directory/'processor_config.json').exists():
             raise ValueError('Missing-source contract changed')
         report['checkpoint_files_sha256']={n:sha(directory/n) for n in names if (directory/n).is_file()}
+        report['phase']='generation-resolution';save()
         config=AutoConfig.from_pretrained(directory,local_files_only=True,trust_remote_code=False)
         generation=GenerationConfig.from_model_config(config)
         report['resolved_generation']=generation.to_diff_dict()
+        report['phase']='processor-load';save()
         processor=AutoProcessor.from_pretrained(directory,local_files_only=True,trust_remote_code=False)
         report['processor']=dict(class_name=type(processor).__module__+'.'+type(processor).__name__,
             image_class=type(processor.image_processor).__module__+'.'+type(processor.image_processor).__name__,
             image_backend=getattr(processor.image_processor,'backend',None),image_config=processor.image_processor.to_dict())
+        report['phase']='source-fingerprints';save()
         report['loaded_source_sha256']={}
         for label,cls in [('generation',GenerationConfig),('model',Qwen3_5ForConditionalGeneration),
                           ('processor',type(processor)),('image_processor',type(processor.image_processor)),('tokenizer',type(processor.tokenizer))]:
@@ -101,6 +126,7 @@ def main():
                 if hashlib.sha256(file.read_bytes().replace(b'\r\n',b'\n')).hexdigest()!=expected:
                     raise ValueError('Loaded original HF implementation changed')
         report['tokenizer_eos']=processor.tokenizer.eos_token_id;save()
+        report['phase']='stop-resolution';save()
         manifest=json.loads((ROOT/'tests/results/qwen35-ocr/ovisocr2-vllm-blueprint.json').read_text())
         pin=next(x for x in manifest['vllm_sources'] if x['path']=='vllm/sampling_params.py')
         payload=urllib.request.urlopen('https://raw.githubusercontent.com/vllm-project/vllm/'+VLLM+'/vllm/sampling_params.py',timeout=30).read()
@@ -110,17 +136,20 @@ def main():
                 or report['resolved_generation']['eos_token_id']!=248044 or processor.tokenizer.eos_token_id!=248046):
             raise ValueError('Derived stop contract differs; preserve before profile changes')
         save()
+        report['phase']='official-meta-schema';save()
         config._attn_implementation='eager'
         with torch.device('meta'):model=Qwen3_5ForConditionalGeneration(config)
         expected={n:list(t.shape) for n,t in model.state_dict().items()}
         if not all(p.device.type=='meta' for p in model.parameters()):raise ValueError('Schema model allocated payloads')
         report['schema']=check_schema(expected,audit['weight_header']['tensors'],bool(config.tie_word_embeddings))
         report['schema']['official_state_dict']=expected;del model
+        report['phase']='prompt';save()
         prompt=original_prompt((directory/'README.md').read_text())
         messages=[dict(role='user',content=[dict(type='image'),dict(type='text',text=prompt)])]
         text=processor.tokenizer.apply_chat_template(messages,tokenize=False,add_generation_prompt=True,enable_thinking=False)
         (out/'rendered-prompt.txt').write_text(text);report['rendered_prompt_sha256']=sha(out/'rendered-prompt.txt');report['inputs']=[];save()
-        for label,width,height in [('square',448,448),('odd',449,417)]:
+        for label,width,height in [('square',448,448),('odd',449,417),('small-control',96,64)]:
+            report['phase']='processor-'+label;save()
             y,x=np.indices((height,width));pixels=np.stack([(x*3+y)%256,(y*5+x)%256,(x+y*7)%256],axis=-1).astype(np.uint8)
             image=Image.fromarray(pixels)
             inputs=processor(text=[text],images=[image],return_tensors='pt',images_kwargs={'min_pixels':448*448,'max_pixels':2880*2880})
@@ -134,9 +163,26 @@ def main():
                 fields={k:dict(shape=list(v.shape),dtype=str(v.dtype),sha256=hashlib.sha256(v.tobytes()).hexdigest()) for k,v in arrays.items()},
                 grid=arrays['image_grid_thw'].tolist(),ids=arrays['input_ids'].tolist(),attention_mask=arrays['attention_mask'].tolist(),
                 archive_sha256=sha(out/(label+'-processor.npz')),repeat_exact=True));save()
+            if label=='small-control':
+                report['phase']='pixel-limit-negative-control';save()
+                plain=AutoProcessor.from_pretrained(directory,local_files_only=True,trust_remote_code=False)
+                if type(plain) is not type(processor):raise ValueError('Default control processor differs')
+                defaults=plain(text=[text],images=[image],return_tensors='pt')
+                default_arrays={k:v.detach().cpu().numpy() for k,v in defaults.items()}
+                np.savez_compressed(out/'small-default-processor.npz',**default_arrays)
+                report['pixel_override_control']=dict(default_grid=default_arrays['image_grid_thw'].tolist(),
+                    explicit_grid=arrays['image_grid_thw'].tolist(),
+                    maximum_override_exercised=False,
+                    default_archive_sha256=sha(out/'small-default-processor.npz'),
+                    default_fields={k:dict(shape=list(v.shape),dtype=str(v.dtype),sha256=hashlib.sha256(v.tobytes()).hexdigest()) for k,v in default_arrays.items()})
+                save()
+                report['pixel_override_control'].update(pixel_override_evidence(
+                    report['pixel_override_control']['default_grid'],report['pixel_override_control']['explicit_grid']))
+                save()
+        report['phase']='complete'
         report['status']='completed weight-free HF metadata/schema/processor probe; actual vLLM/inference remains unqualified';save()
     except BaseException as error:
-        report['status']='failed metadata probe';report['error_type']=type(error).__name__;save();raise
+        report['status']='failed metadata probe';report['error_type']=type(error).__name__;report['error_message']=failure_detail(error);save();raise
 
 
 if __name__=='__main__':main()
