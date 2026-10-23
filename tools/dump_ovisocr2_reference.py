@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Capture the pinned original OvisOCR2 Hugging Face F32 graph.
+"""Capture the pinned original OvisOCR2 Hugging Face CPU/F32 graph.
 
 Stores inputs, every vision/decoder layer, actual positional IDs, logits, cache
 states and official greedy generated IDs. NPZ/JSON are diagnostic artifacts;
 they are never inserted into production GGUF weights. Run on a hosted runner.
+This Torch 2.11.0 CPU lane is distinct from the original vLLM T4/F16 lane.
+Replay the three earlier Torch 2.14.0 metadata processor anchors under 2.11.0
+before interpreting comparisons; this script does not claim that replay.
 """
 
 import argparse
@@ -17,13 +20,30 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "models"))
 import qwen35_ovis_profile as ovis_profile
 
 
-VERSIONS = {"transformers": "5.16.1", "tokenizers": "0.23.3", "torch": "2.14.0"}
+VERSIONS = {"transformers": "5.16.1", "tokenizers": "0.23.3", "torch": "2.11.0"}
 
 
 def utf8_field(value):
     """Return archive-safe bytes and the real byte count (zero uses one sentinel)."""
     data = list(value.encode("utf-8"))
     return data or [0], len(data)
+
+
+def generation_limit_report(generated_ids, max_new_tokens, stop_ids):
+    """Describe bounded greedy output without treating a length cap as EOS."""
+    count = len(generated_ids)
+    if max_new_tokens < 1 or count > max_new_tokens:
+        raise ValueError("Original generation exceeded its requested token bound")
+    reached = bool(generated_ids and generated_ids[-1] in stop_ids)
+    return {
+        "max_new_tokens": max_new_tokens,
+        "generated_token_count": count,
+        "eos_ids": list(stop_ids),
+        "reached_eos": reached,
+        "stop_id": generated_ids[-1] if reached else None,
+        "max_tokens_consumed": count == max_new_tokens,
+        "length_limited": count == max_new_tokens and not reached,
+    }
 
 
 def validate_request(model_dir, prompt):
@@ -437,8 +457,18 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     save("input.raw_decoded_utf8", torch.tensor(raw_bytes, dtype=torch.int32))
     save("input.raw_decoded_length", torch.tensor([raw_length], dtype=torch.int32))
     np.savez(output, **arrays)
+    generation_result = generation_limit_report(ids.tolist()[0], max_new_tokens, profile["stop_ids"])
+    generation_result.update({
+        "raw_sequence_shape": list(generated.sequences.shape),
+        "generated_id_shape": list(ids.shape),
+        "score_count": len(generated.scores),
+        "raw_decoded_utf8_length": raw_length,
+        "decoded_utf8_length": decoded_length,
+    })
     report = {
         "transformers": transformers.__version__, "tokenizers": tokenizers.__version__, "torch": torch.__version__,
+        "reference_execution": "original Hugging Face CPU F32 eager; distinct from vLLM T4 F16",
+        "metadata_processor_anchor_replay": "three Torch 2.14.0 cases require exact field-SHA replay under Torch 2.11.0",
         "source_model": profile["source_model"], "source_revision": profile["source_revision"],
         "checkpoint_sha256": profile["checkpoint_sha256"], "loaded_source_sha256": source_hashes,
         "metadata_sha256": {name: ovis_profile._file_sha256(root / name)
@@ -456,7 +486,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         "source_config": model.config.to_dict(), "vision_layers": vision_depth,
         "decoder_layers": decoder_depth, "stages": {name: list(value.shape) for name, value in arrays.items()},
         "generated_ids": ids.tolist(),
-        "generated_stop_id": ids[0, -1].item() if ids.numel() and ids[0, -1].item() in profile["stop_ids"] else None,
+        "generated_stop_id": generation_result["stop_id"],
+        "generation_result": generation_result,
         "raw_decoded": raw_decoded,
         "decoded": processor.batch_decode(ids, skip_special_tokens=True),
         "cached_vs_full_prefix_max_abs": max_error, "cached_vs_full_prefix_same_argmax": same_argmax,

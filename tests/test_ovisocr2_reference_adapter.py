@@ -40,7 +40,7 @@ class ReferenceAdapterTest(unittest.TestCase):
         profile = {"qualification": {"loaded_source_sha256": {"model": "expected"}}}
         processor = types.SimpleNamespace(image_processor=object(), tokenizer=object())
         modules = [types.SimpleNamespace(__version__=version) for version in
-                   ("5.16.1", "0.23.3", "2.14.0+cpu")]
+                   ("5.16.1", "0.23.3", "2.11.0+cpu")]
         with mock.patch.dict(sys.modules, {"transformers": types.SimpleNamespace(GenerationConfig=object)}), \
              mock.patch.object(ovis.inspect, "getfile", return_value=__file__), \
              mock.patch.object(ovis.ovis_profile, "_file_sha256", return_value="different"):
@@ -49,6 +49,27 @@ class ReferenceAdapterTest(unittest.TestCase):
             modules[1].__version__ = "0.22.2"
             with self.assertRaisesRegex(ValueError, "tokenizers==0.23.3"):
                 ovis.check_framework_sources(profile, *modules, processor, object)
+            modules[1].__version__ = "0.23.3"
+            modules[2].__version__ = "2.14.0+cpu"
+            with self.assertRaisesRegex(ValueError, "torch==2.11.0"):
+                ovis.check_framework_sources(profile, *modules, processor, object)
+
+    def test_generation_bound_reports_both_eos_ids_and_length_cap(self):
+        eos_ids = [248044, 248046]
+        for stop_id in eos_ids:
+            report = ovis.generation_limit_report([17, stop_id], 12, eos_ids)
+            self.assertEqual(report["stop_id"], stop_id)
+            self.assertTrue(report["reached_eos"])
+            self.assertFalse(report["length_limited"])
+            self.assertEqual(report["eos_ids"], eos_ids)
+        capped = ovis.generation_limit_report([17, 18], 2, eos_ids)
+        self.assertEqual(capped["generated_token_count"], 2)
+        self.assertTrue(capped["length_limited"])
+        self.assertFalse(capped["reached_eos"])
+        self.assertIsNone(capped["stop_id"])
+        self.assertFalse(ovis.generation_limit_report([17], 2, eos_ids)["length_limited"])
+        with self.assertRaisesRegex(ValueError, "exceeded"):
+            ovis.generation_limit_report([1, 2, 3], 2, eos_ids)
 
     def test_actual_visual_frame_local_only(self):
         class Visual:
