@@ -3,6 +3,7 @@
 import importlib.util
 import sys
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -91,6 +92,64 @@ class OvisOCR2Parser:
                                    ([248320], [0.5]), ([], [])):
             with self.assertRaises(ValueError):
                 driver.validate_selected_confidences(ids, probabilities, 16)
+
+    def test_native_precision_env_has_explicit_calibrated_gate(self):
+        self.assertEqual(driver.native_environment('f16')['CRISPEMBED_QWEN35_QUANT'], '0')
+        for arm in ('q8', 'q4', 'q4-calibrated'):
+            self.assertEqual(driver.native_environment(arm)['CRISPEMBED_QWEN35_QUANT'], '1')
+        with self.assertRaises(ValueError):
+            driver.native_environment('unreviewed')
+
+    def test_wrapped_reviewed_model_receipt_binds_producer_and_artifact(self):
+        producer = {'status': 'completed diagnostic audit', 'failures': [],
+                    'source_commit': 'a' * 40,
+                    'exports': {'f16': {'model_sha256': driver.F16_SHA}}}
+        canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                              ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+        receipt = {'run': 123, 'artifact': {'id': 456, 'zip_sha256': 'b' * 64},
+                   'producer_report_sha256': 'c' * 64, 'producer': producer,
+                   'independent_review': {'f16_positive': True,
+                                          'artifact_zip_sha256': 'b' * 64,
+                                          'producer_canonical_sha256': canonical}}
+        self.assertEqual(driver.checked_model_receipt(receipt)['source_commit'], 'a' * 40)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'model.json'
+            path.write_text(json.dumps(receipt))
+            with patch.object(driver, 'BASELINE', path):
+                self.assertEqual(driver.require_baseline('original')['baseline_pins']['run'], 123)
+        for change in ('bare', 'failed', 'f16', 'canonical', 'artifact', 'run', 'review'):
+            altered = json.loads(json.dumps(receipt))
+            if change == 'bare':
+                altered = producer
+            elif change == 'failed':
+                altered['producer']['failures'] = ['context']
+            elif change == 'f16':
+                altered['producer']['exports']['f16']['model_sha256'] = 'd' * 64
+            elif change == 'canonical':
+                altered['independent_review']['producer_canonical_sha256'] = 'd' * 64
+            elif change == 'artifact':
+                altered['artifact']['zip_sha256'] = 'd' * 64
+            elif change == 'run':
+                altered['run'] = 0
+            else:
+                altered['independent_review']['f16_positive'] = False
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                driver.checked_model_receipt(altered)
+
+    def test_reviewed_model_service_run_head_and_artifact(self):
+        pins = {'run': 123, 'source_commit': 'a' * 40,
+                'artifact_id': 456, 'artifact_zip_sha256': 'b' * 64}
+        run = {'id': 123, 'status': 'completed', 'conclusion': 'success',
+               'head_sha': 'a' * 40, 'path': '.github/workflows/ovisocr2-metadata.yml'}
+        artifact = {'id': 456, 'expired': False, 'workflow_run': {'id': 123},
+                    'digest': 'sha256:' + 'b' * 64}
+        def response(argv, **_):
+            return json.dumps(artifact if 'artifacts/' in argv[-1] else run)
+        with patch.object(driver.subprocess, 'check_output', side_effect=response):
+            self.assertEqual(driver.verify_model_receipt_service(pins)['run'], 123)
+            artifact['digest'] = 'sha256:' + 'd' * 64
+            with self.assertRaisesRegex(ValueError, 'service proof'):
+                driver.verify_model_receipt_service(pins)
 
 
 if __name__ == '__main__':

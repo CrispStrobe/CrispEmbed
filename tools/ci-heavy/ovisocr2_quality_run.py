@@ -39,6 +39,14 @@ ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
              'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
 
 
+def native_environment(arm):
+    if arm not in ('f16', 'q8', 'q4', 'q4-calibrated'):
+        raise ValueError('Unknown native OvisOCR2 quality arm')
+    env = dict(os.environ, **ENV_GATES)
+    env['CRISPEMBED_QWEN35_QUANT'] = '0' if arm == 'f16' else '1'
+    return env
+
+
 def sha(path):
     h = hashlib.sha256()
     with Path(path).open('rb') as stream:
@@ -65,19 +73,63 @@ def load_module(name, path):
     return result
 
 
+def checked_model_receipt(receipt):
+    """Bind reviewed wrapper to its exact producer, run, and archived artifact."""
+    if not isinstance(receipt, dict):
+        raise ValueError('Reviewed OvisOCR2 model receipt wrapper absent')
+    producer = receipt.get('producer')
+    artifact = receipt.get('artifact')
+    review = receipt.get('independent_review')
+    if not all(isinstance(value, dict) for value in (producer, artifact, review)):
+        raise ValueError('Reviewed OvisOCR2 model producer/artifact/review absent')
+    canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    if (type(receipt.get('run')) is not int or receipt['run'] < 1
+            or type(artifact.get('id')) is not int or artifact['id'] < 1
+            or not re.fullmatch('[0-9a-f]{64}', artifact.get('zip_sha256', ''))
+            or review.get('artifact_zip_sha256') != artifact['zip_sha256']
+            or review.get('producer_canonical_sha256') != canonical
+            or review.get('f16_positive') is not True
+            or producer.get('status') != 'completed diagnostic audit'
+            or not re.fullmatch('[0-9a-f]{40}', producer.get('source_commit', ''))
+            or producer.get('failures') != []
+            or producer.get('exports', {}).get('f16', {}).get('model_sha256') != F16_SHA):
+        raise ValueError('OvisOCR2 original/native F16 baseline is not positively reviewed')
+    raw_sha = receipt.get('producer_report_sha256')
+    if raw_sha is not None and not re.fullmatch('[0-9a-f]{64}', raw_sha):
+        raise ValueError('OvisOCR2 archived raw producer report SHA is invalid')
+    return {'run': receipt['run'], 'source_commit': producer['source_commit'],
+            'artifact_id': artifact['id'], 'artifact_zip_sha256': artifact['zip_sha256'],
+            'producer_canonical_sha256': canonical, 'producer_report_sha256': raw_sha}
+
+
+def verify_model_receipt_service(pins):
+    """Read-only hosted service proof before dependencies, model files or builds."""
+    def api(path):
+        return json.loads(subprocess.check_output(
+            ['gh', 'api', 'repos/CrispStrobe/CrispEmbed/' + path], text=True, timeout=60))
+    run = api('actions/runs/' + str(pins['run']))
+    artifact = api('actions/artifacts/' + str(pins['artifact_id']))
+    if (run.get('id') != pins['run'] or run.get('status') != 'completed'
+            or run.get('conclusion') != 'success'
+            or run.get('head_sha') != pins['source_commit']
+            or run.get('path') != '.github/workflows/ovisocr2-metadata.yml'
+            or artifact.get('id') != pins['artifact_id']
+            or artifact.get('expired') is not False
+            or artifact.get('workflow_run', {}).get('id') != pins['run']
+            or artifact.get('digest') != 'sha256:' + pins['artifact_zip_sha256']):
+        raise ValueError('Reviewed OvisOCR2 model run/source/artifact service proof differs')
+    return {'run': pins['run'], 'source_commit': pins['source_commit'],
+            'artifact_id': pins['artifact_id'], 'artifact_zip_sha256': pins['artifact_zip_sha256']}
+
+
 def require_baseline(phase, original_run=None):
     if phase not in PHASES:
         raise ValueError('Unknown OvisOCR2 quality phase')
     if not BASELINE.is_file():
         raise ValueError('Reviewed positive OvisOCR2 native baseline receipt absent')
     receipt = json.loads(BASELINE.read_text())
-    review = receipt.get('independent_review', {})
-    if (receipt.get('status') != 'completed diagnostic audit'
-            or receipt.get('source_commit') is None
-            or not re.fullmatch(r'[0-9a-f]{40}', receipt['source_commit'])
-            or receipt.get('failures') != [] or review.get('f16_positive') is not True
-            or receipt.get('exports', {}).get('f16', {}).get('model_sha256') != F16_SHA):
-        raise ValueError('OvisOCR2 original/native F16 baseline is not positively reviewed')
+    pins = checked_model_receipt(receipt)
     if phase in ('q4', 'q4-calibrated'):
         if not Q8_REVIEW.is_file():
             raise ValueError('Reviewed Q8 OvisOCR2 result absent; Q4 remains blocked')
@@ -103,8 +155,9 @@ def require_baseline(phase, original_run=None):
                 or type(original_receipt.get('artifact_id')) is not int
                 or review.get('original_11_complete') is not True):
             raise ValueError('Original quality artifact lacks a positive independent review')
-    return {'baseline_source_commit': receipt['source_commit'], 'baseline_sha256': sha(BASELINE),
-            'export_sha256': sha(EXPORT), 'review': receipt['independent_review'],
+    return {'baseline_source_commit': pins['source_commit'], 'baseline_sha256': sha(BASELINE),
+            'baseline_pins': pins, 'export_sha256': sha(EXPORT),
+            'review': receipt['independent_review'],
             'original_review_sha256': sha(ORIGINAL_REVIEW) if phase != 'original' else None}
 
 
@@ -404,8 +457,7 @@ def development_imatrix(build, f16, cases, scratch, out, report):
 
 def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm):
     outputs = {}
-    env = dict(os.environ, **ENV_GATES)
-    env['CRISPEMBED_QWEN35_QUANT'] = '1' if arm in ('q8', 'q4') else '0'
+    env = native_environment(arm)
     for case in cases:
         label = arm + '-' + case['id']
         log = command(label, [binary, model, case['path'], case['cap'], 2],
@@ -603,6 +655,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
     save()
     try:
         report['prerequisite'] = require_baseline(phase, original_run)
+        report['baseline_service'] = verify_model_receipt_service(report['prerequisite']['baseline_pins'])
         contract = load_module('ovis_quality_contract', ROOT / 'tools/ci-heavy/ovisocr2_quality_contract.py')
         contract.load_panel()
         contract.source_schema()
