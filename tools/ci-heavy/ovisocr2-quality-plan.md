@@ -6,7 +6,13 @@ one recipe choice; its four heldout cases must remain unseen by calibration or
 recipe tuning. All images and transcripts are CC0-1.0. The panel is short
 synthetic text and cannot establish broad document quality.
 
-The hosted driver should first call `render_panel()` using Pillow 12.1.0,
+The manual [hosted workflow](../../.github/workflows/ovisocr2-quality.yml)
+requires a retained positive native baseline review before packages or weights.
+It first reproduces the three previously reviewed, separately licensed
+[OCR documents](../../tests/regression/ocr-quality/panel.json) using their
+original Pillow 11.3.0/CairoSVG 2.8.2 renderer and checks exact PNG/RGB hashes.
+Only then does it install the pinned original HF CPU stack and call
+`render_panel()` using Pillow 12.1.0,
 preserve `rendered-panel.json`, every PNG and their raw RGB hashes, then run
 the pinned original and each candidate on the exact same pixels and prompt.
 Keep raw generated IDs/text, processed text, finish and stop reasons, token
@@ -15,7 +21,11 @@ reports exact text, CER/WER, completion, cap and format outcomes separately for
 development and heldout. `paired_quality_screen()` rejects any heldout OCR
 error increase, incomplete generation or format failure. A passing screen is
 only a small diagnostic; decoded task quality and release suitability still
-need independent review on realistic licensed documents.
+need independent review on the three realistic licensed documents. The
+original model runs first on all frozen pixels. Native F16 and quantized
+outputs come from the experimental owning-context test runner, which records
+actual token IDs, confidence and stop enum. A separate public C ABI smoke
+records text and confidence; that API does not expose IDs or stop reason.
 
 After the F16 native model has passed its original and owning-context checks,
 test only `q8-protected` first. Its `crispembed-quantize` command is generated
@@ -28,7 +38,8 @@ the quantizer exit code or tensor type alone.
 
 `q4-attention-q8` is a second, gated size experiment. It keeps the same
 protected tensors, attention matrices at Q8_0 and other eligible matrices at
-Q4_K. Do not run or publish it until Q8 has a reviewed outcome. For each
+Q4_K. It requires a positive independent Q8 review before any run. The native
+unsupported Q4_0 fallback is a failed tensor audit. For each
 candidate, read actual GGUF tensor names, shapes, types and raw byte hashes,
 then call `validate_quant_tensors()`. Retain the quantizer log, input/output
 GGUF SHA-256, every per-tensor record, original/native decoded outputs and
