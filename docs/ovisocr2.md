@@ -81,3 +81,58 @@ Its metadata declares Apache-2.0/Qwen3.5-0.8B and the same small dimensions, wit
 MTP0. Only card/config were inspected. Audit its actual LICENSE, schema,
 processor/prompt and original decoding before considering it as a sibling;
 its recency is not a reason to skip the pinned OvisOCR2 evidence or claim support.
+
+## Pinned execution-blueprint follow-up — 23 October2026
+
+[vLLM0.22.1](https://github.com/vllm-project/vllm/tree/0decac0d96c42b49572498019f0a0e3600f50398)
+resolves to0decac0d. [Source hashes, isolated stop probe and next gates](../tests/results/qwen35-ocr/ovisocr2-vllm-blueprint.json)
+retain the inspected files. No vLLM/model installation or inference occurred.
+
+- The [ordinary model forward/loader](https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/model_executor/models/qwen3_5.py)
+  uses the main language model and skips MTP-prefixed weights; speculative state
+  expansion depends on an explicit speculative configuration. Inspected HF5.16.1
+  main-model source only mentions MTP in unexpected-key ignore lists. This
+  supports auditing a pinned non-speculative policy; it does not authorize
+  silently ignoring arbitrary config or tensors. Official meta-schema comparison
+  with the complete473-entry header still precedes export.
+- [Missing generation metadata falls back to the model configuration](https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/transformers_utils/config.py).
+  Inspected Transformers5.16.1 fills unset generation values from the nested text
+  config. Ovis config EOS248044 is endoftext; tokenizer EOS248046 is im_end.
+  The [vLLM stop updater](https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/sampling_params.py)
+  combines both. Its original AST method, executed in isolation with those
+  supplied fields, yields primary248046 plus stop248044; removing the derived
+  generation field demonstrably removes the second stop. This is a source probe,
+  not installed end-to-end resolution. Native currently accepts/stops on only
+  248046; a pinned stop-set representation is needed before aliasing.
+- [Processor loading](https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/transformers_utils/processor.py)
+  can obtain processor_class from the existing preprocessor/tokenizer metadata,
+  then delegates to AutoProcessor. The saved preprocessor names Qwen3VLProcessor
+  and Qwen2VLImageProcessorFast. Missing processor_config alone is not proof
+  the official path cannot load; our exporter must preserve missing-source
+  provenance and measured effective metadata, rather than inventing a file.
+
+The example pins vLLM but its dependency specifies a Transformers range. Lock
+and verify an actual compatible environment before claiming effective behavior.
+Next run a hosted **metadata-only** original probe (no model weights): resolved
+generation fields and both stops, processor/tokenizer classes, rendered prompt
+and packed synthetic RGB/grid/positions under the example overrides. Then audit
+meta schema and add model-free pinned-profile/missing-source/dual-stop controls.
+The unchanged LightOn converter/frontend and their failed numerical/quality
+records remain intact. Weight-backed parity still needs the actual vLLM path.
+
+The next probe is executable in `tools/ci-heavy/ovisocr2_metadata.py` through
+`ovisocr2-metadata.yml` (manual heavy job, push runs only three model-free controls).
+It pins CPU Torch2.14.0/TorchVision0.29.0/Transformers5.16.1, downloads only
+audited metadata/tokenizer files, rejects fabricated missing-source files,
+checks loaded model/generation source hashes and compares a meta-only official
+state dictionary to all473 header tensors. Two owned synthetic RGB fixtures
+preserve original packed arrays/IDs/grid plus exact repeat checks remotely.
+It executes no model forward and does not install or qualify a complete vLLM
+runtime. Inspect the full report and retain any failure before a profile change.
+
+Initial hosted metadata run39974181719 is queued at60679016; inspect it rather
+than dispatching another copy. Push-only duplicates39974180947/39974177044 were
+cancelled before execution; the manual run retains its required controls.
+The source blueprint was also independently reviewed with read-only web tools;
+its installed-vLLM qualification caveat remains. Prior header and source audits
+are preserved, not repeated in response to generic review suggestions.

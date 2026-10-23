@@ -1,3 +1,39 @@
+## 2026-10-23 — Paired LFM2 F16 CPU/CUDA performance producer submitted
+
+The account-neutral `lfm2-encoder-cuda-performance-v1` recipe at9fd70ce5 pins
+previously audited runtime898af2c2, official F16/modelbb26e78c and exact original
+fixturee3599a94 hashes. One authorized GPU slot was submitted after checking
+recent sessions were terminal; no quota workaround or device redraw is used.
+CPU/CUDA/CUDA/CPU blocks measure actual dense C ABI/Python calls with two
+warmups/seven timed repeats per unchanged15-case panel, exact input IDs and
+original CLS numerical gates. Actual ordinary CUDA matmul placement is required.
+All models/references/builds stay remote; kernel and embedded worker syntax pass.
+No performance or speedup is claimed before completed reports and source review.
+[Protocol and scope](tools/kaggle/lfm2-encoder-cuda-performance/README.md).
+
+## 2026-10-23 — Weight-free Ovis metadata producer prepared
+
+The hosted producer now captures actual pinned HF configuration/generation,
+processor classes/prompt/packed synthetic RGB inputs and official meta-model
+schema against the473-tensor header. No weights or model forward are allowed.
+Three model-free groups pass: tied-head versus unknown/missing/wrong-shape
+rejection, literal original prompt versus executable/ambiguous alternatives,
+and no model-framework imports in controls. Actual pinned README prompt parses.
+Hosted original resolution remains pending; source-only dual-stop evidence is
+not relabelled installed vLLM or decoded parity. [Protocol](docs/ovisocr2.md).
+
+## 2026-10-23 — OvisOCR2 execution-source blockers narrowed
+
+Pinned vLLM0.22.1/0decac0d source inspection distinguishes ordinary forward from
+MTP/speculative execution, traces missing generation/processor metadata fallback
+and identifies primary248046 plus derived248044 stopping. An isolated original
+SamplingParams method probe verifies that stop union and two negative controls;
+it does not load an installed model/configuration. [Full source fingerprints and
+probe](tests/results/qwen35-ocr/ovisocr2-vllm-blueprint.json), [contract](docs/ovisocr2.md).
+No weights, conversion, vLLM installation or inference occurred. Next hosted
+metadata-only original generation/processor/prompt/pixel and official meta-schema
+capture precedes a pinned profile; existing LightOn source/gates remain unchanged.
+
 ## 2026-10-23 — Gated UltraBERT F32 API merged; original-first retrieval passes
 
 [PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) merged at3f3d023a after

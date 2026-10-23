@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | MTP/schema/missing-metadata and actual prompt/pixel/EOS profile before conversion/native alias; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | Pinned vLLM blueprint narrows MTP/fallback/dual stops; weight-free metadata/meta-schema/processor39974181719 queued. No conversion/native alias; Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
