@@ -172,6 +172,13 @@ class HostedAuditTest(unittest.TestCase):
                         fresh_npz, manifest, diagnose=lambda *_: diagnostic)
                     self.assertFalse(failed["passed"])
                     self.assertEqual(failed["first_failure"], expected)
+                write(fresh_npz, {"alpha": b"\x93NUMPYchanged-alpha",
+                                  "beta": b"\x93NUMPYchanged-beta", "new.cache": b"\x93NUMPYnew"})
+                observed_beta_first = {**old_data, "stages": {"beta": [1], "alpha": [1]}}
+                ordered = audit.compare_prior_reference(
+                    observed_beta_first, fresh_data, old_npz, fresh_npz, manifest,
+                    diagnose=lambda *_: diagnostic)
+                self.assertEqual(ordered["first_failure"], "beta")
                 write(fresh_npz, {**original, "new.cache": b"\x93NUMPYnew"})
                 changed_text = {**fresh_data, "decoded": ["other"]}
                 self.assertFalse(audit.compare_prior_reference(

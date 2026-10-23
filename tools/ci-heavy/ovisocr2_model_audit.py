@@ -315,11 +315,18 @@ def compare_prior_reference(old_data, fresh_data, old_npz, fresh_npz, old_manife
                             *, diagnose=npy_drift):
     """Demand byte-identical prior NPY members and exactly the new cache states."""
     old_stages = old_data["stages"]
+    # Preserve observed forward order. These decoded fields were allocated as
+    # input placeholders but populated after generation; diagnose them last.
+    decoded_fields = {"input.decoded_utf8", "input.decoded_length",
+                      "input.raw_decoded_utf8", "input.raw_decoded_length"}
+    stage_order = [name for name in old_stages if name not in decoded_fields]
+    stage_order += [name for name in old_stages if name in decoded_fields]
     fresh_stages = fresh_data.get("stages", {})
     expected = set(old_stages) | set(PRIOR_MISSING_CACHE)
     comparison = {"passed": False, "prior_stage_count": len(old_stages),
                   "fresh_stage_count": len(fresh_stages),
                   "expected_fresh_stage_count": PRIOR_REFERENCE_STAGES + len(PRIOR_MISSING_CACHE),
+                  "comparison_order": "Original capture order, final decoded fields after intermediates",
                   "prior_generated_ids": old_data.get("generated_ids"),
                   "fresh_generated_ids": fresh_data.get("generated_ids"),
                   "prior_decoded": old_data.get("decoded"),
@@ -328,7 +335,7 @@ def compare_prior_reference(old_data, fresh_data, old_npz, fresh_npz, old_manife
                   "fresh_raw_decoded": fresh_data.get("raw_decoded"),
                   "missing_fresh_stages": sorted(expected - set(fresh_stages)),
                   "unexpected_fresh_stages": sorted(set(fresh_stages) - expected),
-                  "changed_stage_shapes": [name for name in sorted(old_stages)
+                  "changed_stage_shapes": [name for name in stage_order
                                            if name in fresh_stages
                                            and old_stages[name] != fresh_stages[name]]}
     if (comparison["missing_fresh_stages"] or comparison["unexpected_fresh_stages"]
@@ -339,14 +346,15 @@ def compare_prior_reference(old_data, fresh_data, old_npz, fresh_npz, old_manife
         return comparison
     fresh_members = npz_member_manifest(fresh_npz, fresh_stages)
     prior_members = old_manifest["members"]
-    changed = [name for name in sorted(old_stages)
+    changed = [name for name in stage_order
                if prior_members[name]["sha256"] != fresh_members[name]["sha256"]]
     comparison.update(unchanged_prior_members=len(old_stages) - len(changed),
                       changed_prior_members=changed,
                       added_cache_members=len(set(fresh_members) - set(prior_members)),
                       fresh_npz_sha256=sha(fresh_npz))
     if changed or comparison["changed_stage_shapes"]:
-        first = sorted(set(changed) | set(comparison["changed_stage_shapes"]))[0]
+        differing = set(changed) | set(comparison["changed_stage_shapes"])
+        first = next(name for name in stage_order if name in differing)
         comparison["first_failure"] = first
         try:
             numeric = diagnose(old_npz, fresh_npz, first)
