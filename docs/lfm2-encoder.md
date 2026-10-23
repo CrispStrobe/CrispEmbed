@@ -64,8 +64,9 @@ make those vectors suitable for semantic retrieval. It has no ColBERT head.
 CPU encoder APIs default on for GGUFs declaring a non-causal LFM2 model and
 mask token. `CRISPEMBED_LFM2_ENCODER=0` disables these APIs and restores the
 historical ordinary-text tokenizer for bisection. Other LFM2 checkpoints and
-GPU encoder graphs require `CRISPEMBED_LFM2_ENCODER=1`. GPU scheduling has not
-yet passed the reference suite, so it remains opt-in. Existing pooled and
+GPU encoder graphs require `CRISPEMBED_LFM2_ENCODER=1`. CUDA F16 scheduling passes the frozen suite on Tesla T4 (23 October2026);
+other devices/precisions, performance and broader workloads remain unqualified,
+so GPU use remains opt-in. Existing pooled and
 ColBERT paths remain available. The model metadata declares 128000 positions;
 the validation suite reaches 649 tokens and does not establish quality at the
 metadata limit. Native token/logit APIs reject sequences exceeding metadata
@@ -314,7 +315,8 @@ decoded-output failures, not only cosine checks.
 the graph, allowing FP32 activations instead of the quantized CPU kernel's Q8
 activation operand. GGUF storage is unchanged. This costs extra temporary memory
 and repeated dequantization; it is an accuracy control, not a smaller-memory claim.
-The default remains unchanged. GPU accuracy and speed are unverified.
+The default remains unchanged. CUDA F16 reference accuracy on T4 is now measured below; GPU speed and other
+profiles/devices remain unverified.
 
 With the official Q8_0 file, the complete same-weight audit reaches
 0.995881 minimum token cosine against the original FP32 checkpoint, compared
@@ -470,3 +472,30 @@ The three new aliases pass remote SHA-256, size and upstream/rehost license chec
 The whole-registry hash checker currently also flags pre-existing unrelated
 missing/drifted pins; this publication preserves those existing pins rather than
 accepting changed upstream model bytes without validation.
+
+## CUDA F16 reference audit — 23 October2026
+
+[Full producer report/provenance](../tests/results/lfm2-encoder/cuda-f16.json)
+replays official F16 SHA f097dbdb and the pinned original15-case FP32 fixture.
+Runtime source898af2c2, CUDA12.8, selectedCUDA0 on a Tesla T4 pair. Source
+selection/model bytes and all reference hashes are recorded;30 native log hashes
+and both ordinary API logs/JSON were independently verified.
+
+| Backend | Direct layer checks | Hidden min row cosine / max relative error | CLS min cosine / max relative error | Logits min cosine / max relative error | Mask matches |
+| --- | --- | --- | --- | --- | --- |
+| CPU control |297/297|0.99998947 /0.181329%|0.99999924 /0.126959%|0.99999957 /0.097554%|15/15|
+| CUDA T4 |297/297|0.99957070 /0.329331%|0.99999604 /0.290247%|0.99999889 /0.170478%|15/15|
+
+Explicit CUDA requests reject fallback. The direct dump computes with that backend;
+ordinary API success plus8,947 scheduler CUDA matmul assignment records confirms
+CUDA participation. Assignment records include repeated graph operations; they
+are not unique kernel-launch counts or proof every operation remains on GPU.
+Exact vocabulary/IDs, pooling/normalization, repeated-call/failure contracts and
+all15 mask predictions pass the unchanged0.999/0.02 suite gates.
+
+This measures F16 reference agreement on one GPU type through649 tokens. It
+establishes no independent task accuracy, low-precision/MMQ profile, other-device
+coverage, GPU latency/RSS result or default promotion. Cold compilation took
+1,798 seconds near the1,800-second job-stage cap; a future justified run should
+budget/cache the build explicitly and record a new script version, not fish for
+hardware. Large model/build artifacts stayed remote; only reports/logs were fetched.

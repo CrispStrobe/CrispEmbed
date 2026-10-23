@@ -119,10 +119,9 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
-- [ ] **LFM2.5 Encoder:** before a Kaggle CUDA audit, add explicit CUDA device
-  selection/no-silent-fallback evidence to the diff target: current
-  `tests/test_lfm2_diff.cpp` selects Metal/CPU only. A GPU allocation alone cannot
-  qualify this lane. Then validate actual GPU scheduling, long-context behavior beyond
+- [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit is complete (HISTORY). Next
+  validate other GPU devices/precisions, hardware-qualified quantized/MMQ paths,
+  paired latency/RSS and actual GPU scheduling on broader workloads, long-context behavior beyond
   the measured suite and independent task quality. F16 remains default; published
   mixed profiles change low-margin predictions. [Usage/evidence](docs/lfm2-encoder.md).
 - [ ] **EmbeddingGemma typed decisions:** independent task-accuracy, GPU and
@@ -153,8 +152,9 @@ Require affected exact-source checks again for each new implementation change.
 
 - [ ] **Release-default compatibility:** the gated PosFormer source backport is
   merged viaPR72; historicalPR60 is closed. Before publishing a successor,
-  compare opt-in current main against actual published0.17.12 on the same50
-  cases, model bytes, IDs/EOS/text and available confidence. Published0.17.12
+  actual released/current opt-in comparison now matches all50
+  IDs/text/EOS sequences, with measured confidence drift retained in HISTORY.
+  Use that frozen evidence to test a successor default and preserve literal0. Published0.17.12
   already enables trained-forward math; current development main preserves its
   legacy default. Decide/default-test this explicitly while retaining `=0`.
   Do not release the development version merely because source integration passed.
@@ -302,7 +302,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-10-23 | M1 handover | UltraBERT original CPU/BLAS comparison atf0dbe58d | User confirmed M1 execution; await full stage/projection and raw/normalized CLS evidence. Do not duplicate this experiment here. |
-| 2026-10-23 | `audit/lfm2-cuda-20261023` | Explicit CUDA/no-fallback diff selection and genuine GPU audit against pinned published LFM2 Encoder references | One Kaggle run is active, scriptv1 atb6979a6f, compiled source898af2c2; uploaded bytes verified. Do not duplicate; private locator is ignored. No arithmetic/weight/gate/default changes. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

@@ -1,0 +1,1722 @@
+{
+  "script_version": "lfm2-encoder-cuda-v1",
+  "embed_source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+  "harness_source": "1395603321611cfc9c89f1474a0c0093ac3ba571",
+  "model_source": "bb26e78c7164b386028928ebfcecebcc42467689",
+  "fixture_source": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+  "status": "completed; all failures retained",
+  "scope": "F16 CPU/CUDA reference agreement; no quantized MMQ, latency or independent task-quality claim",
+  "commands": [
+    {
+      "name": "audit-support-clone",
+      "exit_code": 0,
+      "log": "audit-support-clone.log",
+      "log_sha256": "d8cf896daff46d9b11b38cf7106bb4f0da2ef7520c4cbc73fcdd397da53bd645",
+      "wall_seconds": 2.076388826999988
+    },
+    {
+      "name": "audit-support-checkout",
+      "exit_code": 0,
+      "log": "audit-support-checkout.log",
+      "log_sha256": "356e210f6cfda4f1fdf794c84b95120a70a71039028010ef954a0d484519bbc1",
+      "wall_seconds": 3.973018197999977
+    },
+    {
+      "name": "python-dependencies",
+      "exit_code": 0,
+      "log": "python-dependencies.log",
+      "log_sha256": "131fe91b61ae415dbac0f5f7f40cfbc0a31257900e3d1a2602a5fb7c3e6522ca",
+      "wall_seconds": 9.435949531000006
+    },
+    {
+      "name": "CrispEmbed-clone",
+      "exit_code": 0,
+      "log": "CrispEmbed-clone.log",
+      "log_sha256": "ee86e50a78e4651566f2fff65bfc88249f4c26d4df8ab525f65e4444685888d2",
+      "wall_seconds": 1.1672391380000136
+    },
+    {
+      "name": "CrispEmbed-checkout",
+      "exit_code": 0,
+      "log": "CrispEmbed-checkout.log",
+      "log_sha256": "ec3f14dbd13dde5c7c7c03b57ecea6da99374c180da5588f7881db3685c28633",
+      "wall_seconds": 4.17557360699999
+    },
+    {
+      "name": "submodules",
+      "exit_code": 0,
+      "log": "submodules.log",
+      "log_sha256": "c9d162507b5f185138a268a8f404304c7cd729c97a7b757538f469fff0908576",
+      "wall_seconds": 3.1719113959999845
+    },
+    {
+      "name": "configure",
+      "exit_code": 0,
+      "log": "configure.log",
+      "log_sha256": "409049f5ce223f8044a3835a926d25da18ba6e6ec5ea5ba643277d6b29686b25",
+      "wall_seconds": 6.531348641000022
+    },
+    {
+      "name": "build",
+      "exit_code": 0,
+      "log": "build.log",
+      "log_sha256": "2a1004eb895ce8a4274a4f107490a7cd1185e6c9482b8e7283326adc3bf7a967",
+      "wall_seconds": 1798.10774008
+    },
+    {
+      "name": "unknown-backend",
+      "exit_code": 2,
+      "log": "unknown-backend.log",
+      "log_sha256": "a5befe0c465b542c645013fbc3cb36d979d019d1cebffb23f66550429625a79c",
+      "wall_seconds": 2.2696100620000834
+    },
+    {
+      "name": "cpu-probe",
+      "exit_code": 0,
+      "log": "cpu-probe.log",
+      "log_sha256": "cbf4b7596d8454032764e4e02327641beddfdcb301f78a3eb298b0a2445a3304",
+      "wall_seconds": 0.11445793500001855
+    },
+    {
+      "name": "cpu-stage-000",
+      "exit_code": 0,
+      "log": "cpu-stage-000.log",
+      "log_sha256": "a204a8b5510b1161d2d644968eae7e3e8d9867ecc64dce6811be22db8173d5bf",
+      "wall_seconds": 0.8171706779999113
+    },
+    {
+      "name": "cpu-stage-001",
+      "exit_code": 0,
+      "log": "cpu-stage-001.log",
+      "log_sha256": "0306f5301d00dd4ad6c2d656e894b235f53d4664be28a41edf71def8b6e3eaaf",
+      "wall_seconds": 0.8672794379999686
+    },
+    {
+      "name": "cpu-stage-002",
+      "exit_code": 0,
+      "log": "cpu-stage-002.log",
+      "log_sha256": "279d08e5d0e96e35d69acc5d4f61a0bb10f42c311962329bf8913daa2b927327",
+      "wall_seconds": 0.8670544189999418
+    },
+    {
+      "name": "cpu-stage-003",
+      "exit_code": 0,
+      "log": "cpu-stage-003.log",
+      "log_sha256": "824152836157b32c8cc7d35858447d1949d76cd648c5185f7902a3f678e48145",
+      "wall_seconds": 1.017875715999935
+    },
+    {
+      "name": "cpu-stage-004",
+      "exit_code": 0,
+      "log": "cpu-stage-004.log",
+      "log_sha256": "40bb94b7ffd314bafbc7b931e99c4de1b61738e51508ebd6e6b0544dc2fee434",
+      "wall_seconds": 0.6674372989998574
+    },
+    {
+      "name": "cpu-stage-005",
+      "exit_code": 0,
+      "log": "cpu-stage-005.log",
+      "log_sha256": "c7429051ddbae66bb3e7e488a364e5a5c91d7601950c0318abe3b3d476a056da",
+      "wall_seconds": 0.7168797130000257
+    },
+    {
+      "name": "cpu-stage-006",
+      "exit_code": 0,
+      "log": "cpu-stage-006.log",
+      "log_sha256": "e8bc8b87e0cdf16b8adb234b85bf5c23b08eb7c9ba36a535294985160ef4b21e",
+      "wall_seconds": 0.6162588059999052
+    },
+    {
+      "name": "cpu-stage-007",
+      "exit_code": 0,
+      "log": "cpu-stage-007.log",
+      "log_sha256": "71805372f485baf81a348732bdb51ad24571c593aa5b1df5701084920d6ff12b",
+      "wall_seconds": 0.6691880010000659
+    },
+    {
+      "name": "cpu-stage-008",
+      "exit_code": 0,
+      "log": "cpu-stage-008.log",
+      "log_sha256": "decb043500daf44cef29d7111576ac8a1fa5cea95ba69c035e3a415d199c1937",
+      "wall_seconds": 0.8176999850002176
+    },
+    {
+      "name": "cpu-stage-009",
+      "exit_code": 0,
+      "log": "cpu-stage-009.log",
+      "log_sha256": "36c1b18e40b1085dbde9b5846d70e4fcedc96d773c530a96711fddef0254d54f",
+      "wall_seconds": 0.9173681239999496
+    },
+    {
+      "name": "cpu-stage-010",
+      "exit_code": 0,
+      "log": "cpu-stage-010.log",
+      "log_sha256": "5ba799680e7160243f85de8abb796e849e45513101a430e2059fd4d5cce1ff99",
+      "wall_seconds": 0.8672632079999403
+    },
+    {
+      "name": "cpu-stage-011",
+      "exit_code": 0,
+      "log": "cpu-stage-011.log",
+      "log_sha256": "9cb8eaa7a6c8d37557f9ff640c1c9c43e00c4609f1d750da6cceefd2da501088",
+      "wall_seconds": 0.8178155519999564
+    },
+    {
+      "name": "cpu-stage-012",
+      "exit_code": 0,
+      "log": "cpu-stage-012.log",
+      "log_sha256": "f62463da471f6c149b5a374cfdc391154b462fcd222598b09916d32996aeafd3",
+      "wall_seconds": 0.7670141700000386
+    },
+    {
+      "name": "cpu-stage-013",
+      "exit_code": 0,
+      "log": "cpu-stage-013.log",
+      "log_sha256": "0756d5011e05722c73d30d0351f64e909bf8865f2a049cef1966bc24cf6458a0",
+      "wall_seconds": 1.119591279999895
+    },
+    {
+      "name": "cpu-stage-014",
+      "exit_code": 0,
+      "log": "cpu-stage-014.log",
+      "log_sha256": "849b0bee47e870461a8ce81e9cd704a3e6b2162c22a562ab2d34a2ffce485a95",
+      "wall_seconds": 16.808845150000252
+    },
+    {
+      "name": "cpu-api",
+      "exit_code": 0,
+      "log": "cpu-api.log",
+      "log_sha256": "de55a2f9d344b46a321b9f3657268c6f8d731a42d24457637600c952c7878838",
+      "wall_seconds": 71.45728031399995
+    },
+    {
+      "name": "cuda-probe",
+      "exit_code": 0,
+      "log": "cuda-probe.log",
+      "log_sha256": "6789c566f904f3cbbcd354b704a633dd70a9c5488aa2c8ee86fd5662f82aec58",
+      "wall_seconds": 0.4659922999999253
+    },
+    {
+      "name": "cuda-stage-000",
+      "exit_code": 0,
+      "log": "cuda-stage-000.log",
+      "log_sha256": "dbc09b0f5ea7f3a0ddf2fde17e5c3f2247a4fe0bb40c344b23d3b1b19e8c9476",
+      "wall_seconds": 1.1671581999999034
+    },
+    {
+      "name": "cuda-stage-001",
+      "exit_code": 0,
+      "log": "cuda-stage-001.log",
+      "log_sha256": "0eda82c4f0f471d3fb85e5912595518bbcd3a4a04d28ef6d44e36b8d23103fb2",
+      "wall_seconds": 0.9672151459999441
+    },
+    {
+      "name": "cuda-stage-002",
+      "exit_code": 0,
+      "log": "cuda-stage-002.log",
+      "log_sha256": "e273ef6473088be45a0d77a19c6b61b896a21d10a4883ea670a9eaa6fd07129c",
+      "wall_seconds": 0.9670795229999385
+    },
+    {
+      "name": "cuda-stage-003",
+      "exit_code": 0,
+      "log": "cuda-stage-003.log",
+      "log_sha256": "5f89021954a701177722d8331facb882f2219af236c948f76d0eb6f16389708e",
+      "wall_seconds": 1.0666357199997947
+    },
+    {
+      "name": "cuda-stage-004",
+      "exit_code": 0,
+      "log": "cuda-stage-004.log",
+      "log_sha256": "3649f842f8a2ed01d6e20a31c3a3ed814dd1a4f32afdce12e80a3378da670eca",
+      "wall_seconds": 0.9666044150003472
+    },
+    {
+      "name": "cuda-stage-005",
+      "exit_code": 0,
+      "log": "cuda-stage-005.log",
+      "log_sha256": "045126a49ee6954b76062b85b69e312853b2def1634e28150e487c4cd7f4f91e",
+      "wall_seconds": 0.9673781940000481
+    },
+    {
+      "name": "cuda-stage-006",
+      "exit_code": 0,
+      "log": "cuda-stage-006.log",
+      "log_sha256": "f9de2298a11e0d4cece8d7d766aa12a4e11bcd3d23132d1bce940f00cca40457",
+      "wall_seconds": 0.9665508970001611
+    },
+    {
+      "name": "cuda-stage-007",
+      "exit_code": 0,
+      "log": "cuda-stage-007.log",
+      "log_sha256": "1c49ea507d551aed0e747645281c8c905168ab0f31037fc175679219ff6d7249",
+      "wall_seconds": 0.9669771590001801
+    },
+    {
+      "name": "cuda-stage-008",
+      "exit_code": 0,
+      "log": "cuda-stage-008.log",
+      "log_sha256": "ac2dbdb98841140866bedae428900f4ec246ef959ee6f084fb9f3752d92cf425",
+      "wall_seconds": 0.9674789000000601
+    },
+    {
+      "name": "cuda-stage-009",
+      "exit_code": 0,
+      "log": "cuda-stage-009.log",
+      "log_sha256": "f1bc333ce0794705120dbd88868b13889beb2ec34e533f64570ab88db004676b",
+      "wall_seconds": 0.967294468000091
+    },
+    {
+      "name": "cuda-stage-010",
+      "exit_code": 0,
+      "log": "cuda-stage-010.log",
+      "log_sha256": "4909298d45c09cc94c37ddf66c89cbe71455bb2abfa035eff80f0a8d499ba296",
+      "wall_seconds": 0.9666044409996175
+    },
+    {
+      "name": "cuda-stage-011",
+      "exit_code": 0,
+      "log": "cuda-stage-011.log",
+      "log_sha256": "8614d436369804bbcf15b4007a29f62bf8702d6fab24dbdc308cf474a96f28e8",
+      "wall_seconds": 0.966475177999655
+    },
+    {
+      "name": "cuda-stage-012",
+      "exit_code": 0,
+      "log": "cuda-stage-012.log",
+      "log_sha256": "fbc26f547c433c279c2078ba8003b0ef54a688a5582d6d4fc3cf945bc8ca3bb3",
+      "wall_seconds": 0.9666765189999751
+    },
+    {
+      "name": "cuda-stage-013",
+      "exit_code": 0,
+      "log": "cuda-stage-013.log",
+      "log_sha256": "a8bad9de2a82ef783050205d320c1ba576cf5998e66f94d493799325d601af8b",
+      "wall_seconds": 1.0164833380003984
+    },
+    {
+      "name": "cuda-stage-014",
+      "exit_code": 0,
+      "log": "cuda-stage-014.log",
+      "log_sha256": "748fa589686b8b02320a5c196b984c242b34b962b463813b6f7014d2f746604c",
+      "wall_seconds": 1.3175838350002778
+    },
+    {
+      "name": "cuda-api",
+      "exit_code": 0,
+      "log": "cuda-api.log",
+      "log_sha256": "2f139a619b0c1879ab7251bfcf5b91db914704d1d9ce877f9d52ff188531fdc5",
+      "wall_seconds": 2.837934012000005
+    }
+  ],
+  "arms": {
+    "cpu": {
+      "direct_cases": [
+        {
+          "case": 0,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 1,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 2,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 3,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 4,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 5,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 6,
+          "exit_code": 0,
+          "pass_count": 19,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 7,
+          "exit_code": 0,
+          "pass_count": 19,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 8,
+          "exit_code": 0,
+          "pass_count": 19,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 9,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 10,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 11,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 12,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 13,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 14,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        }
+      ],
+      "api": {
+        "model": "LFM2.5-Encoder-230M-F16.gguf",
+        "cases": [
+          {
+            "text": "The capital of France is <|mask|>.",
+            "tokens": 9,
+            "hidden": {
+              "cos_min": 0.9999955400469518,
+              "cos_mean": 0.9999993421828685,
+              "cos_global": 0.9999985497117901,
+              "relative_error": 0.0017210850226770627,
+              "mine_norm": 143.42177743183066,
+              "ref_norm": 143.4575789680133
+            },
+            "cls": {
+              "cos_min": 0.9999997965321333,
+              "cos_mean": 0.9999997965321333,
+              "cos_global": 0.9999997965321333,
+              "relative_error": 0.0006384909997268589,
+              "mine_norm": 55.51671679990809,
+              "ref_norm": 55.51522296286042
+            },
+            "logits": {
+              "cos_min": 0.9999998993228837,
+              "cos_mean": 0.9999998993228837,
+              "cos_global": 0.9999998993228858,
+              "relative_error": 0.00045002715086038303,
+              "mine_norm": 941.685691352511,
+              "ref_norm": 941.7180008207074
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              }
+            ]
+          },
+          {
+            "text": "Die Hauptstadt von Deutschland ist <|mask|>.",
+            "tokens": 9,
+            "hidden": {
+              "cos_min": 0.9999962395572627,
+              "cos_mean": 0.9999994667648977,
+              "cos_global": 0.9999993050265119,
+              "relative_error": 0.0011808900270849272,
+              "mine_norm": 201.907304775986,
+              "ref_norm": 201.92107255151876
+            },
+            "cls": {
+              "cos_min": 0.9999998819465469,
+              "cos_mean": 0.9999998819465469,
+              "cos_global": 0.9999998819465469,
+              "relative_error": 0.0005048530017136285,
+              "mine_norm": 77.27487132651497,
+              "ref_norm": 77.26429505314995
+            },
+            "logits": {
+              "cos_min": 0.9999999118255584,
+              "cos_mean": 0.9999999118255584,
+              "cos_global": 0.9999999118255588,
+              "relative_error": 0.0004712905684659121,
+              "mine_norm": 1234.731495180678,
+              "ref_norm": 1234.995806380658
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 52362,
+                "token": "Berlin",
+                "reference_id": 52362,
+                "reference_token": "Berlin"
+              }
+            ]
+          },
+          {
+            "text": "La capitale de la France est <|mask|>.",
+            "tokens": 10,
+            "hidden": {
+              "cos_min": 0.9999962719052196,
+              "cos_mean": 0.9999995166771954,
+              "cos_global": 0.9999993004562101,
+              "relative_error": 0.0011849218634476892,
+              "mine_norm": 197.7103404038366,
+              "ref_norm": 197.72439370194806
+            },
+            "cls": {
+              "cos_min": 0.9999998590423685,
+              "cos_mean": 0.9999998590423685,
+              "cos_global": 0.9999998590423688,
+              "relative_error": 0.0005455616169346215,
+              "mine_norm": 75.99450153119648,
+              "ref_norm": 75.98498461088874
+            },
+            "logits": {
+              "cos_min": 0.9999999054999935,
+              "cos_mean": 0.9999999054999935,
+              "cos_global": 0.9999999054999953,
+              "relative_error": 0.0004434684210958177,
+              "mine_norm": 991.2526278105175,
+              "ref_norm": 991.3395089285737
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              }
+            ]
+          },
+          {
+            "text": "The capital of France is <|mask|> and the capital of Germany is <|mask|>.",
+            "tokens": 17,
+            "hidden": {
+              "cos_min": 0.9999933061404688,
+              "cos_mean": 0.9999994377024852,
+              "cos_global": 0.9999984295178996,
+              "relative_error": 0.0018132946105112022,
+              "mine_norm": 169.03424005806943,
+              "ref_norm": 169.09935596911725
+            },
+            "cls": {
+              "cos_min": 0.9999997631452635,
+              "cos_mean": 0.9999997631452635,
+              "cos_global": 0.9999997631452637,
+              "relative_error": 0.0006957821784640315,
+              "mine_norm": 43.60022621912522,
+              "ref_norm": 43.59578989769663
+            },
+            "logits": {
+              "cos_min": 0.9999999272337098,
+              "cos_mean": 0.9999999317107156,
+              "cos_global": 0.9999999317070134,
+              "relative_error": 0.0003700399037955538,
+              "mine_norm": 1624.4884591084033,
+              "ref_norm": 1624.5186811133465
+            },
+            "top1_matches": 2,
+            "masks": 2,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              },
+              {
+                "token_id": 7053,
+                "token": " Berlin",
+                "reference_id": 7053,
+                "reference_token": " Berlin"
+              }
+            ]
+          },
+          {
+            "text": "<|mask|>",
+            "tokens": 2,
+            "hidden": {
+              "cos_min": 0.9999995787484859,
+              "cos_mean": 0.9999996563184925,
+              "cos_global": 0.9999996257240422,
+              "relative_error": 0.001004232526506883,
+              "mine_norm": 46.76162951313212,
+              "ref_norm": 46.7854998845754
+            },
+            "cls": {
+              "cos_min": 0.9999995787484859,
+              "cos_mean": 0.9999995787484859,
+              "cos_global": 0.9999995787484859,
+              "relative_error": 0.0010215549567150867,
+              "mine_norm": 38.34216886623554,
+              "ref_norm": 38.359385763821535
+            },
+            "logits": {
+              "cos_min": 0.9999997842350493,
+              "cos_mean": 0.9999997842350493,
+              "cos_global": 0.9999997842350506,
+              "relative_error": 0.000769225286739673,
+              "mine_norm": 999.5549486017485,
+              "ref_norm": 999.9553685417263
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 511,
+                "token": "\"",
+                "reference_id": 511,
+                "reference_token": "\""
+              }
+            ]
+          },
+          {
+            "text": "<|mask|><|mask|>",
+            "tokens": 3,
+            "hidden": {
+              "cos_min": 0.9999996496078145,
+              "cos_mean": 0.9999996890410726,
+              "cos_global": 0.9999996578490181,
+              "relative_error": 0.0009876346756734408,
+              "mine_norm": 45.98243990766033,
+              "ref_norm": 46.00727914100182
+            },
+            "cls": {
+              "cos_min": 0.9999996496078145,
+              "cos_mean": 0.9999996496078145,
+              "cos_global": 0.9999996496078145,
+              "relative_error": 0.0009251368464346455,
+              "mine_norm": 35.575640841716485,
+              "ref_norm": 35.58966922404587
+            },
+            "logits": {
+              "cos_min": 0.999999830779498,
+              "cos_mean": 0.9999998376540251,
+              "cos_global": 0.999999837251996,
+              "relative_error": 0.0007006064105726649,
+              "mine_norm": 1282.5009547702393,
+              "ref_norm": 1283.0228877039235
+            },
+            "top1_matches": 2,
+            "masks": 2,
+            "predictions": [
+              {
+                "token_id": 512,
+                "token": "#",
+                "reference_id": 512,
+                "reference_token": "#"
+              },
+              {
+                "token_id": 633,
+                "token": "\ufffd",
+                "reference_id": 633,
+                "reference_token": "\ufffd"
+              }
+            ]
+          },
+          {
+            "text": "",
+            "tokens": 1,
+            "hidden": {
+              "cos_min": 0.9999994059124945,
+              "cos_mean": 0.9999994059124945,
+              "cos_global": 0.9999994059124945,
+              "relative_error": 0.0011120459077377353,
+              "mine_norm": 29.77153594065107,
+              "ref_norm": 29.77810964884332
+            },
+            "cls": {
+              "cos_min": 0.9999994059124945,
+              "cos_mean": 0.9999994059124945,
+              "cos_global": 0.9999994059124945,
+              "relative_error": 0.0011120459077377353,
+              "mine_norm": 29.77153594065107,
+              "ref_norm": 29.77810964884332
+            }
+          },
+          {
+            "text": "hello world",
+            "tokens": 3,
+            "hidden": {
+              "cos_min": 0.9999992412255218,
+              "cos_mean": 0.9999996230562043,
+              "cos_global": 0.9999993708062536,
+              "relative_error": 0.0011607198131218309,
+              "mine_norm": 67.89019207314186,
+              "ref_norm": 67.91048116907412
+            },
+            "cls": {
+              "cos_min": 0.9999992412255218,
+              "cos_mean": 0.9999992412255218,
+              "cos_global": 0.9999992412255218,
+              "relative_error": 0.0012695893834979342,
+              "mine_norm": 59.841561772393305,
+              "ref_norm": 59.85999004078574
+            }
+          },
+          {
+            "text": "  tabs\tand\nnewlines\r\n123456789!  ",
+            "tokens": 14,
+            "hidden": {
+              "cos_min": 0.9999986730360563,
+              "cos_mean": 0.99999969613498,
+              "cos_global": 0.9999994912006045,
+              "relative_error": 0.001059013833947241,
+              "mine_norm": 112.891879295071,
+              "ref_norm": 112.92833959639788
+            },
+            "cls": {
+              "cos_min": 0.9999997136201819,
+              "cos_mean": 0.9999997136201819,
+              "cos_global": 0.9999997136201819,
+              "relative_error": 0.0007607436199798429,
+              "mine_norm": 36.97707630301434,
+              "ref_norm": 36.97994448869384
+            }
+          },
+          {
+            "text": "\u65e5\u672c\u306e\u9996\u90fd\u306f<|mask|>\u3067\u3059\u3002\u4e2d\u56fd\u7684\u9996\u90fd\u662f<|mask|>\u3002",
+            "tokens": 14,
+            "hidden": {
+              "cos_min": 0.9999964261808294,
+              "cos_mean": 0.9999996636664765,
+              "cos_global": 0.9999996696004785,
+              "relative_error": 0.0008132607624829214,
+              "mine_norm": 301.13905047077594,
+              "ref_norm": 301.1464903685453
+            },
+            "cls": {
+              "cos_min": 0.9999998311817122,
+              "cos_mean": 0.9999998311817122,
+              "cos_global": 0.9999998311817123,
+              "relative_error": 0.0005817057885992943,
+              "mine_norm": 83.2519508294393,
+              "ref_norm": 83.25423740066873
+            },
+            "logits": {
+              "cos_min": 0.9999999020325261,
+              "cos_mean": 0.9999999101726947,
+              "cos_global": 0.9999999099704988,
+              "relative_error": 0.00043241564036537554,
+              "mine_norm": 2917.476044761388,
+              "ref_norm": 2917.719097688502
+            },
+            "top1_matches": 2,
+            "masks": 2,
+            "predictions": [
+              {
+                "token_id": 20374,
+                "token": "\u6771\u4eac",
+                "reference_id": 20374,
+                "reference_token": "\u6771\u4eac"
+              },
+              {
+                "token_id": 52377,
+                "token": "\u4eac\u90fd",
+                "reference_id": 52377,
+                "reference_token": "\u4eac\u90fd"
+              }
+            ]
+          },
+          {
+            "text": "\u0639\u0627\u0635\u0645\u0629 \u0641\u0631\u0646\u0633\u0627 \u0647\u064a <|mask|>.",
+            "tokens": 11,
+            "hidden": {
+              "cos_min": 0.9999980445813839,
+              "cos_mean": 0.9999997135304463,
+              "cos_global": 0.9999997250953823,
+              "relative_error": 0.000761185508231176,
+              "mine_norm": 231.36535622040407,
+              "ref_norm": 231.40522840599203
+            },
+            "cls": {
+              "cos_min": 0.9999997235221397,
+              "cos_mean": 0.9999997235221397,
+              "cos_global": 0.9999997235221397,
+              "relative_error": 0.0007567533771650072,
+              "mine_norm": 82.8357085411036,
+              "ref_norm": 82.84736553835278
+            },
+            "logits": {
+              "cos_min": 0.9999998490373255,
+              "cos_mean": 0.9999998490373255,
+              "cos_global": 0.999999849037327,
+              "relative_error": 0.0005675617808390069,
+              "mine_norm": 877.4080380209818,
+              "ref_norm": 877.5328945914182
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 528,
+                "token": "3",
+                "reference_id": 528,
+                "reference_token": "3"
+              }
+            ]
+          },
+          {
+            "text": "<|startoftext|>literal special tokens<|im_end|><|mask|>.",
+            "tokens": 9,
+            "hidden": {
+              "cos_min": 0.9999986344511457,
+              "cos_mean": 0.999999423285462,
+              "cos_global": 0.999999480795415,
+              "relative_error": 0.0011407717888502352,
+              "mine_norm": 97.89356685677929,
+              "ref_norm": 97.94384212123187
+            },
+            "cls": {
+              "cos_min": 0.9999996825788162,
+              "cos_mean": 0.9999996825788162,
+              "cos_global": 0.9999996825788162,
+              "relative_error": 0.0010024948373817772,
+              "mine_norm": 59.607957888566354,
+              "ref_norm": 59.64426454205843
+            },
+            "logits": {
+              "cos_min": 0.9999995650547326,
+              "cos_mean": 0.9999995650547326,
+              "cos_global": 0.9999995650547349,
+              "relative_error": 0.0009755378035163241,
+              "mine_norm": 973.5796216228828,
+              "ref_norm": 973.8585477332452
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 526,
+                "token": "1",
+                "reference_id": 526,
+                "reference_token": "1"
+              }
+            ]
+          },
+          {
+            "text": "<|pad|>a<|reserved_7|>b<|mask|><|endoftext|>",
+            "tokens": 7,
+            "hidden": {
+              "cos_min": 0.9999993556592035,
+              "cos_mean": 0.9999996333763852,
+              "cos_global": 0.9999996158370245,
+              "relative_error": 0.0008765630108136501,
+              "mine_norm": 86.44374361420863,
+              "ref_norm": 86.44430198104229
+            },
+            "cls": {
+              "cos_min": 0.9999996922118175,
+              "cos_mean": 0.9999996922118175,
+              "cos_global": 0.9999996922118176,
+              "relative_error": 0.0008083001392982816,
+              "mine_norm": 49.75437290199869,
+              "ref_norm": 49.74472020839599
+            },
+            "logits": {
+              "cos_min": 0.9999998654075581,
+              "cos_mean": 0.9999998654075581,
+              "cos_global": 0.9999998654075599,
+              "relative_error": 0.0005392295415587937,
+              "mine_norm": 994.2914736306037,
+              "ref_norm": 994.4377039888591
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 7593,
+                "token": "\u0101",
+                "reference_id": 7593,
+                "reference_token": "\u0101"
+              }
+            ]
+          },
+          {
+            "text": "Emoji \ud83d\ude42 caf\u00e9 Stra\u00dfe \u0440\u0443\u0441\u0441\u043a\u0438\u0439 \u0967\u0968\u0969\n\t <|mask|>!",
+            "tokens": 20,
+            "hidden": {
+              "cos_min": 0.9999974020068112,
+              "cos_mean": 0.9999997280551189,
+              "cos_global": 0.9999994303963093,
+              "relative_error": 0.00108794012023948,
+              "mine_norm": 196.14345097479256,
+              "ref_norm": 196.1849045412022
+            },
+            "cls": {
+              "cos_min": 0.9999998503323567,
+              "cos_mean": 0.9999998503323567,
+              "cos_global": 0.9999998503323569,
+              "relative_error": 0.0005932829593238808,
+              "mine_norm": 56.656575376120834,
+              "ref_norm": 56.66958695418492
+            },
+            "logits": {
+              "cos_min": 0.9999998368572613,
+              "cos_mean": 0.9999998368572613,
+              "cos_global": 0.9999998368572628,
+              "relative_error": 0.000627942638848022,
+              "mine_norm": 975.2801137194273,
+              "ref_norm": 975.5347107767257
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 54055,
+                "token": " Enjoy",
+                "reference_id": 54055,
+                "reference_token": " Enjoy"
+              }
+            ]
+          },
+          {
+            "text": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The capital of France is <|mask|>.",
+            "tokens": 649,
+            "hidden": {
+              "cos_min": 0.9999894746164296,
+              "cos_mean": 0.9999995725731847,
+              "cos_global": 0.9999994439445438,
+              "relative_error": 0.0010634108435485074,
+              "mine_norm": 1311.7773226383797,
+              "ref_norm": 1311.598539944024
+            },
+            "cls": {
+              "cos_min": 0.9999997021465492,
+              "cos_mean": 0.9999997021465492,
+              "cos_global": 0.9999997021465494,
+              "relative_error": 0.0007733531920089009,
+              "mine_norm": 39.332242710583515,
+              "ref_norm": 39.33416864981945
+            },
+            "logits": {
+              "cos_min": 0.9999999258617702,
+              "cos_mean": 0.9999999258617702,
+              "cos_global": 0.999999925861772,
+              "relative_error": 0.0003879556399193995,
+              "mine_norm": 890.0841890091291,
+              "ref_norm": 890.0421952087928
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              }
+            ]
+          }
+        ],
+        "top1_matches": 15,
+        "masks": 15
+      },
+      "api_exit": 0,
+      "cuda_matmul_assignments": 0
+    },
+    "cuda": {
+      "direct_cases": [
+        {
+          "case": 0,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 1,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 2,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 3,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 4,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 5,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 6,
+          "exit_code": 0,
+          "pass_count": 19,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 7,
+          "exit_code": 0,
+          "pass_count": 19,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 8,
+          "exit_code": 0,
+          "pass_count": 19,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 9,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 10,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 11,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 12,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 13,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        },
+        {
+          "case": 14,
+          "exit_code": 0,
+          "pass_count": 20,
+          "fail_count": 0,
+          "backend_verified": true
+        }
+      ],
+      "api": {
+        "model": "LFM2.5-Encoder-230M-F16.gguf",
+        "cases": [
+          {
+            "text": "The capital of France is <|mask|>.",
+            "tokens": 9,
+            "hidden": {
+              "cos_min": 0.9999978778478187,
+              "cos_mean": 0.9999991582984039,
+              "cos_global": 0.9999987585380162,
+              "relative_error": 0.0016109120793972736,
+              "mine_norm": 143.409366076145,
+              "ref_norm": 143.4575789680133
+            },
+            "cls": {
+              "cos_min": 0.9999993764634569,
+              "cos_mean": 0.9999993764634569,
+              "cos_global": 0.9999993764634572,
+              "relative_error": 0.0012381607179046915,
+              "mine_norm": 55.544875720063224,
+              "ref_norm": 55.51522296286042
+            },
+            "logits": {
+              "cos_min": 0.9999996860265421,
+              "cos_mean": 0.9999996860265421,
+              "cos_global": 0.9999996860265443,
+              "relative_error": 0.0007930302193711535,
+              "mine_norm": 941.6886777478295,
+              "ref_norm": 941.7180008207074
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              }
+            ]
+          },
+          {
+            "text": "Die Hauptstadt von Deutschland ist <|mask|>.",
+            "tokens": 9,
+            "hidden": {
+              "cos_min": 0.9999883813201785,
+              "cos_mean": 0.9999983807357287,
+              "cos_global": 0.9999978824486302,
+              "relative_error": 0.002066005683601184,
+              "mine_norm": 201.88380822291683,
+              "ref_norm": 201.92107255151876
+            },
+            "cls": {
+              "cos_min": 0.999999622574073,
+              "cos_mean": 0.999999622574073,
+              "cos_global": 0.999999622574073,
+              "relative_error": 0.0008696120936868487,
+              "mine_norm": 77.26140243703391,
+              "ref_norm": 77.26429505314995
+            },
+            "logits": {
+              "cos_min": 0.9999996888758287,
+              "cos_mean": 0.9999996888758287,
+              "cos_global": 0.9999996888758294,
+              "relative_error": 0.0009876660680427508,
+              "mine_norm": 1234.261418912206,
+              "ref_norm": 1234.995806380658
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 52362,
+                "token": "Berlin",
+                "reference_id": 52362,
+                "reference_token": "Berlin"
+              }
+            ]
+          },
+          {
+            "text": "La capitale de la France est <|mask|>.",
+            "tokens": 10,
+            "hidden": {
+              "cos_min": 0.9999943659609692,
+              "cos_mean": 0.9999990799315889,
+              "cos_global": 0.9999987703667659,
+              "relative_error": 0.0015682288200730063,
+              "mine_norm": 197.7258819314132,
+              "ref_norm": 197.72439370194806
+            },
+            "cls": {
+              "cos_min": 0.9999996590254878,
+              "cos_mean": 0.9999996590254878,
+              "cos_global": 0.9999996590254879,
+              "relative_error": 0.0008285603510527298,
+              "mine_norm": 75.97982572217181,
+              "ref_norm": 75.98498461088874
+            },
+            "logits": {
+              "cos_min": 0.9999996662912348,
+              "cos_mean": 0.9999996662912348,
+              "cos_global": 0.9999996662912368,
+              "relative_error": 0.0008262235465364601,
+              "mine_norm": 991.216845329373,
+              "ref_norm": 991.3395089285737
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              }
+            ]
+          },
+          {
+            "text": "The capital of France is <|mask|> and the capital of Germany is <|mask|>.",
+            "tokens": 17,
+            "hidden": {
+              "cos_min": 0.9999939980072718,
+              "cos_mean": 0.9999992966737425,
+              "cos_global": 0.9999984343164505,
+              "relative_error": 0.0018524156374689635,
+              "mine_norm": 169.0064594802294,
+              "ref_norm": 169.09935596911725
+            },
+            "cls": {
+              "cos_min": 0.9999995786961007,
+              "cos_mean": 0.9999995786961007,
+              "cos_global": 0.9999995786961007,
+              "relative_error": 0.0009505493672821905,
+              "mine_norm": 43.58500977247392,
+              "ref_norm": 43.59578989769663
+            },
+            "logits": {
+              "cos_min": 0.9999998199333586,
+              "cos_mean": 0.9999998479306149,
+              "cos_global": 0.9999998412372383,
+              "relative_error": 0.0005647542497538519,
+              "mine_norm": 1624.457166534418,
+              "ref_norm": 1624.5186811133465
+            },
+            "top1_matches": 2,
+            "masks": 2,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              },
+              {
+                "token_id": 7053,
+                "token": " Berlin",
+                "reference_id": 7053,
+                "reference_token": " Berlin"
+              }
+            ]
+          },
+          {
+            "text": "<|mask|>",
+            "tokens": 2,
+            "hidden": {
+              "cos_min": 0.9999970265992117,
+              "cos_mean": 0.9999977592771933,
+              "cos_global": 0.9999974990433125,
+              "relative_error": 0.0026855187524500207,
+              "mine_norm": 46.71582959618165,
+              "ref_norm": 46.7854998845754
+            },
+            "cls": {
+              "cos_min": 0.9999970265992117,
+              "cos_mean": 0.9999970265992117,
+              "cos_global": 0.9999970265992117,
+              "relative_error": 0.002902467693641075,
+              "mine_norm": 38.29889342381206,
+              "ref_norm": 38.359385763821535
+            },
+            "logits": {
+              "cos_min": 0.9999988871231442,
+              "cos_mean": 0.9999988871231442,
+              "cos_global": 0.9999988871231458,
+              "relative_error": 0.0017047790764145132,
+              "mine_norm": 999.1293566403714,
+              "ref_norm": 999.9553685417263
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 511,
+                "token": "\"",
+                "reference_id": 511,
+                "reference_token": "\""
+              }
+            ]
+          },
+          {
+            "text": "<|mask|><|mask|>",
+            "tokens": 3,
+            "hidden": {
+              "cos_min": 0.9999989546590912,
+              "cos_mean": 0.9999992074852315,
+              "cos_global": 0.9999991080314351,
+              "relative_error": 0.0016927909255460645,
+              "mine_norm": 45.95939042786002,
+              "ref_norm": 46.00727914100182
+            },
+            "cls": {
+              "cos_min": 0.9999989546590912,
+              "cos_mean": 0.9999989546590912,
+              "cos_global": 0.9999989546590914,
+              "relative_error": 0.0017796002399264345,
+              "mine_norm": 35.55270962494924,
+              "ref_norm": 35.58966922404587
+            },
+            "logits": {
+              "cos_min": 0.9999995057359942,
+              "cos_mean": 0.9999995769299903,
+              "cos_global": 0.9999995720181546,
+              "relative_error": 0.0010887226485403671,
+              "mine_norm": 1282.2860203790785,
+              "ref_norm": 1283.0228877039235
+            },
+            "top1_matches": 2,
+            "masks": 2,
+            "predictions": [
+              {
+                "token_id": 512,
+                "token": "#",
+                "reference_id": 512,
+                "reference_token": "#"
+              },
+              {
+                "token_id": 633,
+                "token": "\ufffd",
+                "reference_id": 633,
+                "reference_token": "\ufffd"
+              }
+            ]
+          },
+          {
+            "text": "",
+            "tokens": 1,
+            "hidden": {
+              "cos_min": 0.9999996080173493,
+              "cos_mean": 0.9999996080173493,
+              "cos_global": 0.9999996080173493,
+              "relative_error": 0.0008891481460844333,
+              "mine_norm": 29.78052069194771,
+              "ref_norm": 29.77810964884332
+            },
+            "cls": {
+              "cos_min": 0.9999996080173493,
+              "cos_mean": 0.9999996080173493,
+              "cos_global": 0.9999996080173493,
+              "relative_error": 0.0008891481460844333,
+              "mine_norm": 29.78052069194771,
+              "ref_norm": 29.77810964884332
+            }
+          },
+          {
+            "text": "hello world",
+            "tokens": 3,
+            "hidden": {
+              "cos_min": 0.999998316918893,
+              "cos_mean": 0.9999988589277512,
+              "cos_global": 0.9999982430951108,
+              "relative_error": 0.0019059266578976288,
+              "mine_norm": 67.93376386504809,
+              "ref_norm": 67.91048116907412
+            },
+            "cls": {
+              "cos_min": 0.999998316918893,
+              "cos_mean": 0.999998316918893,
+              "cos_global": 0.999998316918893,
+              "relative_error": 0.0019720504467823346,
+              "mine_norm": 59.903171979653514,
+              "ref_norm": 59.85999004078574
+            }
+          },
+          {
+            "text": "  tabs\tand\nnewlines\r\n123456789!  ",
+            "tokens": 14,
+            "hidden": {
+              "cos_min": 0.9999960426466321,
+              "cos_mean": 0.9999987259091425,
+              "cos_global": 0.9999978872415323,
+              "relative_error": 0.0021495044450978032,
+              "mine_norm": 112.85713950381103,
+              "ref_norm": 112.92833959639788
+            },
+            "cls": {
+              "cos_min": 0.9999960426466321,
+              "cos_mean": 0.9999960426466321,
+              "cos_global": 0.9999960426466322,
+              "relative_error": 0.0028623922268462107,
+              "mine_norm": 36.96027924340655,
+              "ref_norm": 36.97994448869384
+            }
+          },
+          {
+            "text": "\u65e5\u672c\u306e\u9996\u90fd\u306f<|mask|>\u3067\u3059\u3002\u4e2d\u56fd\u7684\u9996\u90fd\u662f<|mask|>\u3002",
+            "tokens": 14,
+            "hidden": {
+              "cos_min": 0.9999937967244689,
+              "cos_mean": 0.9999993349668836,
+              "cos_global": 0.9999993440534707,
+              "relative_error": 0.00114650509060758,
+              "mine_norm": 301.1309926556571,
+              "ref_norm": 301.1464903685453
+            },
+            "cls": {
+              "cos_min": 0.9999995300660791,
+              "cos_mean": 0.9999995300660791,
+              "cos_global": 0.9999995300660793,
+              "relative_error": 0.0009749838133438848,
+              "mine_norm": 83.24557600894268,
+              "ref_norm": 83.25423740066873
+            },
+            "logits": {
+              "cos_min": 0.9999997456318613,
+              "cos_mean": 0.99999975030382,
+              "cos_global": 0.9999997501245884,
+              "relative_error": 0.0007207378132390609,
+              "mine_norm": 2917.3087200692685,
+              "ref_norm": 2917.719097688502
+            },
+            "top1_matches": 2,
+            "masks": 2,
+            "predictions": [
+              {
+                "token_id": 20374,
+                "token": "\u6771\u4eac",
+                "reference_id": 20374,
+                "reference_token": "\u6771\u4eac"
+              },
+              {
+                "token_id": 52377,
+                "token": "\u4eac\u90fd",
+                "reference_id": 52377,
+                "reference_token": "\u4eac\u90fd"
+              }
+            ]
+          },
+          {
+            "text": "\u0639\u0627\u0635\u0645\u0629 \u0641\u0631\u0646\u0633\u0627 \u0647\u064a <|mask|>.",
+            "tokens": 11,
+            "hidden": {
+              "cos_min": 0.9999981434734775,
+              "cos_mean": 0.9999995465283288,
+              "cos_global": 0.9999996233495336,
+              "relative_error": 0.0008727087014742081,
+              "mine_norm": 231.3840342415518,
+              "ref_norm": 231.40522840599203
+            },
+            "cls": {
+              "cos_min": 0.999999650273366,
+              "cos_mean": 0.999999650273366,
+              "cos_global": 0.999999650273366,
+              "relative_error": 0.0008448082467458246,
+              "mine_norm": 82.83744754947193,
+              "ref_norm": 82.84736553835278
+            },
+            "logits": {
+              "cos_min": 0.9999995143982711,
+              "cos_mean": 0.9999995143982711,
+              "cos_global": 0.9999995143982727,
+              "relative_error": 0.0013723530195378687,
+              "mine_norm": 878.3705696131921,
+              "ref_norm": 877.5328945914182
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 528,
+                "token": "3",
+                "reference_id": 528,
+                "reference_token": "3"
+              }
+            ]
+          },
+          {
+            "text": "<|startoftext|>literal special tokens<|im_end|><|mask|>.",
+            "tokens": 9,
+            "hidden": {
+              "cos_min": 0.9999988034095115,
+              "cos_mean": 0.9999991999080786,
+              "cos_global": 0.9999993155375625,
+              "relative_error": 0.0012271339631110098,
+              "mine_norm": 97.90753144617027,
+              "ref_norm": 97.94384212123187
+            },
+            "cls": {
+              "cos_min": 0.999999483074789,
+              "cos_mean": 0.999999483074789,
+              "cos_global": 0.9999994830747888,
+              "relative_error": 0.0010805349430596481,
+              "mine_norm": 59.62242432138941,
+              "ref_norm": 59.64426454205843
+            },
+            "logits": {
+              "cos_min": 0.9999997293740566,
+              "cos_mean": 0.9999997293740566,
+              "cos_global": 0.999999729374059,
+              "relative_error": 0.0007570922614685875,
+              "mine_norm": 973.684246970184,
+              "ref_norm": 973.8585477332452
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 526,
+                "token": "1",
+                "reference_id": 526,
+                "reference_token": "1"
+              }
+            ]
+          },
+          {
+            "text": "<|pad|>a<|reserved_7|>b<|mask|><|endoftext|>",
+            "tokens": 7,
+            "hidden": {
+              "cos_min": 0.9999981835139706,
+              "cos_mean": 0.9999989518113871,
+              "cos_global": 0.99999897530033,
+              "relative_error": 0.0014358150437402456,
+              "mine_norm": 86.45374838771137,
+              "ref_norm": 86.44430198104229
+            },
+            "cls": {
+              "cos_min": 0.9999993747486314,
+              "cos_mean": 0.9999993747486314,
+              "cos_global": 0.9999993747486317,
+              "relative_error": 0.001119498851402019,
+              "mine_norm": 49.74206848273336,
+              "ref_norm": 49.74472020839599
+            },
+            "logits": {
+              "cos_min": 0.9999995764997274,
+              "cos_mean": 0.9999995764997274,
+              "cos_global": 0.9999995764997291,
+              "relative_error": 0.0009283751619233711,
+              "mine_norm": 994.5585882466839,
+              "ref_norm": 994.4377039888591
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 7593,
+                "token": "\u0101",
+                "reference_id": 7593,
+                "reference_token": "\u0101"
+              }
+            ]
+          },
+          {
+            "text": "Emoji \ud83d\ude42 caf\u00e9 Stra\u00dfe \u0440\u0443\u0441\u0441\u043a\u0438\u0439 \u0967\u0968\u0969\n\t <|mask|>!",
+            "tokens": 20,
+            "hidden": {
+              "cos_min": 0.9999955296628196,
+              "cos_mean": 0.9999993433175034,
+              "cos_global": 0.999998884402903,
+              "relative_error": 0.0016292766517249269,
+              "mine_norm": 196.05703736156178,
+              "ref_norm": 196.1849045412022
+            },
+            "cls": {
+              "cos_min": 0.9999997542757717,
+              "cos_mean": 0.9999997542757717,
+              "cos_global": 0.9999997542757718,
+              "relative_error": 0.0008126590409811186,
+              "mine_norm": 56.646278704591886,
+              "ref_norm": 56.66958695418492
+            },
+            "logits": {
+              "cos_min": 0.9999995789599885,
+              "cos_mean": 0.9999995789599885,
+              "cos_global": 0.9999995789599899,
+              "relative_error": 0.0010374070785401843,
+              "mine_norm": 975.0622646060253,
+              "ref_norm": 975.5347107767257
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 54055,
+                "token": " Enjoy",
+                "reference_id": 54055,
+                "reference_token": " Enjoy"
+              }
+            ]
+          },
+          {
+            "text": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The capital of France is <|mask|>.",
+            "tokens": 649,
+            "hidden": {
+              "cos_min": 0.9995706953756005,
+              "cos_mean": 0.9999962232888641,
+              "cos_global": 0.9999948567712158,
+              "relative_error": 0.0032933075623204195,
+              "mine_norm": 1312.5728168521916,
+              "ref_norm": 1311.598539944024
+            },
+            "cls": {
+              "cos_min": 0.9999984976215562,
+              "cos_mean": 0.9999984976215562,
+              "cos_global": 0.9999984976215563,
+              "relative_error": 0.001753408183637637,
+              "mine_norm": 39.344493002818076,
+              "ref_norm": 39.33416864981945
+            },
+            "logits": {
+              "cos_min": 0.9999998494416201,
+              "cos_mean": 0.9999998494416201,
+              "cos_global": 0.9999998494416226,
+              "relative_error": 0.00056512989818085,
+              "mine_norm": 889.9218064419025,
+              "ref_norm": 890.0421952087928
+            },
+            "top1_matches": 1,
+            "masks": 1,
+            "predictions": [
+              {
+                "token_id": 5242,
+                "token": " Paris",
+                "reference_id": 5242,
+                "reference_token": " Paris"
+              }
+            ]
+          }
+        ],
+        "top1_matches": 15,
+        "masks": 15
+      },
+      "api_exit": 0,
+      "cuda_matmul_assignments": 8947
+    }
+  },
+  "frozen_inputs_unchanged": true,
+  "gpu": "Tesla T4, 7.5\nTesla T4, 7.5\n",
+  "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Fri_Feb_21_20:23:50_PST_2025\nCuda compilation tools, release 12.8, V12.8.93\nBuild cuda_12.8.r12.8/compiler.35583870_0\n",
+  "model_sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+  "reference_files": {
+    "005.gguf": {
+      "bytes": 730208,
+      "sha256": "ec8e6824e123f556f70797ce977bdc5a8064a5361663cb6fd69b73c55f6c675b"
+    },
+    "004.gguf": {
+      "bytes": 402528,
+      "sha256": "d25133090c540486fe67825b94909accc39c213d29f5b61b6a3442a59bebf933"
+    },
+    "009.gguf": {
+      "bytes": 1451200,
+      "sha256": "8e587a6bc26e593545b5c740610d0eae61c5f5bf11fea7dc369f18e62a565744"
+    },
+    "003.gguf": {
+      "bytes": 1647840,
+      "sha256": "42aabe3a90d2f9056fd4a983de86c31c4aa398257cbfcd9376a695e5d0b8abac"
+    },
+    "006.gguf": {
+      "bytes": 74688,
+      "sha256": "3b0b8cfaff49ad3b2180ad6980d4dc877d74994dae72a3b499ab5c9377121998"
+    },
+    "007.gguf": {
+      "bytes": 205824,
+      "sha256": "724f00a7c5540ae0051d2454cfabe8086ff73853d6ae676160cb1f17e1302a60"
+    },
+    "008.gguf": {
+      "bytes": 926784,
+      "sha256": "a1d9d35c734098efefdf6308a9e036f5d3b94cc646051574b13265e23f85e79d"
+    },
+    "012.gguf": {
+      "bytes": 730240,
+      "sha256": "f6129c72fb26e0e4976aa30d4603dc7a0f98f895a5bd1bb7c756fe7c7407fdc7"
+    },
+    "011.gguf": {
+      "bytes": 861344,
+      "sha256": "2629a306cc8a35f1fea6344d1f0ea3a1a55e89400dea9da50d3973568fe7a7d9"
+    },
+    "decoded_vocab.json": {
+      "bytes": 658507,
+      "sha256": "db20e09e100885c8f319e937dbae831538972592e0fae84adc547563c4ec2581"
+    },
+    "013.gguf": {
+      "bytes": 1582304,
+      "sha256": "8ab88c1e6629d380ce200532d6f38419589cd2beeda5139dc3ee504b924bab10"
+    },
+    "010.gguf": {
+      "bytes": 992416,
+      "sha256": "1af170602341f94a77e155275d7e162e8a6b98ef66ef2c512a70d038eb3b49ae"
+    },
+    "014.gguf": {
+      "bytes": 42809792,
+      "sha256": "21bebf1af934251a7557b8d5267a254b85bfbdbe781bd0cd0f28be205ea44c13"
+    },
+    "002.gguf": {
+      "bytes": 926880,
+      "sha256": "8b4896bbb72bf1b76580a0dd765a9dd9ae71277613e85de7ab351ae6e87d7205"
+    },
+    "index.json": {
+      "bytes": 3530,
+      "sha256": "d7f837bc60e6fe0256614790f74f9475a851ad4f8f7b4e71064fe60faeb2b907"
+    },
+    "versions.json": {
+      "bytes": 168,
+      "sha256": "3f61651a76af5f0c9a2c0fdc43627153e78dec51ea4909f1c866449d545e9ec6"
+    },
+    "000.gguf": {
+      "bytes": 861312,
+      "sha256": "c13c73a3bfe1ad59f4aea5a8832b37c009570e74f107bfc9ca74d279bce2ebdf"
+    },
+    "001.gguf": {
+      "bytes": 861344,
+      "sha256": "32c3b368d3e5188926783daac6651e6cbc80bc855f179fdf85ce11871580776a"
+    }
+  },
+  "reference_versions": {
+    "torch": "2.11.0+cu130",
+    "transformers": "5.13.0.dev0",
+    "architecture": [
+      "Lfm2BidirectionalForMaskedLM"
+    ],
+    "attention": "eager",
+    "dtype": "float32"
+  },
+  "failures": [],
+  "conclusive": true,
+  "numerical_gate": {
+    "min_cos": 0.999,
+    "max_relative_error": 0.02,
+    "mask_top1": 15
+  },
+  "qualification": "pass",
+  "audit_provenance": {
+    "raw_report_sha256": "de7e927e8a06818df955e61206fe8951f8aefc9c88df5774383459e81cf6213e",
+    "uploaded_script_commit": "b6979a6f",
+    "runtime_source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+    "service": "Kaggle",
+    "hardware_scope": "CUDA0 on allocated Tesla T4 pair; only selected device tested",
+    "review": "30 native stage log hashes/summaries independently reparsed, both API logs/JSON checked, vocabulary/15-mask agreement and CUDA scheduler assignment records verified",
+    "limits": "594 passing direct checks; reference agreement only. No all-ops GPU residency, independent task quality, quantized MMQ or paired latency qualification. Runtime LFM/core/ggml files unchanged through PosFormer merge; only PosFormer runtime source differs."
+  }
+}

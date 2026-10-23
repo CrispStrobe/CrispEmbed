@@ -1,3 +1,22 @@
+## 23 October2026 — CUDA F16 and actual released-runtime compatibility
+
+LFM2 Encoder's frozen15-case F16 audit passes297 direct checks each on CPU and
+CUDA T4, exact vocabulary/IDs and15/15 mask predictions. CUDA hidden minimum
+row cosine0.99957070, maximum relative error0.329331%; logits0.99999889/0.170478%.
+The unchanged suite gates pass; CPU metrics reproduce prior F16 records. CUDA
+scheduler participation is verified, not full GPU residency or speed.
+[Report](tests/results/lfm2-encoder/cuda-f16.json), [scope/table](docs/lfm2-encoder.md#cuda-f16-reference-audit--23-october2026).
+
+Actual published Linux0.17.12 and current opt-in PosFormer agree on all50 frozen
+case token IDs, text and EOS stops.100 existing step logs independently verify.
+Confidence arrays have equal shape;44 cases differ in float bits, worst absolute
+2.0265579223632812e-6 and mean-confidence2.384185791015625e-7. No bitwise claim or
+new fitted confidence tolerance. Direct calls also match the earlier hosted
+consumer text outputs. Local memory stayed below100MiB/process under explicit
+resource caps; shared-host durations are not a performance comparison.
+[Complete released-binary evidence](tests/results/posformer/released-compatibility.json).
+Default/package/consumer release qualification is separate from this measurement.
+
 ## 23 October2026 — Local operators and original replay remain distinct
 
 Corrected native audit39009703362 completes14 arms/700 exact controls and retains

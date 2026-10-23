@@ -1,3 +1,23 @@
+## 2026-10-23 — Genuine CUDA reference audit and released-binary comparison complete
+
+One Kaggle T4 run at source898af2c2/scriptv1 completes594 direct CPU/CUDA checks,
+both15-case ordinary API panels and15/15 mask predictions per backend. Original
+reference/model bytes are fixed; unknown CUDA/invalid backend requests cannot
+silently fall back. Independent replay checks all30 stage-log hashes/summaries,
+both API JSON/logs, vocabulary and CUDA scheduler assignments. [Full evidence](tests/results/lfm2-encoder/cuda-f16.json).
+Test-only backend selection and the account-neutral job recipe are integrated;
+production LFM/core/ggml arithmetic and GPU defaults remain unchanged.
+
+A resource-gated local pilot used about72MiB/process; the two50-case actual-binary
+comparisons stayed below100MiB with2 threads,2GiB/90CPU-second/90wall-second caps.
+No local build or large model batch was run. Frozen manifest/all50 PNG hashes,
+released archive/manifest and official Q8 bytes verify before inference.
+Published Linux0.17.12 and current trained opt-in agree on every token/text/EOS;
+100 existing native step logs reparse exactly. Confidence drift is retained,
+not fitted away. [Raw binary reports/provenance](tests/results/posformer/released-compatibility.json).
+This closes the decoded-behavior measurement, while default/publication decisions
+and the independent M1 UltraBERT experiment remain distinct.
+
 ## 2026-10-23 — Qualified PosFormer source backport merged; historical PR closed
 
 [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) merges at7f1ecd33 after
