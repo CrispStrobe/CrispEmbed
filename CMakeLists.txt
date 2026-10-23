@@ -1226,6 +1226,8 @@ target_link_libraries(test-ovisocr2-frontend PRIVATE crispembed-qwen35-delta cri
 
 add_executable(test-ovisocr2-context tests/test_ovisocr2_context.cpp)
 target_link_libraries(test-ovisocr2-context PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-ovisocr2-quality-run tests/ovisocr2_quality_run.cpp)
+target_link_libraries(test-ovisocr2-quality-run PRIVATE crispembed-qwen35-delta crispembed-core)
 endif() # NOT iOS: standalone validation executables
 
 # Test-only UltraBERT prepared-ID graph; no production architecture dispatch.
