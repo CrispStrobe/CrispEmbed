@@ -1,3 +1,17 @@
+## 2026-10-23 — Original/native Ovis frontend comparison passes
+
+Corrected40017014043 atccb6059a passes all three unchanged original image
+captures: packed pixels have maximum absolute error0, and grids/IDs/attention
+masks/modalities/template match exactly. Twelve original tokenizer probes pass
+exact IDs/decode with both values of the old marks override. Sixteen bad-profile
+mutations, dual stops, gate/reset/custom-prompt/resolution controls pass.
+Independent review checks every reported source/probe/log hash, reference
+hash, successful exact service head and retained artifact identity/expiry.
+[Complete producer and review](tests/results/qwen35-ocr/ovisocr2-frontend.json).
+The initial regex rejection remains retained below. PR78 still requires its
+remaining platform checks before merge; native model inference/decoded OCR
+quality and publication remain separate. No original threshold was changed.
+
 ## 2026-10-23 — Original Ovis regex mismatch localized before parity
 
 Initial frontend40004747653 at48aefc30 built the native target and passed the
