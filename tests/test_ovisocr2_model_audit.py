@@ -4,6 +4,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import sys
@@ -132,10 +133,46 @@ class HostedAuditTest(unittest.TestCase):
                                              "reached_eos": True, "stop_id": 248044,
                                              "length_limited": False, "generated_id_shape": [1, 2]},
                        "stages": {"generated.scores.0": [1, 248320],
-                                  "generated.scores.1": [1, 248320]},
+                                  "generated.scores.1": [1, 248320],
+                                  "backend_off.generated.ids": [1, 2]},
                        "decoded": ["text"], "raw_decoded": ["text"]}
+            names = [f"vision.layer.{index}" for index in range(12)]
+            names += [f"vision.{name}" for name in (
+                "patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
+                "merger.norm", "merger.up", "merger.activation", "merger", "output")]
+            names += ["decoder.norm", "logits", "argmax_id"]
+            magnitudes = {}
+            for label, baseline in (("backend_off", "prefill"),
+                                    ("backend_off_full_prefix", "full_prefix")):
+                for name in names:
+                    payload["stages"][f"{label}.{name}"] = [1, 2]
+                    payload["stages"][f"{baseline}.{name}"] = [1, 2]
+                    magnitudes[f"{label}.{name}"] = 0.0
+            payload["backend_off_control"] = {
+                "mkldnn_available": True, "enabled_before": True,
+                "enabled_inside": False, "enabled_after": True,
+                "generated_ids": [[17, 248044]], "decoded": ["text"],
+                "raw_decoded": ["text"], "stage_max_abs": magnitudes}
             path.write_text(json.dumps(payload))
             self.assertEqual(audit.verify_original_capture(path, profile, {})["generated_ids"], [[17, 248044]])
+            for change in ("missing_position", "mismatched_shape", "nan_magnitude",
+                           "changed_ids", "not_disabled"):
+                changed = copy.deepcopy(payload)
+                key = "backend_off.vision.position"
+                if change == "missing_position":
+                    del changed["stages"][key]
+                elif change == "mismatched_shape":
+                    changed["stages"][key] = [2, 1]
+                elif change == "nan_magnitude":
+                    changed["backend_off_control"]["stage_max_abs"][key] = math.nan
+                elif change == "changed_ids":
+                    changed["backend_off_control"]["generated_ids"] = [[248046]]
+                else:
+                    changed["backend_off_control"]["enabled_inside"] = True
+                path.write_text(json.dumps(changed))
+                with self.assertRaisesRegex(ValueError, "capture"):
+                    audit.verify_original_capture(path, profile, {})
+            path.write_text(json.dumps(payload))
             del payload["stages"]["generated.scores.1"]
             path.write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "capture"):

@@ -285,7 +285,32 @@ def verify_original_capture(path, profile, report):
         raise ValueError("Original generated ID shape differs")
     last = generated_ids[0][-1] if generated_ids[0] else None
     reached = last in (248044, 248046)
-    stages = data.get("stages", {})
+    stages = data.get("stages") if isinstance(data.get("stages"), dict) else {}
+    backend = data.get("backend_off_control") if isinstance(data.get("backend_off_control"), dict) else {}
+    names = [f"vision.layer.{index}" for index in range(12)]
+    names += [f"vision.{name}" for name in (
+        "patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
+        "merger.norm", "merger.up", "merger.activation", "merger", "output")]
+    names += ["decoder.norm", "logits", "argmax_id"]
+    magnitudes = backend.get("stage_max_abs", {})
+    backend_complete = (backend.get("mkldnn_available") is True
+        and backend.get("enabled_before") is True
+        and backend.get("enabled_inside") is False
+        and backend.get("enabled_after") is True
+        and backend.get("generated_ids") == generated_ids
+        and backend.get("decoded") == data.get("decoded")
+        and backend.get("raw_decoded") == data.get("raw_decoded")
+        and stages.get("backend_off.generated.ids") == [1, len(generated_ids[0])]
+        and isinstance(magnitudes, dict)
+        and all(stages.get(f"{label}.{name}") == stages.get(f"{baseline}.{name}")
+                and isinstance(stages.get(f"{label}.{name}"), list)
+                and stages[f"{label}.{name}"]
+                and isinstance(magnitudes.get(f"{label}.{name}"), (int, float))
+                and math.isfinite(magnitudes[f"{label}.{name}"])
+                and magnitudes[f"{label}.{name}"] >= 0
+                for label, baseline in (("backend_off", "prefill"),
+                                        ("backend_off_full_prefix", "full_prefix"))
+                for name in names))
     scores_complete = all(stages.get(f"generated.scores.{index}") == [1, 248320]
                           for index in range(len(generated_ids[0])))
     if (data.get("source_model") != MODEL or data.get("source_revision") != REVISION
@@ -293,6 +318,7 @@ def verify_original_capture(path, profile, report):
             or data.get("loaded_source_sha256") != profile["qualification"]["loaded_source_sha256"]
             or data.get("vision_layers") != 12 or data.get("decoder_layers") != 24
             or data.get("missing_stages") != []
+            or not backend_complete
             or control.get("prefill_logits_exact") is not True
             or control.get("greedy_ids_exact") is not True
             or data.get("cached_vs_full_prefix_same_argmax") is not True
@@ -311,6 +337,7 @@ def verify_original_capture(path, profile, report):
     report["original_capture"] = {"sha256": sha(path), "generation_result": gate,
         "cached_vs_full_prefix_max_abs": data["cached_vs_full_prefix_max_abs"],
         "cached_vs_full_prefix_same_argmax": True, "observational_control": control,
+        "backend_off_control": backend,
         "stages": data["stages"], "decoded": data["decoded"],
         "raw_decoded": data["raw_decoded"], "generated_ids": data["generated_ids"]}
     return data

@@ -21,6 +21,35 @@ import qwen35_ovis_profile as ovis_profile
 
 
 VERSIONS = {"transformers": "5.16.1", "tokenizers": "0.23.3", "torch": "2.11.0"}
+BACKEND_CONTROL_PHASES = ("backend_off", "backend_off_full_prefix")
+BACKEND_VISION_BOUNDARIES = (
+    "vision.patch_embed", "vision.position", "vision.embedded",
+    "vision.rotary_cos", "vision.rotary_sin", "vision.merger.norm",
+    "vision.merger.up", "vision.merger.activation", "vision.merger",
+    "vision.output",
+)
+
+
+def backend_control_stage(name):
+    """Bound MKLDNN-off captures to the native comparison's named stages."""
+    for label in BACKEND_CONTROL_PHASES:
+        prefix = label + "."
+        if name.startswith(prefix):
+            suffix = name[len(prefix):]
+            if suffix.startswith("vision.layer."):
+                index = suffix.removeprefix("vision.layer.")
+                return index.isdecimal() and 0 <= int(index) < 12
+            return suffix in BACKEND_VISION_BOUNDARIES or suffix in (
+                "decoder.norm", "logits", "argmax_id", "generated.ids")
+    return True
+
+
+def backend_control_names(config):
+    """Every backend-sensitive boundary needed by the existing comparison."""
+    stages = [f"vision.layer.{index}" for index in range(config.vision_config.depth)]
+    stages += BACKEND_VISION_BOUNDARIES
+    stages += ["decoder.norm", "logits", "argmax_id"]
+    return stages
 
 
 def utf8_field(value):
@@ -128,6 +157,9 @@ def required_stages(config, score_count=0):
                 required += [f"{label}.cache.{index}.{field}" for field in fields]
     for index in range(score_count):
         required += [f"generated.{index}.decoder.position_ids", f"generated.scores.{index}"]
+    required += [f"{label}.{name}" for label in BACKEND_CONTROL_PHASES
+                 for name in backend_control_names(config)]
+    required += ["backend_off.generated.ids"]
     return sorted(set(required))
 
 
@@ -180,6 +212,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     expected_score_count = [0]
 
     def save(name, tensor):
+        if not backend_control_stage(name):
+            return
         if name.startswith("generated.") and ".decoder.position_ids" not in name and ".scores." not in name and name != "generated.ids":
             return
         if torch.is_tensor(tensor):
@@ -410,6 +444,27 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
             full = model(**full_inputs)
             save("full_prefix.logits", full.logits[:, -1])
             save("full_prefix.argmax_id", full.logits[:, -1].argmax(-1))
+            # Same original CPU model, dtype, and prepared inputs with only the
+            # MKLDNN backend disabled. These arrays bound named test-only
+            # backend variation; no native weights or model math are changed.
+            backend_enabled_before = torch.backends.mkldnn.enabled
+            with torch.backends.mkldnn.flags(enabled=False):
+                backend_enabled_inside = torch.backends.mkldnn.enabled
+                phase[0] = "backend_off"
+                controlled = model(**prefill_inputs)
+                save("backend_off.logits", controlled.logits[:, -1])
+                save("backend_off.argmax_id", controlled.logits[:, -1].argmax(-1))
+                phase[0] = "backend_off_full_prefix"
+                controlled_full = model(**full_inputs)
+                save("backend_off_full_prefix.logits", controlled_full.logits[:, -1])
+                save("backend_off_full_prefix.argmax_id", controlled_full.logits[:, -1].argmax(-1))
+                phase[0] = None
+                controlled_generated = model.generate(
+                    **inputs, max_new_tokens=max_new_tokens, do_sample=False, use_cache=True,
+                    eos_token_id=profile["stop_ids"], return_dict_in_generate=True)
+                controlled_ids = controlled_generated.sequences[:, inputs["input_ids"].shape[1]:]
+                save("backend_off.generated.ids", controlled_ids)
+            backend_enabled_after = torch.backends.mkldnn.enabled
             phase[0] = "full_prefix"
             delta = (cached.logits[:, -1] - full.logits[:, -1]).abs()
             max_error = delta.max().item()
@@ -463,6 +518,27 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     save("input.decoded_length", torch.tensor([decoded_length], dtype=torch.int32))
     save("input.raw_decoded_utf8", torch.tensor(raw_bytes, dtype=torch.int32))
     save("input.raw_decoded_length", torch.tensor([raw_length], dtype=torch.int32))
+    control_magnitudes = {}
+    for label, baseline in (("backend_off", "prefill"),
+                            ("backend_off_full_prefix", "full_prefix")):
+        for name in backend_control_names(model.config):
+            candidate = arrays.get(f"{label}.{name}")
+            oracle = arrays.get(f"{baseline}.{name}")
+            if candidate is None or oracle is None or candidate.shape != oracle.shape:
+                save_partial(ValueError(f"Missing or mismatched original backend control: {label}.{name}"))
+                raise ValueError(f"Missing or mismatched original backend control: {label}.{name}")
+            control_magnitudes[f"{label}.{name}"] = float(np.max(np.abs(candidate - oracle)))
+    backend_control = {
+        "mkldnn_available": bool(torch.backends.mkldnn.is_available()),
+        "enabled_before": bool(backend_enabled_before),
+        "enabled_inside": bool(backend_enabled_inside),
+        "enabled_after": bool(backend_enabled_after),
+        "generated_ids": controlled_ids.tolist(),
+        "decoded": processor.batch_decode(controlled_ids, skip_special_tokens=True),
+        "raw_decoded": processor.batch_decode(controlled_ids, skip_special_tokens=False,
+                                               clean_up_tokenization_spaces=False),
+        "stage_max_abs": control_magnitudes,
+    }
     np.savez(output, **arrays)
     generation_result = generation_limit_report(ids.tolist()[0], max_new_tokens, profile["stop_ids"])
     generation_result.update({
@@ -490,6 +566,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                                 "reason": "pinned original vLLM effective stop set; missing generation_config.json"},
         "delta_initial_state_none_phases": sorted(delta_none_initial),
         "torch_build": torch.__config__.show(), "observational_control": observational_control,
+        "backend_off_control": backend_control,
         "source_config": model.config.to_dict(), "vision_layers": vision_depth,
         "decoder_layers": decoder_depth, "stages": {name: list(value.shape) for name, value in arrays.items()},
         "generated_ids": ids.tolist(),
@@ -506,14 +583,21 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         raise ValueError(f"Missing reference stages: {missing}")
     if not all(observational_control.values()):
         raise ValueError("OvisOCR2 observation changed original output")
+    if (not backend_control["mkldnn_available"] or not backend_control["enabled_before"]
+            or backend_control["enabled_inside"]
+            or backend_control["enabled_after"] != backend_control["enabled_before"]
+            or backend_control["generated_ids"] != ids.tolist()):
+        raise ValueError("Original MKLDNN-off control differs or changed greedy IDs")
     if not same_argmax or max_error > 0.002:
         raise ValueError(f"Official cache/full-prefix inconsistency: abs={max_error}, argmax={same_argmax}")
     # Small standalone native-op probe; never part of exported model weights.
     probe = gguf.GGUFWriter(str(output.with_name("official-delta.gguf")), "qwen35_delta_reference")
     for name, value in arrays.items():
         if ((".delta." in name or ".linear." in name or ".cache." in name
-             or ".attention." in name or ".decoder." in name or ".vision." in name or name.endswith(".logits"))
-                and name.startswith(("prefill.", "cached.", "full_prefix."))) or name.startswith(("linear.", "generated.", "input.")):
+             or ".attention." in name or ".decoder." in name or ".vision." in name
+             or name.endswith((".logits", ".argmax_id")))
+                and name.startswith(("prefill.", "cached.", "full_prefix.",
+                                     "backend_off.", "backend_off_full_prefix."))) or name.startswith(("linear.", "generated.", "input.")) or name == "backend_off.generated.ids":
             probe.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
     probe.write_header_to_file()
     probe.write_kv_data_to_file()
