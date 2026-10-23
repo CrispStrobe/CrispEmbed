@@ -75,6 +75,8 @@ jobs:
       - name: Publish exact selected artifact and verify immutable empty-cache download
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_HOME: ${{ runner.temp }}/scratch/ovis-publish/fresh-hf-home
+          HF_HUB_DISABLE_XET: '1'
         run: |
           if [ "$PRECISION" = f16 ]; then
             CANDIDATE_DIR="$RUNNER_TEMP/model-reference"
