@@ -73,8 +73,9 @@ def token():
     value = os.environ.get('GITHUB_TOKEN', '').strip()
     if value:
         return value
-    for path in (Path('/kaggle/input/crispasr-hf-token/gh_token.txt'),
-                 Path('/kaggle/input/datasets/${KAGGLE_ACCOUNT}/crispasr-hf-token/gh_token.txt')):
+    paths = [Path('/kaggle/input/crispasr-hf-token/gh_token.txt')]
+    paths.extend(Path('/kaggle/input/datasets').glob('*/crispasr-hf-token/gh_token.txt'))
+    for path in paths:
         if path.is_file():
             return path.read_text().strip()
     try:
