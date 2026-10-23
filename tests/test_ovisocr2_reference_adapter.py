@@ -113,10 +113,27 @@ class ReferenceAdapterTest(unittest.TestCase):
                      "prefill.decoder.layer.23", "cached.cache.0.conv_states",
                      "cached.delta.initial_state", "generated.2.decoder.position_ids",
                      "generated.scores.0", "generated.scores.2",
+                     "backend_off.vision.layer.11", "backend_off.vision.position",
+                     "backend_off.decoder.norm", "backend_off.logits",
+                     "backend_off_full_prefix.vision.merger",
+                     "backend_off_full_prefix.decoder.norm",
+                     "backend_off.generated.ids",
                      "input.prompt_length", "input.rendered_prompt_length",
                      "input.decoded_length", "input.raw_decoded_length"):
             self.assertIn(name, stages)
         self.assertNotIn("prefill.delta.initial_state", stages)
+
+    def test_backend_control_capture_filter_bounds_reference_size(self):
+        for name in ("backend_off.vision.layer.5", "backend_off.vision.position",
+                     "backend_off.vision.merger.norm", "backend_off.decoder.norm",
+                     "backend_off.logits", "backend_off.argmax_id",
+                     "backend_off.generated.ids",
+                     "backend_off_full_prefix.vision.output"):
+            self.assertTrue(ovis.backend_control_stage(name))
+        for name in ("backend_off.decoder.layer.0", "backend_off.delta.output",
+                     "backend_off.cache.0.conv_states", "backend_off.vision.probe.5.qkv",
+                     "backend_off.vision.layer.12", "backend_off_full_prefix.linear.0.qkv"):
+            self.assertFalse(ovis.backend_control_stage(name))
 
     def test_dispatch_preserves_default_and_explicit_profile(self):
         result = {"decoded": ["x"], "cached_vs_full_prefix_max_abs": 0.0,
