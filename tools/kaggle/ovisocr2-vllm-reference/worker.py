@@ -139,25 +139,46 @@ def main():
         inputs = processor(text=[rendered], images=[image], return_tensors='pt',
                            images_kwargs={'min_pixels': 448 * 448, 'max_pixels': 2880 * 2880})
         arrays = {key: value.detach().cpu().numpy() for key, value in inputs.items()}
+        replay = OUT / (label + '-processor-replay.npz')
+        np.savez_compressed(replay, **arrays)
+        actual_fields = {key: {'shape': list(value.shape), 'dtype': str(value.dtype),
+                               'sha256': hashlib.sha256(value.tobytes()).hexdigest()}
+                         for key, value in arrays.items()}
+        case_record = {'case': label, 'rgb_sha256': row['rgb_sha256'],
+                       'replay_file': replay.name, 'replay_sha256': sha(replay),
+                       'actual_fields': actual_fields, 'expected_fields': row['fields'],
+                       'actual_ids': arrays['input_ids'].tolist() if 'input_ids' in arrays else None,
+                       'actual_grid': arrays['image_grid_thw'].tolist() if 'image_grid_thw' in arrays else None,
+                       'exact_original_arrays': False}
+        REPORT['cases'].append(case_record); save()
         if set(arrays) != set(row['fields']):
+            case_record['first_mismatch'] = {'kind': 'field_names',
+                                             'actual': sorted(arrays), 'expected': sorted(row['fields'])}
+            save()
             raise ValueError('Original processor field names differ: ' + label)
         for key, value in arrays.items():
             field = row['fields'][key]
-            if (list(value.shape) != field['shape'] or str(value.dtype) != field['dtype']
-                    or hashlib.sha256(value.tobytes()).hexdigest() != field['sha256']):
+            if actual_fields[key] != field:
+                case_record['first_mismatch'] = {'kind': 'field', 'field': key,
+                                                 'actual': actual_fields[key], 'expected': field}
+                save()
                 raise ValueError('Original processor array differs: ' + label + ':' + key)
         if (arrays['input_ids'].tolist() != row['ids'] or arrays['image_grid_thw'].tolist() != row['grid']
                 or arrays['attention_mask'].tolist() != row['attention_mask']):
+            case_record['first_mismatch'] = {'kind': 'ids_grid_or_mask',
+                'actual': {key: arrays[key].tolist() for key in ('input_ids', 'image_grid_thw', 'attention_mask')},
+                'expected': {key: row[key] for key in ('ids', 'grid', 'attention_mask')}}
+            save()
             raise ValueError('Original processor IDs, grid or mask differ: ' + label)
         file = SCRATCH / 'original' / (label + '-processor.npz')
         with np.load(file, allow_pickle=False) as frozen:
             if set(frozen.files) != set(arrays) or any(not np.array_equal(frozen[k], arrays[k]) for k in arrays):
+                case_record['first_mismatch'] = {'kind': 'artifact_array_equality',
+                                                 'actual_fields': actual_fields,
+                                                 'expected_fields': row['fields']}
+                save()
                 raise ValueError('Original artifact arrays differ: ' + label)
-        np.savez_compressed(OUT / (label + '-processor-replay.npz'), **arrays)
-        REPORT['cases'].append({'case': label, 'rgb_sha256': row['rgb_sha256'],
-                                'fields_sha256': {k: row['fields'][k]['sha256'] for k in arrays},
-                                'ids_count': int(arrays['input_ids'].shape[1]), 'grid': row['grid'],
-                                'exact_original_arrays': True})
+        case_record['exact_original_arrays'] = True
         save()
         if label == 'square':
             first_image = image
@@ -221,24 +242,30 @@ def main():
     REPORT['generations'] = []
     for label, output in zip(('square', 'readable'), outputs):
         expected_ids = rows['square']['ids'][0] if label == 'square' else readable_ids
-        if output.prompt_token_ids is None or list(output.prompt_token_ids) != expected_ids:
-            raise ValueError('vLLM expanded prompt IDs differ from original HF processor: ' + label)
+        actual_ids = list(output.prompt_token_ids) if output.prompt_token_ids is not None else None
         result = output.outputs[0]
         raw_text = result.text
         stripped = raw_text.strip()
         filtered = '\n\n'.join(block for block in stripped.split('\n\n')
                                if not block.strip().startswith('<img src="images/bbox_'))
         processed = clean_repeats(filtered)
-        REPORT['generations'].append({'case': label, 'readme_max_tokens': 16384,
+        generation = {'case': label, 'readme_max_tokens': 16384,
             'bounded_max_tokens': cap, 'temperature': 0.0, 'dtype_policy': 'README auto -> T4 FP16',
             'gdn_prefill_backend': 'triton',
-            'prompt_token_ids': list(output.prompt_token_ids) if output.prompt_token_ids is not None else None,
+            'prompt_token_ids': actual_ids, 'expected_hf_prompt_token_ids': expected_ids,
+            'prompt_ids_exact': actual_ids == expected_ids,
             'token_ids': list(result.token_ids), 'finish_reason': result.finish_reason,
             'stop_reason': result.stop_reason, 'raw_text': raw_text, 'stripped_text': stripped,
             'processed_text': processed, 'raw_text_sha256': hashlib.sha256(raw_text.encode()).hexdigest(),
             'processed_text_sha256': hashlib.sha256(processed.encode()).hexdigest(),
-            'limits': '256-token cap; synthetic image; no OCR quality or BF16 parity claim'})
+            'limits': '256-token cap; synthetic image; no OCR quality or BF16 parity claim'}
+        REPORT['generations'].append(generation)
         save()
+        if not generation['prompt_ids_exact']:
+            REPORT['first_mismatch'] = {'kind': 'expanded_prompt_ids', 'case': label,
+                                        'actual': actual_ids, 'expected': expected_ids}
+            save()
+            raise ValueError('vLLM expanded prompt IDs differ from original HF processor: ' + label)
     REPORT['status'] = 'completed bounded original vLLM reference'
     REPORT['phase'] = 'complete'; save()
 
