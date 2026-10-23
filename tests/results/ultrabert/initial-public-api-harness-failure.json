@@ -1,0 +1,46 @@
+{
+  "source_commit": "0e615ea470b8af25925393abc566bbd42606d0df",
+  "scope": "Initial structural harness failure after successful native build; no model-backed public API comparison executed",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39939481805",
+  "cause": "CMake OUTPUT_NAME crispembed differs from target crispembed-cli; driver executable lookup raised StopIteration",
+  "raw_report_sha256": "6067aa1c5f65438140666305a438dac4937bc5f52c33427d448b8e02f742c4c7",
+  "raw_report": {
+    "source_commit": "0e615ea470b8af25925393abc566bbd42606d0df",
+    "driver_sha256": "3a4d32e65362f0da891a061d7669c5bc4b18835d116994377a83df390d1be5e8",
+    "scope": "CPU/F32 public single-text and sequential batch pooled outputs; no full-model or task-quality promotion",
+    "context_limit": 512,
+    "unsupported": [
+      "pair public API",
+      "reserved token surfaces",
+      "F16/quantized",
+      "GPU",
+      "Matryoshka"
+    ],
+    "environment": {
+      "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]"
+    },
+    "cases": [],
+    "status": "failed",
+    "frozen_report_sha256": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+    "original_source": "0573f1847db68914052a98341a22fceeb1358518",
+    "f32_model_sha256": "89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566",
+    "native_source_sha256": {
+      "src/ultrabert_embed.cpp": "1bc4b04421234373b2568b12cb0de89055231596888795f34e7ef199d70bbd18",
+      "src/ultrabert_profile.h": "1ad434a05dc2261dda652f0f1fca5905ba6ee80435d2f4b2184ee0b252004aa7",
+      "src/crispembed.cpp": "9d389c82926a26646cc554fccd45ff1887a96e00915be3fbae78967849f2f3d3",
+      "tests/test_ultrabert_api.cpp": "06d74770e0e271ffe5527a46d22931ace1b4d8dfa05e5c3f6d6164b5ae5ee41e"
+    },
+    "error": ""
+  },
+  "configure_log_sha256": "7f1d6ec453249d6734a578c6cb74e6ddc479073f91fcd0d9bbb8a6e0893eb97c",
+  "build_log_sha256": "dd960cbefd701c3dad578d9c0ad541918657f71f6b2a5ea33d1eba51942d85e5",
+  "required_targets_built": [
+    "crispembed-cli",
+    "crispembed-server",
+    "crispembed-shared",
+    "test-ultrabert-api",
+    "test-ultrabert-profile"
+  ],
+  "review": "Build log independently checked for all five required targets. Fixed exported-name lookup only; no runtime math/reference/tolerance changes."
+}

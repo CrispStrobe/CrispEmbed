@@ -20,6 +20,15 @@ from ultrabert_contract import QUERY, sha256
 from ultrabert_native import prepare_frozen_artifacts
 
 
+def find_binary(build, target):
+    # CMake target crispembed-cli has OUTPUT_NAME crispembed.
+    name = 'crispembed' if target == 'crispembed-cli' else target
+    for path in (build / name, build / 'bin' / name):
+        if path.is_file():
+            return path
+    raise ValueError('Missing built executable: ' + name)
+
+
 def parse_pooled(log):
     result, rows, total = {}, {}, None
     for line in log.splitlines():
@@ -81,7 +90,7 @@ def main():
         run(['cmake','--build',build,'--target','crispembed-cli','crispembed-server','crispembed-shared',
              'test-ultrabert-profile','test-ultrabert-api','--parallel','2'], 'build')
         def binary(name):
-            return next(p for p in (build/name,build/'bin'/name) if p.is_file())
+            return find_binary(build, name)
         api=binary('test-ultrabert-api');cli=binary('crispembed-cli');server=binary('crispembed-server')
         library=next(build.rglob('libcrispembed.so'))
         report['library_sha256']=sha256(library)

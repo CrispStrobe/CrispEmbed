@@ -2,6 +2,7 @@
 import importlib.util
 from pathlib import Path
 import unittest
+import tempfile
 
 root=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('ultrabert_api',root/'tools/ci-heavy/ultrabert_api.py')
@@ -12,6 +13,14 @@ GOOD=('IDS\t0\t0\t42\n'
       'TOTAL\t1\t2\t0\n')
 
 class EvidenceControls(unittest.TestCase):
+    def test_cmake_cli_output_name_and_missing_binary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            build=Path(folder);(build/'bin').mkdir()
+            actual=build/'bin/crispembed';actual.touch()
+            self.assertEqual(api.find_binary(build,'crispembed-cli'),actual)
+            with self.assertRaisesRegex(ValueError,'Missing built executable: crispembed-server'):
+                api.find_binary(build,'crispembed-server')
+
     def test_positive_and_honest_numerical_failure(self):
         self.assertEqual(api.parse_pooled(GOOD)['failures'],0)
         bad=GOOD.replace('1\t0.0001','1\t0.01').replace('80\t80\t1','80\t80\t0').replace('TOTAL\t1\t2\t0','TOTAL\t1\t2\t1')
