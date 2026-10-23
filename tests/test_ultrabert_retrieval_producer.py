@@ -82,6 +82,13 @@ class QualificationControls(unittest.TestCase):
             bad=deepcopy(record);change(bad)
             with self.assertRaises(ValueError):producer.checked_original(data,bad)
 
+    def test_native_binding_and_library_cannot_fall_back(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);library=root/'libcrispembed.so';binding=root/'python/crispembed/_binding.py'
+            producer.checked_binding_paths(library,binding,library,root)
+            for loaded,source in [(root/'other.so',binding),(library,root/'other.py')]:
+                with self.assertRaises(ValueError):producer.checked_binding_paths(loaded,source,library,root)
+
     def test_only_exact_small_receipt_is_extracted(self):
         with tempfile.TemporaryDirectory() as name:
             folder=Path(name);archive=folder/'a.zip';output=folder/'receipt.json'

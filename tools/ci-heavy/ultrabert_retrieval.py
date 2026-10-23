@@ -204,6 +204,12 @@ def original_records(directory, data, out):
     return record
 
 
+def checked_binding_paths(loaded_library, binding_source, library, engine):
+    if (Path(loaded_library).resolve()!=library.resolve()
+            or Path(binding_source).resolve()!=(engine/'python/crispembed/_binding.py').resolve()):
+        raise ValueError('Native Python binding/library fallback changed measured source')
+
+
 def native_records(directory, data, original, source, receipt, scratch, out):
     # Build a portable CPU library from the already qualified native source.
     # This is a distinct measured binary, not a claim of bit-identical API assets.
@@ -233,8 +239,10 @@ def native_records(directory, data, original, source, receipt, scratch, out):
     from crispembed import CrispEmbed
     os.environ['CRISPEMBED_ULTRABERT']='1';os.environ['CRISPEMBED_FORCE_CPU']='1'
     model=CrispEmbed(str(model_path),n_threads=2,lib_path=str(library),offline=True)
+    checked_binding_paths(model._lib._name,inspect.getfile(CrispEmbed),library,engine)
     record=dict(pooling='cls',query_prompt=QUERY,document_prompt='',fixture_sha256=FIXTURE_SHA256,vectors=[],
                 provenance=dict(source_commit=source,library_sha256=sha256(library),model_sha256=sha256(model_path),
+                                binding_source_sha256=sha256(inspect.getfile(CrispEmbed)),
                                 qualified_api_library_sha256=receipt['library_sha256'],
                                 scope='Fresh portable CPU binary measured on this task; API receipt qualifies source, not byte-identical artifact',
                                 ggml_source=subprocess.check_output(['git','-C',str(engine/'ggml'),'rev-parse','HEAD'],text=True).strip()))
