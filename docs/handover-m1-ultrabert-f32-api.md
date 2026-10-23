@@ -7,9 +7,9 @@ arrays. It creates no release, alias, weights publication or app pin update.
 
 ## Pinned source and resource boundary
 
-- Implementation: `0e615ea470b8af25925393abc566bbd42606d0df`,
+- Implementation: `4be9f864e0e7bc154325e1edc1bdf29a12210a69`,
   [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74).
-- Hosted Linux run39939481805 is already queued; do not dispatch another copy.
+- Hosted Linux run39943940607 is already queued; do not dispatch another copy.
 - Original arrays/source0573f1847 are preserved by39913800444; use the existing
   verified local copy where available. Never recompute or replace references.
 - Inspect load, `memory_pressure`, `vm_stat`, RAM and free disk first. One build/

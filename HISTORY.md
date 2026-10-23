@@ -1,3 +1,31 @@
+## 2026-10-23 — PosFormer released-default restoration merged after complete CI
+
+[PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) merges at75e87ea6 after
+all exact-source790f9a6b checks, including all ten [Build/Flutter39933251542](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39933251542)
+jobs, WASM39933251548, style/security and dedicated39933245147. The trained
+forward is now default unset/1, with literal0 legacy retained. Actual Linux
+released/default50-case IDs/text/EOS/confidence, gate/public API and both bounded
+reference arms are independently reviewed in the retained raw report. Quality
+remains7/50. Published/app0.17.12 and all tags remain unchanged; successor actual
+artifact/consumer qualification is a separate open release lane.
+
+## 2026-10-23 — Initial public UltraBERT harness failure preserved and corrected
+
+API39939481805 at0e615ea4 builds all five required targets, then stops before
+model-backed API tests because target `crispembed-cli` emits `crispembed`.
+[Raw report/source/log hashes](tests/results/ultrabert/initial-public-api-harness-failure.json)
+retain this structural failure. PR74 at4be9f864 corrects only executable-name
+resolution, adds the model-free lookup control and merges current main. Five
+parser/lookup control groups pass. Retry39943940607 is queued; no runtime math,
+reference, tolerance or model-backed qualification is changed by this correction.
+
+Original-first retrieval producer d69e1b90 is prepared separately with six guard
+groups, exact SentenceTransformer6.0.1 wrapper/Pooling hashes and original-module
+CLS/ID observations with hook-neutrality checks. Preflight rejects the actual
+failed API receipt before any model download. First original vectors/rankings
+precede native work; verified byte-for-byte original reuse is available for
+retries. No retrieval model run has been dispatched pending API qualification.
+
 ## 2026-10-23 — UltraBERT F32 API null-failure contract corrected before qualification
 
 DraftPR74 advances from17b668c0 to0e615ea4 after merging the current handoff/
