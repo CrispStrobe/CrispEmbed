@@ -371,6 +371,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--profile", choices=("lighton", "ovisocr2"), default="lighton")
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--image", required=True)
     parser.add_argument("--output", required=True)
@@ -380,8 +381,12 @@ def main():
     args = parser.parse_args()
     if args.max_new_tokens < 1:
         parser.error("--max-new-tokens must be positive")
-    report = dump_reference(args.model_dir, args.image, args.output, args.prompt,
-                            args.max_new_tokens, args.threads)
+    if args.profile == "ovisocr2":
+        from dump_ovisocr2_reference import dump_reference as capture
+    else:
+        capture = dump_reference
+    report = capture(args.model_dir, args.image, args.output, args.prompt,
+                     args.max_new_tokens, args.threads)
     print(json.dumps({key: report[key] for key in ["decoded", "cached_vs_full_prefix_max_abs",
                                                  "cached_vs_full_prefix_same_argmax"]}, indent=2))
 
