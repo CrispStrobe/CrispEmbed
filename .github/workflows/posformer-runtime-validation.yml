@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       include_macos:
-        description: 'Repeat Apple public API validation (runtime unchanged since reviewed macOS source)'
+        description: 'Repeat Apple public API and unset/one/zero gate validation'
         type: boolean
         default: false
 permissions:
@@ -148,7 +148,8 @@ jobs:
           assert outputs('original-baseline.json') == outputs('original-zero.json')
           (root / 'gate-controls.json').write_text(json.dumps({'cases':50,'unset_matches_corrected':True,'zero_matches_baseline':True}))
           PYCODE
-      - name: Actual default matches the frozen published0.17.12 output oracle
+      - name: Actual default matches the frozen published0.17.12 Linux output oracle
+        if: runner.os == 'Linux'
         working-directory: .ci/CrispMath
         run: |
           unset CRISPEMBED_POSFORMER_TRAINED_FORWARD POSFORMER_SCALAR_ENCODER

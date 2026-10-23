@@ -17,8 +17,9 @@ these are retained without claiming bitwise parity or fitting a new tolerance.
 records actual libraries, asset/model/input hashes and raw measurements. This
 is the ground truth for restoring the default, not a new recognition recipe.
 
-Hosted validation checks actual unset output against the frozen released binary
-records, explicit1/unset agreement, zero/legacy agreement, full report provenance,
+Hosted Linux validation checks actual unset output against the frozen released
+Linux binary records. Both platforms check explicit1/unset agreement, zero/legacy
+agreement, full report provenance,
 50-case normal API, meaningful primitive negative controls and both bounded
 original-code/exported-F32 reference paths. Pure controls reject changed tokens,
 text, stops, images/models, case coverage, confidence shape and nonfinite or
