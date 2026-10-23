@@ -278,7 +278,7 @@ alias, artifact publication, release or default-model change is included.
 The backend validates the pinned architecture/source, full218-weight F32 schema,
 per-layer schedules and tokenizer contract before allocating the weight backend.
 Native context is512 tokens including attended BOS; overflow is rejected rather
-than truncated. F16/quantized, GPU, Matryoshka, literal reserved-token surfaces
+than truncated. F16/quantized, GPU, Matryoshka, inputs containing the literal `<|` prefix
 and public pair embedding remain outside this bounded profile.
 
 Ordinary public dense encoding is L2-normalized, as required by the shared ABI.

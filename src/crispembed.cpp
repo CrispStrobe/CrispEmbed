@@ -2705,6 +2705,7 @@ extern "C" const char * crispembed_model_card_url(int index) {
 }
 
 extern "C" const float * crispembed_encode(crispembed_context * ctx, const char * text, int * out_n_dim) {
+    if (out_n_dim) *out_n_dim = 0;
     if (!ctx || !text) return nullptr;
     auto t_enc_start = std::chrono::steady_clock::now();
     // T18 instrument: the FIRST encode is where a GPU backend compiles its

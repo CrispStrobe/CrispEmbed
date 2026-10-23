@@ -107,6 +107,9 @@ int run(int argc, char ** argv) {
     for (int i = 0; i < dim; ++i) prefix_error = std::max(prefix_error, double(std::abs(a[i] - query_vector[i])));
     require(prefix_error <= 0.002, "prefix differs across contexts/threads");
     dim = 91;
+    require(!crispembed_encode(ctx.get(), nullptr, &dim) && dim == 0, "null text retained dimensions");
+    dim = 91;
+    require(!crispembed_encode(nullptr, "text", &dim) && dim == 0, "null context retained dimensions");
     require(!crispembed_encode(ctx.get(), "<|mask|>", &dim) && dim == 0, "reserved surface accepted");
     require(!crispembed_encode(ctx.get(), std::string(65537, 'x').c_str(), &dim) && dim == 0, "byte overflow accepted");
     std::string long_text;
