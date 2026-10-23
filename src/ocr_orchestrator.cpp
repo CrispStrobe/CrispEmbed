@@ -344,7 +344,8 @@ struct context {
     pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
     granite_vision_context * gv = nullptr;    // Granite Vision (LLaVA-Next)
     qwen35_ocr_context * qwen35 = nullptr;
-    qwen35_ocr_context * ovis = nullptr;         // separate from a LightOn stage in the same pipeline
+    qwen35_ocr_context * ovis = nullptr; // separate from a LightOn stage in the same pipeline
+    std::string ovis_model_path;
     lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
     lfm2_vl_ocr_context * lfm2vl = nullptr;      // LFM2.5-VL (SigLIP2 NaFlex multi-tile)
     unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
@@ -1588,6 +1589,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             if (meta) core_gguf::free_metadata(meta);
             if (!legacy_profile) return {};
         }
+        // Each ordered Ovis stage owns its model path, including fallbacks.
+        if (ovis && st.model_a != ctx->ovis_model_path) {
+            if (ctx->ovis) qwen35_ocr_free(ctx->ovis);
+            ctx->ovis = nullptr;
+            ctx->ovis_model_path.clear();
+        }
         auto *& selected = ovis ? ctx->ovis : ctx->qwen35;
         if (!selected) {
             if (st.model_a.empty()) {
@@ -1599,6 +1606,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 fprintf(stderr, "ocr_orchestrator: qwen35/ovis load failed\n");
                 return {};
             }
+            if (ovis) ctx->ovis_model_path = st.model_a;
         }
         if (!qwen35_ocr_set_max_tokens(selected, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048))
             return {};
