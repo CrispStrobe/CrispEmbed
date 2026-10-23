@@ -1,0 +1,55 @@
+{
+  "source": "f61de66549ab71830ec0bdf23483160e537f2dee",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916",
+  "scope": "Actual desktop configure baseline and build/smoke/install job success; not a successor release or downloaded cross-host model qualification",
+  "platforms": {
+    "linux-x86_64": {
+      "job": 120504280472,
+      "baseline_arch": "x86_64",
+      "flags": {
+        "CRISPEMBED_NATIVE": "OFF",
+        "GGML_NATIVE": "OFF",
+        "GGML_AMX_BF16": "OFF",
+        "GGML_AMX_INT8": "OFF",
+        "GGML_AMX_TILE": "OFF",
+        "GGML_AVX2": "ON",
+        "GGML_AVX512": "OFF",
+        "GGML_AVX512_BF16": "OFF",
+        "GGML_AVX512_VBMI": "OFF",
+        "GGML_AVX512_VNNI": "OFF",
+        "GGML_AVX_VNNI": "OFF"
+      },
+      "generated_flags_scan_passed": true,
+      "job_conclusion": "success",
+      "log_sha256": "5ab6992653cc42460870c810a46655e2e6cd8b0eefaceaf174216ebac66031f2"
+    },
+    "macos-arm64": {
+      "job": 120504280451,
+      "baseline_arch": "arm64",
+      "flags": {
+        "CRISPEMBED_NATIVE": "OFF",
+        "GGML_NATIVE": "OFF"
+      },
+      "generated_flags_scan_passed": true,
+      "job_conclusion": "success",
+      "log_sha256": "a9caec81b083afe8fef24d064aa48431306cb2655e28610285259e047a743506"
+    },
+    "windows-x86_64": {
+      "job": 120504280259,
+      "baseline_arch": "AMD64",
+      "flags": {
+        "CRISPEMBED_NATIVE": "OFF",
+        "GGML_NATIVE": "OFF",
+        "GGML_AVX2": "ON",
+        "GGML_AVX512": "OFF",
+        "GGML_AVX512_BF16": "OFF",
+        "GGML_AVX512_VBMI": "OFF",
+        "GGML_AVX512_VNNI": "OFF",
+        "GGML_AVX_VNNI": "OFF"
+      },
+      "generated_flags_scan_passed": true,
+      "job_conclusion": "success",
+      "log_sha256": "7f15b54c07315ce8b935286d00650f048b16a133b4b21b24280dcd9eb8759b80"
+    }
+  }
+}
