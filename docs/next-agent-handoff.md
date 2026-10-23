@@ -102,10 +102,12 @@ rejects. Public pairs, reserved-token inputs, F16/quantized/GPU/Matryoshka remai
 excluded. Historical183/1294 intermediate failures and strict replay failures
 are unchanged; F16 raw CLS0.0185 still fails all seven original cases.
 
-Active [draftPR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) atd01249af
+Active [draftPR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) at391df2ca
 implements actual wrapper consumers and a `bindings_only` workflow arm.
-Hosted39972325056 is queued; inspect instead of dispatching again. Four binding
-output/numerical controls plus five API parser groups pass locally. No actual
+Initial39972325056 built Rust/library but stopped before inference on a
+versioned-SONAME checker bug. The exact-path guard is corrected; failure is
+archived in initial-bindings-loader-failure.json. Retry39979622930 is queued;
+inspect instead of dispatching again. Five binding/five API groups pass locally. No actual
 Rust/Dart model-backed success is claimed until full returned evidence is checked.
 The bounded task uses the existing hosted model/API workflow and preserved
 F32 conversion to exercise actual Rust and Dart generic bindings on the same
@@ -213,3 +215,9 @@ control isolation. Peak RSS includes initialization/quality probes; no VRAM
 peak, throughput, full GPU residency or general speedup claim is justified.
 Fetch only `lfm2-cuda-performance.json`, block JSONs and selected logs. Preserve
 any inconclusive/failed result before a justified new recipe; no defaults move.
+
+Development desktop CPU portability is prepared in draftPR76 atf61de665:
+Linux/Windows now pin GGML_NATIVE=OFF, every desktop leg explicitly disables
+CRISPEMBED_NATIVE, and the release CPU-baseline checker precedes compilation.
+Review complete exact-source desktop/baseline/aggregation reports before merge;
+source/configure checks alone do not qualify installed cross-host artifacts.

@@ -1,3 +1,20 @@
+## 2026-10-23 — Versioned Rust loader failure preserved; portability fix prepared
+
+Initial binding39972325056 builds the fresh portable library and Rust consumer,
+then stops before inference: the checker searched unversioned SONAME while the
+correct dependency is libcrispembed.so.0. [Raw producer and hashes](tests/results/ultrabert/initial-bindings-loader-failure.json)
+retain the failure. DraftPR75 at391df2ca accepts numerical SONAME versions but
+still requires exactly one dependency resolving to the fresh file; unresolved,
+wrong-file, duplicate and malformed names are rejected. Five binding/five API
+control groups pass locally. Retry39979622930 is queued; no model-backed result
+or arithmetic/reference/gate change is inferred.
+
+DraftPR76 atf61de665 aligns development desktop native-off flags with release
+policy and runs the existing CPU-baseline checker before compilation on all
+three desktop legs. YAML/ordering checks, full32-step toolchain pin guard and
+eight guard self-tests pass. Actual hosted platform/baseline results remain
+pending; no local compilation, release/tag or app-pin change occurred.
+
 ## 2026-10-23 — Paired LFM2 F16 CPU/CUDA performance producer submitted
 
 The account-neutral `lfm2-encoder-cuda-performance-v1` recipe at9fd70ce5 pins
