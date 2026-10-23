@@ -51,9 +51,11 @@ def read(rel: str) -> str:
 
 
 def case_body(src: str, eng: str) -> str:
-    m = re.search(r"case engine::" + eng + r": \{(.*?)\n    case engine::", src, re.S)
+    # Multiple engine labels can intentionally share one implementation.
+    start = r"case engine::" + re.escape(eng) + r":\s*(?:case engine::\w+:\s*)*\{"
+    m = re.search(start + r"(.*?)\n    case engine::", src, re.S)
     if not m:
-        m = re.search(r"case engine::" + eng + r": \{(.*?)\n    default:", src, re.S)
+        m = re.search(start + r"(.*?)\n    default:", src, re.S)
     assert m, f"run_engine case for {eng} not found"
     return m.group(1)
 
@@ -64,7 +66,14 @@ def audit(read_source=read) -> list[str]:
     orch = read_source("src/ocr_orchestrator.cpp")
     for eng, marker in ORCH_PROMPT.items():
         body = case_body(orch, eng)
-        if "vlm_prompt" not in body or marker not in body:
+        forwarded = "vlm_prompt" in body and marker in body
+        if eng == "qwen35_ocr":
+            # A profile's prompt-rejection guard is not forwarding evidence.
+            call = re.search(r"qwen35_ocr_recognize_raw\((.*?)\);", body, re.S)
+            forwarded = bool(call and re.search(
+                r"st\.params\.vlm_prompt\.empty\(\)\s*\?\s*nullptr\s*:\s*st\.params\.vlm_prompt\.c_str\(\)",
+                call.group(1)))
+        if not forwarded:
             errors.append(f"run_engine({eng}) does not forward st.params.vlm_prompt via {marker}")
 
     abi = read_source("src/crispembed.cpp")
@@ -112,6 +121,19 @@ def negative_controls() -> list[str]:
         ("ABI recognition", "src/crispembed.cpp", "return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch,\n                                        u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);", "return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch, nullptr, ol);", "does not forward stored prompt"),
     ]
     failures = []
+    shared = """case engine::left:
+    case engine::right: {
+        shared_prompt_call();
+    }
+    case engine::next: {
+        unrelated();
+    }
+    default:
+"""
+    if (case_body(shared, "left") != case_body(shared, "right")
+            or "shared_prompt_call" not in case_body(shared, "left")
+            or "unrelated" in case_body(shared, "left")):
+        failures.append("shared case-label parser captured the wrong engine body")
     for label, rel, old, new, expected in mutations:
         if old not in originals[rel]:
             failures.append("negative-control source anchor missing: " + label)
