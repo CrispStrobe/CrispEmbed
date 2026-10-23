@@ -13,6 +13,7 @@ on:
         default: '0'
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: ovisocr2-quality-${{ github.ref }}
   cancel-in-progress: false
