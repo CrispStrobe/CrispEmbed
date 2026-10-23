@@ -139,8 +139,8 @@ The independent [owned retrieval smoke](ultrabert-retrieval-smoke.md) is frozen
 at80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4: eight
 queries/24 documents and prospective numerical/ranking/gold gates. Its executable
 scorer and four meaningful control groups pass; no actual task outputs exist.
-[Original-first producer d69e1b90](https://github.com/CrispStrobe/CrispEmbed/tree/d69e1b90df79ad7d33c9e996605a4aa704ee0f29)
-and six guard groups are prepared; it requires successful API/source/artifact
+The original-first producer is integrated at40ff3d6c; controls-only hosted
+39945740758/39946699080 pass. No model-backed retrieval job ran. Its six guards require successful API/source/artifact
 qualification before models/builds. Preserve first original records on retries.
 This is a bounded smoke, not representative MTEB/BEIR qualification. Run the
 pinned original SentenceTransformer first, then native API, preserve misses and

@@ -1,3 +1,17 @@
+## PosFormer released-default parity — 23 October2026
+
+Source790f9a6b, now merged via75e87ea6, passes actual Linux unset/default versus
+the frozen published0.17.12 binary oracle on all50 IDs/text/EOS/confidence values
+in39933245147. Earlier actual-binary comparison retains maximum confidence
+absolute drift2.0265579223632812e-6; no general bitwise claim or fitted tolerance.
+Recognition remains7/50. Both bounded five-case/five-step exported-F32 reference
+paths pass their unchanged per-arm budgets; original training-checkpoint/full-
+sequence parity and general handwriting quality remain unresolved.
+[Raw evidence and source/log limits](tests/results/posformer/released-default-validation.json).
+All source790f9a6b Build/Flutter/WASM/style/security checks pass. This qualifies
+the source default; actual successor assets/consumer checks remain separate and
+published/app0.17.12 is unchanged.
+
 ## UltraBERT M1 original replay and pooled-output limits — 23 October2026
 
 M1 CPU/Accelerate, Torch2.14.0/Transformers5.16.1: four arms ×seven cases in63.45s,

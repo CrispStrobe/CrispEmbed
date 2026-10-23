@@ -1,3 +1,14 @@
+## 2026-10-23 — Hosted retrieval guard checks pass; model phase remains conditional
+
+Controls-only [39945740758](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39945740758)
+and main [39946699080](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39946699080)
+pass all four scorer/six producer control groups. The model job was skipped on
+push; these are not task results. Producer/scorer/protocol are integrated on
+main40ff3d6c. Actual original/native task execution still requires successful
+API39943940607 at4be9f864, currently queued. No duplicate model run was dispatched.
+The source/default PosFormer lane is complete; its actual successor release/
+consumer qualification and development-bundle CPU-baseline alignment remain in PLAN.
+
 ## 2026-10-23 — Original-first retrieval producer prepared with immutable reuse
 
 The owned retrieval producer verifies the completed exact-source API service run,
