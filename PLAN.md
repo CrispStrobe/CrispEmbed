@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend exact parity passed40017014043; PR78 merged918c1c8d. Continue original vLLM GPU startup after retained linker failure, then all-layer native/decoded parity; no alias yet |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend exact parity passed40017014043; PR78 merged918c1c8d. Continue controlled original vLLM GPU startup after retained default-FlashInfer failure, then all-layer native/decoded parity; no alias yet |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -335,7 +335,7 @@ and performance follow-ups remain with their owner.
 ## Active Ovis completion sequence — one coordinated lane
 
 1. Original GPU reference: recipe branch `test/ovisocr2-vllm-reference`,
-   corrected source05e51484; verify actual deployed bytes and one free authorized
+   controlled decoder source5fe3fc90; verify actual deployed bytes and one free authorized
    GPU slot. Retain initial transport/bootstrap/linker failures. Require positive
    original model forward, actual dtype/stops/prompt/processor and raw IDs/text/
    EOS/cap plus original cleanup. T4 auto-FP16 is separate from CPU F32.
@@ -361,3 +361,11 @@ and performance follow-ups remain with their owner.
 
 Continue this sequence through the final qualification/publication decision;
 queued jobs and prepared tools do not constitute completed model support.
+
+Ovis original GPU default-FlashInfer attempt05e51484 fails decoder warmup after
+the real driver is fixed. Retain that failure. Controlled5fe3fc90 requests only
+TRITON_ATTN decoder attention, with vision/GDN/dtype/prompt/weights/stops intact.
+Require actual resolved backend and label auto-backend equivalence unproved.
+Current native candidate0eaa26ae has87 model-free controls passing; real original/
+native/API/quality/quantization results are still required. New publication
+preflight is prepared and does not authorize a candidate without those results.
