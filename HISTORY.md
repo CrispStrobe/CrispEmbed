@@ -1,3 +1,15 @@
+## 2026-10-23 — Released-default restoration prepared with independent controls
+
+[PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) at790f9a6b changes the
+PosFormer initial mode to unset/1 trained, literal0 legacy, supported by the
+completed actual published-binary50-case comparison below. Four model-free
+control groups pass against retained released records, rejecting altered
+IDs/text/EOS/images, missing/duplicate/reordered cases and invalid confidence.
+The hosted workflow adds actual unset Linux output versus the frozen released
+Linux oracle; both-platform gate checks and bounded reference paths remain.
+Exact-source hosted checks are queued: this preparation is not completed runtime
+qualification, a release tag, an app upgrade or a recognition-quality improvement.
+
 ## 2026-10-23 — Genuine CUDA reference audit and released-binary comparison complete
 
 One Kaggle T4 run at source898af2c2/scriptv1 completes594 direct CPU/CUDA checks,

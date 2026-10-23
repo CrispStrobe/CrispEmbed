@@ -33,7 +33,7 @@ UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
   tasks and permissive OCR queue remain in PLAN. PR67 platform/Flutter/WASM/
   contract/secret checks pass at `bc1d990504a7816bfec93277ba0096fc4efa7cd4`.
 
-## Start here: attribute original projection drift, then one bounded correction
+## UltraBERT attribution — M1 experiment owned externally
 
 ### U1 — Completed local audit; preservation and attribution next
 
@@ -52,7 +52,9 @@ This does not identify a broken activation or establish full-model parity.
 The red job is the expected strict numerical conclusion, not structural failure.
 Do not repeat it without a justified new experiment.
 
-Next isolate original projection/reduction reproducibility using fixed input
+The user is executing the bounded M1 audit atf0dbe58d; await its raw reports and
+check every original-stage/projection and raw/normalized CLS record. Do not
+duplicate that experiment. Next isolate original projection/reduction reproducibility using fixed input
 arrays, checked loaded weights and backend/CPU/thread fingerprints. Compare
 original module outputs, F64 diagnostics and frozen anchors separately; backend
 alternatives must not silently become new full-model references. All strict
@@ -161,12 +163,12 @@ The original .99999/.002 gates and native183/1294 failures remain unchanged.
 | --- | --- | --- |
 | Integration CI | Completed39009694933 at f6f84aba: all10 Build jobs including Flutter; WASM/lint/contracts pass | Scheduled health/OCR regression green through22 October; rerun affected checks for new code |
 | PR68 deployment | Completed39009694992; live metadata/PNG verified23 October | Deployment revision f6f84aba; no new app/runtime release |
-| PosFormer PR72 | Merged7f1ecd33 after all sourcef7c53803 checks, bounded reference and Flutter success; PR60 closed | Source correction remains opt-in;7/50 quality unchanged. Initial/final reports retained; no tag/app pin change |
-| Version/release | Development main0.17.13; published/app0.17.12 | Compare trained-forward opt-in with actual released0.17.12 before choosing future defaults. Published12 already corrects this math; main's legacy default is retained. Complete atomic artifact/hash/consumer validation before any tag |
+| PosFormer PR73 | PR72 merged7f1ecd33; actual released/candidate50-case IDs/text/EOS match. Default restoration790f9a6b is queued in [PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) | Require full exact-source checks, Linux actual-default/release oracle, gate and bounded reference reports before merge;7/50 quality unchanged |
+| Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 proposes restoring the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
 | Permissive OCR queue | Audit and reuse the smallest applicable shared backend, starting OvisOCR2/Xiaomi-OCR-0 | PLAN gives licenses/storage/dependencies; recheck exact checkpoint/base terms and original blueprint before weights; Indra stays public-code-only |
-| Existing encoders | LFM2.5/typed Gemma independent task accuracy, GPU and long-context/performance lanes | Their dedicated model docs and frozen references; publication already done does not establish independent task quality |
+| Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired latency, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
 All builds, suites, model/batch/browser work run on hosted CI or authorized remote

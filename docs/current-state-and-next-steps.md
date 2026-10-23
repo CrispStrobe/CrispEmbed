@@ -35,10 +35,10 @@ the exact latest workflow reports when recording new totals.
   candidate 0/50, despite 49/50 references being lexically representable.
   Corrections establish bounded forward correctness, not improved recognition.
   Original training-checkpoint/full-sequence parity remains unproved.
-- The published PosFormer correction remains on immutable release0.17.12 and
-  immutable tag source. PR72 selectively ports the correction behind an opt-in
-  onto main; PR60 is closed. Future release defaults still need comparison to
-  published0.17.12; do not change the app dependency as documentation cleanup.
+- The selective PosFormer source backport is merged via PR72; historical PR60 is
+  closed. Published0.17.12 and the opt-in candidate agree on all50 frozen case
+  IDs/text/EOS stops. PR73 restores that released default while retaining literal0;
+  exact-source default/reference and platform CI remain required before merge.
 - No production cloud backend is selected. Provisioning one is optional future
   work, not a blocker for offline use or App Review demonstration.
 
@@ -69,7 +69,7 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Vendor status — final handoff 17 October 2026
+## Vendor status — updated 23 October 2026
 
 [Executable next-agent tasks](next-agent-handoff.md) give exact sources, tool paths,
 corrected audit, artifact expiry and acceptance checks. [PLAN](../PLAN.md) contains
@@ -87,9 +87,10 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | UltraBERT tokenizer | All8 native BPE/test-template rows match original IDs/masks; both wrong alternatives fail8/8 | Wire the tested template into a scoped production profile after qualification |
 | UltraBERT numerical | Initial14-arm panel/700 exact controls complete,183 F32/1,294 F16 numerical failures retained | [Corrected local audit39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362) complete: all21 F32 local probes pass; six F16 down failures; reference/projection attribution and both strict replay failures remain |
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
-| LFM2.5 and typed Gemma | Integration/publication completed in their model documents | Independent task quality, GPU, long-context/performance remain open |
+| LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
+| Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
 | Permissive OCR queue | Source/license/architecture/size roadmap retained in PLAN | Re-audit pinned source/base terms; smallest shared backend next; Indra public-code-only |
-| PosFormer/app | Existing released correction and consumer snapshot remain unchanged | PR72 merged; explicit released-default compatibility, release validation and separately scoped app/portfolio tasks |
+| PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default restoration awaits exact-source CI; release/consumer qualification remains separate |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
 the remote copy expires21 January2027. Original producer/manifest/payload
@@ -98,12 +99,14 @@ Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
 handoff. Original-backend reproducibility39915714794 completes all four controls without
-recovering frozen anchors; [M1 follow-up](handover-m1-validation.md) is ready.
+recovering frozen anchors; the user is running the [M1 follow-up](handover-m1-validation.md).
+Do not duplicate that original CPU/BLAS experiment.
 Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is
 merged at7f1ecd33 after full sourcef7c53803 platform/Flutter/style/security and
 bounded original/exported-weight reference success. PR60 is closed. Development
 manifests0.17.13 are not a release or app upgrade. The new main integration runs
-are separate checks; future released-default compatibility remains explicit.
+are separate checks. Released-binary compatibility is measured; successor default
+validation is tracked in PR73, followed by atomic release/consumer qualification.
 Other portfolio/app owners remain separate.
 
 ## Recommended order and dependencies
@@ -130,14 +133,24 @@ moving the0.17.12 tag. The old and corrected math remain selectable:
 unset/zero preserve the former vendor-main path. Both50-case public-API/gate arms
 and both bounded reference paths pass; recognition remains7/50.
 
-Before a new release, compare actual published0.17.12 (which already enables the
-trained correction) with current main's opt-in on identical50-case/model inputs.
-Require IDs/EOS/text and available confidence evidence, actual library hashes,
-old correct-ID preservation and package/consumer checks. Decide the successor's
-default deliberately while retaining legacy `=0`; do not treat development
-VERSION0.17.13 as release qualification. The app stays on immutable0.17.12.
-[Initial evidence](../tests/results/posformer/main-backport-initial.json),
-[completed reference evidence](../tests/results/posformer/main-backport-reference.json).
+The actual published Linux0.17.12 binary and candidate opt-in match all50
+IDs/text/EOS sequences, with identical confidence shapes. Maximum confidence
+absolute difference is2.0265579223632812e-6; no bitwise claim or fitted tolerance.
+[Actual-binary provenance and raw measurements](../tests/results/posformer/released-compatibility.json)
+retain library/model/image/manifest hashes and native token-log checks.
+
+[PR73](https://github.com/CrispStrobe/CrispEmbed/pull/73) at790f9a6b changes only the
+initial default selection: unset/1 trained, literal0 legacy. Model-free controls
+reject changed IDs/text/stops/images/coverage and invalid confidence. Its queued
+hosted validation must prove actual unset Linux outputs match the frozen released
+binary records, unset/1 and zero/legacy agreement, both bounded reference paths,
+and normal API/printed regressions. Apple has separate gate/output checks;
+the Linux release oracle does not certify a released Apple binary.
+Inspect existing exact-source runs rather than dispatching duplicates. Merge
+only after all affected checks pass, then update source/evidence here and in PLAN.
+No development-version tag, package publication or app pin change follows from
+source success. A successor release separately requires atomic actual artifacts,
+hashes and consumer qualification. The app stays on immutable0.17.12.
 
 ### M1 — Fifty new independent mathematical problems and systemic repairs
 
