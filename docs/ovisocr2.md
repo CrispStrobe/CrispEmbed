@@ -146,3 +146,45 @@ ignored overrides. This demonstrates the448² minimum only; the2880² maximum
 remains unexercised and is labelled accordingly. No large local image/model
 work is introduced. Phase checkpoints and bounded URL/token/path-redacted error
 details preserve the earliest failure. Five model-free groups pass locally.
+
+## Experimental pinned export profile
+
+`models/qwen35_ovis_profile.py` consumes the reviewed39983101540 proof and exact
+ten-file metadata set, including README/prompt and license. It accepts MTP1
+only for the pinned source/config/non-speculative main schema, requires the
+complete checkpoint size/SHA before tensor reads, and rejects shard indexes or
+fabricated absent metadata. The ordinary converter path still rejects MTP.
+
+The explicit `--profile ovisocr2` branch preserves raw missing-file provenance,
+derived generation/processor values, both stop IDs and the original single-image
+prompt in experimental format2. LightOn output stays format1; no native alias,
+reference tensors or quality claim is added. Ten pure source/proof/CLI/config/
+checkpoint controls plus five metadata controls pass locally. Source review
+caught an initial missing-README allowlist before any weight job; the exact
+source-file allowlist now comes from the shared profile.
+
+On hosted CI, run `ovisocr2-metadata.yml` with `phase=export` at the reviewed
+feature source. `tools/ci-heavy/ovisocr2_export.py` checks original service
+qualification before dependencies/weights, executes actual F32/F16 converter
+CLIs and verifies all473 original casts, names/shapes/dtypes and GGUF payload
+hashes independently. Models/manifests/license remain remote in an experimental
+artifact; download only the reports for review. No local weight conversion is
+authorized by this protocol on a constrained shared host.
+
+Full-weight conversion/roundtrip is not yet qualified. Next native work must
+compare actual prompt IDs, packed RGB/grids/positions and both stopping IDs
+against the preserved original arrays before adapting the LightOn frontend.
+Use original-module intermediate dumpers and crispembed-diff for the model
+forward and decoded EOS/text/cleanup; metadata success cannot replace that.
+Maximum resolution, long pages, existing numerical debt and publication gates
+remain explicit.
+
+The roundtrip auditor at5e197bae derives record names, flattened patch shapes
+and requested F32/F16 precision directly from the qualified original schema.
+It rejects duplicate/extra records or GGUF tensor names rather than trusting
+exporter manifest declarations. Negative controls mutate precision, shapes,
+source coverage and names. The initial full export39991277170 was cancelled
+while its weight-backed job remained queued, before execution. The replacement
+[39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147)
+uses that strengthened source. Inspect both F32/F16 reports and original-cast
+payload checks before any conversion qualification; no duplicate local work.

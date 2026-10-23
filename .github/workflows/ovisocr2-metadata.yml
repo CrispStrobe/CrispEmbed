@@ -1,14 +1,26 @@
 name: OvisOCR2 weight-free metadata and schema
 on:
   workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        description: 'Weight-free metadata capture or full experimental conversion/roundtrip'
+        options: [metadata, export]
+        default: metadata
   push:
-    branches: [main, test/ovisocr2-metadata]
+    branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile]
     paths:
       - '.github/workflows/ovisocr2-metadata.yml'
       - 'tools/ci-heavy/ovisocr2_metadata.py'
       - 'tests/test_ovisocr2_metadata.py'
+      - 'models/convert-qwen35-ocr-to-gguf.py'
+      - 'models/qwen35_ovis_profile.py'
+      - 'tests/test_ovisocr2_export_profile.py'
+      - 'tools/ci-heavy/ovisocr2_export.py'
+      - 'tests/results/qwen35-ocr/ovisocr2-metadata.json'
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: ovisocr2-metadata-${{ github.ref }}
   cancel-in-progress: false
@@ -20,9 +32,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python tests/test_ovisocr2_metadata.py -v
+      - run: |
+          python tests/test_ovisocr2_metadata.py -v
+          python tests/test_ovisocr2_export_profile.py -v
   metadata:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' && inputs.phase != 'export'
     needs: controls
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -51,5 +65,52 @@ jobs:
         with:
           name: ovisocr2-metadata-${{ github.run_id }}
           path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+  export:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'export'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Original qualification preflight before dependencies or weights
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_export.py --preflight
+      - name: Pinned CPU export environment
+        run: |
+          python -m pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Exact full checkpoint and every F32/F16 tensor roundtrip
+        run: python tools/ci-heavy/ovisocr2_export.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-export-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-experimental-gguf-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ovis-export/*.gguf
+            ${{ runner.temp }}/scratch/ovis-export/*.manifest.json
+            ${{ runner.temp }}/scratch/ovis-export/LICENSE
+            ${{ runner.temp }}/scratch/ovis-export/README.md
           if-no-files-found: warn
           retention-days: 90

@@ -4092,5 +4092,6 @@
     "zip_sha256": "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5",
     "expires_at": "2027-01-21T16:00:21Z"
   },
-  "preservation": "Original packed arrays/prompt/IDs remain in ovisocr2-metadata-39983101540 through21 January2027; preserve the same bytes before expiry. No model payload hash was measured by this weight-free run; LFS SHA is an upstream declaration for future conversion verification."
+  "preservation": "Original packed arrays/prompt/IDs remain in ovisocr2-metadata-39983101540 through21 January2027; preserve the same bytes before expiry. No model payload hash was measured by this weight-free run; LFS SHA is an upstream declaration for future conversion verification.",
+  "rendered_prompt": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>\nExtract all readable content from the image in natural human reading order and output the result as a single Markdown document. For charts or images, represent them using an HTML image tag: <img src=\"images/bbox_{left}_{top}_{right}_{bottom}.jpg\" />, where left, top, right, bottom are bounding box coordinates scaled to [0, 1000). Format formulas as LaTeX. Format tables as HTML: <table>...</table>. Transcribe all other text as standard Markdown. Preserve the original text without translation or paraphrasing.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
 }
