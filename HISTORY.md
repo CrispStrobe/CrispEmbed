@@ -1,3 +1,13 @@
+## 2026-10-23 — Actual binding/library identity guarded before retrieval inference
+
+Producer71daebea verifies that the native Python class and loaded library resolve
+to the qualified checkout/fresh build, rejecting package or library fallback
+before candidate inference. Seven producer guard groups pass locally, alongside
+the four scorer groups; the preceding six-group producer version has hosted
+success. The updated hosted control run39947939925 is pending. API39943940607
+has started its model job, with evidence controls successful; no model-backed
+result or retrieval task score is inferred before its final report.
+
 ## 2026-10-23 — Hosted retrieval guard checks pass; model phase remains conditional
 
 Controls-only [39945740758](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39945740758)

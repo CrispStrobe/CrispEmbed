@@ -92,7 +92,7 @@ anchors or call U1 local targets full-model parity.
 
 Implementation [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) is
 at4be9f864; hosted [39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)
-is queued after the initial harness-only CLI-name failure (build passed; no API
+awaits its model-backed conclusion after the initial harness-only CLI-name failure (build passed; no API
 comparison ran). [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
 Inspect existing exact-source CI; do not dispatch duplicates. This
 initial profile covers ordinary text and sequential batches, while public pairs,
@@ -140,7 +140,8 @@ at80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4: eight
 queries/24 documents and prospective numerical/ranking/gold gates. Its executable
 scorer and four meaningful control groups pass; no actual task outputs exist.
 The original-first producer is integrated at40ff3d6c; controls-only hosted
-39945740758/39946699080 pass. No model-backed retrieval job ran. Its six guards require successful API/source/artifact
+39945740758/39946699080 pass. No model-backed retrieval job ran. Seven producer guards (including actual binding/library identity) require
+successful API/source/artifact
 qualification before models/builds. Preserve first original records on retries.
 This is a bounded smoke, not representative MTEB/BEIR qualification. Run the
 pinned original SentenceTransformer first, then native API, preserve misses and

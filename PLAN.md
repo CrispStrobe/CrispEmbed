@@ -122,7 +122,8 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   fails all seven cases. Pending: numerical attribution, gated architecture/text loading,
   exact prompts/CLS/masks, C ABI/CLI/server/all bindings, independent retrieval
   ([frozen owned smoke/scorer and original-first producer](docs/ultrabert-retrieval-smoke.md),
-  integrated at40ff3d6c with hosted guard success; model outputs pending),
+  integrated at40ff3d6c with hosted guard success; binding-identity guard71daebea
+  also passes locally; model outputs pending),
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
@@ -315,7 +316,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `feat/ultrabert-f32-api` | Default-off CPU/F32 UltraBERT pooled text profile using existing exact tokenizer and graph math; public API/CLI/bindings and hosted frozen-output controls | [Draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) at4be9f864; [hosted API39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607) queued. Public pair/Rust/Dart model-backed remain open; owned retrieval inputs/gold/scorer frozen, model outputs pending. Optional [M1 native handover](docs/handover-m1-ultrabert-f32-api.md); strict intermediate audit retained. |
+| 2026-10-23 | `feat/ultrabert-f32-api` | Default-off CPU/F32 UltraBERT pooled text profile using existing exact tokenizer and graph math; public API/CLI/bindings and hosted frozen-output controls | [Draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) at4be9f864; [hosted API39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607) awaiting its model-backed conclusion. Public pair/Rust/Dart model-backed remain open; owned retrieval inputs/gold/scorer frozen, model outputs pending. Optional [M1 native handover](docs/handover-m1-ultrabert-f32-api.md); strict intermediate audit retained. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

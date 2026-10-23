@@ -95,9 +95,8 @@ The API job is still pending at preparation time; this command is conditional,
 not authorization to treat a pending/failed run as qualified. If a later source
 is corrected, use its completed reviewed API receipt and full source instead.
 Check the dispatched producer head against the reviewed branch before execution.
-Six new model-free guard groups cover source/status/receipt errors, missing or
-forged numeric data, safe receipt extraction, no-model preflight, and immutable
-original input/module reuse. No model-backed task result is claimed yet.
+Seven model-free guard groups cover source/status/receipt errors, missing or
+forged numeric data, safe receipt extraction, no-model preflight, immutable original input/module reuse, and actual Python binding/library identity. No model-backed task result is claimed yet.
 
 On a native/quality failure after original capture, preserve the first original
 bytes. The workflow's optional `original_run` input fetches the prior small
@@ -107,3 +106,7 @@ reuses `original.json` byte-for-byte; it does not rerun original inference.
 Manual authorized runs can pass `--reuse-original FILE --original-sha256 SHA`
 after independently verifying the prior service artifact. Always use fresh
 scratch/output directories and preserve the initial failed scores and logs.
+
+The producer also checks that the loaded native library and Python binding resolve
+to the fresh build/qualified checkout, and records their hashes. A default-library
+or installed-package fallback is rejected before candidate inference.

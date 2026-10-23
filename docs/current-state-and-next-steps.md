@@ -99,7 +99,7 @@ Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
 handoff. DraftPR74 at4be9f864 adds the gated CPU/F32 public-text profile; hosted
-39943940607 is queued after a CLI-output-name harness correction. The initial
+39943940607 awaits its model-backed conclusion after a CLI-output-name harness correction. The initial
 build passed; no public API comparison ran before that structural failure. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
 is frozen before task outputs; actual SentenceTransformer/native scoring remains
 pending. The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
