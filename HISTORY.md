@@ -1,3 +1,18 @@
+## 2026-10-23 — Independent CUDA audit submitted while M1 work proceeds
+
+A test-only explicit backend selector at898af2c2 rejects unavailable CUDA or
+unknown device requests instead of silently falling back. Existing Metal/CPU
+selection remains unchanged when unset. One Kaggle GPU audit, scriptv1 atb6979a6f,
+replays official F16 weights/frozen15-case arrays on explicit CPU/CUDA backends,
+then the ordinary API and scheduler. Uploaded source bytes were independently
+verified against script SHA256 `86c5bb90246f644a65ad76c1191ce0ead9af95b12829172ba400191fb04e772b`.
+The run is active; no GPU qualification is claimed before actual reports.
+All source/fixture/model pins,297 layer checks per backend, numerical/decoded
+caps, no-fallback execution evidence and failure exits are defined in the
+[branch recipe](https://github.com/CrispStrobe/CrispEmbed/tree/audit/lfm2-cuda-20261023/tools/kaggle/lfm2-encoder-cuda-audit).
+Private account/run locators remain ignored. Host work was limited to edits,
+API checks and one-file C++ syntax validation after resource inspection.
+
 ## 2026-10-23 — Corrected PosFormer reference and primitive controls pass
 
 [Linux39918191021](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39918191021)
