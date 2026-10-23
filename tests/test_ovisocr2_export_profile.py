@@ -159,6 +159,36 @@ class OvisProfileControls(unittest.TestCase):
                 self.assertEqual(set(fake.snapshot_download.call_args.kwargs['allow_patterns']),set(self.producer['checkpoint_files_sha256']))
                 self.assertIn('README.md',fake.snapshot_download.call_args.kwargs['allow_patterns'])
 
+    def test_roundtrip_independently_rejects_manifest_policy_changes(self):
+        import math
+        spec=importlib.util.spec_from_file_location('ovis_export_driver',ROOT/'tools/ci-heavy/ovisocr2_export.py')
+        driver=importlib.util.module_from_spec(spec);spec.loader.exec_module(driver)
+        schema=self.producer['schema']['official_state_dict']
+        for dtype in ('f32','f16'):
+            records=[]
+            for source,original_shape in schema.items():
+                if source=='lm_head.weight':continue
+                name=source.replace('model.language_model.','l.',1).replace('model.visual.','v.',1)
+                shape=list(original_shape)
+                if name=='v.patch_embed.proj.weight':shape=[shape[0],math.prod(shape[1:])]
+                precision='float16' if dtype=='f16' and len(shape)==2 and 'norm' not in name else 'float32'
+                records.append(dict(source=source,name=name,source_shape=original_shape,shape=shape,dtype=precision))
+            manifest=dict(dtype=dtype,keep_f32=[],tie_word_embeddings=True,checkpoint_tensor_count=473,
+                          export_tensor_count=473,records=records)
+            driver.validate_manifest(manifest,dtype,schema)
+            for mutate in (
+                lambda m:m.update(dtype='f16' if dtype=='f32' else 'f32'),
+                lambda m:m.update(keep_f32=['unrequested']),
+                lambda m:m['records'].append(copy.deepcopy(m['records'][0])),
+                lambda m:m['records'].__setitem__(0,copy.deepcopy(m['records'][1])),
+                lambda m:m['records'][0].update(name=m['records'][1]['name']),
+                lambda m:m['records'][0].update(dtype='float16' if m['records'][0]['dtype']=='float32' else 'float32'),
+                lambda m:m['records'][0].update(shape=[1]),
+                lambda m:m['records'][0].update(source_shape=[1]),
+            ):
+                altered=copy.deepcopy(manifest);mutate(altered)
+                with self.assertRaises(ValueError):driver.validate_manifest(altered,dtype,schema)
+
     def test_no_model_imports(self):
         import sys
         for name in ("torch", "transformers", "safetensors", "gguf"):

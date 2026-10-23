@@ -34,13 +34,44 @@ def preflight():
     return p
 
 
-def roundtrip(model,manifest,source):
+def validate_manifest(manifest,dtype,schema):
+    """Check the requested export policy independently of exporter records."""
+    expected=set(schema)-{'lm_head.weight'}
+    records=manifest['records']
+    if (dtype not in ('f32','f16') or manifest['dtype']!=dtype or manifest['keep_f32']!=[]
+            or manifest['tie_word_embeddings'] is not True
+            or manifest['checkpoint_tensor_count']!=473 or manifest['export_tensor_count']!=473
+            or len(records)!=473 or len(expected)!=473
+            or {r['source'] for r in records}!=expected
+            or len({r['name'] for r in records})!=473):
+        raise ValueError('Export manifest coverage or requested precision differs')
+    for record in records:
+        original=record['source']
+        if original.startswith('model.language_model.'):
+            name='l.'+original[len('model.language_model.'):]
+        elif original.startswith('model.visual.'):
+            name='v.'+original[len('model.visual.'):]
+        else:
+            raise ValueError('Unexpected original tensor prefix')
+        shape=list(schema[original])
+        if name=='v.patch_embed.proj.weight':
+            import math
+            shape=[shape[0],math.prod(shape[1:])]
+        expected_dtype='float16' if dtype=='f16' and len(shape)==2 and 'norm' not in name else 'float32'
+        if (record['name']!=name or record['source_shape']!=schema[original]
+                or record['shape']!=shape or record['dtype']!=expected_dtype):
+            raise ValueError('Export record differs from original schema/precision policy: '+original)
+
+
+def roundtrip(model,manifest,source,dtype):
+    schema=policy()._verified_evidence()['schema']['official_state_dict']
+    validate_manifest(manifest,dtype,schema)
     import numpy as np
     from gguf import GGUFReader,GGMLQuantizationType
     from safetensors import safe_open
     reader=GGUFReader(model);tensors={t.name:t for t in reader.tensors}
     records=manifest['records']
-    if len(tensors)!=473 or set(tensors)!={r['name'] for r in records}:raise ValueError('Export tensor coverage changed')
+    if len(reader.tensors)!=473 or len(tensors)!=473 or set(tensors)!={r['name'] for r in records}:raise ValueError('Export tensor coverage changed')
     if (reader.fields['qwen35_ocr.format_version'].contents()!=2
             or reader.fields['qwen35_ocr.profile'].contents()!='ovisocr2'
             or reader.fields['qwen35_ocr.stop_token_ids'].contents()!=[248044,248046]
@@ -95,7 +126,7 @@ def main():
                 subprocess.run(command,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=1800)
             manifest_path=model.with_suffix('.gguf.manifest.json');manifest=json.loads(manifest_path.read_text())
             shutil.copy(manifest_path,out/manifest_path.name)
-            result=roundtrip(model,manifest,metadata)
+            result=roundtrip(model,manifest,metadata,dtype)
             report['exports'][dtype]=dict(manifest_sha256=sha(manifest_path),**result);save()
         if (metadata/'generation_config.json').exists() or (metadata/'processor_config.json').exists():
             raise ValueError('Conversion fabricated source metadata')
