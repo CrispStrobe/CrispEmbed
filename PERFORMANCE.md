@@ -1655,8 +1655,8 @@ their verdicts stand. The h2ovl quant-ladder decisions were keyed on
 the fixed harness — it is a whole-map global cosine (one row), never an axis
 casualty. Arbitrated per the standing rule by running the real reference:
 `tools/dump_ppocrv6_detector_reference.py` on the safetensors teachers
-(`/Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_{medium,small}_det_safetensors`,
-PaddleX checkout `/Volumes/backups/code/PaddleX`):
+(the original PP-OCRv6 medium/small detector safetensors and a PaddleX
+source checkout):
 
 | arm (fox.png, 800x192 prob map) | vs cached fox-ref | vs FRESH paddle ref |
 |---|--:|--:|
@@ -4650,7 +4650,7 @@ selected critical tensors are copied from F32. The selected
 until repeat benchmarks, page-region parity, and decoded-text quality gates
 improve.
 
-Fresh Miniconda regeneration from `/opt/homebrew/share/tessdata/frk.traineddata`
+Fresh regeneration from the original `frk.traineddata`
 now gives exact input parity (`cosine=1.0`, both norms `122.453`). Against
 now gives exact input parity (`cosine=1.0`, both norms `122.453`). The old Q8
 artifact lacked `sample_iteration`, causing the earlier `0.983119` logits
@@ -4658,10 +4658,10 @@ result and seeded-padding mismatch. A freshly converted F32 model reaches
 9/9 stages with logits cosine `0.993819`; a mixed Q8/F32 candidate carrying
 the recovered seed reaches 9/9 and `0.994876`. Both still decode differently
 from Python, so the mixed candidate is not production-accepted. References are
-stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`
+retained as `tesseract-frk-ref-fresh.gguf`
 and `tesseract-frk-ref-int8fc.gguf`.
 
-GGUF metadata audit of `/Volumes/backups/ai/crispembed-gguf/` found 46
+GGUF metadata audit of the task artifact collection found46
 Tesseract model artifacts: 45 lack `tesseract_lstm.sample_iteration`; only
 `tesseract-eng-homebrew-intmeta-f32-sample6352704.gguf` carries it. The missing
 seed can change every out-of-bounds Convolve padding value, so those artifacts
