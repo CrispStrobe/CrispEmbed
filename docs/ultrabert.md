@@ -268,3 +268,37 @@ all183/1294 intermediate failures visible. Until those public-API/task checks pa
 this remains an experimental integration lane, with no supported registry alias,
 release or HF quantized publication. Further original attribution can continue
 independently using a distinct hypothesis, without repeating the completed arms.
+
+## Experimental public F32 text profile — implementation awaiting hosted checks
+
+The `feat/ultrabert-f32-api` lane adds a default-off CPU/F32 backend to normal
+`crispembed_init`/`encode`/`encode_batch` and per-token calls. Enable
+`CRISPEMBED_ULTRABERT=1`; unset/literal0 reject this architecture. No registry
+alias, artifact publication, release or default-model change is included.
+The backend validates the pinned architecture/source, full218-weight F32 schema,
+per-layer schedules and tokenizer contract before allocating the weight backend.
+Native context is512 tokens including attended BOS; overflow is rejected rather
+than truncated. F16/quantized, GPU, Matryoshka, literal reserved-token surfaces
+and public pair embedding remain outside this bounded profile.
+
+Ordinary public dense encoding is L2-normalized, as required by the shared ABI.
+Original SentenceTransformer raw CLS remains separately accessible through
+`crispembed_encode_tokens_raw`'s first row; Python uses
+`ids, hidden = model.encode_tokens(text, normalize=False)` then `hidden[0]`.
+Documents/ordinary encode have no implicit prefix. Set the declared query prefix
+explicitly through `set_prefix`; the existing CLI auto-query-prefix convention
+applies, with `--prefix ""` selecting unprefixed documents. Python/Rust/Dart,
+CLI and server use their existing generic ABI routes without a new model class.
+
+The hosted `ultrabert-api.yml` workflow verifies original preserved arrays and
+exact regenerated conversion bytes before running public text/ID and pooled
+`crispembed-diff` comparisons. Six original single/batch cases (seven rows) are
+covered; the original pair case remains in the separate prepared-ID audit.
+Repeated calls, two contexts, explicit prefixes, overflow/failure recovery,
+model-free schema controls, Python binding, CLI and HTTP surfaces are included.
+Actual Rust/Dart model-backed checks and a public pair API remain separate.
+All fixed pooled gates remain0.99999/0.002. The original full-stage audit and its
+183/1294 failures remain unchanged; this new test does not relabel them as passed.
+Independent retrieval/official SentenceTransformer wrapper qualification remains
+required before a supported-model or task-quality claim. Inspect complete hosted
+conclusions and raw reports before merging this implementation.

@@ -2860,21 +2860,26 @@ static int cli_main(int argc, char ** argv) {
     }
 
     // Dense encode
+    int dense_failures = 0;
+    bool first_dense = true;
     if (json_output) printf("[\n");
     for (size_t i = 0; i < texts.size(); i++) {
         int dim = 0;
         const float * vec = crispembed_encode(ctx, texts[i].c_str(), &dim);
         if (!vec) {
             fprintf(stderr, "error: encoding failed for text %zu\n", i);
+            ++dense_failures;
             continue;
         }
 
         if (json_output) {
+            if (!first_dense) printf(",\n");
             printf("  {\"text\": \"%s\", \"embedding\": [", json_escape(texts[i]).c_str());
+            first_dense = false;
             for (int d = 0; d < dim; d++) {
                 printf("%.6f%s", vec[d], d + 1 < dim ? ", " : "");
             }
-            printf("]}%s\n", i + 1 < texts.size() ? "," : "");
+            printf("]}");
         } else {
             // Plain format: one line per text, space-separated floats
             for (int d = 0; d < dim; d++) {
@@ -2886,7 +2891,7 @@ static int cli_main(int argc, char ** argv) {
     if (json_output) printf("]\n");
 
     crispembed_free(ctx);
-    return 0;
+    return dense_failures ? 1 : 0;
 }
 
 int main(int argc, char ** argv) {

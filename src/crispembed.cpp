@@ -246,6 +246,7 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
 #include "decoder_embed_internal.h"
 #include "lfm2_embed.h"
 #include "gemma_decision.h"
+#include "ultrabert_embed.h"
 
 struct crispembed_context {
     embed_model model;
@@ -259,6 +260,7 @@ struct crispembed_context {
     std::vector<int32_t> prev_dec_tokens;
     int prefix_cache_enabled = -1; // -1 = unresolved, 0 = off, 1 = on
     // LFM2.5 bidirectional embedding (arch="lfm2")
+    ultrabert_context * ultrabert_ctx = nullptr;
     gemma_decision_context * decision_ctx = nullptr;
     std::string last_decision;
     lfm2_embed_ctx * lfm2_ctx = nullptr;
@@ -2406,6 +2408,17 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     // Encoder models (BERT/XLM-R) have bert.* keys and enc.N.* tensor names.
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(model_path, gp);
+    if (g && core_gguf::kv_str(g, "general.architecture", "") == "ultrabert") {
+        gguf_free(g);
+        ctx->ultrabert_ctx = ultrabert_init(model_path, ctx->n_threads);
+        if (!ctx->ultrabert_ctx) {
+            delete ctx;
+            return nullptr;
+        }
+        ultrabert_hparams(&ctx->model.hparams);
+        ctx->colbert_query_prefix = ultrabert_query_prefix();
+        return ctx;
+    }
     if (g && core_gguf::kv_str(g, "general.architecture", "") == "gemma_decision") {
         gguf_free(g);
         ctx->decision_ctx = gemma_decision_init(model_path, ctx->n_threads);
@@ -2707,6 +2720,19 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
         enc_text = prefixed.c_str();
     }
 
+    if (ctx->ultrabert_ctx) {
+        if (out_n_dim) *out_n_dim = 0;
+        ctx->last_output.clear();
+        // No trained Matryoshka profile is declared by the pinned checkpoint.
+        if (ctx->matryoshka_dim != 0 && ctx->matryoshka_dim != 768) return nullptr;
+        if (!ultrabert_encode(ctx->ultrabert_ctx, enc_text, ctx->last_output)) return nullptr;
+        double norm = 0;
+        for (float v : ctx->last_output) norm += double(v) * v;
+        norm = std::max(std::sqrt(norm), 1e-12);
+        for (float & v : ctx->last_output) v = float(v / norm);
+        if (out_n_dim) *out_n_dim = 768;
+        return ctx->last_output.data();
+    }
     if (ctx->decision_ctx) {
         if (!gemma_decision_encode(ctx->decision_ctx, enc_text, ctx->last_output)) return nullptr;
         if (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < (int)ctx->last_output.size()) {
@@ -2889,7 +2915,7 @@ extern "C" int crispembed_list_lora(const crispembed_context * ctx, const char *
 
 extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const char ** texts, int n_texts,
                                                  int * out_n_dim) {
-    if (ctx && ctx->decision_ctx) {
+    if (ctx && (ctx->decision_ctx || ctx->ultrabert_ctx)) {
         if (out_n_dim) *out_n_dim = 0;
         if (!texts || n_texts <= 0) return nullptr;
         std::vector<float> batch;
@@ -3353,7 +3379,7 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx, cons
         ctx->last_token_embeddings.clear();
     }
     if (!ctx || !text || ctx->is_decoder) return nullptr;
-    if (ctx->is_lfm2) {
+    if (ctx->is_lfm2 || ctx->ultrabert_ctx) {
         const float * raw = crispembed_encode_tokens_raw(ctx, text, out_n_tokens, out_dim);
         if (!raw) return nullptr;
         const int dim = ctx->last_token_dim;
@@ -3452,6 +3478,16 @@ extern "C" const float * crispembed_encode_tokens_raw(crispembed_context * ctx, 
     if (!ctx || !text || ctx->is_decoder) return nullptr;
 
     std::string enc_text = ctx->prefix.empty() ? std::string(text) : ctx->prefix + text;
+    if (ctx->ultrabert_ctx) {
+        std::vector<float> pooled;
+        if (!ultrabert_encode(ctx->ultrabert_ctx, enc_text, pooled, &ctx->last_token_ids, &ctx->last_token_embeddings))
+            return nullptr;
+        ctx->last_token_n = int(ctx->last_token_ids.size());
+        ctx->last_token_dim = 768;
+        if (out_n_tokens) *out_n_tokens = ctx->last_token_n;
+        if (out_dim) *out_dim = 768;
+        return ctx->last_token_embeddings.data();
+    }
     if (ctx->is_lfm2) {
         if (!lfm2_embed_encode_tokens(ctx->lfm2_ctx, enc_text.c_str(), ctx->last_token_ids, ctx->last_token_embeddings))
             return nullptr;
@@ -3506,6 +3542,7 @@ extern "C" const int32_t * crispembed_last_token_ids(const crispembed_context * 
 }
 
 extern "C" const char * crispembed_token_str(const crispembed_context * ctx, int32_t id) {
+    if (ctx && ctx->ultrabert_ctx) return ultrabert_token(ctx->ultrabert_ctx, id);
     if (ctx && ctx->decision_ctx) return gemma_decision_token(ctx->decision_ctx, id);
 
     if (!ctx || ctx->is_decoder) return nullptr;
@@ -3516,7 +3553,7 @@ extern "C" const char * crispembed_token_str(const crispembed_context * ctx, int
 }
 
 extern "C" int crispembed_tokenizer_kind(const crispembed_context * ctx) {
-    if (ctx && ctx->decision_ctx) return 3;
+    if (ctx && (ctx->decision_ctx || ctx->ultrabert_ctx)) return 3;
 
     // 0 = unknown, 1 = WordPiece (## continuation marker),
     // 2 = SentencePiece (▁ word-start marker), 3 = BPE.
@@ -5274,6 +5311,7 @@ extern "C" const char * crispembed_lightonocr_recognize(crispembed_lightonocr_co
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {
+    if (ctx && ctx->ultrabert_ctx) ultrabert_free(ctx->ultrabert_ctx);
     if (ctx && ctx->decision_ctx) gemma_decision_free(ctx->decision_ctx);
 
     if (!ctx) return;
