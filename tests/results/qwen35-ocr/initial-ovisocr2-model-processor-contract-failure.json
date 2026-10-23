@@ -1,0 +1,173 @@
+{
+  "run": 40034685690,
+  "source_commit": "468f5504a42228b880b4cd1ad1f084e3ef6fce4d",
+  "service_conclusion": "failure",
+  "artifact": {
+    "id": 12538103028,
+    "name": "ovisocr2-model-reports-40034685690",
+    "zip_sha256": "af25f35605c3cd424d2fcf18d8cb6df8859d3d7d7f2c272966af1277e56636c7"
+  },
+  "producer_report_sha256": "973795c30352d9211509c6cf6edb6c23bd619a53f1110341c8e0425804a8e708",
+  "phase": "original-f32-capture",
+  "original_capture_exit_code": 1,
+  "error": "OvisOCR2 original processor or EOS differs",
+  "native_forward_executed": false,
+  "processor_replay": [
+    {
+      "case": "square",
+      "match": true,
+      "fields": {
+        "input_ids": {
+          "shape": [
+            1,
+            323
+          ],
+          "dtype": "int64",
+          "sha256": "71d69ebc2e0d1acf2a14ed999feba309e7ccdac1aea62ea693a2128d8494e126"
+        },
+        "attention_mask": {
+          "shape": [
+            1,
+            323
+          ],
+          "dtype": "int64",
+          "sha256": "fa1a669c24af08351c3ae28ab3078dedb157707bd2d15f663faf5488ede2a76f"
+        },
+        "mm_token_type_ids": {
+          "shape": [
+            1,
+            323
+          ],
+          "dtype": "int64",
+          "sha256": "1967bddd57243aa07e314e90148c3f991cb599ddccd95657bc5b990ee67a6bd2"
+        },
+        "pixel_values": {
+          "shape": [
+            784,
+            1536
+          ],
+          "dtype": "float32",
+          "sha256": "d06c03388b4dea9c1b426b62f8734a8f1f33a84c88feb614ffd1953ce0d00288"
+        },
+        "image_grid_thw": {
+          "shape": [
+            1,
+            3
+          ],
+          "dtype": "int64",
+          "sha256": "4f4e4125b4f4650e669e646443bb6c1468449f2366872edb060aa01bb4b30f19"
+        }
+      }
+    },
+    {
+      "case": "odd",
+      "match": true,
+      "fields": {
+        "input_ids": {
+          "shape": [
+            1,
+            337
+          ],
+          "dtype": "int64",
+          "sha256": "d6e27f74e70d41856748180b6f1c36cf9a0d5d4b32f377e8f5b0578159e07990"
+        },
+        "attention_mask": {
+          "shape": [
+            1,
+            337
+          ],
+          "dtype": "int64",
+          "sha256": "3893896ef9babeab3dccc2a87f08e459cec58b7f66947a1f3ecd054ae5bd65e4"
+        },
+        "mm_token_type_ids": {
+          "shape": [
+            1,
+            337
+          ],
+          "dtype": "int64",
+          "sha256": "834f4cb4f26479bdb0a7925da6eb5043d6e20210efc28039dcdc718109e225ae"
+        },
+        "pixel_values": {
+          "shape": [
+            840,
+            1536
+          ],
+          "dtype": "float32",
+          "sha256": "069a2a278022d3a6a1ab2858dc15978822f37ecb6d1c8c481e17b631bb793ea8"
+        },
+        "image_grid_thw": {
+          "shape": [
+            1,
+            3
+          ],
+          "dtype": "int64",
+          "sha256": "e6638e4689cb2afa2b27ae0bc53848c173bf6e613c223105ac14720e9dff2f84"
+        }
+      }
+    },
+    {
+      "case": "small-control",
+      "match": true,
+      "fields": {
+        "input_ids": {
+          "shape": [
+            1,
+            343
+          ],
+          "dtype": "int64",
+          "sha256": "d1de74742190f9089ee8805d0353d2a8f5da5bc5754b249a5aef821ad2cae9f3"
+        },
+        "attention_mask": {
+          "shape": [
+            1,
+            343
+          ],
+          "dtype": "int64",
+          "sha256": "f80dd88b3cde9e67cc4b75bdf83007bd7e31d76c8a3dd475ace9375582657407"
+        },
+        "mm_token_type_ids": {
+          "shape": [
+            1,
+            343
+          ],
+          "dtype": "int64",
+          "sha256": "7da2096e2e79cc98ef34713787f682921f084dc10367d0c5bc42d44bb40a5509"
+        },
+        "pixel_values": {
+          "shape": [
+            864,
+            1536
+          ],
+          "dtype": "float32",
+          "sha256": "f8cb274f27cf90198f5bf936f761658a8fdcf514d85a4c819d7f5aebb3317e18"
+        },
+        "image_grid_thw": {
+          "shape": [
+            1,
+            3
+          ],
+          "dtype": "int64",
+          "sha256": "1da2d6f9854f29be93c29858c984c29543598cb4777b538ebc4a99493a02dab3"
+        }
+      }
+    }
+  ],
+  "loaded_original_source_sha256": {
+    "generation": "427f7e57922fb58c3b321f5e5837ee782bd640cd5b22833029b16f9d4b9c4cdb",
+    "model": "788d4bad50a8d39be2fe79125f0f40134773cd23b1791606fb6b3ab0bc6d2263",
+    "processor": "8ce525e56e0ddade5a665a70f0727b5576f6f51610d068ddfaf4cc60333415f0",
+    "image_processor": "4e1da45f9e7e157ca08aa88243fcc1495ea6a333e40e0c5035ef17ef2747a97d",
+    "tokenizer": "fac4e6576bfe2369731be147a4e530f262bdf32f2ac50436f96f0d8bdd2fc628"
+  },
+  "diagnosis": {
+    "pinned_transformers": "5.16.1",
+    "source": "src/transformers/image_processing_utils.py, BaseImageProcessor._standardize_kwargs and to_dict",
+    "cause_candidate": "to_dict keeps image_mean/image_std tuples; archived JSON evidence reloads them as lists. Raw Python dict equality differs before any forward.",
+    "correction": "Compare exact JSON representations as original metadata serialization does, record every field check and native value type, reject changed values/classes/backend/EOS.",
+    "hosted_confirmation_pending": true
+  },
+  "limits": [
+    "No original model forward, native parity, decoded quality or model qualification from this failed run.",
+    "Initial report/log remain in the exact remote artifact; no comparison tolerances or source pins changed."
+  ]
+}

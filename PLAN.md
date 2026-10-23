@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 native all-layer/decoded audit40034685690 is queued; no alias yet |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 native all-layer/decoded retry40039159696 at d0f64542 is pending after the retained pre-forward processor-guard failure; no alias yet |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -322,8 +322,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40034685690 at468f5504 queued. Review all stages/IDs/text/raw vectors, then actual public interfaces and independently frozen quality/precision gates. No default, alias or publication before qualification. |
-| 2026-10-23 | `test/ovisocr2-vllm-reference` | Sol helper prepares pinned original-vLLM genuine GPU reference recipe | No local builds/imports/models. Check actual published wheel and driver compatibility, preserve auto dtype, verify processor anchors and frontend success before weights. Initiald024 hardware passes but GitHub archive401 precedes model use; byte-identical public fixture mirror50b63a86 fixes transport. Reviewed retrya6256187 is submitted only after a fresh free-slot check. No source build farm or GPU redraw. |
+| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native retry40039159696 at d0f64542 pending after the retained pre-forward processor-guard failure40034685690. Review all stages/IDs/text/raw vectors, then actual public interfaces and independently frozen quality/precision gates. No default, alias or publication before qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -338,8 +337,13 @@ inputs/stops/IDs/text and immutable preservation are archived in HISTORY.
 The original automatic FlashInfer T4 failure remains retained. Continue:
 
 1. **Full native model audit:** draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79),
-   source468f5504, [40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
-   queued through `ovisocr2-metadata.yml`, phase=model. Do not duplicate it.
+   source d0f64542, [40039159696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40039159696)
+   dispatched through `ovisocr2-metadata.yml`, phase=model. Do not duplicate it.
+   Initial40034685690 stopped before forward on a raw Python tuple/list processor
+   guard; [initial evidence](tests/results/qwen35-ocr/initial-ovisocr2-model-processor-contract-failure.json)
+   preserves all three exact processor anchors and source hashes. The correction
+   compares exact JSON values, as the original metadata producer does, and logs
+   each field/type without changing any mathematical budget.
    Review original HF CPU/F32 modules, every vision/text layer/cache/logit,
    all generated scores, IDs/EOS/raw text, owning repeat/two-context and negative
    controls. Preserve earliest absolute errors/norms and all failed arms. Raw
