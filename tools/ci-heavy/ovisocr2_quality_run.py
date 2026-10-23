@@ -47,6 +47,17 @@ def sha(path):
     return h.hexdigest()
 
 
+def validate_selected_confidences(ids, confidences, cap):
+    if (not isinstance(ids, list) or not isinstance(confidences, list)
+            or type(cap) is not int or not 0 < len(ids) <= cap
+            or len(ids) != len(confidences)
+            or any(type(token) is not int or not 0 <= token < 248320 for token in ids)
+            or any(type(value) not in (int, float) or not math.isfinite(value)
+                   or value < 0 or value > 1 for value in confidences)):
+        raise ValueError('Actual selected-token confidence/ID record invalid')
+    return sum(confidences) / len(confidences)
+
+
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     result = importlib.util.module_from_spec(spec)
@@ -201,16 +212,20 @@ def validate_reused_original(previous, current, cases, rendered, contract, profi
         row = outputs[case['id']]
         ids = row.get('token_ids', [])
         confidence = row.get('confidences', [])
+        try:
+            mean = validate_selected_confidences(ids, confidence, case['cap'])
+        except ValueError as exc:
+            raise ValueError('Reviewed original quality confidence record differs: ' + case['id']) from exc
         if (row.get('input_rgb_sha256') != case['rgb_sha256']
                 or row.get('input_png_sha256') != case['png_sha256']
                 or row.get('cap') != case['cap']
-                or not 0 < len(ids) <= case['cap'] or len(ids) != len(confidence)
-                or any(type(token) is not int or not 0 <= token < 248320 for token in ids)
-                or any(not isinstance(value, (float, int)) or not math.isfinite(value)
-                       or value < 0 or value > 1 for value in confidence)
                 or row.get('stop_id') != (ids[-1] if ids[-1] in (248044, 248046) else None)
                 or row.get('finish_reason') != ('stop' if row['stop_id'] is not None else 'length')):
             raise ValueError('Reviewed original quality ID/confidence/stop record differs: ' + case['id'])
+        recorded_mean = row.get('mean_confidence')
+        if (type(recorded_mean) not in (int, float) or not math.isfinite(recorded_mean)
+                or not math.isclose(recorded_mean, mean, rel_tol=0, abs_tol=1e-12)):
+            raise ValueError('Reviewed original quality confidence mean differs: ' + case['id'])
     scores = score_outputs(contract, rendered, cases, outputs)
     if scores != previous.get('scores', {}).get('original'):
         raise ValueError('Reviewed original quality score recomputation differs')
@@ -306,9 +321,8 @@ def original_cases(source, cases, profile, out, report, save):
             if list(scores.shape) != [1, 248320]:
                 raise ValueError('Original selected-token vocabulary differs: ' + case['id'])
             confidence = float(torch.softmax(scores[0].float(), dim=-1)[token])
-            if not math.isfinite(confidence) or not 0 <= confidence <= 1:
-                raise ValueError('Original selected-token confidence invalid: ' + case['id'])
             confidences.append(confidence)
+        mean_confidence = validate_selected_confidences(ids, confidences, case['cap'])
         raw = processor.tokenizer.decode(ids, skip_special_tokens=True,
                                          clean_up_tokenization_spaces=False)
         stop_id = ids[-1] if ids and ids[-1] in profile['stop_ids'] else None
@@ -316,7 +330,7 @@ def original_cases(source, cases, profile, out, report, save):
                   'input_ids_sha256': hashlib.sha256(inputs['input_ids'].numpy().tobytes()).hexdigest(),
                   'token_ids': ids, 'raw_text': raw, 'processed_text': process_readme_output(raw, cleaner, filter_fn),
                   'confidences': confidences,
-                  'mean_confidence': sum(confidences) / len(confidences),
+                  'mean_confidence': mean_confidence,
                   'finish_reason': 'stop' if stop_id is not None else 'length', 'stop_id': stop_id,
                   'cap': case['cap'], 'wall_seconds': time.monotonic() - start,
                   'peak_process_rss_kib': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,

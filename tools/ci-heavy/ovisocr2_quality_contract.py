@@ -91,6 +91,7 @@ def render_panel(destination, panel=None):
 
 
 def source_schema(path=EVIDENCE_PATH):
+    """Return audited GGUF shapes; the producer evidence retains original HF shapes."""
     evidence = json.loads(Path(path).read_text())
     producer = evidence['producer']
     if (canonical_sha(producer) != PRODUCER_SHA or evidence['run'] != 39983101540
@@ -107,6 +108,15 @@ def source_schema(path=EVIDENCE_PATH):
             mapped = 'l.' + name.removeprefix('model.language_model.')
         else:
             raise ValueError('Unknown original OvisOCR2 tensor: ' + name)
+        if mapped == 'v.patch_embed.proj.weight':
+            # The pinned exporter flattens only this Conv3d [out,C,T,H,W]
+            # into a GGUF matrix. The original five-axis shape remains in
+            # the reviewed producer evidence and is checked here exactly.
+            if shape != [768, 3, 2, 16, 16]:
+                raise ValueError('Original OvisOCR2 patch source shape differs')
+            shape = [768, 1536]
+        elif len(shape) > 4:
+            raise ValueError('Unexpected unflattened OvisOCR2 tensor: ' + name)
         mapping[mapped] = shape
     if len(mapping) != 473:
         raise ValueError('OvisOCR2 mapped schema differs')

@@ -58,6 +58,7 @@ class OvisOCR2Parser:
         outputs = {case['id']: {'input_rgb_sha256': case['rgb_sha256'],
                                 'input_png_sha256': case['png_sha256'], 'cap': case['cap'],
                                 'token_ids': [42, 248046], 'confidences': [0.4, 0.8],
+                                'mean_confidence': 0.6000000000000001,
                                 'stop_id': 248046, 'finish_reason': 'stop'} for case in cases}
         current = {'inputs': cases, 'rendered_panel_sha256': 'c' * 64,
                    'reviewed_documents_sha256': 'd' * 64}
@@ -81,6 +82,15 @@ class OvisOCR2Parser:
                 prior['original_cases']['10']['cap'] = 17
                 with self.assertRaisesRegex(ValueError, 'record differs'):
                     driver.validate_reused_original(prior, current, cases, None, None, profile, '2' * 64)
+
+    def test_selected_token_confidences_reject_nonfinite_and_mismatch(self):
+        self.assertAlmostEqual(driver.validate_selected_confidences(
+            [42, 248046], [0.25, 0.75], 16), 0.5)
+        for ids, probabilities in (([42], []), ([42], [float('nan')]),
+                                   ([42], [float('inf')]), ([42], [-0.1]),
+                                   ([248320], [0.5]), ([], [])):
+            with self.assertRaises(ValueError):
+                driver.validate_selected_confidences(ids, probabilities, 16)
 
 
 if __name__ == '__main__':

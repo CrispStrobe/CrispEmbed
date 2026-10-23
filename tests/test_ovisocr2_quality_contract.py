@@ -104,6 +104,32 @@ class OvisQualityContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'precision'):
             contract.validate_quant_tensors(before, changed, 'q4-attention-q8', schema)
 
+    def test_reviewed_patch_conv3d_is_only_flattened_gguf_shape(self):
+        producer = json.loads(contract.EVIDENCE_PATH.read_text())['producer']
+        self.assertEqual(producer['schema']['official_state_dict']['model.visual.patch_embed.proj.weight'],
+                         [768, 3, 2, 16, 16])
+        export = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-export.json').read_text())
+        patch_record = next(row for row in export['producer']['exports']['f16']['records']
+                            if row['name'] == 'v.patch_embed.proj.weight')
+        self.assertEqual(patch_record['sha256'],
+                         '2118e6880b91f152debf94b7e70395945bdb2191eaeb2f08c1e937ab9b0ed235')
+        self.assertEqual(contract.source_schema()['v.patch_embed.proj.weight'], [768, 1536])
+        # GGUFReader reports reversed GGUF dimensions [1536,768]. The
+        # audited patch stays byte exact under every protected recipe.
+        schema = {'v.patch_embed.proj.weight': [768, 1536],
+                  'l.example.weight': [256, 512]}
+        before = {'v.patch_embed.proj.weight': {'shape': [1536, 768], 'type': 'F16',
+                                                'sha256': patch_record['sha256']},
+                  'l.example.weight': {'shape': [512, 256], 'type': 'F16', 'sha256': 'b' * 64}}
+        after = copy.deepcopy(before)
+        after['l.example.weight'].update(type='Q8_0', sha256='c' * 64)
+        self.assertEqual(contract.validate_quant_tensors(before, after,
+                                                         'q8-protected', schema)['protected_byte_exact'], True)
+        wrong = copy.deepcopy(after)
+        wrong['v.patch_embed.proj.weight']['shape'] = [16, 16, 2, 3, 768]
+        with self.assertRaisesRegex(ValueError, 'shape'):
+            contract.validate_quant_tensors(before, wrong, 'q8-protected', schema)
+
     def test_realistic_document_screen_checks_completion_and_15_cells(self):
         rows = []
         for name, license in [('historical-receipt', 'CC0-1.0'),
