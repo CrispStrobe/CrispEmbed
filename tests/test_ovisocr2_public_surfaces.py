@@ -100,6 +100,20 @@ class PublicSurfacePreflight(unittest.TestCase):
         arms["dart-run"]["metric_lines"] = []
         with self.assertRaises(ValueError): subject.compare_confidences(arms)
 
+    def test_compiled_python_dart_abi_requires_exact_stage_layout(self):
+        native = ("ABI stage_size=168 cleanup_size=40 params_size=88 "
+                  "vlm_max_tokens_offset=136 vlm_prompt_offset=144\n")
+        dart = ["ABI stage_size=168 cleanup_size=40 params_size=88"]
+        python = {"stage_size": 168, "cleanup_size": 40, "params_size": 88,
+                  "vlm_max_tokens_offset": 136, "vlm_prompt_offset": 144}
+        self.assertEqual(subject.compare_abi(native, dart, python)["dart"]["stage_size"], 168)
+        with self.assertRaises(ValueError):
+            subject.compare_abi(native, ["ABI stage_size=160 cleanup_size=40 params_size=88"], python)
+        with self.assertRaises(ValueError):
+            subject.compare_abi(native, dart, {**python, "vlm_prompt_offset": 140})
+        with self.assertRaises(ValueError):
+            subject.compare_abi("no ABI record", dart, python)
+
 
 if __name__ == "__main__":
     unittest.main()

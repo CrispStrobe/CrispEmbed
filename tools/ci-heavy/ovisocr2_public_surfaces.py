@@ -410,6 +410,35 @@ def compare_confidences(arms):
                                          for name in ("python", "cli-stage21", "http-stage21"))}
 
 
+def compare_abi(native_text, dart_lines, python_layout):
+    """Bind the copied Dart stage FFI to the actual compiled C++ header layout."""
+    pattern = (r"ABI stage_size=(\d+) cleanup_size=(\d+) params_size=(\d+)"
+               r"(?: vlm_max_tokens_offset=(\d+) vlm_prompt_offset=(\d+))?")
+    native_rows = re.findall(pattern, native_text)
+    dart_rows = [re.fullmatch(pattern, line) for line in dart_lines if line.startswith("ABI ")]
+    if len(native_rows) != 1 or len(dart_rows) != 1 or dart_rows[0] is None:
+        raise ValueError("Native or Dart ABI declaration absent or ambiguous")
+    names = ("stage_size", "cleanup_size", "params_size",
+             "vlm_max_tokens_offset", "vlm_prompt_offset")
+    native = dict(zip(names, map(int, native_rows[0])))
+    if not all(native_rows[0]):
+        raise ValueError("Native ABI offsets are missing")
+    dart = dict(zip(names[:3], map(int, dart_rows[0].groups()[:3])))
+    if python_layout != native or dart != {key: native[key] for key in dart}:
+        raise ValueError("Python/Dart OCR stage ABI differs from compiled C++")
+    return {"native": native, "python": python_layout, "dart": dart}
+
+
+def python_abi_layout():
+    sys.path.insert(0, str(ROOT/"python"))
+    from crispembed._binding import _CrispOcrStage, _ScanCleanupParams, _CrispOcrPipelineParams
+    return {"stage_size": ctypes.sizeof(_CrispOcrStage),
+            "cleanup_size": ctypes.sizeof(_ScanCleanupParams),
+            "params_size": ctypes.sizeof(_CrispOcrPipelineParams),
+            "vlm_max_tokens_offset": _CrispOcrStage.vlm_max_tokens.offset,
+            "vlm_prompt_offset": _CrispOcrStage.vlm_prompt.offset}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--preflight", action="store_true")
@@ -425,7 +454,11 @@ def main():
               "source_sha256": {name: sha(ROOT/name) for name in (
                   "tools/ci-heavy/ovisocr2_public_surfaces.py",
                   "tests/ovisocr2_public_bindings.rs", "tests/ovisocr2_public_bindings.dart")},
-              "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit."}
+              "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
+              "generic_prompt_semantics": {
+                  "single_model_cli": "Fixed-task Ovis prompt override is ignored with an explicit warning; the default task still runs.",
+                  "single_model_http": "A custom fixed-task prompt returns prompt_applied:false; the default task still runs.",
+                  "explicit_ovis_stage": "CLI/HTTP startup rejects a nonempty custom prompt; binding setters return false without mutation."}}
     report_path = out/"ovisocr2-public-surfaces.json"
     def save(): report_path.write_text(json.dumps(report, indent=2, allow_nan=False)+"\n")
     save()
@@ -460,7 +493,8 @@ def main():
         for label, command in (("cmake-configure", configure),
             ("cpu-baseline-check", [sys.executable, ROOT/"scripts/check-cpu-baseline.py", build]),
             ("public-target-build", ["cmake", "--build", build, "--config", "Release", "--target",
-                                      "crispembed-shared", "crispembed-cli", "crispembed-server", "-j2"])):
+                                      "crispembed-shared", "crispembed-cli", "crispembed-server",
+                                      "test-qwen35-public", "-j2"])):
             report["arms"][label] = run_cmd(label, command, out, timeout=2400)
             save()
             if not report["arms"][label]["passed"]:
@@ -470,6 +504,18 @@ def main():
             (("shared", lib), ("cli", build/"crispembed"), ("server", build/"crispembed-server"))}
         report["phase"] = "public-model-backed-arms"
         save()
+        # The existing Qwen public checker prints the authoritative C++ ABI
+        # before loading references. Deliberately missing test inputs make it
+        # exit 2 after that print, without reading any model weights.
+        abi_probe = run_cmd("native-abi-layout", [build/"test-qwen35-public",
+            "__missing_abi_model__", "__missing_abi_image__", "__missing_abi_reference__",
+            "__unused__", "__missing_abi_prompted_reference__"], out, timeout=30)
+        abi_probe["passed"] = abi_probe["exit_code"] == 2 and len([
+            line for line in abi_probe["metric_lines"] if line.startswith("ABI ")]) == 1
+        report["arms"]["native-abi-layout"] = abi_probe
+        save()
+        if not abi_probe["passed"]:
+            raise ValueError("Existing native public ABI checker did not return a bounded layout record")
         env = env_with_gates()
         os.environ.update({gate: "1" for gate in GATES})
         for label, arm in (("c-abi", lambda: abi_arm(lib, artifacts["model"], rgb, pins["expected_text"])),
@@ -483,6 +529,14 @@ def main():
         bindings_arm(ROOT, build, artifacts["model"], raw, artifacts["image"],
                      pins["expected_text"], out, scratch, report, save)
         try:
+            report["abi_layout"] = {"passed": True, **compare_abi(
+                (out/"native-abi-layout.log").read_text(),
+                report["arms"].get("dart-run", {}).get("metric_lines", []),
+                python_abi_layout())}
+        except Exception as exc:
+            report["abi_layout"] = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
+        save()
+        try:
             report["public_confidence_comparison"] = {"passed": True,
                 **compare_confidences(report["arms"])}
         except Exception as exc:
@@ -492,6 +546,8 @@ def main():
         report["failures"] = [name for name, arm in report["arms"].items() if not arm["passed"]]
         if not report["public_confidence_comparison"]["passed"]:
             report["failures"].append("public-confidence-comparison")
+        if not report["abi_layout"]["passed"]:
+            report["failures"].append("public-abi-layout")
         report["status"] = "completed public audit" if not report["failures"] else "completed with failures"
         save()
         if report["failures"]: raise ValueError("Public model-backed arms failed")
