@@ -31,16 +31,24 @@ class RecipeControls(unittest.TestCase):
             self.assertEqual(argv[-1], 'pip==' + recipe.ISOLATED_PIP_VERSION)
             self.assertEqual(report['isolated_pip_version'], recipe.ISOLATED_PIP_VERSION)
 
-    def test_cuda_link_uses_real_driver_and_task_owned_directory_only(self):
+    def test_cuda_link_uses_loaded_driver_not_ldconfig_cache(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             driver = root / 'libcuda.so.580.178.04'
             driver.write_bytes(b'controlled-driver-fixture')
-            output = ' libcuda.so.1 (libc6,x86-64) => ' + str(driver) + '\n'
+            maps = 'a-b r-xp 0 00:00 1 ' + str(driver) + '\n'
+            def version(pointer):
+                pointer._obj.value = 13000
+                return 0
+            library = mock.Mock()
+            library.cuDriverGetVersion.side_effect = version
             original = {'LIBRARY_PATH': '/existing', 'OTHER': 'unchanged'}
+            read = Path.read_text
+            def mapped(path, *args, **kwargs):
+                return maps if str(path) == '/proc/self/maps' else read(path, *args, **kwargs)
             with mock.patch.object(recipe, 'SCRATCH', root), \
-                    mock.patch.object(recipe.subprocess, 'check_output', return_value=output), \
-                    mock.patch.object(recipe, 'save'):
+                    mock.patch.object(recipe.ctypes, 'CDLL', return_value=library), \
+                    mock.patch.object(Path, 'read_text', mapped), mock.patch.object(recipe, 'save'):
                 report = {}
                 env = recipe.cuda_link_environment(report, original)
                 link = root / 'cuda-driver-link/libcuda.so'
@@ -51,12 +59,17 @@ class RecipeControls(unittest.TestCase):
                 self.assertEqual(env['OTHER'], 'unchanged')
                 self.assertFalse(report['cuda_driver_link']['system_files_modified'])
                 self.assertEqual(report['cuda_driver_link']['sha256'], recipe.digest(driver))
-                recipe.cuda_link_environment({}, {})  # repeat replaces only own symlink
-            for bad in ('', ' libcuda.so (libc6) => ' + str(driver),
-                        ' libcuda.so.1 (libc6) => ' + str(root / 'missing')):
-                with mock.patch.object(recipe.subprocess, 'check_output', return_value=bad):
-                    with self.assertRaises((ValueError, FileNotFoundError)):
-                        recipe.cuda_link_environment({}, {})
+                self.assertEqual(report['cuda_driver_link']['driver_api_version'], 13000)
+                recipe.cuda_link_environment({}, {})
+                maps = ''
+                with self.assertRaises(ValueError):
+                    recipe.cuda_link_environment({}, {})
+                maps = 'a-b r-xp 0 00:00 1 ' + str(root / 'libcuda.so.missing') + '\n'
+                with self.assertRaises(FileNotFoundError):
+                    recipe.cuda_link_environment({}, {})
+                library.cuDriverGetVersion.side_effect = lambda pointer: 34
+                with self.assertRaisesRegex(ValueError, 'driver API'):
+                    recipe.cuda_link_environment({}, {})
 
     @classmethod
     def setUpClass(cls):

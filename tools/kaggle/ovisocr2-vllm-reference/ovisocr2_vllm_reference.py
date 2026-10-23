@@ -6,6 +6,7 @@ receipt is deliberately not a BF16 reference or a task-quality benchmark.
 """
 
 import hashlib
+import ctypes
 import json
 import os
 from pathlib import Path
@@ -262,16 +263,25 @@ def gpu_gate(report):
 
 def cuda_link_environment(report, env):
     """Expose the installed real driver to JIT linkers without system changes."""
-    output = subprocess.check_output(['ldconfig', '-p'], text=True, timeout=15)
+    # NVIDIA container mounts need not appear in the ldconfig cache. Ask the
+    # dynamic loader for the actual driver, then inspect its mapped file.
+    driver = ctypes.CDLL('libcuda.so.1')
+    version = ctypes.c_int()
+    driver.cuDriverGetVersion.argtypes = [ctypes.POINTER(ctypes.c_int)]
+    driver.cuDriverGetVersion.restype = ctypes.c_int
+    if driver.cuDriverGetVersion(ctypes.byref(version)) != 0 or version.value < 12090:
+        raise ValueError('Actual CUDA driver API is unavailable or below CUDA 12.9')
+    mapped = Path('/proc/self/maps').read_text()
     candidates = []
-    for line in output.splitlines():
-        if re.match(r'\s*libcuda\.so\.1\s', line) and '=>' in line:
-            path = Path(line.split('=>', 1)[1].strip()).resolve(strict=True)
+    for line in mapped.splitlines():
+        parts = line.split(maxsplit=5)
+        if len(parts) == 6 and Path(parts[5]).name.startswith('libcuda.so'):
+            path = Path(parts[5]).resolve(strict=True)
             if 'stubs' not in path.parts and path.is_file():
                 candidates.append(path)
     candidates = sorted(set(candidates))
     if len(candidates) != 1:
-        raise ValueError('Expected one installed real CUDA driver library')
+        raise ValueError('Expected one dynamically loaded real CUDA driver library')
     target = candidates[0]
     directory = SCRATCH / 'cuda-driver-link'
     directory.mkdir(exist_ok=True)
@@ -284,7 +294,7 @@ def cuda_link_environment(report, env):
     result = dict(env)
     result['LIBRARY_PATH'] = str(directory) + (
         ':' + result['LIBRARY_PATH'] if result.get('LIBRARY_PATH') else '')
-    report['cuda_driver_link'] = {'target': str(target), 'sha256': digest(target),
+    report['cuda_driver_link'] = {'driver_api_version': version.value, 'target': str(target), 'sha256': digest(target),
                                   'link': str(link), 'system_files_modified': False}
     save(report)
     return result
@@ -330,6 +340,7 @@ def main():
         evidence = metadata_proof(report)
         report['phase'] = 'hardware'; save(report)
         gpu_gate(report)
+        driver_env = cuda_link_environment(report, os.environ)
         report['phase'] = 'pinned-worker'; save(report)
         worker = SCRATCH / 'worker.py'
         fetch(WORKER_URL, worker, timeout=60)
@@ -363,9 +374,8 @@ def main():
         freeze = run('package-freeze', [python, '-m', 'pip', 'freeze', '--all'], report, timeout=120)
         report['package_freeze_sha256'] = digest(freeze)
         report['phase'] = 'original-gpu-reference'; save(report)
-        env = dict(os.environ, CUDA_VISIBLE_DEVICES='0', OVIS_OUT=str(OUT), OVIS_SCRATCH=str(SCRATCH),
+        env = dict(driver_env, CUDA_VISIBLE_DEVICES='0', OVIS_OUT=str(OUT), OVIS_SCRATCH=str(SCRATCH),
                    OVIS_PROOF_COMMIT=PROOF_COMMIT, OVIS_CHECKPOINT_SHA=CHECKPOINT_SHA)
-        env = cuda_link_environment(report, env)
         run('original-vllm-worker', [python, str(worker)], report, env=env, timeout=3600)
         worker_result = json.loads((OUT / 'ovisocr2-vllm-worker.json').read_text())
         report['worker'] = worker_result
