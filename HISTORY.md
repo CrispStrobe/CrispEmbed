@@ -1,3 +1,22 @@
+## 2026-10-23 — Corrected UltraBERT audit and integration conclusions verified
+
+[Local operator39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
+at f6f84aba completes14 arms/700 passing exact controls. All28 small log hashes
+verify; strict reparsing reproduces every prior ordinary/exact/84 operator
+record. All183 F32/1,294 F16 ordinary failures remain. Additional42 local
+records pass21/21 F32 and15/21 F16; all six F16 failures are down projections
+against original F32 targets. New Python local-down/frozen-full-output gaps
+reach0.0029296875. [Full report](tests/results/ultrabert/local-operator-audit.json).
+This is not production support, independent retrieval quality or a numerical waiver.
+
+Merged-source Build39009694933 passes all10 jobs including Flutter; WASM,
+lint/source/quantizer/decoded controls pass. Pages39009694992 deploys f6f84aba;
+on23 October actual HTML metadata and PNG pass HTTP200/type/1200×630/byte checks.
+Scheduled health39773877133 and OCR regression39751981426 pass22 October.
+Remote main remained9490cc29 before this follow-up; release/app stay0.17.12.
+New external issue71 requests subtitle inpainting and temporal consistency;
+license/architecture feasibility is a separately scoped candidate, not implemented.
+
 ## 2026-10-17 — Wrap-up: validated packaging and gated UltraBERT tools consolidated
 
 Wheel [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845)

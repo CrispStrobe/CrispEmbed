@@ -1,4 +1,4 @@
-# Executable handoff — 17 October 2026
+# Executable handoff — updated 23 October 2026
 
 Read this file, [PLAN](../PLAN.md), [the model contract](ultrabert.md),
 [contributing](contributing.md) and [the shared consumer handoff](current-state-and-next-steps.md).
@@ -17,7 +17,7 @@ UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
   artifact bytes stay remote.
 - Social preview: reviewed PNG/metadata, all native/Flutter/WASM/secret checks
   pass at `ebcadb1ffa87750972836dd858fe03e355b0fde0`; PR68 merged.
-  Deployment must be checked at its actual deployed revision.
+  Deployment39009694992 succeeded at f6f84aba; live HTML/PNG checked23 October: correct absolute metadata, HTTP200/image/png,1200×630 and committed PNG bytes.
 - UltraBERT source/schema, both218-tensor F32/F16 conversions, original7-case/
   2,730-stage captures, test-only full-layer native graph and scoped operator
   diagnostics. All initial failures are preserved. No production dispatch exists.
@@ -35,60 +35,29 @@ UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
 
 ## Start here: verify the corrected audit, then one bounded correction
 
-### U1 — Finish the corrected same-input operator audit
+### U1 — Completed local audit; preservation and attribution next
 
-Initial [39008070299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299)
-failed at `a349539e01701f53144b100623b67bcd62489436` after compilation,
-25 model-free controls, five Torch controls and all seven local captures passed.
-The first empty F32 ordinary/probe metrics agree, but merged stderr split a
-buffered OPERATOR record before parsing. No completed 14-arm result exists.
-[Raw producer report and failure provenance](../tests/results/ultrabert/initial-local-audit-failure.json)
-retain this failure. The correction flushes stdout before the auxiliary reference
-loader writes stderr; strict parsing and all numerical gates remain unchanged.
+Corrected [39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
+completed all14 native arms at `f6f84aba6ba22b27b9f15cfc08f1d182524062d2`.
+[Complete report](../tests/results/ultrabert/local-operator-audit.json) preserves
+all producer fields. All28 log hashes were independently checked/reparsed;
+ordinary/exact/84 OPERATOR records exactly match the earlier reviewed audit.
+All700 exact controls pass;183 F32/1,294 F16 ordinary failures remain.
 
-Corrected [run39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
-is queued at integrated source `f6f84aba6ba22b27b9f15cfc08f1d182524062d2`.
-Inspect this run and exact source before dispatching anything:
+The additional42 LINEAR records pass all21 F32 probes; F16 retains six down
+projection failures against original F32 targets, max1.12353516. SiLU/product
+probes pass both formats. Newly executed Python local down differs from the
+frozen full-model output by up to0.0029296875; original anchors are retained.
+This does not identify a broken activation or establish full-model parity.
+The red job is the expected strict numerical conclusion, not structural failure.
+Do not repeat it without a justified new experiment.
 
-```sh
-gh run list --workflow ultrabert-native.yml --limit 5
-```
-
-If none exists for the corrected source, dispatch once (never duplicate an active
-run), recording its immutable source and run URL:
-
-```sh
-gh workflow run ultrabert-native.yml --ref main -f reference_run=38997562520 -f operator_audit=true -f linear_audit=true -f linear_local_audit=true -f linear_forward_audit=false
-```
-
-Workflow: [ultrabert-native.yml](../.github/workflows/ultrabert-native.yml).
-Driver: [ultrabert_native.py](../tools/ci-heavy/ultrabert_native.py).
-Original operator observer: [dump_ultrabert_linear_reference.py](../tools/dump_ultrabert_linear_reference.py).
-Native comparisons: [test_ultrabert_diff.cpp](../tests/test_ultrabert_diff.cpp),
-using `crispembed_diff::Ref`, not a parallel parity framework.
-
-Fetch only `ultrabert-native.json`, `linear-reference/linear-reference.json` and
-28 small ordinary/operator logs from artifact `ultrabert-native-<corrected-run-id>`.
-Inspect archive members with ZIP ranges, or extract the small members on a
-hosted runner. Do not download model/reference arrays onto a shared host.
-
-Acceptance: verify run/source, all file hashes, 7 local-reference records, original
-archive/conversion replay, 14 native arms, 700 exact controls, 84 old OPERATOR
-records and 42 additional LINEAR records. Reparse logs using `parse_log`,
-`parse_operator_log` and `parse_linear_log(..., local_operators=True)`; require
-ordinary probe-on/off metrics/exits identical. Local targets use the original
-SiLU/down modules with fixed frozen gate/up values and identical replayed products.
-`layer_14.local_down` is an additional operator target; it never replaces frozen
-`layer_14.ffn_out`. Retain their discrepancy and all ordinary failures.
-The corrected source still needs its actual 14-arm hosted conclusion. A failed
-numerical job can contain completed measurements; inspect its report rather than
-equating workflow failure with a build error.
-
-If the run fails structurally, retain raw reports/log hashes, fix that specific
-failure, and rerun one immutable source. If complete, archive every producer
-field and its original report SHA, summarize local versus composed errors/norms,
-and select only the next earliest justified operator experiment. No weight,
-prompt, case, cap or tolerance fitting. Do not repeat an already queued run.
+Next isolate original projection/reduction reproducibility using fixed input
+arrays, checked loaded weights and backend/CPU/thread fingerprints. Compare
+original module outputs, F64 diagnostics and frozen anchors separately; backend
+alternatives must not silently become new full-model references. All strict
+replay modes and original0.99999/0.002 gates remain unchanged. Use existing
+`tools/` original-module capture and `crispembed-diff` stage definitions.
 
 ### U2 — Attribute remaining numerical differences
 
@@ -101,8 +70,8 @@ RMS, exact stage order and final raw/normalized CLS, not cosine alone.
 
 [Original-input operator report](../tests/results/ultrabert/operator-audit.json)
 passes41/42 F32 probes: Unicode whole MLP error0.0048828125 drops to0.000671386719
-with frozen gate/up. F16 retains24 local failures. U1 can distinguish local
-SiLU/product/down differences from projection/upstream amplification; replay
+with frozen gate/up. F16 retains24 local failures. U1 shows all F32 local
+SiLU/product/down probes pass while composed errors remain; replay
 projection/reduction alternatives only where its results justify them. Preserve
 working gated alternatives and rerun the unchanged complete panel for a correction.
 
@@ -171,8 +140,8 @@ replace expired tensors with a newly computed reference under the same identity.
 
 | Lane | Next bounded action | Completion evidence / limits |
 | --- | --- | --- |
-| Integration CI | Inspect new main's exact Build/Flutter, WASM, lint, contracts and secret runs | Component source checks above are not proof of new merge-head conclusions; fix actual integration failures, no local build batches |
-| PR68 deployment | Inspect the Pages run from the merged source and actual production HTML/PNG | Absolute OG/Twitter URLs, PNG200/image/png/1200×630 and served revision; PR CI alone is not deployment |
+| Integration CI | Completed39009694933 at f6f84aba: all10 Build jobs including Flutter; WASM/lint/contracts pass | Scheduled health/OCR regression green through22 October; rerun affected checks for new code |
+| PR68 deployment | Completed39009694992; live metadata/PNG verified23 October | Deployment revision f6f84aba; no new app/runtime release |
 | PosFormer PR60 | Port only trained input LayerNorm and ceil-pool correction from78493a31 onto current main | Fresh original/reference/decoded native tests; preserve unchanged7/50 result, existing public API and stable tag; do not merge its old release branch wholesale |
 | Version/release | Reconcile main0.17.11 with published0.17.12 before a future release | Repository bump procedure, native/WASM hashes and actual consumer validation atomically; no app pin or PyPI change as cleanup |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |

@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Consumer snapshot verified5 October2026; vendor roadmap updated 17 October 2026.
+Consumer snapshot verified5 October2026; vendor roadmap updated 23 October 2026.
 For current vendor work, start with the [executable handoff](next-agent-handoff.md).
 The application snapshot below keeps its original verification dates. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
@@ -76,16 +76,16 @@ corrected audit, artifact expiry and acceptance checks. [PLAN](../PLAN.md) conta
 pending work, [HISTORY](../HISTORY.md) completed milestones and every initial
 failure, [PERFORMANCE](../PERFORMANCE.md) numerical/quality/storage limits.
 Completed wheel/source changes and test-only UltraBERT tools are integrated;
-new merge-head platform CI and Pages deployment still need actual conclusions.
+merged-source platform CI and Pages/live metadata verification pass (HISTORY23 October).
 The app remains pinned to immutable0.17.12, not vendor main.
 
 | Front | Verified result | Remaining work |
 | --- | --- | --- |
 | Wheels | All4 platform legs/23 installed native-load/C-ABI checks/aggregation pass at e75a32f1 | Version/release reconciliation and any future PyPI publication are separate |
-| Social preview | PR68 merged after native/Flutter/WASM/secret success | Check actual Pages deployment and served HTML/PNG/revision |
+| Social preview | PR68 merged after native/Flutter/WASM/secret success | Completed deployment39009694992 at f6f84aba; live HTML/PNG verified23 October |
 | UltraBERT source/conversion | All218 tensors in both F32/F16 exports and original7-case/2,730-stage capture pass | No production architecture/text API/bindings yet |
 | UltraBERT tokenizer | All8 native BPE/test-template rows match original IDs/masks; both wrong alternatives fail8/8 | Wire the tested template into a scoped production profile after qualification |
-| UltraBERT numerical | Initial14-arm panel/700 exact controls complete,183 F32/1,294 F16 numerical failures retained | [Initial local audit39008070299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299) compiled/passed controls and captures, then failed on interleaved logging; flush correction awaits full hosted result; retain both strict replay failures |
+| UltraBERT numerical | Initial14-arm panel/700 exact controls complete,183 F32/1,294 F16 numerical failures retained | [Corrected local audit39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362) complete: all21 F32 local probes pass; six F16 down failures; reference/projection attribution and both strict replay failures remain |
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 and typed Gemma | Integration/publication completed in their model documents | Independent task quality, GPU, long-context/performance remain open |
 | Permissive OCR queue | Source/license/architecture/size roadmap retained in PLAN | Re-audit pinned source/base terms; smallest shared backend next; Indra public-code-only |

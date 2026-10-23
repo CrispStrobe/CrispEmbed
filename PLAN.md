@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 17 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 23 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -36,8 +36,8 @@ confidence/timing limits. Q4 receipt truncates at1024 with unclosed HTML; all
 quantized recipes change receipt/book text and retain numerical failures. No
 candidate is selected for publication or default promotion.
 
-1. [ ] **Finish UltraBERT attribution/integration:** inspect the corrected
-   same-input operator run after the39008070299 logging failure, then follow U1–U4 in the executable handoff.
+1. [ ] **Finish UltraBERT attribution/integration:** use the completed
+   same-input operator audit39009703362 and isolate reference/projection drift, then follow U1–U4 in the executable handoff.
    Native tokenizer component parity is complete; public model support is not.
 2. [ ] **Resolve OCR correctness/independent quality before publication.** Keep
    existing failed F16/quantized records and held-out gold/caps. HF publication,
@@ -112,8 +112,8 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   [the architecture contract](docs/ultrabert.md). Original reference/conversions
   and8-row native tokenizer/template parity pass; the test-only native graph
   retains183 F32/1,294 F16 intermediate failures. Both strict replay failures
-  remain archived. Inspect the corrected local audit after39008070299 failed on
-  interleaved logging; scoped local targets cannot replace old full-model references.
+  remain archived. Completed local audit39009703362 passes all21 F32 local probes,
+  with six F16 down failures; scoped local targets cannot replace old full-model references.
   Pending: numerical attribution, gated production architecture/text loading,
   exact prompts/CLS/masks, C ABI/CLI/server/all bindings, independent retrieval,
   long-context/GPU/performance and validated quantization/publication. Base150M/
@@ -140,12 +140,9 @@ inspection, conversion and inference remain outside the selected scope; its
 
 Completed wheel validation and PR/source review are in HISTORY. Remaining work:
 
-- [ ] **Merged-main CI:** inspect exact post-integration Build/Flutter, WASM,
-  lint, source/quality/quantizer controls and secret conclusions. Previously
-  passing component sources do not establish the new merge-head result.
-- [ ] **PR68 deployment:** inspect the Pages run for the merge and actual served
-  HTML/PNG response/revision. Full PR checks passed and source is merged;
-  deployment verification is distinct and may still be queued.
+Merged-source CI and live Pages verification are complete (HISTORY23 October).
+Require affected exact-source checks again for each new implementation change.
+
 - [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes
   with current main and draftPR60 using native/reference/decoded evidence.
 - [ ] **Release metadata:** reconcile source VERSION0.17.11 and published0.17.12
@@ -159,6 +156,11 @@ Completed wheel validation and PR/source review are in HISTORY. Remaining work:
   narrow-layout coverage, fresh math problems and App Review/store presentation.
   Cloud deployment and collaboration remain separate optional product decisions.
   Exact scopes and dependencies: [consumer handoff](docs/current-state-and-next-steps.md).
+
+- [ ] **Issue71 inpainting feasibility:** audit exact code/checkpoint licenses for
+  MI-GAN/LaMa; trace image/mask contracts and existing primitive coverage. Keep
+  still-image parity/public interfaces separate from batching/temporal propagation.
+  Do not treat issue descriptions as verified license or quality evidence.
 
 ## OCR portfolio and performance carry-forward
 

@@ -88,7 +88,7 @@ limits in PERFORMANCE. Do not repeat dated historical commands as current tasks.
 The wheel matrix/23 installed native-load checks/aggregation and native tokenizer
 component audit pass. UltraBERT tools are test-only; production model support,
 remaining numerical errors and strict reference-replay drift are unresolved.
-Inspect the corrected local audit after39008070299 failed on interleaved logging. Preserve its
+Corrected local audit39009703362 completed with retained numerical failures. Preserve its
 scoped targets separately from the original frozen full-model references.
 
 Read exact contracts before runtime work, use original-module intermediate dumps

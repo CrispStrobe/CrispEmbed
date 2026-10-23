@@ -207,7 +207,7 @@ post-RoPE Q/K are not yet compared. No production dispatch/API is added.
 | Isolated original replay | Rejects empty gate anchor drift2.0265579223632812e-6 before new native comparisons | [initial capture failure](../tests/results/ultrabert/initial-linear-capture-failure.json) |
 | Full original replay | Hook neutrality passes;287 empty-case old payloads differ, first Q0 error5.960464477539062e-7 | [all full-replay differences](../tests/results/ultrabert/full-forward-capture-failure.json) |
 | Native BPE/test template | All8 rows exact IDs/masks; terminal-SEP and zero-ID-padding controls each fail8/8;4 log controls pass | [39007901207](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39007901207), [report](../tests/results/ultrabert/tokenizer-audit.json) |
-| Same-input local operators | 39008070299 at a349539e: build/25 model-free/five Torch controls/seven captures pass; interleaved logging aborts first arm. Flush correction awaits full hosted result | [run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39008070299) |
+| Same-input local operators | 39009703362 at f6f84aba completes14 arms; all21 F32 local probes pass, six F16 down failures; ordinary failures unchanged | [run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362) |
 
 The strict replay failures do not establish a CPU/backend cause. Preserve their
 original arrays, source identity and exact checks. The new `linear_local_audit`
