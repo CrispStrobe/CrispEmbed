@@ -91,12 +91,15 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | Permissive OCR queue | Source/license/architecture/size roadmap retained in PLAN | Re-audit pinned source/base terms; smallest shared backend next; Indra public-code-only |
 | PosFormer/app | Existing released correction and consumer snapshot remain unchanged | Selective PR60 backport, version reconciliation and separately scoped app/portfolio tasks |
 
-UltraBERT original reference artifact expires31 October2026 03:09:55 UTC. Preserve
-its byte-exact arrays remotely before expiry; never silently recompute a missing
-reference. Numerical replay drift and cause remain unresolved. Component cosine,
-exact tokenizer IDs or local operator agreement do not establish full model/task
-quality. Public support, quantized publication/default changes require the gates
-in U1–U4 of the executable handoff. Other portfolio/app owners remain separate.
+UltraBERT original arrays were verified and copied by preservation39913800444;
+the remote copy expires21 January2027. Original producer/manifest/payload
+identities remain unchanged. [Preservation provenance](../tests/results/ultrabert/reference-preservation.json).
+Numerical replay drift and cause remain unresolved. Component cosine, exact
+tokenizer IDs or local operator agreement do not establish full model/task quality.
+Public support and quantized/default publication require U1–U4 in the executable
+handoff. Bounded original-backend reproducibility39915714794 is queued; selective
+PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is draft with
+fresh hosted validation pending. Other portfolio/app owners remain separate.
 
 ## Recommended order and dependencies
 

@@ -153,7 +153,7 @@ Inspect its report before repeating the experiment.
 | --- | --- | --- |
 | Integration CI | Completed39009694933 at f6f84aba: all10 Build jobs including Flutter; WASM/lint/contracts pass | Scheduled health/OCR regression green through22 October; rerun affected checks for new code |
 | PR68 deployment | Completed39009694992; live metadata/PNG verified23 October | Deployment revision f6f84aba; no new app/runtime release |
-| PosFormer PR60 | Port only trained input LayerNorm and ceil-pool correction from78493a31 onto current main | Fresh original/reference/decoded native tests; preserve unchanged7/50 result, existing public API and stable tag; do not merge its old release branch wholesale |
+| PosFormer PR60/72 | Selective opt-in backport is in draftPR72 at0b73f5f9; validation39916014523 pending | Inspect fresh Linux/macOS50-case API/reference/gate tests before merge. Branch development version0.17.13; stable tag/app pin unchanged; no old release branch merge |
 | Version/release | Reconcile main0.17.11 with published0.17.12 before a future release | Repository bump procedure, native/WASM hashes and actual consumer validation atomically; no app pin or PyPI change as cleanup |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |

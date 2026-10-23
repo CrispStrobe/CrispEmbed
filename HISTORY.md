@@ -1,3 +1,18 @@
+## 2026-10-23 — Bounded follow-up sources queued
+
+Original-module/backend reproducibility [39915714794](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39915714794)
+is queued at8031ae1c: four fixed thread/MKLDNN alternatives, loaded-weight bit
+checks, all original anchors, and separately labelled F64/F16-weight probes.
+No native numerical correction is inferred before actual reports.
+
+Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72)
+at0b73f5f9 preserves main behavior under unset/zero and opts into trained input
+normalization/ceil pooling with `CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` captured
+at initialization. Its Linux/macOS normal-API/reference/gate validation39916014523
+is pending. Development manifests0.17.13 are confined to that draft branch;
+no release tag, publication or app pin change. PR60 remains open until evidence
+supports reconciliation. This is a queued implementation checkpoint, not a pass.
+
 ## 2026-10-23 — Frozen original arrays preserved without regeneration
 
 [Preservation39913800444](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39913800444)
