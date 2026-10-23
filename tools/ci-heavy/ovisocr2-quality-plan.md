@@ -45,7 +45,10 @@ the quantizer exit code or tensor type alone.
 
 `q4-attention-q8` is a second, gated size experiment. It keeps the same
 protected tensors, attention matrices at Q8_0 and other eligible matrices at
-Q4_K. It requires a positive independent Q8 review before any run. The native
+Q4_K. It requires an independent review of the actual Q8 diagnostic and an
+explicit `allow_q4_diagnostic` decision before any run. A failed Q8 numerical
+arm remains in the record and blocks Q8 publication, while Q4 may still be
+measured. The native
 unsupported Q4_0 fallback is a failed tensor audit. For each
 candidate, read actual GGUF tensor names, shapes, types and raw byte hashes,
 then call `validate_quant_tensors()`. Retain the quantizer log, input/output
@@ -54,8 +57,16 @@ failure reports remotely. A separate `q4-calibrated` phase invokes the existing
 native importance collector on only the four frozen development images and
 requires all 72 FFN importance vectors to be applied; heldout images and
 documents never enter calibration. Both Q4 arms require a reviewed positive
-Q8 result. A quantized candidate GGUF and upstream attribution stay in a
+Q8 diagnostic review. A quantized candidate GGUF and upstream attribution stay in a
 remote workflow artifact for later independent review and possible publication.
+Each quantized phase also downloads the small original activation artifact from
+the reviewed model-audit run, verifies its ZIP and reference GGUF/JSON/image
+SHA-256 values, and runs `test-qwen35-decoder --native-frontend` with the
+original float comparison thresholds and all-layer coverage. The report keeps
+every metric, the earliest failing stage and magnitudes, IDs/stop/text evidence,
+and the complete log. This is a quantization drift diagnostic. Its failure
+does not stop the separate full OCR quality panel, but it blocks candidate
+qualification.
 Paired realistic document gates reject increased raw or parsed CER/WER,
 incomplete or malformed output, and any error in the controlled 15-cell grid.
 No model alias or release is qualified by this workflow alone.
