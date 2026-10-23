@@ -1,0 +1,96 @@
+name: OvisOCR2 gated public surfaces
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_run_id:
+        description: 'Reviewed positive Ovis model-audit run ID'
+        required: true
+        type: string
+      lighton_run_id:
+        description: 'Existing qualified LightOn model artifact run ID'
+        required: true
+        type: string
+      lighton_artifact_name:
+        description: 'Existing qualified LightOn model artifact name'
+        required: true
+        type: string
+      lighton_filename:
+        description: 'Format-1 LightOn GGUF filename within that artifact'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ovisocr2-public-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ovisocr2_public_surfaces.py -v
+
+  public:
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODEL_RUN_ID: ${{ inputs.model_run_id }}
+      LIGHTON_FILENAME: ${{ inputs.lighton_filename }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reviewed F16-positive model gate before dependencies and weights
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_public_surfaces.py --preflight --model-run-id "$MODEL_RUN_ID"
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovisocr2-model-reference-${{ inputs.model_run_id }}
+          run-id: ${{ inputs.model_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/model-reference
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.lighton_artifact_name }}
+          run-id: ${{ inputs.lighton_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/lighton
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Pinned public Python binding dependencies
+        run: |
+          python -m pip install numpy==2.2.6 pillow==12.1.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Actual C ABI, Python, CLI, HTTP, Rust and Dart model-backed outputs
+        run: |
+          python tools/ci-heavy/ovisocr2_public_surfaces.py \
+            --model-run-id "$MODEL_RUN_ID" \
+            --artifacts "$RUNNER_TEMP/model-reference" \
+            --lighton-model "$RUNNER_TEMP/lighton/$LIGHTON_FILENAME"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-public-surfaces-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
