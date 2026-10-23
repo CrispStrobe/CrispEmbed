@@ -91,7 +91,7 @@ anchors or call U1 local targets full-model parity.
 ### U3 — Scope a gated F32 pooled-output profile; retain full-model audit failures
 
 Implementation [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) is
-at17b668c0; hosted [39938024529](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39938024529)
+at0e615ea4; hosted [39939481805](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39939481805)
 is queued. Inspect existing exact-source CI; do not dispatch duplicates. This
 initial profile covers ordinary text and sequential batches, while public pairs,
 reserved-token surfaces, F16/quantized/GPU/Matryoshka remain explicitly excluded.

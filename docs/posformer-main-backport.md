@@ -1,28 +1,33 @@
-# PosFormer selective main backport
+# PosFormer trained forward and released default
 
-The source is selectively ported from PR60 at78493a31 onto current main; the old
-release branch, release workflow changes and tag are not merged. The trained
-decoder applies embedding LayerNorm, positional encoding, then input LayerNorm.
-The fixed2×2/stride2 encoder pools duplicate missing edge samples for PyTorch
-ceil-mode valid-sample max/mean behavior.
+PosFormer applies the trained embedding LayerNorm, positional addition, then
+input LayerNorm. Fixed2×2/stride2 encoder pools duplicate missing edge samples
+for PyTorch ceil-mode valid-sample max/mean behavior. The source backport is
+selective; the historical release branch was not merged wholesale.
 
-`CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` opts into both corrections. The value is
-captured at model initialization; unset/literal0 preserve the existing main path.
-The prior path remains available. Required trained norm/position tensors are
-validated only for the opted-in path. Test probes are added only to a separate
-hosted test library and must be absent from the production library.
+The trained forward is the default, matching published0.17.12.
+`CRISPEMBED_POSFORMER_TRAINED_FORWARD=0` restores the legacy vendor-main path;
+explicit1 and unset select the trained forward. Mode is captured at model init.
+Required norm/position tensors are validated only for the trained path.
 
-Hosted `posformer-runtime-validation.yml` checks original exported weights,
-normal public API transcription on all50 frozen cases (prior result7/50),
-Linux/macOS, scalar/default reference encoders, meaningful wrong normalization/
-pooling controls, gate-unset/zero baseline output equality and printed OCR.
-A passing component test is not recognition improvement. All source/model/corpus
-identities are pinned; any missing artifact or changed anchor is a failure.
+Actual published Linux0.17.12 and the prior opt-in candidate match all50 frozen
+case token IDs/text/EOS stops. Confidence differences reach2.0265579223632812e-6;
+these are retained without claiming bitwise parity or fitting a new tolerance.
+[Released-binary evidence](../tests/results/posformer/released-compatibility.json)
+records actual libraries, asset/model/input hashes and raw measurements. This
+is the ground truth for restoring the default, not a new recognition recipe.
 
-The development manifests are synchronized to0.17.13 for this actual runtime
-addition. No release tag, package publication, default promotion or app pin change
-is implied. PR72 merged at7f1ecd33 after all sourcef7c53803 checks and report review;
-historical PR60 is closed. Release compatibility with actual published0.17.12
-remains separate: that release already uses trained-forward math by default,
-while development main retains the legacy default. Validate this before publishing
-or changing defaults; the opt-in source merge is not a successor release.
+Hosted Linux validation checks actual unset output against the frozen released
+Linux binary records. Both platforms check explicit1/unset agreement, zero/legacy
+agreement, full report provenance,
+50-case normal API, meaningful primitive negative controls and both bounded
+original-code/exported-F32 reference paths. Pure controls reject changed tokens,
+text, stops, images/models, case coverage, confidence shape and nonfinite or
+impossible zero top-1 probabilities. Confidence drift remains measured separately.
+Test probes belong only to the separate hosted test library.
+
+Recognition remains7/50 on this panel. Original training-checkpoint/BN statistics
+and full-sequence parity are unproved; the exported-F32 reference covers five
+cases/five decoder steps. The initial trace-anchor failure remains archived.
+Development manifests0.17.13 create no tag, publication or app upgrade. Keep
+immutable app0.17.12 until actual successor artifact/hash/consumer qualification.

@@ -24,6 +24,34 @@ def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def compare_release_records(released, candidate):
+    """Exact released IDs/text/stops; confidence drift stays explicitly measured."""
+    for record in (released, candidate):
+        if (record['model_sha256'] != MODEL_SHA or record['manifest_sha256'] != MANIFEST_SHA
+                or record['threads'] != 2 or not record.get('completed') or len(record['cases']) != 50):
+            raise ValueError('Incomplete or changed release comparison')
+    if released['library_source'] != '78493a31fc3043f3af4ab6fd2f197a32da6f07f0':
+        raise ValueError('Wrong released source')
+    if len({c['id'] for c in released['cases']}) != 50:
+        raise ValueError('Duplicate released cases')
+    confidence_max = mean_max = 0.0
+    for old, new in zip(released['cases'], candidate['cases']):
+        for key in ('id','image_sha256','text','token_ids','stop'):
+            if old[key] != new[key]:raise ValueError('Released output changed: '+key)
+        if len(old['confidence']) != len(new['confidence']):raise ValueError('Confidence shape changed')
+        for record in (old, new):
+            if (not all(math.isfinite(x) and 0 < x <= 1 for x in record['confidence'])
+                    or not math.isfinite(record['mean_confidence'])
+                    or not 0 <= record['mean_confidence'] <= 1
+                    or (record['confidence'] and record['mean_confidence'] == 0)):
+                raise ValueError('Nonfinite/invalid confidence')
+        confidence_max = max([confidence_max]+[abs(x-y) for x,y in zip(old['confidence'],new['confidence'])])
+        mean_max = max(mean_max,abs(old['mean_confidence']-new['mean_confidence']))
+    return dict(cases=50,token_ids_exact=True,text_exact=True,stops_exact=True,
+                max_confidence_abs=confidence_max,max_mean_confidence_abs=mean_max,
+                confidence_scope='Measured; no bitwise claim or fitted numerical tolerance')
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--library', type=Path, required=True)
