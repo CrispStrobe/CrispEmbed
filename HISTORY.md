@@ -1,3 +1,29 @@
+## 2026-10-23 — Original Ovis F32 forward completes; cache observer failure retained
+
+[40040392649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40040392649)
+at13a093ea confirms both exact processor and generation-resolution corrections,
+then completes original CPU/F32 forward and generation. Actual nine IDs and
+`Hello OCR\n\n12345` match the controlled GPU reference, ending EOS248046.
+Cached/full-prefix logits max1.33514404296875e-5 with the same argmax.
+Observed/unobserved logits and greedy IDs are exact. The original MKLDNN-off
+control retains the same IDs; its numerical variation is reported separately.
+
+The required-stage gate then correctly rejects72 missing linear-cache arrays.
+Pinned cache utils use dictionaries keyed by integer0; the observer handled
+lists/tuples and omitted the dictionary values. [Initial report, positive original
+observations and immutable artifact identities](tests/results/qwen35-ocr/initial-ovisocr2-model-cache-observer-failure.json).
+All871 captured arrays remain in remote artifact12539012965; do not replace them.
+The observer correction and prior-member gate in cc038b00 require every old NPY
+member byte-identical and exactly72 new cache stages before native. Replay drift
+records the earliest observed stage's absolute error/norms. Large downloads and
+model execution stay on CI;108 pure controls pass. Retry40041958521 is dispatched.
+
+PR smoke40040387163 also exposes a source-auditor parser that misses shared
+switch case labels. Correction0fbda101 handles the shared implementation and
+checks the actual prompt recognizer argument, so a rejection guard cannot fake
+forwarding. All four prompt-loss mutations still reject; cap/name guards pass.
+No native model qualification, model publication, release or app pin change yet.
+
 ## 2026-10-23 — Ovis processor correction confirmed; generation guard failure retained
 
 [40039159696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40039159696)
