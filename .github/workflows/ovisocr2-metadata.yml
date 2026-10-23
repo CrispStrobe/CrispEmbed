@@ -52,6 +52,9 @@ jobs:
           python tests/test_ovisocr2_model_audit.py -v
           python tests/test_ovisocr2_adapter_contract.py -v
           python tests/test_ovisocr2_quality_contract.py -v
+          python tests/test_ovisocr2_quality_run.py -v
+          python tests/test_ovisocr2_vllm_recipe.py -v
+          python tests/test_ovisocr2_vllm_review.py -v
   metadata:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'metadata'
     needs: controls
