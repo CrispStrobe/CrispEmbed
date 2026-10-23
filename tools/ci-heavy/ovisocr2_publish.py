@@ -21,6 +21,11 @@ DESTINATION = 'cstr/OvisOCR2-GGUF'
 F16_SHA = 'd3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db'
 LICENSE_SHA = 'bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a'
 UPSTREAM_README_SHA = 'f2510d6d02471c01a2808102da79cb47106963f18486f2ac05dd5c0b53fc1c7a'
+LICENSE_CHAIN_PATH = EVIDENCE/'ovisocr2-license-chain.json'
+LICENSE_CHAIN_SHA = '1614862ff965aee172b70f504efd883ddff88cc6bba550c439a648ece5b5d098'
+SOURCE_CONTRACT_PATH = EVIDENCE/'ovisocr2-source-contract.json'
+SOURCE_CONTRACT_SHA = '81a6b3ea839bba0a8b0b1308bb064c363654dbb793f759ec6976d45218d6e43c'
+ROOT_LICENSE_SHA = '50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32'
 RECIPES = {'f16': 'original-f16', 'q8': 'q8-protected', 'q4': 'q4-attention-q8',
            'q4-calibrated': 'q4-attention-q8'}
 
@@ -66,10 +71,64 @@ def valid_cache_error(value):
     return type(value) in (int, float) and math.isfinite(value) and 0 <= value <= .002
 
 
+def require_license_chain():
+    """Check pinned, small public provenance before auth or weight access."""
+    if (not LICENSE_CHAIN_PATH.is_file() or digest(LICENSE_CHAIN_PATH) != LICENSE_CHAIN_SHA
+            or not SOURCE_CONTRACT_PATH.is_file() or digest(SOURCE_CONTRACT_PATH) != SOURCE_CONTRACT_SHA):
+        raise ValueError('Pinned Ovis/base/root license chain or source contract missing/altered')
+    chain = json.loads(LICENSE_CHAIN_PATH.read_text())
+    source = json.loads(SOURCE_CONTRACT_PATH.read_text())
+    if chain.get('source_contract') != {
+            'path': 'tests/results/qwen35-ocr/ovisocr2-source-contract.json',
+            'sha256': SOURCE_CONTRACT_SHA}:
+        raise ValueError('License chain source contract proof differs')
+    models = chain.get('models', {})
+    expected = (
+        ('ATH-MaaS/OvisOCR2', REVISION, 'Qwen/Qwen3.5-0.8B'),
+        ('Qwen/Qwen3.5-0.8B', '2fc06364715b967f1860aea9cf38778875588b17',
+         ['Qwen/Qwen3.5-0.8B-Base']))
+    if set(models) != {'ATH-MaaS/OvisOCR2', 'Qwen/Qwen3.5-0.8B',
+                       'Qwen/Qwen3.5-0.8B-Base'}:
+        raise ValueError('License chain model set differs')
+    for name, revision, base in expected:
+        row, upstream = models[name], source.get('models', {}).get(name, {})
+        if (row.get('revision') != revision or row.get('declared_base') != base
+                or row.get('declared_license') != 'apache-2.0'
+                or row.get('revision') != upstream.get('revision')
+                or row.get('declared_base') != upstream.get('declared_base')
+                or row.get('declared_license') != upstream.get('declared_license')
+                or row.get('license_sha256') != upstream.get('downloaded_file_sha256', {}).get('LICENSE')
+                or row.get('readme_sha256') != upstream.get('downloaded_file_sha256', {}).get('README.md')
+                or row.get('notice_present_in_listed_files') is not False
+                or any('notice' in filename.lower() for filename in upstream.get('files', []))):
+            raise ValueError('Pinned Ovis or declared-base license metadata differs')
+    root = models['Qwen/Qwen3.5-0.8B-Base']
+    comparison = chain.get('license_text_comparison', {})
+    if (root.get('revision') != 'dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68'
+            or root.get('declared_base') is not None
+            or root.get('declared_license') != 'apache-2.0'
+            or root.get('license_sha256') != ROOT_LICENSE_SHA
+            or root.get('license_bytes') != 11343
+            or root.get('readme_sha256') != '3cff39d2674e28b95e2df75cdb2d7a687ec391931065b05df83dbae12b447b11'
+            or root.get('readme_bytes') != 3727
+            or root.get('notice_present_in_listed_files') is not False
+            or root.get('metadata_record_sha256') != '7f78cc6516bfc7d5fa27e57901cffa2699dd42f88ae1336eafbcf74bd8b198f8'
+            or comparison.get('method') != 'UTF-8 text read with universal newline translation only'
+            or comparison.get('normalized_sha256') != ROOT_LICENSE_SHA
+            or comparison.get('exact_normalized_text_equal') is not True
+            or comparison.get('raw_license_sha256_equal') is not False
+            or comparison.get('compared_models') != ['ATH-MaaS/OvisOCR2',
+                                                    'Qwen/Qwen3.5-0.8B-Base']
+            or models['ATH-MaaS/OvisOCR2']['license_sha256'] != LICENSE_SHA):
+        raise ValueError('Pinned root-base Apache metadata or normalized LICENSE proof differs')
+    return chain
+
+
 def require_receipts(precision, destination=DESTINATION):
     """Pure gate. No Hugging Face import, token lookup, or weight access."""
     if precision not in RECIPES or destination != DESTINATION:
         raise ValueError('Unknown precision or unreviewed destination')
+    license_chain = require_license_chain()
     gpu, gpu_sha = load('ovisocr2-vllm-reference.json')
     positive(gpu, 'genuine_gpu_forward_completed')
     gp = producer(gpu)
@@ -247,6 +306,8 @@ def require_receipts(precision, destination=DESTINATION):
                                'quality': quality_sha, 'original_quality': original_quality_sha,
                                'quant_attempts': decision_sha,
                                **({'calibration': calibration_sha} if calibration_sha else {})},
+            'license_chain': license_chain, 'license_chain_sha256': LICENSE_CHAIN_SHA,
+            'source_contract_sha256': SOURCE_CONTRACT_SHA,
             'destination': destination}
 
 
@@ -318,7 +379,9 @@ def main():
     report = {'status': 'started', 'phase': 'preflight', 'source_commit': os.environ.get('GITHUB_SHA'),
               'source_sha256': {name: digest(ROOT/name) for name in (
                   'tools/ci-heavy/ovisocr2_publish.py', 'models/cards/ovisocr2-card.template.md',
-                  '.github/workflows/ovisocr2-publish.yml')},
+                  '.github/workflows/ovisocr2-publish.yml',
+                  'tests/results/qwen35-ocr/ovisocr2-license-chain.json',
+                  'tests/results/qwen35-ocr/ovisocr2-source-contract.json')},
               'destination': args.destination}
     def save(): report_path.write_text(json.dumps(report, indent=2, allow_nan=False)+'\n')
     save()
@@ -376,6 +439,9 @@ def main():
                                   'bytes': pins['candidate_bytes'], 'precision': args.precision,
                                   'recipe': pins['recipe']},
                     'license_sha256': LICENSE_SHA,
+                    'license_chain_sha256': pins['license_chain_sha256'],
+                    'source_contract_sha256': pins['source_contract_sha256'],
+                    'license_chain': pins['license_chain'],
                     'upstream_readme_sha256': UPSTREAM_README_SHA,
                     'receipts': pins['receipt_sha256'],
                     'limits': ['CrispEmbed experimental format-2 reader; no stock llama.cpp claim',

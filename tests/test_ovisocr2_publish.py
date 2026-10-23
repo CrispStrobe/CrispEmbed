@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('ovis_publish', ROOT/'tools/ci-heavy/ovisocr2_publish.py')
@@ -123,6 +124,22 @@ class PublicationGate(unittest.TestCase):
     def tearDown(self):
         subject.EVIDENCE = self.old
         self.temp.cleanup()
+
+    def test_pinned_three_model_license_chain_and_negative_control(self):
+        chain = subject.require_license_chain()
+        self.assertEqual(chain['models']['ATH-MaaS/OvisOCR2']['license_sha256'],
+                         subject.LICENSE_SHA)
+        self.assertEqual(chain['models']['Qwen/Qwen3.5-0.8B-Base']['license_sha256'],
+                         subject.ROOT_LICENSE_SHA)
+        self.assertTrue(chain['license_text_comparison']['exact_normalized_text_equal'])
+        self.assertFalse(chain['license_text_comparison']['raw_license_sha256_equal'])
+        altered = self.folder/'changed-license-chain.json'
+        altered.write_text(json.dumps({**chain, 'models': {}}))
+        with mock.patch.object(subject, 'LICENSE_CHAIN_PATH', altered):
+            with self.assertRaisesRegex(ValueError, 'license chain'):
+                subject.require_license_chain()
+            with self.assertRaisesRegex(ValueError, 'license chain'):
+                subject.require_receipts('f16')
 
     def test_native_review_is_bound_to_exact_original_gpu_receipt(self):
         fixtures(self.folder)

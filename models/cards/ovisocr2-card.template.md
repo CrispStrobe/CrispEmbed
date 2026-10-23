@@ -16,6 +16,13 @@ Apache-2.0. The audited 473-tensor checkpoint is the non-speculative main-model
 schema. The source config declares MTP1, but this export makes no MTP support
 claim. Stock llama.cpp compatibility is not claimed.
 
+The Ovis card declares [Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B/tree/2fc06364715b967f1860aea9cf38778875588b17)
+as its base; that card declares [Qwen3.5-0.8B-Base](https://huggingface.co/Qwen/Qwen3.5-0.8B-Base/tree/dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68).
+All three pinned metadata records declare Apache-2.0. Their LICENSE text is
+identical after newline normalization; the root Base file has a different raw
+SHA-256 due to line endings. The exact chain, raw file hashes and inspection
+scope are in `manifest.json`. No separate NOTICE file was listed at those pins.
+
 | File | Bytes | SHA-256 | Recipe |
 |---|---:|---|---|
 | `${filename}` | ${model_bytes} | `${model_sha256}` | `${recipe}` |
