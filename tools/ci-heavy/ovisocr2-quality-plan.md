@@ -26,6 +26,13 @@ original model runs first on all frozen pixels. Native F16 and quantized
 outputs come from the experimental owning-context test runner, which records
 actual token IDs, confidence and stop enum. A separate public C ABI smoke
 records text and confidence; that API does not expose IDs or stop reason.
+The original run records actual selected-token probabilities from
+`generate(output_scores=True)` and must be independently reviewed as
+`tests/results/qwen35-ocr/ovisocr2-original-quality.json`. Later phases
+require its explicit `original_run` number, verify the successful GitHub
+workflow source, artifact ZIP digest, report SHA, all 11 frozen input
+identities and caps, README/source proof, and recomputed scores. They reuse
+the original outputs without rerunning original inference.
 
 After the F16 native model has passed its original and owning-context checks,
 test only `q8-protected` first. Its `crispembed-quantize` command is generated
@@ -43,4 +50,12 @@ unsupported Q4_0 fallback is a failed tensor audit. For each
 candidate, read actual GGUF tensor names, shapes, types and raw byte hashes,
 then call `validate_quant_tensors()`. Retain the quantizer log, input/output
 GGUF SHA-256, every per-tensor record, original/native decoded outputs and
-failure reports remotely. No model alias or release is qualified by this plan.
+failure reports remotely. A separate `q4-calibrated` phase invokes the existing
+native importance collector on only the four frozen development images and
+requires all 72 FFN importance vectors to be applied; heldout images and
+documents never enter calibration. Both Q4 arms require a reviewed positive
+Q8 result. A quantized candidate GGUF and upstream attribution stay in a
+remote workflow artifact for later independent review and possible publication.
+Paired realistic document gates reject increased raw or parsed CER/WER,
+incomplete or malformed output, and any error in the controlled 15-cell grid.
+No model alias or release is qualified by this workflow alone.

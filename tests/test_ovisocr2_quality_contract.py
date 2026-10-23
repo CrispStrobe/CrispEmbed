@@ -104,6 +104,28 @@ class OvisQualityContract(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'precision'):
             contract.validate_quant_tensors(before, changed, 'q4-attention-q8', schema)
 
+    def test_realistic_document_screen_checks_completion_and_15_cells(self):
+        rows = []
+        for name, license in [('historical-receipt', 'CC0-1.0'),
+                              ('two-column-page', 'CC0-1.0'), ('inventory-table', 'MIT')]:
+            rows.append({'id': name, 'rgb_sha256': 'a' * 64, 'license': license,
+                         'completed': True, 'cap_hit': False, 'format_issues': [],
+                         'structure': {'complete': True, 'parse_ok': True,
+                                       'raw': {'cer': 0.1, 'wer': 0.2},
+                                       'content': {'cer': 0.1, 'wer': 0.2},
+                                       'table': {'expected_cells': 15, 'cell_errors': 0}
+                                       if name == 'inventory-table' else None}})
+        self.assertTrue(contract.paired_document_screen(rows, copy.deepcopy(rows))['screen_passed'])
+        worse = copy.deepcopy(rows)
+        worse[0]['structure']['content']['cer'] = 0.11
+        self.assertFalse(contract.paired_document_screen(rows, worse)['screen_passed'])
+        worse = copy.deepcopy(rows)
+        worse[2]['structure']['table']['cell_errors'] = 1
+        self.assertFalse(contract.paired_document_screen(rows, worse)['screen_passed'])
+        worse = copy.deepcopy(rows)
+        worse[1]['cap_hit'] = True
+        self.assertFalse(contract.paired_document_screen(rows, worse)['screen_passed'])
+
 
 if __name__ == '__main__':
     unittest.main()
