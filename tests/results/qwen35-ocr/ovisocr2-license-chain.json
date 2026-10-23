@@ -1,0 +1,44 @@
+{
+  "scope": "Pinned public metadata and LICENSE text inspection only; no checkpoint payload or legal conclusion",
+  "source_contract": {
+    "path": "tests/results/qwen35-ocr/ovisocr2-source-contract.json",
+    "sha256": "81a6b3ea839bba0a8b0b1308bb064c363654dbb793f759ec6976d45218d6e43c"
+  },
+  "models": {
+    "ATH-MaaS/OvisOCR2": {
+      "revision": "cbdede82e048659b83310476ff807da825f8fe78",
+      "declared_license": "apache-2.0",
+      "declared_base": "Qwen/Qwen3.5-0.8B",
+      "license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+      "readme_sha256": "f2510d6d02471c01a2808102da79cb47106963f18486f2ac05dd5c0b53fc1c7a",
+      "notice_present_in_listed_files": false
+    },
+    "Qwen/Qwen3.5-0.8B": {
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "declared_license": "apache-2.0",
+      "declared_base": ["Qwen/Qwen3.5-0.8B-Base"],
+      "license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+      "readme_sha256": "87a163af54f32fa608a0f8d3ac67945c53dd2b4a7c96740b3d7fdc28e8458864",
+      "notice_present_in_listed_files": false
+    },
+    "Qwen/Qwen3.5-0.8B-Base": {
+      "revision": "dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68",
+      "declared_license": "apache-2.0",
+      "declared_base": null,
+      "license_sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+      "license_bytes": 11343,
+      "readme_sha256": "3cff39d2674e28b95e2df75cdb2d7a687ec391931065b05df83dbae12b447b11",
+      "readme_bytes": 3727,
+      "notice_present_in_listed_files": false,
+      "evidence": "Pinned root-base metadata and LICENSE/card read-only inspection",
+      "metadata_record_sha256": "7f78cc6516bfc7d5fa27e57901cffa2699dd42f88ae1336eafbcf74bd8b198f8"
+    }
+  },
+  "license_text_comparison": {
+    "method": "UTF-8 text read with universal newline translation only",
+    "normalized_sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+    "exact_normalized_text_equal": true,
+    "raw_license_sha256_equal": false,
+    "compared_models": ["ATH-MaaS/OvisOCR2", "Qwen/Qwen3.5-0.8B-Base"]
+  }
+}

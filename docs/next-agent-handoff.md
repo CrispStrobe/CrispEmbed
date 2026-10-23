@@ -234,83 +234,32 @@ pin both native-off options and pass the release CPU-baseline checker before
 compilation. [Reviewed flags and log hashes](../tests/results/packaging/development-cpu-baseline.json).
 Cross-host installed bundle reuse and successor release assets remain separate.
 
-## Claimed Ovis frontend lane — exact execution gate
+## Ovis — original GPU reference complete; native and quality execution pending
 
-[PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78), source
-`ccb6059a6b07b1339abc4de7dd085b0f08af8493`, runs
-[40017014043](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40017014043)
-through `ovisocr2-metadata.yml`, `phase=frontend`. The duplicate push-only
-controls40004747058 were cancelled before execution; the manual job retains
-all21 model-free control groups. Do not duplicate the manual run.
+Frontend PR78 merged918c1c8d after exact pixels/IDs/grids/masks/template,
+Unicode and negative controls40017014043. Controlled original GPU recipe5fe3fc90
+passes actual FP16/TRITON_ATTN decoder/Torch-SDPA vision/Triton-GDN execution.
+Both image references reach EOS248046; the unchanged auto-FlashInfer T4 path
+fails and is retained. [Full GPU proof](../tests/results/qwen35-ocr/ovisocr2-vllm-reference.json)
+and [immutable fixture preservation](../tests/results/qwen35-ocr/ovisocr2-vllm-reference-preservation.json)
+keep the exact original bytes; do not regenerate them or modify the positive
+GPU receipt now consumed by downstream source/hash gates.
 
-Review `ovisocr2-frontend-RUN` small reference/log/report artifact. The driver
-verifies original run39983101540, artifact ZIP, NPZ fields and deterministic RGB
-before preparing a reference GGUF. The hosted native test uses crispembed-diff
-and all three original captures. Require exact grids/IDs/attention masks/
-modalities/template, packed pixel max absolute error≤1.2e-7, both stops,16
-wrong-profile rejections, clearing after errors, both gates=0, custom-prompt and
-unsupported-resolution rejection. Keep any first failing artifact and absolute
-errors before fixing arithmetic. No weights are downloaded for this lane.
+Continue the five pending steps in [PLAN](../PLAN.md). Native model run
+[40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
+is queued at468f5504; do not duplicate it. Download only
+`ovisocr2-model-reports-RUN`. Keep the large model/reference and raw actual
+native vector artifacts remote, retrieving specific diagnostics only when needed.
+Trace the earliest differing original module with absolute errors/norms, caches,
+all scores and actual decoded IDs/text/EOS; retain all failures and raw strict
+flags. Existing vision/final-norm original backend controls are captured before
+candidate outputs, with unchanged hidden/cache/logit thresholds.
 
-The C++ prompt is independently625-byte identical to the original template.
-`CRISPEMBED_OVISOCR2_FRONTEND=1` plus the master gate is required; native OCR
-initialization still admits format1 only. Successful frontend comparison would
-not qualify an Ovis model alias. Subsequent model work must capture original
-modules/all layers/caches/logits and actual vLLM raw IDs/stops/decoded and
-cleaned outputs, preserving current LightOn failures and the1024-patch limit.
-
-The following model-reference gate has a
-[pinned vLLM/T4 source audit](../tests/results/qwen35-ocr/ovisocr2-vllm-t4-source-audit.json).
-The unchanged README leaves dtype automatic: Ovis nested BF16 config resolves
-to FP16 on T4/SM7.5; explicit BF16 requires SM≥8. T4 auto-FP16 and newer-GPU
-BF16 are separate numerical references. The requested Triton GDN route has no
-explicit SM8 gate in inspected dispatch, but T4 kernel compilation/output is
-unverified. The CUDA12.8 vLLM variant pins Torch2.11; the earlier metadata
-probe used Torch2.14. Never combine them as if cross-stack parity had passed.
-
-After the frontend gate, use one free authorized GPU session for an isolated
-pinned-vLLM startup and genuine model forward. Preserve the actual resolved
-dtype, device/toolkit/package hashes, original prompt/processor arrays and
-raw IDs/logits/stops/text. Check those processor arrays against the frozen
-metadata anchors before interpreting model differences. Unsupported kernel or
-environment results remain explicit failures; do not redraw GPUs or switch
-dtypes silently. Only then extend existing original-module dumpers and
-crispembed-diff for every layer/cache/logit and composed native output.
-
-### Retained initial frontend failure and corrected Unicode profile
-
-Initial40004747653 at48aefc30 compiled and passed CPU-baseline checks but
-stopped before numerical comparisons. The loader expected LightOn's regex;
-Ovis's original includes `\p{M}` in letter runs and excludes it from punctuation.
-[Initial producer, reference/log hashes and failure](../tests/results/qwen35-ocr/initial-ovisocr2-frontend-pattern-failure.json)
-are retained. Corrected ccb6059a selects the exact Ovis regex and existing
-mark-aware BPE by profile; the LightOn path remains unchanged. Twelve original
-`tokenizers==0.23.3` text probes add normalization/pre-tokenizer chunks/IDs/decode
-captures for combining marks, Indic/Arabic, special tokens and other boundaries.
-The native audit compares them with both legacy marks-override values. Image
-fixtures and numeric budgets are unchanged. The replacement40017014043 is
-queued; duplicate push-only controls40017015075 were cancelled before execution.
-No corrected native parity is claimed until the replacement completes.
-
-## Current Ovis execution checkpoint
-
-Frontend PR78 merged918c1c8d after exact processor/tokenizer parity and all
-platform checks. See the active five-step sequence in [PLAN](../PLAN.md).
-Original GPU attempt50ce5e52 installed the pinned stack, passed all three
-processor anchors and actual FP16 CUDA control, then failed FlashInfer JIT
-linking `-lcuda` before decoded generation. Initial transport, ensurepip and
-linker receipts are retained in `tests/results/qwen35-ocr/initial-ovisocr2-vllm-*-failure.json`.
-Corrected source05e51484 resolves the actually loaded driver before packages,
-without model/dtype/kernel changes. DraftPR79 at3cbcae76 prepares phase=model;
-its preflight requires a reviewed positive original-GPU receipt before weights.
-No native alias, independent OCR-quality qualification or model publication yet.
-Earlier queued/source-only descriptions above are historical; use this checkpoint.
-
-The subsequent driver-cache discovery failure is preserved in
-`initial-ovisocr2-vllm-driver-cache-failure.json`; actual source05e51484 and
-its deployed retry are pending. DraftPR79 now includes explicit pipeline
-selection, prepared actual public-surface checks and frozen quality/quantization
-contracts. None is a model-backed result. The optional
-[Apple build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/3cbcae76/docs/handover-m1-ovisocr2.md)
-provides bounded build work while hosted jobs wait. Keep actual model/reference
-artifacts remote and continue the active PLAN sequence through qualification.
+Actual public C/Python/CLI/HTTP/Rust/Dart, independent quality, protected Q8/Q4
+and development-only calibration workflows are prepared in draftPR79. They
+require reviewed predecessor evidence; none has a model-backed result yet.
+Publication is conditional on all planned outcomes, license-chain provenance,
+qualified candidate hashes and actual immutable empty-cache HF readback.
+The optional [M1 build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/8b13e839/docs/handover-m1-ovisocr2.md)
+is a build-only fallback; the current original backend-control protocol is Linux.
+The app remains pinned0.17.12. No Ovis model weights or alias are published.
