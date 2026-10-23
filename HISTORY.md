@@ -1,3 +1,21 @@
+## 2026-10-23 — Ovis weight-free metadata/schema/processor qualification passes
+
+Hosted39983101540 atca3d096f passes actual HF5.16.1 config/generation/processor
+and official meta-schema. All473 checkpoint header shapes match; the only
+missing official parameter is the tied head (474 expected). No MTP parameters
+exist in that official main schema. Primary tokenizerEOS248046 and derived
+generationEOS248044 produce both source-probed stops. Three original RGB
+inputs pack to784/840/864 patches; the small-image default control packs280,
+proving only the minimum-pixel override. Maximum-limit coverage remains unproved.
+
+Independent review verifies all473 shapes, upstream processor/image/tokenizer
+source hashes, artifact digest, every packed NPY field hash, original RGB/IDs/
+grids/masks and merged image-token counts without importing model frameworks.
+[Full producer, review and immutable checkpoint LFS declaration](tests/results/qwen35-ocr/ovisocr2-metadata.json).
+No weights/model forward or installed-vLLM inference ran. Raw original arrays
+stay remote through21 January2027. This enables a separately pinned experimental
+export profile; full-weight roundtrip/native/decoded quality and alias gates remain.
+
 ## 2026-10-23 — Actual Rust/Dart UltraBERT pooled-output qualification passes
 
 Corrected [39979622930](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979622930)
