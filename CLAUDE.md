@@ -98,8 +98,9 @@ Read exact contracts before runtime work, use original-module intermediate dumps
 and crispembed-diff, keep gates/old alternatives, and require actual output and
 quality evidence before promotion. OCR quantized publication remains conditional;
 no current candidate qualifies. OvisOCR2 metadata/schema/processor capture
-passes; experimental full-weight export is queued without a native alias or
-decoded-quality claim. Development CPU-baseline PR76 is merged, with actual
+passes; experimental full-weight export and exact frontend parity pass, with PR77/78
+merged. Original GPU engine startup/full native inference and decoded-quality
+qualification remain pending; use the current PLAN completion sequence. Development CPU-baseline PR76 is merged, with actual
 three-platform desktop jobs passing; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with
