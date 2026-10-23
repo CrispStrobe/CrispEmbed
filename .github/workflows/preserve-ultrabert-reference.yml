@@ -1,0 +1,50 @@
+name: Preserve UltraBERT original reference
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: preserve-ultrabert-reference
+  cancel-in-progress: false
+jobs:
+  preserve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify immutable original producer identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          record = json.loads(Path('tests/results/ultrabert/reference-audit.json').read_text())
+          run = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + '${{ github.repository }}' + '/actions/runs/38997562520']))
+          assert run['head_sha'] == record['source_commit'] and run['conclusion'] == 'success'
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: heavy-38997562520
+          run-id: 38997562520
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/original
+      - run: python -m pip install gguf==0.19.0 numpy==2.2.6
+      - name: Verify every original archive and stage payload without inference
+        run: python tools/ci-heavy/preserve_ultrabert_reference.py "$RUNNER_TEMP/original" "$RUNNER_TEMP/preservation.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ultrabert-original-38997562520-preserved-${{ github.run_id }}
+          path: ${{ runner.temp }}/original/
+          retention-days: 90
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ultrabert-preservation-report-${{ github.run_id }}
+          path: ${{ runner.temp }}/preservation.json
+          retention-days: 90
+          if-no-files-found: error
