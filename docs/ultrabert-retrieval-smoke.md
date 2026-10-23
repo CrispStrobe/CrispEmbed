@@ -57,3 +57,53 @@ poor-quality retrieval, wrong pooling/prefix/order/coverage and invalid values.
 Synthetic control vectors are never model results. The lightweight
 `ultrabert-retrieval.yml` workflow registers these controls; actual original
 SentenceTransformer/native task execution remains pending.
+
+## Original-first model producer
+
+`tools/ci-heavy/ultrabert_retrieval.py` and `ultrabert-retrieval-model.yml` are a
+separate lane from PR74. The workflow requires the successful API run and its
+full native source. Preflight validates the service run/path/source, artifact
+SHA256 and complete six-case/seven-row pooled/API receipt before heavy package
+installation, model download or builds. Failed/pending receipts are rejected;
+39939481805 was checked as a real negative control without any model download.
+
+The inspected SentenceTransformer6.0.1 source is commit
+[b0acd1a4d22ba2bc10072868ddea7612561c9424](https://github.com/huggingface/sentence-transformers/tree/b0acd1a4d22ba2bc10072868ddea7612561c9424).
+The producer verifies installed wrapper/Pooling file hashes and the actual
+`pooling_mode="cls"`/include-prompt configuration. Hooks observe attended token
+IDs and the first raw hidden vector entering the real Pooling module; unhooked
+wrapper results must remain bit-exact. Named query and unprefixed document calls
+run through the actual wrapper, with raw and explicit normalized outputs.
+Original vectors/IDs/source provenance and rankings are saved before native work.
+
+The native phase checks out the API-qualified immutable source, validates all
+four source fingerprints and builds a fresh CPU/F32 library with portable flags
+and the repository baseline checker. It regenerates the exact frozen F32 GGUF
+and measures actual public raw-token/normalized embedding APIs on all32 inputs.
+The fresh binary is reported with its own hash; source qualification is not a
+claim of byte-identical API artifacts. Earliest ID mismatches, vector max/mean/
+RMS/norms, all scores/rankings and gold failures are preserved. Model payloads and
+builds remain outside the report artifact. Full-stage debt remains separate.
+
+After reviewing API39943940607 at4be9f864 as successful, dispatch exactly once:
+
+```sh
+gh workflow run ultrabert-retrieval-model.yml   --ref audit/ultrabert-retrieval-producer   -f api_run=39943940607   -f native_source=4be9f864e0e7bc154325e1edc1bdf29a12210a69
+```
+
+The API job is still pending at preparation time; this command is conditional,
+not authorization to treat a pending/failed run as qualified. If a later source
+is corrected, use its completed reviewed API receipt and full source instead.
+Check the dispatched producer head against the reviewed branch before execution.
+Six new model-free guard groups cover source/status/receipt errors, missing or
+forged numeric data, safe receipt extraction, no-model preflight, and immutable
+original input/module reuse. No model-backed task result is claimed yet.
+
+On a native/quality failure after original capture, preserve the first original
+bytes. The workflow's optional `original_run` input fetches the prior small
+artifact and checks producer head, recorded original SHA256, all32 input hashes/
+IDs/masks and wrapper/model source provenance before package installation. It
+reuses `original.json` byte-for-byte; it does not rerun original inference.
+Manual authorized runs can pass `--reuse-original FILE --original-sha256 SHA`
+after independently verifying the prior service artifact. Always use fresh
+scratch/output directories and preserve the initial failed scores and logs.

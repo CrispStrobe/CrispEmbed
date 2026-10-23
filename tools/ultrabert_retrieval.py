@@ -67,6 +67,10 @@ def evaluate(data, original, native):
             error=max(abs(x-y) for x,y in zip(a,b))
             cosine=math.fsum(x*y for x,y in zip(a,b))/math.sqrt(math.fsum(x*x for x in a)*math.fsum(x*x for x in b))
             comparisons.append({'id':key,'mode':mode,'cosine':cosine,'max_abs':error,
+                                'mean_abs':math.fsum(abs(x-y) for x,y in zip(a,b))/len(a),
+                                'rms':math.sqrt(math.fsum((x-y)**2 for x,y in zip(a,b))/len(a)),
+                                'reference_norm':math.sqrt(math.fsum(x*x for x in a)),
+                                'native_norm':math.sqrt(math.fsum(x*x for x in b)),
                                 'pass':cosine>=limits['vector_cosine_min'] and error<=limits['vector_max_abs']})
     baseline=rankings(data,before);candidate=rankings(data,after)
     agreement=all(a['ranking'][0]['id']==b['ranking'][0]['id'] for a,b in zip(baseline['queries'],candidate['queries']))

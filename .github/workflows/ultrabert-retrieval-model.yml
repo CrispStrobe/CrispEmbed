@@ -1,0 +1,113 @@
+name: UltraBERT owned retrieval model smoke
+on:
+  push:
+    branches: ['audit/ultrabert-retrieval-producer']
+    paths: ['.github/workflows/ultrabert-retrieval-model.yml']
+  workflow_dispatch:
+    inputs:
+      api_run:
+        description: 'Successful exact-source UltraBERT public API run'
+        type: string
+        required: true
+      native_source:
+        description: 'Full immutable native source qualified by that API run'
+        type: string
+        required: true
+      original_run:
+        description: 'Optional prior retrieval run whose original.json must be reused unchanged'
+        type: string
+        required: false
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-owned-retrieval-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python tests/test_ultrabert_retrieval.py -v
+          python tests/test_ultrabert_retrieval_producer.py -v
+  model:
+    if: github.event_name == 'workflow_dispatch'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      API_RUN: ${{ inputs.api_run }}
+      NATIVE_SOURCE: ${{ inputs.native_source }}
+      ORIGINAL_RUN: ${{ inputs.original_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Directories and mandatory qualified-source preflight
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
+          export HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch"
+          python tools/ci-heavy/ultrabert_retrieval.py --api-run "$API_RUN" --native-source "$NATIVE_SOURCE" --preflight
+      - name: Verify prior original producer before fetching its small reports
+        if: inputs.original_run != ''
+        run: |
+          python - <<'PYCODE'
+          import json, os, subprocess
+          run=os.environ['ORIGINAL_RUN']
+          if not run.isdigit():raise ValueError('Numeric original producer run required')
+          old=json.loads(subprocess.check_output(['gh','api','repos/CrispStrobe/CrispEmbed/actions/runs/'+run]))
+          if old['status']!='completed' or old['path']!='.github/workflows/ultrabert-retrieval-model.yml':
+              raise ValueError('Wrong/incomplete original producer')
+          PYCODE
+      - uses: actions/download-artifact@v4
+        if: inputs.original_run != ''
+        with:
+          name: ultrabert-retrieval-${{ inputs.original_run }}
+          run-id: ${{ inputs.original_run }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/original
+      - name: Check reusable original bytes, inputs and module provenance
+        if: inputs.original_run != ''
+        run: |
+          python - <<'PYCODE'
+          import importlib.util, json, os, subprocess
+          from pathlib import Path
+          spec=importlib.util.spec_from_file_location('producer','tools/ci-heavy/ultrabert_retrieval.py')
+          p=importlib.util.module_from_spec(spec);spec.loader.exec_module(p)
+          root=Path(os.environ['RUNNER_TEMP'])/'original'
+          previous=json.loads((root/'retrieval-producer.json').read_text())
+          meta=json.loads(subprocess.check_output(['gh','api','repos/CrispStrobe/CrispEmbed/actions/runs/'+os.environ['ORIGINAL_RUN']]))
+          if previous['task_source']!=meta['head_sha'] or p.sha256(root/'original.json')!=previous['original_sha256']:
+              raise ValueError('Original producer source/payload changed')
+          p.checked_original(p.fixture('tests/regression/ultrabert/retrieval-smoke-v1.json'),json.loads((root/'original.json').read_text()))
+          with open(os.environ['GITHUB_ENV'],'a') as f:f.write('ORIGINAL_RECORD_SHA='+previous['original_sha256']+'\n')
+          PYCODE
+      - name: Pinned original-wrapper CPU and conversion environment
+        run: |
+          python -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 sentence-transformers==6.0.1 gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6 huggingface-hub==1.33.0
+      - name: Original wrapper first, then portable native and unchanged smoke gates
+        run: |
+          reuse_args=()
+          if [ -n "$ORIGINAL_RUN" ]; then reuse_args+=(--reuse-original "$RUNNER_TEMP/original/original.json" --original-sha256 "$ORIGINAL_RECORD_SHA"); fi
+          python tools/ci-heavy/ultrabert_retrieval.py --api-run "$API_RUN" --native-source "$NATIVE_SOURCE" "${reuse_args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-retrieval-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
