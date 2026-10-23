@@ -1,13 +1,13 @@
-# UltraBERT support contract — updated 17 October 2026
+# UltraBERT support contract — updated 23 October 2026
 
-**Production support remains pending; conversion and test-only audits are implemented.** The first useful port is the retrieval
+**Experimental default-off CPU/F32 text support is merged; general release/model qualification remains pending.** The first useful port is the retrieval
 checkpoint UltraBERT-Embed-150M, followed by the150M and380M masked encoders.
 They need an explicit architecture path; treating them as stock BERT, ModernBERT
 or an unmodified bidirectional decoder would give different math and masks.
 The initial feasibility audit read public metadata, tokenizer assets and Python
 source only. Conversion and original-reference verification are complete, as described below.
 The prepared-ID native prototype has a complete initial parity audit with
-retained intermediate failures. No public native backend is supported yet.
+retained intermediate failures. PR74 adds the bounded public backend below; numerical audit failures remain.
 
 ## Pinned upstream sources
 
@@ -188,7 +188,7 @@ stages, hook-neutrality/mask controls and complete conversions pass. The
 raw fields and hashes; tensor arrays stay in the remote run artifact. The earlier
 dependency and inference-tensor negative-control failures are retained in HISTORY.
 The corrected environment is `torch==2.14.0 transformers==5.16.1 gguf==0.19.0
-safetensors==0.8.0 numpy==2.2.6`. These tools are integrated on main without production architecture dispatch;
+safetensors==0.8.0 numpy==2.2.6`. These tools and the gated CPU/F32 architecture dispatch are integrated on main;
 remaining acceptance work is in the executable handoff.
 
 ## Current test-only implementation and evidence
@@ -197,7 +197,8 @@ The default-off `CRISPEMBED_ULTRABERT` test graph implements all24 blocks,
 per-layer masks/thetas, split-half RoPE, RMSNorm/SwiGLU, residuals and CLS.
 Unset/literal0 are checked before IO. Each case compares292 numerical stages
 and50 exact controls with `crispembed_diff::Ref`;48 original RoPE tables and
-post-RoPE Q/K are not yet compared. No production dispatch/API is added.
+post-RoPE Q/K are not yet compared. That prepared-ID audit added no production
+dispatch; the later PR74 public path is documented below.
 
 | Surface | Result | Evidence |
 | --- | --- | --- |
@@ -227,8 +228,8 @@ local-component success as full-model/independent retrieval quality.
 
 [Native tokenizer test](../tests/test_ultrabert_tokenizer.cpp) uses the real
 BPETokenizer with an explicit test-only UltraBERT template. The generic BERT pair
-API adds a terminal separator; encoder `pre=gpt2` selection and CLS loading need
-explicit production integration. The passed metadata-only fixture is not public
+API adds a terminal separator; the later PR74 single-text profile explicitly
+selects GPT-2 splitting and CLS while leaving public pairs excluded. The passed metadata-only fixture is not public
 GGUF model loading. Initial compile/API failure remains retained alongside its
 successful repair. Exact inputs/gold were unchanged.
 
@@ -259,19 +260,20 @@ all seven cases: max6.72e-5/5.94e-7, reported cosine1.0. F16 raw CLS max0.0185
 fails all seven cases, despite its normalized cosine0.999999642. Do not combine
 these precision conclusions or promote F16 from cosine alone.
 
-Next implement and qualify a separate default-off **F32 pooled-embedding profile**:
+The merged default-off **F32 pooled-embedding profile** separately qualifies:
 actual text IDs/masks, prompts/normalization, raw and normalized CLS, repeat/batch/
-context isolation and all contributing API/binding surfaces. Freeze independent
-retrieval queries/documents/gold and score/ranking acceptance before candidates;
-run original SentenceTransformer and native outputs on suitable resources. Keep
-all183/1294 intermediate failures visible. Until those public-API/task checks pass,
+context isolation, C API/Python/CLI/HTTP. Actual Rust/Dart model execution remains
+open. Independent retrieval inputs/gold were frozen before the completed original-
+first wrapper/native smoke. Keep
+all183/1294 intermediate failures visible. Despite bounded API/smoke success,
 this remains an experimental integration lane, with no supported registry alias,
 release or HF quantized publication. Further original attribution can continue
 independently using a distinct hypothesis, without repeating the completed arms.
 
-## Experimental public F32 text profile — implementation awaiting hosted checks
+## Experimental public F32 text profile — merged and bounded checks pass
 
-The `feat/ultrabert-f32-api` lane adds a default-off CPU/F32 backend to normal
+PR74 merged at3f3d023a after all source4be9f864 checks, including ten Build/
+Flutter39943915528 jobs. It adds a default-off CPU/F32 backend to normal
 `crispembed_init`/`encode`/`encode_batch` and per-token calls. Enable
 `CRISPEMBED_ULTRABERT=1`; unset/literal0 reject this architecture. No registry
 alias, artifact publication, release or default-model change is included.
@@ -299,6 +301,9 @@ model-free schema controls, Python binding, CLI and HTTP surfaces are included.
 Actual Rust/Dart model-backed checks and a public pair API remain separate.
 All fixed pooled gates remain0.99999/0.002. The original full-stage audit and its
 183/1294 failures remain unchanged; this new test does not relabel them as passed.
-Independent retrieval/official SentenceTransformer wrapper qualification remains
-required before a supported-model or task-quality claim. Inspect complete hosted
-conclusions and raw reports before merging this implementation.
+API39943940607 passes; original-first SentenceTransformer/native39950831201
+also passes the owned8-query/24-document smoke with all three metrics1.0,
+all32 IDs/64 vectors and8/8 top1 equal. Raw/normalized maxima7.34e-5/5.51e-7,
+minimum cosine0.999999999999019. [Full scores/review](../tests/results/ultrabert/retrieval-smoke.json).
+Representative retrieval, actual Rust/Dart execution and release/publication
+remain separate gates; the authored smoke is not broad benchmark evidence.

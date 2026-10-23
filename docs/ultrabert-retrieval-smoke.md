@@ -56,7 +56,7 @@ groups: valid synthetic vectors, a real vector/ranking error, identical but
 poor-quality retrieval, wrong pooling/prefix/order/coverage and invalid values.
 Synthetic control vectors are never model results. The lightweight
 `ultrabert-retrieval.yml` workflow registers these controls; actual original
-SentenceTransformer/native task execution remains pending.
+SentenceTransformer/native task execution passed39950831201; results below.
 
 ## Original-first model producer
 
@@ -85,18 +85,18 @@ claim of byte-identical API artifacts. Earliest ID mismatches, vector max/mean/
 RMS/norms, all scores/rankings and gold failures are preserved. Model payloads and
 builds remain outside the report artifact. Full-stage debt remains separate.
 
-After reviewing API39943940607 at4be9f864 as successful, dispatch exactly once:
+Historical command used after reviewing API39943940607 at4be9f864 as successful
+(already completed; do not redispatch without a new hypothesis):
 
 ```sh
 gh workflow run ultrabert-retrieval-model.yml   --ref audit/ultrabert-retrieval-producer   -f api_run=39943940607   -f native_source=4be9f864e0e7bc154325e1edc1bdf29a12210a69
 ```
 
-The API job is still pending at preparation time; this command is conditional,
-not authorization to treat a pending/failed run as qualified. If a later source
+The API and corrected retrieval jobs now pass. If a later source
 is corrected, use its completed reviewed API receipt and full source instead.
 Check the dispatched producer head against the reviewed branch before execution.
 Seven model-free guard groups cover source/status/receipt errors, missing or
-forged numeric data, safe receipt extraction, no-model preflight, immutable original input/module reuse, and actual Python binding/library identity. No model-backed task result is claimed yet.
+forged numeric data, safe receipt extraction, no-model preflight, immutable original input/module reuse, and actual Python binding/library identity. Model-backed results and scope are recorded below.
 
 On a native/quality failure after original capture, preserve the first original
 bytes. The workflow's optional `original_run` input fetches the prior small
@@ -118,3 +118,18 @@ Both wrapper/Pooling are byte-identical after newline normalization; the
 records exact wheel and source hashes. The corrected producer pins exact wheel
 bytes and still rejects any installed-source mismatch. No task vectors existed
 from that attempt, and no frozen input/gold/budget is changed.
+
+## Completed result — 23 October2026
+
+Corrected39950831201 at812e56e5/native4be9f864 passes original-first wrapper/native
+scoring. Original/native Recall@1,MRR@10,NDCG@10 all1.0, all8 top1 exact; all32
+IDs/64 raw/normalized vectors pass unchanged0.99999/0.002. Raw CLS max
+7.343292236328125e-5, normalized5.513429641723633e-7, minimum cosine
+0.999999999999019. Independent review recomputes every vector/scorer record and
+all384 original/native pair scores/rankings, verifies source/payload hashes and
+all returned bytes against actual artifact ZIP digest.
+[Full score matrices, producer and review](../tests/results/ultrabert/retrieval-smoke.json).
+Raw vectors/logs stay in remote artifact12501926974 through21 January2027;
+preserve identical bytes before expiry, with verified original reuse on retries.
+No representative MTEB/BEIR or latency/RSS claim follows; historical183/1294
+intermediate failures remain. No alias, model publication or runtime release.

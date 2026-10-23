@@ -1,3 +1,29 @@
+## 2026-10-23 — Gated UltraBERT F32 API merged; original-first retrieval passes
+
+[PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) merged at3f3d023a after
+all exact-source4be9f864 checks, including all ten Build/Flutter39943915528 jobs,
+WASM, Rust, style/security and dedicated public API39943940607. The CPU/F32 text
+backend is default-off (`CRISPEMBED_ULTRABERT=1`);512 attended tokens, explicit
+prefixes, raw CLS and normalized dense output retain the pinned contract.
+No new tag, model alias/publication or app upgrade follows this source merge.
+
+Corrected original-first [39950831201](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39950831201)
+at812e56e5/native4be9f864 passes the frozen eight-query/24-document smoke.
+Original SentenceTransformer6.0.1 and native Recall@1/MRR@10/NDCG@10 are all1.0;
+all eight top1 choices agree. All32 IDs and64 raw/normalized vector comparisons
+pass unchanged0.99999/0.002 gates. Raw max7.343292236328125e-5, normalized
+max5.513429641723633e-7, minimum cosine0.999999999999019. Independent review
+recomputes every vector/scorer field and checks all384 pair scores/rankings,
+source/payload hashes and every artifact member against its actual ZIP digest.
+[Full scores, producer fields and preservation](tests/results/ultrabert/retrieval-smoke.json).
+Raw original/native vectors and logs remain remote through21 January2027.
+
+Initial CLI-name and wheel-newline provenance failures are preserved. No frozen
+inputs/gold/prompts/arithmetic/budgets changed. This authored smoke does not
+establish MTEB/BEIR quality;183 F32/1294 F16 intermediate failures and both strict
+replay failures remain. Actual Rust/Dart model-backed tests, public pairs,
+long-context/GPU/performance and quantization/publication remain scoped in PLAN.
+
 ## 2026-10-23 — Retrieval source-pin failure attributed to wheel line endings
 
 Original-first39949129060 at2f871a3e fails before model construction/vectors or

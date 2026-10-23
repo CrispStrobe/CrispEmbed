@@ -38,9 +38,11 @@ candidate is selected for publication or default promotion.
 
 1. [ ] **Finish UltraBERT attribution/integration:** use the completed
    same-input operator audit39009703362 and completed M1 evidence to scope
-   gated F32 pooled-output/API and independent retrieval qualification in U3.
+   remaining Rust/Dart model-backed surfaces, representative retrieval and
+   attribution follow-ups in U3/U4; gated F32 API/owned smoke are merged.
    Keep original183/1294 failures and attribution lanes; do not repeat backend arms.
-   Native tokenizer component parity is complete; public model support is not.
+   Default-off CPU/F32 text support is merged; general model/release qualification
+   remains open.
 2. [ ] **Resolve OCR correctness/independent quality before publication.** Keep
    existing failed F16/quantized records and held-out gold/caps. HF publication,
    pinned aliases and consumer catalogs require a validated candidate; none is
@@ -118,16 +120,14 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   remain archived. Completed local audit39009703362 passes all21 F32 local probes,
   with six F16 down failures; scoped local targets cannot replace old full-model references.
   M1 original replay is complete; retain its RoPE/hidden differences and small
-  CLS errors. Next separately qualify the gated F32 pooled profile; F16 raw CLS
+  CLS errors. Gated F32 public API and owned retrieval smoke pass; F16 raw CLS
   fails all seven cases. Public API39943940607 passes the gated F32 text/CLS/mask,
-  C ABI/Python/CLI/HTTP checks at4be9f864; PR74 remains draft pending final
-  platform CI. Pending: numerical attribution, source integration, actual
-  model-backed Rust/Dart and public pair support, independent retrieval
-  ([frozen owned smoke/scorer and original-first producer](docs/ultrabert-retrieval-smoke.md),
-  integrated at40ff3d6c with hosted guard success; binding-identity guard71daebea
-  passes hosted39947939925; original-first39949129060 failed before model load because wheel sources use
-  CRLF; exact wheel-byte hashes are corrected. Retry39950831201 at812e56e5
-  against native4be9f864 is queued, with no task outputs yet),
+  C ABI/Python/CLI/HTTP checks at4be9f864. PR74 merged3f3d023a after complete
+  Build/Flutter/WASM/style/security CI. Original/native retrieval39950831201
+  passes all32 ID/64 vector checks and8/8 top1, all three task metrics1.0 on
+  the owned smoke; full evidence is in HISTORY and retrieval-smoke.json.
+  Pending: numerical attribution, actual model-backed Rust/Dart and public pair
+  support; a separately frozen, licensed representative retrieval benchmark;
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
@@ -156,8 +156,8 @@ Completed wheel validation and PR/source review are in HISTORY. Remaining work:
 
 [M1 handover](docs/handover-m1-validation.md) is completed: original CPU/BLAS
 replay retains intermediate differences while raw/normalized CLS remain close.
-Proceed with separately scoped F32 pooled-output/API/retrieval qualification,
-retaining the unchanged full-model audit; no repeat of the completed four arms. Kaggle remains for actual GPU experiments per the private environment
+The F32 public API/owned smoke lane is merged; continue the remaining binding/
+representative-quality gates, retaining the unchanged full-model audit; no repeat of the completed four arms. Kaggle remains for actual GPU experiments per the private environment
 guide; current CPU/Apple reference jobs are not interchangeable with GPU runs.
 
 Merged-source CI and live Pages verification are complete (HISTORY23 October).
@@ -320,7 +320,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `feat/ultrabert-f32-api` | Default-off CPU/F32 UltraBERT pooled text profile using existing exact tokenizer and graph math; public API/CLI/bindings and hosted frozen-output controls | [Draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) at4be9f864; [API39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607) passes; all raw logs/IDs/source and receipt reviewed. Final platform CI pending; owned retrieval39949129060 failed before model load on wheel/tag line endings; exact wheel hashes corrected. Public pair/Rust/Dart model-backed remain open; owned retrieval inputs/gold/scorer frozen, model outputs pending. Optional [M1 native handover](docs/handover-m1-ultrabert-f32-api.md); strict intermediate audit retained. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

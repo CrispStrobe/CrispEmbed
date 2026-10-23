@@ -1,3 +1,16 @@
+## UltraBERT owned retrieval smoke — 23 October2026
+
+Original-first39950831201 at812e56e5 uses pinned SentenceTransformer6.0.1 CPU/F32,
+then actual native source4be9f864 with a fresh portable two-thread CPU library.
+On eight frozen owned queries/24 documents, both achieve Recall@1=MRR@10=
+NDCG@10=1.0 with all eight top1 choices equal. Minimum original top-two margin
+is0.01906667162. All32 input IDs match;64 vector comparisons pass0.99999/0.002.
+Raw CLS max7.343292236328125e-5, normalized max5.513429641723633e-7; respective
+minimum cosines0.9999999999990196/0.999999999999019. Every score/vector record,
+source fingerprint and artifact byte is independently checked. [Evidence](tests/results/ultrabert/retrieval-smoke.json).
+This is an authored smoke, not representative MTEB/BEIR or latency/RSS evidence.
+The183/1294 intermediate failures remain; no F16/quantized/GPU/32K promotion.
+
 ## UltraBERT actual F32 public-text pooled parity — 23 October2026
 
 Hosted39943940607 at4be9f864 uses normal model loading and actual text APIs on
@@ -8,8 +21,8 @@ reported cosine1.0 (rounded, not bitwise equality). Repeat/batch/context/prefix,
 rejection/recovery and actual Python/CLI/HTTP checks pass. [Raw report and limits](tests/results/ultrabert/public-f32-api.json).
 This is a bounded CPU/F32 profile with512 tokens; no pair/reserved-token/F16/
 quantized/GPU/Matryoshka or broad retrieval quality claim follows. Existing strict
-183 F32/1294 F16 failures remain. The independent owned retrieval run39949129060
-is separate and pending; it must pass original/native vector/ranking/gold checks.
+183 F32/1294 F16 failures remain. The independent owned retrieval39950831201 passes its separately frozen
+vector/ranking/gold gates above; broad benchmark qualification remains open.
 
 ## PosFormer released-default parity — 23 October2026
 

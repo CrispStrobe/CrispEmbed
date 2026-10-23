@@ -3,8 +3,8 @@
 Read this file, [PLAN](../PLAN.md), [the model contract](ultrabert.md),
 [contributing](contributing.md) and [the shared consumer handoff](current-state-and-next-steps.md).
 Completed evidence belongs in [HISTORY](../HISTORY.md); measured limits are in
-[PERFORMANCE](../PERFORMANCE.md). This is a handoff, not a claim of production
-UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
+[PERFORMANCE](../PERFORMANCE.md). The default-off CPU/F32 UltraBERT API is merged; general release/model quality
+remains conditional. The app still consumes immutable CrispEmbed0.17.12.
 
 ## Completed and integrated
 
@@ -20,7 +20,8 @@ UltraBERT support. The app still consumes immutable CrispEmbed0.17.12.
   Deployment39009694992 succeeded at f6f84aba; live HTML/PNG checked23 October: correct absolute metadata, HTTP200/image/png,1200×630 and committed PNG bytes.
 - UltraBERT source/schema, both218-tensor F32/F16 conversions, original7-case/
   2,730-stage captures, test-only full-layer native graph and scoped operator
-  diagnostics. All initial failures are preserved. No production dispatch exists.
+  diagnostics. All initial failures are preserved. PR74 now adds the bounded
+  default-off CPU/F32 production dispatch; full-stage failures remain.
 - Native BPE plus test-only UltraBERT templates match all8 original text rows and
   explicit masks; wrong terminal-SEP and ID-zero-padding alternatives each fail
   all8. Default/zero gates and4 log controls pass
@@ -88,79 +89,51 @@ check loaded tensor bits and earliest operator inputs before attributing cause.
 Both strict replay modes must remain available; never silently regenerate their
 anchors or call U1 local targets full-model parity.
 
-### U3 — Scope a gated F32 pooled-output profile; retain full-model audit failures
+### U3 — F32 API merged; complete the remaining binding and input surfaces
 
-Implementation [draft PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) is
-at4be9f864; hosted [39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)
-passes after the initial harness-only CLI-name failure (build passed; no API
-comparison ran before that failure). [Actual public API evidence](../tests/results/ultrabert/public-f32-api.json).
-All twelve pooled checks/seven actual text rows and Python/CLI/HTTP pass; final
-platform checks remain before merge. Original-first39949129060 failed before model load on wheel/tag line endings;
-exact wheel-byte hashes are corrected and initial evidence preserved. [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
-Inspect existing exact-source CI; do not dispatch duplicates. This
-initial profile covers ordinary text and sequential batches, while public pairs,
-reserved-token surfaces, F16/quantized/GPU/Matryoshka remain explicitly excluded.
-Generic bindings route through the shared ABI; model-backed Rust/Dart checks and
-independent retrieval/SentenceTransformer qualification remain pending.
+[PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) merged3f3d023a after
+all exact-source4be9f864 checks, including ten Build/Flutter39943915528 jobs.
+[API39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)
+passes all twelve pooled/seven actual text-row and C API/Python/CLI/HTTP checks.
+[Public API evidence](../tests/results/ultrabert/public-f32-api.json).
+The default-off CPU/F32 path covers ordinary text and sequential batches,512
+attended tokens including BOS, explicit prefixes and raw/normalized CLS. Literal0
+rejects. Public pairs, reserved-token inputs, F16/quantized/GPU/Matryoshka remain
+excluded. Historical183/1294 intermediate failures and strict replay failures
+are unchanged; F16 raw CLS0.0185 still fails all seven original cases.
 
-
-M1 original Python also exceeds the unchanged full-hidden0.002 budget; this does
-not identify native correctness from a single maximum. Existing native F32 raw/
-normalized CLS pass all seven fixed-output cases (max6.72e-5/5.94e-7; reported
-cosine1.0). A gated F32 public-API profile and independent retrieval qualification
-may proceed separately, while183 intermediate failures remain visible. Do not
-promote F16: raw CLS max0.0185 fails all seven cases. Before release, freeze and
-execute independent retrieval inputs/gold and score/ranking acceptance, plus the
-actual SentenceTransformer prompt/normalization contract. No production-quality
-claim follows from the seven prepared-ID cases.
-
-Use [the pinned architecture contract](ultrabert.md) and all contributing surfaces:
-new default-off `core_env::on` backend, architecture detection, C ABI, CLI/server,
-Python/Rust/Dart and model registry. Preserve literal0 behavior and existing
-encoders. Reuse primitives, not unrelated model defaults.
-
-Start from the tested [tokenizer profile](../tests/test_ultrabert_tokenizer.cpp).
-Actual integration needs GPT-2 splitting, one BOS0, separator15 only between
-pairs, no terminal EOS, explicit query-prefix choice and attended BOS despite
-sharing pad ID0. Generic `BPETokenizer::encode_pair` is a BERT template and appends
-a final separator. The encoder loader does not select GPT-2 splitting for
-`pre=gpt2` as the decoder loader does; route explicitly for this profile. Do not
-make an untested global tokenizer change. CLS pooling is neither last-token nor
-mean pooling; raw and optional normalized output remain separate.
-
-Acceptance: normal public text APIs must reproduce the frozen ID/mask and native
-intermediate/final-vector panel, including query/document, Unicode, empty, pairs
-and batching. A metadata-only tokenizer fixture or prepared-ID graph alone is
-insufficient. Keep the initial512-token bound explicit and reject overflow;
-32K/GPU support needs separate memory/geometry/parity measurements. Native lacks
-48 original RoPE-table captures and post-RoPE Q/K; add original-source probes
-only as needed and check old anchors before relying on added arrays.
+Next bounded task: use the existing hosted model/API workflow and preserved
+F32 conversion to exercise actual Rust and Dart generic bindings on the same
+frozen text/ID/vector cases, explicit query/document prefixes and failure
+recovery. Assert the loaded library/model hashes and unchanged budgets; retain
+initial failures. Build-only wrapper success is not model-backed execution.
+Use an isolated worktree, original tools/crispembed-diff and hosted runners.
+Pair API is a later explicit contract: BOS0+A+SEP15+B, no terminal separator,
+attended BOS despite pad ID0; do not change the generic BERT template globally.
+The optional [M1 native API handover](handover-m1-ultrabert-f32-api.md) supplies
+Apple execution coverage without repeating the completed Python audit.
 
 ### U4 — Independent quality, quantization and publication
 
-The independent [owned retrieval smoke](ultrabert-retrieval-smoke.md) is frozen
-at80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4: eight
-queries/24 documents and prospective numerical/ranking/gold gates. Its executable
-scorer and four meaningful control groups pass; no actual task outputs exist.
-The original-first producer is integrated at40ff3d6c; controls-only hosted
-39945740758/39946699080 pass; updated39947939925 passes all four scorer/seven
-producer groups, including actual binding/library identity. API39943940607
-succeeds at4be9f864. Original-first39949129060 at2f871a3e failed before model load on wheel/tag
-line endings. Exact wheel-byte hashes are corrected; no original task vectors
-were produced. Retain initial-retrieval-producer-failure.json; retry39950831201 is dispatched
-once at812e56e5 against qualified native4be9f864.
-API/source/artifact qualification precedes models/builds. Preserve first original
-records on retries.
-This is a bounded smoke, not representative MTEB/BEIR qualification. Run the
-pinned original SentenceTransformer first, then native API, preserve misses and
-all full score matrices; do not fit this panel after observing outputs.
-An optional [M1 native API handover](handover-m1-ultrabert-f32-api.md) supplies
-complementary Apple CPU coverage without repeating the completed Python audit.
+The [owned retrieval smoke](ultrabert-retrieval-smoke.md) is complete in
+[39950831201](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39950831201)
+at812e56e5/native4be9f864. All32 actual IDs/64 vector comparisons pass; original
+SentenceTransformer/native Recall@1/MRR@10/NDCG@10 all1.0 and all8 top1 match.
+Raw/normalized maxima7.343292236328125e-5/5.513429641723633e-7, minimum cosine
+0.999999999999019. [Full scores/provenance/review](../tests/results/ultrabert/retrieval-smoke.json).
+Both structural initial failures are retained. The original wrapper ran first;
+raw vectors/logs remain remote in ultrabert-retrieval-39950831201 through
+21 January2027. Preserve the same bytes before expiry; use verified original_run
+reuse for justified native retries, never regenerate these original anchors.
 
-After U3, execute the SentenceTransformer wrapper and compare raw CLS, optional
-normalization, named/default prompts and ordering. Freeze independent retrieval
-inputs/gold before candidate outputs; report task metrics separately from numerical
-parity. Then evaluate longer contexts and GPU/latency/RSS on appropriate resources.
+Next choose a separately licensed representative retrieval dataset and freeze
+revision, split, queries/corpus/gold, prompt/normalization and quality/ranking
+acceptance before new candidate outputs. Execute original SentenceTransformer
+first, then the gated native API on hosted resources, reporting misses, score
+matrices and numerical magnitudes separately. The owned smoke is not MTEB/BEIR
+reproduction. Longer contexts and GPU/latency/RSS need distinct resource/parity
+plans;512 remains the public bound. Further attribution requires a distinct
+hypothesis and existing original probes; do not repeat the four backend arms.
 
 Quantization needs declared development/calibration inputs plus independent
 quality evaluation; keep norms and other critical precision choices measured.

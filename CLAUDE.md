@@ -86,8 +86,10 @@ Use [the executable next-agent handoff](docs/next-agent-handoff.md) and
 limits in PERFORMANCE. Do not repeat dated historical commands as current tasks.
 
 The wheel matrix/23 installed native-load checks/aggregation and native tokenizer
-component audit pass. UltraBERT tools are test-only; production model support,
-remaining numerical errors and strict reference-replay drift are unresolved.
+component audit pass. UltraBERT default-off CPU/F32 text API is merged viaPR74,
+with actual C API/Python/CLI/HTTP and owned retrieval smoke passing. Remaining
+binding/representative-quality/release gates, numerical errors and strict
+reference-replay drift are unresolved.
 Corrected local audit39009703362 completed with retained numerical failures. Preserve its
 scoped targets separately from the original frozen full-model references.
 

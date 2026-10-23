@@ -83,8 +83,8 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | --- | --- | --- |
 | Wheels | All4 platform legs/23 installed native-load/C-ABI checks/aggregation pass at e75a32f1 | Version/release reconciliation and any future PyPI publication are separate |
 | Social preview | PR68 merged after native/Flutter/WASM/secret success | Completed deployment39009694992 at f6f84aba; live HTML/PNG verified23 October |
-| UltraBERT source/conversion | All218 tensors in both F32/F16 exports and original7-case/2,730-stage capture pass | No production architecture/text API/bindings yet |
-| UltraBERT tokenizer | All8 native BPE/test-template rows match original IDs/masks; both wrong alternatives fail8/8 | Wire the tested template into a scoped production profile after qualification |
+| UltraBERT source/conversion | All218 tensors in both F32/F16 exports and original7-case/2,730-stage capture pass | Gated CPU/F32 text dispatch mergedPR74; Rust/Dart model execution, pairs and release gates remain |
+| UltraBERT tokenizer | All8 native BPE/test-template rows match original IDs/masks; both wrong alternatives fail8/8 | Scoped public F32 IDs/masks pass; pair/reserved-token profiles remain separate |
 | UltraBERT numerical | Initial14-arm panel/700 exact controls complete,183 F32/1,294 F16 numerical failures retained | [Corrected local audit39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362) complete: all21 F32 local probes pass; six F16 down failures; reference/projection attribution and both strict replay failures remain |
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
@@ -97,15 +97,18 @@ the remote copy expires21 January2027. Original producer/manifest/payload
 identities remain unchanged. [Preservation provenance](../tests/results/ultrabert/reference-preservation.json).
 Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
-Public support and quantized/default publication require U1–U4 in the executable
-handoff. DraftPR74 at4be9f864 adds the gated CPU/F32 public-text profile; hosted
-39943940607 passes all twelve pooled/seven text-row and actual Python/CLI/HTTP
-checks after the initial CLI-name harness correction. [Full evidence](../tests/results/ultrabert/public-f32-api.json).
-Final platform CI remains before PR74 merge; initial retrieval39949129060 failed before model load on wheel/tag line endings;
-exact wheel hashes are corrected. Retry39950831201 is dispatched once at812e56e5 against native4be9f864;
-no task score is inferred. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
-is frozen before task outputs; actual SentenceTransformer/native scoring remains
-pending. The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
+Default-off CPU/F32 public text support merged viaPR74 at3f3d023a after complete
+source4be9f864 platform/Flutter/WASM/style/security checks. Hosted39943940607
+passes actual C API/Python/CLI/HTTP and all twelve pooled/seven text-row checks.
+[API evidence](../tests/results/ultrabert/public-f32-api.json). Original-first
+retrieval39950831201 at812e56e5/native4be9f864 passes all32 IDs/64 vectors and
+8/8 exact top1; original/native Recall@1/MRR@10/NDCG@10 all1.0. Raw max7.34e-5,
+normalized5.51e-7, minimum cosine0.999999999999019. [Full smoke evidence](../tests/results/ultrabert/retrieval-smoke.json).
+This authored panel does not establish representative MTEB/BEIR quality.
+Rust/Dart model-backed, public pairs, long-context/GPU/performance and validated
+quantization/publication remain U3/U4. Initial harness failures and183/1294
+intermediate failures are retained. No new runtime tag/model alias/app pin.
+The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
 complementary Apple coverage, with no repeated Python audit. Original-backend reproducibility39915714794 completes all four controls without
 recovering frozen anchors. The [M1 follow-up](handover-m1-validation.md) is complete:
 raw/normalized CLS max6.52e-5/6.41e-7, long hidden0.00579. Independent review
