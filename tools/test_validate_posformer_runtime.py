@@ -1,7 +1,7 @@
 """Dependency-light rejection controls; model inference runs only in hosted CI."""
 import copy
 import unittest
-from validate_posformer_runtime import APP, BASE, ORIGINAL_SOURCE, CORRECT_IDS, compare
+from validate_posformer_runtime import APP, BASE, ORIGINAL_SOURCE, CORRECT_IDS, compare, instrument_preserving_gates
 from compare_handwriting_encoders_test import report
 from audit_handwriting_vocabulary import FROZEN_MANIFEST_SHA256
 
@@ -66,6 +66,28 @@ class ProductionReportsTest(unittest.TestCase):
             provenance[key] = value
             with self.subTest(key=key), self.assertRaises(ValueError):
                 compare(left, right, provenance)
+
+
+class GatedTraceTest(unittest.TestCase):
+    def source(self):
+        return '\n'.join(f'x = ctx->trained_forward ? pf_pool_ceil(g, x, GGML_OP_POOL_{op})\n'
+                         f'    : ggml_pool_2d(g, x, GGML_OP_POOL_{op}, 2, 2, 2, 2, 0, 0);'
+                         for op in ('MAX', 'AVG'))
+
+    def test_only_observation_is_added_both_production_branches_survive(self):
+        original = self.source()
+        def observe(source):
+            self.assertNotIn('ctx->trained_forward', source)
+            self.assertEqual(source.count('x = pf_pool_ceil('), 2)
+            return '// trace only\n' + source
+        self.assertEqual(instrument_preserving_gates(original, observe), '// trace only\n' + original)
+
+    def test_missing_duplicate_and_operator_changing_instrumentation_rejected(self):
+        for source in (self.source().split('\n', 2)[0], self.source() + self.source()):
+            with self.assertRaisesRegex(ValueError, 'anchors changed'):
+                instrument_preserving_gates(source, lambda x: x)
+        with self.assertRaisesRegex(ValueError, 'changed pooling operators'):
+            instrument_preserving_gates(self.source(), lambda x: x.replace('GGML_OP_POOL_MAX', 'GGML_OP_POOL_AVG'))
 
 
 if __name__ == '__main__':

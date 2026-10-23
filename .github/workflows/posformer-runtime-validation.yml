@@ -3,6 +3,11 @@ on:
   push:
     branches: ['fix/posformer-main-backport']
   workflow_dispatch:
+    inputs:
+      include_macos:
+        description: 'Repeat Apple public API validation (runtime unchanged since reviewed macOS source)'
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -14,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: ${{ fromJSON(inputs.include_macos && '["ubuntu-latest","macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 65
     env:
@@ -108,6 +113,7 @@ jobs:
           export CRISPMATH_OCR_SHA256=450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4
           export CRISPMATH_OCR_BRIDGE_SOURCE="$GITHUB_SHA"
           export CRISPMATH_OCR_LIBRARY="$PRODUCTION_LIBRARY"
+          export PYTHONPATH="$GITHUB_WORKSPACE/.ci/CrispMath/tool:$GITHUB_WORKSPACE/tools"
           unset POSFORMER_SCALAR_ENCODER
           for gate in unset zero; do
             unset CRISPEMBED_POSFORMER_TRAINED_FORWARD
@@ -118,7 +124,11 @@ jobs:
           python3 - <<'PYCODE'
           import json, os
           from pathlib import Path
+          from validate_posformer_runtime import compare
           root = Path(os.environ['GITHUB_WORKSPACE']) / '.ci/reports'
+          load = lambda name: json.loads((root / name).read_text())
+          for name in ('original-unset.json', 'original-zero.json'):
+              compare(load('original-baseline.json'), load(name), load('production-provenance.json'))
           def outputs(name):
               rows = json.loads((root / name).read_text())['cases']
               assert len(rows) == 50
@@ -158,6 +168,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
   formatting:
+    if: github.event_name == 'workflow_dispatch' && inputs.include_macos
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

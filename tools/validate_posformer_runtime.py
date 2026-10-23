@@ -124,6 +124,25 @@ def source_provenance(args):
                         'production_probes_absent': True, 'validation_tool_sha256': sha(__file__)})
 
 
+def instrument_preserving_gates(source, instrument):
+    """Adapt only trace anchors, then restore the exact production selections."""
+    pattern = re.compile(
+        r'x = ctx->trained_forward \? pf_pool_ceil\(g, x, (GGML_OP_POOL_(?:MAX|AVG))\)'
+        r'\n[ \t]+: ggml_pool_2d\(g, x, \1, 2, 2, 2, 2, 0, 0\);')
+    matches = list(pattern.finditer(source))
+    require(len(matches) == 2 and {m[1] for m in matches} == {'GGML_OP_POOL_MAX', 'GGML_OP_POOL_AVG'},
+            'Gated pooling trace anchors changed')
+    selections = {f'x = pf_pool_ceil(g, x, {m[1]});': m[0] for m in matches}
+    for direct, selection in selections.items():
+        require(source.count(selection) == 1, 'Duplicate gated selection')
+        source = source.replace(selection, direct, 1)
+    source = instrument(source)
+    for direct, selection in selections.items():
+        require(source.count(direct) == 1, 'Instrumenter changed pooling operators')
+        source = source.replace(direct, selection, 1)
+    return source
+
+
 def prepare(args):
     from prepare_handwriting_reference_bridge import instrument
     provenance = load(args.provenance)
@@ -142,7 +161,7 @@ def prepare(args):
         end = added.index('\n}', added.index(token)) + 2
         require(start >= 0, 'Probe source anchor missing')
         probes.append(added[start:end])
-    text = instrument(path.read_text() + '\n' + '\n\n'.join(probes) + '\n')
+    text = instrument_preserving_gates(path.read_text() + '\n' + '\n\n'.join(probes) + '\n', instrument)
     path.write_text(text)
     provenance.update({'original_source_sha256': provenance['production_source_sha256'],
                        'instrumented_source_sha256': sha(path),
