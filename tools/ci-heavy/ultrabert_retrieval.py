@@ -26,8 +26,10 @@ from ultrabert_retrieval import FIXTURE_SHA256, checked_vectors, evaluate, fixtu
 
 REPO = 'CrispStrobe/CrispEmbed'
 ST_SOURCE = 'b0acd1a4d22ba2bc10072868ddea7612561c9424'
-ST_WRAPPER_SHA = 'b0a945cf57425b1755d13ee5d7d97b7a33af38546a62578d530267ffb7e26e6f'
-ST_POOL_SHA = '371f6fb2069387f920851c2f82e125044f769093ebea1d0f4036c8631d89a9e3'
+# Published 6.0.1 wheel uses CRLF; tagged sources use LF. Exact wheel bytes
+# were independently checked equal after newline normalization (failure receipt).
+ST_WRAPPER_SHA = '3d677757bf3e684c45d3634ae67918cd9a67cee6aac6760e5fa1c72dfe820650'
+ST_POOL_SHA = 'b6e96e0eac50ebc33d6310ef3b8d35b7cd2b7e0e521809552bba34c05c13d43d'
 
 
 def checked_run(run, source):

@@ -95,8 +95,8 @@ at4be9f864; hosted [39943940607](https://github.com/CrispStrobe/CrispEmbed/actio
 passes after the initial harness-only CLI-name failure (build passed; no API
 comparison ran before that failure). [Actual public API evidence](../tests/results/ultrabert/public-f32-api.json).
 All twelve pooled checks/seven actual text rows and Python/CLI/HTTP pass; final
-platform checks remain before merge. Original-first retrieval39949129060 is
-dispatched once at producer2f871a3e, native4be9f864; inspect instead of duplicating. [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
+platform checks remain before merge. Original-first39949129060 failed before model load on wheel/tag line endings;
+exact wheel-byte hashes are corrected and initial evidence preserved. [Initial failure](../tests/results/ultrabert/initial-public-api-harness-failure.json).
 Inspect existing exact-source CI; do not dispatch duplicates. This
 initial profile covers ordinary text and sequential batches, while public pairs,
 reserved-token surfaces, F16/quantized/GPU/Matryoshka remain explicitly excluded.
@@ -145,8 +145,9 @@ scorer and four meaningful control groups pass; no actual task outputs exist.
 The original-first producer is integrated at40ff3d6c; controls-only hosted
 39945740758/39946699080 pass; updated39947939925 passes all four scorer/seven
 producer groups, including actual binding/library identity. API39943940607
-succeeds at4be9f864. Original-first model39949129060 is queued at producer
-2f871a3e against that qualified native source; inspect rather than redispatch.
+succeeds at4be9f864. Original-first39949129060 at2f871a3e failed before model load on wheel/tag
+line endings. Exact wheel-byte hashes are corrected; no original task vectors
+were produced. Retain initial-retrieval-producer-failure.json on retry.
 API/source/artifact qualification precedes models/builds. Preserve first original
 records on retries.
 This is a bounded smoke, not representative MTEB/BEIR qualification. Run the

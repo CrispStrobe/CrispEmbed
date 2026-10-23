@@ -110,3 +110,11 @@ scratch/output directories and preserve the initial failed scores and logs.
 The producer also checks that the loaded native library and Python binding resolve
 to the fresh build/qualified checkout, and records their hashes. A default-library
 or installed-package fallback is rejected before candidate inference.
+
+The initial model run39949129060 failed before model construction: published
+SentenceTransformer6.0.1 wheel files use CRLF while the inspected tag uses LF.
+Both wrapper/Pooling are byte-identical after newline normalization; the
+[initial failure receipt](../tests/results/ultrabert/initial-retrieval-producer-failure.json)
+records exact wheel and source hashes. The corrected producer pins exact wheel
+bytes and still rejects any installed-source mismatch. No task vectors existed
+from that attempt, and no frozen input/gold/budget is changed.

@@ -1,0 +1,43 @@
+{
+  "run": 39949129060,
+  "source": "2f871a3e09d5187a4574e31c3ff89af466706a57",
+  "raw_report_sha256": "d2a506721961c1118e1f8a3e851d5af50a32ad06ad5a1ce84eac816b4367b01e",
+  "producer": {
+    "task_source": "2f871a3e09d5187a4574e31c3ff89af466706a57",
+    "driver_sha256": "477457d0e9c2dedb31c48b58102429a799be29516f7cabe91f646f9335f94b3b",
+    "fixture_sha256": "80143c78618b835d388d3133dbf508b8ff129c12659a42b94b2823983b1b6dc4",
+    "scope": "Owned retrieval smoke only; full-stage debt/broad benchmark quality/release gates remain separate",
+    "status": "failed producer",
+    "qualification": {
+      "run": "39943940607",
+      "source": "4be9f864e0e7bc154325e1edc1bdf29a12210a69",
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607",
+      "artifact_id": 12499556021,
+      "artifact_zip_sha256": "76c8de310eef62249bda6fa91a2ad51db3b9a2c9ad2eab190a13aa5df31e11c7",
+      "receipt_sha256": "41ac5dc18e4ef35ae9c4a7ca954e69ae053a39161e22893c6f618694f328f320"
+    },
+    "error_type": "ValueError"
+  },
+  "failure": "Loaded SentenceTransformer wrapper source differs",
+  "phase": "before model construction, original vectors, native build or task scoring",
+  "cause": "Published wheel uses CRLF; pinned tag source uses LF. Both wrapper and Pooling are byte-identical after CRLF-to-LF normalization.",
+  "wheel": {
+    "filename": "sentence_transformers-6.0.1-py3-none-any.whl",
+    "url": "https://files.pythonhosted.org/packages/31/ab/dc6031faf1b6bba08076fbf457b21a5c51ba7928a77916915e093c16b8c7/sentence_transformers-6.0.1-py3-none-any.whl",
+    "sha256": "b8888d72c707ba33c63aa30845850702dd5acadf1dd0d051436380bcebe4fd0f"
+  },
+  "source_comparison": [
+    {
+      "file": "model.py",
+      "tag_lf_sha256": "b0a945cf57425b1755d13ee5d7d97b7a33af38546a62578d530267ffb7e26e6f",
+      "wheel_crlf_sha256": "3d677757bf3e684c45d3634ae67918cd9a67cee6aac6760e5fa1c72dfe820650",
+      "normalized_bytes_identical": true
+    },
+    {
+      "file": "pooling.py",
+      "tag_lf_sha256": "371f6fb2069387f920851c2f82e125044f769093ebea1d0f4036c8631d89a9e3",
+      "wheel_crlf_sha256": "b6e96e0eac50ebc33d6310ef3b8d35b7cd2b7e0e521809552bba34c05c13d43d",
+      "normalized_bytes_identical": true
+    }
+  ]
+}

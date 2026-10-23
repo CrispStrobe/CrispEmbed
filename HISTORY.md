@@ -1,3 +1,16 @@
+## 2026-10-23 — Retrieval source-pin failure attributed to wheel line endings
+
+Original-first39949129060 at2f871a3e fails before model construction/vectors or
+native work: the published SentenceTransformer6.0.1 wheel contains CRLF files,
+while inspected tagb0acd1a4 uses LF. Both wrapper and Pooling match byte-for-byte
+after CRLF-to-LF normalization. [Initial producer fields and exact wheel/source
+hashes](tests/results/ultrabert/initial-retrieval-producer-failure.json) preserve
+this structural failure. The producer now pins exact published wheel bytes,
+retaining strict installed-source checks. No model/input/gold/prompt/arithmetic
+or budget changed; all four scorer/seven producer groups pass locally.
+No original records exist from this failed attempt; retry uses first original
+capture rather than regeneration of any prior task anchors.
+
 ## 2026-10-23 — Actual UltraBERT F32 public text API and consumer checks pass
 
 [39943940607](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39943940607)

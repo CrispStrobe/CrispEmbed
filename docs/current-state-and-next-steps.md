@@ -101,8 +101,8 @@ Public support and quantized/default publication require U1–U4 in the executab
 handoff. DraftPR74 at4be9f864 adds the gated CPU/F32 public-text profile; hosted
 39943940607 passes all twelve pooled/seven text-row and actual Python/CLI/HTTP
 checks after the initial CLI-name harness correction. [Full evidence](../tests/results/ultrabert/public-f32-api.json).
-Final platform CI remains before PR74 merge; owned retrieval39949129060 is
-dispatched once, without inferring a task score. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
+Final platform CI remains before PR74 merge; initial retrieval39949129060 failed before model load on wheel/tag line endings;
+exact wheel hashes are corrected. The original-first retry will run once, without inferring a task score. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
 is frozen before task outputs; actual SentenceTransformer/native scoring remains
 pending. The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
 complementary Apple coverage, with no repeated Python audit. Original-backend reproducibility39915714794 completes all four controls without
