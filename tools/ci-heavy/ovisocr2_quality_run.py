@@ -860,6 +860,31 @@ def frozen_cases(out, contract):
     return rendered, cases, prepared
 
 
+# Only this presentation attribute is ignored for the Ovis document structure
+# view. The unchanged strict-v1 scorer and its raw metrics remain in the report.
+TABLE_BORDER_OPEN = re.compile(
+    r'<table[ \t\r\n]+border[ \t\r\n]*=[ \t\r\n]*(?:[0-9]{1,10}|"[0-9]{1,10}"|\'[0-9]{1,10}\')[ \t\r\n]*>')
+
+
+def score_ovis_document(ocr_quality, gold, text, *, complete, policy):
+    """Score one exact Ovis table presentation variant through frozen v1 grammar."""
+    if policy != 'ovisocr2-table-border-presentation-v1':
+        raise ValueError('Unknown OvisOCR2 document presentation policy')
+    strict = ocr_quality.score(gold, text, complete=complete)
+    if strict['policy'] != 'crispembed-ocr-quality-v1':
+        raise ValueError('Frozen strict OCR quality policy changed')
+    normalized, count = TABLE_BORDER_OPEN.subn('<table>', text)
+    primary = ocr_quality.score(gold, normalized, complete=complete)
+    # The attribute affects only the structure view. Raw text error and size
+    # always describe the actual unmodified model output.
+    for key in ('raw_text', 'raw', 'characters', 'lines'):
+        primary[key] = strict[key]
+    primary.update(policy=policy, strict_v1=strict, normalized_text=normalized,
+                   normalized_sha256=hashlib.sha256(normalized.encode('utf-8')).hexdigest(),
+                   border_attribute_count=count)
+    return primary
+
+
 def score_outputs(contract, rendered, cases, outputs):
     ocr_quality = load_module('ovis_quality_document_scorer', ROOT / 'tools/ocr_quality.py')
     synthetic = contract.score_panel(rendered, {case['id']: outputs[case['id']]
@@ -876,9 +901,9 @@ def score_outputs(contract, rendered, cases, outputs):
                 if row['id'] == case['id'])
             gold = json.loads((ROOT / gold_path).read_text())
             scored = contract.score_case(case['gold'], record, case['cap'])
-            structure = ocr_quality.score(
-                gold, record['processed_text'],
-                complete=scored['completed'])
+            structure = score_ovis_document(
+                ocr_quality, gold, record['processed_text'],
+                complete=scored['completed'], policy=contract.DOCUMENT_POLICY)
             documents.append({'id': case['id'], 'license': case['license'],
                               'rgb_sha256': case['rgb_sha256'],
                               **scored,
@@ -922,6 +947,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
                   'tools/ci-heavy/ovisocr2_quality_contract.py',
+                  'tools/ocr_quality.py',
                   'tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json',
                   'models/qwen35_ovis_profile.py',
                   'models/convert-qwen35-ocr-to-gguf.py')},

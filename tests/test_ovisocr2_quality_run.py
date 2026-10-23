@@ -7,7 +7,6 @@ import hashlib
 from pathlib import Path
 import tempfile
 import zipfile
-from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -154,9 +153,7 @@ class OvisOCR2Parser:
                                    'raw_text': 'x', 'processed_text': 'x',
                                    'token_ids': [42, 248046], 'stop_id': 248046,
                                    'finish_reason': 'stop'}
-        scorer = SimpleNamespace(score=lambda _gold, _text, *, complete: {'complete': complete})
-        with patch.object(contract, 'score_panel', return_value={}), \
-                patch.object(driver, 'load_module', return_value=scorer):
+        with patch.object(contract, 'score_panel', return_value={}):
             result = driver.score_outputs(contract, None, cases, outputs)
             self.assertTrue(all(row['structure']['complete'] for row in result['realistic_documents']))
             outputs['inventory-table']['token_ids'] = [42, 43]
@@ -164,6 +161,74 @@ class OvisOCR2Parser:
             outputs['inventory-table']['finish_reason'] = 'length'
             result = driver.score_outputs(contract, None, cases, outputs)
             self.assertFalse(result['realistic_documents'][2]['structure']['complete'])
+
+    def test_ovis_document_border_policy_preserves_strict_and_raw_metrics(self):
+        scorer = driver.load_module('ovis_quality_border_test_scorer',
+                                    ROOT / 'tools/ocr_quality.py')
+        contract = driver.load_module('ovis_quality_border_test_contract',
+                                      ROOT / 'tools/ci-heavy/ovisocr2_quality_contract.py')
+        cells = [[f'cell-{row}-{col}' for col in range(3)] for row in range(5)]
+        body = ''.join('<tr>' + ''.join(f'<td>{cell}</td>' for cell in row) + '</tr>'
+                       for row in cells)
+        gold = {'text': ' '.join(cell for row in cells for cell in row),
+                'tables': [cells]}
+        for opening in ('<table border=1>', '<table border="1">',
+                        "<table border='12'>", '<table border = 0>'):
+            with self.subTest(opening=opening):
+                output = opening + body + '</table>'
+                strict = scorer.score(gold, output, complete=True)
+                scored = driver.score_ovis_document(
+                    scorer, gold, output, complete=True, policy=contract.DOCUMENT_POLICY)
+                self.assertFalse(strict['parse_ok'])
+                self.assertEqual(scored['strict_v1'], strict)
+                self.assertTrue(scored['parse_ok'])
+                self.assertTrue(scored['exact_quality'])
+                self.assertEqual(scored['table']['expected_cells'], 15)
+                self.assertEqual(scored['table']['cell_errors'], 0)
+                self.assertEqual(scored['border_attribute_count'], 1)
+                self.assertEqual(scored['normalized_text'], '<table>' + body + '</table>')
+                self.assertEqual(scored['normalized_sha256'], hashlib.sha256(
+                    scored['normalized_text'].encode()).hexdigest())
+                for key in ('raw_text', 'raw', 'characters', 'lines'):
+                    self.assertEqual(scored[key], strict[key])
+
+        unchanged = '<table>' + body + '</table>'
+        scored = driver.score_ovis_document(
+            scorer, gold, unchanged, complete=True, policy=contract.DOCUMENT_POLICY)
+        self.assertEqual(scored['border_attribute_count'], 0)
+        self.assertEqual(scored['normalized_text'], unchanged)
+
+        changed = body.replace('cell-0-0', 'wrong', 1)
+        reordered = body.replace('cell-0-0', 'temp', 1).replace('cell-0-1', 'cell-0-0', 1).replace('temp', 'cell-0-1', 1)
+        added = body + '<tr><td>extra</td><td>extra</td><td>extra</td></tr>'
+        for mutated in (changed, reordered, added):
+            with self.subTest(mutated=mutated[:40]):
+                scored = driver.score_ovis_document(
+                    scorer, gold, '<table border=1>' + mutated + '</table>',
+                    complete=True, policy=contract.DOCUMENT_POLICY)
+                self.assertTrue(scored['parse_ok'])
+                self.assertFalse(scored['exact_quality'])
+                self.assertGreater(scored['table']['cell_errors'], 0)
+
+        malformed = (
+            '<table border=1 style="color:red">' + body + '</table>',
+            '<table border=1>' + body.replace('<td>', '<td rowspan="2">', 1) + '</table>',
+            '<table border=-1>' + body + '</table>',
+            '<table border="1" border="2">' + body + '</table>',
+            '<table border=1>' + body + '<tr><td>ragged</td></tr></table>',
+            '<table border=1>' + body,
+            '<table border=1><tr><td><table><tr><td>x</td></tr></table></td>'
+            '<td>y</td><td>z</td></tr></table>',
+            '<table border=1><!-- comment -->' + body + '</table>',
+        )
+        for output in malformed:
+            with self.subTest(output=output[:60]):
+                scored = driver.score_ovis_document(
+                    scorer, gold, output, complete=True, policy=contract.DOCUMENT_POLICY)
+                self.assertFalse(scored['parse_ok'])
+                self.assertFalse(scored['exact_quality'])
+        with self.assertRaisesRegex(ValueError, 'Unknown OvisOCR2'):
+            driver.score_ovis_document(scorer, gold, unchanged, complete=True, policy='other')
 
     def test_native_precision_env_has_explicit_calibrated_gate(self):
         self.assertEqual(driver.native_environment('f16')['CRISPEMBED_QWEN35_QUANT'], '0')

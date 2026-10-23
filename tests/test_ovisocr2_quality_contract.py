@@ -164,7 +164,8 @@ class OvisQualityContract(unittest.TestCase):
                               ('two-column-page', 'CC0-1.0'), ('inventory-table', 'MIT')]:
             rows.append({'id': name, 'rgb_sha256': 'a' * 64, 'license': license,
                          'completed': True, 'cap_hit': False, 'format_issues': [],
-                         'structure': {'complete': True, 'parse_ok': True,
+                         'structure': {'policy': contract.DOCUMENT_POLICY,
+                                       'complete': True, 'parse_ok': True,
                                        'raw': {'cer': 0.1, 'wer': 0.2},
                                        'content': {'cer': 0.1, 'wer': 0.2},
                                        'table': {'expected_cells': 15, 'cell_errors': 0}
@@ -179,6 +180,10 @@ class OvisQualityContract(unittest.TestCase):
         worse = copy.deepcopy(rows)
         worse[1]['cap_hit'] = True
         self.assertFalse(contract.paired_document_screen(rows, worse)['screen_passed'])
+        wrong_policy = copy.deepcopy(rows)
+        wrong_policy[1]['structure']['policy'] = 'crispembed-ocr-quality-v1'
+        with self.assertRaisesRegex(ValueError, 'scoring policy differs'):
+            contract.paired_document_screen(rows, wrong_policy)
 
 
 if __name__ == '__main__':

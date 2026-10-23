@@ -21,6 +21,7 @@ EVIDENCE_PATH = ROOT / 'tests/results/qwen35-ocr/ovisocr2-metadata.json'
 PANEL_SHA = '0bec97a7a04683c7c0aec95063aa01cf9a73bcf78db61f433d7d66d89588f212'
 PRODUCER_SHA = '233dc37fdaa2ff6b4a8b3ca3832b578305b5f3b6ed4d0d88d54c73591626b372'
 STOPS = {248044, 248046}
+DOCUMENT_POLICY = 'ovisocr2-table-border-presentation-v1'
 
 # Every recipe starts with original F16 vision/embedding and recurrent gates.
 # One bounded Q8 candidate precedes any more aggressive Q4 exploration.
@@ -320,6 +321,9 @@ def paired_document_screen(reference, candidate):
                 or not re.fullmatch('[0-9a-f]{64}', old.get('rgb_sha256', ''))
                 or old.get('license') != new.get('license')):
             raise ValueError('Reviewed realistic OCR pixel/license identity differs')
+        if (old.get('structure', {}).get('policy') != DOCUMENT_POLICY
+                or new.get('structure', {}).get('policy') != DOCUMENT_POLICY):
+            raise ValueError('Reviewed realistic OCR document scoring policy differs')
         for side, row in (('original', old), ('candidate', new)):
             structure = row.get('structure', {})
             if (row.get('cap_hit') or not row.get('completed')
