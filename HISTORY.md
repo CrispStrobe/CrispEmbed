@@ -1,3 +1,23 @@
+## 2026-10-23 — Original auto-FlashInfer T4 startup failure retained
+
+Attempt05e51484 fixes the CUDA-driver linker discovery and passes isolated
+packages, all three frozen processor anchors, actual FP16 CUDA control and
+checkpoint SHA. The actual decoder auto-selects FlashInfer, vision selects
+Torch SDPA and GDN selects Triton. CUDA-graph warmup then fails in decoder
+FlashInfer `BatchPrefillWithPagedKVCache` at head dimension256 with CUDA
+invalid argument. No page decode completes.
+[Unchanged producer/worker and retained payload/log hashes](tests/results/qwen35-ocr/initial-ovisocr2-vllm-flashinfer-failure.json).
+
+Pinned vLLM0.22.1 source validates one controlled alternative:
+`attention_config={"backend":"TRITON_ATTN"}` targets decoder attention while
+vision and GDN configuration remain separate. Recipe5fe3fc90/worker4b4293d9
+adds only that setting, leaving dtype automatic, graph compilation, prompt,
+weights and stops unchanged. The deployed retry is verified and pending.
+This is a controlled original-vLLM reference, not proof that the README's
+unchanged automatic backend works on T4. No device redraw or numerical-budget
+change is used. Native all-stage/public/quality/calibration/publication tools
+are prepared in draftPR79 but their model-backed outcomes remain pending.
+
 ## 2026-10-23 — Native Ovis candidate and audits prepared; driver-cache failure retained
 
 Native draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) prepares
