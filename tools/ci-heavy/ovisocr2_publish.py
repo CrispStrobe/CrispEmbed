@@ -62,6 +62,10 @@ def source_head(value):
     return isinstance(value, str) and re.fullmatch(r'[0-9a-f]{40}', value) is not None
 
 
+def valid_cache_error(value):
+    return type(value) in (int, float) and math.isfinite(value) and 0 <= value <= .002
+
+
 def require_receipts(precision, destination=DESTINATION):
     """Pure gate. No Hugging Face import, token lookup, or weight access."""
     if precision not in RECIPES or destination != DESTINATION:
@@ -79,16 +83,28 @@ def require_receipts(precision, destination=DESTINATION):
     positive(model, 'f16_positive')
     mp = producer(model)
     model_artifact = model.get('artifact', {})
+    reference_artifact = model.get('reference_artifact', {})
+    model_review = model['independent_review']
+    canonical_producer_sha = hashlib.sha256(json.dumps(
+        mp, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        allow_nan=False).encode()).hexdigest()
+    cache_error = mp.get('original_capture', {}).get('cached_vs_full_prefix_max_abs')
+    model_run = model.get('run')
     f16 = mp.get('exports', {}).get('f16', {})
-    if (model.get('run') is None or not source_head(mp.get('source_commit'))
+    if (type(model_run) is not int or model_run < 1 or not source_head(mp.get('source_commit'))
             or mp.get('status') != 'completed diagnostic audit' or mp.get('failures') != []
             or type(model_artifact.get('id')) is not int
             or not sha_field(model_artifact.get('zip_sha256'))
-            or model.get('independent_review', {}).get('artifact_zip_sha256') != model_artifact['zip_sha256']
+            or model_artifact.get('name') not in (None, f'ovisocr2-model-reports-{model_run}')
+            or model_review.get('artifact_zip_sha256') != model_artifact['zip_sha256']
+            or model_review.get('producer_canonical_sha256') != canonical_producer_sha
+            or type(reference_artifact.get('id')) is not int
+            or not sha_field(reference_artifact.get('zip_sha256'))
+            or reference_artifact.get('name') != f'ovisocr2-model-reference-{model_run}'
+            or model_review.get('reference_artifact_zip_sha256') != reference_artifact['zip_sha256']
             or f16.get('model_sha256') != F16_SHA
             or mp.get('original_capture', {}).get('cached_vs_full_prefix_same_argmax') is not True
-            or not isinstance(mp.get('original_capture', {}).get('cached_vs_full_prefix_max_abs'), (int, float))
-            or mp['original_capture']['cached_vs_full_prefix_max_abs'] > .002):
+            or not valid_cache_error(cache_error)):
         raise ValueError('Original/native F16 source or cache receipt differs')
     public, public_sha = load('ovisocr2-public-surfaces.json')
     positive(public, 'public_positive')
@@ -216,8 +232,11 @@ def require_receipts(precision, destination=DESTINATION):
             'candidate_sha256': candidate['sha256'], 'candidate_bytes': candidate['bytes'],
             'model_run_id': mp.get('service_run', {}).get('id') or
                             model.get('run') or model.get('model_run_id'),
-            'model_artifact_id': model_artifact['id'],
-            'model_artifact_zip_sha256': model_artifact['zip_sha256'],
+            'model_report_artifact_id': model_artifact['id'],
+            'model_report_artifact_zip_sha256': model_artifact['zip_sha256'],
+            'model_reference_artifact_id': reference_artifact['id'],
+            'model_reference_artifact_zip_sha256': reference_artifact['zip_sha256'],
+            'model_producer_canonical_sha256': canonical_producer_sha,
             'model_source_commit': mp['source_commit'], 'public_source_commit': pp['source_commit'],
             'quality_source_commit': qp['source_commit'],
             'quality_run_id': quality.get('run') or qp.get('run'),
@@ -310,9 +329,15 @@ def main():
                                  '.github/workflows/ovisocr2-metadata.yml'),
             'quality': service_run(args.quality_run_id, pins['quality_source_commit'],
                                    '.github/workflows/ovisocr2-quality.yml')}
-        report['service_artifacts'] = {'model': service_artifact(
-            pins['model_artifact_id'], args.model_run_id,
-            f'ovisocr2-model-reference-{args.model_run_id}', pins['model_artifact_zip_sha256'])}
+        report['service_artifacts'] = {
+            'model_reports': service_artifact(
+                pins['model_report_artifact_id'], args.model_run_id,
+                f'ovisocr2-model-reports-{args.model_run_id}',
+                pins['model_report_artifact_zip_sha256']),
+            'model_reference': service_artifact(
+                pins['model_reference_artifact_id'], args.model_run_id,
+                f'ovisocr2-model-reference-{args.model_run_id}',
+                pins['model_reference_artifact_zip_sha256'])}
         if args.precision != 'f16':
             report['service_artifacts']['candidate'] = service_artifact(
                 pins['candidate_artifact_id'], args.quality_run_id,
@@ -342,6 +367,7 @@ def main():
         manifest = {'source_model': MODEL, 'source_revision': REVISION,
                     'audited_source_commit': pins['public_source_commit'],
                     'model_audit_source_commit': pins['model_source_commit'],
+                    'model_producer_canonical_sha256': pins['model_producer_canonical_sha256'],
                     'quality_source_commit': pins['quality_source_commit'],
                     'publisher_source_commit': os.environ.get('GITHUB_SHA'),
                     'publication_workflow_run': os.environ.get('GITHUB_RUN_ID'),

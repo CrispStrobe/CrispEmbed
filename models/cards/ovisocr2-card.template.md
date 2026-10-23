@@ -12,16 +12,19 @@ This GGUF contains the complete main-model checkpoint of
 [ATH-MaaS/OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) at
 `cbdede82e048659b83310476ff807da825f8fe78`, converted for the experimental
 CrispEmbed format-2 OvisOCR2 reader. The pinned upstream card and LICENSE declare
-Apache-2.0. The source includes a separate MTP checkpoint that is outside this
-non-speculative main-model export. Stock llama.cpp compatibility is not claimed.
+Apache-2.0. The audited 473-tensor checkpoint is the non-speculative main-model
+schema. The source config declares MTP1, but this export makes no MTP support
+claim. Stock llama.cpp compatibility is not claimed.
 
 | File | Bytes | SHA-256 | Recipe |
 |---|---:|---|---|
 | `${filename}` | ${model_bytes} | `${model_sha256}` | `${recipe}` |
 
 The pinned upstream card is also preserved as `UPSTREAM_README.md`. The audited
-CrispEmbed source commit is `${audited_source_commit}`. Until a
-qualified release includes it, build that source and enable the three
+CrispEmbed source commit is `${audited_source_commit}`. This is a CPU-only
+experimental reader. After the original image resize it accepts at most 1024
+visual patches; the original 2880²-pixel maximum has not been qualified.
+Until a qualified release includes it, build that source and enable the three
 experimental gates to load the GGUF by its explicit local path:
 
 ```sh

@@ -1,5 +1,6 @@
 """Pure publication qualification tests. No hub client, auth or weights."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -26,14 +27,22 @@ def fixtures(folder, precision='f16'):
                        'runtime_stop_probe': {'all_stop_ids': [248044, 248046]}}},
            'independent_review': {'genuine_gpu_forward_completed': True}}
     write(folder, 'ovisocr2-vllm-reference.json', gpu)
-    model = {'run': 123, 'artifact': {'id': 1001, 'zip_sha256': HASH},
+    model = {'run': 123,
+             'artifact': {'id': 1001, 'zip_sha256': HASH,
+                          'name': 'ovisocr2-model-reports-123'},
+             'reference_artifact': {'id': 1002, 'zip_sha256': HASH,
+                                    'name': 'ovisocr2-model-reference-123'},
              'producer': {'status': 'completed diagnostic audit', 'failures': [],
                           'source_commit': HEAD,
                           'exports': {'f16': {'model_sha256': subject.F16_SHA}},
                           'reference_artifacts': {'gguf': {'sha256': HASH}},
                           'original_capture': {'cached_vs_full_prefix_same_argmax': True,
                                                'cached_vs_full_prefix_max_abs': .001}},
-             'independent_review': {'f16_positive': True, 'artifact_zip_sha256': HASH}}
+             'independent_review': {'f16_positive': True, 'artifact_zip_sha256': HASH,
+                                    'reference_artifact_zip_sha256': HASH}}
+    model['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+        model['producer'], sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        allow_nan=False).encode()).hexdigest()
     model_sha = write(folder, 'ovisocr2-model-audit.json', model)
     public = {'producer': {'status': 'completed public audit', 'failures': [],
                            'source_commit': HEAD,
@@ -118,7 +127,27 @@ class PublicationGate(unittest.TestCase):
         fixtures(self.folder)
         pins = subject.require_receipts('f16')
         self.assertEqual(pins['candidate_sha256'], subject.F16_SHA)
-        self.assertEqual(pins['model_artifact_id'], 1001)
+        self.assertEqual(pins['model_report_artifact_id'], 1001)
+        self.assertEqual(pins['model_reference_artifact_id'], 1002)
+
+    def test_model_report_and_reference_artifacts_are_distinct(self):
+        model, _, _, _, _ = fixtures(self.folder)
+        model['reference_artifact'] = model['artifact']
+        write(self.folder, 'ovisocr2-model-audit.json', model)
+        with self.assertRaises(ValueError): subject.require_receipts('f16')
+
+    def test_nonfinite_cache_and_wrong_canonical_producer_are_rejected(self):
+        self.assertFalse(subject.valid_cache_error(float('nan')))
+        self.assertFalse(subject.valid_cache_error(float('inf')))
+        self.assertFalse(subject.valid_cache_error(.0021))
+        self.assertTrue(subject.valid_cache_error(.002))
+        model, _, _, _, _ = fixtures(self.folder)
+        model['independent_review']['producer_canonical_sha256'] = HASH
+        write(self.folder, 'ovisocr2-model-audit.json', model)
+        with self.assertRaises(ValueError): subject.require_receipts('f16')
+        model['producer']['original_capture']['cached_vs_full_prefix_max_abs'] = float('nan')
+        write(self.folder, 'ovisocr2-model-audit.json', model)
+        with self.assertRaises(ValueError): subject.require_receipts('f16')
 
     def test_missing_and_negative_review_fail_before_any_artifact(self):
         with self.assertRaises(ValueError): subject.require_receipts('f16')
