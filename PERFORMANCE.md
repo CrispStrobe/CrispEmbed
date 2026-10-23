@@ -1,3 +1,28 @@
+The separately frozen Ovis presentation view preserves all raw scores and
+strict-v1 failures while parsing integer table borders. Original GPU content
+CER/WER is0.0533854/0.2222222 for the receipt,0.1110366/0.1870504 for two-column,
+and0/0 with all15 inventory cells exact. Receipt/two-column tables lack complete
+cell annotations, so those are content scores rather than table correctness.
+[Original-only presentation evidence](tests/results/qwen35-ocr/ovisocr2-vllm-quality-presentation.json).
+
+## 2026-10-23 — Ovis controlled original GPU quality, bounded timing only
+
+The eleven-case original T4/FP16 quality reference completes every EOS within
+256-token authored/1024-token document caps. Per-case forward wall times include
+31.292s for the first short case with compilation/warmup; subsequent authored
+cases take0.163–0.265s. The receipt/two-column/inventory calls take9.121/7.190/1.805s.
+These are one unpaired session with different output lengths, not a speedup or
+throughput benchmark. Initialization/package installation is separate.
+
+Reported maximum RSS3,049,472KiB is for the calling process; it excludes the
+separate vLLM engine child. Its Torch CUDA allocator figure likewise excludes
+that child. Device snapshots11971MiB include the engine's reserved arena and
+are neither model-weight size nor measured peak memory. Preserve those scopes.
+All eight authored cases have WER0 with paragraph-break CER; document quality
+and the initial strict table-attribute parse failures are in the
+[full original reference](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json).
+No native or quantized quality/performance is established by this measurement.
+
 ## Original/native Ovis frontend parity — 23 October2026
 
 Hosted40017014043 atccb6059a compares784/840/864 original packed-image patches

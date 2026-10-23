@@ -1,3 +1,53 @@
+## 2026-10-23 — Ovis processor correction confirmed; generation guard failure retained
+
+[40039159696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40039159696)
+at d0f64542 confirms all processor fields/classes/backend/EOS match the original
+JSON exactly, while native mean/std values are tuples. All473 weights load, then
+the next capture guard stops before forward: it assumed metadata AutoConfig
+and loaded-model generation defaults had identical dictionaries.
+[Initial generation failure, actual processor checks and pinned source trace](tests/results/qwen35-ocr/initial-ovisocr2-model-generation-contract-failure.json).
+
+Pinned HF5.16.1 missing-generation-file loading derives settings from raw
+`config.json`; the metadata probe used AutoConfig with additional defaults.
+Source13a093ea independently validates both exact contracts and records their
+per-key differences without changing model settings, stops or budgets.
+All103 standard-library controls pass. Retry40040392649 is dispatched; native
+inference and qualification remain unproved.
+
+The separate Ovis document presentation policy02ea6144 freezes before any CPU/
+native quality outputs. Only integer opening-table border attributes are removed
+for parsing; all original raw text/CER/WER and unchanged strict-v1 results remain.
+Source/grammar negative controls still reject changed/reordered/added cells,
+styles, non-unit spans, nested/ragged/unclosed tables and comments. Applied to
+the archived original GPU output, inventory content and all15 cells are exact;
+receipt content CER/WER0.0533854/0.2222222 and two-column0.1110366/0.1870504.
+[Separate original presentation view](tests/results/qwen35-ocr/ovisocr2-vllm-quality-presentation.json).
+This does not qualify native output or remove the historical strict parse failures.
+
+## 2026-10-23 — Eleven-case original Ovis GPU quality reference completes
+
+Pinned recipe4a616a8f/worker e6f3c708 completes actual vLLM0.22.1 T4 FP16
+inference with TRITON_ATTN decoder, Torch SDPA vision and Triton GDN. All eleven
+actual PNG/RGB hashes, source pins, expanded prompt IDs, returned IDs/EOS and
+finite selected-token logprob probabilities pass independent review. All eleven
+reach EOS248046, with no cap hit. The eight authored text cases have zero WER;
+extra paragraph breaks leave nonzero raw CER. This is a small panel, not a public
+OCR benchmark or native parity result.
+
+The two-column document parses under the unchanged frozen scorer with content
+CER0.1110366/WER0.1870504. The receipt and inventory emit table border attributes,
+which the frozen parser rejects. Those initial parse failures and all raw scores
+remain unchanged. An Ovis-specific presentation view is being prepared before
+candidate outputs, preserving original raw metrics and strict grammar/cell checks.
+[Unchanged producer and independent review](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json).
+
+All reports/logs/eight synthetic PNGs are preserved at immutable fixture a2902f8e,
+132,124 ZIP bytes/SHA6b17b79a…2f2830, verified by anonymous readback; the three
+realistic PNGs remain separately pinned at057e1266 without regeneration.
+[Preservation proof](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference-preservation.json).
+No model weights, native quality result, selected quantization recipe or runtime
+release follows from this original GPU reference.
+
 ## 2026-10-23 — Ovis native audit initial processor guard failure retained
 
 [40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)

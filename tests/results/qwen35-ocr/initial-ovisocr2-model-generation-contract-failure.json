@@ -1,0 +1,94 @@
+{
+  "run": 40039159696,
+  "source_commit": "d0f645422bd3ec3f76c3451ae84e0362da0e66b4",
+  "service_conclusion": "failure",
+  "artifact": {
+    "id": 12538587289,
+    "name": "ovisocr2-model-reports-40039159696",
+    "zip_sha256": "70c183baf90cad6fa9417288a1caaf28f42b88a692e45d047a4f12c213c744a1"
+  },
+  "producer_report_sha256": "e70bbce2f6737e84db39b0ad80eeaa14fde65384019ba985e84de2bf29a57942",
+  "phase": "original-f32-capture",
+  "native_forward_executed": false,
+  "original_model_forward_executed": false,
+  "original_checkpoint_load": "All473 tensors loaded before generation guard; no forward completed",
+  "processor_contract": {
+    "actual": {
+      "class_name": "transformers.models.qwen3_vl.processing_qwen3_vl.Qwen3VLProcessor",
+      "image_backend": "torchvision",
+      "image_class": "transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor",
+      "image_config": {
+        "do_convert_rgb": true,
+        "do_normalize": true,
+        "do_rescale": true,
+        "do_resize": true,
+        "image_mean": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "image_processor_type": "Qwen2VLImageProcessor",
+        "image_std": [
+          0.5,
+          0.5,
+          0.5
+        ],
+        "merge_size": 2,
+        "patch_size": 16,
+        "resample": 3,
+        "rescale_factor": 0.00392156862745098,
+        "size": {
+          "longest_edge": 16777216,
+          "shortest_edge": 65536
+        },
+        "temporal_patch_size": 2
+      }
+    },
+    "checks": {
+      "class_name": true,
+      "image_backend": true,
+      "image_class": true,
+      "image_config": true,
+      "primary_eos": true
+    },
+    "comparison": "Exact JSON values, matching original metadata serialization; no numeric tolerance",
+    "image_config_native_equal": false,
+    "image_config_python_types": {
+      "do_convert_rgb": "bool",
+      "do_normalize": "bool",
+      "do_rescale": "bool",
+      "do_resize": "bool",
+      "image_mean": "tuple",
+      "image_processor_type": "str",
+      "image_std": "tuple",
+      "merge_size": "int",
+      "patch_size": "int",
+      "resample": "Resampling",
+      "rescale_factor": "float",
+      "size": "dict",
+      "temporal_patch_size": "int"
+    },
+    "primary_eos": 248046
+  },
+  "capture_log_sha256": "daf6909d2ea060bc722ed3f8bcb5f72de3bd40d4c1969d4581a4d4f90f5c6765",
+  "error": "OvisOCR2 resolved original generation config differs",
+  "diagnosis": {
+    "pinned_sources": {
+      "loader": {
+        "url": "https://github.com/huggingface/transformers/blob/v5.16.1/src/transformers/generation/utils.py",
+        "sha256": "c45e19eb4534a2478f8e4825dc35a28fb5efe5a2f8d09695e4b2ea532b4dbd82"
+      },
+      "generation": {
+        "url": "https://github.com/huggingface/transformers/blob/v5.16.1/src/transformers/generation/configuration_utils.py",
+        "sha256": "427f7e57922fb58c3b321f5e5837ee782bd640cd5b22833029b16f9d4b9c4cdb"
+      }
+    },
+    "distinction": "Original metadata uses GenerationConfig.from_model_config(AutoConfig object); HF adjust_generation_fn falls back to raw config.json via GenerationConfig.from_pretrained(config_file_name=config.json,_from_model_config=True). AutoConfig injects defaults absent from raw JSON.",
+    "correction": "Validate both metadata AutoConfig contract and actual model raw-config fallback exactly and separately, logging all configs and checks. No model setting or original metadata change.",
+    "hosted_confirmation_pending": true
+  },
+  "limits": [
+    "The initial processor tuple/list diagnosis is confirmed by actual hosted fields; no mathematical tolerance changed.",
+    "No native/model output, parity, task quality or publication qualification from this run."
+  ]
+}
