@@ -28,6 +28,11 @@ BACKEND_VISION_BOUNDARIES = (
     "vision.merger.up", "vision.merger.activation", "vision.merger",
     "vision.output",
 )
+BACKEND_VISION_PROBES = tuple(
+    f"vision.probe.{index}.{field}"
+    for index in (5, 11)
+    for field in ("norm1", "qkv", "pooled", "attention", "norm2", "up", "activation", "down")
+)
 
 
 def backend_control_stage(name):
@@ -39,7 +44,7 @@ def backend_control_stage(name):
             if suffix.startswith("vision.layer."):
                 index = suffix.removeprefix("vision.layer.")
                 return index.isdecimal() and 0 <= int(index) < 12
-            return suffix in BACKEND_VISION_BOUNDARIES or suffix in (
+            return suffix in BACKEND_VISION_BOUNDARIES or suffix in BACKEND_VISION_PROBES or suffix in (
                 "decoder.norm", "logits", "argmax_id", "generated.ids")
     return True
 
@@ -48,6 +53,7 @@ def backend_control_names(config):
     """Every backend-sensitive boundary needed by the existing comparison."""
     stages = [f"vision.layer.{index}" for index in range(config.vision_config.depth)]
     stages += BACKEND_VISION_BOUNDARIES
+    stages += BACKEND_VISION_PROBES
     stages += ["decoder.norm", "logits", "argmax_id"]
     return stages
 

@@ -291,6 +291,9 @@ def verify_original_capture(path, profile, report):
     names += [f"vision.{name}" for name in (
         "patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
         "merger.norm", "merger.up", "merger.activation", "merger", "output")]
+    names += [f"vision.probe.{index}.{field}" for index in (5, 11)
+              for field in ("norm1", "qkv", "pooled", "attention",
+                            "norm2", "up", "activation", "down")]
     names += ["decoder.norm", "logits", "argmax_id"]
     magnitudes = backend.get("stage_max_abs", {})
     backend_complete = (backend.get("mkldnn_available") is True

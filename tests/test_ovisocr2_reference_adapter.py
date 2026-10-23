@@ -114,6 +114,8 @@ class ReferenceAdapterTest(unittest.TestCase):
                      "cached.delta.initial_state", "generated.2.decoder.position_ids",
                      "generated.scores.0", "generated.scores.2",
                      "backend_off.vision.layer.11", "backend_off.vision.position",
+                     "backend_off.vision.probe.5.qkv",
+                     "backend_off_full_prefix.vision.probe.11.pooled",
                      "backend_off.decoder.norm", "backend_off.logits",
                      "backend_off_full_prefix.vision.merger",
                      "backend_off_full_prefix.decoder.norm",
@@ -126,12 +128,15 @@ class ReferenceAdapterTest(unittest.TestCase):
     def test_backend_control_capture_filter_bounds_reference_size(self):
         for name in ("backend_off.vision.layer.5", "backend_off.vision.position",
                      "backend_off.vision.merger.norm", "backend_off.decoder.norm",
+                     "backend_off.vision.probe.5.qkv",
+                     "backend_off_full_prefix.vision.probe.11.pooled",
                      "backend_off.logits", "backend_off.argmax_id",
                      "backend_off.generated.ids",
                      "backend_off_full_prefix.vision.output"):
             self.assertTrue(ovis.backend_control_stage(name))
         for name in ("backend_off.decoder.layer.0", "backend_off.delta.output",
-                     "backend_off.cache.0.conv_states", "backend_off.vision.probe.5.qkv",
+                     "backend_off.cache.0.conv_states", "backend_off.vision.probe.4.qkv",
+                     "backend_off.vision.probe.5.extra",
                      "backend_off.vision.layer.12", "backend_off_full_prefix.linear.0.qkv"):
             self.assertFalse(ovis.backend_control_stage(name))
 
