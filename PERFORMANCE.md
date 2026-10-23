@@ -1,3 +1,30 @@
+## 23 October2026 — Local operators and original replay remain distinct
+
+Corrected native audit39009703362 completes14 arms/700 exact controls and retains
+all183 F32/1,294 F16 ordinary numerical failures. Additional original-input
+SiLU/product/down probes pass21/21 F32 and15/21 F16; all six F16 failures are down
+projections against original F32 targets (worst1.12353516). This does not select
+a quantization recipe, establish independent retrieval quality or waive the
+strict0.99999/0.002 gates. [Full local report](tests/results/ultrabert/local-operator-audit.json).
+
+Original-backend39915714794 completes four thread/MKLDNN alternatives and checks
+loaded selected-parameter bits against the checkpoint. Each of seven cases first
+differs at layer0 Q;287 captured stages differ in every arm. Largest first-Q
+absolute difference is 2.86102294922e-06; final-hidden differences reach
+0.00745487213135 on the long cases. MKLDNN switches are identical at fixed
+threads; thread changes alter document outputs but recover no frozen reference.
+F64 diagnostics also do not restore all frozen values. The earlier report has
+no separate final CLS measurements; those are explicitly required in the
+[updated M1 handover](docs/handover-m1-validation.md). These controls establish
+neither a hardware/reduction cause nor a native runtime correction.
+[All backend records](tests/results/ultrabert/reproducibility.json).
+
+PosFormer draftPR72's initial Linux/macOS public-API runs retain7/50 original
+exact matches and38 changed opt-in transcriptions. Unset/zero preserve every
+baseline output. Linux exported-weight reference inference remains unmeasured
+after a test-only trace-anchor rejection; corrected39918191021 is pending.
+No speed, general recognition improvement, default adoption or release claim.
+
 ## Completed build and tokenizer qualification — 17 October 2026
 
 The repaired wheel workflow passes all4 platform legs/23 actual installed native
