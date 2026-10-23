@@ -99,6 +99,61 @@ class OvisOCR2Parser:
             self.assertEqual(driver.native_environment(arm)['CRISPEMBED_QWEN35_QUANT'], '1')
         with self.assertRaises(ValueError):
             driver.native_environment('unreviewed')
+        for arm in ('q8', 'q4', 'q4-calibrated'):
+            env = driver.numerical_environment(arm)
+            self.assertEqual(env['CRISPEMBED_QWEN35_QUANT'], '1')
+            self.assertEqual(env['CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS'], '1')
+            self.assertTrue(all(env[name] == '0' for name in driver.DIFF_FLOAT_ZERO))
+        with self.assertRaises(ValueError):
+            driver.numerical_environment('f16')
+
+    def test_numerical_trace_records_earliest_drift_and_requires_full_coverage(self):
+        line = lambda status, stage: (
+            f'{status} {stage}: cos_min=0.999990000 cos_global=0.999990000 '
+            'max_abs=0.002 mean_abs=0.0001 norms=12/12')
+        passing = '\n'.join([line('PASS', f'{phase}.decoder.layer.{i}')
+                             for phase in ('prefill', 'cached', 'full_prefix') for i in range(24)]
+                            + [line('PASS', 'generated.scores.0'), 'Native generated IDs: 42 248046',
+                               'PASS native decoded text exact bytes=5: hello',
+                               'PASS composed 24-layer native decoder and greedy IDs'])
+        self.assertTrue(driver.parse_numerical_diagnostic(passing, 0)['passed'])
+        self.assertEqual(driver.parse_numerical_diagnostic(passing.encode(), 0)['decoded_text'], 'hello')
+        changed = passing.replace(line('PASS', 'prefill.decoder.layer.3'),
+                                  line('FAIL', 'prefill.decoder.layer.3'), 1)
+        result = driver.parse_numerical_diagnostic(changed, 1)
+        self.assertFalse(result['passed'])
+        self.assertEqual(result['first_failure']['stage'], 'prefill.decoder.layer.3')
+        self.assertEqual(result['first_failure']['max_abs'], .002)
+        self.assertEqual(result['generated_ids'], [42, 248046])
+        self.assertFalse(driver.parse_numerical_diagnostic(passing.split('Native generated IDs:')[0], 0)['passed'])
+        nonfinite = passing.replace('max_abs=0.002', 'max_abs=nan', 1)
+        report = driver.parse_numerical_diagnostic(nonfinite, 1)
+        self.assertFalse(report['passed'])
+        self.assertIsNone(report['first_failure']['max_abs'])
+        json.dumps(report, allow_nan=False)
+
+    def test_reviewed_q8_failure_can_authorize_separate_q4_diagnostic(self):
+        producer = {'requested_phase': 'q8', 'scores': {'q8': {'recorded': True}},
+                    'quant_numerical': {'passed': False},
+                    'models': {'q8': {'sha256': 'a' * 64}}}
+        canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                              ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+        receipt = {'producer': producer,
+                   'independent_review': {'producer_canonical_sha256': canonical,
+                                          'q8_diagnostic_complete': True,
+                                          'allow_q4_diagnostic': True,
+                                          'q8_positive_for_publication': False}}
+        result = driver.checked_q8_diagnostic_review(receipt)
+        self.assertFalse(result['q8_numerical_passed'])
+        self.assertFalse(result['q8_positive_for_publication'])
+        altered = json.loads(json.dumps(receipt))
+        altered['independent_review']['allow_q4_diagnostic'] = False
+        with self.assertRaises(ValueError):
+            driver.checked_q8_diagnostic_review(altered)
+        altered = json.loads(json.dumps(receipt))
+        altered['producer']['models']['q8']['sha256'] = 'b' * 64
+        with self.assertRaises(ValueError):
+            driver.checked_q8_diagnostic_review(altered)
 
     def test_wrapped_reviewed_model_receipt_binds_producer_and_artifact(self):
         producer = {'status': 'completed diagnostic audit', 'failures': [],

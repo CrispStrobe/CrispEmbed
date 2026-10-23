@@ -37,6 +37,12 @@ REVISION = 'cbdede82e048659b83310476ff807da825f8fe78'
 PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated')
 ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
              'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
+DIFF_FLOAT_ZERO = ('CRISPEMBED_QWEN35_PRECISE_RMS',
+                   'CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
+                   'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN',
+                   'CRISPEMBED_QWEN35_VISION_CASCADE_NORM',
+                   'CRISPEMBED_QWEN35_IMATRIX', 'CRISPEMBED_QWEN35_PARALLEL_F16',
+                   'CRISPEMBED_QWEN35_PROFILE', 'CRISPEMBED_QWEN35_TOKENIZER_MARKS')
 
 
 def native_environment(arm):
@@ -44,6 +50,15 @@ def native_environment(arm):
         raise ValueError('Unknown native OvisOCR2 quality arm')
     env = dict(os.environ, **ENV_GATES)
     env['CRISPEMBED_QWEN35_QUANT'] = '0' if arm == 'f16' else '1'
+    return env
+
+
+def numerical_environment(arm):
+    if arm not in ('q8', 'q4', 'q4-calibrated'):
+        raise ValueError('Numerical OvisOCR2 diff is for a quantized candidate only')
+    env = native_environment(arm)
+    env.update({name: '0' for name in DIFF_FLOAT_ZERO})
+    env['CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS'] = '1'
     return env
 
 
@@ -123,6 +138,30 @@ def verify_model_receipt_service(pins):
             'artifact_id': pins['artifact_id'], 'artifact_zip_sha256': pins['artifact_zip_sha256']}
 
 
+def checked_q8_diagnostic_review(q8):
+    """A reviewed failed Q8 numerical result may still authorize a Q4 diagnostic."""
+    if not isinstance(q8, dict):
+        raise ValueError('Reviewed Q8 diagnostic receipt absent')
+    q8_producer, q8_review = q8.get('producer'), q8.get('independent_review')
+    if not isinstance(q8_producer, dict) or not isinstance(q8_review, dict):
+        raise ValueError('Reviewed Q8 diagnostic producer/review absent')
+    q8_canonical = hashlib.sha256(json.dumps(q8_producer, sort_keys=True,
+                                   separators=(',', ':'), ensure_ascii=True,
+                                   allow_nan=False).encode()).hexdigest()
+    if (q8_producer.get('requested_phase') != 'q8'
+            or q8_producer.get('scores', {}).get('q8') is None
+            or q8_producer.get('quant_numerical') is None
+            or not re.fullmatch('[0-9a-f]{64}',
+                                q8_producer.get('models', {}).get('q8', {}).get('sha256', ''))
+            or q8_review.get('producer_canonical_sha256') != q8_canonical
+            or q8_review.get('q8_diagnostic_complete') is not True
+            or q8_review.get('allow_q4_diagnostic') is not True):
+        raise ValueError('OvisOCR2 Q8 result not reviewed for Q4 diagnostic comparison')
+    return {'producer_canonical_sha256': q8_canonical,
+            'q8_numerical_passed': q8_producer['quant_numerical'].get('passed') is True,
+            'q8_positive_for_publication': q8_review.get('q8_positive_for_publication') is True}
+
+
 def require_baseline(phase, original_run=None):
     if phase not in PHASES:
         raise ValueError('Unknown OvisOCR2 quality phase')
@@ -134,10 +173,7 @@ def require_baseline(phase, original_run=None):
         if not Q8_REVIEW.is_file():
             raise ValueError('Reviewed Q8 OvisOCR2 result absent; Q4 remains blocked')
         q8 = json.loads(Q8_REVIEW.read_text())
-        if (q8.get('panel_canonical_sha256') !=
-                '0bec97a7a04683c7c0aec95063aa01cf9a73bcf78db61f433d7d66d89588f212'
-                or q8.get('independent_review', {}).get('q8_positive_for_q4') is not True):
-            raise ValueError('OvisOCR2 Q8 result not independently qualified for Q4')
+        q8_gate = checked_q8_diagnostic_review(q8)
     export = json.loads(EXPORT.read_text())
     if (export['run'] != 39992662147 or
             export['producer']['exports']['f16']['model_sha256'] != F16_SHA or
@@ -158,6 +194,8 @@ def require_baseline(phase, original_run=None):
     return {'baseline_source_commit': pins['source_commit'], 'baseline_sha256': sha(BASELINE),
             'baseline_pins': pins, 'export_sha256': sha(EXPORT),
             'review': receipt['independent_review'],
+            'q8_review_sha256': sha(Q8_REVIEW) if phase in ('q4', 'q4-calibrated') else None,
+            'q8_diagnostic_gate': q8_gate if phase in ('q4', 'q4-calibrated') else None,
             'original_review_sha256': sha(ORIGINAL_REVIEW) if phase != 'original' else None}
 
 
@@ -242,6 +280,154 @@ def reviewed_original_artifact(run_id, out):
                     'artifact_id': artifact['id'], 'artifact_zip_sha256': sha(archive_path),
                     'report_sha256': hashlib.sha256(payload).hexdigest(),
                     'receipt_sha256': sha(ORIGINAL_REVIEW)}
+
+
+def original_diff_reference(pins, producer, scratch, license_sha):
+    """Fetch the separate source-run activation artifact; never fetch model weights."""
+    expected = producer.get('reference_artifacts', {})
+    readable = producer.get('readable', {})
+    for name in ('gguf', 'json'):
+        if not re.fullmatch('[0-9a-f]{64}', expected.get(name, {}).get('sha256', '')):
+            raise ValueError('Reviewed original numerical reference SHA missing: ' + name)
+    if not re.fullmatch('[0-9a-f]{64}', readable.get('png_sha256', '')):
+        raise ValueError('Reviewed original readable PNG SHA missing')
+    listing = json.loads(subprocess.check_output([
+        'gh', 'api', 'repos/CrispStrobe/CrispEmbed/actions/runs/' + str(pins['run'])
+        + '/artifacts?per_page=100'], text=True, timeout=60))
+    candidates = [item for item in listing.get('artifacts', [])
+                  if item.get('name') == 'ovisocr2-model-diff-reference-' + str(pins['run'])
+                  and item.get('expired') is False]
+    if (listing.get('total_count', 0) > 100 or len(candidates) != 1
+            or candidates[0].get('workflow_run', {}).get('id') != pins['run']
+            or not 0 < candidates[0].get('size_in_bytes', 0) <= 750_000_000
+            or not re.fullmatch('sha256:[0-9a-f]{64}', candidates[0].get('digest', ''))):
+        raise ValueError('Unique small original numerical reference artifact missing')
+    artifact = candidates[0]
+    folder = scratch / 'ovis-diff-reference'
+    folder.mkdir(parents=True, exist_ok=True)
+    archive_path = folder / 'reference.zip'
+    with archive_path.open('wb') as stream:
+        subprocess.run(['gh', 'api', 'repos/CrispStrobe/CrispEmbed/actions/artifacts/'
+                        + str(artifact['id']) + '/zip'], stdout=stream, check=True, timeout=300)
+    digest = sha(archive_path)
+    if artifact['digest'] != 'sha256:' + digest:
+        raise ValueError('Original numerical reference artifact ZIP digest differs')
+    required = {'official-delta.gguf': expected['gguf']['sha256'],
+                'ovisocr2-original.json': expected['json']['sha256'],
+                'owned-readable.png': readable['png_sha256'], 'LICENSE': license_sha}
+    with zipfile.ZipFile(archive_path) as archive:
+        names = archive.namelist()
+        if (len(names) != len(set(names)) or not set(required) <= set(names)
+                or any(Path(name).is_absolute() or '..' in Path(name).parts
+                       or Path(name).name != name for name in names)):
+            raise ValueError('Original numerical reference archive member set/path differs')
+        for name, key in (('official-delta.gguf', 'gguf'), ('ovisocr2-original.json', 'json')):
+            if (type(expected[key].get('bytes')) is not int
+                    or archive.getinfo(name).file_size != expected[key]['bytes']):
+                raise ValueError('Original numerical reference ZIP declaration differs: ' + name)
+        for name in required:
+            with archive.open(name) as source, (folder / name).open('wb') as destination:
+                shutil.copyfileobj(source, destination, length=1024 * 1024)
+            if sha(folder / name) != required[name]:
+                raise ValueError('Original numerical reference payload SHA differs: ' + name)
+    for name, key in (('official-delta.gguf', 'gguf'), ('ovisocr2-original.json', 'json')):
+        if (type(expected[key].get('bytes')) is not int
+                or (folder / name).stat().st_size != expected[key]['bytes']):
+            raise ValueError('Original numerical reference byte count differs: ' + name)
+    return folder / 'official-delta.gguf', {
+        'run': pins['run'], 'source_commit': pins['source_commit'],
+        'artifact_id': artifact['id'], 'artifact_zip_sha256': digest,
+        'payload_sha256': required,
+        'scope': 'Original activations, JSON, readable PNG, and license only; no checkpoint or GGUF weights'}
+
+
+def parse_numerical_diagnostic(log_text, exit_code):
+    """Keep actual diff magnitudes and earliest failure; a partial trace cannot pass."""
+    raw_log = log_text if isinstance(log_text, bytes) else log_text.encode('utf-8')
+    log_text = raw_log.decode('utf-8', errors='replace')
+    metric_pattern = re.compile(
+        r'^(PASS|FAIL) ([^:\n]+): cos_min=([^ ]+) cos_global=([^ ]+) '
+        r'max_abs=([^ ]+) mean_abs=([^ ]+) norms=([^ /]+)/([^\n ]+)$', re.M)
+    metrics = []
+    metric_lines = []
+    for match in metric_pattern.finditer(log_text):
+        metric_lines.append(match.group(0))
+        try:
+            values = [float(value) for value in match.groups()[2:]]
+        except ValueError:
+            values = [float('nan')] * 6
+        finite = all(math.isfinite(value) for value in values)
+        metrics.append({'verdict': match.group(1), 'stage': match.group(2),
+                        **dict(zip(('cos_min', 'cos_global', 'max_abs', 'mean_abs',
+                                    'native_norm', 'reference_norm'),
+                                   [value if math.isfinite(value) else None for value in values])),
+                        'finite': finite})
+    failure_line = next((line for line in log_text.splitlines()
+                         if line.startswith(('FAIL ', 'Error:', 'ERROR ', 'Traceback'))), None)
+    failure = next((row for row, line in zip(metrics, metric_lines) if line == failure_line), None)
+    if failure is None and failure_line is not None:
+        failure = {'line': failure_line[:400]}
+    if failure is None:
+        failure = next((row for row in metrics if not row['finite']), None)
+    ids_match = re.search(r'^Native generated IDs:([^\n]*)$', log_text, re.M)
+    try:
+        ids = [int(value) for value in ids_match.group(1).split()] if ids_match else None
+    except ValueError:
+        ids = None
+    decoded = re.search(rb'^(PASS|FAIL) native decoded text exact bytes=(\d+): ', raw_log, re.M)
+    declared_bytes = int(decoded.group(2)) if decoded else None
+    decoded_payload = raw_log[decoded.end():decoded.end() + declared_bytes] if decoded else None
+    try:
+        decoded_text = decoded_payload.decode('utf-8') if decoded_payload is not None else None
+    except UnicodeDecodeError:
+        decoded_text = None
+    layer_count = sum(row['stage'].startswith(('prefill.decoder.layer.', 'cached.decoder.layer.',
+                                               'full_prefix.decoder.layer.')) for row in metrics)
+    coverage = (layer_count == 72 and any(row['stage'].startswith('generated.scores.')
+                                           for row in metrics))
+    positive = (exit_code == 0 and failure is None and coverage
+                and ids is not None and len(ids) > 0
+                and decoded is not None and decoded.group(1) == b'PASS'
+                and decoded_text is not None and len(decoded_payload) == declared_bytes
+                and 'PASS composed 24-layer native decoder and greedy IDs' in log_text)
+    return {'passed': bool(positive), 'exit_code': exit_code,
+            'comparison_coverage': coverage, 'metric_count': len(metrics),
+            'decoder_layer_count': layer_count, 'metric_lines': metric_lines,
+            'budget_lines': [line for line in log_text.splitlines() if line.startswith('BUDGET ')],
+            'trace_lines': [line for line in log_text.splitlines() if line.startswith('TRACE ')],
+            'metrics': metrics, 'first_failure': failure,
+            'generated_ids': ids, 'stop_id': ids[-1] if ids and ids[-1] in (248044, 248046) else None,
+            'eos_observed': bool(ids and ids[-1] in (248044, 248046)),
+            'decoded_text_exact': decoded.group(1) == b'PASS' if decoded else None,
+            'decoded_text': decoded_text,
+            'decoded_text_utf8_hex': decoded_payload.hex() if decoded_text is not None else None,
+            'declared_decoded_bytes': declared_bytes,
+            'limits': 'Original F32/F16 absolute and cosine thresholds are diagnostic for quantized weights; failure does not identify a float-runtime bug'}
+
+
+def numerical_diagnostic(binary, candidate, reference, phase, out, report, save):
+    label = phase + '-official-numerical-diff'
+    path = out / (label + '.log')
+    started = time.monotonic()
+    exit_code, error = None, None
+    with path.open('w') as stream:
+        try:
+            completed = subprocess.run([str(binary), str(candidate), str(reference), '--native-frontend'],
+                                       stdout=stream, stderr=subprocess.STDOUT,
+                                       env=numerical_environment(phase), timeout=1800)
+            exit_code = completed.returncode
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            error = type(exc).__name__
+            stream.write('\nDiagnostic process error: ' + error + '\n')
+    result = parse_numerical_diagnostic(path.read_bytes(), exit_code)
+    result.update({'log': path.name, 'log_sha256': sha(path), 'wall_seconds': time.monotonic() - started,
+                   'source_reference_sha256': sha(reference),
+                   'process_error': error,
+                   'source_thresholds': {'cos_min': 0.99999, 'absolute_base': 0.002,
+                                         'calibration': 'unchanged named original backend variation'}})
+    report['quant_numerical'] = result
+    save()
+    return result
 
 
 def validate_reused_original(previous, current, cases, rendered, contract, profile, readme_sha):
@@ -647,7 +833,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
               'limits': ['Experimental OvisOCR2 profile only; native alias remains blocked',
                          'No quantization artifact is qualified without independent review',
                          'Synthetic text is a smoke panel; three documents are a bounded evaluation',
-                         'No importance matrix or heldout calibration is used']}
+                         'Only q4-calibrated uses development-only importance; no heldout calibration']}
 
     def save():
         report_path.write_text(json.dumps(report, indent=2, allow_nan=False) + '\n')
@@ -721,6 +907,17 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
             save()
             return report
 
+        diff_reference = None
+        if phase in ('q8', 'q4', 'q4-calibrated'):
+            report['phase'] = 'reviewed-original-numerical-reference'
+            save()
+            baseline_producer = json.loads(BASELINE.read_text())['producer']
+            diff_reference, diff_proof = original_diff_reference(
+                report['prerequisite']['baseline_pins'], baseline_producer, scratch,
+                report['metadata_source_sha256']['LICENSE'])
+            report['numerical_reference'] = diff_proof
+            save()
+
         scratch.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(source / 'LICENSE', scratch / 'LICENSE')
         shutil.copyfile(source / 'README.md', scratch / 'UPSTREAM_README.md')
@@ -735,6 +932,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         command('cpu-baseline-check', [sys.executable, ROOT / 'scripts/check-cpu-baseline.py', build],
                 out, report, timeout=120)
         targets = ['test-ovisocr2-quality-run', 'crispembed-shared', 'crispembed-quantize']
+        if phase in ('q8', 'q4', 'q4-calibrated'):
+            targets.append('test-qwen35-decoder')
         if phase == 'q4-calibrated':
             targets.append('test-qwen35-imatrix')
         command('native-build', ['cmake', '--build', build, '--config', 'Release', '--target',
@@ -744,6 +943,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         quantizer = build / 'crispembed-quantize'
         report['native_binary_sha256'] = {p.name: sha(p) for p in
                                           [runner, library, quantizer,
+                                           *([build / 'test-qwen35-decoder'] if diff_reference else []),
                                            *([build / 'test-qwen35-imatrix'] if phase == 'q4-calibrated' else [])]}
         report['native_source_sha256'] = {
             str(p.relative_to(ROOT)): sha(p) for p in
@@ -797,6 +997,10 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
                                    'recipe': recipe}
         report['tensor_audit'] = contract.validate_quant_tensors(
             gguf_tensors(f16), gguf_tensors(candidate), recipe)
+        report['phase'] = phase + '-official-numerical-diagnostic'
+        save()
+        numerical_diagnostic(build / 'test-qwen35-decoder', candidate, diff_reference,
+                             phase, out, report, save)
         report['phase'] = phase + '-native-quality'
         save()
         outputs = native_cases(runner, candidate, cases, cleaner, filter_fn, out, report, save, phase)
@@ -812,6 +1016,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         if (not report['paired_synthetic']['screen_passed']
                 or any(not result['screen_passed'] for result in report['paired_documents'].values())):
             raise ValueError('Quantized paired OCR quality screen failed; observations retained')
+        if report['quant_numerical']['passed'] is not True:
+            raise ValueError('Quantized numerical diagnostic failed; quality observations retained')
         report['status'] = 'completed quantized quality observations; independent review pending'
         save()
         return report
