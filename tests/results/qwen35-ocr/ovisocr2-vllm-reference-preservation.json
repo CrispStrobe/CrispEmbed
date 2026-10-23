@@ -1,0 +1,66 @@
+{
+  "repo": "cstr/crispembed-regression-fixtures",
+  "revision": "602a36454331cc9a02ed942402fcfa3a06affaa5",
+  "file": "qwen35-ovisocr2/controlled-vllm-t4-5fe3fc90/reference.zip",
+  "url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/602a36454331cc9a02ed942402fcfa3a06affaa5/qwen35-ovisocr2/controlled-vllm-t4-5fe3fc90/reference.zip",
+  "sha256": "cf45bfd5d9c0dd995391ff6501372a600501bf7eac23e5c81f4fc51844082ac7",
+  "bytes": 500157,
+  "anonymous_immutable_readback_verified": true,
+  "source": {
+    "source_recipe_commit": "5fe3fc90032259981112bf673e227ec66a07c83e",
+    "worker_commit": "4b4293d92a4f388315ebf5be4e5cd56f44e31816",
+    "worker_sha256": "daaade86dbae60b7aecd5ecd9dc1e87a0e49e091361fa00441a437e27f2ee1df",
+    "archive_sha256": "cf45bfd5d9c0dd995391ff6501372a600501bf7eac23e5c81f4fc51844082ac7",
+    "archive_bytes": 500157,
+    "producer_report_sha256": "76b0458061b25b5d3cc178ae8f9245e9de6711daf09ff198ab058e3c2752cf84",
+    "files": {
+      "crispembed-ovisocr2-pinned-vllm-reference.log": {
+        "sha256": "a077c9ce392bb66702a73b521dab9b1cc74a86b6fbcb5e469c5edf0932bc85ea",
+        "bytes": 5729
+      },
+      "odd-processor-replay.npz": {
+        "sha256": "b15a06d8c00b5c6f00ca059626ca5b330a7718c51209fe9fe5b377cedd2f7656",
+        "bytes": 339305
+      },
+      "ovisocr2-vllm-logs/bootstrap-isolated-pip.log": {
+        "sha256": "9dcea68e5375b7a621b418efc8a7da5fd68d1010966b66ef2ec9a276196dc40a",
+        "bytes": 456
+      },
+      "ovisocr2-vllm-logs/install-pinned-stack.log": {
+        "sha256": "eb138959c1edf70f51a4ea22677e4d1f2295c3f198b46ef8f061ed41c9e8d15f",
+        "bytes": 65519
+      },
+      "ovisocr2-vllm-logs/original-vllm-worker.log": {
+        "sha256": "590f56ff3f818c1c7e0e1909d0cf270e144f3b3fea31a639d6b765b424de873c",
+        "bytes": 19541
+      },
+      "ovisocr2-vllm-logs/package-freeze.log": {
+        "sha256": "7fee3ae003efbcb3cf31b3fad7ce9c2c9a33c96e9c39f04c402bfb7d27d325a9",
+        "bytes": 4340
+      },
+      "ovisocr2-vllm-reference.json": {
+        "sha256": "76b0458061b25b5d3cc178ae8f9245e9de6711daf09ff198ab058e3c2752cf84",
+        "bytes": 93390
+      },
+      "ovisocr2-vllm-worker.json": {
+        "sha256": "9313f6be42f806ce2e2ce991025bc8d62ffd26b515ae10e1639329a23648ca85",
+        "bytes": 54444
+      },
+      "owned-readable.png": {
+        "sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+        "bytes": 5247
+      },
+      "small-control-processor-replay.npz": {
+        "sha256": "e2fbeece97a6219eeb33457a68c25db50270dc58738be76ab1e95d45ffff0a95",
+        "bytes": 161118
+      },
+      "square-processor-replay.npz": {
+        "sha256": "e4dc5b80d0533672fc04ef4a85c75173aac8d6eaf2490b704bfdb71d140eb0d1",
+        "bytes": 191506
+      }
+    },
+    "scope": "Actual successful controlled original vLLM T4 FP16 decoder-TRITON_ATTN reference; no model weights; README auto-FlashInfer failure remains separate."
+  },
+  "original_public_gpu_receipt_sha256": "fbec0f4b75576e93bc32db26e645be0764b23be3a5a6be3e84e04854db1bab4c",
+  "preservation_only_no_reference_regeneration": true
+}
