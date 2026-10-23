@@ -98,6 +98,12 @@ def review(directory, metadata, recipe_sha, worker_sha):
         for field in ('raw_text', 'processed_text'):
             if hashlib.sha256(row[field].encode()).hexdigest() != row[field + '_sha256']:
                 raise ValueError('Original decoded text hash differs')
+    engine_log = (root / 'ovisocr2-vllm-logs/original-vllm-worker.log').read_text()
+    for message in ('Using TRITON_ATTN attention backend',
+                    'Using AttentionBackendEnum.TORCH_SDPA for MMEncoderAttention',
+                    'Using Triton/FLA GDN prefill kernel (requested=triton'):
+        if message not in engine_log:
+            raise ValueError('Actual engine backend selection log missing: ' + message)
     for row in producer['commands']:
         path = root / 'ovisocr2-vllm-logs' / row['log']
         if row['exit_code'] != 0 or row['timed_out'] or sha(path) != row['log_sha256']:
