@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend exact parity passed40017014043; PR78 merged918c1c8d. Continue controlled original vLLM GPU startup after retained default-FlashInfer failure, then all-layer native/decoded parity; no alias yet |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 native all-layer/decoded audit40034685690 is queued; no alias yet |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -334,38 +334,46 @@ and performance follow-ups remain with their owner.
 
 ## Active Ovis completion sequence — one coordinated lane
 
-1. Original GPU reference: recipe branch `test/ovisocr2-vllm-reference`,
-   controlled decoder source5fe3fc90; verify actual deployed bytes and one free authorized
-   GPU slot. Retain initial transport/bootstrap/linker failures. Require positive
-   original model forward, actual dtype/stops/prompt/processor and raw IDs/text/
-   EOS/cap plus original cleanup. T4 auto-FP16 is separate from CPU F32.
-2. Full model audit: `test/ovisocr2-native-parity` at3cbcae76 (draftPR79) prepares
-   `ovisocr2-metadata.yml`, phase=model. The driver refuses before weights until
-   a reviewed positive original-GPU receipt exists. Capture actual original
-   modules, every vision/text layer, caches, logits and all generated scores;
-   compare through native harness/crispembed-diff. Preserve earliest absolute
-   errors/norms, repeat/two-context and gate/reset controls, all failing arms.
-3. Complete gated registry/CLI/C ABI/orchestrator/Python/Rust/Dart surfaces;
-   retain the three Ovis gates and unsupported-resolution rejection. No invented
-   URL/hash or production alias before qualified artifacts. Run actual owning
-   API/binding calls on hosted CI.
-4. Freeze disjoint owned development/held-out quality inputs before candidate
-   outputs. Compare raw/cleaned text, CER/WER, tables/format/completion/EOS/caps,
-   confidence and latency/RSS against original; authored smoke is not an upstream
-   benchmark reproduction. Existing LightOn debt remains unchanged.
-5. Use `crispembed-quantize` for Q8/Q4_K with declared critical-tensor retention
-   and calibration; evaluate independent held-out quality and magnitude/errors.
-   Retain all failures. Publish only a qualified artifact with license/card/
-   provenance, remote hashes and an actual empty-cache download. If no quantized
-   recipe qualifies, record that result without publishing a failing recipe.
+Original controlled GPU execution is complete; source5fe3fc90, exact saved
+inputs/stops/IDs/text and immutable preservation are archived in HISTORY.
+The original automatic FlashInfer T4 failure remains retained. Continue:
 
-Continue this sequence through the final qualification/publication decision;
-queued jobs and prepared tools do not constitute completed model support.
+1. **Full native model audit:** draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79),
+   source468f5504, [40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
+   queued through `ovisocr2-metadata.yml`, phase=model. Do not duplicate it.
+   Review original HF CPU/F32 modules, every vision/text layer/cache/logit,
+   all generated scores, IDs/EOS/raw text, owning repeat/two-context and negative
+   controls. Preserve earliest absolute errors/norms and all failed arms. Raw
+   actual native vectors stay remote in `ovisocr2-native-diff-RUN`; download
+   only needed reports/images. Existing named original backend-control budgets
+   apply; keep all raw strict-absolute flags and prior LightOn numerical debt.
+2. **Complete actual public checks:** C/Python/CLI/HTTP/Rust/Dart prepared tools
+   require a reviewed positive native receipt before weights. Keep the three
+   Ovis gates, fixed task prompt and1024-patch rejection. Validate both selector
+   profile guards, prompt/gate resets, ABI/layout, source/library identity,
+   independent contexts and multiple Ovis stage model paths. No invented URL,
+   checksum, registry default or production alias before qualified artifacts.
+3. **Independent quality:** run original HF once on the frozen four-development/
+   four-heldout synthetic inputs and three separately licensed documents, then
+   retain its exact artifact/source/hash and reuse it for precision arms.
+   Require raw/cleaned CER/WER, completion/EOS/caps, format, fifteen owned table
+   cells, confidence, timings and RSS. Authored smoke is not a benchmark.
+4. **Critical precision and calibration:** run `crispembed-quantize` Q8 protected,
+   Q4 attention-Q8 and a separate four-development-image/72-FFN-vector imatrix
+   arm after reviewed Q8 diagnostic completion. Q8 failure is retained and does
+   not prohibit the authorized Q4 diagnostic. Preserve original/native
+   crispembed-diff stage magnitudes/raw vectors, decoded quality and all failures.
+   A failed numerical or quality candidate is not eligible for publication.
+5. **Conditional publication and integration:** select only a qualified F16 or
+   quantized artifact after reviewing every planned quantization outcome.
+   Prepared publisher requires exact original/native/public/quality/selection
+   receipts and licensed base provenance; only calibrated Q4 needs actual
+   importance evidence. Verify immutable HF bytes through an empty cache, then
+   add pinned experimental registry/catalog entries and actual empty-cache
+   consumer checks. Keep probes outside production distribution. No runtime
+   tag, default flip or app pin change follows from prepared tools alone.
 
-Ovis original GPU default-FlashInfer attempt05e51484 fails decoder warmup after
-the real driver is fixed. Retain that failure. Controlled5fe3fc90 requests only
-TRITON_ATTN decoder attention, with vision/GDN/dtype/prompt/weights/stops intact.
-Require actual resolved backend and label auto-backend equivalence unproved.
-Current native candidate0eaa26ae has87 model-free controls passing; real original/
-native/API/quality/quantization results are still required. New publication
-preflight is prepared and does not authorize a candidate without those results.
+Continue through the final qualification/publication decision; queued jobs and
+prepared tooling are not completed model support. The actual single-model
+math audit is independent from the later pipeline model-path cache correction;
+record both sources and their actual hosted checks.

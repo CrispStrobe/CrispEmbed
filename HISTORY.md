@@ -1,3 +1,34 @@
+## 2026-10-23 — Controlled original Ovis GPU execution qualifies
+
+Recipe5fe3fc90 with immutable worker4b4293d9 completes on T4. The actual
+runtime uses FP16, TRITON_ATTN decoder attention, Torch SDPA vision and Triton
+GDN. All three saved processor replays are independently rehashed against the
+original field bytes; prompt IDs, package/source/weight hashes, runtime stops
+and selected backend logs pass. Both actual ID lists end in EOS248046: four
+tokens for the noise image and nine for the readable image, which decodes
+`Hello OCR\n\n12345`. This is a bounded reference, not broad OCR accuracy or
+proof that unchanged automatic FlashInfer works.
+[Unchanged producer and independent review](tests/results/qwen35-ocr/ovisocr2-vllm-reference.json).
+
+The exact original reports, replay arrays, owned PNG and logs are preserved
+without regeneration in the existing public fixture dataset at immutable
+602a3645. Anonymous readback checks all500,157 ZIP bytes and SHA
+cf45bfd5…082ac7. No model weights or production probes are published there.
+[Preservation proof](tests/results/qwen35-ocr/ovisocr2-vllm-reference-preservation.json).
+The Ovis→Qwen→root Base chain is pinned and declares Apache-2.0 throughout;
+raw LICENSE hashes preserve their line-ending difference while normalized text
+is identical. [License-chain proof](tests/results/qwen35-ocr/ovisocr2-license-chain.json).
+
+The positive reference unlocks original-HF/native F32/F16 audit
+[40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
+at468f5504. It is queued, not passed. Model-free controls pass91 groups;
+local preflight verifies the actual public prerequisites without loading a
+framework or model. Test-only original MKLDNN-off controls use the existing
+named vision/final-norm comparison; hidden/cache/logit budgets remain unchanged.
+Actual native raw vectors will be retained separately with shape/byte/hash
+manifests. No native model/API/independent quality/calibration/publication result
+is inferred from this GPU milestone; PR79 remains draft and app0.17.12 unchanged.
+
 ## 2026-10-23 — Original auto-FlashInfer T4 startup failure retained
 
 Attempt05e51484 fixes the CUDA-driver linker discovery and passes isolated
