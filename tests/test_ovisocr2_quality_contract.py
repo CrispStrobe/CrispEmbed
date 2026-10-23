@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import copy
 from pathlib import Path
 import unittest
 
@@ -62,6 +63,46 @@ class OvisQualityContract(unittest.TestCase):
         import sys
         for name in ('torch', 'transformers', 'gguf', 'PIL', 'vllm'):
             self.assertNotIn(name, sys.modules)
+
+    def test_paired_screen_rejects_missing_or_relabelled_cases(self):
+        panel = contract.load_panel()
+        rows = []
+        for row in panel['cases']:
+            rows.append({'id': row['id'], 'split': row['split'], 'gold': row['gold'],
+                         'input_rgb_sha256': 'a' * 64, 'raw_text': row['gold'],
+                         'processed_text': row['gold'], 'generated_tokens': 2,
+                         'cap_hit': False, 'completed': True, 'format_issues': [],
+                         'cer': 0.0, 'wer': 0.0, 'finish_reason': 'stop',
+                         'raw_exact': True, 'processed_exact': True, 'stop_id': 248046})
+        reference = {'panel_canonical_sha256': contract.PANEL_SHA, 'cases': rows}
+        self.assertTrue(contract.paired_quality_screen(reference, reference)['screen_passed'])
+        for mutation in ('missing', 'split', 'nan', 'empty'):
+            candidate = copy.deepcopy(reference)
+            if mutation == 'missing':
+                candidate['cases'].pop()
+            elif mutation == 'split':
+                candidate['cases'][4]['split'] = 'development'
+            elif mutation == 'nan':
+                candidate['cases'][4]['cer'] = float('nan')
+            else:
+                candidate['cases'][4]['generated_tokens'] = 0
+            with self.assertRaises(ValueError):
+                contract.paired_quality_screen(reference, candidate)
+
+    def test_quant_audit_rejects_shape_drift_and_q4_fallback(self):
+        schema = {'l.example.weight': [256, 512]}
+        before = {'l.example.weight': {'shape': [512, 256], 'type': 'F16', 'sha256': 'a' * 64}}
+        after = {'l.example.weight': {'shape': [512, 256], 'type': 'Q4_K', 'sha256': 'b' * 64}}
+        self.assertEqual(contract.validate_quant_tensors(before, after, 'q4-attention-q8', schema)
+                         ['changed_matrix_count'], 1)
+        changed = copy.deepcopy(after)
+        changed['l.example.weight']['shape'] = [256, 512]
+        with self.assertRaisesRegex(ValueError, 'shape'):
+            contract.validate_quant_tensors(before, changed, 'q4-attention-q8', schema)
+        changed = copy.deepcopy(after)
+        changed['l.example.weight']['type'] = 'Q4_0'
+        with self.assertRaisesRegex(ValueError, 'precision'):
+            contract.validate_quant_tensors(before, changed, 'q4-attention-q8', schema)
 
 
 if __name__ == '__main__':
