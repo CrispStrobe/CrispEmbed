@@ -184,6 +184,13 @@ jobs:
             ${{ runner.temp }}/scratch/ovis-model/LICENSE
           if-no-files-found: warn
           retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-native-diff-${{ github.run_id }}
+          path: ${{ runner.temp }}/scratch/ovis-model/native-diff/
+          if-no-files-found: warn
+          retention-days: 90
   export:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'export'
     needs: controls
