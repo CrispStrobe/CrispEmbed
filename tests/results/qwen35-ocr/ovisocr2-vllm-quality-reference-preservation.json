@@ -1,0 +1,90 @@
+{
+  "repo": "cstr/crispembed-regression-fixtures",
+  "revision": "a2902f8e8dde63b333b932c7058b6e102b481a27",
+  "file": "qwen35-ovisocr2/controlled-vllm-quality-t4-4a616a8f/reference.zip",
+  "url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/a2902f8e8dde63b333b932c7058b6e102b481a27/qwen35-ovisocr2/controlled-vllm-quality-t4-4a616a8f/reference.zip",
+  "sha256": "6b17b79aadccbce4116b941b942c0a93374b855986d46bad4098e010d52f2830",
+  "bytes": 132124,
+  "anonymous_immutable_readback_verified": true,
+  "source": {
+    "source_recipe_commit": "4a616a8f69e69ba203c9b00bc545130113c3edb7",
+    "worker_commit": "e6f3c708cfe24fc8a6e77e0e3b9c27709e74f333",
+    "worker_sha256": "0726210027850e96bfd6da2c9a3ff100b5a4992fdf972fab8ca8c1ba44d31794",
+    "archive_sha256": "6b17b79aadccbce4116b941b942c0a93374b855986d46bad4098e010d52f2830",
+    "archive_bytes": 132124,
+    "producer_report_sha256": "c15efac30452dbdb69e29bd37b6dcd7f9f6012c0de7e4ec433a46315df0aa7d6",
+    "files": {
+      "crispembed-ovisocr2-pinned-vllm-quality-reference.log": {
+        "sha256": "56e8a062ebc961c401a014b7b68ad309f3ae62ef97c3fbeff7922d0808f68042",
+        "bytes": 8015
+      },
+      "ovisocr2-vllm-quality-logs/bootstrap-isolated-pip.log": {
+        "sha256": "a4fcb8e0357cef55a63d48aff5dbe603731b3d01c2c8fe8c89e41d220675ddd5",
+        "bytes": 457
+      },
+      "ovisocr2-vllm-quality-logs/install-pinned-stack.log": {
+        "sha256": "545d142d01d639fd93097f0e32468eb6a9a909b054b32652649d24fb80f43a94",
+        "bytes": 65509
+      },
+      "ovisocr2-vllm-quality-logs/original-vllm-quality-worker.log": {
+        "sha256": "0cf41216abb9b64a8e8a0f484d2deac68763894487bfd76937317f3381da479b",
+        "bytes": 26664
+      },
+      "ovisocr2-vllm-quality-reference.json": {
+        "sha256": "c15efac30452dbdb69e29bd37b6dcd7f9f6012c0de7e4ec433a46315df0aa7d6",
+        "bytes": 303359
+      },
+      "ovisocr2-vllm-quality-worker.json": {
+        "sha256": "2ee119d5eb0aa52c13efa7fd5eff48e1ec8c823d3bc0099cdf3c634c3dc129fc",
+        "bytes": 246508
+      },
+      "synthetic/dev-hello.png": {
+        "sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+        "bytes": 5247
+      },
+      "synthetic/dev-invoice.png": {
+        "sha256": "3d68df3e5cf8f575f83852fcbdaa6146e404a1d5ad539a397aa83edb02323cbb",
+        "bytes": 6147
+      },
+      "synthetic/dev-menu.png": {
+        "sha256": "56962e2083e49334111e226fdd572a8cdc236702c83714819e124431736f5382",
+        "bytes": 5124
+      },
+      "synthetic/dev-section.png": {
+        "sha256": "6becaffcd6cb66380e8b1470fa52752cea851833962b320647e1ef2aae22da2a",
+        "bytes": 5658
+      },
+      "synthetic/hold-batch.png": {
+        "sha256": "99b7c6a2637c391e3a73006324c9ae3962be8c9bd7527b68c46eef6667875c3e",
+        "bytes": 6293
+      },
+      "synthetic/hold-code.png": {
+        "sha256": "9a229d10c2db28b310bd5638c176183abfdbc24bab1c80c735f36586048ea7e8",
+        "bytes": 6731
+      },
+      "synthetic/hold-date.png": {
+        "sha256": "6de213205fcfac85ece5fab63915180f18ebed63d013f86d568a5a8ca401a0c3",
+        "bytes": 5751
+      },
+      "synthetic/hold-paid.png": {
+        "sha256": "7503009f3f02b5d1f48e249c8d917ced4e1216f32f8925d829890e4553169c17",
+        "bytes": 5758
+      },
+      "synthetic/rendered-panel.json": {
+        "sha256": "ec8e67364ff3abaac0003ac9ebbca4216ec3996b7e11fe1bf319dd88ab7e20b0",
+        "bytes": 2710
+      }
+    },
+    "frozen_realistic_inputs": {
+      "original_artifact_id": 12037153992,
+      "mirror_url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/057e12668bf8109ec83c65929c9b8d6cb99ca566/ocr-quality-v1/prepared-38879605915/prepared.zip",
+      "zip_sha256": "a890c3ad8151706948d3d89529e5f5716405e5f790a3749436f36d78f20ca9cc",
+      "files_sha256": {
+        "historical-receipt.png": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b",
+        "two-column-page.png": "36a6ca6306a9f74ceee06b1a5268c8eae354b53212417d3eac0f2b70b2bada21",
+        "inventory-table.png": "1e7a3073bd158dc87613463e45eafc52cec0c48f3655a6937a583767e26f4b4f"
+      }
+    },
+    "scope": "Actual eleven-case controlled original vLLM T4 FP16 decoder-TRITON_ATTN quality reference. Raw parser failures retained. No native parity/model weights/automatic-backend equivalence."
+  }
+}

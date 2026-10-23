@@ -101,7 +101,7 @@ no current candidate qualifies. OvisOCR2 metadata/schema/processor capture
 passes; experimental full-weight export and exact frontend parity pass, with PR77/78
 merged. Controlled original T4 GPU execution passes; full native inference, public
 consumers and independent quality/calibration/publication remain pending.
-Continue the current PLAN completion sequence and queued model40034685690. Development CPU-baseline PR76 is merged, with actual
+Continue the current PLAN completion sequence and model retry40039159696 after the retained pre-forward processor-guard failure. Development CPU-baseline PR76 is merged, with actual
 three-platform desktop jobs passing; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with

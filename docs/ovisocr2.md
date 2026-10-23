@@ -241,27 +241,35 @@ Actual corrected frontend parity awaits a hosted retry.
 
 ## Current execution sequence
 
-Use the active completion sequence in [PLAN](../PLAN.md) and draft
-[PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79). Frontend qualification
-is complete; original vLLM engine startup is the next measured gate. Retain
-all initial GPU transport/bootstrap/linker/discovery failures. Corrected recipe
-05e51484 uses the actual loaded CUDA driver without changing dtype or kernels.
-Only a reviewed positive GPU receipt unlocks the prepared original HF CPU/F32
-capture and native F32/F16 `ovisocr2-metadata.yml`, phase=model.
+Full export and exact native frontend qualification are complete. The
+[controlled original GPU reference](../tests/results/qwen35-ocr/ovisocr2-vllm-reference.json)
+passes at5fe3fc90: T4 auto-FP16, explicit TRITON_ATTN decoder, auto Torch-SDPA
+vision and requested Triton GDN. Both original images reach EOS248046. The
+unchanged automatic FlashInfer startup failure remains retained; no automatic-
+backend or newer-GPU BF16 equivalence is inferred. Exact input/report/log bytes
+are [preserved immutably](../tests/results/qwen35-ocr/ovisocr2-vllm-reference-preservation.json).
 
-The candidate's explicit selector is engine21 (`ovisocr2`) with an exact model
-file and all three gates: `CRISPEMBED_QWEN35_OCR`,
-`CRISPEMBED_OVISOCR2_FRONTEND`, `CRISPEMBED_OVISOCR2_INFERENCE`. It has no
-registry default. Actual public C/Python/CLI/HTTP/Rust/Dart checks are prepared,
-not executed. Generic APIs expose text/confidence; actual IDs/stops are retained
-by the separate test-only owning runner and model audit.
+Native draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) and model
+[40039159696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40039159696)
+at d0f64542 are the next measured gate. Initial40034685690 stopped before forward
+on a Python tuple/list processor comparison; all three saved processor fields
+and framework source hashes had matched. The correction compares exact JSON
+representations and records each field/type; hosted confirmation is pending.
+It captures original HF CPU/F32 modules and genuine MKLDNN-off controls before
+native outputs, then compares every layer/cache/logit/score and actual decoded
+IDs/EOS/text through the existing harness. Raw native vectors are retained
+remotely; scalar cosine alone does not qualify task accuracy.
 
-Quality work freezes development/heldout synthetic inputs and reuses the
-separately licensed three-document corpus. Original inference must precede
-candidate outputs, with unchanged gold, pixels, caps and metric/format gates.
-The Q8 protected and Q4 attention-Q8 recipes retain vision, tied embedding/head,
-norms and recurrent gates. A separate development-only importance arm must
-never consume heldout documents or pixels. Completed tools are not quality or
-calibration results. Publication remains conditional on numerical, decoded and
-independent quality qualification, license/card/provenance, hashes and actual
-empty-cache downloads; no Ovis weights are published yet.
+The candidate's explicit pipeline selector is engine21 (`ovisocr2`) with an
+exact model file and all three gates: `CRISPEMBED_QWEN35_OCR`,
+`CRISPEMBED_OVISOCR2_FRONTEND`, `CRISPEMBED_OVISOCR2_INFERENCE`. Actual owning
+C/Python/CLI/HTTP/Rust/Dart tests are prepared, including multiple stage model
+paths, prompt/profile/gate and ABI controls. Generic APIs expose text/confidence;
+actual IDs/stops are retained separately by the test-only owning runner.
+
+Follow the pending [PLAN sequence](../PLAN.md) for original-first independent
+quality, protected Q8/Q4, four-development-image/72-FFN importance calibration
+and conditional publication. Keep every failed precision candidate and the
+unchanged LightOn debt. Only a qualified candidate with complete license/base
+provenance, pinned remote hashes and an actual immutable empty-cache download
+may enter the registry/catalog. No Ovis model alias or weights are published.

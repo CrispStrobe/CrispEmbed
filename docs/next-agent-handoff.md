@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header, original metadata39983101540 and [full F32/F16 export39992662147](../tests/results/qwen35-ocr/ovisocr2-export.json) pass; PR77 merged2f8b5354 | [PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78) adds separately gated frontend atccb6059a; hosted40017014043 passes; PR78 merged918c1c8d. Inspect original/native packed-pixel, grid, ID/mask/modality/template and stop/profile/gate results before merge. No native model alias/decoded parity. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header, full473-tensor export, exact frontend and controlled original GPU execution pass | Native retry40039159696 at d0f64542 is pending after the retained pre-forward processor guard failure; do not duplicate. Follow the active PLAN sequence through public interfaces, independent quality, protected/calibrated quantization and conditional publication. No alias yet. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -246,14 +246,22 @@ keep the exact original bytes; do not regenerate them or modify the positive
 GPU receipt now consumed by downstream source/hash gates.
 
 Continue the five pending steps in [PLAN](../PLAN.md). Native model run
-[40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
-is queued at468f5504; do not duplicate it. Download only
+[40039159696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40039159696)
+is dispatched at d0f64542; do not duplicate it. Initial40034685690 stopped before
+forward on the tuple/list processor guard. The correction compares exact JSON
+values and records every field/type; hosted confirmation is pending.
+[Initial report and replay evidence](../tests/results/qwen35-ocr/initial-ovisocr2-model-processor-contract-failure.json). Download only
 `ovisocr2-model-reports-RUN`. Keep the large model/reference and raw actual
 native vector artifacts remote, retrieving specific diagnostics only when needed.
 Trace the earliest differing original module with absolute errors/norms, caches,
 all scores and actual decoded IDs/text/EOS; retain all failures and raw strict
 flags. Existing vision/final-norm original backend controls are captured before
 candidate outputs, with unchanged hidden/cache/logit thresholds.
+
+The eleven-case original GPU quality reference is complete and
+[preserved](../tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json). All
+cases reach EOS; all eight authored texts have WER0. Strict-v1 table border
+attribute failures remain retained. Original HF and native quality are separate.
 
 Actual public C/Python/CLI/HTTP/Rust/Dart, independent quality, protected Q8/Q4
 and development-only calibration workflows are prepared in draftPR79. They

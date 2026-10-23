@@ -1,3 +1,46 @@
+## 2026-10-23 — Eleven-case original Ovis GPU quality reference completes
+
+Pinned recipe4a616a8f/worker e6f3c708 completes actual vLLM0.22.1 T4 FP16
+inference with TRITON_ATTN decoder, Torch SDPA vision and Triton GDN. All eleven
+actual PNG/RGB hashes, source pins, expanded prompt IDs, returned IDs/EOS and
+finite selected-token logprob probabilities pass independent review. All eleven
+reach EOS248046, with no cap hit. The eight authored text cases have zero WER;
+extra paragraph breaks leave nonzero raw CER. This is a small panel, not a public
+OCR benchmark or native parity result.
+
+The two-column document parses under the unchanged frozen scorer with content
+CER0.1110366/WER0.1870504. The receipt and inventory emit table border attributes,
+which the frozen parser rejects. Those initial parse failures and all raw scores
+remain unchanged. An Ovis-specific presentation view is being prepared before
+candidate outputs, preserving original raw metrics and strict grammar/cell checks.
+[Unchanged producer and independent review](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference.json).
+
+All reports/logs/eight synthetic PNGs are preserved at immutable fixture a2902f8e,
+132,124 ZIP bytes/SHA6b17b79a…2f2830, verified by anonymous readback; the three
+realistic PNGs remain separately pinned at057e1266 without regeneration.
+[Preservation proof](tests/results/qwen35-ocr/ovisocr2-vllm-quality-reference-preservation.json).
+No model weights, native quality result, selected quantization recipe or runtime
+release follows from this original GPU reference.
+
+## 2026-10-23 — Ovis native audit initial processor guard failure retained
+
+[40034685690](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40034685690)
+at468f5504 passes all three original processor field hashes and framework source
+hashes, then stops before original/native forward at the combined processor/EOS
+comparison. Pinned Transformers5.16.1 standardizes mean/std lists to tuples;
+`to_dict()` retains them while the original producer serializes JSON arrays.
+Correction d0f64542 compares exact JSON values and records each field/type;
+changed means, patch sizes, backends and EOS still reject. Ninety-seven pure
+controls pass. [Initial report/log identity and replay hashes](tests/results/qwen35-ocr/initial-ovisocr2-model-processor-contract-failure.json).
+Retry40039159696 is dispatched; no native parity or model qualification is implied.
+
+The three realistic evaluation PNGs and original prepared report are preserved
+byte-for-byte at fixture dataset057e1266, ZIP724,951 bytes/SHA a890c3ad…0ca9cc.
+[Preservation proof](tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json).
+Quality tooling now reuses those bytes rather than rerendering. A separate
+original T4 quality reference is running on the frozen eight authored images
+plus three documents; no quality result is claimed before reviewing its output.
+
 ## 2026-10-23 — Controlled original Ovis GPU execution qualifies
 
 Recipe5fe3fc90 with immutable worker4b4293d9 completes on T4. The actual
