@@ -1,0 +1,15 @@
+{
+  "repo": "cstr/crispembed-regression-fixtures",
+  "revision": "50b63a86f2d706491c3cfb953da28b143324fa48",
+  "url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/50b63a86f2d706491c3cfb953da28b143324fa48/qwen35-ovisocr2/original-processor/metadata.zip",
+  "scope": "Transport mirror of unchanged original synthetic processor captures; no checkpoint weights or model-quality qualification",
+  "original_run": 39983101540,
+  "original_source": "ca3d096fe673f3554e95ef8e5f534b597564233e",
+  "original_artifact_id": 12515557390,
+  "zip_sha256": "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5",
+  "bytes": 524058,
+  "upstream_model": "ATH-MaaS/OvisOCR2",
+  "upstream_revision": "cbdede82e048659b83310476ff807da825f8fe78",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/39983101540",
+  "producer_canonical_sha256": "233dc37fdaa2ff6b4a8b3ca3832b578305b5f3b6ed4d0d88d54c73591626b372"
+}
