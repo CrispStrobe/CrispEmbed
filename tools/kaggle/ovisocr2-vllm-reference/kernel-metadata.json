@@ -1,0 +1,14 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-ovisocr2-vllm-reference",
+  "title": "CrispEmbed OvisOCR2 Pinned vLLM Reference",
+  "code_file": "ovisocr2_vllm_reference.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

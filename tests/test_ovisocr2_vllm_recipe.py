@@ -1,0 +1,76 @@
+"""Source-only guards for the hosted original OvisOCR2 vLLM recipe."""
+
+import ast
+import importlib.util
+import json
+from pathlib import Path
+import unittest
+from unittest import mock
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = ROOT / 'tools/kaggle/ovisocr2-vllm-reference/ovisocr2_vllm_reference.py'
+spec = importlib.util.spec_from_file_location('ovisocr2_vllm_recipe', SCRIPT)
+recipe = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(recipe)
+
+
+class RecipeControls(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.evidence = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-metadata.json').read_text())
+
+    def test_real_reviewed_producer_proof(self):
+        report = {}
+        with mock.patch.object(recipe, 'get_json', return_value=self.evidence), mock.patch.object(recipe, 'save'):
+            self.assertEqual(recipe.metadata_proof(report), self.evidence)
+            altered = json.loads(json.dumps(self.evidence))
+            altered['producer']['tokenizer_eos'] = 248044
+            with mock.patch.object(recipe, 'get_json', return_value=altered):
+                with self.assertRaises(ValueError):
+                    recipe.metadata_proof({})
+
+    def test_frontend_requires_exact_successful_commit(self):
+        run = {'id': recipe.FRONTEND_RUN, 'head_sha': recipe.FRONTEND_HEAD,
+               'status': 'completed', 'conclusion': 'success',
+               'path': '.github/workflows/ovisocr2-metadata.yml'}
+        with mock.patch.object(recipe, 'get_json', return_value=run):
+            self.assertEqual(recipe.service_gate(recipe.FRONTEND_RUN, recipe.FRONTEND_HEAD,
+                                                 'frontend')['head_sha'], recipe.FRONTEND_HEAD)
+        for change in ({'head_sha': recipe.FRONTEND_HEAD[:-1] + '0'},
+                       {'conclusion': 'failure'}, {'status': 'queued'},
+                       {'path': 'another-workflow.yml'}):
+            with mock.patch.object(recipe, 'get_json', return_value=dict(run, **change)):
+                with self.assertRaises(ValueError):
+                    recipe.service_gate(recipe.FRONTEND_RUN, recipe.FRONTEND_HEAD, 'frontend')
+
+    def test_driver_gate_precedes_gpu_and_installation(self):
+        source = SCRIPT.read_text()
+        self.assertLess(source.index("service_gate(FRONTEND_RUN"), source.index('        gpu_gate(report)'))
+        self.assertLess(source.index('        gpu_gate(report)'), source.index('        venv.EnvBuilder('))
+        self.assertEqual(recipe.DRIVER_MIN, (575, 51, 3))
+        self.assertIn('+cu129', recipe.WHEEL_NAME)
+        self.assertEqual(len(recipe.WHEEL_SHA), 64)
+
+    def test_import_does_not_load_model_or_cuda_frameworks(self):
+        import sys
+        for name in ('torch', 'transformers', 'vllm', 'numpy', 'PIL', 'huggingface_hub'):
+            self.assertNotIn(name, sys.modules)
+
+    def test_worker_retains_original_llm_precision_and_gdn_arguments(self):
+        worker = ROOT / 'tools/kaggle/ovisocr2-vllm-reference/worker.py'
+        tree = ast.parse(worker.read_text())
+        calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+                 and isinstance(node.func, ast.Name) and node.func.id == 'LLM']
+        self.assertEqual(len(calls), 1)
+        kwargs = {key.arg: key.value for key in calls[0].keywords}
+        self.assertNotIn('dtype', kwargs)
+        self.assertEqual(ast.literal_eval(kwargs['tensor_parallel_size']), 1)
+        self.assertEqual(ast.literal_eval(kwargs['gpu_memory_utilization']), 0.8)
+        self.assertEqual(ast.literal_eval(kwargs['gdn_prefill_backend']), 'triton')
+        self.assertIn("images_kwargs={'min_pixels': 448 * 448, 'max_pixels': 2880 * 2880}",
+                      worker.read_text())
+
+
+if __name__ == '__main__':
+    unittest.main()
