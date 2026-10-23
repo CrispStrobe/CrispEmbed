@@ -17,7 +17,7 @@ MODEL = 'ATH-MaaS/OvisOCR2'
 REVISION = 'cbdede82e048659b83310476ff807da825f8fe78'
 CASES = (('square', 448, 448), ('odd', 449, 417), ('small-control', 96, 64))
 REPORT = {'phase': 'gpu-control', 'status': 'started', 'cases': [],
-          'scope': 'Pinned original processor anchors, then one bounded original vLLM greedy image pass; T4 auto-FP16 only'}
+          'scope': 'Pinned original vLLM controlled Triton decoder attention; original auto-FlashInfer T4 failed. No auto-backend or BF16 equivalence claim'}
 
 
 def save():
@@ -206,8 +206,21 @@ def main():
     REPORT['checkpoint_sha256'] = sha(checkpoint)
     REPORT['phase'] = 'original-vllm-init'; save()
     from vllm import LLM, SamplingParams
+    # Explicit controlled departure after the retained auto-FlashInfer T4
+    # head_dim=256 CUDA-graph warmup failure. Vision keeps its own auto backend.
+    REPORT['attention_backend_override'] = {
+        'readme_decoder_attention': 'auto', 'requested_decoder_attention': 'TRITON_ATTN',
+        'vision_attention': 'auto unchanged',
+        'reason': 'retained T4 FlashInfer BatchPrefillWithPagedKVCache invalid argument',
+        'readme_auto_backend_equivalence_qualified': False}
+    save()
     model = LLM(model=str(source), tensor_parallel_size=1, gpu_memory_utilization=0.8,
-                gdn_prefill_backend='triton')
+                gdn_prefill_backend='triton', attention_config={'backend': 'TRITON_ATTN'})
+    backend = model.llm_engine.vllm_config.attention_config.backend
+    REPORT['resolved_decoder_attention_backend'] = backend.name
+    if backend.name != 'TRITON_ATTN':
+        raise ValueError('Controlled decoder attention backend differs')
+    save()
     dtype = str(model.model_config.dtype)
     REPORT['resolved_vllm_dtype'] = dtype
     if dtype != 'torch.float16':
@@ -251,7 +264,7 @@ def main():
         processed = clean_repeats(filtered)
         generation = {'case': label, 'readme_max_tokens': 16384,
             'bounded_max_tokens': cap, 'temperature': 0.0, 'dtype_policy': 'README auto -> T4 FP16',
-            'gdn_prefill_backend': 'triton',
+            'gdn_prefill_backend': 'triton', 'decoder_attention_backend': 'TRITON_ATTN',
             'prompt_token_ids': actual_ids, 'expected_hf_prompt_token_ids': expected_ids,
             'prompt_ids_exact': actual_ids == expected_ids,
             'token_ids': list(result.token_ids), 'finish_reason': result.finish_reason,
