@@ -1,3 +1,40 @@
+## Paired LFM2.5 Encoder F16 dense API performance — 23 October2026
+
+Pinned recipe7a17864f/v2 completes CPU/CUDA/CUDA/CPU blocks on a Kaggle Tesla
+T4/CUDA12.8 session using the unchanged898af2c2 runtime, official F16 checkpoint
+and original15-case references. Each block uses two threads, two warmups and
+seven timed ordinary dense API calls per case. Times include Python FFI/output
+copy and completed native computation; initialization and reference checks are
+excluded. Medians below pool14 measurements per backend/case.
+
+| Tokens / case | CPU median ms | CUDA median ms | CPU/CUDA |
+| --- | ---: | ---: | ---: |
+| 1 / case6 | 21.723 | 6.240 | 3.48× |
+| 9 / case0 | 136.542 | 4.889 | 27.93× |
+| 20 / case13 | 304.819 | 11.026 | 27.64× |
+| 649 / case14 | 9667.336 | 80.488 | 120.11× |
+
+All15 cases have lower CUDA medians in this session, ranging3.48–120.11×.
+This is a paired host-specific comparison; CPU model/clock, VRAM, concurrency
+and throughput were not captured. Process peak RSS is at most1,136,992KiB CPU
+and788,272KiB CUDA, including initialization and quality probes. RSS is not GPU
+memory. Actual scheduler probes show zero/180 CUDA matmul assignments for the
+CPU/CUDA arms. No full GPU-residency claim follows.
+
+Independent review checks the exact pinned recipe/worker hashes, all18 frozen
+file declarations against the prior full audit, four raw block hashes/content,
+selected log hashes and all60 timing rows/420 samples. Within each backend,
+output vector hashes repeat across both blocks. Reported raw CLS minimum cosine
+is0.999999241 CPU/0.999996043 CUDA; worst relative error is0.126959%/0.290247%,
+within unchanged gates. Raw CLS arrays were not retained by this timing recipe,
+so those numerical metrics were not independently recomputed; the separate
+594-check full-stage audit remains the numerical evidence. Dense repeat and
+normalization assertions pass in the pinned worker. This is not retrieval/task
+quality and does not change GPU defaults.
+[Full producer and independent review](tests/results/lfm2-encoder/cuda-f16-performance.json).
+Initial v1 build timeout before inference remains preserved in
+[the initial receipt](tests/results/lfm2-encoder/initial-cuda-performance-timeout.json).
+
 ## UltraBERT actual Rust/Dart wrappers — 23 October2026
 
 Both wrappers pass all seven original text rows/21 pooled checks each in

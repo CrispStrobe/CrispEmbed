@@ -1,0 +1,1777 @@
+{
+  "date": "2026-10-23",
+  "service": "Kaggle genuine GPU session",
+  "source_commit": "7a17864f",
+  "producer": {
+    "script_version": "lfm2-encoder-cuda-performance-v2",
+    "embed_source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+    "harness_source": "1395603321611cfc9c89f1474a0c0093ac3ba571",
+    "model_source": "bb26e78c7164b386028928ebfcecebcc42467689",
+    "fixture_source": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+    "status": "completed bounded paired dense API performance; no default promotion",
+    "scope": "Paired ordinary dense F16 API latency and process RSS; fixed15-case numerical panel, no independent task quality or default promotion",
+    "commands": [
+      {
+        "name": "audit-support-clone",
+        "exit_code": 0,
+        "log": "audit-support-clone.log",
+        "log_sha256": "2d521ad3b8b44ad046de61afb71ce3236f514e957b2e5c612a0b65c689c086b5",
+        "wall_seconds": 2.3731049819999726,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "audit-support-checkout",
+        "exit_code": 0,
+        "log": "audit-support-checkout.log",
+        "log_sha256": "356e210f6cfda4f1fdf794c84b95120a70a71039028010ef954a0d484519bbc1",
+        "wall_seconds": 3.977950102999955,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "python-dependencies",
+        "exit_code": 0,
+        "log": "python-dependencies.log",
+        "log_sha256": "3fdf00ed3bf2765c5a3c479c6f41d017ef60a60d4029810ef5e2ee283d576df3",
+        "wall_seconds": 13.049032391000026,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "CrispEmbed-clone",
+        "exit_code": 0,
+        "log": "CrispEmbed-clone.log",
+        "log_sha256": "eb2be85d2ebc4c0450715d2f87ba246f3c435658dc92c58adafabf0487804090",
+        "wall_seconds": 1.1179890060000162,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "CrispEmbed-checkout",
+        "exit_code": 0,
+        "log": "CrispEmbed-checkout.log",
+        "log_sha256": "ec3f14dbd13dde5c7c7c03b57ecea6da99374c180da5588f7881db3685c28633",
+        "wall_seconds": 3.676344960999984,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "submodules",
+        "exit_code": 0,
+        "log": "submodules.log",
+        "log_sha256": "4d810a32dded2f249dfe17b0ee0cca2c7b315a8fb9fcba08f471357600c42959",
+        "wall_seconds": 3.2258796400000165,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "configure",
+        "exit_code": 0,
+        "log": "configure.log",
+        "log_sha256": "0b2a41108d520f0ecd2bb993d2275e14e5243c060afc6884dabc5007ab4bc9ef",
+        "wall_seconds": 8.695371072,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "build",
+        "exit_code": 0,
+        "log": "build.log",
+        "log_sha256": "a91b19c28acf90d2739ad23ab488f3bad9cdc9e1caa1c6a54eea35578e0c5861",
+        "wall_seconds": 1746.766199575,
+        "timed_out": false,
+        "timeout_seconds": 3600
+      },
+      {
+        "name": "cpu-placement",
+        "exit_code": 0,
+        "log": "cpu-placement.log",
+        "log_sha256": "ab0334e66bffc11b03cac5ec1a965ca09c2144d44bf35bacda8ff0e28626faca",
+        "wall_seconds": 9.038235287000134,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "cuda-placement",
+        "exit_code": 0,
+        "log": "cuda-placement.log",
+        "log_sha256": "2a37484e41328f6bea973bd43494da8980a572ddce0a2fdbd2504a4f0195bd96",
+        "wall_seconds": 1.5191530970000713,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "block-0-cpu",
+        "exit_code": 0,
+        "log": "block-0-cpu.log",
+        "log_sha256": "b388c1b5e8cdd7794009b51f970397375cb45d504a808f3ec164308be5e8568e",
+        "wall_seconds": 129.8545055149998,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "block-1-cuda",
+        "exit_code": 0,
+        "log": "block-1-cuda.log",
+        "log_sha256": "2c2f9cbe8e8662d2ff0ba36296014f04ed2aefec267e1b23df8e4fa0fa74be80",
+        "wall_seconds": 3.576329001999966,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "block-2-cuda",
+        "exit_code": 0,
+        "log": "block-2-cuda.log",
+        "log_sha256": "2c2f9cbe8e8662d2ff0ba36296014f04ed2aefec267e1b23df8e4fa0fa74be80",
+        "wall_seconds": 3.224227631999838,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      },
+      {
+        "name": "block-3-cpu",
+        "exit_code": 0,
+        "log": "block-3-cpu.log",
+        "log_sha256": "b388c1b5e8cdd7794009b51f970397375cb45d504a808f3ec164308be5e8568e",
+        "wall_seconds": 129.36128448699992,
+        "timed_out": false,
+        "timeout_seconds": 1800
+      }
+    ],
+    "arms": {
+      "cpu": {
+        "cuda_matmul_assignments": 0,
+        "samples": [
+          {
+            "block": 0,
+            "report_sha256": "8e2f01a50838f9cc9e991f1dca8095e4ff5df904d7536737561455e6009a163e",
+            "backend": "cpu",
+            "initialization_seconds": 0.5591078919997017,
+            "threads": 2,
+            "warmups": 2,
+            "repeats": 7,
+            "scope": "Dense encode latency includes Python FFI/output copy and completed native computation; excludes init/token/reference checks and warmups",
+            "cases": [
+              {
+                "case": 0,
+                "tokens": 9,
+                "milliseconds": [
+                  135.661641,
+                  140.224722,
+                  138.10319,
+                  134.956728,
+                  131.388898,
+                  137.422912,
+                  134.496612
+                ],
+                "median_ms": 135.661641,
+                "min_ms": 131.388898,
+                "max_ms": 140.224722,
+                "vector_sha256": "2b39f505f05996ae0e02473105fd5b93364eb7a0caf9d991ec86f674eb1f5c15",
+                "cls_cosine": 0.9999997965321333,
+                "cls_relative_error": 0.0006384909997268589,
+                "cls_max_abs": 0.004199028015136719,
+                "native_norm": 55.51671679990809,
+                "reference_norm": 55.51522296286042
+              },
+              {
+                "case": 1,
+                "tokens": 9,
+                "milliseconds": [
+                  137.509038,
+                  138.654222,
+                  142.007486,
+                  138.714675,
+                  135.497328,
+                  140.86993,
+                  134.58094
+                ],
+                "median_ms": 138.654222,
+                "min_ms": 134.58094,
+                "max_ms": 142.007486,
+                "vector_sha256": "7fe3471832bbed16a0f06701ba913894b228cfe4626e2eddd56176d5b3985d47",
+                "cls_cosine": 0.9999998819465469,
+                "cls_relative_error": 0.0005048530017136285,
+                "cls_max_abs": 0.005687713623046875,
+                "native_norm": 77.27487132651497,
+                "reference_norm": 77.26429505314995
+              },
+              {
+                "case": 2,
+                "tokens": 10,
+                "milliseconds": [
+                  159.223946,
+                  153.228748,
+                  151.795033,
+                  153.191247,
+                  154.306702,
+                  157.681512,
+                  152.776012
+                ],
+                "median_ms": 153.228748,
+                "min_ms": 151.795033,
+                "max_ms": 159.223946,
+                "vector_sha256": "6ab17909d3ad5d9b6f5f27da7dcf6fe6c91dc4c148943ff73f7f596d6f83e689",
+                "cls_cosine": 0.9999998590423689,
+                "cls_relative_error": 0.0005455616169346215,
+                "cls_max_abs": 0.008700370788574219,
+                "native_norm": 75.99450153119648,
+                "reference_norm": 75.98498461088874
+              },
+              {
+                "case": 3,
+                "tokens": 17,
+                "milliseconds": [
+                  262.325482,
+                  259.390407,
+                  270.639374,
+                  258.090794,
+                  266.982142,
+                  261.47229,
+                  258.084581
+                ],
+                "median_ms": 261.47229,
+                "min_ms": 258.084581,
+                "max_ms": 270.639374,
+                "vector_sha256": "59c60ce5bacf668a78309c7dcbcc637badc11dca963a927c5c22562aaf0ace96",
+                "cls_cosine": 0.9999997631452637,
+                "cls_relative_error": 0.0006957821784640315,
+                "cls_max_abs": 0.003628969192504883,
+                "native_norm": 43.60022621912522,
+                "reference_norm": 43.59578989769663
+              },
+              {
+                "case": 4,
+                "tokens": 2,
+                "milliseconds": [
+                  39.005607,
+                  39.588926,
+                  36.231382,
+                  36.565087,
+                  35.249781,
+                  36.491416,
+                  38.990605
+                ],
+                "median_ms": 36.565087,
+                "min_ms": 35.249781,
+                "max_ms": 39.588926,
+                "vector_sha256": "60dfbc5ed9b0444b7c99bd4cc8058b4c0fefc1ccfbf33c7497bc568980c03452",
+                "cls_cosine": 0.9999995787484862,
+                "cls_relative_error": 0.0010215549567150867,
+                "cls_max_abs": 0.015599250793457031,
+                "native_norm": 38.34216886623554,
+                "reference_norm": 38.359385763821535
+              },
+              {
+                "case": 5,
+                "tokens": 3,
+                "milliseconds": [
+                  51.459943,
+                  50.038322,
+                  50.474817,
+                  52.053205,
+                  59.897867,
+                  58.589037,
+                  57.49465
+                ],
+                "median_ms": 52.053205,
+                "min_ms": 50.038322,
+                "max_ms": 59.897867,
+                "vector_sha256": "fa2f2334d17caa49749e70e0c48206e148f1818ca33204db422747ebdf889479",
+                "cls_cosine": 0.9999996496078145,
+                "cls_relative_error": 0.0009251368464346455,
+                "cls_max_abs": 0.0109405517578125,
+                "native_norm": 35.575640841716485,
+                "reference_norm": 35.58966922404587
+              },
+              {
+                "case": 6,
+                "tokens": 1,
+                "milliseconds": [
+                  21.262511,
+                  20.815829,
+                  21.146999,
+                  21.499139,
+                  22.178711,
+                  22.160693,
+                  21.63295
+                ],
+                "median_ms": 21.499139,
+                "min_ms": 20.815829,
+                "max_ms": 22.178711,
+                "vector_sha256": "f97b8ecef009d010671b89ae3471b8608560a1071f7e7774d82f1c862db7b95e",
+                "cls_cosine": 0.9999994059124944,
+                "cls_relative_error": 0.0011120459077377353,
+                "cls_max_abs": 0.019664764404296875,
+                "native_norm": 29.77153594065107,
+                "reference_norm": 29.77810964884332
+              },
+              {
+                "case": 7,
+                "tokens": 3,
+                "milliseconds": [
+                  49.799121,
+                  49.617373,
+                  48.220476,
+                  49.298273,
+                  50.485294,
+                  52.856946,
+                  53.717028
+                ],
+                "median_ms": 49.799121,
+                "min_ms": 48.220476,
+                "max_ms": 53.717028,
+                "vector_sha256": "09022fd057a00723ef310a9be9979ba3c6f69e9a0e55cb52a0a4da13f12c0247",
+                "cls_cosine": 0.9999992412255218,
+                "cls_relative_error": 0.0012695893834979342,
+                "cls_max_abs": 0.04982185363769531,
+                "native_norm": 59.841561772393305,
+                "reference_norm": 59.85999004078574
+              },
+              {
+                "case": 8,
+                "tokens": 14,
+                "milliseconds": [
+                  217.865945,
+                  204.575224,
+                  208.650166,
+                  209.928775,
+                  203.429708,
+                  212.583324,
+                  207.41047
+                ],
+                "median_ms": 208.650166,
+                "min_ms": 203.429708,
+                "max_ms": 217.865945,
+                "vector_sha256": "b20ae3c157d6d1d166dd6c9fc510a7c40ffcfa581f97b4270856f531e16f8314",
+                "cls_cosine": 0.9999997136201819,
+                "cls_relative_error": 0.0007607436199798429,
+                "cls_max_abs": 0.011935234069824219,
+                "native_norm": 36.97707630301434,
+                "reference_norm": 36.97994448869384
+              },
+              {
+                "case": 9,
+                "tokens": 14,
+                "milliseconds": [
+                  211.14023,
+                  212.81112,
+                  209.057016,
+                  208.077543,
+                  218.035107,
+                  214.663576,
+                  215.304104
+                ],
+                "median_ms": 212.81112,
+                "min_ms": 208.077543,
+                "max_ms": 218.035107,
+                "vector_sha256": "0eb515e8af50eb31081c5f5710fe8d3d4f35035ce33e2a413b828500997203fe",
+                "cls_cosine": 0.9999998311817121,
+                "cls_relative_error": 0.0005817057885992943,
+                "cls_max_abs": 0.005141496658325195,
+                "native_norm": 83.2519508294393,
+                "reference_norm": 83.25423740066873
+              },
+              {
+                "case": 10,
+                "tokens": 11,
+                "milliseconds": [
+                  170.769593,
+                  187.639507,
+                  169.832369,
+                  165.302223,
+                  166.002786,
+                  165.215151,
+                  171.975299
+                ],
+                "median_ms": 169.832369,
+                "min_ms": 165.215151,
+                "max_ms": 187.639507,
+                "vector_sha256": "26f7a84f456442303137281690ac3bbeed54e1d4911cc87558b74a06e99edd73",
+                "cls_cosine": 0.9999997235221397,
+                "cls_relative_error": 0.0007567533771650072,
+                "cls_max_abs": 0.010862350463867188,
+                "native_norm": 82.8357085411036,
+                "reference_norm": 82.84736553835278
+              },
+              {
+                "case": 11,
+                "tokens": 9,
+                "milliseconds": [
+                  144.136954,
+                  148.318117,
+                  143.336961,
+                  140.362855,
+                  137.275376,
+                  139.675799,
+                  141.799581
+                ],
+                "median_ms": 141.799581,
+                "min_ms": 137.275376,
+                "max_ms": 148.318117,
+                "vector_sha256": "ed83531ece72d931811a3a53fe6c7a37f01f98d630a6917459621143fbaee3f6",
+                "cls_cosine": 0.9999996825788162,
+                "cls_relative_error": 0.0010024948373817772,
+                "cls_max_abs": 0.010090827941894531,
+                "native_norm": 59.607957888566354,
+                "reference_norm": 59.64426454205843
+              },
+              {
+                "case": 12,
+                "tokens": 7,
+                "milliseconds": [
+                  112.597765,
+                  108.593905,
+                  114.450003,
+                  108.67679,
+                  113.639733,
+                  106.282929,
+                  107.222809
+                ],
+                "median_ms": 108.67679,
+                "min_ms": 106.282929,
+                "max_ms": 114.450003,
+                "vector_sha256": "37269854ed5c72b32185ab2e0ec6e454c5dc2a83267b0b3ffae391a456de094e",
+                "cls_cosine": 0.9999996922118176,
+                "cls_relative_error": 0.0008083001392982816,
+                "cls_max_abs": 0.011666059494018555,
+                "native_norm": 49.75437290199869,
+                "reference_norm": 49.74472020839599
+              },
+              {
+                "case": 13,
+                "tokens": 20,
+                "milliseconds": [
+                  316.369494,
+                  316.123188,
+                  304.263496,
+                  304.944091,
+                  298.750379,
+                  302.104217,
+                  309.926386
+                ],
+                "median_ms": 304.944091,
+                "min_ms": 298.750379,
+                "max_ms": 316.369494,
+                "vector_sha256": "5a4b4fa7a24748c5d9cb0a6d3886cec5177f9a16ade0633a8bcf3bb8c49d51f8",
+                "cls_cosine": 0.999999850332357,
+                "cls_relative_error": 0.0005932829593238808,
+                "cls_max_abs": 0.005486726760864258,
+                "native_norm": 56.656575376120834,
+                "reference_norm": 56.66958695418492
+              },
+              {
+                "case": 14,
+                "tokens": 649,
+                "milliseconds": [
+                  9725.98475,
+                  9842.527188,
+                  9665.391736,
+                  9626.188824,
+                  9750.324826,
+                  9669.280532,
+                  9596.371576
+                ],
+                "median_ms": 9669.280532,
+                "min_ms": 9596.371576,
+                "max_ms": 9842.527188,
+                "vector_sha256": "1797768289c7aa23e928fb094c7dd755ed12d9e0070ee8725c1a3642f062ee67",
+                "cls_cosine": 0.9999997021465494,
+                "cls_relative_error": 0.0007733531920089009,
+                "cls_max_abs": 0.004562854766845703,
+                "native_norm": 39.332242710583515,
+                "reference_norm": 39.33416864981945
+              }
+            ],
+            "peak_process_rss_kib": 1135744,
+            "completed": true
+          },
+          {
+            "block": 3,
+            "report_sha256": "b29e1ee374c287f2be24147d117123eb839383259197012c27f75dae6b00b32d",
+            "backend": "cpu",
+            "initialization_seconds": 0.5549583749998419,
+            "threads": 2,
+            "warmups": 2,
+            "repeats": 7,
+            "scope": "Dense encode latency includes Python FFI/output copy and completed native computation; excludes init/token/reference checks and warmups",
+            "cases": [
+              {
+                "case": 0,
+                "tokens": 9,
+                "milliseconds": [
+                  140.658463,
+                  141.377028,
+                  140.880079,
+                  135.486795,
+                  134.681785,
+                  133.964105,
+                  141.989518
+                ],
+                "median_ms": 140.658463,
+                "min_ms": 133.964105,
+                "max_ms": 141.989518,
+                "vector_sha256": "2b39f505f05996ae0e02473105fd5b93364eb7a0caf9d991ec86f674eb1f5c15",
+                "cls_cosine": 0.9999997965321333,
+                "cls_relative_error": 0.0006384909997268589,
+                "cls_max_abs": 0.004199028015136719,
+                "native_norm": 55.51671679990809,
+                "reference_norm": 55.51522296286042
+              },
+              {
+                "case": 1,
+                "tokens": 9,
+                "milliseconds": [
+                  138.457812,
+                  132.256725,
+                  140.614163,
+                  146.941177,
+                  143.569974,
+                  139.638542,
+                  139.043599
+                ],
+                "median_ms": 139.638542,
+                "min_ms": 132.256725,
+                "max_ms": 146.941177,
+                "vector_sha256": "7fe3471832bbed16a0f06701ba913894b228cfe4626e2eddd56176d5b3985d47",
+                "cls_cosine": 0.9999998819465469,
+                "cls_relative_error": 0.0005048530017136285,
+                "cls_max_abs": 0.005687713623046875,
+                "native_norm": 77.27487132651497,
+                "reference_norm": 77.26429505314995
+              },
+              {
+                "case": 2,
+                "tokens": 10,
+                "milliseconds": [
+                  158.511901,
+                  164.311102,
+                  166.956362,
+                  154.993698,
+                  155.559582,
+                  158.824064,
+                  154.119372
+                ],
+                "median_ms": 158.511901,
+                "min_ms": 154.119372,
+                "max_ms": 166.956362,
+                "vector_sha256": "6ab17909d3ad5d9b6f5f27da7dcf6fe6c91dc4c148943ff73f7f596d6f83e689",
+                "cls_cosine": 0.9999998590423689,
+                "cls_relative_error": 0.0005455616169346215,
+                "cls_max_abs": 0.008700370788574219,
+                "native_norm": 75.99450153119648,
+                "reference_norm": 75.98498461088874
+              },
+              {
+                "case": 3,
+                "tokens": 17,
+                "milliseconds": [
+                  262.789314,
+                  262.039072,
+                  262.515326,
+                  260.916259,
+                  262.340894,
+                  249.147214,
+                  258.988911
+                ],
+                "median_ms": 262.039072,
+                "min_ms": 249.147214,
+                "max_ms": 262.789314,
+                "vector_sha256": "59c60ce5bacf668a78309c7dcbcc637badc11dca963a927c5c22562aaf0ace96",
+                "cls_cosine": 0.9999997631452637,
+                "cls_relative_error": 0.0006957821784640315,
+                "cls_max_abs": 0.003628969192504883,
+                "native_norm": 43.60022621912522,
+                "reference_norm": 43.59578989769663
+              },
+              {
+                "case": 4,
+                "tokens": 2,
+                "milliseconds": [
+                  39.522155,
+                  37.373921,
+                  36.583861,
+                  37.363186,
+                  36.251944,
+                  36.462995,
+                  37.750933
+                ],
+                "median_ms": 37.363186,
+                "min_ms": 36.251944,
+                "max_ms": 39.522155,
+                "vector_sha256": "60dfbc5ed9b0444b7c99bd4cc8058b4c0fefc1ccfbf33c7497bc568980c03452",
+                "cls_cosine": 0.9999995787484862,
+                "cls_relative_error": 0.0010215549567150867,
+                "cls_max_abs": 0.015599250793457031,
+                "native_norm": 38.34216886623554,
+                "reference_norm": 38.359385763821535
+              },
+              {
+                "case": 5,
+                "tokens": 3,
+                "milliseconds": [
+                  48.853279,
+                  48.885501,
+                  61.659767,
+                  62.551591,
+                  52.509863,
+                  51.810203,
+                  51.778611
+                ],
+                "median_ms": 51.810203,
+                "min_ms": 48.853279,
+                "max_ms": 62.551591,
+                "vector_sha256": "fa2f2334d17caa49749e70e0c48206e148f1818ca33204db422747ebdf889479",
+                "cls_cosine": 0.9999996496078145,
+                "cls_relative_error": 0.0009251368464346455,
+                "cls_max_abs": 0.0109405517578125,
+                "native_norm": 35.575640841716485,
+                "reference_norm": 35.58966922404587
+              },
+              {
+                "case": 6,
+                "tokens": 1,
+                "milliseconds": [
+                  22.207241,
+                  21.445749,
+                  21.418578,
+                  21.992304,
+                  21.887525,
+                  21.812327,
+                  21.839694
+                ],
+                "median_ms": 21.839694,
+                "min_ms": 21.418578,
+                "max_ms": 22.207241,
+                "vector_sha256": "f97b8ecef009d010671b89ae3471b8608560a1071f7e7774d82f1c862db7b95e",
+                "cls_cosine": 0.9999994059124944,
+                "cls_relative_error": 0.0011120459077377353,
+                "cls_max_abs": 0.019664764404296875,
+                "native_norm": 29.77153594065107,
+                "reference_norm": 29.77810964884332
+              },
+              {
+                "case": 7,
+                "tokens": 3,
+                "milliseconds": [
+                  52.982779,
+                  52.340236,
+                  52.378889,
+                  51.851481,
+                  50.325247,
+                  51.531666,
+                  53.328119
+                ],
+                "median_ms": 52.340236,
+                "min_ms": 50.325247,
+                "max_ms": 53.328119,
+                "vector_sha256": "09022fd057a00723ef310a9be9979ba3c6f69e9a0e55cb52a0a4da13f12c0247",
+                "cls_cosine": 0.9999992412255218,
+                "cls_relative_error": 0.0012695893834979342,
+                "cls_max_abs": 0.04982185363769531,
+                "native_norm": 59.841561772393305,
+                "reference_norm": 59.85999004078574
+              },
+              {
+                "case": 8,
+                "tokens": 14,
+                "milliseconds": [
+                  224.895583,
+                  213.499623,
+                  210.332864,
+                  211.807926,
+                  212.05414,
+                  219.096512,
+                  206.909917
+                ],
+                "median_ms": 212.05414,
+                "min_ms": 206.909917,
+                "max_ms": 224.895583,
+                "vector_sha256": "b20ae3c157d6d1d166dd6c9fc510a7c40ffcfa581f97b4270856f531e16f8314",
+                "cls_cosine": 0.9999997136201819,
+                "cls_relative_error": 0.0007607436199798429,
+                "cls_max_abs": 0.011935234069824219,
+                "native_norm": 36.97707630301434,
+                "reference_norm": 36.97994448869384
+              },
+              {
+                "case": 9,
+                "tokens": 14,
+                "milliseconds": [
+                  216.006805,
+                  201.968933,
+                  208.416415,
+                  214.263707,
+                  214.86714,
+                  211.482143,
+                  202.646923
+                ],
+                "median_ms": 211.482143,
+                "min_ms": 201.968933,
+                "max_ms": 216.006805,
+                "vector_sha256": "0eb515e8af50eb31081c5f5710fe8d3d4f35035ce33e2a413b828500997203fe",
+                "cls_cosine": 0.9999998311817121,
+                "cls_relative_error": 0.0005817057885992943,
+                "cls_max_abs": 0.005141496658325195,
+                "native_norm": 83.2519508294393,
+                "reference_norm": 83.25423740066873
+              },
+              {
+                "case": 10,
+                "tokens": 11,
+                "milliseconds": [
+                  161.653647,
+                  158.165803,
+                  160.84704,
+                  171.525307,
+                  169.0724,
+                  161.324549,
+                  169.420563
+                ],
+                "median_ms": 161.653647,
+                "min_ms": 158.165803,
+                "max_ms": 171.525307,
+                "vector_sha256": "26f7a84f456442303137281690ac3bbeed54e1d4911cc87558b74a06e99edd73",
+                "cls_cosine": 0.9999997235221397,
+                "cls_relative_error": 0.0007567533771650072,
+                "cls_max_abs": 0.010862350463867188,
+                "native_norm": 82.8357085411036,
+                "reference_norm": 82.84736553835278
+              },
+              {
+                "case": 11,
+                "tokens": 9,
+                "milliseconds": [
+                  136.329334,
+                  130.29841,
+                  131.820855,
+                  134.355958,
+                  135.072205,
+                  131.63751,
+                  143.85303
+                ],
+                "median_ms": 134.355958,
+                "min_ms": 130.29841,
+                "max_ms": 143.85303,
+                "vector_sha256": "ed83531ece72d931811a3a53fe6c7a37f01f98d630a6917459621143fbaee3f6",
+                "cls_cosine": 0.9999996825788162,
+                "cls_relative_error": 0.0010024948373817772,
+                "cls_max_abs": 0.010090827941894531,
+                "native_norm": 59.607957888566354,
+                "reference_norm": 59.64426454205843
+              },
+              {
+                "case": 12,
+                "tokens": 7,
+                "milliseconds": [
+                  105.64367,
+                  108.042708,
+                  107.448861,
+                  106.333455,
+                  130.898655,
+                  118.232311,
+                  116.212312
+                ],
+                "median_ms": 108.042708,
+                "min_ms": 105.64367,
+                "max_ms": 130.898655,
+                "vector_sha256": "37269854ed5c72b32185ab2e0ec6e454c5dc2a83267b0b3ffae391a456de094e",
+                "cls_cosine": 0.9999996922118176,
+                "cls_relative_error": 0.0008083001392982816,
+                "cls_max_abs": 0.011666059494018555,
+                "native_norm": 49.75437290199869,
+                "reference_norm": 49.74472020839599
+              },
+              {
+                "case": 13,
+                "tokens": 20,
+                "milliseconds": [
+                  302.743325,
+                  321.7178,
+                  306.962248,
+                  292.941542,
+                  297.405147,
+                  311.675465,
+                  304.693841
+                ],
+                "median_ms": 304.693841,
+                "min_ms": 292.941542,
+                "max_ms": 321.7178,
+                "vector_sha256": "5a4b4fa7a24748c5d9cb0a6d3886cec5177f9a16ade0633a8bcf3bb8c49d51f8",
+                "cls_cosine": 0.999999850332357,
+                "cls_relative_error": 0.0005932829593238808,
+                "cls_max_abs": 0.005486726760864258,
+                "native_norm": 56.656575376120834,
+                "reference_norm": 56.66958695418492
+              },
+              {
+                "case": 14,
+                "tokens": 649,
+                "milliseconds": [
+                  9800.994406,
+                  9678.175939,
+                  9542.328807,
+                  9612.45456,
+                  9665.185209,
+                  9714.606994,
+                  9559.324307
+                ],
+                "median_ms": 9665.185209,
+                "min_ms": 9542.328807,
+                "max_ms": 9800.994406,
+                "vector_sha256": "1797768289c7aa23e928fb094c7dd755ed12d9e0070ee8725c1a3642f062ee67",
+                "cls_cosine": 0.9999997021465494,
+                "cls_relative_error": 0.0007733531920089009,
+                "cls_max_abs": 0.004562854766845703,
+                "native_norm": 39.332242710583515,
+                "reference_norm": 39.33416864981945
+              }
+            ],
+            "peak_process_rss_kib": 1136992,
+            "completed": true
+          }
+        ]
+      },
+      "cuda": {
+        "cuda_matmul_assignments": 180,
+        "samples": [
+          {
+            "block": 1,
+            "report_sha256": "fc47e2dd42b64a4b1152949510540bf4cbc27ee9819e148670de0ae5b378483a",
+            "backend": "cuda",
+            "initialization_seconds": 0.7750142550003147,
+            "threads": 2,
+            "warmups": 2,
+            "repeats": 7,
+            "scope": "Dense encode latency includes Python FFI/output copy and completed native computation; excludes init/token/reference checks and warmups",
+            "cases": [
+              {
+                "case": 0,
+                "tokens": 9,
+                "milliseconds": [
+                  4.660514,
+                  7.962789,
+                  4.739033,
+                  8.115462,
+                  4.96864,
+                  9.436422,
+                  4.809087
+                ],
+                "median_ms": 4.96864,
+                "min_ms": 4.660514,
+                "max_ms": 9.436422,
+                "vector_sha256": "bfd8a3798536eced56c33cef403a088bd958170769486ea7e45247244ed6b8c8",
+                "cls_cosine": 0.9999993764634572,
+                "cls_relative_error": 0.0012381607179046915,
+                "cls_max_abs": 0.013599872589111328,
+                "native_norm": 55.544875720063224,
+                "reference_norm": 55.51522296286042
+              },
+              {
+                "case": 1,
+                "tokens": 9,
+                "milliseconds": [
+                  4.614837,
+                  8.12928,
+                  4.852357,
+                  8.212392,
+                  4.737857,
+                  7.816637,
+                  4.718446
+                ],
+                "median_ms": 4.852357,
+                "min_ms": 4.614837,
+                "max_ms": 8.212392,
+                "vector_sha256": "ea3e5dceeef303fd7f56553283367959f6071af7fb7b92eaf25d6262d4463ae6",
+                "cls_cosine": 0.9999996225740732,
+                "cls_relative_error": 0.0008696120936868487,
+                "cls_max_abs": 0.010647773742675781,
+                "native_norm": 77.26140243703391,
+                "reference_norm": 77.26429505314995
+              },
+              {
+                "case": 2,
+                "tokens": 10,
+                "milliseconds": [
+                  7.838876,
+                  4.811257,
+                  8.355434,
+                  4.754959,
+                  8.207487,
+                  4.827048,
+                  7.568151
+                ],
+                "median_ms": 7.568151,
+                "min_ms": 4.754959,
+                "max_ms": 8.355434,
+                "vector_sha256": "9d03829f7703cce4bb00c81d21aa4d23b731a4137c823c105d3ed85c15e25766",
+                "cls_cosine": 0.999999659025488,
+                "cls_relative_error": 0.0008285603510527298,
+                "cls_max_abs": 0.006800651550292969,
+                "native_norm": 75.97982572217181,
+                "reference_norm": 75.98498461088874
+              },
+              {
+                "case": 3,
+                "tokens": 17,
+                "milliseconds": [
+                  19.340003,
+                  13.589095,
+                  19.794712,
+                  13.664496,
+                  19.42786,
+                  13.636583,
+                  18.898051
+                ],
+                "median_ms": 18.898051,
+                "min_ms": 13.589095,
+                "max_ms": 19.794712,
+                "vector_sha256": "40b7600e7526c915ce529562b54b63b0363b3f55fefc39a946435d701b7a9054",
+                "cls_cosine": 0.9999995786961006,
+                "cls_relative_error": 0.0009505493672821905,
+                "cls_max_abs": 0.005292654037475586,
+                "native_norm": 43.58500977247392,
+                "reference_norm": 43.59578989769663
+              },
+              {
+                "case": 4,
+                "tokens": 2,
+                "milliseconds": [
+                  8.469169,
+                  5.084965,
+                  11.719135,
+                  5.016762,
+                  8.250641,
+                  5.436041,
+                  7.592184
+                ],
+                "median_ms": 7.592184,
+                "min_ms": 5.016762,
+                "max_ms": 11.719135,
+                "vector_sha256": "a256985d9b8e7c6ee952041ee7d0860f1d261a465ee9955c78b07c6c302da75f",
+                "cls_cosine": 0.9999970265992119,
+                "cls_relative_error": 0.002902467693641075,
+                "cls_max_abs": 0.02046823501586914,
+                "native_norm": 38.29889342381206,
+                "reference_norm": 38.359385763821535
+              },
+              {
+                "case": 5,
+                "tokens": 3,
+                "milliseconds": [
+                  7.714714,
+                  4.317793,
+                  7.610271,
+                  4.307942,
+                  7.521113,
+                  4.259244,
+                  7.511564
+                ],
+                "median_ms": 7.511564,
+                "min_ms": 4.259244,
+                "max_ms": 7.714714,
+                "vector_sha256": "dcb98b8376aa02361bc74bc00ad74ec184b6362e29328b533b7f35cb7c351bd7",
+                "cls_cosine": 0.9999989546590914,
+                "cls_relative_error": 0.0017796002399264345,
+                "cls_max_abs": 0.02267932891845703,
+                "native_norm": 35.55270962494924,
+                "reference_norm": 35.58966922404587
+              },
+              {
+                "case": 6,
+                "tokens": 1,
+                "milliseconds": [
+                  6.36775,
+                  3.538164,
+                  6.326474,
+                  3.486188,
+                  6.328839,
+                  3.474222,
+                  6.659965
+                ],
+                "median_ms": 6.326474,
+                "min_ms": 3.474222,
+                "max_ms": 6.659965,
+                "vector_sha256": "39f012540ba9764f0e27fcbf26e250378c7090ae01346084374a2f6ecf7a9cbe",
+                "cls_cosine": 0.9999996080173494,
+                "cls_relative_error": 0.0008891481460844333,
+                "cls_max_abs": 0.0036585330963134766,
+                "native_norm": 29.78052069194771,
+                "reference_norm": 29.77810964884332
+              },
+              {
+                "case": 7,
+                "tokens": 3,
+                "milliseconds": [
+                  7.401589,
+                  4.404437,
+                  7.42857,
+                  4.34979,
+                  7.572857,
+                  4.256747,
+                  7.536196
+                ],
+                "median_ms": 7.401589,
+                "min_ms": 4.256747,
+                "max_ms": 7.572857,
+                "vector_sha256": "e6b236e22fc0dc702662ca69a45971da52f64b5cc4192f98a585b30c2b87755c",
+                "cls_cosine": 0.9999983169188928,
+                "cls_relative_error": 0.0019720504467823346,
+                "cls_max_abs": 0.03418540954589844,
+                "native_norm": 59.903171979653514,
+                "reference_norm": 59.85999004078574
+              },
+              {
+                "case": 8,
+                "tokens": 14,
+                "milliseconds": [
+                  6.719333,
+                  3.668331,
+                  6.976065,
+                  3.893147,
+                  7.251605,
+                  3.705586,
+                  7.075917
+                ],
+                "median_ms": 6.719333,
+                "min_ms": 3.668331,
+                "max_ms": 7.251605,
+                "vector_sha256": "35648e74d07607d509f9bbd394059af80a3337070fe1247819e4d8db03566bad",
+                "cls_cosine": 0.9999960426466322,
+                "cls_relative_error": 0.0028623922268462107,
+                "cls_max_abs": 0.01660919189453125,
+                "native_norm": 36.96027924340655,
+                "reference_norm": 36.97994448869384
+              },
+              {
+                "case": 9,
+                "tokens": 14,
+                "milliseconds": [
+                  9.591906,
+                  3.730184,
+                  7.313444,
+                  3.855757,
+                  7.250737,
+                  3.771944,
+                  7.345147
+                ],
+                "median_ms": 7.250737,
+                "min_ms": 3.730184,
+                "max_ms": 9.591906,
+                "vector_sha256": "48af0a19302154621257de0281ce3142ab0518afbfa5bcce0899844722116893",
+                "cls_cosine": 0.9999995300660793,
+                "cls_relative_error": 0.0009749838133438848,
+                "cls_max_abs": 0.008525371551513672,
+                "native_norm": 83.24557600894268,
+                "reference_norm": 83.25423740066873
+              },
+              {
+                "case": 10,
+                "tokens": 11,
+                "milliseconds": [
+                  6.680871,
+                  3.727908,
+                  7.209738,
+                  3.680235,
+                  7.156241,
+                  3.729876,
+                  7.072126
+                ],
+                "median_ms": 6.680871,
+                "min_ms": 3.680235,
+                "max_ms": 7.209738,
+                "vector_sha256": "7bfcebcd7309c14bf5dec85bdf1494e85303068cd4f464776d21b9972ba86502",
+                "cls_cosine": 0.999999650273366,
+                "cls_relative_error": 0.0008448082467458246,
+                "cls_max_abs": 0.008020639419555664,
+                "native_norm": 82.83744754947193,
+                "reference_norm": 82.84736553835278
+              },
+              {
+                "case": 11,
+                "tokens": 9,
+                "milliseconds": [
+                  6.780538,
+                  3.632497,
+                  6.987812,
+                  4.950934,
+                  7.012943,
+                  3.639669,
+                  6.933098
+                ],
+                "median_ms": 6.780538,
+                "min_ms": 3.632497,
+                "max_ms": 7.012943,
+                "vector_sha256": "ea52c12a341abf3e41e23c25188bad6e684f5d95b7bf5fe89335bb86b8c2cc5c",
+                "cls_cosine": 0.9999994830747888,
+                "cls_relative_error": 0.0010805349430596481,
+                "cls_max_abs": 0.006894588470458984,
+                "native_norm": 59.62242432138941,
+                "reference_norm": 59.64426454205843
+              },
+              {
+                "case": 12,
+                "tokens": 7,
+                "milliseconds": [
+                  6.284741,
+                  3.516269,
+                  7.372497,
+                  3.690972,
+                  6.941554,
+                  3.429393,
+                  6.898599
+                ],
+                "median_ms": 6.284741,
+                "min_ms": 3.429393,
+                "max_ms": 7.372497,
+                "vector_sha256": "be59c37c786f2421de73960e82ee525dcce78f4f1bcd6938956a1a0f54b23b13",
+                "cls_cosine": 0.9999993747486318,
+                "cls_relative_error": 0.001119498851402019,
+                "cls_max_abs": 0.018157005310058594,
+                "native_norm": 49.74206848273336,
+                "reference_norm": 49.74472020839599
+              },
+              {
+                "case": 13,
+                "tokens": 20,
+                "milliseconds": [
+                  10.94496,
+                  16.574759,
+                  10.908103,
+                  16.456184,
+                  10.919185,
+                  16.723469,
+                  10.985207
+                ],
+                "median_ms": 10.985207,
+                "min_ms": 10.908103,
+                "max_ms": 16.723469,
+                "vector_sha256": "312ac57cfd39454a564688915be890fa639044d445ccdecab078423fadb86288",
+                "cls_cosine": 0.9999997542757719,
+                "cls_relative_error": 0.0008126590409811186,
+                "cls_max_abs": 0.0059185028076171875,
+                "native_norm": 56.646278704591886,
+                "reference_norm": 56.66958695418492
+              },
+              {
+                "case": 14,
+                "tokens": 649,
+                "milliseconds": [
+                  83.807541,
+                  79.952352,
+                  82.961211,
+                  79.263232,
+                  82.015492,
+                  78.697878,
+                  82.553547
+                ],
+                "median_ms": 82.015492,
+                "min_ms": 78.697878,
+                "max_ms": 83.807541,
+                "vector_sha256": "7d913d089d5696930a764458afba600c0e450d08a463fded80d6c9728230a4c5",
+                "cls_cosine": 0.9999984976215566,
+                "cls_relative_error": 0.001753408183637637,
+                "cls_max_abs": 0.008929967880249023,
+                "native_norm": 39.344493002818076,
+                "reference_norm": 39.33416864981945
+              }
+            ],
+            "peak_process_rss_kib": 788272,
+            "completed": true
+          },
+          {
+            "block": 2,
+            "report_sha256": "9a608b8015b42a1ebaa3f175eaa4669c39503f971688249e5e9ff9c0c70c07e0",
+            "backend": "cuda",
+            "initialization_seconds": 0.6104222989997652,
+            "threads": 2,
+            "warmups": 2,
+            "repeats": 7,
+            "scope": "Dense encode latency includes Python FFI/output copy and completed native computation; excludes init/token/reference checks and warmups",
+            "cases": [
+              {
+                "case": 0,
+                "tokens": 9,
+                "milliseconds": [
+                  3.604244,
+                  6.487649,
+                  3.508452,
+                  6.901932,
+                  3.506846,
+                  6.655313,
+                  3.640578
+                ],
+                "median_ms": 3.640578,
+                "min_ms": 3.506846,
+                "max_ms": 6.901932,
+                "vector_sha256": "bfd8a3798536eced56c33cef403a088bd958170769486ea7e45247244ed6b8c8",
+                "cls_cosine": 0.9999993764634572,
+                "cls_relative_error": 0.0012381607179046915,
+                "cls_max_abs": 0.013599872589111328,
+                "native_norm": 55.544875720063224,
+                "reference_norm": 55.51522296286042
+              },
+              {
+                "case": 1,
+                "tokens": 9,
+                "milliseconds": [
+                  3.577197,
+                  6.809773,
+                  3.576206,
+                  6.682501,
+                  3.586718,
+                  6.754012,
+                  3.611792
+                ],
+                "median_ms": 3.611792,
+                "min_ms": 3.576206,
+                "max_ms": 6.809773,
+                "vector_sha256": "ea3e5dceeef303fd7f56553283367959f6071af7fb7b92eaf25d6262d4463ae6",
+                "cls_cosine": 0.9999996225740732,
+                "cls_relative_error": 0.0008696120936868487,
+                "cls_max_abs": 0.010647773742675781,
+                "native_norm": 77.26140243703391,
+                "reference_norm": 77.26429505314995
+              },
+              {
+                "case": 2,
+                "tokens": 10,
+                "milliseconds": [
+                  7.469089,
+                  3.675597,
+                  6.748579,
+                  3.493083,
+                  6.494464,
+                  3.52507,
+                  6.40049
+                ],
+                "median_ms": 6.40049,
+                "min_ms": 3.493083,
+                "max_ms": 7.469089,
+                "vector_sha256": "9d03829f7703cce4bb00c81d21aa4d23b731a4137c823c105d3ed85c15e25766",
+                "cls_cosine": 0.999999659025488,
+                "cls_relative_error": 0.0008285603510527298,
+                "cls_max_abs": 0.006800651550292969,
+                "native_norm": 75.97982572217181,
+                "reference_norm": 75.98498461088874
+              },
+              {
+                "case": 3,
+                "tokens": 17,
+                "milliseconds": [
+                  17.19453,
+                  10.762781,
+                  16.409457,
+                  10.755716,
+                  16.401048,
+                  11.073763,
+                  16.231322
+                ],
+                "median_ms": 16.231322,
+                "min_ms": 10.755716,
+                "max_ms": 17.19453,
+                "vector_sha256": "40b7600e7526c915ce529562b54b63b0363b3f55fefc39a946435d701b7a9054",
+                "cls_cosine": 0.9999995786961006,
+                "cls_relative_error": 0.0009505493672821905,
+                "cls_max_abs": 0.005292654037475586,
+                "native_norm": 43.58500977247392,
+                "reference_norm": 43.59578989769663
+              },
+              {
+                "case": 4,
+                "tokens": 2,
+                "milliseconds": [
+                  8.014254,
+                  3.814876,
+                  9.218165,
+                  3.919572,
+                  7.192583,
+                  3.768986,
+                  6.710328
+                ],
+                "median_ms": 6.710328,
+                "min_ms": 3.768986,
+                "max_ms": 9.218165,
+                "vector_sha256": "a256985d9b8e7c6ee952041ee7d0860f1d261a465ee9955c78b07c6c302da75f",
+                "cls_cosine": 0.9999970265992119,
+                "cls_relative_error": 0.002902467693641075,
+                "cls_max_abs": 0.02046823501586914,
+                "native_norm": 38.29889342381206,
+                "reference_norm": 38.359385763821535
+              },
+              {
+                "case": 5,
+                "tokens": 3,
+                "milliseconds": [
+                  7.129747,
+                  4.080517,
+                  7.289956,
+                  4.121197,
+                  7.262395,
+                  4.165893,
+                  7.261777
+                ],
+                "median_ms": 7.129747,
+                "min_ms": 4.080517,
+                "max_ms": 7.289956,
+                "vector_sha256": "dcb98b8376aa02361bc74bc00ad74ec184b6362e29328b533b7f35cb7c351bd7",
+                "cls_cosine": 0.9999989546590914,
+                "cls_relative_error": 0.0017796002399264345,
+                "cls_max_abs": 0.02267932891845703,
+                "native_norm": 35.55270962494924,
+                "reference_norm": 35.58966922404587
+              },
+              {
+                "case": 6,
+                "tokens": 1,
+                "milliseconds": [
+                  6.704561,
+                  3.443704,
+                  6.46844,
+                  3.406892,
+                  6.153372,
+                  3.558821,
+                  6.417498
+                ],
+                "median_ms": 6.153372,
+                "min_ms": 3.406892,
+                "max_ms": 6.704561,
+                "vector_sha256": "39f012540ba9764f0e27fcbf26e250378c7090ae01346084374a2f6ecf7a9cbe",
+                "cls_cosine": 0.9999996080173494,
+                "cls_relative_error": 0.0008891481460844333,
+                "cls_max_abs": 0.0036585330963134766,
+                "native_norm": 29.78052069194771,
+                "reference_norm": 29.77810964884332
+              },
+              {
+                "case": 7,
+                "tokens": 3,
+                "milliseconds": [
+                  7.138653,
+                  4.068556,
+                  7.140529,
+                  4.069136,
+                  7.055744,
+                  4.23753,
+                  7.117173
+                ],
+                "median_ms": 7.055744,
+                "min_ms": 4.068556,
+                "max_ms": 7.140529,
+                "vector_sha256": "e6b236e22fc0dc702662ca69a45971da52f64b5cc4192f98a585b30c2b87755c",
+                "cls_cosine": 0.9999983169188928,
+                "cls_relative_error": 0.0019720504467823346,
+                "cls_max_abs": 0.03418540954589844,
+                "native_norm": 59.903171979653514,
+                "reference_norm": 59.85999004078574
+              },
+              {
+                "case": 8,
+                "tokens": 14,
+                "milliseconds": [
+                  6.593253,
+                  3.640853,
+                  7.383166,
+                  3.650403,
+                  6.702684,
+                  3.598163,
+                  6.602209
+                ],
+                "median_ms": 6.593253,
+                "min_ms": 3.598163,
+                "max_ms": 7.383166,
+                "vector_sha256": "35648e74d07607d509f9bbd394059af80a3337070fe1247819e4d8db03566bad",
+                "cls_cosine": 0.9999960426466322,
+                "cls_relative_error": 0.0028623922268462107,
+                "cls_max_abs": 0.01660919189453125,
+                "native_norm": 36.96027924340655,
+                "reference_norm": 36.97994448869384
+              },
+              {
+                "case": 9,
+                "tokens": 14,
+                "milliseconds": [
+                  9.388574,
+                  3.93619,
+                  6.771277,
+                  3.709321,
+                  6.632898,
+                  3.593929,
+                  6.815373
+                ],
+                "median_ms": 6.632898,
+                "min_ms": 3.593929,
+                "max_ms": 9.388574,
+                "vector_sha256": "48af0a19302154621257de0281ce3142ab0518afbfa5bcce0899844722116893",
+                "cls_cosine": 0.9999995300660793,
+                "cls_relative_error": 0.0009749838133438848,
+                "cls_max_abs": 0.008525371551513672,
+                "native_norm": 83.24557600894268,
+                "reference_norm": 83.25423740066873
+              },
+              {
+                "case": 10,
+                "tokens": 11,
+                "milliseconds": [
+                  6.700028,
+                  3.547491,
+                  6.644225,
+                  3.493517,
+                  6.811955,
+                  3.559641,
+                  6.946125
+                ],
+                "median_ms": 6.644225,
+                "min_ms": 3.493517,
+                "max_ms": 6.946125,
+                "vector_sha256": "7bfcebcd7309c14bf5dec85bdf1494e85303068cd4f464776d21b9972ba86502",
+                "cls_cosine": 0.999999650273366,
+                "cls_relative_error": 0.0008448082467458246,
+                "cls_max_abs": 0.008020639419555664,
+                "native_norm": 82.83744754947193,
+                "reference_norm": 82.84736553835278
+              },
+              {
+                "case": 11,
+                "tokens": 9,
+                "milliseconds": [
+                  6.307022,
+                  3.520544,
+                  6.485276,
+                  3.559532,
+                  6.795682,
+                  3.544777,
+                  6.459069
+                ],
+                "median_ms": 6.307022,
+                "min_ms": 3.520544,
+                "max_ms": 6.795682,
+                "vector_sha256": "ea52c12a341abf3e41e23c25188bad6e684f5d95b7bf5fe89335bb86b8c2cc5c",
+                "cls_cosine": 0.9999994830747888,
+                "cls_relative_error": 0.0010805349430596481,
+                "cls_max_abs": 0.006894588470458984,
+                "native_norm": 59.62242432138941,
+                "reference_norm": 59.64426454205843
+              },
+              {
+                "case": 12,
+                "tokens": 7,
+                "milliseconds": [
+                  6.375606,
+                  3.44809,
+                  6.47294,
+                  3.701934,
+                  6.964057,
+                  3.507922,
+                  6.776914
+                ],
+                "median_ms": 6.375606,
+                "min_ms": 3.44809,
+                "max_ms": 6.964057,
+                "vector_sha256": "be59c37c786f2421de73960e82ee525dcce78f4f1bcd6938956a1a0f54b23b13",
+                "cls_cosine": 0.9999993747486318,
+                "cls_relative_error": 0.001119498851402019,
+                "cls_max_abs": 0.018157005310058594,
+                "native_norm": 49.74206848273336,
+                "reference_norm": 49.74472020839599
+              },
+              {
+                "case": 13,
+                "tokens": 20,
+                "milliseconds": [
+                  10.960213,
+                  17.103049,
+                  11.067678,
+                  16.481143,
+                  10.975072,
+                  16.360211,
+                  10.929419
+                ],
+                "median_ms": 11.067678,
+                "min_ms": 10.929419,
+                "max_ms": 17.103049,
+                "vector_sha256": "312ac57cfd39454a564688915be890fa639044d445ccdecab078423fadb86288",
+                "cls_cosine": 0.9999997542757719,
+                "cls_relative_error": 0.0008126590409811186,
+                "cls_max_abs": 0.0059185028076171875,
+                "native_norm": 56.646278704591886,
+                "reference_norm": 56.66958695418492
+              },
+              {
+                "case": 14,
+                "tokens": 649,
+                "milliseconds": [
+                  80.277795,
+                  80.143261,
+                  83.477892,
+                  80.494598,
+                  83.786456,
+                  78.875443,
+                  80.482332
+                ],
+                "median_ms": 80.482332,
+                "min_ms": 78.875443,
+                "max_ms": 83.786456,
+                "vector_sha256": "7d913d089d5696930a764458afba600c0e450d08a463fded80d6c9728230a4c5",
+                "cls_cosine": 0.9999984976215566,
+                "cls_relative_error": 0.001753408183637637,
+                "cls_max_abs": 0.008929967880249023,
+                "native_norm": 39.344493002818076,
+                "reference_norm": 39.33416864981945
+              }
+            ],
+            "peak_process_rss_kib": 786520,
+            "completed": true
+          }
+        ]
+      }
+    },
+    "frozen_inputs_unchanged": true,
+    "script_sha256": "e57d4780088595e215cb4b8ee6dfdbe5baa2cc3e56e46a6f93e3e493dca10a43",
+    "gpu": "Tesla T4, 7.5\nTesla T4, 7.5\n",
+    "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Fri_Feb_21_20:23:50_PST_2025\nCuda compilation tools, release 12.8, V12.8.93\nBuild cuda_12.8.r12.8/compiler.35583870_0\n",
+    "reference_files": {
+      "005.gguf": {
+        "bytes": 730208,
+        "sha256": "ec8e6824e123f556f70797ce977bdc5a8064a5361663cb6fd69b73c55f6c675b"
+      },
+      "004.gguf": {
+        "bytes": 402528,
+        "sha256": "d25133090c540486fe67825b94909accc39c213d29f5b61b6a3442a59bebf933"
+      },
+      "009.gguf": {
+        "bytes": 1451200,
+        "sha256": "8e587a6bc26e593545b5c740610d0eae61c5f5bf11fea7dc369f18e62a565744"
+      },
+      "003.gguf": {
+        "bytes": 1647840,
+        "sha256": "42aabe3a90d2f9056fd4a983de86c31c4aa398257cbfcd9376a695e5d0b8abac"
+      },
+      "006.gguf": {
+        "bytes": 74688,
+        "sha256": "3b0b8cfaff49ad3b2180ad6980d4dc877d74994dae72a3b499ab5c9377121998"
+      },
+      "007.gguf": {
+        "bytes": 205824,
+        "sha256": "724f00a7c5540ae0051d2454cfabe8086ff73853d6ae676160cb1f17e1302a60"
+      },
+      "008.gguf": {
+        "bytes": 926784,
+        "sha256": "a1d9d35c734098efefdf6308a9e036f5d3b94cc646051574b13265e23f85e79d"
+      },
+      "012.gguf": {
+        "bytes": 730240,
+        "sha256": "f6129c72fb26e0e4976aa30d4603dc7a0f98f895a5bd1bb7c756fe7c7407fdc7"
+      },
+      "011.gguf": {
+        "bytes": 861344,
+        "sha256": "2629a306cc8a35f1fea6344d1f0ea3a1a55e89400dea9da50d3973568fe7a7d9"
+      },
+      "decoded_vocab.json": {
+        "bytes": 658507,
+        "sha256": "db20e09e100885c8f319e937dbae831538972592e0fae84adc547563c4ec2581"
+      },
+      "013.gguf": {
+        "bytes": 1582304,
+        "sha256": "8ab88c1e6629d380ce200532d6f38419589cd2beeda5139dc3ee504b924bab10"
+      },
+      "010.gguf": {
+        "bytes": 992416,
+        "sha256": "1af170602341f94a77e155275d7e162e8a6b98ef66ef2c512a70d038eb3b49ae"
+      },
+      "014.gguf": {
+        "bytes": 42809792,
+        "sha256": "21bebf1af934251a7557b8d5267a254b85bfbdbe781bd0cd0f28be205ea44c13"
+      },
+      "002.gguf": {
+        "bytes": 926880,
+        "sha256": "8b4896bbb72bf1b76580a0dd765a9dd9ae71277613e85de7ab351ae6e87d7205"
+      },
+      "index.json": {
+        "bytes": 3530,
+        "sha256": "d7f837bc60e6fe0256614790f74f9475a851ad4f8f7b4e71064fe60faeb2b907"
+      },
+      "versions.json": {
+        "bytes": 168,
+        "sha256": "3f61651a76af5f0c9a2c0fdc43627153e78dec51ea4909f1c866449d545e9ec6"
+      },
+      "000.gguf": {
+        "bytes": 861312,
+        "sha256": "c13c73a3bfe1ad59f4aea5a8832b37c009570e74f107bfc9ca74d279bce2ebdf"
+      },
+      "001.gguf": {
+        "bytes": 861344,
+        "sha256": "32c3b368d3e5188926783daac6651e6cbc80bc855f179fdf85ce11871580776a"
+      }
+    },
+    "model_sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+    "ggml_source": "890278a8342c620197c90e702e1188bcab94f510",
+    "library_sha256": "491cf5cbcf6a476354d04ca81af9c035bb826ddb226e6ca2908d0cb1230a1bc6",
+    "worker_sha256": "aa02617d59b0d6f478860b2047a6498e13cbbec610dbe97973fde516bf97260f",
+    "conclusive": true,
+    "limits": "One detected GPU/host, fixed15-case F16 panel, two threads, two warmups/seven repeats, ABBA; RSS is per-process high-water including initialization/quality probes, not incremental VRAM or throughput"
+  },
+  "independent_review": {
+    "recipe_source": "7a17864fa1efc1fc28bf97053f4c8a4cb7991dfb",
+    "producer_sha256": "ea2841ff6fb35423e54465ed84315587f0975f87665875dd33f33d23789beca2",
+    "terminal_log_sha256": "696611a26ae080c5a5687ea27ba3048df0d6fe60312d4535d5cffb678b5c362a",
+    "exact_pinned_recipe_and_worker": true,
+    "original_model_and_all_18_reference_file_declarations_match_prior_audit": true,
+    "selected_logs_sha256": {
+      "configure": "0b2a41108d520f0ecd2bb993d2275e14e5243c060afc6884dabc5007ab4bc9ef",
+      "build": "a91b19c28acf90d2739ad23ab488f3bad9cdc9e1caa1c6a54eea35578e0c5861",
+      "cpu-placement": "ab0334e66bffc11b03cac5ec1a965ca09c2144d44bf35bacda8ff0e28626faca",
+      "cuda-placement": "2a37484e41328f6bea973bd43494da8980a572ddce0a2fdbd2504a4f0195bd96"
+    },
+    "blocks": [
+      {
+        "block": 0,
+        "backend": "cpu",
+        "sha256": "8e2f01a50838f9cc9e991f1dca8095e4ff5df904d7536737561455e6009a163e"
+      },
+      {
+        "block": 1,
+        "backend": "cuda",
+        "sha256": "fc47e2dd42b64a4b1152949510540bf4cbc27ee9819e148670de0ae5b378483a"
+      },
+      {
+        "block": 2,
+        "backend": "cuda",
+        "sha256": "9a608b8015b42a1ebaa3f175eaa4669c39503f971688249e5e9ff9c0c70c07e0"
+      },
+      {
+        "block": 3,
+        "backend": "cpu",
+        "sha256": "b29e1ee374c287f2be24147d117123eb839383259197012c27f75dae6b00b32d"
+      }
+    ],
+    "timing_rows_recomputed": 60,
+    "timing_samples_checked": 420,
+    "cross_block_vector_hashes_identical_within_backend": true,
+    "cpu_cuda_matmul_assignments": {
+      "cpu": 0,
+      "cuda": 180
+    },
+    "paired_cases": [
+      {
+        "case": 0,
+        "tokens": 9,
+        "cpu_median_ms": 136.5422765,
+        "cuda_median_ms": 4.888863499999999,
+        "cpu_over_cuda": 27.929247053021633
+      },
+      {
+        "case": 1,
+        "tokens": 9,
+        "cpu_median_ms": 138.87913700000001,
+        "cuda_median_ms": 4.795107,
+        "cpu_over_cuda": 28.962677370911646
+      },
+      {
+        "case": 2,
+        "tokens": 10,
+        "cpu_median_ms": 155.27664,
+        "cuda_median_ms": 6.447476999999999,
+        "cpu_over_cuda": 24.083318172364166
+      },
+      {
+        "case": 3,
+        "tokens": 17,
+        "cpu_median_ms": 261.755681,
+        "cuda_median_ms": 16.316184999999997,
+        "cpu_over_cuda": 16.0427012196785
+      },
+      {
+        "case": 4,
+        "tokens": 2,
+        "cpu_median_ms": 36.9735235,
+        "cuda_median_ms": 6.9514555,
+        "cpu_over_cuda": 5.318817548353723
+      },
+      {
+        "case": 5,
+        "tokens": 3,
+        "cpu_median_ms": 51.931703999999996,
+        "cuda_median_ms": 7.195762,
+        "cpu_over_cuda": 7.216984664028631
+      },
+      {
+        "case": 6,
+        "tokens": 1,
+        "cpu_median_ms": 21.722638500000002,
+        "cuda_median_ms": 6.239923,
+        "cpu_over_cuda": 3.481235024855275
+      },
+      {
+        "case": 7,
+        "tokens": 3,
+        "cpu_median_ms": 51.691573500000004,
+        "cuda_median_ms": 7.0864585,
+        "cpu_over_cuda": 7.294415609715347
+      },
+      {
+        "case": 8,
+        "tokens": 14,
+        "cpu_median_ms": 211.07039500000002,
+        "cuda_median_ms": 6.597731,
+        "cpu_over_cuda": 31.9913611209672
+      },
+      {
+        "case": 9,
+        "tokens": 14,
+        "cpu_median_ms": 212.1466315,
+        "cuda_median_ms": 6.7020875,
+        "cpu_over_cuda": 31.653814054203263
+      },
+      {
+        "case": 10,
+        "tokens": 11,
+        "cpu_median_ms": 167.537593,
+        "cuda_median_ms": 6.662547999999999,
+        "cpu_over_cuda": 25.146174256455637
+      },
+      {
+        "case": 11,
+        "tokens": 9,
+        "cpu_median_ms": 138.47558750000002,
+        "cuda_median_ms": 6.3830455,
+        "cpu_over_cuda": 21.694281749989095
+      },
+      {
+        "case": 12,
+        "tokens": 7,
+        "cpu_median_ms": 108.6353475,
+        "cuda_median_ms": 6.330173500000001,
+        "cpu_over_cuda": 17.16151184481752
+      },
+      {
+        "case": 13,
+        "tokens": 20,
+        "cpu_median_ms": 304.81896600000005,
+        "cuda_median_ms": 11.026442500000002,
+        "cpu_over_cuda": 27.64436181479203
+      },
+      {
+        "case": 14,
+        "tokens": 649,
+        "cpu_median_ms": 9667.336134000001,
+        "cuda_median_ms": 80.48846499999999,
+        "cpu_over_cuda": 120.10834265506246
+      }
+    ],
+    "peak_process_rss_kib": {
+      "cpu": [
+        1135744,
+        1136992
+      ],
+      "cuda": [
+        788272,
+        786520
+      ]
+    },
+    "reported_cls_gates_pass": true,
+    "raw_cls_arrays_recomputed": false,
+    "limits": "Timing summaries, report/block identity, source hashes and selected placement/build logs independently checked. Raw CLS/vector arrays were not retained in this performance run; numerical agreement relies on the pinned worker assertions and separate full-stage audit. CPU model/clock and VRAM not captured. One session, 15 fixed cases; no throughput, independent task quality or default promotion claim."
+  },
+  "artifact_preservation": "Original producer, four block reports, selected build/placement logs and terminal log retained outside Git; full weights/caches remain remote. Initial v1 timeout retained separately."
+}

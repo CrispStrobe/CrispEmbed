@@ -65,7 +65,7 @@ CPU encoder APIs default on for GGUFs declaring a non-causal LFM2 model and
 mask token. `CRISPEMBED_LFM2_ENCODER=0` disables these APIs and restores the
 historical ordinary-text tokenizer for bisection. Other LFM2 checkpoints and
 GPU encoder graphs require `CRISPEMBED_LFM2_ENCODER=1`. CUDA F16 scheduling passes the frozen suite on Tesla T4 (23 October2026);
-other devices/precisions, performance and broader workloads remain unqualified,
+other devices/precisions and broader workloads remain unqualified,
 so GPU use remains opt-in. Existing pooled and
 ColBERT paths remain available. The model metadata declares 128000 positions;
 the validation suite reaches 649 tokens and does not establish quality at the
@@ -499,3 +499,21 @@ coverage, GPU latency/RSS result or default promotion. Cold compilation took
 1,798 seconds near the1,800-second job-stage cap; a future justified run should
 budget/cache the build explicitly and record a new script version, not fish for
 hardware. Large model/build artifacts stayed remote; only reports/logs were fetched.
+
+## Paired CPU/CUDA F16 performance — 23 October2026
+
+The bounded ABBA15-case dense API timing run completes on Tesla T4/CUDA12.8.
+For the nine-token case, pooled medians are136.542ms CPU and4.889ms CUDA;
+for649 tokens,9667.336ms and80.488ms. All15 CUDA medians are lower in this
+single session (3.48–120.11×). Two threads, two warmups/seven repeats per block,
+fresh contexts and unchanged original CLS/ID/repeat gates are used. Scheduler
+probes confirm CPU zero/CUDA180 GPU matmul assignments.
+
+This measures completed ordinary dense encoding including Python FFI/output
+copy. It excludes initialization/reference checks; process peak RSS includes
+them and is not VRAM. CPU model/clock and concurrency/throughput are unmeasured.
+Raw CLS metrics rely on pinned worker assertions, with separate full-stage
+audit evidence; this timing run retains vector hashes rather than raw vectors.
+GPU remains opt-in and semantic retrieval quality is unqualified.
+[Producer and independent review](../tests/results/lfm2-encoder/cuda-f16-performance.json),
+[complete timing/storage limits](../PERFORMANCE.md#paired-lfm25-encoder-f16-dense-api-performance--23-october2026).
