@@ -265,6 +265,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         handles.append(linear.register_forward_hook(hook(f"{label}.output")))
     model_module = sys.modules[type(delta_layer).__module__]
     originals = {}
+    delta_wrappers = {}
     delta_active = [False]
     delta_none_initial = set()
     for method_name in ["chunk_gated_delta_rule", "recurrent_gated_delta_rule"]:
@@ -290,11 +291,15 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
                     save(f"{phase[0]}.delta.final_state", result[1])
                 return result
             return capture
-        setattr(model_module, "torch_" + method_name, wrap(original))
+        delta_wrappers[method_name] = wrap(original)
     def delta_enter(module, args):
+        for name, wrapper in delta_wrappers.items():
+            setattr(model_module, "torch_" + name, wrapper)
         delta_active[0] = True
     def delta_leave(module, args, result):
         delta_active[0] = False
+        for name, original in originals.items():
+            setattr(model_module, "torch_" + name, original)
     handles.append(delta_layer.register_forward_pre_hook(delta_enter))
     handles.append(delta_layer.register_forward_hook(delta_leave))
     for index, block in enumerate(language.layers):
