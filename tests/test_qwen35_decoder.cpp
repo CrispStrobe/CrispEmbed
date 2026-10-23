@@ -1,4 +1,5 @@
 #include "core/clean_exit.h"
+#include "core/env_gate.h"
 #include "qwen35_decoder.h"
 #include "qwen35_vision.h"
 #include "qwen35_positions.h"
@@ -38,6 +39,7 @@ static int argmax(const std::vector<float> & x) {
 static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3 && argc != 4) return 2;
     const bool native_frontend = argc == 4 && std::string(argv[3]) == "--native-frontend";
+    const bool audit_all_layers = core_env::on("CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS");
     const bool native_positions = native_frontend || (argc == 4 && std::string(argv[3]) == "--native-positions");
     const bool native_vision = argc == 4;
     if (native_vision && !native_positions && std::string(argv[3]) != "--native-vision") return 2;
@@ -102,7 +104,8 @@ static int crispembed_test_main(int argc, char ** argv) {
             std::string prompt, rendered;
             for (int i = 0; i < int(prompt_length.first[0]); ++i) prompt.push_back(char(prompt_bytes.first[i]));
             std::vector<int> derived_ids;
-            if (!qwen35_ocr::preprocess_rgb(bytes.data(), int(rgb_shape[2]), int(rgb_shape[1]), {}, image) ||
+            if (!qwen35_ocr::preprocess_rgb(bytes.data(), int(rgb_shape[2]), int(rgb_shape[1]),
+                                            tokenizer.image_limits(), image) ||
                 !tokenizer.image_prompt(prompt, int(image.patches.size() / 1536 / 4), derived_ids, native_modalities,
                                         rendered))
                 return 2;
@@ -216,8 +219,8 @@ static int crispembed_test_main(int argc, char ** argv) {
         for (size_t i = 0; i < current.hidden.size(); ++i) {
             if (!qwen35_compare(ref, phase + ".decoder.layer." + std::to_string(i), current.hidden[i])) {
                 ok = false;
-                // Keep the earliest divergence visible; later layers are not proof.
-                break;
+                // The diagnostic arm measures amplification after the earliest failure.
+                if (!audit_all_layers) break;
             }
         }
         ok &= qwen35_compare(ref, phase + ".decoder.norm", current.norm);
@@ -276,7 +279,7 @@ static int crispembed_test_main(int argc, char ** argv) {
                 ok = false;
                 break;
             }
-            if (id == (native_frontend ? tokenizer.eos() : 248046)) {
+            if (native_frontend ? tokenizer.is_stop(id) : id == 248046) {
                 ok &= step + 1 == expected.second;
                 break;
             }
@@ -311,7 +314,15 @@ static int crispembed_test_main(int argc, char ** argv) {
         std::string text, oracle;
         const auto bytes = ref.get_f32("input.decoded_utf8");
         if (!bytes.first || !tokenizer.decode(ids, text)) return 2;
-        for (size_t i = 0; i < bytes.second; ++i) oracle.push_back(char(bytes.first[i]));
+        const auto length = ref.get_f32("input.decoded_length");
+        size_t count = bytes.second;
+        if (length.first) {
+            if (length.second != 1 || !std::isfinite(length.first[0]) || length.first[0] < 0 ||
+                length.first[0] > bytes.second || std::floor(length.first[0]) != length.first[0])
+                return 2;
+            count = size_t(length.first[0]);
+        }
+        for (size_t i = 0; i < count; ++i) oracle.push_back(char(bytes.first[i]));
         ok &= text == oracle;
         std::printf("Native decoded UTF8 hex:");
         for (unsigned char byte : text) std::printf("%02x", byte);

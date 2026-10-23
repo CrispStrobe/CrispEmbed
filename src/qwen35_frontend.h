@@ -35,6 +35,7 @@ public:
     bool image_prompt(const std::string & prompt, int image_tokens, std::vector<int> & ids,
                       std::vector<int> & modalities, std::string & rendered) const;
     int eos() const { return eos_; }
+    bool is_ovisocr2() const { return ovis_; }
     bool is_stop(int id) const;
     image_config image_limits() const { return ovis_ ? image_config{ 448 * 448, 2880 * 2880 } : image_config{}; }
 };
