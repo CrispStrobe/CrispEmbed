@@ -1,3 +1,19 @@
+## 2026-10-23 — Pinned experimental Ovis export profile implemented
+
+A separate exact-source export profile verifies the reviewed metadata proof,
+all ten source-file hashes, canonical config, non-speculative MTP policy,
+checkpoint size/full SHA, original prompt and dual stopping metadata. Missing
+upstream processor/generation files remain absent; derived values are separate.
+Format2 remains experimental/native-alias-unqualified; ordinary LightOn output
+and default MTP rejection are preserved. Nine profile/CLI guards and five
+metadata groups pass locally, with no model/framework imports in controls.
+
+A hosted export arm is prepared for both F32/F16, complete original-cast/tensor
+roundtrip and remote model artifact preservation with upstream license. A Sol
+helper wrote/reviewed bounded profile code and identified a metadata allowlist
+omission, fixed before any weight run. Actual conversion/model/native/decoded
+qualification remains pending. [Protocol](docs/ovisocr2.md).
+
 ## 2026-10-23 — Ovis weight-free metadata/schema/processor qualification passes
 
 Hosted39983101540 atca3d096f passes actual HF5.16.1 config/generation/processor

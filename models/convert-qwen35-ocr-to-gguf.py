@@ -9,6 +9,9 @@ The source layout is preserved (including zero-centered RMSNorm weights).
 
 import argparse
 import hashlib
+import importlib.util
+import inspect
+from functools import lru_cache
 import json
 import re
 from pathlib import Path
@@ -17,6 +20,13 @@ from pathlib import Path
 ARCH = "qwen35_ocr"
 LIGHTON_MODEL = "lightonai/LightOnOCR-3-0.8B"
 LIGHTON_REVISION = "36d8636925327c671bd8e479c517a004f7566bd9"
+
+
+@lru_cache(maxsize=1)
+def _ovis_profiles():
+    spec=importlib.util.spec_from_file_location('qwen35_ovis_profile',Path(__file__).with_name('qwen35_ovis_profile.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
 
 
 def precision_recipe(name):
@@ -30,7 +40,7 @@ def precision_recipe(name):
     ]
 
 
-def read_tokenizer_metadata(root, vocab_size):
+def read_tokenizer_metadata(root, vocab_size, generation=None):
     tokenizer = json.loads((root / "tokenizer.json").read_text())
     if tokenizer["model"]["type"] != "BPE":
         raise ValueError("Expected an audited BPE tokenizer")
@@ -51,7 +61,8 @@ def read_tokenizer_metadata(root, vocab_size):
         raise ValueError("Unimplemented tokenizer normalization/dropout")
     if any(t.get("single_word") or t.get("lstrip") or t.get("rstrip") or t.get("normalized") for t in tokenizer["added_tokens"]):
         raise ValueError("Unimplemented added-token matching policy")
-    generation = json.loads((root / "generation_config.json").read_text())
+    if generation is None:
+        generation = json.loads((root / "generation_config.json").read_text())
     eos = generation["eos_token_id"]
     if not isinstance(eos, int) or eos < 0 or eos >= vocab_size:
         raise ValueError("Only a valid single generation EOS supported")
@@ -79,7 +90,7 @@ def write_tokenizer_metadata(writer, data):
     writer.add_uint32("tokenizer.ggml.padding_token_id", data["pad"])
 
 
-def validate_config(config):
+def validate_config(config, profile=None):
     if config.get("model_type") != "qwen3_5":
         raise ValueError("Only dense qwen3_5 checkpoints are supported")
     text = config["text_config"]
@@ -89,7 +100,9 @@ def validate_config(config):
         "linear_attention", "full_attention"
     }:
         raise ValueError("Invalid or unsupported decoder layer schedule")
-    if text.get("mtp_num_hidden_layers", 0):
+    if profile is not None:
+        _ovis_profiles().validate_config(config,profile)
+    if text.get("mtp_num_hidden_layers", 0) and profile is None:
         raise ValueError("MTP checkpoints need a separately audited export policy")
     if vision.get("deepstack_visual_indexes", []):
         raise ValueError("DeepStack is not part of the audited Qwen3.5 OCR format")
@@ -116,24 +129,39 @@ def tensor_name(name):
     return result
 
 
-def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_f32=()):
-    import gguf
-    import numpy as np
-    import torch
-    from safetensors import safe_open
-    from transformers import AutoConfig, Qwen3_5ForConditionalGeneration
-
+def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_f32=(), profile=None):
     root = Path(model_dir)
     output = Path(output)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("An immutable 40-hex source revision is required")
+    if profile not in (None,"ovisocr2"):
+        raise ValueError("Unknown export profile")
+    pinned=_ovis_profiles().load_profile(root,source_model,source_revision) if profile else None
     config = json.loads((root / "config.json").read_text())
-    text, vision = validate_config(config)
+    text, vision = validate_config(config,pinned)
     if dtype not in {"f32", "f16"}:
         raise ValueError("Establish full-precision parity before adding quantized exports")
+    if pinned:
+        if (root/"model.safetensors.index.json").exists():
+            raise ValueError("Pinned Ovis checkpoint is a single file; unexpected shard index")
+        _ovis_profiles().verify_checkpoint(root/"model.safetensors",pinned)
+
+    import gguf
+    import numpy as np
+    import torch
+    from safetensors import safe_open
+    import transformers
+    from transformers import AutoConfig, Qwen3_5ForConditionalGeneration
+    if pinned:
+        expected=pinned['qualification']
+        implementation=Path(inspect.getfile(Qwen3_5ForConditionalGeneration)).read_bytes().replace(b'\r\n',b'\n')
+        if (transformers.__version__!=expected['transformers_version']
+                or hashlib.sha256(implementation).hexdigest()!=expected['loaded_source_sha256']['model']):
+            raise ValueError("Ovis meta-model implementation differs from qualification")
 
     # Official implementation supplies the independent expected parameter schema.
     hf_config = AutoConfig.from_pretrained(root, local_files_only=True, trust_remote_code=False)
+    if pinned: hf_config._attn_implementation="eager"
     with torch.device("meta"):
         official = Qwen3_5ForConditionalGeneration(hf_config)
     expected = {name: list(tensor.shape) for name, tensor in official.state_dict().items()}
@@ -183,7 +211,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                                embed_file.get_tensor("model.language_model.embed_tokens.weight")):
                 raise ValueError("Checkpoint claims tied weights but stores unequal head/embedding")
 
-    tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"])
+    tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"],pinned["generation"] if pinned else None)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     pending = output.with_name(output.name + ".partial")
@@ -192,15 +220,31 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     writer.add_string("general.source.huggingface.repository", source_model)
     writer.add_string("general.source.huggingface.revision", source_revision)
     writer.add_string(f"{ARCH}.status", "experimental-export-native-backend-pending")
-    writer.add_uint32(f"{ARCH}.format_version", 1)
+    writer.add_uint32(f"{ARCH}.format_version", pinned["format_version"] if pinned else 1)
     writer.add_bool(f"{ARCH}.tie_word_embeddings", tied)
     writer.add_bool(f"{ARCH}.zero_centered_text_norm", True)
     # Preserve every config field, rather than treating nested EOS ids as synonyms.
     for filename in ["config.json", "processor_config.json", "preprocessor_config.json",
                      "tokenizer_config.json", "generation_config.json"]:
+        if pinned and filename in pinned['missing_source_files']:
+            continue  # Preserve absence, never fabricate an upstream source file.
         writer.add_string(f"{ARCH}.{filename.removesuffix('.json')}", (root / filename).read_text())
     writer.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
     write_tokenizer_metadata(writer, tokenizer_data)
+    if pinned:
+        writer.add_string(f"{ARCH}.profile",pinned['name'])
+        writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
+        writer.add_key_value(f"{ARCH}.stop_token_ids",pinned['stop_ids'],gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
+        writer.add_uint32(f"{ARCH}.primary_eos_id",pinned['primary_eos'])
+        writer.add_array(f"{ARCH}.missing_source_files",pinned['missing_source_files'])
+        writer.add_string(f"{ARCH}.resolved_generation_config",json.dumps(pinned['generation'],sort_keys=True))
+        writer.add_string(f"{ARCH}.resolved_processor_config",json.dumps(pinned['processor'],sort_keys=True))
+        writer.add_string(f"{ARCH}.metadata_qualification",json.dumps(pinned['qualification'],sort_keys=True))
+        writer.add_string(f"{ARCH}.checkpoint_sha256",pinned['checkpoint_sha256'])
+        writer.add_uint32(f"{ARCH}.image_min_pixels",pinned['image_min_pixels'])
+        writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
+        writer.add_bool(f"{ARCH}.image_max_qualified",False)
+        writer.add_bool(f"{ARCH}.native_alias_qualified",False)
 
     records = []
     try:
@@ -238,6 +282,8 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                 "architecture": ARCH, "dtype": dtype, "keep_f32": sorted(keep_f32), "tie_word_embeddings": tied,
                 "checkpoint_tensor_count": len(actual), "export_tensor_count": len(records),
                 "records": records, "bytes": output.stat().st_size}
+    if pinned:
+        manifest["profile"]={k:v for k,v in pinned.items() if k!="proof_marker"}
     output.with_suffix(output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
 
@@ -247,6 +293,8 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=LIGHTON_MODEL)
+    parser.add_argument("--profile",choices=["ovisocr2"],
+                        help="Pinned experimental Ovis export-only profile; not a native alias")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--dtype", choices=["f32", "f16"], default="f16")
@@ -257,10 +305,17 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
+    if args.profile or args.model=="ATH-MaaS/OvisOCR2":
+        policy=_ovis_profiles()
+        if args.profile!="ovisocr2" or args.model!=policy.MODEL or args.revision!=policy.REVISION:
+            parser.error("Ovis export requires its exact source/revision and --profile ovisocr2")
+        metadata=snapshot_download(args.model,revision=args.revision,
+                                  allow_patterns=list(policy.metadata_files()))
+        policy.load_profile(metadata,args.model,args.revision)  # Before any weight download.
     directory = snapshot_download(args.model, revision=args.revision,
                                   allow_patterns=["*.json", "*.jinja", "*.safetensors", "LICENSE*"])
     retained = sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32))
-    manifest = convert(directory, args.output, args.model, args.revision, args.dtype, retained)
+    manifest = convert(directory, args.output, args.model, args.revision, args.dtype, retained,profile=args.profile)
     print(json.dumps({key: value for key, value in manifest.items() if key != "records"}, indent=2))
 
 
