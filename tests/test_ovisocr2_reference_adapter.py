@@ -25,8 +25,16 @@ class ReferenceAdapterTest(unittest.TestCase):
                   mock.patch.object(ovis.ovis_profile, "validate_config", side_effect=lambda *a: calls.append("config"))):
                 with self.assertRaisesRegex(ValueError, "custom prompt"):
                     ovis.validate_request(directory, "different")
-                self.assertEqual(calls, ["metadata", "checkpoint", "config"])
+                with self.assertRaisesRegex(ValueError, "custom prompt"):
+                    ovis.validate_request(directory, profile["rendered_prompt"])
+                self.assertEqual(calls, [])
                 self.assertIs(ovis.validate_request(directory, ""), profile)
+                self.assertEqual(calls, ["metadata", "checkpoint", "config"])
+
+    def test_utf8_fields_preserve_empty_lengths_and_nonascii_bytes(self):
+        self.assertEqual(ovis.utf8_field(""), ([0], 0))
+        self.assertEqual(ovis.utf8_field("é"), ([0xC3, 0xA9], 2))
+        self.assertEqual(ovis.utf8_field("🧪"), ([0xF0, 0x9F, 0xA7, 0xAA], 4))
 
     def test_version_and_source_rejection(self):
         profile = {"qualification": {"loaded_source_sha256": {"model": "expected"}}}
@@ -82,7 +90,9 @@ class ReferenceAdapterTest(unittest.TestCase):
         stages = ovis.required_stages(config, 3)
         for name in ("prefill.vision.layer.11", "prefill.vision.position",
                      "prefill.decoder.layer.23", "cached.cache.0.conv_states",
-                     "cached.delta.initial_state", "generated.2.decoder.position_ids"):
+                     "cached.delta.initial_state", "generated.2.decoder.position_ids",
+                     "input.prompt_length", "input.rendered_prompt_length",
+                     "input.decoded_length", "input.raw_decoded_length"):
             self.assertIn(name, stages)
         self.assertNotIn("prefill.delta.initial_state", stages)
 

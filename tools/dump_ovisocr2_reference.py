@@ -20,14 +20,20 @@ import qwen35_ovis_profile as ovis_profile
 VERSIONS = {"transformers": "5.16.1", "tokenizers": "0.23.3", "torch": "2.14.0"}
 
 
+def utf8_field(value):
+    """Return archive-safe bytes and the real byte count (zero uses one sentinel)."""
+    data = list(value.encode("utf-8"))
+    return data or [0], len(data)
+
+
 def validate_request(model_dir, prompt):
     """Perform all source checks before any framework model/processor reader."""
+    if prompt:
+        raise ValueError("OvisOCR2 custom prompt override is forbidden")
     profile = ovis_profile.load_profile(model_dir, ovis_profile.MODEL, ovis_profile.REVISION)
     ovis_profile.verify_checkpoint(Path(model_dir) / "model.safetensors", profile)
     config = json.loads((Path(model_dir) / "config.json").read_text())
     ovis_profile.validate_config(config, profile)
-    if prompt and prompt != profile["rendered_prompt"]:
-        raise ValueError("OvisOCR2 custom prompt override is forbidden")
     if len(profile["rendered_prompt"].encode("utf-8")) != 625:
         raise ValueError("OvisOCR2 original prompt byte count differs")
     return profile
@@ -70,7 +76,11 @@ def required_stages(config, score_count=0):
                  ["patch_embed", "position", "embedded", "rotary_cos", "rotary_sin",
                   "merger.norm", "merger.up", "merger.activation", "merger"]]
     required += ["input.pixel_values", "input.image_grid_thw", "input.input_ids",
-                 "input.mm_token_type_ids", "generated.ids", "prefill.logits",
+                 "input.mm_token_type_ids", "input.prompt_utf8", "input.prompt_length",
+                 "input.rendered_prompt_utf8", "input.rendered_prompt_length",
+                 "input.decoded_utf8", "input.decoded_length",
+                 "input.raw_decoded_utf8", "input.raw_decoded_length",
+                 "generated.ids", "prefill.logits",
                  "cached.logits", "full_prefix.logits"]
     required += ["linear.conv_weights", "linear.a_log", "linear.dt_bias", "linear.norm_weights",
                  "prefill.vision.output"]
@@ -129,7 +139,6 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         raise ValueError("OvisOCR2 original processor or EOS differs")
     image = Image.open(image_path).convert("RGB")
     rendered = profile["rendered_prompt"]
-    prompt = rendered
     inputs = processor(text=[rendered], images=[image], return_tensors="pt",
                        return_mm_token_type_ids=True,
                        images_kwargs={"min_pixels": profile["image_min_pixels"],
@@ -170,9 +179,16 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         }, indent=2) + "\n")
 
     save("input.rgb", torch.from_numpy(np.array(image, dtype=np.uint8).copy()))
-    save("input.prompt_utf8", torch.tensor(list(prompt.encode("utf-8")), dtype=torch.int32) if prompt else torch.zeros(1, dtype=torch.int32))
-    save("input.prompt_length", torch.tensor([len(prompt.encode("utf-8"))], dtype=torch.int32))
-    save("input.decoded_utf8", torch.zeros(1))  # overwritten after official generate
+    prompt_bytes, prompt_length = utf8_field(prompt)
+    rendered_bytes, rendered_length = utf8_field(rendered)
+    save("input.prompt_utf8", torch.tensor(prompt_bytes, dtype=torch.int32))
+    save("input.prompt_length", torch.tensor([prompt_length], dtype=torch.int32))
+    save("input.rendered_prompt_utf8", torch.tensor(rendered_bytes, dtype=torch.int32))
+    save("input.rendered_prompt_length", torch.tensor([rendered_length], dtype=torch.int32))
+    save("input.decoded_utf8", torch.tensor([0], dtype=torch.int32))  # overwritten after generation
+    save("input.decoded_length", torch.tensor([0], dtype=torch.int32))
+    save("input.raw_decoded_utf8", torch.tensor([0], dtype=torch.int32))
+    save("input.raw_decoded_length", torch.tensor([0], dtype=torch.int32))
     for name, value in inputs.items():
         save("input." + name, value)
 
@@ -414,8 +430,12 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     decoded = processor.batch_decode(ids, skip_special_tokens=True)[0]
     raw_decoded = processor.batch_decode(ids, skip_special_tokens=False,
                                          clean_up_tokenization_spaces=False)
-    save("input.decoded_utf8", torch.tensor(list(decoded.encode("utf-8")), dtype=torch.int32))
-    save("input.raw_decoded_utf8", torch.tensor(list(raw_decoded[0].encode("utf-8")), dtype=torch.int32))
+    decoded_bytes, decoded_length = utf8_field(decoded)
+    raw_bytes, raw_length = utf8_field(raw_decoded[0])
+    save("input.decoded_utf8", torch.tensor(decoded_bytes, dtype=torch.int32))
+    save("input.decoded_length", torch.tensor([decoded_length], dtype=torch.int32))
+    save("input.raw_decoded_utf8", torch.tensor(raw_bytes, dtype=torch.int32))
+    save("input.raw_decoded_length", torch.tensor([raw_length], dtype=torch.int32))
     np.savez(output, **arrays)
     report = {
         "transformers": transformers.__version__, "tokenizers": tokenizers.__version__, "torch": torch.__version__,
