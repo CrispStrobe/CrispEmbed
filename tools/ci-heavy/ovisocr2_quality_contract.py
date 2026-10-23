@@ -91,6 +91,7 @@ def render_panel(destination, panel=None):
 
 
 def source_schema(path=EVIDENCE_PATH):
+    """Return audited GGUF shapes; the producer evidence retains original HF shapes."""
     evidence = json.loads(Path(path).read_text())
     producer = evidence['producer']
     if (canonical_sha(producer) != PRODUCER_SHA or evidence['run'] != 39983101540
@@ -107,6 +108,15 @@ def source_schema(path=EVIDENCE_PATH):
             mapped = 'l.' + name.removeprefix('model.language_model.')
         else:
             raise ValueError('Unknown original OvisOCR2 tensor: ' + name)
+        if mapped == 'v.patch_embed.proj.weight':
+            # The pinned exporter flattens only this Conv3d [out,C,T,H,W]
+            # into a GGUF matrix. The original five-axis shape remains in
+            # the reviewed producer evidence and is checked here exactly.
+            if shape != [768, 3, 2, 16, 16]:
+                raise ValueError('Original OvisOCR2 patch source shape differs')
+            shape = [768, 1536]
+        elif len(shape) > 4:
+            raise ValueError('Unexpected unflattened OvisOCR2 tensor: ' + name)
         mapping[mapped] = shape
     if len(mapping) != 473:
         raise ValueError('OvisOCR2 mapped schema differs')
@@ -280,3 +290,43 @@ def paired_quality_screen(reference, candidate):
     return {'screen_passed': not failures, 'failures': failures,
             'requires_separate_numerical_and_release_review': True,
             'scope': 'Paired heldout nonregression on four short owned synthetic pages only'}
+
+
+def paired_document_screen(reference, candidate):
+    """Fail closed on the separately reviewed three-document OCR and table panel."""
+    expected = ('historical-receipt', 'two-column-page', 'inventory-table')
+    if (tuple(row.get('id') for row in reference) != expected
+            or tuple(row.get('id') for row in candidate) != expected):
+        raise ValueError('Reviewed realistic OCR document set/order differs')
+    failures = []
+    for old, new in zip(reference, candidate):
+        if (old.get('rgb_sha256') != new.get('rgb_sha256')
+                or not re.fullmatch('[0-9a-f]{64}', old.get('rgb_sha256', ''))
+                or old.get('license') != new.get('license')):
+            raise ValueError('Reviewed realistic OCR pixel/license identity differs')
+        for side, row in (('original', old), ('candidate', new)):
+            structure = row.get('structure', {})
+            if (row.get('cap_hit') or not row.get('completed')
+                    or row.get('format_issues') or structure.get('complete') is not True
+                    or structure.get('parse_ok') is not True):
+                failures.append(row['id'] + ': ' + side + ' incomplete or malformed')
+        left, right = old.get('structure', {}), new.get('structure', {})
+        for view in ('raw', 'content'):
+            for metric in ('cer', 'wer'):
+                a = (left.get(view) or {}).get(metric)
+                b = (right.get(view) or {}).get(metric)
+                if (not isinstance(a, (int, float)) or not isinstance(b, (int, float))
+                        or not math.isfinite(a) or not math.isfinite(b) or a < 0 or b < 0):
+                    failures.append(old['id'] + ': missing finite ' + view + '/' + metric)
+                elif b > a:
+                    failures.append(old['id'] + ': ' + view + '/' + metric + ' increased')
+        if old['id'] == 'inventory-table':
+            old_table, new_table = left.get('table') or {}, right.get('table') or {}
+            if (old_table.get('expected_cells') != 15 or new_table.get('expected_cells') != 15
+                    or not isinstance(new_table.get('cell_errors'), int)
+                    or not isinstance(old_table.get('cell_errors'), int)
+                    or new_table['cell_errors'] > old_table['cell_errors']
+                    or new_table['cell_errors'] != 0):
+                failures.append('inventory-table: 15-cell grid failed or regressed')
+    return {'screen_passed': not failures, 'failures': failures,
+            'scope': 'Three reviewed licensed documents; completion, raw/content CER/WER, and 15 table cells'}

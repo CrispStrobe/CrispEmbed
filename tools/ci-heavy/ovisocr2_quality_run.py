@@ -12,27 +12,39 @@ import importlib.util
 import inspect
 import importlib.metadata
 import json
+import math
 import os
 from pathlib import Path
 import re
 import resource
+import shutil
 import subprocess
 import sys
 import time
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / 'tests/results/qwen35-ocr'
 BASELINE = EVIDENCE / 'ovisocr2-model-audit.json'
 Q8_REVIEW = EVIDENCE / 'ovisocr2-q8-quality.json'
+ORIGINAL_REVIEW = EVIDENCE / 'ovisocr2-original-quality.json'
 EXPORT = EVIDENCE / 'ovisocr2-export.json'
 F16_SHA = 'd3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db'
 F16_BYTES = 1717222848
 MODEL = 'ATH-MaaS/OvisOCR2'
 REVISION = 'cbdede82e048659b83310476ff807da825f8fe78'
-PHASES = ('original', 'f16', 'q8', 'q4')
+PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated')
 ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
              'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
+
+
+def native_environment(arm):
+    if arm not in ('f16', 'q8', 'q4', 'q4-calibrated'):
+        raise ValueError('Unknown native OvisOCR2 quality arm')
+    env = dict(os.environ, **ENV_GATES)
+    env['CRISPEMBED_QWEN35_QUANT'] = '0' if arm == 'f16' else '1'
+    return env
 
 
 def sha(path):
@@ -43,6 +55,17 @@ def sha(path):
     return h.hexdigest()
 
 
+def validate_selected_confidences(ids, confidences, cap):
+    if (not isinstance(ids, list) or not isinstance(confidences, list)
+            or type(cap) is not int or not 0 < len(ids) <= cap
+            or len(ids) != len(confidences)
+            or any(type(token) is not int or not 0 <= token < 248320 for token in ids)
+            or any(type(value) not in (int, float) or not math.isfinite(value)
+                   or value < 0 or value > 1 for value in confidences)):
+        raise ValueError('Actual selected-token confidence/ID record invalid')
+    return sum(confidences) / len(confidences)
+
+
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     result = importlib.util.module_from_spec(spec)
@@ -50,20 +73,64 @@ def load_module(name, path):
     return result
 
 
-def require_baseline(phase):
+def checked_model_receipt(receipt):
+    """Bind reviewed wrapper to its exact producer, run, and archived artifact."""
+    if not isinstance(receipt, dict):
+        raise ValueError('Reviewed OvisOCR2 model receipt wrapper absent')
+    producer = receipt.get('producer')
+    artifact = receipt.get('artifact')
+    review = receipt.get('independent_review')
+    if not all(isinstance(value, dict) for value in (producer, artifact, review)):
+        raise ValueError('Reviewed OvisOCR2 model producer/artifact/review absent')
+    canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    if (type(receipt.get('run')) is not int or receipt['run'] < 1
+            or type(artifact.get('id')) is not int or artifact['id'] < 1
+            or not re.fullmatch('[0-9a-f]{64}', artifact.get('zip_sha256', ''))
+            or review.get('artifact_zip_sha256') != artifact['zip_sha256']
+            or review.get('producer_canonical_sha256') != canonical
+            or review.get('f16_positive') is not True
+            or producer.get('status') != 'completed diagnostic audit'
+            or not re.fullmatch('[0-9a-f]{40}', producer.get('source_commit', ''))
+            or producer.get('failures') != []
+            or producer.get('exports', {}).get('f16', {}).get('model_sha256') != F16_SHA):
+        raise ValueError('OvisOCR2 original/native F16 baseline is not positively reviewed')
+    raw_sha = receipt.get('producer_report_sha256')
+    if raw_sha is not None and not re.fullmatch('[0-9a-f]{64}', raw_sha):
+        raise ValueError('OvisOCR2 archived raw producer report SHA is invalid')
+    return {'run': receipt['run'], 'source_commit': producer['source_commit'],
+            'artifact_id': artifact['id'], 'artifact_zip_sha256': artifact['zip_sha256'],
+            'producer_canonical_sha256': canonical, 'producer_report_sha256': raw_sha}
+
+
+def verify_model_receipt_service(pins):
+    """Read-only hosted service proof before dependencies, model files or builds."""
+    def api(path):
+        return json.loads(subprocess.check_output(
+            ['gh', 'api', 'repos/CrispStrobe/CrispEmbed/' + path], text=True, timeout=60))
+    run = api('actions/runs/' + str(pins['run']))
+    artifact = api('actions/artifacts/' + str(pins['artifact_id']))
+    if (run.get('id') != pins['run'] or run.get('status') != 'completed'
+            or run.get('conclusion') != 'success'
+            or run.get('head_sha') != pins['source_commit']
+            or run.get('path') != '.github/workflows/ovisocr2-metadata.yml'
+            or artifact.get('id') != pins['artifact_id']
+            or artifact.get('expired') is not False
+            or artifact.get('workflow_run', {}).get('id') != pins['run']
+            or artifact.get('digest') != 'sha256:' + pins['artifact_zip_sha256']):
+        raise ValueError('Reviewed OvisOCR2 model run/source/artifact service proof differs')
+    return {'run': pins['run'], 'source_commit': pins['source_commit'],
+            'artifact_id': pins['artifact_id'], 'artifact_zip_sha256': pins['artifact_zip_sha256']}
+
+
+def require_baseline(phase, original_run=None):
     if phase not in PHASES:
         raise ValueError('Unknown OvisOCR2 quality phase')
     if not BASELINE.is_file():
         raise ValueError('Reviewed positive OvisOCR2 native baseline receipt absent')
     receipt = json.loads(BASELINE.read_text())
-    review = receipt.get('independent_review', {})
-    if (receipt.get('status') != 'completed diagnostic audit'
-            or receipt.get('source_commit') is None
-            or not re.fullmatch(r'[0-9a-f]{40}', receipt['source_commit'])
-            or receipt.get('failures') != [] or review.get('f16_positive') is not True
-            or receipt.get('exports', {}).get('f16', {}).get('model_sha256') != F16_SHA):
-        raise ValueError('OvisOCR2 original/native F16 baseline is not positively reviewed')
-    if phase == 'q4':
+    pins = checked_model_receipt(receipt)
+    if phase in ('q4', 'q4-calibrated'):
         if not Q8_REVIEW.is_file():
             raise ValueError('Reviewed Q8 OvisOCR2 result absent; Q4 remains blocked')
         q8 = json.loads(Q8_REVIEW.read_text())
@@ -76,8 +143,22 @@ def require_baseline(phase):
             export['producer']['exports']['f16']['model_sha256'] != F16_SHA or
             export['producer']['exports']['f16']['bytes'] != F16_BYTES):
         raise ValueError('Pinned OvisOCR2 F16 export declaration differs')
-    return {'baseline_source_commit': receipt['source_commit'], 'baseline_sha256': sha(BASELINE),
-            'export_sha256': sha(EXPORT), 'review': review}
+    if phase != 'original':
+        if not isinstance(original_run, int) or original_run < 1 or not ORIGINAL_REVIEW.is_file():
+            raise ValueError('Reviewed original quality run and receipt required before candidate work')
+        original_receipt = json.loads(ORIGINAL_REVIEW.read_text())
+        review = original_receipt.get('independent_review', {})
+        if (original_receipt.get('run') != original_run
+                or not re.fullmatch('[0-9a-f]{40}', original_receipt.get('source_commit', ''))
+                or not re.fullmatch('[0-9a-f]{64}', original_receipt.get('artifact_zip_sha256', ''))
+                or not re.fullmatch('[0-9a-f]{64}', original_receipt.get('report_sha256', ''))
+                or type(original_receipt.get('artifact_id')) is not int
+                or review.get('original_11_complete') is not True):
+            raise ValueError('Original quality artifact lacks a positive independent review')
+    return {'baseline_source_commit': pins['source_commit'], 'baseline_sha256': sha(BASELINE),
+            'baseline_pins': pins, 'export_sha256': sha(EXPORT),
+            'review': receipt['independent_review'],
+            'original_review_sha256': sha(ORIGINAL_REVIEW) if phase != 'original' else None}
 
 
 def original_readme_functions(readme):
@@ -121,6 +202,87 @@ def original_readme_functions(readme):
 def process_readme_output(raw, cleaner, filter_fn):
     stripped = raw.strip()
     return cleaner(filter_fn(stripped))
+
+
+def reviewed_original_artifact(run_id, out):
+    """Fetch only the small reviewed original report archive, with service proof."""
+    receipt = json.loads(ORIGINAL_REVIEW.read_text())
+    def api(path):
+        return json.loads(subprocess.check_output(
+            ['gh', 'api', 'repos/CrispStrobe/CrispEmbed/' + path], text=True, timeout=60))
+    run = api('actions/runs/' + str(run_id))
+    if (run.get('id') != run_id or run.get('head_sha') != receipt['source_commit']
+            or run.get('status') != 'completed' or run.get('conclusion') != 'success'
+            or run.get('path') != '.github/workflows/ovisocr2-quality.yml'):
+        raise ValueError('Reviewed original quality service run/source/workflow differs')
+    artifact = api('actions/artifacts/' + str(receipt['artifact_id']))
+    if (artifact.get('name') != 'ovisocr2-quality-reports-' + str(run_id)
+            or artifact.get('expired') is not False
+            or artifact.get('workflow_run', {}).get('id') != run_id
+            or artifact.get('digest') != 'sha256:' + receipt['artifact_zip_sha256']
+            or not 0 < artifact.get('size_in_bytes', 0) <= 50_000_000):
+        raise ValueError('Reviewed original quality artifact identity/digest differs')
+    archive_path = out / 'reviewed-original-quality.zip'
+    with archive_path.open('wb') as stream:
+        subprocess.run(['gh', 'api', 'repos/CrispStrobe/CrispEmbed/actions/artifacts/'
+                        + str(artifact['id']) + '/zip'], stdout=stream, check=True, timeout=300)
+    if sha(archive_path) != receipt['artifact_zip_sha256']:
+        raise ValueError('Reviewed original quality ZIP payload differs')
+    with zipfile.ZipFile(archive_path) as archive:
+        names = archive.namelist()
+        if (len(names) != len(set(names)) or names.count('ovisocr2-quality.json') != 1
+                or any(Path(name).is_absolute() or '..' in Path(name).parts for name in names)):
+            raise ValueError('Reviewed original quality archive members differ')
+        payload = archive.read('ovisocr2-quality.json')
+    if hashlib.sha256(payload).hexdigest() != receipt['report_sha256']:
+        raise ValueError('Reviewed original quality report bytes differ')
+    report = json.loads(payload)
+    (out / 'reviewed-original-quality.json').write_bytes(payload)
+    return report, {'run': run_id, 'source_commit': run['head_sha'],
+                    'artifact_id': artifact['id'], 'artifact_zip_sha256': sha(archive_path),
+                    'report_sha256': hashlib.sha256(payload).hexdigest(),
+                    'receipt_sha256': sha(ORIGINAL_REVIEW)}
+
+
+def validate_reused_original(previous, current, cases, rendered, contract, profile, readme_sha):
+    """Require exact frozen inputs and source proof before reusing selected tokens."""
+    receipt = json.loads(ORIGINAL_REVIEW.read_text())
+    if (previous.get('status') != 'completed original HF quality baseline; review pending'
+            or previous.get('requested_phase') != 'original'
+            or previous.get('source_commit') != receipt['source_commit']
+            or previous.get('inputs') != current['inputs']
+            or previous.get('rendered_panel_sha256') != current['rendered_panel_sha256']
+            or previous.get('reviewed_documents_sha256') != current['reviewed_documents_sha256']
+            or previous.get('original_source', {}).get('readme_sha256') != readme_sha
+            or previous['original_source'].get('checkpoint_sha256') != profile['checkpoint_sha256']
+            or previous['original_source'].get('framework_source_sha256')
+            != profile['qualification']['loaded_source_sha256']):
+        raise ValueError('Reviewed original quality source/input/prompt proof differs')
+    outputs = previous.get('original_cases', {})
+    if set(outputs) != {case['id'] for case in cases} or len(outputs) != 11:
+        raise ValueError('Reviewed original quality case coverage differs')
+    for case in cases:
+        row = outputs[case['id']]
+        ids = row.get('token_ids', [])
+        confidence = row.get('confidences', [])
+        try:
+            mean = validate_selected_confidences(ids, confidence, case['cap'])
+        except ValueError as exc:
+            raise ValueError('Reviewed original quality confidence record differs: ' + case['id']) from exc
+        if (row.get('input_rgb_sha256') != case['rgb_sha256']
+                or row.get('input_png_sha256') != case['png_sha256']
+                or row.get('cap') != case['cap']
+                or row.get('stop_id') != (ids[-1] if ids[-1] in (248044, 248046) else None)
+                or row.get('finish_reason') != ('stop' if row['stop_id'] is not None else 'length')):
+            raise ValueError('Reviewed original quality ID/confidence/stop record differs: ' + case['id'])
+        recorded_mean = row.get('mean_confidence')
+        if (type(recorded_mean) not in (int, float) or not math.isfinite(recorded_mean)
+                or not math.isclose(recorded_mean, mean, rel_tol=0, abs_tol=1e-12)):
+            raise ValueError('Reviewed original quality confidence mean differs: ' + case['id'])
+    scores = score_outputs(contract, rendered, cases, outputs)
+    if scores != previous.get('scores', {}).get('original'):
+        raise ValueError('Reviewed original quality score recomputation differs')
+    return outputs, scores
 
 
 def command(label, argv, out, report, timeout=1800, env=None):
@@ -197,26 +359,40 @@ def original_cases(source, cases, profile, out, report, save):
             raise ValueError('Original multimodal token type IDs missing: ' + case['id'])
         start = time.monotonic()
         with torch.inference_mode():
-            sequence = model.generate(**inputs, max_new_tokens=case['cap'], do_sample=False,
-                                      use_cache=True, eos_token_id=profile['stop_ids'],
-                                      return_dict_in_generate=True).sequences[0]
+            generated = model.generate(**inputs, max_new_tokens=case['cap'], do_sample=False,
+                                       use_cache=True, eos_token_id=profile['stop_ids'],
+                                       return_dict_in_generate=True, output_scores=True)
+            sequence = generated.sequences[0]
         ids = sequence[inputs['input_ids'].shape[1]:].tolist()
         if not ids or len(ids) > case['cap'] or any(type(token) is not int or not 0 <= token < 248320
                                                   for token in ids):
             raise ValueError('Original generated IDs/cap differ: ' + case['id'])
+        if len(generated.scores) != len(ids):
+            raise ValueError('Original selected-token score count differs: ' + case['id'])
+        confidences = []
+        for token, scores in zip(ids, generated.scores):
+            if list(scores.shape) != [1, 248320]:
+                raise ValueError('Original selected-token vocabulary differs: ' + case['id'])
+            confidence = float(torch.softmax(scores[0].float(), dim=-1)[token])
+            confidences.append(confidence)
+        mean_confidence = validate_selected_confidences(ids, confidences, case['cap'])
         raw = processor.tokenizer.decode(ids, skip_special_tokens=True,
                                          clean_up_tokenization_spaces=False)
         stop_id = ids[-1] if ids and ids[-1] in profile['stop_ids'] else None
         record = {'input_rgb_sha256': case['rgb_sha256'], 'input_png_sha256': case['png_sha256'],
                   'input_ids_sha256': hashlib.sha256(inputs['input_ids'].numpy().tobytes()).hexdigest(),
                   'token_ids': ids, 'raw_text': raw, 'processed_text': process_readme_output(raw, cleaner, filter_fn),
+                  'confidences': confidences,
+                  'mean_confidence': mean_confidence,
                   'finish_reason': 'stop' if stop_id is not None else 'length', 'stop_id': stop_id,
                   'cap': case['cap'], 'wall_seconds': time.monotonic() - start,
                   'peak_process_rss_kib': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
-                  'confidence_available': False}
+                  'confidence_source': 'original generate output_scores softmax at actual selected IDs'}
         outputs[case['id']] = record
         report['original_cases'] = outputs
         save()
+        del generated, sequence, inputs
+        gc.collect()
     del model
     gc.collect()
     return outputs, cleaner, filter_fn
@@ -230,10 +406,58 @@ def gguf_tensors(path):
             for tensor in reader.tensors}
 
 
+def development_imatrix(build, f16, cases, scratch, out, report):
+    """Collect 72 FFN activation vectors on the four frozen development images only."""
+    import gguf
+    import numpy as np
+    development = [case for case in cases if case['split'] == 'development']
+    if len(development) != 4 or any(case['kind'] != 'synthetic-smoke' for case in development):
+        raise ValueError('Ovis importance calibration development split differs')
+    stats = scratch / 'development-imatrix-stats.tsv'
+    env = dict(os.environ, **ENV_GATES)
+    env['CRISPEMBED_QWEN35_QUANT'] = '0'
+    log = command('development-imatrix-collector',
+                  [build / 'test-qwen35-imatrix', f16, stats,
+                   *[case['path'] for case in development]], out, report, timeout=1800, env=env)
+    if 'PASS native FFN importance: 72 matrices' not in log.read_text():
+        raise ValueError('Native development-only FFN collection did not pass')
+    expected = {f'l.layers.{index}.mlp.{kind}_proj.weight': 3584 if kind == 'down' else 1024
+                for index in range(24) for kind in ('gate', 'up', 'down')}
+    path = scratch / 'development-imatrix.gguf'
+    writer = gguf.GGUFWriter(str(path), 'crispembed-imatrix')
+    writer.add_uint32('imatrix.version', 1)
+    rows = []
+    for line in stats.read_text().splitlines():
+        name, count_text, width_text, *values = line.split()
+        count, width = int(count_text), int(width_text)
+        if name not in expected or width != expected.pop(name) or count < 1 or len(values) != width:
+            raise ValueError('Development FFN importance schema differs')
+        weights = np.asarray(values, dtype=np.float64).astype(np.float32)
+        if not np.isfinite(weights).all() or np.min(weights) < 0 or not np.max(weights) > 0:
+            raise ValueError('Development FFN importance values invalid')
+        writer.add_uint64('count.' + name, count)
+        writer.add_tensor(name, weights)
+        rows.append({'name': name, 'rows': count, 'columns': width,
+                     'sum_sha256': hashlib.sha256(weights.tobytes()).hexdigest()})
+    if expected or len(rows) != 72 or len({row['rows'] for row in rows}) != 1:
+        raise ValueError('Development FFN importance coverage differs')
+    writer.write_header_to_file()
+    writer.write_kv_data_to_file()
+    writer.write_tensors_to_file()
+    writer.close()
+    report['calibration'] = {
+        'scope': 'Four frozen synthetic development images only; no heldout images or documents',
+        'input_ids': [case['id'] for case in development],
+        'input_rgb_sha256': {case['id']: case['rgb_sha256'] for case in development},
+        'collector_source_sha256': sha(ROOT / 'tests/test_qwen35_imatrix.cpp'),
+        'stats_sha256': sha(stats), 'imatrix_sha256': sha(path),
+        'imatrix_bytes': path.stat().st_size, 'vectors': rows}
+    return path
+
+
 def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm):
     outputs = {}
-    env = dict(os.environ, **ENV_GATES)
-    env['CRISPEMBED_QWEN35_QUANT'] = '1' if arm in ('q8', 'q4') else '0'
+    env = native_environment(arm)
     for case in cases:
         label = arm + '-' + case['id']
         log = command(label, [binary, model, case['path'], case['cap'], 2],
@@ -358,6 +582,7 @@ def frozen_cases(out, contract):
 
 
 def score_outputs(contract, rendered, cases, outputs):
+    ocr_quality = load_module('ovis_quality_document_scorer', ROOT / 'tools/ocr_quality.py')
     synthetic = contract.score_panel(rendered, {case['id']: outputs[case['id']]
                                                 for case in cases if case['kind'] == 'synthetic-smoke'})
     documents = []
@@ -367,16 +592,24 @@ def score_outputs(contract, rendered, cases, outputs):
             if (record['input_rgb_sha256'] != case['rgb_sha256']
                     or record['input_png_sha256'] != case['png_sha256']):
                 raise ValueError('Realistic document input changed')
+            gold_path = next(row['gold'] for row in json.loads(
+                (ROOT / 'tests/regression/ocr-quality/panel.json').read_text())['cases']
+                if row['id'] == case['id'])
+            gold = json.loads((ROOT / gold_path).read_text())
+            structure = ocr_quality.score(
+                gold, record['processed_text'],
+                complete=record['finish_reason'] == 'stop' and len(record['token_ids']) < case['cap'])
             documents.append({'id': case['id'], 'license': case['license'],
                               'rgb_sha256': case['rgb_sha256'],
-                              **contract.score_case(case['gold'], record, case['cap'])})
+                              **contract.score_case(case['gold'], record, case['cap']),
+                              'structure': structure})
     if len(documents) != 3:
         raise ValueError('Realistic OCR document coverage differs')
     return {'synthetic': synthetic, 'realistic_documents': documents,
             'realistic_scope': 'Three separately licensed and visually reviewed documents; no fitting or calibration'}
 
 
-def download_original(report, save):
+def download_original(report, save, checkpoint=True):
     from huggingface_hub import hf_hub_download, snapshot_download
     profile_module = load_module('ovis_quality_profile', ROOT / 'models/qwen35_ovis_profile.py')
     source = Path(snapshot_download(MODEL, revision=REVISION,
@@ -387,6 +620,8 @@ def download_original(report, save):
                                         for name in profile_module.metadata_files()}
     report['profile_qualification'] = profile['qualification']
     save()
+    if not checkpoint:
+        return source, profile
     checkpoint = Path(hf_hub_download(MODEL, 'model.safetensors', revision=REVISION))
     if checkpoint.parent.resolve() != source.resolve():
         raise ValueError('Pinned metadata and checkpoint snapshots differ')
@@ -397,7 +632,7 @@ def download_original(report, save):
     return source, profile
 
 
-def run_main(phase, preflight=False, documents=False):
+def run_main(phase, preflight=False, documents=False, original_run=None):
     out = Path(os.environ['HEAVY_OUT'])
     scratch = Path(os.environ['HEAVY_SCRATCH']) / 'ovis-quality'
     out.mkdir(parents=True, exist_ok=True)
@@ -419,7 +654,8 @@ def run_main(phase, preflight=False, documents=False):
 
     save()
     try:
-        report['prerequisite'] = require_baseline(phase)
+        report['prerequisite'] = require_baseline(phase, original_run)
+        report['baseline_service'] = verify_model_receipt_service(report['prerequisite']['baseline_pins'])
         contract = load_module('ovis_quality_contract', ROOT / 'tools/ci-heavy/ovisocr2_quality_contract.py')
         contract.load_panel()
         contract.source_schema()
@@ -455,14 +691,30 @@ def run_main(phase, preflight=False, documents=False):
         report['prepared_documents_sha256'] = sha(out / 'documents/prepared.json')
         report['phase'] = 'pinned-original-checkpoint'
         save()
-        source, profile = download_original(report, save)
+        source, profile = download_original(report, save, checkpoint=phase == 'original')
         report['versions'] = {name: importlib.metadata.version(name) for name in
                               ('torch', 'transformers', 'tokenizers', 'numpy', 'gguf', 'Pillow',
                                'huggingface-hub', 'safetensors', 'CairoSVG')}
-        report['phase'] = 'original-hf-f32-on-frozen-pixels'
-        save()
-        original, cleaner, filter_fn = original_cases(source, cases, profile, out, report, save)
-        report['scores'] = {'original': score_outputs(contract, rendered, cases, original)}
+        if phase == 'original':
+            report['phase'] = 'original-hf-f32-on-frozen-pixels'
+            save()
+            original, cleaner, filter_fn = original_cases(source, cases, profile, out, report, save)
+            report['scores'] = {'original': score_outputs(contract, rendered, cases, original)}
+        else:
+            report['phase'] = 'reviewed-original-artifact-reuse'
+            save()
+            previous, artifact_proof = reviewed_original_artifact(original_run, out)
+            report['original_artifact_reuse'] = artifact_proof
+            readme = (source / 'README.md').read_text()
+            prompt, cleaner, filter_fn = original_readme_functions(readme)
+            if previous['original_source'].get('readme_sha256') != sha(source / 'README.md') \
+                    or prompt not in profile['rendered_prompt']:
+                raise ValueError('Pinned README quality prompt differs before reuse')
+            original, scores = validate_reused_original(
+                previous, report, cases, rendered, contract, profile, sha(source / 'README.md'))
+            report['original_cases'] = original
+            report['original_source'] = previous['original_source']
+            report['scores'] = {'original': scores}
         save()
         if phase == 'original':
             report['status'] = 'completed original HF quality baseline; review pending'
@@ -470,6 +722,8 @@ def run_main(phase, preflight=False, documents=False):
             return report
 
         scratch.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source / 'LICENSE', scratch / 'LICENSE')
+        shutil.copyfile(source / 'README.md', scratch / 'UPSTREAM_README.md')
         build = scratch / 'build'
         report['phase'] = 'portable-native-build'
         save()
@@ -480,13 +734,17 @@ def run_main(phase, preflight=False, documents=False):
                 out, report, timeout=600)
         command('cpu-baseline-check', [sys.executable, ROOT / 'scripts/check-cpu-baseline.py', build],
                 out, report, timeout=120)
+        targets = ['test-ovisocr2-quality-run', 'crispembed-shared', 'crispembed-quantize']
+        if phase == 'q4-calibrated':
+            targets.append('test-qwen35-imatrix')
         command('native-build', ['cmake', '--build', build, '--config', 'Release', '--target',
-                                 'test-ovisocr2-quality-run', 'crispembed-shared',
-                                 'crispembed-quantize', '-j2'], out, report, timeout=2400)
+                                 *targets, '-j2'], out, report, timeout=2400)
         runner = build / 'test-ovisocr2-quality-run'
         library = build / 'libcrispembed.so'
         quantizer = build / 'crispembed-quantize'
-        report['native_binary_sha256'] = {p.name: sha(p) for p in (runner, library, quantizer)}
+        report['native_binary_sha256'] = {p.name: sha(p) for p in
+                                          [runner, library, quantizer,
+                                           *([build / 'test-qwen35-imatrix'] if phase == 'q4-calibrated' else [])]}
         report['native_source_sha256'] = {
             str(p.relative_to(ROOT)): sha(p) for p in
             [ROOT / 'tests/ovisocr2_quality_run.cpp', ROOT / 'src/crispembed.cpp',
@@ -508,8 +766,13 @@ def run_main(phase, preflight=False, documents=False):
         report['scores']['f16'] = score_outputs(contract, rendered, cases, f16_results)
         report['f16_paired_synthetic'] = contract.paired_quality_screen(
             report['scores']['original']['synthetic'], report['scores']['f16']['synthetic'])
+        report['f16_paired_documents'] = contract.paired_document_screen(
+            report['scores']['original']['realistic_documents'],
+            report['scores']['f16']['realistic_documents'])
         report['cabi_smoke'] = {'f16': cabi_smoke(library, f16, cases[0])}
         save()
+        if not report['f16_paired_synthetic']['screen_passed'] or not report['f16_paired_documents']['screen_passed']:
+            raise ValueError('F16 paired OCR quality screen failed; observations retained')
         if phase == 'f16':
             report['status'] = 'completed F16 quality observations; independent review pending'
             save()
@@ -517,10 +780,19 @@ def run_main(phase, preflight=False, documents=False):
 
         recipe = 'q8-protected' if phase == 'q8' else 'q4-attention-q8'
         candidate = scratch / ('ovisocr2-' + phase + '.gguf')
+        imatrix = None
+        if phase == 'q4-calibrated':
+            report['phase'] = 'development-only-native-importance'
+            save()
+            imatrix = development_imatrix(build, f16, cases, scratch, out, report)
         report['phase'] = phase + '-quantize'
         save()
-        command(phase + '-quantize', contract.quant_command(quantizer, f16, candidate, recipe),
-                out, report, timeout=2400)
+        argv = contract.quant_command(quantizer, f16, candidate, recipe)
+        if imatrix is not None:
+            argv.extend(['--imatrix', str(imatrix)])
+        quant_log = command(phase + '-quantize', argv, out, report, timeout=2400)
+        if imatrix is not None and ', 72 with imatrix' not in quant_log.read_text():
+            raise ValueError('Quantizer skipped one or more development FFN importance vectors')
         report['models'][phase] = {'sha256': sha(candidate), 'bytes': candidate.stat().st_size,
                                    'recipe': recipe}
         report['tensor_audit'] = contract.validate_quant_tensors(
@@ -531,7 +803,15 @@ def run_main(phase, preflight=False, documents=False):
         report['scores'][phase] = score_outputs(contract, rendered, cases, outputs)
         report['paired_synthetic'] = contract.paired_quality_screen(
             report['scores']['f16']['synthetic'], report['scores'][phase]['synthetic'])
+        report['paired_documents'] = {
+            reference: contract.paired_document_screen(report['scores'][reference]['realistic_documents'],
+                                                       report['scores'][phase]['realistic_documents'])
+            for reference in ('original', 'f16')}
         report['cabi_smoke'][phase] = cabi_smoke(library, candidate, cases[0], quantized=True)
+        save()
+        if (not report['paired_synthetic']['screen_passed']
+                or any(not result['screen_passed'] for result in report['paired_documents'].values())):
+            raise ValueError('Quantized paired OCR quality screen failed; observations retained')
         report['status'] = 'completed quantized quality observations; independent review pending'
         save()
         return report
@@ -549,7 +829,8 @@ if __name__ == '__main__':
     parser.add_argument('--phase', choices=PHASES, required=True)
     parser.add_argument('--preflight', action='store_true')
     parser.add_argument('--prepare-documents', action='store_true')
+    parser.add_argument('--original-run', type=int)
     args = parser.parse_args()
     if args.preflight and args.prepare_documents:
         parser.error('Choose one preparation mode')
-    run_main(args.phase, args.preflight, args.prepare_documents)
+    run_main(args.phase, args.preflight, args.prepare_documents, args.original_run)
