@@ -45,6 +45,13 @@ Torchvision0.26.0 wheels, Transformers5.16.1, Tokenizers0.23.3, NumPy2.2.6,
 Pillow12.1.0, HF Hub1.33.0, GGUF0.19.0 and Safetensors0.8.0. The Linux CPU-wheel
 index is not the source of Apple wheels; record actual wheel hashes/versions.
 
+The current model controller requires a real MKLDNN-enabled Linux CPU and an
+original MKLDNN-off control. It is deliberately not an executable Apple model
+protocol yet. Finish the build-only first stage; an Apple reference extension
+needs its own explicitly reviewed backend control and separate report. Do not
+fabricate MKLDNN availability or bypass the Linux reference gate on an M1.
+The instructions below describe the remaining contract for that extension.
+
 The executable source is `tools/ci-heavy/ovisocr2_model_audit.py` and the
 original adapter is `tools/dump_ovisocr2_reference.py`. Its `--preflight` checks
 public service/source receipts before framework imports. If adapting the
