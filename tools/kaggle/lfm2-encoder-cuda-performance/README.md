@@ -26,4 +26,11 @@ verify pulled script bytes. Do not repush an active kernel or retry GPU draws.
 Unsupported legacy GPU/toolkit pairs terminate inconclusive before downloads.
 Use the standard harness toolchain/CUDA/cache/job-limit/heartbeat helpers.
 Keep all weights, references, build and compiler cache remote; only small JSONs
-and selected logs are outputs. Script version is lfm2-encoder-cuda-performance-v1.
+and selected logs are outputs. Script version is lfm2-encoder-cuda-performance-v2.
+
+Versionv1 reached97% of the remote build, then hit its30-minute command timeout
+before model inference/timings. Initial report/build/terminal-log fingerprints
+are preserved in `tests/results/lfm2-encoder/initial-cuda-performance-timeout.json`.
+Versionv2 extends only the build deadline to60 minutes and journals/kills the
+build process group on timeout; the inference worker is byte-identical. Small
+process controls run in the existing Build guard job without models or CUDA.

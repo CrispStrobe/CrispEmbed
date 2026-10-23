@@ -1,0 +1,152 @@
+{
+  "producer": {
+    "script_version": "lfm2-encoder-cuda-performance-v1",
+    "embed_source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+    "harness_source": "1395603321611cfc9c89f1474a0c0093ac3ba571",
+    "model_source": "bb26e78c7164b386028928ebfcecebcc42467689",
+    "fixture_source": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+    "status": "failed structurally; all partial timings/logs retained",
+    "scope": "Paired ordinary dense F16 API latency and process RSS; fixed15-case numerical panel, no independent task quality or default promotion",
+    "commands": [
+      {
+        "name": "audit-support-clone",
+        "exit_code": 0,
+        "log": "audit-support-clone.log",
+        "log_sha256": "2d521ad3b8b44ad046de61afb71ce3236f514e957b2e5c612a0b65c689c086b5",
+        "wall_seconds": 1.921004982999989
+      },
+      {
+        "name": "audit-support-checkout",
+        "exit_code": 0,
+        "log": "audit-support-checkout.log",
+        "log_sha256": "356e210f6cfda4f1fdf794c84b95120a70a71039028010ef954a0d484519bbc1",
+        "wall_seconds": 4.379038414999968
+      },
+      {
+        "name": "python-dependencies",
+        "exit_code": 0,
+        "log": "python-dependencies.log",
+        "log_sha256": "8812e17f14a2065b97ae2e208a91ab96f69cb7f86e2baa5f8d8a7f77ef0d06e7",
+        "wall_seconds": 10.945248136999965
+      },
+      {
+        "name": "CrispEmbed-clone",
+        "exit_code": 0,
+        "log": "CrispEmbed-clone.log",
+        "log_sha256": "eb2be85d2ebc4c0450715d2f87ba246f3c435658dc92c58adafabf0487804090",
+        "wall_seconds": 0.817072990999975
+      },
+      {
+        "name": "CrispEmbed-checkout",
+        "exit_code": 0,
+        "log": "CrispEmbed-checkout.log",
+        "log_sha256": "ec3f14dbd13dde5c7c7c03b57ecea6da99374c180da5588f7881db3685c28633",
+        "wall_seconds": 4.028080458999966
+      },
+      {
+        "name": "submodules",
+        "exit_code": 0,
+        "log": "submodules.log",
+        "log_sha256": "4d810a32dded2f249dfe17b0ee0cca2c7b315a8fb9fcba08f471357600c42959",
+        "wall_seconds": 3.3769968440000184
+      },
+      {
+        "name": "configure",
+        "exit_code": 0,
+        "log": "configure.log",
+        "log_sha256": "1d185844d0cc12b8e0eaba76109bf732e9bee5c4a1c8654c2339f7fdac741f4d",
+        "wall_seconds": 6.987655097000015
+      }
+    ],
+    "arms": {},
+    "frozen_inputs_unchanged": true,
+    "script_sha256": "634dab020e356b12d840836c62366937b45058f2700cf3cca24f8c2f4ea57151",
+    "gpu": "Tesla T4, 7.5\nTesla T4, 7.5\n",
+    "nvcc": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Fri_Feb_21_20:23:50_PST_2025\nCuda compilation tools, release 12.8, V12.8.93\nBuild cuda_12.8.r12.8/compiler.35583870_0\n",
+    "reference_files": {
+      "005.gguf": {
+        "bytes": 730208,
+        "sha256": "ec8e6824e123f556f70797ce977bdc5a8064a5361663cb6fd69b73c55f6c675b"
+      },
+      "004.gguf": {
+        "bytes": 402528,
+        "sha256": "d25133090c540486fe67825b94909accc39c213d29f5b61b6a3442a59bebf933"
+      },
+      "009.gguf": {
+        "bytes": 1451200,
+        "sha256": "8e587a6bc26e593545b5c740610d0eae61c5f5bf11fea7dc369f18e62a565744"
+      },
+      "003.gguf": {
+        "bytes": 1647840,
+        "sha256": "42aabe3a90d2f9056fd4a983de86c31c4aa398257cbfcd9376a695e5d0b8abac"
+      },
+      "006.gguf": {
+        "bytes": 74688,
+        "sha256": "3b0b8cfaff49ad3b2180ad6980d4dc877d74994dae72a3b499ab5c9377121998"
+      },
+      "007.gguf": {
+        "bytes": 205824,
+        "sha256": "724f00a7c5540ae0051d2454cfabe8086ff73853d6ae676160cb1f17e1302a60"
+      },
+      "008.gguf": {
+        "bytes": 926784,
+        "sha256": "a1d9d35c734098efefdf6308a9e036f5d3b94cc646051574b13265e23f85e79d"
+      },
+      "012.gguf": {
+        "bytes": 730240,
+        "sha256": "f6129c72fb26e0e4976aa30d4603dc7a0f98f895a5bd1bb7c756fe7c7407fdc7"
+      },
+      "011.gguf": {
+        "bytes": 861344,
+        "sha256": "2629a306cc8a35f1fea6344d1f0ea3a1a55e89400dea9da50d3973568fe7a7d9"
+      },
+      "decoded_vocab.json": {
+        "bytes": 658507,
+        "sha256": "db20e09e100885c8f319e937dbae831538972592e0fae84adc547563c4ec2581"
+      },
+      "013.gguf": {
+        "bytes": 1582304,
+        "sha256": "8ab88c1e6629d380ce200532d6f38419589cd2beeda5139dc3ee504b924bab10"
+      },
+      "010.gguf": {
+        "bytes": 992416,
+        "sha256": "1af170602341f94a77e155275d7e162e8a6b98ef66ef2c512a70d038eb3b49ae"
+      },
+      "014.gguf": {
+        "bytes": 42809792,
+        "sha256": "21bebf1af934251a7557b8d5267a254b85bfbdbe781bd0cd0f28be205ea44c13"
+      },
+      "002.gguf": {
+        "bytes": 926880,
+        "sha256": "8b4896bbb72bf1b76580a0dd765a9dd9ae71277613e85de7ab351ae6e87d7205"
+      },
+      "index.json": {
+        "bytes": 3530,
+        "sha256": "d7f837bc60e6fe0256614790f74f9475a851ad4f8f7b4e71064fe60faeb2b907"
+      },
+      "versions.json": {
+        "bytes": 168,
+        "sha256": "3f61651a76af5f0c9a2c0fdc43627153e78dec51ea4909f1c866449d545e9ec6"
+      },
+      "000.gguf": {
+        "bytes": 861312,
+        "sha256": "c13c73a3bfe1ad59f4aea5a8832b37c009570e74f107bfc9ca74d279bce2ebdf"
+      },
+      "001.gguf": {
+        "bytes": 861344,
+        "sha256": "32c3b368d3e5188926783daac6651e6cbc80bc855f179fdf85ce11871580776a"
+      }
+    },
+    "model_sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+    "ggml_source": "890278a8342c620197c90e702e1188bcab94f510",
+    "error_type": "TimeoutExpired",
+    "conclusive": false
+  },
+  "raw_report_sha256": "1167345b0c011de64fcaf781069cbd488580864b474063dcc980676ed3a95bed",
+  "source": "9fd70ce5",
+  "scope": "Structural build timeout before any benchmark/model inference; no performance or new numerical result",
+  "last_build_progress_percent": 97,
+  "build_log_sha256": "b25d212f0f1320bbaa72935517b5e0f1c0cd8729219bc2db18506187f3e4ae98",
+  "terminal_log_sha256": "d4590854b4222f41182d02192ea7097a1f6f782b04cbea8732a8694db36caa69",
+  "correction": "Build-only budget1800->3600seconds, journal timeout before raising and terminate task-owned process group; embedded inference worker remains byte-identical"
+}

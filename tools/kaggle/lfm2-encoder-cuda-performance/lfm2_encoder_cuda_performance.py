@@ -9,11 +9,12 @@ import math
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
 
-SCRIPT_VERSION = 'lfm2-encoder-cuda-performance-v1'
+SCRIPT_VERSION = 'lfm2-encoder-cuda-performance-v2'
 EMBED_SOURCE = '898af2c2a76369ceecd700a2b021ca001483a9c1'
 HARNESS_SOURCE = '1395603321611cfc9c89f1474a0c0093ac3ba571'
 MODEL_SOURCE = 'bb26e78c7164b386028928ebfcecebcc42467689'
@@ -40,17 +41,25 @@ def save():
 def run(name, command, env=None, timeout=1800):
     print(name, flush=True)
     path = LOGS / (name + '.log')
-    started = time.monotonic()
+    started = time.monotonic();timed_out=False
     with path.open('w') as log:
-        proc = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, env=env, timeout=timeout)
-    entry = dict(name=name, exit_code=proc.returncode, log=path.name, log_sha256=digest(path),
-                 wall_seconds=time.monotonic()-started)
+        proc=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,env=env,start_new_session=True)
+        try:
+            proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            timed_out=True
+            try:os.killpg(proc.pid,signal.SIGKILL)
+            except ProcessLookupError:pass
+            proc.wait()
+    entry=dict(name=name,exit_code=proc.returncode,log=path.name,log_sha256=digest(path),
+               wall_seconds=time.monotonic()-started,timed_out=timed_out,timeout_seconds=timeout)
     report['commands'].append(entry);save()
+    if timed_out:raise subprocess.TimeoutExpired(command,timeout)
     return entry,path
 
-def checked(name,command,env=None):
-    entry,path=run(name,command,env)
-    if entry['exit_code']: raise RuntimeError(name+' failed; inspect retained log')
+def checked(name,command,env=None,timeout=1800):
+    entry,path=run(name,command,env,timeout)
+    if entry['exit_code']:raise RuntimeError(name+' failed; inspect retained log')
     return path
 
 def clone(url,commit,directory):
@@ -141,7 +150,7 @@ try:
         '-DGGML_NATIVE=OFF','-DCRISPEMBED_NATIVE=OFF','-DGGML_METAL=OFF','-DGGML_BLAS=OFF',
         '-DCRISPEMBED_BUILD_SHARED=ON',*flags])
     with kh.build_heartbeat('lfm2-cuda-performance-build'):
-        checked('build',['cmake','--build',str(BUILD),'--target','crispembed-shared','--parallel',kh.safe_build_jobs(gpu=True)])
+        checked('build',['cmake','--build',str(BUILD),'--target','crispembed-shared','--parallel',kh.safe_build_jobs(gpu=True)],timeout=3600)
     library=BUILD/'libcrispembed.so';report['library_sha256']=digest(library)
     worker=SCRATCH/'performance-worker.py';worker.write_text(WORKER);report['worker_sha256']=digest(worker)
     env=dict(os.environ,CRISPEMBED_LFM2_ENCODER='1',OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2')

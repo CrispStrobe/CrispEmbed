@@ -52,6 +52,8 @@ jobs:
         run: bash tools/check_workflow_pins.sh
       - name: Pin guard self-test
         run: bash tools/test_check_workflow_pins.sh
+      - name: GPU recipe process deadline controls (model-free)
+        run: python3 tests/test_lfm2_performance_process.py -v
 
   build:
     name: ${{ matrix.name }}

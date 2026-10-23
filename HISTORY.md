@@ -1,3 +1,16 @@
+## 2026-10-23 — GPU performance build timeout preserved; lifecycle corrected
+
+The initial paired-performancev1 recipe reaches97% of its genuine T4/CUDA12.8
+build, then hits the1800-second command deadline before any model inference or
+timing. [Full producer fields and raw/build/terminal-log fingerprints](tests/results/lfm2-encoder/initial-cuda-performance-timeout.json)
+are retained before any repush. Versionv2 extends only the build limit to3600s,
+terminates the task-owned process group on timeout and journals its exit/log hash
+before raising. The embedded inference worker is byte-identical; original
+reference hashes and numerical/timing protocol remain unchanged. Two small
+process lifecycle groups pass and are registered in the existing hosted guard
+job. A corrected GPU run requires the normal free-slot check; no hardware redraw
+or speedup/default claim follows from this failure.
+
 ## 2026-10-23 — Ovis processor minimum-pixel counterfactual added
 
 Read-only Sol review identified an evidence gap: the initial processor probe
