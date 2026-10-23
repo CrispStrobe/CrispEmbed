@@ -83,13 +83,13 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | --- | --- | --- |
 | Wheels | All4 platform legs/23 installed native-load/C-ABI checks/aggregation pass at e75a32f1 | Version/release reconciliation and any future PyPI publication are separate |
 | Social preview | PR68 merged after native/Flutter/WASM/secret success | Completed deployment39009694992 at f6f84aba; live HTML/PNG verified23 October |
-| UltraBERT source/conversion | All218 tensors in both F32/F16 exports and original7-case/2,730-stage capture pass | Gated CPU/F32 text dispatch mergedPR74; Rust/Dart model execution, pairs and release gates remain |
+| UltraBERT source/conversion | All218 tensors in both F32/F16 exports and original7-case/2,730-stage capture pass | Gated CPU/F32 text dispatch mergedPR74; Rust/Dart actual wrapper audit passes39979622930; test integration, pairs and release gates remain |
 | UltraBERT tokenizer | All8 native BPE/test-template rows match original IDs/masks; both wrong alternatives fail8/8 | Scoped public F32 IDs/masks pass; pair/reserved-token profiles remain separate |
 | UltraBERT numerical | Initial14-arm panel/700 exact controls complete,183 F32/1,294 F16 numerical failures retained | [Corrected local audit39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362) complete: all21 F32 local probes pass; six F16 down failures; reference/projection attribution and both strict replay failures remain |
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | Pinned vLLM blueprint narrows MTP/fallback/dual stops; weight-free metadata/meta-schema/processor39974181719 queued. No conversion/native alias; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | Pinned vLLM blueprint narrows MTP/fallback/dual stops; weight-free metadata/meta-schema/processor39983101540 atca3d096f queued; minimum-limit counterfactual added. No conversion/native alias; Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
@@ -105,7 +105,8 @@ retrieval39950831201 at812e56e5/native4be9f864 passes all32 IDs/64 vectors and
 8/8 exact top1; original/native Recall@1/MRR@10/NDCG@10 all1.0. Raw max7.34e-5,
 normalized5.51e-7, minimum cosine0.999999999999019. [Full smoke evidence](../tests/results/ultrabert/retrieval-smoke.json).
 This authored panel does not establish representative MTEB/BEIR quality.
-Rust/Dart model-backed, public pairs, long-context/GPU/performance and validated
+Actual Rust/Dart39979622930 passes all seven rows/42 pooled checks; PR75 awaits
+final platform CI. Public pairs, long-context/GPU/performance and validated
 quantization/publication remain U3/U4. Initial harness failures and183/1294
 intermediate failures are retained. No new runtime tag/model alias/app pin.
 The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies

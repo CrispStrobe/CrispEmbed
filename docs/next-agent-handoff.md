@@ -106,9 +106,10 @@ Active [draftPR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) at391df2ca
 implements actual wrapper consumers and a `bindings_only` workflow arm.
 Initial39972325056 built Rust/library but stopped before inference on a
 versioned-SONAME checker bug. The exact-path guard is corrected; failure is
-archived in initial-bindings-loader-failure.json. Retry39979622930 is queued;
-inspect instead of dispatching again. Five binding/five API groups pass locally. No actual
-Rust/Dart model-backed success is claimed until full returned evidence is checked.
+archived in initial-bindings-loader-failure.json. Corrected39979622930 passes all42 pooled metrics/14 binding ID rows and
+consumer/gate/failure contracts, independently checked with all artifact bytes.
+[Evidence](../tests/results/ultrabert/public-bindings.json). Final platform CI
+remains before PR75 merge; do not repeat the successful model run.
 The bounded task uses the existing hosted model/API workflow and preserved
 F32 conversion to exercise actual Rust and Dart generic bindings on the same
 frozen text/ID/vector cases, explicit query/document prefixes and failure
@@ -192,7 +193,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | Pinned vLLM source/isolated dual-stop probe complete. Weight-free HF metadata/meta-schema/processor39974181719 at60679016 is queued; inspect/preserve before any pinned MTP/stop-set profile or weight run. Xiaomi follows; Indra stays public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | Pinned vLLM source/isolated dual-stop probe complete. Weight-free HF metadata/meta-schema/processor39983101540 atca3d096f is queued; inspect/preserve before any pinned MTP/stop-set profile or weight run. Xiaomi follows; Indra stays public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired latency, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -204,8 +205,9 @@ this public handoff; the task definitions above do not depend on them.
 
 ## Active paired GPU performance follow-up
 
-`tools/kaggle/lfm2-encoder-cuda-performance/` recipe9fd70ce5/versionv1 was
-submitted once on a free authorized GPU slot. Inspect the current private run
+`tools/kaggle/lfm2-encoder-cuda-performance/` initial recipe9fd70ce5/versionv1 hit its30-minute build timeout at97%, before
+inference. Versionv2/7a17864f extends only the build limit to60 minutes, journals
+timeouts and terminates its process group. Original worker bytes are unchanged. Inspect the current private run
 locator; do not resubmit an active kernel or redraw unsupported hardware. The
 public script pins the audited runtime898af2c2, F16/modelbb26e78c and complete
 original fixturee3599a94 hashes. CPU/CUDA/CUDA/CPU processes retain all per-case

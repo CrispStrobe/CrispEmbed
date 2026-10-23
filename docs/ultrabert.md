@@ -262,8 +262,8 @@ these precision conclusions or promote F16 from cosine alone.
 
 The merged default-off **F32 pooled-embedding profile** separately qualifies:
 actual text IDs/masks, prompts/normalization, raw and normalized CLS, repeat/batch/
-context isolation, C API/Python/CLI/HTTP. Actual Rust/Dart model execution remains
-open. Independent retrieval inputs/gold were frozen before the completed original-
+context isolation, C API/Python/CLI/HTTP and actual Rust/Dart model execution
+(39979622930, independently reviewed). Independent retrieval inputs/gold were frozen before the completed original-
 first wrapper/native smoke. Keep
 all183/1294 intermediate failures visible. Despite bounded API/smoke success,
 this remains an experimental integration lane, with no supported registry alias,
@@ -298,12 +298,16 @@ exact regenerated conversion bytes before running public text/ID and pooled
 covered; the original pair case remains in the separate prepared-ID audit.
 Repeated calls, two contexts, explicit prefixes, overflow/failure recovery,
 model-free schema controls, Python binding, CLI and HTTP surfaces are included.
-Actual Rust/Dart model-backed checks and a public pair API remain separate.
+Actual Rust/Dart39979622930 passes all seven frozen rows/42 pooled checks and
+consumer/gate/error contracts; its test-integration PR75 awaits final CI. Public
+pair support remains separate.
 All fixed pooled gates remain0.99999/0.002. The original full-stage audit and its
 183/1294 failures remain unchanged; this new test does not relabel them as passed.
 API39943940607 passes; original-first SentenceTransformer/native39950831201
 also passes the owned8-query/24-document smoke with all three metrics1.0,
 all32 IDs/64 vectors and8/8 top1 equal. Raw/normalized maxima7.34e-5/5.51e-7,
 minimum cosine0.999999999999019. [Full scores/review](../tests/results/ultrabert/retrieval-smoke.json).
-Representative retrieval, actual Rust/Dart execution and release/publication
+Actual Rust/Dart execution passes in the separately reviewed
+[wrapper audit](../tests/results/ultrabert/public-bindings.json). Representative
+retrieval and release/publication
 remain separate gates; the authored smoke is not broad benchmark evidence.

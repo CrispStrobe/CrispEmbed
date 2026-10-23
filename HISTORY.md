@@ -1,3 +1,22 @@
+## 2026-10-23 — Actual Rust/Dart UltraBERT pooled-output qualification passes
+
+Corrected [39979622930](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979622930)
+at391df2ca completes both real generic bindings on all seven frozen text rows.
+All42 raw/dense/normalized-token CLS comparisons pass unchanged0.99999/0.002;
+raw max6.723403930664062e-5, dense5.941838026046753e-7, normalized-token
+6.07222318649292e-7, minimum cosine0.999999999994188. Repeat/batch/order,
+contexts/prefixes, overflow/reserved rejection/recovery and unset/zero/F16 gates
+pass for both languages. The portable library matches the initial build byte
+for-byte; the SONAME correction changed only the test guard.
+
+Independent review recomputes all42 metric records/14 binding ID rows, verifies
+unchanged frozen expected-vector bytes and source fingerprints, reparses actual/
+gate log JSON, and checks every artifact member against its actual ZIP digest.
+[Full producer/review](tests/results/ultrabert/public-bindings.json). Raw vectors,
+logs and lockfiles remain remote through21 January2027. DraftPR75 still waits
+for final exact-source platform checks before test integration; no model alias,
+release, broad benchmark or waiver of183/1294 intermediate failures follows.
+
 ## 2026-10-23 — GPU performance build timeout preserved; lifecycle corrected
 
 The initial paired-performancev1 recipe reaches97% of its genuine T4/CUDA12.8

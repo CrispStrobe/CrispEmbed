@@ -1,3 +1,14 @@
+## UltraBERT actual Rust/Dart wrappers — 23 October2026
+
+Both wrappers pass all seven original text rows/21 pooled checks each in
+39979622930 at391df2ca: raw CLS max6.723403930664062e-5, dense-normalized
+max5.941838026046753e-7, normalized-token CLS max6.07222318649292e-7; minimum
+cosine0.999999999994188. All original0.99999/0.002 gates, IDs, error/recovery
+and value-parsed gates remain unchanged. Source/library/expected-vector/artifact
+bytes and every metric are independently reviewed. [Evidence](tests/results/ultrabert/public-bindings.json).
+This qualifies the512-token CPU/F32 binding path; full183/1294 intermediate
+failures, public pairs, broad task quality/GPU/quantization/release gates remain.
+
 ## UltraBERT owned retrieval smoke — 23 October2026
 
 Original-first39950831201 at812e56e5 uses pinned SentenceTransformer6.0.1 CPU/F32,
