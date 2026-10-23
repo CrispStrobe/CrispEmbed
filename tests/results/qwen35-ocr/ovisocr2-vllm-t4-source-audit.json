@@ -93,5 +93,18 @@
       "path": ".github/workflows/ovisocr2-metadata.yml",
       "url": "https://github.com/CrispStrobe/CrispEmbed/blob/main/.github/workflows/ovisocr2-metadata.yml"
     }
-  ]
+  ],
+  "packaging_followup": {
+    "scope": "Source availability and actual hardware gate, not model inference qualification",
+    "exact_release_cu128_artifact_found": false,
+    "published_wheel": "vllm-0.22.1+cu129-cp38-abi3-manylinux_2_28_x86_64.whl",
+    "wheel_sha256": "365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd",
+    "published_release": "https://github.com/vllm-project/vllm/releases/tag/v0.22.1",
+    "conservative_driver_minimum": "575.51.03",
+    "observed_gpu": "Tesla T4 SM7.5",
+    "observed_driver": "580.178.04",
+    "observed_nvcc": "12.8",
+    "interpretation": "Installed toolkit12.8 does not determine support for the isolated published CUDA12.9 wheel; actual driver meets the conservative gate. The generic documentation did not establish that this exact release publishes a cu128 wheel.",
+    "initial_receipt": "initial-ovisocr2-vllm-artifact-failure.json"
+  }
 }

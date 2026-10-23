@@ -1,3 +1,13 @@
+## Original/native Ovis frontend parity — 23 October2026
+
+Hosted40017014043 atccb6059a compares784/840/864 original packed-image patches
+against the native frontend. All packed values match exactly (max absolute0);
+L2 norms are634.810075,646.223554 and641.359650 on both sides. Grids, IDs,
+attention masks, modalities and625-byte template match exactly. Twelve original
+Unicode token-ID/decoded probes and profile/stop/gate controls pass. This is
+frontend correctness, not model decoded quality, latency, maximum-resolution or
+quantization qualification. [Producer and independent review](tests/results/qwen35-ocr/ovisocr2-frontend.json).
+
 ## Paired LFM2.5 Encoder F16 dense API performance — 23 October2026
 
 Pinned recipe7a17864f/v2 completes CPU/CUDA/CUDA/CPU blocks on a Kaggle Tesla
