@@ -3,7 +3,9 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import types
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("ovis_public", ROOT/"tools/ci-heavy/ovisocr2_public_surfaces.py")
@@ -113,6 +115,46 @@ class PublicSurfacePreflight(unittest.TestCase):
             subject.compare_abi(native, dart, {**python, "vlm_prompt_offset": 140})
         with self.assertRaises(ValueError):
             subject.compare_abi("no ABI record", dart, python)
+
+    def test_two_stage_cache_probe_requires_second_model_load_failure(self):
+        source = Path("/hosted/ovisocr2-metadata-complete-truncated.gguf")
+        trace = {"stages_tried": 2, "metrics": [
+            {"index": 1, "engine": "ovisocr2", "accepted": False, "text_chars": 15},
+            {"index": 2, "engine": "ovisocr2", "accepted": False, "text_chars": 0}],
+            "fallback_text": "Hello OCR\n12345"}
+        log = ("qwen35-ocr: truncated/corrupt GGUF '" + str(source) + "' — tensor data past EOF\n"
+               "ocr_orchestrator: qwen35/ovis load failed\n"
+               "RESULT stage-cache " + json.dumps(trace) + "\n")
+        result = subject.validate_stage_cache_probe({"exit_code": 0}, log,
+                                                     "Hello OCR\n12345", source)
+        self.assertEqual(result["metrics"][1]["text_chars"], 0)
+        for changed in (
+                log.replace('"text_chars": 0', '"text_chars": 15'),
+                log.replace("truncated/corrupt GGUF", "metadata rejected"),
+                log.replace("ocr_orchestrator: qwen35/ovis load failed", "load reused"),
+                log.replace('"stages_tried": 2', '"stages_tried": 1')):
+            with self.assertRaises(ValueError):
+                subject.validate_stage_cache_probe({"exit_code": 0}, changed,
+                                                   "Hello OCR\n12345", source)
+
+    def test_truncated_second_file_keeps_exact_metadata_boundary(self):
+        class Field:
+            def __init__(self, value): self.value = value
+            def contents(self): return self.value
+        class Reader:
+            def __init__(self, _):
+                self.tensors = [None] * 473
+                self.fields = {"qwen35_ocr.format_version": Field(2),
+                               "qwen35_ocr.profile": Field("ovisocr2")}
+                self.data_offset = 64
+        with tempfile.TemporaryDirectory() as tmp:
+            original, truncated = Path(tmp)/"original.gguf", Path(tmp)/"truncated.gguf"
+            original.write_bytes(bytes(range(256)) * 8)
+            with mock.patch.dict("sys.modules", {"gguf": types.SimpleNamespace(GGUFReader=Reader)}):
+                evidence = subject.metadata_complete_truncation(original, truncated)
+            self.assertEqual(truncated.read_bytes(), original.read_bytes()[:128])
+            self.assertEqual(evidence["metadata_bytes"], 64)
+            self.assertEqual(evidence["retained_tensor_bytes"], 64)
 
 
 if __name__ == "__main__":

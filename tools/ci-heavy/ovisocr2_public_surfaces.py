@@ -125,6 +125,57 @@ def require_lighton_artifact(path):
     return {"sha256": expected["sha256"], "bytes": expected["bytes"]}
 
 
+def metadata_complete_truncation(model, target):
+    """Copy only a verified GGUF header plus 64 tensor bytes for a load-fail control."""
+    from gguf import GGUFReader
+    reader = GGUFReader(str(model))
+    if (len(reader.tensors) != 473
+            or reader.fields["qwen35_ocr.format_version"].contents() != 2
+            or reader.fields["qwen35_ocr.profile"].contents() != "ovisocr2"):
+        raise ValueError("Truncation source is not the qualified format-2 Ovis checkpoint")
+    offset = int(reader.data_offset)
+    del reader
+    cut = offset + 64
+    if offset < 24 or cut >= Path(model).stat().st_size:
+        raise ValueError("GGUF metadata/data boundary is invalid")
+    with Path(model).open("rb") as source, Path(target).open("xb") as output:
+        remaining = cut
+        while remaining:
+            block = source.read(min(1024 * 1024, remaining))
+            if not block:
+                raise ValueError("Qualified GGUF ended before the metadata boundary")
+            output.write(block)
+            remaining -= len(block)
+    return {"sha256": sha(target), "bytes": cut, "metadata_bytes": offset,
+            "retained_tensor_bytes": 64, "tensor_count": 473,
+            "source_sha256": sha(model)}
+
+
+def validate_stage_cache_probe(command, log_text, expected_text, truncated_path):
+    """Require actual two-stage C API traces, not final fallback text alone."""
+    rows = [line.removeprefix("RESULT stage-cache ") for line in log_text.splitlines()
+            if line.startswith("RESULT stage-cache ")]
+    if len(rows) != 1:
+        raise ValueError("Ovis two-stage result record missing or ambiguous")
+    value = json.loads(rows[0])
+    metrics = value.get("metrics", [])
+    if (command.get("exit_code") != 0 or len(metrics) != 2
+            or value.get("stages_tried") != 2
+            or [row.get("index") for row in metrics] != [1, 2]
+            or [row.get("engine") for row in metrics] != ["ovisocr2", "ovisocr2"]
+            or metrics[0].get("text_chars") != len(expected_text.encode("utf-8"))
+            or metrics[0].get("accepted") is not False
+            or metrics[1].get("text_chars") != 0
+            or metrics[1].get("accepted") is not False
+            or "truncated/corrupt GGUF" not in log_text
+            or str(truncated_path) not in log_text
+            or "ocr_orchestrator: qwen35/ovis load failed" not in log_text):
+        raise ValueError("Second Ovis stage reused first model or truncated weight load was not proven")
+    return {"stages_tried": 2, "metrics": metrics,
+            "fallback_text": value.get("fallback_text"),
+            "metadata_opened_second": True, "second_weight_load_failed": True}
+
+
 def run_cmd(label, args, out, *, env=None, cwd=ROOT, timeout=1800):
     log = out / (label + ".log")
     with log.open("w") as stream:
@@ -453,6 +504,7 @@ def main():
               "source_commit": os.environ.get("GITHUB_SHA"),
               "source_sha256": {name: sha(ROOT/name) for name in (
                   "tools/ci-heavy/ovisocr2_public_surfaces.py",
+                  "tools/ci-heavy/ovisocr2_stage_cache_probe.py",
                   "tests/ovisocr2_public_bindings.rs", "tests/ovisocr2_public_bindings.dart")},
               "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
               "generic_prompt_semantics": {
@@ -518,6 +570,25 @@ def main():
             raise ValueError("Existing native public ABI checker did not return a bounded layout record")
         env = env_with_gates()
         os.environ.update({gate: "1" for gate in GATES})
+        truncated = scratch/"ovisocr2-metadata-complete-truncated.gguf"
+        stage_cache = None
+        try:
+            report["stage_cache_truncation"] = metadata_complete_truncation(artifacts["model"], truncated)
+            stage_cache = run_cmd("python-stage21-two-model-cache", [
+                sys.executable, ROOT/"tools/ci-heavy/ovisocr2_stage_cache_probe.py",
+                "--repo", ROOT, "--lib", lib, "--first-model", artifacts["model"],
+                "--truncated-second", truncated, "--image", artifacts["image"]],
+                out, env=env, timeout=1200)
+            stage_cache.update(validate_stage_cache_probe(
+                stage_cache, (out/stage_cache["log"]).read_text(errors="replace"),
+                pins["expected_text"], truncated))
+            stage_cache["passed"] = True
+            report["arms"]["python-stage21-two-model-cache"] = stage_cache
+        except Exception as exc:
+            report["arms"]["python-stage21-two-model-cache"] = {
+                **(stage_cache or {}), "passed": False,
+                "error": f"{type(exc).__name__}: {exc}"}
+        save()
         for label, arm in (("c-abi", lambda: abi_arm(lib, artifacts["model"], rgb, pins["expected_text"])),
                            ("python", lambda: python_arm(ROOT, lib, artifacts["model"], artifacts["image"],
                                                          rgb, pins["expected_text"]))):
