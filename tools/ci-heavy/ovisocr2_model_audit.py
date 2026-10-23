@@ -45,7 +45,7 @@ VERSIONS = {"torch": "2.11.0", "torchvision": "0.26.0", "transformers": "5.16.1"
             "tokenizers": "0.23.3", "numpy": "2.2.6", "gguf": "0.19.0",
             "safetensors": "0.8.0", "Pillow": "12.1.0", "huggingface-hub": "1.33.0"}
 NATIVE_TARGETS = ("test-qwen35-decoder", "test-qwen35-vision", "test-qwen35-delta",
-                  "test-ovisocr2-context")
+                  "test-ovisocr2-context", "test-ovisocr2-quality-run")
 NATIVE_ENV = {name: "1" for name in ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR2_FRONTEND",
                                      "CRISPEMBED_OVISOCR2_INFERENCE", "CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS")}
 NATIVE_ENV.update({name: "0" for name in (

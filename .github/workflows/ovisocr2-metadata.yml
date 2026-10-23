@@ -4,7 +4,7 @@ on:
     inputs:
       phase:
         type: choice
-        description: 'Original metadata, full export roundtrip, or weight-free native frontend'
+        description: 'Original metadata/export, frontend, or gated full-model parity'
         options: [metadata, export, frontend, model]
         default: metadata
   push:
@@ -50,6 +50,8 @@ jobs:
           python tests/test_ovisocr2_frontend_driver.py -v
           python tests/test_ovisocr2_reference_adapter.py -v
           python tests/test_ovisocr2_model_audit.py -v
+          python tests/test_ovisocr2_adapter_contract.py -v
+          python tests/test_ovisocr2_quality_contract.py -v
   metadata:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'metadata'
     needs: controls

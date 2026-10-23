@@ -344,7 +344,7 @@ struct context {
     pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
     granite_vision_context * gv = nullptr;    // Granite Vision (LLaVA-Next)
     qwen35_ocr_context * qwen35 = nullptr;
-    qwen35_ocr_context * ovis = nullptr; // separate from a LightOn stage in the same pipeline
+    qwen35_ocr_context * ovis = nullptr;         // separate from a LightOn stage in the same pipeline
     lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
     lfm2_vl_ocr_context * lfm2vl = nullptr;      // LFM2.5-VL (SigLIP2 NaFlex multi-tile)
     unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
@@ -1573,8 +1573,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
     case engine::ovisocr2: {
         const bool ovis = st.eng == engine::ovisocr2;
         if (ovis) {
-            if (!core_env::on("CRISPEMBED_QWEN35_OCR") ||
-                !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
+            if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
                 !core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") || !st.params.vlm_prompt.empty())
                 return {};
             auto * meta = core_gguf::open_metadata(st.model_a.c_str());
