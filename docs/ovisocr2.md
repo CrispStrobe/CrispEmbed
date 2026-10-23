@@ -158,7 +158,7 @@ fabricated absent metadata. The ordinary converter path still rejects MTP.
 The explicit `--profile ovisocr2` branch preserves raw missing-file provenance,
 derived generation/processor values, both stop IDs and the original single-image
 prompt in experimental format2. LightOn output stays format1; no native alias,
-reference tensors or quality claim is added. Nine pure source/proof/CLI/config/
+reference tensors or quality claim is added. Ten pure source/proof/CLI/config/
 checkpoint controls plus five metadata controls pass locally. Source review
 caught an initial missing-README allowlist before any weight job; the exact
 source-file allowlist now comes from the shared profile.
@@ -178,3 +178,13 @@ Use original-module intermediate dumpers and crispembed-diff for the model
 forward and decoded EOS/text/cleanup; metadata success cannot replace that.
 Maximum resolution, long pages, existing numerical debt and publication gates
 remain explicit.
+
+The roundtrip auditor at5e197bae derives record names, flattened patch shapes
+and requested F32/F16 precision directly from the qualified original schema.
+It rejects duplicate/extra records or GGUF tensor names rather than trusting
+exporter manifest declarations. Negative controls mutate precision, shapes,
+source coverage and names. The initial full export39991277170 was cancelled
+while its weight-backed job remained queued, before execution. The replacement
+[39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147)
+uses that strengthened source. Inspect both F32/F16 reports and original-cast
+payload checks before any conversion qualification; no duplicate local work.

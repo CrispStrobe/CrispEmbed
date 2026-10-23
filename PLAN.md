@@ -38,7 +38,7 @@ candidate is selected for publication or default promotion.
 
 1. [ ] **Finish UltraBERT attribution/integration:** use the completed
    same-input operator audit39009703362 and completed M1 evidence to scope
-   remaining Rust/Dart model-backed surfaces, representative retrieval and
+   completed Rust/Dart model-backed surfaces, representative retrieval and
    attribution follow-ups in U3/U4; gated F32 API/owned smoke are merged.
    Keep original183/1294 failures and attribution lanes; do not repeat backend arms.
    Default-off CPU/F32 text support is merged; general model/release qualification
@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Source/header audit complete](docs/ovisocr2.md); pinned vLLM blueprint/isolated dual-stop probe complete; next hosted metadata-only effective generation/processor/prompt/pixels and official meta-schema, then pinned MTP/stop-set profile and remote decoded parity |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound export profile at 5e197bae has hosted full-weight roundtrip [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147) queued. No conversion result, native alias or decoded vLLM parity yet |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -126,14 +126,16 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   Build/Flutter/WASM/style/security CI. Original/native retrieval39950831201
   passes all32 ID/64 vector checks and8/8 top1, all three task metrics1.0 on
   the owned smoke; full evidence is in HISTORY and retrieval-smoke.json.
-  Pending: numerical attribution, test integration (PR75; actual Rust/Dart39979622930 now passes), public pair
+  PR75 is merged at2f078406; actual Rust/Dart39979622930 passes all42 pooled checks and14 binding ID rows. Pending: numerical attribution and public pair
   support; a separately frozen, licensed representative retrieval benchmark;
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
-- [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit is complete (HISTORY). Next
+- [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit and one-session paired
+  CPU/CUDA performance review are complete (HISTORY): all15 cases run faster
+  on CUDA, with9/20/649-token pooled medians27.93x/27.64x/120.11x. Next
   validate other GPU devices/precisions, hardware-qualified quantized/MMQ paths,
-  paired latency/RSS and actual GPU scheduling on broader workloads, long-context behavior beyond
+  paired throughput/RSS and actual GPU scheduling on broader workloads, long-context behavior beyond
   the measured suite and independent task quality. F16 remains default; published
   mixed profiles change low-margin predictions. [Usage/evidence](docs/lfm2-encoder.md).
 - [ ] **EmbeddingGemma typed decisions:** independent task-accuracy, GPU and
@@ -170,13 +172,13 @@ Require affected exact-source checks again for each new implementation change.
   consumers on affected platforms, including an actual Apple released/default
   comparison. Source success is not an artifact release. Keep legacy `=0` and
   unchanged7/50 quality explicit; preserve per-case native logs on future runs.
-- [ ] **Development artifact portability:** align desktop Linux/Windows
-  `.github/workflows/build.yml` configure flags with the release baseline before
-  cross-host bundle reuse: explicit `GGML_NATIVE=OFF` and the CPU-baseline checker.
-  Release workflow legs already pin/check this; development matrix flags currently
-  differ. Keep performance experiments separate and verify actual installed
-  bundles on the declared CPU baseline. The retrieval producer builds a fresh
-  portable library instead of reusing a development artifact across hosts.
+- [ ] **Development artifact portability:** PR76 merged1f8ff4d5 and actual
+  desktop [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916)
+  passes Linux, macOS and Windows configure/build/smoke/install jobs with both
+  native flags off and the release CPU-baseline checker before compilation.
+  [Archived report](tests/results/packaging/development-cpu-baseline.json).
+  Cross-host installed bundle reuse remains a separate consumer check; keep
+  performance experiments separate.
 - [ ] **Release metadata:** keep development VERSION0.17.13 distinct from published0.17.12
   before a new release; do not change the app's immutable release pin as cleanup.
 - [ ] **R1:** promote any successor runtime atomically through native/WASM build,
@@ -320,10 +322,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `feat/ovisocr2-export-profile` | Pinned experimental export profile using reviewed metadata39983101540: exact source/config/MTP/schema, absent-file provenance, dual stops, checkpoint hash | Metadata/schema/processor capture and independent byte review pass; implement pure guards and converter branch without changing LightOn. Remote full-weight conversion/roundtrip, native frontend and decoded vLLM parity remain separate; no alias/publication. |
-| 2026-10-23 | `fix/development-cpu-baseline` | Align development desktop bundle CPU flags and baseline checks with release workflow | [DraftPR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) atf61de665 pins both native-off options and existing checker before desktop compilation. YAML/pin guards pass; hosted platform/baseline results pending. No release/app pin change. |
-| 2026-10-23 | `test/lfm2-cuda-performance` | Paired F16 ordinary dense API CPU/CUDA latency/RSS on unchanged15-case original panel, balanced order and actual placement | Initialv1 timed out at97% build before inference; report/logs preserved. Versionv2/7a17864f extends build deadline and journals/kills process groups; identical inference worker, original CLS gates retained. Corrected result pending; no defaults/precision change. |
-| 2026-10-23 | `test/ultrabert-bindings` | Actual Rust/Dart generic wrappers against preserved seven-row F32 text/CLS references; prefixes, batch/repeat/context isolation, failures/recovery, default/zero gates | [DraftPR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) at391df2ca; initial loader failure preserved; corrected39979622930 passes both actual wrappers/all42 pooled checks, IDs/gates/contracts. Independent artifact/source/metric review complete; platform CI remains before merge. No gate/reference change. |
+| 2026-10-23 | `feat/ovisocr2-export-profile` | Pinned experimental export profile using reviewed metadata39983101540: exact source/config/MTP/schema, absent-file provenance, dual stops, checkpoint hash | Implementation5e197bae is complete and [hosted full-payload export39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147) is queued. Inspect retained F32/F16 roundtrip reports before any conversion qualification. Native frontend, decoded vLLM parity and publication remain separate; no alias. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

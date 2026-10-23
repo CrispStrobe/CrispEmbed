@@ -89,7 +89,7 @@ check loaded tensor bits and earliest operator inputs before attributing cause.
 Both strict replay modes must remain available; never silently regenerate their
 anchors or call U1 local targets full-model parity.
 
-### U3 — F32 API merged; complete the remaining binding and input surfaces
+### U3 — F32 API and Rust/Dart bindings merged; complete remaining input surfaces
 
 [PR74](https://github.com/CrispStrobe/CrispEmbed/pull/74) merged3f3d023a after
 all exact-source4be9f864 checks, including ten Build/Flutter39943915528 jobs.
@@ -102,20 +102,18 @@ rejects. Public pairs, reserved-token inputs, F16/quantized/GPU/Matryoshka remai
 excluded. Historical183/1294 intermediate failures and strict replay failures
 are unchanged; F16 raw CLS0.0185 still fails all seven original cases.
 
-Active [draftPR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) at391df2ca
-implements actual wrapper consumers and a `bindings_only` workflow arm.
+Merged [PR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) at2f078406
+integrates actual wrapper consumers and a `bindings_only` workflow arm.
 Initial39972325056 built Rust/library but stopped before inference on a
 versioned-SONAME checker bug. The exact-path guard is corrected; failure is
 archived in initial-bindings-loader-failure.json. Corrected39979622930 passes all42 pooled metrics/14 binding ID rows and
 consumer/gate/failure contracts, independently checked with all artifact bytes.
-[Evidence](../tests/results/ultrabert/public-bindings.json). Final platform CI
-remains before PR75 merge; do not repeat the successful model run.
-The bounded task uses the existing hosted model/API workflow and preserved
-F32 conversion to exercise actual Rust and Dart generic bindings on the same
-frozen text/ID/vector cases, explicit query/document prefixes and failure
-recovery. Assert the loaded library/model hashes and unchanged budgets; retain
-initial failures. Build-only wrapper success is not model-backed execution.
-Use an isolated worktree, original tools/crispembed-diff and hosted runners.
+[Evidence](../tests/results/ultrabert/public-bindings.json). Raw/dense/normalized-token
+CLS maxima are6.723403930664062e-5/5.941838026046753e-7/
+6.07222318649292e-7, with minimum cosine0.999999999994188 in both languages.
+The initial loader failure, unchanged frozen references and all183/1294 full-stage
+failures remain. Do not repeat the successful model run; preserve remote raw
+vectors/logs before their21 January2027 expiry.
 Pair API is a later explicit contract: BOS0+A+SEP15+B, no terminal separator,
 attended BOS despite pad ID0; do not change the generic BERT template globally.
 The optional [M1 native API handover](handover-m1-ultrabert-f32-api.md) supplies
@@ -193,8 +191,8 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header audit complete; [bounded integration contract](ovisocr2.md) | Pinned vLLM source/isolated dual-stop probe complete. Weight-free HF metadata/meta-schema/processor39983101540 atca3d096f is queued; inspect/preserve before any pinned MTP/stop-set profile or weight run. Xiaomi follows; Indra stays public-code-only |
-| Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired latency, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
+| Permissive OCR queue | OvisOCR2 source/license/header and [weight-free metadata/schema/processor39983101540](../tests/results/qwen35-ocr/ovisocr2-metadata.json) pass; [contract](ovisocr2.md) | [PR77](https://github.com/CrispStrobe/CrispEmbed/pull/77) implements the pinned experimental profile at 5e197bae; full-payload [export39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147) is queued. Inspect F32/F16 roundtrip reports before qualification; no native alias/decoded parity. Xiaomi follows; Indra public-code-only |
+| Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
 All builds, suites, model/batch/browser work run on hosted CI or authorized remote
@@ -203,23 +201,35 @@ Use isolated worktrees, preserve unrelated files/owners, and keep private machin
 setup/access notes ignored. Optional ignored environment notes may supplement
 this public handoff; the task definitions above do not depend on them.
 
-## Active paired GPU performance follow-up
+## Completed bounded paired GPU performance; follow-ups remain
 
 `tools/kaggle/lfm2-encoder-cuda-performance/` initial recipe9fd70ce5/versionv1 hit its30-minute build timeout at97%, before
 inference. Versionv2/7a17864f extends only the build limit to60 minutes, journals
-timeouts and terminates its process group. Original worker bytes are unchanged. Inspect the current private run
-locator; do not resubmit an active kernel or redraw unsupported hardware. The
+timeouts and terminates its process group. Original worker bytes are unchanged. The
+v2 run completed all four blocks and15 cases. Independent review matches the
+pinned recipe/worker and all18 source declarations, selected build/configure/
+placement logs, four raw-block SHA/content pairs and all60 rows/420 timing
+samples. CPU0/CUDA180 scheduler `MUL_MAT` assignments confirm placement. In
+this one T4 session all15 cases are faster on CUDA (3.48–120.11x); pooled14-
+sample median9/20/649-token latencies are136.5423/4.88886 ms,
+304.819/11.0264 ms and9667.336/80.4885 ms (CPU/CUDA). The
 public script pins the audited runtime898af2c2, F16/modelbb26e78c and complete
 original fixturee3599a94 hashes. CPU/CUDA/CUDA/CPU processes retain all per-case
 seven-repeat latencies after two warmups, initialization separately, exact IDs
 and original CLS gates. Scheduler probes require actual CUDA use and CPU
 control isolation. Peak RSS includes initialization/quality probes; no VRAM
 peak, throughput, full GPU residency or general speedup claim is justified.
-Fetch only `lfm2-cuda-performance.json`, block JSONs and selected logs. Preserve
-any inconclusive/failed result before a justified new recipe; no defaults move.
+Reported CPU/CUDA CLS gates pass, but raw CLS arrays were not retained in the
+performance artifact, so those numerical metrics cannot be independently
+recomputed there. The separate594-stage audit remains the stronger numerical
+evidence. Retain raw reports and the v1 timeout; other hardware, precision,
+throughput, task quality and defaults remain open.
+[Full timing producer and independent review](../tests/results/lfm2-encoder/cuda-f16-performance.json).
 
-Development desktop CPU portability is prepared in draftPR76 atf61de665:
-Linux/Windows now pin GGML_NATIVE=OFF, every desktop leg explicitly disables
-CRISPEMBED_NATIVE, and the release CPU-baseline checker precedes compilation.
-Review complete exact-source desktop/baseline/aggregation reports before merge;
-source/configure checks alone do not qualify installed cross-host artifacts.
+Development desktop CPU portability merged via
+[PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) at1f8ff4d5.
+Actual [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916)
+passes Linux/macOS/Windows desktop configure/build/smoke/install jobs; all three
+pin both native-off options and pass the release CPU-baseline checker before
+compilation. [Reviewed flags and log hashes](../tests/results/packaging/development-cpu-baseline.json).
+Cross-host installed bundle reuse and successor release assets remain separate.
