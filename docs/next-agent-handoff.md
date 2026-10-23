@@ -125,16 +125,27 @@ pinned aliases and empty-cache downloads only for a validated candidate. Do not
 publish current experimental UltraBERT artifacts. Base150M/380M masked-LM heads
 are separate later ports; do not discard the untied head or infer task-head training.
 
-## Preserve original arrays before artifact expiry
+## Original arrays preserved; use the verified copy after original expiry
 
-Approved producer [38997562520](https://github.com/CrispStrobe/CrispEmbed/actions/runs/38997562520),
-source `0573f1847db68914052a98341a22fceeb1358518`, artifact
-`heavy-38997562520`, expires **31 October2026 03:09:55 UTC**. Before expiry, copy
-it to durable authorized remote storage/longer-retained hosted artifacts. Verify
-the original raw manifest SHA, all7 archive hashes, stage payloads and conversion
-identities against [reference-audit.json](../tests/results/ultrabert/reference-audit.json).
-Keep the original producer provenance when adding a new storage locator. Never
-replace expired tensors with a newly computed reference under the same identity.
+Original producer38997562520 at `0573f1847db68914052a98341a22fceeb1358518`
+was copied without regeneration by [39913800444](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39913800444).
+All seven archive hashes/2730 stage payloads and original conversion records pass.
+[Preservation report](../tests/results/ultrabert/reference-preservation.json)
+records original identity and inventory. Remote artifact
+`ultrabert-original-38997562520-preserved-39913800444` expires
+**21 January2027 06:48:52 UTC**. Original artifact expires31 October2026.
+The native workflow accepts `reference_run=38997562520` plus
+`preserved_run=39913800444`; original report/source/payload checks remain intact.
+Before the new expiry, make another verified remote copy or durable archive,
+without rerunning original inference. Do not use the preservation run as a new
+reference producer or silently substitute recomputed arrays.
+
+Bounded reproducibility [39915714794](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39915714794)
+is queued at8031ae1c. It compares original full-forward anchors and same-input
+Q/gate/up/down modules across threads1/2 and MKLDNN on/off, fingerprints loaded
+weights/backends, and reports F64/F16-weight diagnostic alternatives separately.
+No native correction, new full-model reference or relaxed threshold is implied.
+Inspect its report before repeating the experiment.
 
 ## Other executable fronts and boundaries
 

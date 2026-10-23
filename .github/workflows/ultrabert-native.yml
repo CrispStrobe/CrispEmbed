@@ -8,6 +8,11 @@ on:
         description: 'Successful original reference workflow run (must match the reviewed record)'
         required: true
         type: string
+      preserved_run:
+        description: 'Optional successful preservation run; keeps original producer identity'
+        required: false
+        default: ''
+        type: string
       operator_audit:
         description: 'Replay original-input operators separately; preserve ordinary metrics'
         default: false
@@ -46,6 +51,7 @@ jobs:
     timeout-minutes: 60
     env:
       REFERENCE_RUN: ${{ inputs.reference_run }}
+      PRESERVED_RUN: ${{ inputs.preserved_run }}
       OPERATOR_AUDIT: ${{ inputs.operator_audit }}
       LINEAR_AUDIT: ${{ inputs.linear_audit }}
       LINEAR_FORWARD_AUDIT: ${{ inputs.linear_forward_audit }}
@@ -84,6 +90,13 @@ jobs:
           meta = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + run]))
           if meta['conclusion'] != 'success' or meta['head_sha'] != record['source_commit']:
               raise ValueError('Original run is not a successful frozen source')
+          preserved = os.environ.get('PRESERVED_RUN', '')
+          if preserved:
+              if not preserved.isdigit() or run != '38997562520':
+                  raise ValueError('Invalid preservation/original run')
+              copy = json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/runs/' + preserved]))
+              if copy['conclusion'] != 'success' or copy['path'] != '.github/workflows/preserve-ultrabert-reference.yml':
+                  raise ValueError('Not a successful reference-preservation workflow')
           PY
       - name: Install conversion and archive-reader dependencies
         run: python -m pip install gguf==0.19.0 safetensors==0.8.0 numpy==2.2.6 huggingface-hub==1.33.0
@@ -94,8 +107,8 @@ jobs:
           python -m pip install transformers==5.16.1
       - uses: actions/download-artifact@v4
         with:
-          name: heavy-${{ inputs.reference_run }}
-          run-id: ${{ inputs.reference_run }}
+          name: ${{ inputs.preserved_run && format('ultrabert-original-38997562520-preserved-{0}', inputs.preserved_run) || format('heavy-{0}', inputs.reference_run) }}
+          run-id: ${{ inputs.preserved_run || inputs.reference_run }}
           github-token: ${{ github.token }}
           path: ${{ env.FROZEN_ARTIFACTS }}
       - name: Compare full native graph with original tensor archives

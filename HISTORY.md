@@ -1,3 +1,13 @@
+## 2026-10-23 — Frozen original arrays preserved without regeneration
+
+[Preservation39913800444](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39913800444)
+verifies seven archive hashes/all2730 stage payloads and both original conversion
+records, then copies the original artifact for90 days. Remote artifact12483912080
+expires21 January2027 06:48:52 UTC. [Inventory/provenance](tests/results/ultrabert/reference-preservation.json).
+Native audit accepts the preservation locator separately from original producer
+38997562520; frozen source/manifest/payload checks are unchanged. No model inference,
+reference regeneration, runtime release or app update occurred.
+
 ## 2026-10-23 — Corrected UltraBERT audit and integration conclusions verified
 
 [Local operator39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
