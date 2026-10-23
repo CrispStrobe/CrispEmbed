@@ -1,3 +1,20 @@
+## 2026-10-23 — Corrected PosFormer reference and primitive controls pass
+
+[Linux39918191021](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39918191021)
+atf7c53803 passes fresh50-case API/gate/printed regressions,16 pool/two norm
+controls and both original-code/exported-F32 reference arms. Each arm covers
+five cases/five decoder steps,45 encoder/275 decoder stage records and25 exact
+argmax matches. All270 exported tensors/parameters are accounted for; wrong
+value/shape/nonfinite/floor/norm-order controls reject. Independent report review
+checks every stage/argmax, production source hash, probe-free production/test-only
+library separation and full public-API provenance. [All raw reports/hashes](tests/results/posformer/main-backport-reference.json).
+
+Default encoder worst abs0.00198864937; scalar3.81469727e-6, within unchanged
+per-arm budgets. Original training checkpoint/BN statistics and full-sequence
+accuracy remain unproved. Original-Q8 recognition stays7/50; this is no general
+quality/default promotion. PR72 remains draft until remaining platform/secret
+checks finish. Both initial trace failure and completed macOS API evidence remain.
+
 ## 2026-10-23 — Resource-aware handoff checkpoint
 
 The M1 handover pins the updated original-projection script, including explicit

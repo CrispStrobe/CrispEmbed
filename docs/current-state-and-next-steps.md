@@ -100,8 +100,8 @@ Public support and quantized/default publication require U1–U4 in the executab
 handoff. Original-backend reproducibility39915714794 completes all four controls without
 recovering frozen anchors; [M1 follow-up](handover-m1-validation.md) is ready.
 Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is
-draft: both50-case API/gate arms pass, corrected Linux reference39918191021 is
-queued after retained test-only anchor failure. Other portfolio/app owners remain separate.
+draft: both50-case API/gate arms and corrected Linux reference39918191021 pass;
+remaining platform/secret checks are pending after retained test-only anchor failure. Other portfolio/app owners remain separate.
 
 ## Recommended order and dependencies
 
@@ -117,7 +117,7 @@ math-engine investigation, not a reason to rebuild everything immediately.
 
 ### V1 — Qualify the selective PosFormer backport
 
-**Repository:** CrispEmbed. **Draft PR72; reference qualification pending.**
+**Repository:** CrispEmbed. **Draft PR72; bounded reference qualification passed, platform checks pending.**
 
 Review [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) at
 `f7c538039f904b35d642f333e9ff98bd9dd1dda3`, selectively ported from PR60.
@@ -129,8 +129,9 @@ outputs equal baseline. This is not improved handwriting recognition.
 
 Initial Linux reference instrumentation rejects its gated pool anchor before
 inference; the adapter fix changes only test tools and restores exact production
-branches. Inspect corrected run39918191021, required format/platform checks and
-all original/exported-weight stage results before merging. [Initial reports](../tests/results/posformer/main-backport-initial.json)
+branches. Corrected39918191021 passes both five-case/five-step reference arms, all270
+exported tensors and16 pooling/two normalization controls. Inspect remaining
+exact-source platform/secret checks before merging. [Initial reports](../tests/results/posformer/main-backport-initial.json)
 retain producer fields, hashes and failure. Do not repeat the backport from scratch
 or merge PR60's historical release branch wholesale.
 

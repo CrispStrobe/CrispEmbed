@@ -21,8 +21,11 @@ neither a hardware/reduction cause nor a native runtime correction.
 
 PosFormer draftPR72's initial Linux/macOS public-API runs retain7/50 original
 exact matches and38 changed opt-in transcriptions. Unset/zero preserve every
-baseline output. Linux exported-weight reference inference remains unmeasured
-after a test-only trace-anchor rejection; corrected39918191021 is pending.
+baseline output. Corrected Linux39918191021 passes the bounded five-case/five-step exported-F32
+reference in default/scalar arms: each45 encoder/275 decoder records and25
+argmax comparisons. Worst encoder abs0.00198864937 default and3.81469727e-6
+scalar, within original per-arm budgets. Full original-checkpoint/sequence
+quality remains unproved; the initial trace-anchor failure is retained.
 No speed, general recognition improvement, default adoption or release claim.
 
 ## Completed build and tokenizer qualification — 17 October 2026
