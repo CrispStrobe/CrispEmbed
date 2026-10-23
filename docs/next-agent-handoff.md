@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header and [weight-free metadata/schema/processor39983101540](../tests/results/qwen35-ocr/ovisocr2-metadata.json) pass; [contract](ovisocr2.md) | [PR77](https://github.com/CrispStrobe/CrispEmbed/pull/77) implements the pinned experimental profile at a005de0b; full-payload [export39991277170](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39991277170) is queued. Inspect F32/F16 roundtrip reports before qualification; no native alias/decoded parity. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header and [weight-free metadata/schema/processor39983101540](../tests/results/qwen35-ocr/ovisocr2-metadata.json) pass; [contract](ovisocr2.md) | [PR77](https://github.com/CrispStrobe/CrispEmbed/pull/77) implements the pinned experimental profile at 5e197bae; full-payload [export39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147) is queued. Inspect F32/F16 roundtrip reports before qualification; no native alias/decoded parity. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -224,6 +224,7 @@ performance artifact, so those numerical metrics cannot be independently
 recomputed there. The separate594-stage audit remains the stronger numerical
 evidence. Retain raw reports and the v1 timeout; other hardware, precision,
 throughput, task quality and defaults remain open.
+[Full timing producer and independent review](../tests/results/lfm2-encoder/cuda-f16-performance.json).
 
 Development desktop CPU portability merged via
 [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) at1f8ff4d5.

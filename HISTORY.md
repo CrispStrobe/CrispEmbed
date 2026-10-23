@@ -1,3 +1,21 @@
+## 2026-10-23 — Ovis roundtrip audit tightened before weight execution
+
+PR77 source5e197bae independently derives exported names, shapes and F32/F16
+policy from the qualified original schema rather than accepting exporter manifest
+claims. Duplicate/extra/missing records and tensor names fail. Ten profile and
+five metadata control groups pass without model imports. Original export run
+[39991277170](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39991277170)
+passed controls but was cancelled while its export job remained queued, before
+weight execution. The replacement
+[39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147)
+is queued at5e197bae; neither run establishes conversion or native quality yet.
+
+The completed LFM paired performance producer and independent timing/source/log
+review are now archived in
+[cuda-f16-performance.json](tests/results/lfm2-encoder/cuda-f16-performance.json),
+with measurements and scope in PERFORMANCE and the model document. The v1
+pre-inference timeout remains retained separately.
+
 ## 2026-10-23 — PR75/PR76 integrated; Ovis export and paired GPU timing remain gated
 
 [PR75](https://github.com/CrispStrobe/CrispEmbed/pull/75) integrated at
