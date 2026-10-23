@@ -1,3 +1,17 @@
+## 2026-10-23 — Resource-aware handoff checkpoint
+
+The M1 handover pins the updated original-projection script, including explicit
+raw/normalized CLS outputs. The earlier Linux backend report retains only final
+hidden-state metrics; it is not relabelled as measured CLS parity. The next M1
+run must produce those final-vector records before drawing a full-output conclusion.
+
+A Kaggle inventory found no active sessions among the twelve recently run kernels
+checked. No GPU session was spent on CPU-only reference/Apple work. The existing
+LFM diff target selects Metal/CPU only; explicit CUDA/no-fallback execution proof
+is a prerequisite for a useful Kaggle GPU audit. Seven additional small trace/
+provenance controls pass locally. One superseded task-owned queued secret scan
+was cancelled while retaining the latest scan; no unrelated jobs were touched.
+
 ## 2026-10-23 — PosFormer API/gates verified; trace anchor corrected separately
 
 At0b73f5f9, Linux and macOS normal public API runs preserve all seven original
