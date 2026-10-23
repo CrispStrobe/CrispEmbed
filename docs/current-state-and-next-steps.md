@@ -115,27 +115,29 @@ review. R1 is used only when a production app change is ready to ship. C1 and
 F1 require an explicit backend/product decision. B1 is an optional bounded
 math-engine investigation, not a reason to rebuild everything immediately.
 
-### V1 — Reconcile the released hotfix with vendor main
+### V1 — Qualify the selective PosFormer backport
 
-**Repository:** CrispEmbed. **Ready now; isolated runtime patch.**
+**Repository:** CrispEmbed. **Draft PR72; reference qualification pending.**
 
-Start with [draft PR60](https://github.com/CrispStrobe/CrispEmbed/pull/60),
-source `78493a31fc3043f3af4ab6fd2f197a32da6f07f0`, and current main.
-Port only the trained decoder input LayerNorm and missing-edge ceil-pooling
-corrections, with their meaningful positive/negative controls, into the current
-[PosFormer implementation](https://github.com/CrispStrobe/CrispEmbed/blob/main/src/posformer_ocr.cpp).
-Do not merge the historical release branch wholesale or copy release metadata.
-Preserve independent concurrent vendor features. Follow the vendor version-bump
-procedure for an actual new release; do not move the existing release tag.
+Review [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) at
+`f7c538039f904b35d642f333e9ff98bd9dd1dda3`, selectively ported from PR60.
+It retains the existing main path under unset/literal0 and enables trained input
+LayerNorm/ceil pooling with `CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` at model init.
+Both Linux/macOS50-case normal-API arms pass at the identical C++ source0b73f5f9:
+seven exact matches remain,38 transcriptions change under opt-in, and unset/zero
+outputs equal baseline. This is not improved handwriting recognition.
 
-Re-run synthetic positive/negative normalization/pooling controls, independent
-reference comparisons and actual normal-API Linux/Mac transcripts on the frozen
-fifty images. Inspect packaged libraries for unintended diagnostic payloads.
-Reconcile the draft only after equivalent behavior is evidenced on current main.
+Initial Linux reference instrumentation rejects its gated pool anchor before
+inference; the adapter fix changes only test tools and restores exact production
+branches. Inspect corrected run39918191021, required format/platform checks and
+all original/exported-weight stage results before merging. [Initial reports](../tests/results/posformer/main-backport-initial.json)
+retain producer fields, hashes and failure. Do not repeat the backport from scratch
+or merge PR60's historical release branch wholesale.
 
-**Done when:** main contains the measured correction with reproducible evidence
-and the draft status explains its disposition. Keep CrispMath on immutable
-0.17.12 until a separately validated successor release exists.
+**Done when:** actual reference/gate/API evidence qualifies the current source,
+main contains that bounded correction, and PR60's disposition is reconciled.
+Branch development manifests0.17.13 do not authorize release tags/publication.
+Keep the app on immutable0.17.12 until a separately validated successor exists.
 
 ### M1 — Fifty new independent mathematical problems and systemic repairs
 
