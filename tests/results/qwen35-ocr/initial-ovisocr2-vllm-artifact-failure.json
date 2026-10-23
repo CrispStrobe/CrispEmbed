@@ -1,0 +1,83 @@
+{
+  "service": "Kaggle GPU session",
+  "recipe_source": "d024a00d1f4fa0cd1b58e8066d56d0fa405673a5",
+  "producer": {
+    "recipe": "ovisocr2-original-vllm-t4-v1",
+    "status": "failed",
+    "phase": "original-artifact",
+    "scope": "Original vLLM auto-FP16 T4 path and bounded greedy prefix; no BF16 parity or task-quality claim",
+    "pins": {
+      "model": "ATH-MaaS/OvisOCR2",
+      "revision": "cbdede82e048659b83310476ff807da825f8fe78",
+      "metadata_run": 39983101540,
+      "frontend_run": 40017014043,
+      "proof_commit": "8f13e82fe592978a6dd47d812163842019b47eb2",
+      "vllm_version": "0.22.1",
+      "vllm_commit": "0decac0d96c42b49572498019f0a0e3600f50398",
+      "worker_commit": "5374e590a5fe42388861193a0efb051a1ce4ed73",
+      "worker_sha256": "09156255c01a87a292234a5e4b90f10788e8c949e29d27cbf2b3efbc867ac72f",
+      "vllm_wheel_sha256": "365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd",
+      "vllm_wheel_bytes": 473003163,
+      "checkpoint_sha256": "9270560288656ece5cb3a6989001afcf5af8d223bceed4a423c33a008861d009",
+      "torch": "2.11.0",
+      "transformers": "5.16.1",
+      "tokenizers": "0.23.3"
+    },
+    "sources": {
+      "readme": "https://huggingface.co/ATH-MaaS/OvisOCR2/blob/cbdede82e048659b83310476ff807da825f8fe78/README.md",
+      "vllm_release": "https://github.com/vllm-project/vllm/releases/tag/v0.22.1",
+      "driver": "https://docs.nvidia.com/cuda/archive/12.9.0/cuda-toolkit-release-notes/index.html",
+      "gpu": "https://docs.vllm.ai/en/v0.22.1/getting_started/installation/gpu/"
+    },
+    "commands": [],
+    "limits": [
+      "Published vLLM v0.22.1 release has no cu128 wheel; this recipe uses pinned cu129 only after an actual qualified driver check.",
+      "The README leaves dtype=auto; vLLM resolves Ovis BF16 config to FP16 on T4.",
+      "A bounded 256-token output is an explicitly labeled cap versus README max_tokens=16384."
+    ],
+    "script_sha256": "c10ffbf6bf27565ca377f79c276909294822df59a9b5d7166b5000976c31b0a0",
+    "service_frontend": {
+      "run": 40017014043,
+      "head_sha": "ccb6059a6b07b1339abc4de7dd085b0f08af8493",
+      "conclusion": "success",
+      "workflow_path": ".github/workflows/ovisocr2-metadata.yml"
+    },
+    "service_metadata": {
+      "run": 39983101540,
+      "head_sha": "ca3d096fe673f3554e95ef8e5f534b597564233e",
+      "conclusion": "success",
+      "workflow_path": ".github/workflows/ovisocr2-metadata.yml"
+    },
+    "metadata_proof": {
+      "url": "https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/8f13e82fe592978a6dd47d812163842019b47eb2/tests/results/qwen35-ocr/ovisocr2-metadata.json",
+      "producer_sha256": "233dc37fdaa2ff6b4a8b3ca3832b578305b5f3b6ed4d0d88d54c73591626b372",
+      "artifact_id": 12515557390
+    },
+    "gpu_query": [
+      "Tesla T4, 7.5, 580.178.04, 15360",
+      "Tesla T4, 7.5, 580.178.04, 15360"
+    ],
+    "hardware": {
+      "name": "Tesla T4",
+      "capability": "7.5",
+      "driver": "580.178.04",
+      "memory_mib": 15360,
+      "required_driver": "575.51.3",
+      "wheel_cuda": "12.9",
+      "nvcc_version_output": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Fri_Feb_21_20:23:50_PST_2025\nCuda compilation tools, release 12.8, V12.8.93\nBuild cuda_12.8.r12.8/compiler.35583870_0"
+    },
+    "worker_sha256": "09156255c01a87a292234a5e4b90f10788e8c949e29d27cbf2b3efbc867ac72f",
+    "error_type": "HTTPError"
+  },
+  "producer_sha256": "815fa1f8a34d85cccc1600549236124698fd0721f6b72a9781dde6938ac70439",
+  "terminal_log_sha256": "85901e2876982446c125569a32a9045a116442cee915f1b8e552b21dda048e2d",
+  "review": {
+    "deployed_script_source_verified": true,
+    "hardware_gate_passed": true,
+    "genuine_gpu_forward_completed": false,
+    "failed_before_package_installation_and_weights": true,
+    "earliest_failure": "GitHub artifact ZIP download returned HTTP401; no GitHub artifact credential was available in this GPU environment.",
+    "source_model_and_algorithms_unchanged": true,
+    "fix": "Transport-only: download byte-identical processor ZIP from immutable public HF fixture mirror, preserving all original ZIP/NPZ/field hashes; no shared credential modification or GPU redraw."
+  }
+}

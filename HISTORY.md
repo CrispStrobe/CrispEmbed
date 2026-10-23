@@ -1,3 +1,21 @@
+## 2026-10-23 — Original GPU hardware qualifies; processor-fixture transport corrected
+
+The first original-vLLM GPU attempt atd024a00d received T4/SM7.5 with
+580.178.04 driver, meeting the published CUDA12.9 wheel's conservative driver
+gate even though the installed toolkit is12.8. It stopped on HTTP401 while
+fetching the original GitHub processor ZIP, before packages/checkpoint/model
+execution. [Original producer and terminal hash](tests/results/qwen35-ocr/initial-ovisocr2-vllm-artifact-failure.json).
+No model/GDN compatibility success is inferred from the hardware gate.
+
+The exact524,058-byte original ZIP is now mirrored in the existing public
+regression-fixture dataset at immutable50b63a86, with upstream license and
+provenance. Anonymous readback preserves SHAe3ddf289…d2c7dde5; all ZIP/NPZ/field
+comparisons remain unchanged. [Mirror provenance](tests/results/qwen35-ocr/ovisocr2-processor-fixture-mirror.json).
+The transport retry uses recipea6256187/worker2dc53790; no shared credentials
+were changed and no GPU redraw was requested. Actual model execution remains
+pending. The exact vLLM0.22.1 release publishes cu129, not the previously
+inferred cu128 variant; the source-audit follow-up corrects that distinction.
+
 ## 2026-10-23 — Original/native Ovis frontend comparison passes
 
 Corrected40017014043 atccb6059a passes all three unchanged original image
