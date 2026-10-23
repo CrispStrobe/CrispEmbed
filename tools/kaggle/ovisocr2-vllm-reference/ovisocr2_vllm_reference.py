@@ -47,8 +47,8 @@ MIRROR_URL = (f'https://huggingface.co/datasets/{MIRROR_REPO}/resolve/{MIRROR_RE
               '/qwen35-ovisocr2/original-processor/metadata.zip')
 MIRROR_BYTES = 524058
 MIRROR_SHA = 'e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5'
-WORKER_COMMIT = '5374e590a5fe42388861193a0efb051a1ce4ed73'
-WORKER_SHA = '09156255c01a87a292234a5e4b90f10788e8c949e29d27cbf2b3efbc867ac72f'
+WORKER_COMMIT = '2dc537902e72a5f706850cd75afc3dc14e498295'
+WORKER_SHA = 'dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af'
 WORKER_URL = (f'https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/{WORKER_COMMIT}'
               '/tools/kaggle/ovisocr2-vllm-reference/worker.py')
 DRIVER_MIN = (575, 51, 3)  # NVIDIA CUDA 12.9 GA corresponding Linux driver.
