@@ -115,9 +115,15 @@ def main():
                 raise ValueError('Incomplete original forward')
             stages = {k:compare(v, old(k)) for k,v in captures.items()}
             first = next((k for k,v in stages.items() if not v['bit_exact']), None)
+            # Same CLS extraction/normalization as the immutable original dumper.
+            with torch.inference_mode():
+                cls_raw = output[:, 0, :].detach().clone()
+                cls_normalized = torch.nn.functional.normalize(cls_raw, p=2, dim=-1)
+            final_vectors = {name:compare(value, old(name)) for name,value in
+                             (('cls_raw',cls_raw),('cls_normalized',cls_normalized))}
             entry = dict(case=case['case']['id'], original_archive_sha256=case['archive_sha256'],
                          first_differing_stage=first, differing_stages=sum(not v['bit_exact'] for v in stages.values()),
-                         stages=stages, projections={})
+                         stages=stages, final_vectors=final_vectors, projections={})
             gate, up = old('layer_14.gate'), old('layer_14.up')
             with torch.inference_mode():
                 product = model.layers[14].mlp.act_fn(gate) * up
