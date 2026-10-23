@@ -12,9 +12,12 @@ version](https://docs.nvidia.com/cuda/archive/12.9.0/cuda-toolkit-release-notes/
 before installing packages or downloading weights. A lower driver yields an
 inconclusive result with no device redraw or wheel fallback.
 
-Provide `GITHUB_TOKEN` as a Kaggle secret to read the original GitHub Actions
-artifact. Do not put token values or account names in this directory. The
-recipe uses the normal `${KAGGLE_ACCOUNT}` placeholder in its kernel metadata.
+The script reads a `GITHUB_TOKEN` Kaggle secret or the existing private token
+dataset's `gh_token.txt` to read the original GitHub Actions artifact. Do not
+put token values or account names in this directory. The recipe uses the
+normal `${KAGGLE_ACCOUNT}` placeholder in its kernel metadata. It fetches its
+worker from immutable Git source and checks the worker SHA-256 because Kaggle
+deploys only `code_file` from this directory.
 The top-level script writes its phase journal, command log hashes, and small
 processor replay files to Kaggle output. The checkpoint and wheel stay in
 remote temporary storage.
@@ -22,10 +25,11 @@ remote temporary storage.
 The README omits `dtype`, so vLLM's `auto` policy selects FP16 on T4 from the
 model's BF16 config. This is the original example's T4 route, **not a BF16
 parity result**. The script keeps the README's Triton GDN request and
-multimodal kwargs. Its one greedy generation is explicitly capped at 256
-tokens instead of the README's 16,384, and the image is a frozen synthetic
-processor fixture. Raw IDs, raw text and the README's processed text are
-retained; no OCR quality or native-model parity claim follows from this run.
+multimodal kwargs. Its two-image greedy batch is explicitly capped at 256
+tokens per image instead of the README's 16,384. It includes a frozen random
+processor fixture and a deterministic owned image with readable text. Raw
+IDs, raw text and the README's processed text are retained; no OCR quality
+benchmark or native-model parity claim follows from this run.
 
 The script is prepared for review. A successful frontend prerequisite and an
 available GPU slot are required before submission. Run `kpush.py` through the

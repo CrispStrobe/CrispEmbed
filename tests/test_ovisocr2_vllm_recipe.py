@@ -4,6 +4,7 @@ import ast
 import importlib.util
 import json
 from pathlib import Path
+import urllib.request
 import unittest
 from unittest import mock
 
@@ -51,6 +52,25 @@ class RecipeControls(unittest.TestCase):
         self.assertEqual(recipe.DRIVER_MIN, (575, 51, 3))
         self.assertIn('+cu129', recipe.WHEEL_NAME)
         self.assertEqual(len(recipe.WHEEL_SHA), 64)
+        worker = ROOT / 'tools/kaggle/ovisocr2-vllm-reference/worker.py'
+        self.assertEqual(recipe.digest(worker), recipe.WORKER_SHA)
+        self.assertIn(recipe.WORKER_COMMIT, recipe.WORKER_URL)
+
+    def test_cross_host_artifact_redirect_strips_authorization(self):
+        request = urllib.request.Request('https://api.github.com/artifact',
+                                         headers={'Authorization': 'Bearer private'})
+        handler = recipe.StripCrossHostAuth()
+        redirected = handler.redirect_request(request, None, 302, 'Found', {},
+                                              'https://blob.example.invalid/zip')
+        self.assertFalse(redirected.has_header('Authorization'))
+        same_host = handler.redirect_request(request, None, 302, 'Found', {},
+                                             'https://api.github.com/elsewhere')
+        self.assertTrue(same_host.has_header('Authorization'))
+
+    def test_deployed_kernel_has_existing_token_dataset_placeholder(self):
+        metadata = json.loads((ROOT / 'tools/kaggle/ovisocr2-vllm-reference/kernel-metadata.json').read_text())
+        self.assertEqual(metadata['dataset_sources'], ['${KAGGLE_ACCOUNT}/crispasr-hf-token'])
+        self.assertEqual(metadata['code_file'], 'ovisocr2_vllm_reference.py')
 
     def test_import_does_not_load_model_or_cuda_frameworks(self):
         import sys

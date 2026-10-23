@@ -6,6 +6,7 @@ receipt is deliberately not a BF16 reference or a task-quality benchmark.
 """
 
 import hashlib
+import functools
 import json
 import os
 from pathlib import Path
@@ -15,6 +16,7 @@ import subprocess
 import sys
 import time
 import urllib.request
+import urllib.parse
 import venv
 import zipfile
 
@@ -39,6 +41,10 @@ WHEEL_NAME = 'vllm-0.22.1+cu129-cp38-abi3-manylinux_2_28_x86_64.whl'
 WHEEL_URL = 'https://github.com/vllm-project/vllm/releases/download/v0.22.1/vllm-0.22.1%2Bcu129-cp38-abi3-manylinux_2_28_x86_64.whl'
 WHEEL_SHA = '365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd'
 WHEEL_BYTES = 473003163
+WORKER_COMMIT = '5374e590a5fe42388861193a0efb051a1ce4ed73'
+WORKER_SHA = '09156255c01a87a292234a5e4b90f10788e8c949e29d27cbf2b3efbc867ac72f'
+WORKER_URL = (f'https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/{WORKER_COMMIT}'
+              '/tools/kaggle/ovisocr2-vllm-reference/worker.py')
 DRIVER_MIN = (575, 51, 3)  # NVIDIA CUDA 12.9 GA corresponding Linux driver.
 SOURCES = {
     'readme': f'https://huggingface.co/{MODEL}/blob/{REVISION}/README.md',
@@ -62,10 +68,15 @@ def canonical_sha(value):
     return hashlib.sha256(payload).hexdigest()
 
 
+@functools.cache
 def token():
     value = os.environ.get('GITHUB_TOKEN', '').strip()
     if value:
         return value
+    for path in (Path('/kaggle/input/crispasr-hf-token/gh_token.txt'),
+                 Path('/kaggle/input/datasets/${KAGGLE_ACCOUNT}/crispasr-hf-token/gh_token.txt')):
+        if path.is_file():
+            return path.read_text().strip()
     try:
         from kaggle_secrets import UserSecretsClient
         return (UserSecretsClient().get_secret('GITHUB_TOKEN') or '').strip()
@@ -80,36 +91,69 @@ def request(url, auth='', accept='application/vnd.github+json'):
     return urllib.request.Request(url, headers=headers)
 
 
+class StripCrossHostAuth(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if (redirected is not None and
+                urllib.parse.urlsplit(req.full_url).hostname != urllib.parse.urlsplit(newurl).hostname):
+            redirected.remove_header('Authorization')
+        return redirected
+
+
+OPENER = urllib.request.build_opener(StripCrossHostAuth())
+
+
 def get_json(url, auth=''):
-    with urllib.request.urlopen(request(url, auth), timeout=30) as response:
+    with OPENER.open(request(url, auth), timeout=30) as response:
         return json.load(response)
 
 
 def fetch(url, destination, auth='', timeout=300):
-    with urllib.request.urlopen(request(url, auth, 'application/octet-stream'), timeout=timeout) as response:
+    started = time.monotonic()
+    last = started
+    count = 0
+    print('START fetch', destination.name, flush=True)
+    with OPENER.open(request(url, auth, 'application/octet-stream'), timeout=timeout) as response:
         with destination.open('wb') as output:
             while block := response.read(1024 * 1024):
                 output.write(block)
+                count += len(block)
+                now = time.monotonic()
+                if now - last >= 30:
+                    print('HEARTBEAT fetch', destination.name, count, 'bytes', flush=True)
+                    last = now
+    print('END fetch', destination.name, count, 'bytes',
+          int(time.monotonic() - started), 'seconds', flush=True)
 
 
 def run(name, argv, report, timeout=600, env=None):
     path = LOGS / (name + '.log')
     start = time.monotonic()
     timed_out = False
+    print('START', name, flush=True)
     with path.open('w') as log:
         child = subprocess.Popen(argv, stdout=log, stderr=subprocess.STDOUT, env=env,
                                  start_new_session=True)
-        try:
-            child.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            timed_out = True
-            os.killpg(child.pid, signal.SIGKILL)
-            child.wait()
+        while child.poll() is None:
+            remaining = timeout - (time.monotonic() - start)
+            if remaining <= 0:
+                timed_out = True
+                try:
+                    os.killpg(child.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                child.wait()
+                break
+            try:
+                child.wait(timeout=min(30, remaining))
+            except subprocess.TimeoutExpired:
+                print('HEARTBEAT', name, int(time.monotonic() - start), 'seconds', flush=True)
     entry = {'name': name, 'exit_code': child.returncode, 'timed_out': timed_out,
              'timeout_seconds': timeout, 'wall_seconds': time.monotonic() - start,
              'log': path.name, 'log_sha256': digest(path)}
     report['commands'].append(entry)
     save(report)
+    print('END', name, 'exit', child.returncode, 'timeout', timed_out, flush=True)
     if timed_out or child.returncode:
         raise RuntimeError(name + ' failed; see retained log')
     return path
@@ -230,6 +274,7 @@ def main():
               'pins': {'model': MODEL, 'revision': REVISION, 'metadata_run': METADATA_RUN,
                        'frontend_run': FRONTEND_RUN, 'proof_commit': PROOF_COMMIT,
                        'vllm_version': '0.22.1', 'vllm_commit': VLLM_COMMIT,
+                       'worker_commit': WORKER_COMMIT, 'worker_sha256': WORKER_SHA,
                        'vllm_wheel_sha256': WHEEL_SHA, 'vllm_wheel_bytes': WHEEL_BYTES,
                        'checkpoint_sha256': CHECKPOINT_SHA, 'torch': '2.11.0',
                        'transformers': '5.16.1', 'tokenizers': '0.23.3'},
@@ -240,13 +285,18 @@ def main():
     save(report)
     try:
         report['script_sha256'] = digest(__file__)
-        report['worker_sha256'] = digest(HERE / 'worker.py')
         report['service_frontend'] = service_gate(FRONTEND_RUN, FRONTEND_HEAD, 'Corrected frontend')
         report['service_metadata'] = service_gate(METADATA_RUN, METADATA_HEAD, 'Original metadata')
         report['phase'] = 'metadata-proof'; save(report)
         evidence = metadata_proof(report)
         report['phase'] = 'hardware'; save(report)
         gpu_gate(report)
+        report['phase'] = 'pinned-worker'; save(report)
+        worker = SCRATCH / 'worker.py'
+        fetch(WORKER_URL, worker, timeout=60)
+        if digest(worker) != WORKER_SHA:
+            raise ValueError('Pinned original worker source bytes differ')
+        report['worker_sha256'] = digest(worker); save(report)
         report['phase'] = 'original-artifact'; save(report)
         original_arrays(evidence, report)
         report['phase'] = 'isolated-packages'; save(report)
@@ -277,10 +327,10 @@ def main():
         report['phase'] = 'original-gpu-reference'; save(report)
         env = dict(os.environ, CUDA_VISIBLE_DEVICES='0', OVIS_OUT=str(OUT), OVIS_SCRATCH=str(SCRATCH),
                    OVIS_PROOF_COMMIT=PROOF_COMMIT, OVIS_CHECKPOINT_SHA=CHECKPOINT_SHA)
-        run('original-vllm-worker', [python, str(HERE / 'worker.py')], report, env=env, timeout=3600)
-        worker = json.loads((OUT / 'ovisocr2-vllm-worker.json').read_text())
-        report['worker'] = worker
-        if worker['status'] != 'completed bounded original vLLM reference':
+        run('original-vllm-worker', [python, str(worker)], report, env=env, timeout=3600)
+        worker_result = json.loads((OUT / 'ovisocr2-vllm-worker.json').read_text())
+        report['worker'] = worker_result
+        if worker_result['status'] != 'completed bounded original vLLM reference':
             raise ValueError('Original worker did not complete')
         report['status'] = 'completed bounded original vLLM T4 reference'
         report['phase'] = 'complete'; save(report)
