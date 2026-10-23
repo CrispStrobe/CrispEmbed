@@ -1358,13 +1358,15 @@ static int cli_main(int argc, char ** argv) {
                     "error: experimental ovisocr2 needs --ocr-rec FILE, an empty custom prompt, and all three gates\n");
                 return 1;
             }
-            if (eid == 21) {
+            if (eid == 20 || eid == 21) {
                 auto * meta = core_gguf::open_metadata(ocr_rec_path.c_str());
-                const bool profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 2 &&
-                                     core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr2";
+                const bool profile =
+                    meta && ((eid == 20 && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 1) ||
+                             (eid == 21 && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 2 &&
+                              core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr2"));
                 if (meta) core_gguf::free_metadata(meta);
                 if (!profile) {
-                    fprintf(stderr, "error: ovisocr2 requires an exact Ovis format-2 model file\n");
+                    fprintf(stderr, "error: qwen35/ovis selector requires its exact model profile\n");
                     return 1;
                 }
             }

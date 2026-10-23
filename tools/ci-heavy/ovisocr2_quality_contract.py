@@ -9,6 +9,8 @@ import fnmatch
 import hashlib
 import importlib.metadata
 import json
+import math
+import re
 from pathlib import Path
 import unicodedata
 
@@ -143,7 +145,8 @@ def validate_quant_tensors(before, after, recipe, schema=None):
     changed = 0
     for name, old in before.items():
         new = after[name]
-        if old['shape'] != new['shape'] or len(old['shape']) != len(schema[name]):
+        expected_shape = list(reversed(schema[name]))
+        if old['shape'] != expected_shape or new['shape'] != expected_shape:
             raise ValueError('OvisOCR2 quantized tensor shape differs: ' + name)
         if _protected(name, schema[name]):
             if new != old:
@@ -154,10 +157,7 @@ def validate_quant_tensors(before, after, recipe, schema=None):
             pattern, precision = rule.rsplit('=', 1)
             if fnmatch.fnmatchcase(name, pattern):
                 expected = precision.upper()
-        allowed = {expected}
-        if expected == 'Q4_K':
-            allowed.add('Q4_0')  # Quantizer's explicit non-256-row fallback.
-        if new['type'].upper() not in allowed:
+        if new['type'].upper() != expected:
             raise ValueError('OvisOCR2 quantized tensor precision differs: ' + name)
         if new['sha256'] != old['sha256']:
             changed += 1
@@ -240,12 +240,33 @@ def score_panel(rendered, outputs, panel=None):
 
 def paired_quality_screen(reference, candidate):
     """Strict heldout screen; a pass still requires separate numerical/release review."""
+    panel = load_panel()
+    expected = [(row['id'], row['split'], row['gold']) for row in panel['cases']]
     if (reference['panel_canonical_sha256'] != PANEL_SHA
             or candidate['panel_canonical_sha256'] != PANEL_SHA
-            or [row['id'] for row in reference['cases']] != [row['id'] for row in candidate['cases']]):
+            or [(row['id'], row['split'], row['gold']) for row in reference['cases']] != expected
+            or [(row['id'], row['split'], row['gold']) for row in candidate['cases']] != expected):
         raise ValueError('OvisOCR2 paired quality panels differ')
     failures = []
     for old, new in zip(reference['cases'], candidate['cases']):
+        required = ('raw_text', 'processed_text', 'input_rgb_sha256', 'generated_tokens',
+                    'cap_hit', 'completed', 'format_issues', 'cer', 'wer', 'finish_reason',
+                    'raw_exact', 'processed_exact', 'stop_id')
+        if (any(key not in row for row in (old, new) for key in required)
+                or any(not isinstance(row['raw_text'], str) or not isinstance(row['processed_text'], str)
+                       or not isinstance(row['format_issues'], list)
+                       or any(not isinstance(issue, str) for issue in row['format_issues'])
+                       or type(row['generated_tokens']) is not int or row['generated_tokens'] < 1
+                       or type(row['cap_hit']) is not bool or type(row['completed']) is not bool
+                       or type(row['raw_exact']) is not bool or type(row['processed_exact']) is not bool
+                       or row['finish_reason'] not in ('stop', 'length')
+                       or row['stop_id'] not in STOPS | {None}
+                       or not isinstance(row['input_rgb_sha256'], str)
+                       or not re.fullmatch('[0-9a-f]{64}', row['input_rgb_sha256'])
+                       or any(not isinstance(row[metric], (int, float)) or not math.isfinite(row[metric])
+                              or row[metric] < 0 for metric in ('cer', 'wer'))
+                       for row in (old, new))):
+            raise ValueError('Incomplete OvisOCR2 paired quality case')
         if old['input_rgb_sha256'] != new['input_rgb_sha256']:
             raise ValueError('OvisOCR2 paired input pixels differ')
         if old['split'] != 'heldout':
