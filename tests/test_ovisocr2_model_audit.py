@@ -113,6 +113,37 @@ class HostedAuditTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "differs"):
                 audit.verify_export(model, manifest, "f32", evidence)
 
+    def test_capture_gate_requires_every_score_and_strict_cache(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "reference.json"
+            profile = {"checkpoint_sha256": "a" * 64,
+                       "qualification": {"loaded_source_sha256": {"model": "b" * 64}}}
+            payload = {"source_model": audit.MODEL, "source_revision": audit.REVISION,
+                       "checkpoint_sha256": profile["checkpoint_sha256"],
+                       "loaded_source_sha256": profile["qualification"]["loaded_source_sha256"],
+                       "vision_layers": 12, "decoder_layers": 24, "missing_stages": [],
+                       "observational_control": {"prefill_logits_exact": True, "greedy_ids_exact": True},
+                       "cached_vs_full_prefix_same_argmax": True, "cached_vs_full_prefix_max_abs": 0.001,
+                       "generated_ids": [[17, 248044]],
+                       "generation_result": {"max_new_tokens": 12, "eos_ids": [248044, 248046],
+                                             "generated_token_count": 2, "score_count": 2,
+                                             "reached_eos": True, "stop_id": 248044,
+                                             "length_limited": False, "generated_id_shape": [1, 2]},
+                       "stages": {"generated.scores.0": [1, 248320],
+                                  "generated.scores.1": [1, 248320]},
+                       "decoded": ["text"], "raw_decoded": ["text"]}
+            path.write_text(json.dumps(payload))
+            self.assertEqual(audit.verify_original_capture(path, profile, {})["generated_ids"], [[17, 248044]])
+            del payload["stages"]["generated.scores.1"]
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "capture"):
+                audit.verify_original_capture(path, profile, {})
+            payload["stages"]["generated.scores.1"] = [1, 248320]
+            payload["cached_vs_full_prefix_max_abs"] = 0.003
+            path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "cache"):
+                audit.verify_original_capture(path, profile, {})
+
 
 if __name__ == "__main__":
     unittest.main()
