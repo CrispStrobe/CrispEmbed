@@ -1,3 +1,20 @@
+## 2026-10-23 — Pinned Ovis experimental F32/F16 export qualifies
+
+PR77 merged2f8b5354 after all source2a13b90a platform/WASM/security checks
+and full export39992662147 at5e197bae. Both473-tensor payload roundtrips pass
+on hosted CI against original-checkpoint casts. Independent small-report review
+checks source hashes, both manifest hashes, every schema/name/shape/dtype record
+and all producer per-tensor hashes. F32 has473 F32 tensors; F16 retains234 F32
+and239 F16 tensors. Reported sizes are3,421,945,280 and1,717,222,848 bytes.
+
+[Producer and independent review](tests/results/qwen35-ocr/ovisocr2-export.json)
+retain remote report/model artifact IDs, digests and21 January2027 expiry.
+Full GGUF/checkpoint bytes remain remote; independent review did not recompute
+full payload hashes locally. This qualifies experimental conversion only.
+Original/native frontend, actual vLLM/model forward, all-stage/logit/decoded
+quality, maximum-resolution, native alias and publication remain separate.
+The next claimed lane is metadata-only gated native frontend comparison.
+
 ## 2026-10-23 — Ovis roundtrip audit tightened before weight execution
 
 PR77 source5e197bae independently derives exported names, shapes and F32/F16
