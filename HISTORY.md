@@ -1,3 +1,35 @@
+## 2026-10-23 — Original/native Ovis frontend comparison passes
+
+Corrected40017014043 atccb6059a passes all three unchanged original image
+captures: packed pixels have maximum absolute error0, and grids/IDs/attention
+masks/modalities/template match exactly. Twelve original tokenizer probes pass
+exact IDs/decode with both values of the old marks override. Sixteen bad-profile
+mutations, dual stops, gate/reset/custom-prompt/resolution controls pass.
+Independent review checks every reported source/probe/log hash, reference
+hash, successful exact service head and retained artifact identity/expiry.
+[Complete producer and review](tests/results/qwen35-ocr/ovisocr2-frontend.json).
+The initial regex rejection remains retained below. PR78 still requires its
+remaining platform checks before merge; native model inference/decoded OCR
+quality and publication remain separate. No original threshold was changed.
+
+## 2026-10-23 — Original Ovis regex mismatch localized before parity
+
+Initial frontend40004747653 at48aefc30 built the native target and passed the
+CPU-baseline guard, then exited before image/numerical comparisons. Read-only
+GGUF inspection identifies the first mismatch: Ovis's qualified tokenizer regex
+includes combining marks, unlike the initial LightOn-only expected regex. All
+remaining inspected load contracts match.
+[Initial producer and artifact/reference/log hashes](tests/results/qwen35-ocr/initial-ovisocr2-frontend-pattern-failure.json)
+remain preserved, including the unmodified original processor captures.
+
+PR78 correctionccb6059a pins Ovis's actual regex and enables the existing
+mark-aware pre-tokenizer by source profile. LightOn retains its pattern/gated
+alternative. Twelve original tokenizers0.23.3 probes capture normalized text,
+pre-tokenizer chunks, IDs and decode; native checks exercise both legacy override
+values and16 malformed profiles. Six driver/ten profile/five metadata controls
+pass without model imports. Hosted retry40017014043 is queued; no numerical
+budget or original image field is changed and no corrected pass is inferred.
+
 ## 2026-10-23 — Pinned Ovis experimental F32/F16 export qualifies
 
 PR77 merged2f8b5354 after all source2a13b90a platform/WASM/security checks
