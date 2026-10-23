@@ -42,6 +42,16 @@ class ArchiveControls(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     review.npz_records(path)
 
+    def test_explicit_engine_backend_line_is_distinct_from_config_or_auto_line(self):
+        lines = ['Using AttentionBackendEnum.TRITON_ATTN backend.',
+                 'Using AttentionBackendEnum.TORCH_SDPA for MMEncoderAttention.',
+                 'Using Triton/FLA GDN prefill kernel (requested=triton, head_k_dim=None).']
+        review.require_backend_logs('\n'.join(lines))
+        for replacement in ('non-default args TRITON_ATTN',
+                            'Using FLASHINFER attention backend out of potential backends: [TRITON_ATTN]'):
+            with self.assertRaises(ValueError):
+                review.require_backend_logs('\n'.join([replacement] + lines[1:]))
+
     def test_failed_real_original_attempt_cannot_unlock_native_model(self):
         root = PATH.parents[2]
         failure = json.loads((root / 'tests/results/qwen35-ocr/initial-ovisocr2-vllm-cuda-link-failure.json').read_text())
