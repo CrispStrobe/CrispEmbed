@@ -164,6 +164,19 @@ def generation_contract(model, profile, raw_config, generation_class):
     return report
 
 
+def linear_cache_state(value, name):
+    """Observe the pinned cache's sole state, without changing or copying it."""
+    if isinstance(value, dict):
+        if len(value) != 1 or any(type(key) is not int or key != 0 for key in value):
+            raise ValueError(f"Unexpected OvisOCR2 {name} cache state keys")
+        return value[0]
+    if isinstance(value, (list, tuple)):
+        if len(value) != 1:
+            raise ValueError(f"Unexpected OvisOCR2 {name} cache arity")
+        return value[0]
+    return value
+
+
 def observed_visual_positions(frame, event, arg, visual, save, phase):
     """Read the real local variable at the original forward return boundary."""
     if event == "return" and frame.f_locals.get("self") is visual:
@@ -448,10 +461,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         for index, layer in enumerate(cache.layers):
             for name in ["conv_states", "recurrent_states", "keys", "values"]:
                 value = getattr(layer, name, None)
-                if name in ("conv_states", "recurrent_states") and isinstance(value, (list, tuple)):
-                    if len(value) != 1:
-                        raise ValueError(f"Unexpected OvisOCR2 {name} cache arity")
-                    value = value[0]
+                if name in ("conv_states", "recurrent_states"):
+                    value = linear_cache_state(value, name)
                 save(f"{label}.cache.{index}.{name}", value)
 
     try:

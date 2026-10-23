@@ -108,6 +108,17 @@ class ReferenceAdapterTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "metadata_autoconfig"):
                 ovis.generation_contract(model, {"generation": raw}, {}, factory)
 
+    def test_linear_cache_state_observes_pinned_dict_and_rejects_other_keys(self):
+        tensor = object()
+        for container in ({0: tensor}, [tensor], (tensor,), tensor):
+            self.assertIs(ovis.linear_cache_state(container, "conv_states"), tensor)
+        self.assertEqual(ovis.linear_cache_state({0: None}, "recurrent_states"), None)
+        for container in ({}, {1: tensor}, {"0": tensor}, {False: tensor},
+                          {0: tensor, 1: tensor}, [], [tensor, tensor]):
+            with self.subTest(container=type(container).__name__):
+                with self.assertRaisesRegex(ValueError, "cache"):
+                    ovis.linear_cache_state(container, "conv_states")
+
     def test_generation_bound_reports_both_eos_ids_and_length_cap(self):
         eos_ids = [248044, 248046]
         for stop_id in eos_ids:

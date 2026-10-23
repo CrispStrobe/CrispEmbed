@@ -1,0 +1,261 @@
+{
+  "run": 40040392649,
+  "source_commit": "13a093ea7593916c29290138fed992c406e61b2b",
+  "service_conclusion": "failure",
+  "phase": "original-f32-capture",
+  "artifact": {
+    "id": 12539336818,
+    "name": "ovisocr2-model-reports-40040392649",
+    "zip_sha256": "879d70e693064f84889adb5a2f8df6ec14b574b5a85e99a62c5c828cbe7ee675"
+  },
+  "producer_report_sha256": "30c4ae762178383733d54d8c2e21ac83de773c8dfab12ad941000afe79ebae36",
+  "reference_artifact": {
+    "id": 12539012965,
+    "name": "ovisocr2-model-reference-40040392649",
+    "bytes": 1264893857,
+    "zip_sha256": "48b6df63be1c9d015f40797ae8e3a5d42dece3d21b9f265cb9b5baf63c4a1594",
+    "keep_remote": true
+  },
+  "small_reference_artifact": {
+    "id": 12539596013,
+    "zip_sha256": "d7f8aeb37841fa8b424b26675c6ccce2012fbb5187a29e3ae3b6a12a47b9ffff"
+  },
+  "original_report_sha256": "fdb31d635f7275fff1a6a0f8e454c42fd01abb6d693af7ffc2754bd3908b72ae",
+  "original_forward_executed": true,
+  "native_forward_executed": false,
+  "original_observations": {
+    "processor_contract": {
+      "checks": {
+        "class_name": true,
+        "image_class": true,
+        "image_backend": true,
+        "image_config": true,
+        "primary_eos": true
+      },
+      "actual": {
+        "class_name": "transformers.models.qwen3_vl.processing_qwen3_vl.Qwen3VLProcessor",
+        "image_class": "transformers.models.qwen2_vl.image_processing_qwen2_vl.Qwen2VLImageProcessor",
+        "image_backend": "torchvision",
+        "image_config": {
+          "size": {
+            "longest_edge": 16777216,
+            "shortest_edge": 65536
+          },
+          "patch_size": 16,
+          "temporal_patch_size": 2,
+          "merge_size": 2,
+          "image_mean": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "image_std": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "image_processor_type": "Qwen2VLImageProcessor",
+          "do_convert_rgb": true,
+          "do_resize": true,
+          "resample": 3,
+          "do_rescale": true,
+          "rescale_factor": 0.00392156862745098,
+          "do_normalize": true
+        }
+      },
+      "primary_eos": 248046,
+      "image_config_native_equal": false,
+      "image_config_python_types": {
+        "size": "dict",
+        "patch_size": "int",
+        "temporal_patch_size": "int",
+        "merge_size": "int",
+        "image_mean": "tuple",
+        "image_std": "tuple",
+        "image_processor_type": "str",
+        "do_convert_rgb": "bool",
+        "do_resize": "bool",
+        "resample": "Resampling",
+        "do_rescale": "bool",
+        "rescale_factor": "float",
+        "do_normalize": "bool"
+      },
+      "comparison": "Exact JSON values, matching original metadata serialization; no numeric tolerance"
+    },
+    "generation_contract": {
+      "checks": {
+        "metadata_autoconfig": true,
+        "loaded_raw_config_fallback": true
+      },
+      "metadata_autoconfig": {
+        "use_cache": true,
+        "output_attentions": false,
+        "output_hidden_states": false,
+        "eos_token_id": 248044,
+        "_from_model_config": true,
+        "transformers_version": "5.16.1"
+      },
+      "raw_config_fallback": {
+        "use_cache": true,
+        "eos_token_id": 248044,
+        "_from_model_config": true,
+        "transformers_version": "5.16.1"
+      },
+      "loaded_model": {
+        "use_cache": true,
+        "eos_token_id": 248044,
+        "_from_model_config": true,
+        "transformers_version": "5.16.1"
+      },
+      "metadata_vs_raw_differences": {
+        "output_attentions": {
+          "metadata_present": true,
+          "metadata_value": false,
+          "raw_present": false,
+          "raw_value": null
+        },
+        "output_hidden_states": {
+          "metadata_present": true,
+          "metadata_value": false,
+          "raw_present": false,
+          "raw_value": null
+        }
+      },
+      "resolution": "Pinned HF missing-generation-file fallback from raw config.json; unchanged model settings"
+    },
+    "generated_ids": [
+      [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ]
+    ],
+    "decoded": [
+      "Hello OCR\n\n12345"
+    ],
+    "raw_decoded": [
+      "Hello OCR\n\n12345<|im_end|>"
+    ],
+    "generation_result": {
+      "max_new_tokens": 12,
+      "generated_token_count": 9,
+      "eos_ids": [
+        248044,
+        248046
+      ],
+      "reached_eos": true,
+      "stop_id": 248046,
+      "max_tokens_consumed": false,
+      "length_limited": false,
+      "raw_sequence_shape": [
+        1,
+        332
+      ],
+      "generated_id_shape": [
+        1,
+        9
+      ],
+      "score_count": 9,
+      "raw_decoded_utf8_length": 26,
+      "decoded_utf8_length": 16
+    },
+    "cached_vs_full_prefix_max_abs": 1.33514404296875e-05,
+    "cached_vs_full_prefix_same_argmax": true,
+    "observational_control": {
+      "prefill_logits_exact": true,
+      "greedy_ids_exact": true
+    }
+  },
+  "captured_stage_count": 871,
+  "missing_stages": [
+    "cached.cache.0.conv_states",
+    "cached.cache.0.recurrent_states",
+    "cached.cache.1.conv_states",
+    "cached.cache.1.recurrent_states",
+    "cached.cache.10.conv_states",
+    "cached.cache.10.recurrent_states",
+    "cached.cache.12.conv_states",
+    "cached.cache.12.recurrent_states",
+    "cached.cache.13.conv_states",
+    "cached.cache.13.recurrent_states",
+    "cached.cache.14.conv_states",
+    "cached.cache.14.recurrent_states",
+    "cached.cache.16.conv_states",
+    "cached.cache.16.recurrent_states",
+    "cached.cache.17.conv_states",
+    "cached.cache.17.recurrent_states",
+    "cached.cache.18.conv_states",
+    "cached.cache.18.recurrent_states",
+    "cached.cache.2.conv_states",
+    "cached.cache.2.recurrent_states",
+    "cached.cache.20.conv_states",
+    "cached.cache.20.recurrent_states",
+    "cached.cache.21.conv_states",
+    "cached.cache.21.recurrent_states",
+    "cached.cache.22.conv_states",
+    "cached.cache.22.recurrent_states",
+    "cached.cache.4.conv_states",
+    "cached.cache.4.recurrent_states",
+    "cached.cache.5.conv_states",
+    "cached.cache.5.recurrent_states",
+    "cached.cache.6.conv_states",
+    "cached.cache.6.recurrent_states",
+    "cached.cache.8.conv_states",
+    "cached.cache.8.recurrent_states",
+    "cached.cache.9.conv_states",
+    "cached.cache.9.recurrent_states",
+    "prefill.cache.0.conv_states",
+    "prefill.cache.0.recurrent_states",
+    "prefill.cache.1.conv_states",
+    "prefill.cache.1.recurrent_states",
+    "prefill.cache.10.conv_states",
+    "prefill.cache.10.recurrent_states",
+    "prefill.cache.12.conv_states",
+    "prefill.cache.12.recurrent_states",
+    "prefill.cache.13.conv_states",
+    "prefill.cache.13.recurrent_states",
+    "prefill.cache.14.conv_states",
+    "prefill.cache.14.recurrent_states",
+    "prefill.cache.16.conv_states",
+    "prefill.cache.16.recurrent_states",
+    "prefill.cache.17.conv_states",
+    "prefill.cache.17.recurrent_states",
+    "prefill.cache.18.conv_states",
+    "prefill.cache.18.recurrent_states",
+    "prefill.cache.2.conv_states",
+    "prefill.cache.2.recurrent_states",
+    "prefill.cache.20.conv_states",
+    "prefill.cache.20.recurrent_states",
+    "prefill.cache.21.conv_states",
+    "prefill.cache.21.recurrent_states",
+    "prefill.cache.22.conv_states",
+    "prefill.cache.22.recurrent_states",
+    "prefill.cache.4.conv_states",
+    "prefill.cache.4.recurrent_states",
+    "prefill.cache.5.conv_states",
+    "prefill.cache.5.recurrent_states",
+    "prefill.cache.6.conv_states",
+    "prefill.cache.6.recurrent_states",
+    "prefill.cache.8.conv_states",
+    "prefill.cache.8.recurrent_states",
+    "prefill.cache.9.conv_states",
+    "prefill.cache.9.recurrent_states"
+  ],
+  "diagnosis": {
+    "source": "https://github.com/huggingface/transformers/blob/v5.16.1/src/transformers/cache_utils.py",
+    "source_sha256": "4b284431cb3a881b6e6f8b8c6430df6f2efdcb3366a2484c7984ae88c612c61a",
+    "cause": "LinearAttentionCacheLayerMixin stores conv_states and recurrent_states in dictionaries keyed by integer0. The observer handled singleton lists/tuples, silently omitted dictionaries, and the final required-stage gate correctly rejected72 missing arrays.",
+    "correction": "Observe sole integer0 dictionary entry without changing model/cache; compare all871 existing stage payloads before adding72 required cache stages.",
+    "hosted_confirmation_pending": true
+  },
+  "limits": [
+    "Original forward/IDs/observational/cache-control result is bounded; reference export is incomplete and no native parity/publication result exists.",
+    "Retain the large initial reference artifact remotely; do not regenerate or discard its871 saved arrays."
+  ]
+}
