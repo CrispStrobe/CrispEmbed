@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+import zipfile
 from unittest import mock
 
 
@@ -40,6 +41,142 @@ def good_receipt():
 
 
 class HostedAuditTest(unittest.TestCase):
+    def test_cpu_runtime_attribution_records_only_model_and_thread_controls(self):
+        with mock.patch.object(audit.platform, "machine", return_value="x86_64"), \
+             mock.patch.object(audit.os, "cpu_count", return_value=8), \
+             mock.patch.object(audit.os, "sched_getaffinity", return_value={0, 1}), \
+             mock.patch.dict(os.environ, {"OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2",
+                                          "OPENBLAS_NUM_THREADS": "2"}):
+            result = audit.cpu_runtime_attribution()
+        self.assertEqual(result["machine"], "x86_64")
+        self.assertEqual(result["logical_cpu_count"], 8)
+        self.assertEqual(result["affinity_cpu_count"], 2)
+        self.assertEqual(result["thread_env"], {"OMP_NUM_THREADS": "2",
+                                                "MKL_NUM_THREADS": "2",
+                                                "OPENBLAS_NUM_THREADS": "2"})
+        self.assertEqual(set(result), {"cpu_model", "machine", "logical_cpu_count",
+                                       "affinity_cpu_count", "thread_env"})
+
+    def test_prior_failed_run_service_requires_exact_source_and_artifact(self):
+        run = {"id": audit.PRIOR_REFERENCE_RUN, "status": "completed", "conclusion": "failure",
+               "head_sha": audit.PRIOR_REFERENCE_HEAD,
+               "path": ".github/workflows/ovisocr2-metadata.yml"}
+        artifact = {"id": audit.PRIOR_REFERENCE_ARTIFACT_ID,
+                    "name": f"ovisocr2-model-reference-{audit.PRIOR_REFERENCE_RUN}",
+                    "expired": False, "size_in_bytes": audit.PRIOR_REFERENCE_ARTIFACT_BYTES,
+                    "digest": "sha256:" + audit.PRIOR_REFERENCE_ARTIFACT_SHA,
+                    "workflow_run": {"id": audit.PRIOR_REFERENCE_RUN,
+                                     "head_sha": audit.PRIOR_REFERENCE_HEAD}}
+        def call(argv):
+            return json.dumps(artifact if "/artifacts/" in argv[-1] else run).encode()
+        self.assertEqual(audit.prior_reference_service(call)["conclusion"], "failure")
+        for changed in ({**run, "conclusion": "success"}, {**run, "head_sha": "0" * 40}):
+            with self.assertRaisesRegex(ValueError, "prior failed-run"):
+                audit.prior_reference_service(lambda argv: json.dumps(
+                    artifact if "/artifacts/" in argv[-1] else changed).encode())
+        artifact["digest"] = "sha256:" + "0" * 64
+        with self.assertRaisesRegex(ValueError, "prior failed-run"):
+            audit.prior_reference_service(call)
+
+    def test_prior_npz_members_and_archive_hash_path_guards(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            npz = root / "small.npz"
+            with zipfile.ZipFile(npz, "w") as archive:
+                archive.writestr("alpha.npy", b"\x93NUMPYheader-and-payload")
+            stages = {"alpha": [1]}
+            members = audit.npz_member_manifest(npz, stages)
+            self.assertEqual(set(members), {"alpha"})
+            self.assertEqual(members["alpha"]["sha256"], hashlib.sha256(
+                b"\x93NUMPYheader-and-payload").hexdigest())
+            with self.assertRaisesRegex(ValueError, "stage members"):
+                audit.npz_member_manifest(npz, {"alpha": [1], "missing": [1]})
+            with zipfile.ZipFile(npz, "w") as archive:
+                archive.writestr("../escape.npy", b"\x93NUMPYx")
+            with self.assertRaisesRegex(ValueError, "stage members"):
+                audit.npz_member_manifest(npz, {"../escape": [1]})
+
+            with zipfile.ZipFile(npz, "w") as archive:
+                archive.writestr("alpha.npy", b"\x93NUMPYx")
+            archive_path = root / "prior.zip"
+            prior_json = b'{"stages":{"alpha":[1]}}'
+            def write_archive(json_name="ovisocr2-original.json"):
+                with zipfile.ZipFile(archive_path, "w") as archive:
+                    archive.writestr(json_name, prior_json)
+                    archive.write(npz, "ovisocr2-original.npz")
+                return archive_path.stat().st_size, audit.sha(archive_path)
+            size, digest = write_archive()
+            with mock.patch.object(audit, "PRIOR_REFERENCE_ARTIFACT_BYTES", size), \
+                 mock.patch.object(audit, "PRIOR_REFERENCE_ARTIFACT_SHA", digest), \
+                 mock.patch.object(audit, "PRIOR_REFERENCE_JSON_SHA", hashlib.sha256(prior_json).hexdigest()), \
+                 mock.patch.object(audit, "prior_reference_json", return_value={"stages": stages}):
+                data, old_npz, manifest, path = audit.extract_prior_reference(
+                    archive_path, root / "extracted", root, {}, {}, root / "readable.png")
+                self.assertEqual(data["stages"], stages)
+                self.assertEqual(manifest["stage_count"], 1)
+                self.assertTrue(old_npz.is_file())
+                self.assertTrue(path.is_file())
+                self.assertFalse(archive_path.exists())
+                write_archive()
+                with mock.patch.object(audit, "PRIOR_REFERENCE_ARTIFACT_SHA", "0" * 64):
+                    with self.assertRaisesRegex(ValueError, "ZIP size/SHA"):
+                        audit.extract_prior_reference(archive_path, root / "bad", root,
+                                                      {}, {}, root / "readable.png")
+            size, digest = write_archive("../ovisocr2-original.json")
+            with mock.patch.object(audit, "PRIOR_REFERENCE_ARTIFACT_BYTES", size), \
+                 mock.patch.object(audit, "PRIOR_REFERENCE_ARTIFACT_SHA", digest):
+                with self.assertRaisesRegex(ValueError, "members/path"):
+                    audit.extract_prior_reference(archive_path, root / "bad", root,
+                                                  {}, {}, root / "readable.png")
+
+    def test_prior_member_comparison_detects_first_drift_extra_and_missing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            old_npz, fresh_npz = root / "old.npz", root / "fresh.npz"
+            original = {"alpha": b"\x93NUMPYalpha", "beta": b"\x93NUMPYbeta"}
+            def write(path, members):
+                with zipfile.ZipFile(path, "w") as archive:
+                    for name, value in members.items():
+                        archive.writestr(name + ".npy", value)
+            write(old_npz, original)
+            old_data = {"stages": {"alpha": [1], "beta": [1]},
+                        "generated_ids": [[248046]], "decoded": ["x"], "raw_decoded": ["x<eos>"]}
+            manifest = {"members": audit.npz_member_manifest(old_npz, old_data["stages"])}
+            fresh_data = {**old_data, "stages": {**old_data["stages"], "new.cache": [1]},
+                          "missing_stages": []}
+            with mock.patch.object(audit, "PRIOR_MISSING_CACHE", ["new.cache"]), \
+                 mock.patch.object(audit, "PRIOR_REFERENCE_STAGES", 2):
+                write(fresh_npz, {**original, "new.cache": b"\x93NUMPYnew"})
+                result = audit.compare_prior_reference(old_data, fresh_data, old_npz,
+                                                       fresh_npz, manifest)
+                self.assertTrue(result["passed"])
+                self.assertEqual(result["unchanged_prior_members"], 2)
+                self.assertEqual(result["added_cache_members"], 1)
+                write(fresh_npz, {**original, "alpha": b"\x93NUMPYchanged",
+                                  "new.cache": b"\x93NUMPYnew"})
+                diagnostic = {"max_abs": 2.0, "old_l2_norm": 1.0,
+                              "fresh_l2_norm": 3.0, "diff_l2_norm": 2.0}
+                result = audit.compare_prior_reference(
+                    old_data, fresh_data, old_npz, fresh_npz, manifest,
+                    diagnose=lambda *_: diagnostic)
+                self.assertFalse(result["passed"])
+                self.assertEqual(result["first_failure"], "alpha")
+                self.assertEqual(result["first_changed_member"]["numeric"], diagnostic)
+                self.assertEqual(result["prior_generated_ids"], [[248046]])
+                self.assertEqual(result["fresh_decoded"], ["x"])
+                for stages, expected in (({"alpha": [1], "beta": [1]}, "new.cache"),
+                                         ({**fresh_data["stages"], "extra": [1]}, "extra"),
+                                         ({**fresh_data["stages"], "alpha": [2]}, "alpha")):
+                    failed = audit.compare_prior_reference(
+                        old_data, {**fresh_data, "stages": stages}, old_npz,
+                        fresh_npz, manifest, diagnose=lambda *_: diagnostic)
+                    self.assertFalse(failed["passed"])
+                    self.assertEqual(failed["first_failure"], expected)
+                write(fresh_npz, {**original, "new.cache": b"\x93NUMPYnew"})
+                changed_text = {**fresh_data, "decoded": ["other"]}
+                self.assertFalse(audit.compare_prior_reference(
+                    old_data, changed_text, old_npz, fresh_npz, manifest)["passed"])
+
     def test_missing_gpu_receipt_stops_before_heavy_dependencies(self):
         with tempfile.TemporaryDirectory() as temp:
             with mock.patch.object(audit, "GPU_RECEIPT", Path(temp) / "absent.json"), \
@@ -183,6 +320,15 @@ class HostedAuditTest(unittest.TestCase):
                 "raw_decoded": ["text"], "stage_max_abs": magnitudes}
             path.write_text(json.dumps(payload))
             self.assertEqual(audit.verify_original_capture(path, profile, {})["generated_ids"], [[17, 248044]])
+            prior_only = copy.deepcopy(payload)
+            prior_only["missing_stages"] = ["cached.cache.0.conv_states"]
+            path.write_text(json.dumps(prior_only))
+            with self.assertRaisesRegex(ValueError, "capture"):
+                audit.verify_original_capture(path, profile, {})
+            self.assertEqual(audit.verify_original_capture(
+                path, profile, {}, expected_missing=prior_only["missing_stages"])["missing_stages"],
+                prior_only["missing_stages"])
+            path.write_text(json.dumps(payload))
             for change in ("missing_position", "missing_probe", "mismatched_shape", "nan_magnitude",
                            "changed_ids", "not_disabled"):
                 changed = copy.deepcopy(payload)

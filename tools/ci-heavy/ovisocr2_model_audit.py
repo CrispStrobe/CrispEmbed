@@ -7,12 +7,14 @@ small reports and complete command logs. This driver never promotes an alias.
 """
 
 import argparse
+import io
 import hashlib
 import importlib.metadata
 import importlib.util
 import json
 import math
 import os
+import platform
 from pathlib import Path
 import re
 import shutil
@@ -31,6 +33,19 @@ MIRROR_REVISION = "50b63a86f2d706491c3cfb953da28b143324fa48"
 MIRROR_FILE = "qwen35-ovisocr2/original-processor/metadata.zip"
 MIRROR_BYTES = 524058
 MIRROR_SHA = "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5"
+PRIOR_REFERENCE_RUN = 40040392649
+PRIOR_REFERENCE_HEAD = "13a093ea7593916c29290138fed992c406e61b2b"
+PRIOR_REFERENCE_ARTIFACT_ID = 12539012965
+PRIOR_REFERENCE_ARTIFACT_BYTES = 1264893857
+PRIOR_REFERENCE_ARTIFACT_SHA = "48b6df63be1c9d015f40797ae8e3a5d42dece3d21b9f265cb9b5baf63c4a1594"
+PRIOR_REFERENCE_JSON_SHA = "fdb31d635f7275fff1a6a0f8e454c42fd01abb6d693af7ffc2754bd3908b72ae"
+PRIOR_REFERENCE_STAGES = 871
+PRIOR_MISSING_CACHE = sorted(
+    f"{phase}.cache.{layer}.{state}"
+    for phase in ("prefill", "cached")
+    for layer in range(24) if layer % 4 != 3
+    for state in ("conv_states", "recurrent_states")
+)
 VLLM_COMMIT = "0decac0d96c42b49572498019f0a0e3600f50398"
 WORKER_SHA = "daaade86dbae60b7aecd5ecd9dc1e87a0e49e091361fa00441a437e27f2ee1df"
 SERVICES = {
@@ -151,6 +166,208 @@ def service_gate(name, run_info, call):
     return {key: data[key] for key in ("id", "status", "conclusion", "head_sha", "path")}
 
 
+def prior_reference_service(call):
+    """Pin the failed run's preserved reference, never treating it as a pass."""
+    base = "repos/CrispStrobe/CrispEmbed/actions/"
+    run = json.loads(call(["gh", "api", base + f"runs/{PRIOR_REFERENCE_RUN}"]))
+    artifact = json.loads(call(["gh", "api", base + f"artifacts/{PRIOR_REFERENCE_ARTIFACT_ID}"]))
+    name = f"ovisocr2-model-reference-{PRIOR_REFERENCE_RUN}"
+    if (run.get("id") != PRIOR_REFERENCE_RUN or run.get("status") != "completed"
+            or run.get("conclusion") != "failure"
+            or run.get("head_sha") != PRIOR_REFERENCE_HEAD
+            or run.get("path") != ".github/workflows/ovisocr2-metadata.yml"
+            or artifact.get("id") != PRIOR_REFERENCE_ARTIFACT_ID
+            or artifact.get("name") != name or artifact.get("expired") is not False
+            or artifact.get("size_in_bytes") != PRIOR_REFERENCE_ARTIFACT_BYTES
+            or artifact.get("digest") != "sha256:" + PRIOR_REFERENCE_ARTIFACT_SHA
+            or artifact.get("workflow_run", {}).get("id") != PRIOR_REFERENCE_RUN
+            or artifact.get("workflow_run", {}).get("head_sha") != PRIOR_REFERENCE_HEAD):
+        raise ValueError("Pinned prior failed-run reference service/source/artifact differs")
+    return {"run": PRIOR_REFERENCE_RUN, "head_sha": PRIOR_REFERENCE_HEAD,
+            "conclusion": "failure", "artifact_id": PRIOR_REFERENCE_ARTIFACT_ID,
+            "artifact_name": name, "artifact_zip_sha256": PRIOR_REFERENCE_ARTIFACT_SHA,
+            "artifact_bytes": PRIOR_REFERENCE_ARTIFACT_BYTES}
+
+
+def npz_member_manifest(path, stages):
+    """Stream hashes over complete .npy members, including each NPY header."""
+    expected = {name + ".npy" for name in stages}
+    with zipfile.ZipFile(path) as archive:
+        infos = archive.infolist()
+        names = [entry.filename for entry in infos]
+        if (len(names) != len(set(names)) or set(names) != expected
+                or any(Path(name).name != name or name.startswith(".") for name in names)):
+            raise ValueError("Original NPZ stage members differ from captured stage JSON")
+        members = {}
+        for entry in sorted(infos, key=lambda item: item.filename):
+            digest = hashlib.sha256()
+            with archive.open(entry) as stream:
+                magic = stream.read(6)
+                if magic != b"\x93NUMPY":
+                    raise ValueError("Original NPZ member is not an NPY payload: " + entry.filename)
+                digest.update(magic)
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(block)
+            members[entry.filename[:-4]] = {"sha256": digest.hexdigest(),
+                                            "npy_bytes": entry.file_size,
+                                            "shape": stages[entry.filename[:-4]]}
+    return members
+
+
+def prior_reference_json(path, profile, metadata_sha, readable):
+    if sha(path) != PRIOR_REFERENCE_JSON_SHA:
+        raise ValueError("Pinned prior original JSON SHA differs")
+    data = load_json(path)
+    if (len(data.get("stages", {})) != PRIOR_REFERENCE_STAGES
+            or data.get("missing_stages") != PRIOR_MISSING_CACHE
+            or set(data["stages"]) & set(PRIOR_MISSING_CACHE)
+            or data.get("image_sha256") != sha(readable)
+            or data.get("image_size") != [448, 448]
+            or data.get("metadata_sha256") != metadata_sha
+            or data.get("torch") != "2.11.0+cpu"
+            or data.get("transformers") != "5.16.1"
+            or data.get("tokenizers") != "0.23.3"
+            or data.get("generated_ids") != [[9419, 77796, 271, 16, 17, 18, 19, 20, 248046]]
+            or data.get("decoded") != ["Hello OCR\n\n12345"]
+            or data.get("raw_decoded") != ["Hello OCR\n\n12345<|im_end|>"]):
+        raise ValueError("Pinned prior original JSON stages/source/output differ")
+    verify_original_capture(path, profile, {}, expected_missing=PRIOR_MISSING_CACHE)
+    return data
+
+
+def extract_prior_reference(archive_path, folder, out, profile, metadata_sha, readable):
+    """Extract only two pinned members into task-owned files; preserve remote original."""
+    if (archive_path.stat().st_size != PRIOR_REFERENCE_ARTIFACT_BYTES
+            or sha(archive_path) != PRIOR_REFERENCE_ARTIFACT_SHA):
+        raise ValueError("Pinned prior original ZIP size/SHA differs")
+    folder.mkdir(parents=True, exist_ok=True)
+    required = {"ovisocr2-original.npz", "ovisocr2-original.json"}
+    with zipfile.ZipFile(archive_path) as archive:
+        infos = archive.infolist()
+        names = [entry.filename for entry in infos]
+        if (len(names) != len(set(names)) or not required.issubset(names)
+                or any(Path(name).name != name or name.startswith(".") for name in names)):
+            raise ValueError("Pinned prior original ZIP members/path differ")
+        json_bytes = archive.read("ovisocr2-original.json")
+        if hashlib.sha256(json_bytes).hexdigest() != PRIOR_REFERENCE_JSON_SHA:
+            raise ValueError("Pinned prior original JSON member SHA differs")
+        old_json_path = folder / "ovisocr2-original.json"
+        old_json_path.write_bytes(json_bytes)
+        old_data = prior_reference_json(old_json_path, profile, metadata_sha, readable)
+        old_npz_path = folder / "ovisocr2-original.npz"
+        digest = hashlib.sha256()
+        with archive.open("ovisocr2-original.npz") as source, old_npz_path.open("wb") as target:
+            for block in iter(lambda: source.read(1024 * 1024), b""):
+                target.write(block)
+                digest.update(block)
+    members = npz_member_manifest(old_npz_path, old_data["stages"])
+    manifest = {"source_run": PRIOR_REFERENCE_RUN, "source_head": PRIOR_REFERENCE_HEAD,
+                "source_artifact_id": PRIOR_REFERENCE_ARTIFACT_ID,
+                "source_artifact_zip_sha256": PRIOR_REFERENCE_ARTIFACT_SHA,
+                "original_json_sha256": PRIOR_REFERENCE_JSON_SHA,
+                "original_npz_sha256": digest.hexdigest(), "stage_count": len(members),
+                "missing_cache_stages": PRIOR_MISSING_CACHE, "members": members}
+    manifest_path = out / "ovisocr2-prior-reference-manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
+    shutil.copyfile(old_json_path, out / "ovisocr2-prior-original.json")
+    archive_path.unlink()  # Verified task-owned download; durable source remains in Actions.
+    return old_data, old_npz_path, manifest, manifest_path
+
+
+def download_prior_reference(scratch, out, profile, metadata_sha, readable):
+    folder = scratch / "prior-reference"
+    folder.mkdir(parents=True, exist_ok=True)
+    archive_path = folder / "prior-reference.zip"
+    with archive_path.open("wb") as stream:
+        subprocess.run(["gh", "api", "repos/CrispStrobe/CrispEmbed/actions/artifacts/"
+                        + str(PRIOR_REFERENCE_ARTIFACT_ID) + "/zip"],
+                       stdout=stream, check=True, timeout=900)
+    return extract_prior_reference(archive_path, folder, out, profile, metadata_sha, readable)
+
+
+def npy_drift(old_npz, fresh_npz, stage):
+    """Only hosted CI loads the earliest changed numeric member for diagnostics."""
+    import numpy as np
+
+    member = stage + ".npy"
+    with zipfile.ZipFile(old_npz) as previous, zipfile.ZipFile(fresh_npz) as current:
+        old = np.load(io.BytesIO(previous.read(member)), allow_pickle=False)
+        new = np.load(io.BytesIO(current.read(member)), allow_pickle=False)
+    def finite_number(value):
+        value = float(value)
+        return value if math.isfinite(value) else None
+
+    result = {"old_shape": list(old.shape), "fresh_shape": list(new.shape),
+              "old_dtype": str(old.dtype), "fresh_dtype": str(new.dtype),
+              "old_l2_norm": finite_number(np.linalg.norm(old.astype(np.float64))),
+              "fresh_l2_norm": finite_number(np.linalg.norm(new.astype(np.float64)))}
+    if old.shape == new.shape:
+        difference = np.abs(new.astype(np.float64) - old.astype(np.float64))
+        result.update(max_abs=finite_number(np.max(difference)),
+                      mean_abs=finite_number(np.mean(difference)),
+                      diff_l2_norm=finite_number(np.linalg.norm(difference)))
+    else:
+        result.update(max_abs=None, mean_abs=None, diff_l2_norm=None)
+    return result
+
+
+def compare_prior_reference(old_data, fresh_data, old_npz, fresh_npz, old_manifest,
+                            *, diagnose=npy_drift):
+    """Demand byte-identical prior NPY members and exactly the new cache states."""
+    old_stages = old_data["stages"]
+    fresh_stages = fresh_data.get("stages", {})
+    expected = set(old_stages) | set(PRIOR_MISSING_CACHE)
+    comparison = {"passed": False, "prior_stage_count": len(old_stages),
+                  "fresh_stage_count": len(fresh_stages),
+                  "expected_fresh_stage_count": PRIOR_REFERENCE_STAGES + len(PRIOR_MISSING_CACHE),
+                  "prior_generated_ids": old_data.get("generated_ids"),
+                  "fresh_generated_ids": fresh_data.get("generated_ids"),
+                  "prior_decoded": old_data.get("decoded"),
+                  "fresh_decoded": fresh_data.get("decoded"),
+                  "prior_raw_decoded": old_data.get("raw_decoded"),
+                  "fresh_raw_decoded": fresh_data.get("raw_decoded"),
+                  "missing_fresh_stages": sorted(expected - set(fresh_stages)),
+                  "unexpected_fresh_stages": sorted(set(fresh_stages) - expected),
+                  "changed_stage_shapes": [name for name in sorted(old_stages)
+                                           if name in fresh_stages
+                                           and old_stages[name] != fresh_stages[name]]}
+    if (comparison["missing_fresh_stages"] or comparison["unexpected_fresh_stages"]
+            or fresh_data.get("missing_stages") != []):
+        differing = (comparison["missing_fresh_stages"] or comparison["unexpected_fresh_stages"]
+                     or fresh_data.get("missing_stages") or [])
+        comparison["first_failure"] = differing[0] if differing else "fresh missing_stages declaration"
+        return comparison
+    fresh_members = npz_member_manifest(fresh_npz, fresh_stages)
+    prior_members = old_manifest["members"]
+    changed = [name for name in sorted(old_stages)
+               if prior_members[name]["sha256"] != fresh_members[name]["sha256"]]
+    comparison.update(unchanged_prior_members=len(old_stages) - len(changed),
+                      changed_prior_members=changed,
+                      added_cache_members=len(set(fresh_members) - set(prior_members)),
+                      fresh_npz_sha256=sha(fresh_npz))
+    if changed or comparison["changed_stage_shapes"]:
+        first = sorted(set(changed) | set(comparison["changed_stage_shapes"]))[0]
+        comparison["first_failure"] = first
+        try:
+            numeric = diagnose(old_npz, fresh_npz, first)
+        except Exception as exc:
+            numeric = {"diagnostic_error": f"{type(exc).__name__}: {exc}"}
+        comparison["first_changed_member"] = {
+            "stage": first, "prior_npy_sha256": prior_members[first]["sha256"],
+            "fresh_npy_sha256": fresh_members[first]["sha256"],
+            "prior_stage_shape": old_stages[first], "fresh_stage_shape": fresh_stages[first],
+            "numeric": numeric}
+        return comparison
+    if (fresh_data.get("generated_ids") != old_data.get("generated_ids")
+            or fresh_data.get("decoded") != old_data.get("decoded")
+            or fresh_data.get("raw_decoded") != old_data.get("raw_decoded")):
+        comparison["first_failure"] = "decoded output/IDs differ despite member hashes"
+        return comparison
+    comparison["passed"] = True
+    comparison["first_failure"] = None
+    return comparison
+
+
 def check_versions():
     found = {name: importlib.metadata.version(name) for name in VERSIONS}
     wrong = {name: value for name, value in found.items()
@@ -158,6 +375,22 @@ def check_versions():
     if wrong:
         raise ValueError("Pinned original CPU package versions differ: " + repr(wrong))
     return found
+
+
+def cpu_runtime_attribution():
+    """Record non-identifying CPU/runtime facts for cross-host exact replay."""
+    cpu_model = None
+    cpuinfo = Path("/proc/cpuinfo")
+    if cpuinfo.is_file():
+        for line in cpuinfo.read_text(errors="replace").splitlines():
+            if line.startswith("model name") and ":" in line:
+                cpu_model = line.split(":", 1)[1].strip()
+                break
+    affinity = len(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else None
+    return {"cpu_model": cpu_model, "machine": platform.machine(),
+            "logical_cpu_count": os.cpu_count(), "affinity_cpu_count": affinity,
+            "thread_env": {name: os.environ.get(name) for name in
+                           ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS")}}
 
 
 def summarize_log(path):
@@ -276,7 +509,7 @@ def verify_readable(image, gpu_receipt, scratch, report):
     return path
 
 
-def verify_original_capture(path, profile, report):
+def verify_original_capture(path, profile, report, *, expected_missing=()):
     data = load_json(path)
     gate = data.get("generation_result", {})
     control = data.get("observational_control", {})
@@ -320,7 +553,7 @@ def verify_original_capture(path, profile, report):
             or data.get("checkpoint_sha256") != profile["checkpoint_sha256"]
             or data.get("loaded_source_sha256") != profile["qualification"]["loaded_source_sha256"]
             or data.get("vision_layers") != 12 or data.get("decoder_layers") != 24
-            or data.get("missing_stages") != []
+            or data.get("missing_stages") != list(expected_missing)
             or not backend_complete
             or control.get("prefill_logits_exact") is not True
             or control.get("greedy_ids_exact") is not True
@@ -484,6 +717,7 @@ def run_main(preflight_only=False):
                   "tools/ci-heavy/ovisocr2_model_audit.py", "tools/dump_ovisocr2_reference.py",
                   "tools/dump_qwen35_ocr_reference.py", "models/qwen35_ovis_profile.py",
                   "models/convert-qwen35-ocr-to-gguf.py")}}
+    report["cpu_runtime"] = cpu_runtime_attribution()
     report["native_source_sha256"] = {str(path.relative_to(ROOT)): sha(path) for path in
         [*sorted((ROOT / "src").glob("qwen35*")),
          *(ROOT / name for name in (
@@ -514,6 +748,7 @@ def run_main(preflight_only=False):
             "frontend_report_sha256": sha(EVIDENCE / "ovisocr2-frontend.json")}
         report["service_runs"] = {name: service_gate(name, values, subprocess.check_output)
                                   for name, values in SERVICES.items()}
+        report["prior_reference_service"] = prior_reference_service(subprocess.check_output)
         report["phase"] = "preflight-complete"
         save()
         if preflight_only:
@@ -534,8 +769,26 @@ def run_main(preflight_only=False):
         readable = verify_readable(readable_image, gpu, scratch, report)
         save()
 
+        report["phase"] = "prior-original-reference-integrity"
+        save()
+        old_data, old_npz, old_manifest, old_manifest_path = download_prior_reference(
+            scratch, out, profile, report["metadata_source"], readable)
+        report["prior_reference"] = {
+            "source_run": PRIOR_REFERENCE_RUN, "source_head": PRIOR_REFERENCE_HEAD,
+            "artifact_id": PRIOR_REFERENCE_ARTIFACT_ID,
+            "artifact_zip_sha256": PRIOR_REFERENCE_ARTIFACT_SHA,
+            "original_json_sha256": PRIOR_REFERENCE_JSON_SHA,
+            "original_npz_sha256": old_manifest["original_npz_sha256"],
+            "member_count": len(old_manifest["members"]),
+            "missing_cache_stage_count": len(PRIOR_MISSING_CACHE),
+            "member_manifest": old_manifest_path.name,
+            "member_manifest_sha256": sha(old_manifest_path),
+            "verified_zip_removed": True,
+            "durable_source": "Actions artifact ovisocr2-model-reference-40040392649"}
+        save()
+
         # This is the first checkpoint download. All three original metadata
-        # anchors and the reviewed GPU readable RGB identity have passed.
+        # anchors, GPU RGB identity, and all 871 prior member hashes have passed.
         from huggingface_hub import hf_hub_download
         checkpoint = Path(hf_hub_download(MODEL, "model.safetensors", revision=REVISION))
         report["checkpoint_sha256"] = policy().verify_checkpoint(checkpoint, profile)
@@ -551,10 +804,20 @@ def run_main(preflight_only=False):
         save()
         reference_json = reference_npz.with_suffix(".json")
         reference_gguf = scratch / "official-delta.gguf"
-        if not (capture_ok and reference_npz.is_file() and reference_json.is_file()
-                and reference_gguf.is_file()):
+        if not (reference_npz.is_file() and reference_json.is_file()):
             raise ValueError("Original capture failed or required reference artifacts are missing")
+        fresh_data = load_json(reference_json)
+        report["prior_reference_comparison"] = compare_prior_reference(
+            old_data, fresh_data, old_npz, reference_npz, old_manifest)
+        save()
+        if not report["prior_reference_comparison"]["passed"]:
+            raise ValueError("Fresh original capture differs from pinned prior reference")
+        if not capture_ok or not reference_gguf.is_file():
+            raise ValueError("Original capture failed or official delta probe is missing")
         verify_original_capture(reference_json, profile, report)
+        old_npz.unlink()  # Exact comparison passed; the pinned old artifact remains remote.
+        report["prior_reference"]["local_prior_npz_removed_after_exact_comparison"] = True
+        save()
         if report["original_capture"]["decoded"]:
             report["cross_precision_decoded_observation"] = {
                 "cpu_hf_f32": report["original_capture"]["decoded"][0],
