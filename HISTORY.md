@@ -1,3 +1,24 @@
+## 2026-10-23 — Native Ovis candidate and audits prepared; driver-cache failure retained
+
+Native draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) prepares
+triple-gated owning inference, explicit pipeline engine21, C/Python/CLI/HTTP/
+Rust/Dart audits and frozen independent quality/critical-tensor quantization
+contracts. The combined model-free controls pass65 groups at3cbcae76; no
+model-backed native/public/quality result is inferred. The public prompt setter
+rejects nonempty Ovis prompts without mutation, and both explicit selectors
+reject mismatched profile files at startup. A test-only runner preserves actual
+IDs/stops/raw UTF-8/confidence and timing separately from the generic public API.
+
+GPU retryc819ea5a installs the pinned stack but stops before its worker because
+the mounted driver is absent from the ldconfig cache.
+[Unchanged producer and retained hashes](tests/results/qwen35-ocr/initial-ovisocr2-vllm-driver-cache-failure.json).
+Corrected05e51484 resolves the actual dynamically loaded driver, checks its API
+and exposes it to the linker before package installation. Nine pure controls
+pass; the single submitted retry remains pending. No device/dtype/kernel change.
+The [bounded Apple handoff](https://github.com/CrispStrobe/CrispEmbed/blob/3cbcae76/docs/handover-m1-ovisocr2.md)
+offers a model-free build while hosted checks are queued. No local shared-host
+build/inference or new runtime/model publication occurred.
+
 ## 2026-10-23 — Ovis frontend merged; actual original stack reaches GPU startup
 
 [PR78](https://github.com/CrispStrobe/CrispEmbed/pull/78) merged at

@@ -1,0 +1,896 @@
+{
+  "service": "Kaggle GPU session",
+  "recipe_source": "c819ea5a8db53c3a192306c30bd2b6246925bcb7",
+  "producer": {
+    "recipe": "ovisocr2-original-vllm-t4-v1",
+    "status": "failed",
+    "phase": "original-gpu-reference",
+    "scope": "Original vLLM auto-FP16 T4 path and bounded greedy prefix; no BF16 parity or task-quality claim",
+    "pins": {
+      "model": "ATH-MaaS/OvisOCR2",
+      "revision": "cbdede82e048659b83310476ff807da825f8fe78",
+      "metadata_run": 39983101540,
+      "frontend_run": 40017014043,
+      "proof_commit": "8f13e82fe592978a6dd47d812163842019b47eb2",
+      "vllm_version": "0.22.1",
+      "vllm_commit": "0decac0d96c42b49572498019f0a0e3600f50398",
+      "worker_commit": "2dc537902e72a5f706850cd75afc3dc14e498295",
+      "worker_sha256": "dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af",
+      "vllm_wheel_sha256": "365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd",
+      "vllm_wheel_bytes": 473003163,
+      "checkpoint_sha256": "9270560288656ece5cb3a6989001afcf5af8d223bceed4a423c33a008861d009",
+      "torch": "2.11.0",
+      "original_mirror_revision": "50b63a86f2d706491c3cfb953da28b143324fa48",
+      "original_mirror_zip_sha256": "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5",
+      "transformers": "5.16.1",
+      "tokenizers": "0.23.3"
+    },
+    "sources": {
+      "readme": "https://huggingface.co/ATH-MaaS/OvisOCR2/blob/cbdede82e048659b83310476ff807da825f8fe78/README.md",
+      "vllm_release": "https://github.com/vllm-project/vllm/releases/tag/v0.22.1",
+      "driver": "https://docs.nvidia.com/cuda/archive/12.9.0/cuda-toolkit-release-notes/index.html",
+      "gpu": "https://docs.vllm.ai/en/v0.22.1/getting_started/installation/gpu/",
+      "isolated_pip": "https://pip.pypa.io/en/stable/topics/python-option/"
+    },
+    "commands": [
+      {
+        "name": "bootstrap-isolated-pip",
+        "exit_code": 0,
+        "timed_out": false,
+        "timeout_seconds": 300,
+        "wall_seconds": 2.6199147160000393,
+        "log": "bootstrap-isolated-pip.log",
+        "log_sha256": "2a5e64c245dae6d690fcdcaec68b679ec13e04ee6d37fe99ce9d8bf3b1af6ab5"
+      },
+      {
+        "name": "install-pinned-stack",
+        "exit_code": 0,
+        "timed_out": false,
+        "timeout_seconds": 1800,
+        "wall_seconds": 296.73400361700004,
+        "log": "install-pinned-stack.log",
+        "log_sha256": "ae577c0c4f8f162aea181b7af327f3b43a95a702c5dce6f9686e48e77ba14111"
+      },
+      {
+        "name": "package-freeze",
+        "exit_code": 0,
+        "timed_out": false,
+        "timeout_seconds": 120,
+        "wall_seconds": 0.46530192600005194,
+        "log": "package-freeze.log",
+        "log_sha256": "7fee3ae003efbcb3cf31b3fad7ce9c2c9a33c96e9c39f04c402bfb7d27d325a9"
+      }
+    ],
+    "limits": [
+      "Published vLLM v0.22.1 release has no cu128 wheel; this recipe uses pinned cu129 only after an actual qualified driver check.",
+      "The README leaves dtype=auto; vLLM resolves Ovis BF16 config to FP16 on T4.",
+      "A bounded 256-token output is an explicitly labeled cap versus README max_tokens=16384."
+    ],
+    "script_sha256": "e2ea998cb45b68db2d95bb9051a114a517dce280fd66c760f988ef2c6c51b01f",
+    "service_frontend": {
+      "run": 40017014043,
+      "head_sha": "ccb6059a6b07b1339abc4de7dd085b0f08af8493",
+      "conclusion": "success",
+      "workflow_path": ".github/workflows/ovisocr2-metadata.yml"
+    },
+    "service_metadata": {
+      "run": 39983101540,
+      "head_sha": "ca3d096fe673f3554e95ef8e5f534b597564233e",
+      "conclusion": "success",
+      "workflow_path": ".github/workflows/ovisocr2-metadata.yml"
+    },
+    "metadata_proof": {
+      "url": "https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/8f13e82fe592978a6dd47d812163842019b47eb2/tests/results/qwen35-ocr/ovisocr2-metadata.json",
+      "producer_sha256": "233dc37fdaa2ff6b4a8b3ca3832b578305b5f3b6ed4d0d88d54c73591626b372",
+      "artifact_id": 12515557390
+    },
+    "gpu_query": [
+      "Tesla T4, 7.5, 580.178.04, 15360",
+      "Tesla T4, 7.5, 580.178.04, 15360"
+    ],
+    "hardware": {
+      "name": "Tesla T4",
+      "capability": "7.5",
+      "driver": "580.178.04",
+      "memory_mib": 15360,
+      "required_driver": "575.51.3",
+      "wheel_cuda": "12.9",
+      "nvcc_version_output": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2025 NVIDIA Corporation\nBuilt on Fri_Feb_21_20:23:50_PST_2025\nCuda compilation tools, release 12.8, V12.8.93\nBuild cuda_12.8.r12.8/compiler.35583870_0"
+    },
+    "worker_sha256": "dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af",
+    "original_artifact": {
+      "id": 12515557390,
+      "sha256": "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5",
+      "transport": {
+        "repo": "cstr/crispembed-regression-fixtures",
+        "revision": "50b63a86f2d706491c3cfb953da28b143324fa48",
+        "url": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/resolve/50b63a86f2d706491c3cfb953da28b143324fa48/qwen35-ovisocr2/original-processor/metadata.zip",
+        "bytes": 524058
+      },
+      "files": {
+        "small-control-processor.npz": "e2fbeece97a6219eeb33457a68c25db50270dc58738be76ab1e95d45ffff0a95",
+        "odd-processor.npz": "b15a06d8c00b5c6f00ca059626ca5b330a7718c51209fe9fe5b377cedd2f7656",
+        "square-processor.npz": "e4dc5b80d0533672fc04ef4a85c75173aac8d6eaf2490b704bfdb71d140eb0d1"
+      }
+    },
+    "isolated_pip_version": "26.2.2",
+    "downloaded_wheel_sha256": "365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd",
+    "package_archive_sha256": {
+      "vllm": {
+        "version": "0.22.1+cu129",
+        "sha256": "365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd"
+      },
+      "torch": {
+        "version": "2.11.0+cu129",
+        "sha256": "fde1830d7f79641680865759dc57780e94a9de7e68a82ed61973e9bc7af29423"
+      },
+      "torchvision": {
+        "version": "0.26.0+cu129",
+        "sha256": "4a4d4ead35f916ea4e64d8cc7b8177e4780365da7acd0197cddff922a0056c8a"
+      },
+      "transformers": {
+        "version": "5.16.1",
+        "sha256": "2f2d5b98a5ad3718713653734298fa620754ed683702a635ebb587df3ed29c7e"
+      },
+      "tokenizers": {
+        "version": "0.23.3",
+        "sha256": "376851d22bcf9d650a5c3090bb83e6cf9e895fbf0595369fa4cd43c1f69b5f87"
+      },
+      "huggingface_hub": {
+        "version": "1.33.0",
+        "sha256": "04e434b06e100eddbce9a6e817d72693a7884b10a79bd67ab48080d5c07eb899"
+      },
+      "numpy": {
+        "version": "2.2.6",
+        "sha256": "1bc23a79bfabc5d056d106f9befb8d50c31ced2fbc70eedb8155aec74a45798f"
+      },
+      "pillow": {
+        "version": "12.1.0",
+        "sha256": "6741e6f3074a35e47c77b23a4e4f2d90db3ed905cb1c5e6e0d49bff2045632bc"
+      },
+      "apache-tvm-ffi": {
+        "version": "0.1.9",
+        "sha256": "f45eb43499acac45ff6c93564f0ff2d3ca27b69656d540fd56ce59d51c0b4c65"
+      },
+      "compressed-tensors": {
+        "version": "0.15.0.1",
+        "sha256": "e1b1f322e82e475715e242bad46925a304ea8e5c98b5055a15b8eb22fb6bfea9"
+      },
+      "cuda-toolkit": {
+        "version": "12.9.1",
+        "sha256": "0c8636dfacbecfe9867a949a211864f080a805bc54023ce4a361aa4e1fd8738b"
+      },
+      "depyf": {
+        "version": "0.20.0",
+        "sha256": "d31effad4261cebecb58955d832e448ace88f432328f95f82fd99c30fd9308d4"
+      },
+      "diskcache": {
+        "version": "5.6.3",
+        "sha256": "5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19"
+      },
+      "flashinfer-cubin": {
+        "version": "0.6.11.post2",
+        "sha256": "eb01c2801ee31d145bbf7afb2c223150333e602c8208216017b0190b1087b990"
+      },
+      "flashinfer-python": {
+        "version": "0.6.11.post2",
+        "sha256": "550cbdb760f9f7ec0e42055e06636b9489d05f1a38989cafd77e6eb820de0138"
+      },
+      "humming-kernels": {
+        "version": "0.1.2",
+        "sha256": "f7434b0424946445ef5ad5682bcabf309d97721818ed5bdc4c6f61de3c6b9d2f"
+      },
+      "lark": {
+        "version": "1.2.2",
+        "sha256": "c2276486b02f0f1b90be155f2c8ba4a8e194d42775786db622faccd652d8e80c"
+      },
+      "lm-format-enforcer": {
+        "version": "0.11.3",
+        "sha256": "cf586350875def1ae7a8fba84fcbbfc8371424b6c9d05c1fcba70aa233fbf06f"
+      },
+      "numba": {
+        "version": "0.65.0",
+        "sha256": "b8a9008411615c69d083d1dcf477f75a5aa727b30beb16e139799e2be945cdfd"
+      },
+      "nvidia-cudnn-cu12": {
+        "version": "9.17.1.4",
+        "sha256": "b5083ced291edb2baf8eab09951c6bc58b79b2023c4ec885657a63acdf51d0bd"
+      },
+      "nvidia-cusparselt-cu12": {
+        "version": "0.7.1",
+        "sha256": "f1bb701d6b930d5a7cea44c19ceb973311500847f81b634d802b7b539dc55623"
+      },
+      "nvidia-cutlass-dsl": {
+        "version": "4.5.2",
+        "sha256": "68ed1b63ca74aae87955012da9dfd7fdaae471329d0028b229b841c7192ccf52"
+      },
+      "nvidia-cutlass-dsl-libs-base": {
+        "version": "4.5.2",
+        "sha256": "e59da7d89e5e4f8514c6530843f910f9d8734d8042dcaa079c9d9c5063eb3514"
+      },
+      "nvidia-nccl-cu12": {
+        "version": "2.28.9",
+        "sha256": "485776daa8447da5da39681af455aa3b2c2586ddcf4af8772495e7c532c7e5ab"
+      },
+      "nvidia-nvshmem-cu12": {
+        "version": "3.4.5",
+        "sha256": "042f2500f24c021db8a06c5eec2539027d57460e1c1a762055a6554f72c369bd"
+      },
+      "outlines_core": {
+        "version": "0.2.14",
+        "sha256": "6453e23f01d98ec48e3a4141d7112792ce77001dfb28d91d6fd89f47009f91ef"
+      },
+      "tilelang": {
+        "version": "0.1.9",
+        "sha256": "4bbccfe9035aed775ffafb6dc25a5994504b24e2c5d95d0f39643edfafa7bf12"
+      },
+      "tokenspeed-mla": {
+        "version": "0.1.2",
+        "sha256": "c9466a351fe039792e56cf49f3e79744c1dc28c7af10306a02e62b8e92fa5985"
+      },
+      "torchaudio": {
+        "version": "2.11.0+cu129",
+        "sha256": "45103fac849ffee337976ff19eac81725b3396e2c18e3f48ed92ba7669cb32d7"
+      },
+      "triton": {
+        "version": "3.6.0",
+        "sha256": "0075039ff27765480083b1a109999bf27110f3542f1f9fad95f0f9065a36da79"
+      },
+      "click": {
+        "version": "8.5.0",
+        "sha256": "255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360"
+      },
+      "cuda-bindings": {
+        "version": "12.9.10",
+        "sha256": "761589eb7fdc585d8bc496bff6185c8828c1b1e151e3769ac05824512e883dbd"
+      },
+      "cuda-pathfinder": {
+        "version": "1.8.4",
+        "sha256": "85a4e708c725d603f576042ef32781a3d1737c51e84c35fe361d2680191af65a"
+      },
+      "hf-xet": {
+        "version": "1.7.0",
+        "sha256": "2814a6e999d13464c4d679b788cc5d784eb5a4edfc638a31f10e9a11ab531ef8"
+      },
+      "httpx": {
+        "version": "0.28.1",
+        "sha256": "d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad"
+      },
+      "httpcore": {
+        "version": "1.0.9",
+        "sha256": "2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55"
+      },
+      "llguidance": {
+        "version": "1.7.6",
+        "sha256": "ceec951d29a74309984e3be0fe7f5f56c1362434cd937abd517b259a60908b1e"
+      },
+      "llvmlite": {
+        "version": "0.47.0",
+        "sha256": "2699a74321189e812d476a43d6d7f652f51811e7b5aad9d9bba842a1c7927acb"
+      },
+      "model-hosting-container-standards": {
+        "version": "0.1.16",
+        "sha256": "47f4f65713120bc3a69feb022981a38db9e557aedf88dbd72077f20588caa12b"
+      },
+      "nvidia-cublas-cu12": {
+        "version": "12.9.1.4",
+        "sha256": "453611eb21a7c1f2c2156ed9f3a45b691deda0440ec550860290dc901af5b4c2"
+      },
+      "nvidia-cuda-cupti-cu12": {
+        "version": "12.9.79",
+        "sha256": "096bcf334f13e1984ba36685ad4c1d6347db214de03dbb6eebb237b41d9d934f"
+      },
+      "nvidia-cuda-nvrtc-cu12": {
+        "version": "12.9.86",
+        "sha256": "210cf05005a447e29214e9ce50851e83fc5f4358df8b453155d5e1918094dcb4"
+      },
+      "nvidia-cuda-runtime-cu12": {
+        "version": "12.9.79",
+        "sha256": "25bba2dfb01d48a9b59ca474a1ac43c6ebf7011f1b0b8cc44f54eb6ac48a96c3"
+      },
+      "nvidia-cudnn-frontend": {
+        "version": "1.18.0",
+        "sha256": "c0544206b02cae9da4f044ca3fe7416b99e0c8a8052285dd3e5a8fc445d34f9c"
+      },
+      "nvidia-cufft-cu12": {
+        "version": "11.4.1.4",
+        "sha256": "c67884f2a7d276b4b80eb56a79322a95df592ae5e765cf1243693365ccab4e28"
+      },
+      "nvidia-cufile-cu12": {
+        "version": "1.14.1.1",
+        "sha256": "9552e2231792e94b1ff17bc99e958cc0e6bbbaa4a9d91fa2dbeed97716628fe6"
+      },
+      "nvidia-curand-cu12": {
+        "version": "10.3.10.19",
+        "sha256": "49b274db4780d421bd2ccd362e1415c13887c53c214f0d4b761752b8f9f6aa1e"
+      },
+      "nvidia-cusolver-cu12": {
+        "version": "11.7.5.82",
+        "sha256": "15da72d1340d29b5b3cf3fd100e3cd53421dde36002eda6ed93811af63c40d88"
+      },
+      "nvidia-cusparse-cu12": {
+        "version": "12.5.10.65",
+        "sha256": "73060ce019ac064a057267c585bf1fd5a353734151f87472ff02b2c5c9984e78"
+      },
+      "nvidia-nvjitlink-cu12": {
+        "version": "12.9.86",
+        "sha256": "e3f1171dbdc83c5932a45f0f4c99180a70de9bd2718c1ab77d14104f6d7147f9"
+      },
+      "nvidia-nvtx-cu12": {
+        "version": "12.9.79",
+        "sha256": "fec150986817f2b4e7eed72ed059f2dcb9ba3856b9a96134e448eac946a6952f"
+      },
+      "setuptools": {
+        "version": "80.10.2",
+        "sha256": "95b30ddfb717250edb492926c92b5221f7ef3fbcc2b07579bcd4a27da21d0173"
+      },
+      "xgrammar": {
+        "version": "0.2.3",
+        "sha256": "29d0fbd4709733b224e6e115d1001fb07124c71fe114a9087a2e3e53ce871517"
+      },
+      "z3-solver": {
+        "version": "4.15.4.0",
+        "sha256": "7e103a6f203f505b8b8b8e5c931cc407c95b61556512d4921c1ddc0b3f41b08e"
+      },
+      "aiohttp": {
+        "version": "3.14.5",
+        "sha256": "1ffa3a523a36d8628f98c06492ae16a31a23d14c0b4ec721757b477319f656d6"
+      },
+      "multidict": {
+        "version": "7.1.0",
+        "sha256": "5129cc1f5fec6888e2db0be936dab67242e32c738811c8769aeea93aab4257a8"
+      },
+      "yarl": {
+        "version": "1.25.1",
+        "sha256": "be80550d9bfe83d9b62398a37081a90434e6df2d978ec345c3d2820de6beddab"
+      },
+      "aiohappyeyeballs": {
+        "version": "2.7.1",
+        "sha256": "9243213661e29250eb41368e5daa826fc017156c3b8a11440826b2e3ed376472"
+      },
+      "aiosignal": {
+        "version": "1.4.0",
+        "sha256": "053243f8b92b990551949e63930a839ff0cf0b0ebbe0597b0f3fb19e1a0fe82e"
+      },
+      "anthropic": {
+        "version": "2.2.0",
+        "sha256": "ba8388e843521b3eb3cfadf99ec415f13e124a8d1587236969b0a3d84e427d36"
+      },
+      "anyio": {
+        "version": "4.15.1",
+        "sha256": "6152fdbbf9a77fdec97731721bebf7c4c44f7c29b424b0065826173efc7ed101"
+      },
+      "docstring_parser": {
+        "version": "0.18.0",
+        "sha256": "b3fcbed555c47d8479be0796ef7e19c2670d428d72e96da63f3a40122860374b"
+      },
+      "httpx2": {
+        "version": "2.16.0",
+        "sha256": "fd2c5d7909e8d86fe92d53020c310ca0e4e431b838c207c5754b9bbf0308d49a"
+      },
+      "httpcore2": {
+        "version": "2.16.0",
+        "sha256": "5c4358319f2602d984ad93182c9fee5160f22e9da7babdda870a5e7c4e2dc34f"
+      },
+      "jiter": {
+        "version": "0.18.0",
+        "sha256": "6e3350b7431f7b8315b925d9ca0f29a44e8fb6ed45c1fe552392cb6297966bb9"
+      },
+      "opentelemetry-api": {
+        "version": "1.45.1",
+        "sha256": "b31553efa588ae44bc306f863c785c5333a9ecc091248c6ee68b4b6c87fdedfb"
+      },
+      "pydantic": {
+        "version": "2.14.1",
+        "sha256": "9195d967ec791692a04438115466764fb8b9a27b31f14a760437694f40d6b454"
+      },
+      "pydantic_core": {
+        "version": "2.50.1",
+        "sha256": "17e722e156d0444ecaefbe640bdb60928752bf2013e2b7a11cdb099aaae19bec"
+      },
+      "sniffio": {
+        "version": "1.3.1",
+        "sha256": "2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2"
+      },
+      "typing_extensions": {
+        "version": "4.16.0",
+        "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8"
+      },
+      "annotated-types": {
+        "version": "0.8.0",
+        "sha256": "f072f4d804ea359e4eaf198b1af7a8b0943881a87f31bb764f8bf219bb9419e0"
+      },
+      "attrs": {
+        "version": "26.1.0",
+        "sha256": "c647aa4a12dfbad9333ca4e71fe62ddc36f4e63b2d260a37a8b83d2f043ac309"
+      },
+      "cuda-python": {
+        "version": "12.9.10",
+        "sha256": "70190d75fae02245355a3f53935887f343e4664ff95fb57aa9b2e0a26a3a317f"
+      },
+      "fastapi": {
+        "version": "0.162.0",
+        "sha256": "3785963de305dd09912426cb81f2d230fce98ab3521cdfe97265c8d14983128c"
+      },
+      "annotated-doc": {
+        "version": "0.0.5",
+        "sha256": "117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101"
+      },
+      "email-validator": {
+        "version": "2.3.0",
+        "sha256": "80f13f623413e6b197ae73bb10bf4eb0908faf509ad8362c5edeb0be7fd450b4"
+      },
+      "dnspython": {
+        "version": "2.9.0",
+        "sha256": "9a4aedb833c3c1b49214d04d44d3032ab7a9135f7c1d29a549b4ff78fd82fda9"
+      },
+      "fastapi-cli": {
+        "version": "0.0.32",
+        "sha256": "8dcc286fa32f01bbd3f65dd09cfd5a2540ed5f2230b77db7fd30978d6165f3c4"
+      },
+      "fastapi-cloud-cli": {
+        "version": "0.26.0",
+        "sha256": "94029f92f3dc4289b376e1213f0d6cc7c30d4f32de7e47b5effc6dc754ab9ce9"
+      },
+      "agent-detector": {
+        "version": "2.0.0",
+        "sha256": "22c6a1c9c23894a12f55aea625f060b8d3330fba774de72d02d5442bb580417f"
+      },
+      "detect-installer": {
+        "version": "0.2.1",
+        "sha256": "87e2ce7d05cb108b178f8e45bb80d3d88c0cb4b397983345c18ad6562e02e620"
+      },
+      "fastar": {
+        "version": "0.12.0",
+        "sha256": "e2bfad69679111e4567d4bad41fd795071c9335cd94bc0f26e24b7d19e95c9b1"
+      },
+      "fastsafetensors": {
+        "version": "0.5.0",
+        "sha256": "42704d63db61498afcd04cc18c4e35bfde461987be3efd28c54c02042eb54003"
+      },
+      "filelock": {
+        "version": "4.2.4",
+        "sha256": "301241438c57936ef93f4243a94f2559022268bfcf9b375a9a72eb0f8db8358e"
+      },
+      "frozenlist": {
+        "version": "1.8.0",
+        "sha256": "fb30f9626572a76dfe4293c7194a09fb1fe93ba94c7d4f720dfae3b646b45027"
+      },
+      "fsspec": {
+        "version": "2026.9.0",
+        "sha256": "8dd6e646e99ea382bd85f97a45e6b526a442d79423a7dc673f1e2756d05fcb5f"
+      },
+      "gguf": {
+        "version": "0.19.0",
+        "sha256": "70bcd10edfe697fb2dad6e40af2234b9d8ece9a41a99761405121ebda1c3c1cd"
+      },
+      "h11": {
+        "version": "0.16.0",
+        "sha256": "63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"
+      },
+      "idna": {
+        "version": "3.20",
+        "sha256": "ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c"
+      },
+      "interegular": {
+        "version": "0.3.3",
+        "sha256": "b0c07007d48c89d6d19f7204972d369b2a77222722e126b6aa63aa721dc3b19c"
+      },
+      "Jinja2": {
+        "version": "3.1.6",
+        "sha256": null
+      },
+      "MarkupSafe": {
+        "version": "3.0.4",
+        "sha256": "434139499bb20b502ed3baa1f169e618f924a97e7a777fea1a49446d80106cf6"
+      },
+      "mistral_common": {
+        "version": "1.12.0",
+        "sha256": "fa4504b66c30c0201ae4578c0340c5ee2abd22151c271532f62e373b985a53cf"
+      },
+      "jsonschema": {
+        "version": "4.26.0",
+        "sha256": "d489f15263b8d200f8387e64b4c3a75f06629559fb73deb8fdfb525f2dab50ce"
+      },
+      "jsonschema-specifications": {
+        "version": "2025.9.1",
+        "sha256": "98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe"
+      },
+      "networkx": {
+        "version": "3.7",
+        "sha256": "e3fd2c13a7814cee3746340d8d7f8598a67f16a58bf47fb7f8793fab6efca1b0"
+      },
+      "openai": {
+        "version": "3.37.0",
+        "sha256": "d9f5b000f52397a7f9f946012744c5bc4c962eed3c100385252464c273a63e57"
+      },
+      "openai-harmony": {
+        "version": "0.0.8",
+        "sha256": "c007d277218a50db8839e599ed78e0fffe5130f614c3f6d93ae257f282071a29"
+      },
+      "opencv-python-headless": {
+        "version": "5.0.0.93",
+        "sha256": "ed709fdf9aa0bd1f2ed8549e71d19449b03a675bb581eb292285f6861953be37"
+      },
+      "opentelemetry-exporter-otlp": {
+        "version": "1.45.1",
+        "sha256": "ef3910d32b36ccbaf62390189759bd43a8109885e2d50b738ed9c9b255bf5cb5"
+      },
+      "opentelemetry-exporter-otlp-proto-grpc": {
+        "version": "1.45.1",
+        "sha256": "e42ecb789d2fc5d8145e3dadc3e2991c9f18cd166d7c7514e234702540274b76"
+      },
+      "opentelemetry-exporter-otlp-common": {
+        "version": "0.66b1",
+        "sha256": "00ff8592c3a7cb729ff3fdc7ffa12372c243bdf2163e80c180994d0c7bd83ee9"
+      },
+      "opentelemetry-exporter-otlp-proto-common": {
+        "version": "1.45.1",
+        "sha256": "2f446183ae7047b036226f1d846c41a834b0e8755ad13b51a51dd38952eb466c"
+      },
+      "opentelemetry-exporter-otlp-proto-http": {
+        "version": "1.45.1",
+        "sha256": "24a97cf3753c7fb52fad44a696e452ff371686339e2acf3309e2eda3d0230700"
+      },
+      "opentelemetry-exporter-http-transport": {
+        "version": "0.66b1",
+        "sha256": "2f95404bdee7f9d2d529c7de56c7bd86d014d774d8fbf137810e0167f8a492bf"
+      },
+      "opentelemetry-proto": {
+        "version": "1.45.1",
+        "sha256": "f38e2a8413053c180cd3d2637fbb279673ec2f6a6e09c995aafa2f452c52b46e"
+      },
+      "googleapis-common-protos": {
+        "version": "1.76.0",
+        "sha256": "59e13344a9f3651aa201a03e2bee815a3bf43a4baf1f9ff8a9b62a840ce25fac"
+      },
+      "grpcio": {
+        "version": "1.84.1",
+        "sha256": "2ce575e400e0dec9484f5d038fa12d6b3919d493c2beb897a23b9a32fa3bfd12"
+      },
+      "opentelemetry-sdk": {
+        "version": "1.45.1",
+        "sha256": "c604c11dc429810812348989115fa44bd558772a3d7442afc43d024f2c250ca4"
+      },
+      "opentelemetry-semantic-conventions": {
+        "version": "0.66b1",
+        "sha256": "d4cddeb4315490b35213f55e2bdc9ac54bb1e4d318927475bed62b35545e581b"
+      },
+      "protobuf": {
+        "version": "7.36.2",
+        "sha256": "89f23aa53c24553a2416fd4fd1ec06f74fa42b14b546d8883128813f775bbfd2"
+      },
+      "requests": {
+        "version": "2.34.2",
+        "sha256": "2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0"
+      },
+      "charset-normalizer": {
+        "version": "3.5.2",
+        "sha256": "7218e8f32b0956cfcd048fd42d9d5779809745ca1d86113ca56f66e7ae1549c4"
+      },
+      "urllib3": {
+        "version": "2.8.0",
+        "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3"
+      },
+      "certifi": {
+        "version": "2026.10.23",
+        "sha256": "e9b54de76e530bb6cf0ccd036787103acb58fd42ba930ea8bf948ddbaa2f61d1"
+      },
+      "opentelemetry-semantic-conventions-ai": {
+        "version": "0.5.1",
+        "sha256": "25aeb22bd261543b4898a73824026d96770e5351209c7d07a0b1314762b1f6e4"
+      },
+      "packaging": {
+        "version": "26.3",
+        "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c"
+      },
+      "prometheus_client": {
+        "version": "0.26.0",
+        "sha256": "fa93d06737aa02bacd05794768508bb97d2fbee28cb3bca04eaae92f0ca953d6"
+      },
+      "prometheus-fastapi-instrumentator": {
+        "version": "8.1.0",
+        "sha256": "b9f40b2cff3f7891ca0610b3ae4fc6ec723fd326b04bb659819aaeb821a0fc7d"
+      },
+      "starlette": {
+        "version": "1.9.0",
+        "sha256": "fd3f159936e882d06c1108f84688f7cda2cf85fc6a592a50edbd175e882c2ddc"
+      },
+      "propcache": {
+        "version": "0.5.4",
+        "sha256": "f85915e00dcb1cd9f2f890ead064ed40a27df06f0db65be427b29482ae357572"
+      },
+      "pydantic-extra-types": {
+        "version": "2.11.1",
+        "sha256": "1722ea2bddae5628ace25f2aa685b69978ef533123e5638cfbddb999e0100ec1"
+      },
+      "pycountry": {
+        "version": "26.2.16",
+        "sha256": "115c4baf7cceaa30f59a4694d79483c9167dbce7a9de4d3d571c5f3ea77c305a"
+      },
+      "pydantic-settings": {
+        "version": "2.16.1",
+        "sha256": "30f5313340da4e8f1b440d1910b92a5bc3ccbb6b4ba70ec2b8395bc921f418f5"
+      },
+      "python-dotenv": {
+        "version": "1.2.4",
+        "sha256": "42269a8a5b3fd54ffa6f3d84b18abed50064717576b4ecf03dc4a55d8aa04fdc"
+      },
+      "python-multipart": {
+        "version": "0.0.32",
+        "sha256": "ff6d3f776f16878c894e52e107296ffc890e913c611b1a4ec6c44e2821fe2e23"
+      },
+      "PyYAML": {
+        "version": "6.0.3",
+        "sha256": "0f29edc409a6392443abf94b9cf89ce99889a1dd5376d94316ae5145dfedd5d6"
+      },
+      "pyzmq": {
+        "version": "27.2.0",
+        "sha256": "dea74fd65f1fc5f7fe167916a473ebe6ed6174e5e5d9de11ea6583661be6cf43"
+      },
+      "quack-kernels": {
+        "version": "0.5.0",
+        "sha256": "08821ebfb8e638cc20308d5c59410c6dbb3b637ccc7b07bd57c7a9261a06af74"
+      },
+      "referencing": {
+        "version": "0.37.0",
+        "sha256": "381329a9f99628c9069361716891d34ad94af76e461dcb0335825aecc7692231"
+      },
+      "regex": {
+        "version": "2026.9.29",
+        "sha256": "d49c18f1ea294cf4adde2e5ac256e98c82ea9d708462ce4bf799dffa7cfe8a2c"
+      },
+      "rich-toolkit": {
+        "version": "0.20.6",
+        "sha256": "465453ba6f94f99401f59f79fb562827ba5f6b4d4759015d40019f5c67750262"
+      },
+      "rich": {
+        "version": "15.0.0",
+        "sha256": "33bd4ef74232fb73fe9279a257718407f169c09b78a87ad3d296f548e27de0bb"
+      },
+      "Pygments": {
+        "version": "2.21.0",
+        "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9"
+      },
+      "markdown-it-py": {
+        "version": "4.2.0",
+        "sha256": "9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a"
+      },
+      "mdurl": {
+        "version": "0.1.2",
+        "sha256": "84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8"
+      },
+      "rignore": {
+        "version": "0.8.1",
+        "sha256": "2ca91c91a53135889945e77b286215ecd41c8f1090398db97ca3459c5a290eb6"
+      },
+      "rpds-py": {
+        "version": "2026.9.1",
+        "sha256": "7868b85224291c6cb6759f9b5adb9745f486d226f62b16a614dd5a2a5ab2b35b"
+      },
+      "safetensors": {
+        "version": "0.8.0",
+        "sha256": "fd6f3f93c9a0a7cc2788ee63fb763353d4bd2e89b0751bc78fcf7dda00bea774"
+      },
+      "sentry-sdk": {
+        "version": "2.73.0",
+        "sha256": "0bcfa6928ea5adbb89591858b514d27adac27c7a3cccc31b20ed10e0b09eda9e"
+      },
+      "six": {
+        "version": "1.17.0",
+        "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274"
+      },
+      "supervisor": {
+        "version": "4.3.0",
+        "sha256": "0bcb763fddafba410f35cbde226aa7f8514b9fb82eb05a0c85f6588d1c13f8db"
+      },
+      "sympy": {
+        "version": "1.14.0",
+        "sha256": "e091cc3e99d2141a0ba2847328f5479b05d94a6635cb96148ccb3f34671bd8f5"
+      },
+      "mpmath": {
+        "version": "1.3.0",
+        "sha256": "a0b2b9fe80bbcd81a6647ff13108738cfb482d481d826cc0e02f5b35e5c88d2c"
+      },
+      "tiktoken": {
+        "version": "0.14.0",
+        "sha256": "26e60f6a956ee171ab728b37b8439905d7ea1db435c30f9822f291e9861c861d"
+      },
+      "tokenspeed-triton": {
+        "version": "3.9.10.post20261008",
+        "sha256": "5cb864b8a55f3b0b6d95dca81af85abd702496265971d8c44366eb68c8851154"
+      },
+      "tqdm": {
+        "version": "4.70.1",
+        "sha256": "c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73"
+      },
+      "truststore": {
+        "version": "0.10.5",
+        "sha256": "9aaaedaefaf06d8b206278cf8b5012bc897f485a874503501e12d776df78951c"
+      },
+      "typer": {
+        "version": "0.27.3",
+        "sha256": "e50022f28b82a86313e54501317a1db64bf8f8d036ff8cfe5ca7e47675454aff"
+      },
+      "shellingham": {
+        "version": "1.5.4",
+        "sha256": "7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686"
+      },
+      "typing-inspection": {
+        "version": "0.4.4",
+        "sha256": "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147"
+      },
+      "uvicorn": {
+        "version": "0.54.0",
+        "sha256": "505bdb0f318731d45f1f712071fc781a8981f6847a31c902c9f5e652d4f67faf"
+      },
+      "httptools": {
+        "version": "0.9.0",
+        "sha256": "088de1738e1af624466a01c35d652dbe6fb825be887c76d68aa850621d81db88"
+      },
+      "uvloop": {
+        "version": "0.23.0",
+        "sha256": "e2cba180d6451822763eda8364f342435a873bcfb3849cbd82fdeca248ca65eb"
+      },
+      "watchfiles": {
+        "version": "1.3.0",
+        "sha256": "b5768b49e426fd5b550b012c866db347cdf15c398ef98dc557b6e6b72fa74cd1"
+      },
+      "websockets": {
+        "version": "17.3",
+        "sha256": "de2c12555bf05546f3ee75733f2c81de70aab7f530e86d0d2162b0ddcb3c39ae"
+      },
+      "astor": {
+        "version": "0.8.1",
+        "sha256": "070a54e890cefb5b3739d19f30f5a5ec840ffc9c50ffa7d23cc9fc1a38ebbfc5"
+      },
+      "blake3": {
+        "version": "1.0.11",
+        "sha256": "dad7fc38101ec6fe0ff4ac1e4f89e0c20ee532d4c042a134b5fe83a2cb93bc2e"
+      },
+      "cachetools": {
+        "version": "7.2.4",
+        "sha256": "4cfbebf3eec4040d2073b19c460511ad47eef7b852dbf9a0d385099b4dafa31e"
+      },
+      "cbor2": {
+        "version": "6.1.5",
+        "sha256": "833db11fbea9808b080e5340d5f96615e28a6a6617618a4331e60082d0dc1ca4"
+      },
+      "cloudpickle": {
+        "version": "3.1.2",
+        "sha256": "9acb47f6afd73f60dc1df93bb801b472f05ff42fa6c84167d25cb206be1fbf4a"
+      },
+      "cuda-tile": {
+        "version": "1.7.0",
+        "sha256": "a0cdc35796df8caf8fb1850e69d9d7d56e9a8da11e8bcb3042a64f1528f34b4d"
+      },
+      "dill": {
+        "version": "0.4.1",
+        "sha256": "1e1ce33e978ae97fcfcff5638477032b801c46c7c65cf717f95fbc2248f79a9d"
+      },
+      "einops": {
+        "version": "0.8.2",
+        "sha256": "54058201ac7087911181bfec4af6091bb59380360f069276601256a76af08193"
+      },
+      "ijson": {
+        "version": "3.6.0",
+        "sha256": "3cdf857bf286c5e4854eacb6434a9c1006fbc1c44c58ff79293ccaca95ec7b82"
+      },
+      "jmespath": {
+        "version": "1.1.0",
+        "sha256": "a5663118de4908c91729bea0acadca56526eb2698e83de10cd116ae0f4e97c64"
+      },
+      "loguru": {
+        "version": "0.7.3",
+        "sha256": "31a33c10c8e1e10422bfd431aeb5d351c7cf7fa671e3c4df004162264b28220c"
+      },
+      "mcp": {
+        "version": "2.3.0",
+        "sha256": "dd0c44c089d16453e8ae31a3877a0054d7a2314caaa81f5e0541b9b1734b2377"
+      },
+      "mcp-types": {
+        "version": "2.3.0",
+        "sha256": "968efdbdaedfab06adae40d378a34395f1090c5921d4be3c9cde283aaf76d91d"
+      },
+      "PyJWT": {
+        "version": "2.15.1",
+        "sha256": "42d59d631f7768a1028a64c7ff581a9bf7519804daf91fc5b6c56e30eec5e193"
+      },
+      "cryptography": {
+        "version": "50.0.2",
+        "sha256": "9dab55f57c74c3cad24c323bacbbd04be4705ba6eb0d92e920b1fc4837ed5079"
+      },
+      "cffi": {
+        "version": "2.1.1",
+        "sha256": "a931079504ecc49efed7744c476a5c343a92fabf66dec2db95edb1b2fdc770e2"
+      },
+      "sse-starlette": {
+        "version": "3.5.0",
+        "sha256": "3e6e1070df3f0f5d9cea81496de92dbb72f6721871d99748ece67441dd8b7997"
+      },
+      "ml_dtypes": {
+        "version": "0.6.0",
+        "sha256": "26b1f1fa4f0435a2946859823f6e2bf06796f1e9f10f5a05b08a5e3c8f46ff69"
+      },
+      "msgspec": {
+        "version": "0.22.0",
+        "sha256": "c6c310ef83e7e291b01a63298828f848348bb99e84a1098c4b3923c05674d032"
+      },
+      "ninja": {
+        "version": "1.13.2",
+        "sha256": "65a24341b5ac09fcadcc37082660be40a94174e51a937fabf6e2cae26225fa2c"
+      },
+      "nvidia-cuda-cccl-cu12": {
+        "version": "12.9.27",
+        "sha256": "37869e17ce2e1ecec6eddf1927cca0f8c34e64fd848d40453df559091e2d7117"
+      },
+      "nvidia-cuda-nvcc-cu12": {
+        "version": "12.9.86",
+        "sha256": "5d6a0d32fdc7ea39917c20065614ae93add6f577d840233237ff08e9a38f58f0"
+      },
+      "nvidia-ml-py": {
+        "version": "13.615.71",
+        "sha256": "959bf4adf6fe1308e4bd739e722236b0d1ec8392e2cefad33ff70c311380b9b6"
+      },
+      "partial-json-parser": {
+        "version": "0.2.1.1.post7",
+        "sha256": "145119e5eabcf80cbb13844a6b50a85c68bf99d376f8ed771e2a3c3b03e653ae"
+      },
+      "psutil": {
+        "version": "7.2.2",
+        "sha256": "076a2d2f923fd4821644f5ba89f059523da90dc9014e85f8e45a5774ca5bc6f9"
+      },
+      "py-cpuinfo": {
+        "version": "9.0.0",
+        "sha256": "859625bc251f64e21f077d099d4162689c762b5d6a4c3c97553d56241c9674d5"
+      },
+      "pybase64": {
+        "version": "1.5.1",
+        "sha256": "c7b14c5ec14c8c3aceb161afbcbf75d6239a3bea1f86c2b13991487871dbc542"
+      },
+      "pycparser": {
+        "version": "3.12",
+        "sha256": "a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e"
+      },
+      "pyelftools": {
+        "version": "0.33",
+        "sha256": "f215ad5f47d3f1373a21496a6c9e0707c622840d0622f23ff7ce08678b020036"
+      },
+      "python-json-logger": {
+        "version": "4.2.0",
+        "sha256": "158a52126fcd6869e09574d2b66272666f3dc8f468c62637ef9a1fa883719cb9"
+      },
+      "sentencepiece": {
+        "version": "0.2.2",
+        "sha256": "64b656f025355cf8c51abe9fbe3848540756c6d7ca5e6791b1afa664bc24c7cb"
+      },
+      "setproctitle": {
+        "version": "1.3.8",
+        "sha256": "d4289e209e805d7d276a534f062092974fbe6814889d4c132c247205ebb49a65"
+      },
+      "tabulate": {
+        "version": "0.10.0",
+        "sha256": "f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3"
+      },
+      "torch_c_dlpack_ext": {
+        "version": "0.1.5",
+        "sha256": "debe62e5ef93e631065d6b9f6e60d3d39bae6b89fa1b25d9523f40b3efbf8aba"
+      }
+    },
+    "package_install_report_sha256": "1b6c641e181a4fb02ede4e4913f0678b636bc68fcc904f9dbe772d4d4b381ec9",
+    "package_freeze_sha256": "7fee3ae003efbcb3cf31b3fad7ce9c2c9a33c96e9c39f04c402bfb7d27d325a9",
+    "error_type": "ValueError"
+  },
+  "retained_files": {
+    "crispembed-ovisocr2-pinned-vllm-reference.log": "a6ba20e813934c9c70f0aa498debab3f92017ee9ea429a4213b5190e3bb4f5f3",
+    "ovisocr2-vllm-logs/bootstrap-isolated-pip.log": "2a5e64c245dae6d690fcdcaec68b679ec13e04ee6d37fe99ce9d8bf3b1af6ab5",
+    "ovisocr2-vllm-logs/install-pinned-stack.log": "ae577c0c4f8f162aea181b7af327f3b43a95a702c5dce6f9686e48e77ba14111",
+    "ovisocr2-vllm-logs/package-freeze.log": "7fee3ae003efbcb3cf31b3fad7ce9c2c9a33c96e9c39f04c402bfb7d27d325a9",
+    "ovisocr2-vllm-reference.json": "174415ab1405b10b9e8332cf0573922f5794ec43532181307ecad4de5bd9340b"
+  },
+  "independent_review": {
+    "genuine_gpu_forward_completed": false,
+    "earliest_failure": "Driver library was not in ldconfig cache; discovery rejected before worker/checkpoint. Pinned isolated package install succeeded.",
+    "fix": "Resolve actual ctypes-loaded libcuda.so.1 via mapped file and driver API, before package installation. No system/dtype/kernel/model change."
+  }
+}
