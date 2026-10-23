@@ -1,0 +1,97 @@
+{
+  "conclusions": {
+    "supported_by_source": [
+      "T4 meets vLLM general CUDA minimum SM7.5.",
+      "The exact README call on T4 uses auto dtype and source policy resolves Ovis BF16 configuration to FP16 fallback with warnings.",
+      "Requested Triton GDN route has no explicit SM8 gate in inspected dispatcher, and its entry dtype check allows FP16."
+    ],
+    "unknown_without_hosted_execution": [
+      "Whether the pinned CUDA12.8 vLLM/Torch2.11 stack installs in the target Kaggle environment.",
+      "Whether all Ovis-specific Triton/FLA kernels compile and run on SM7.5.",
+      "Whether model initializes within target memory and produces expected outputs.",
+      "Whether vLLM Torch2.11 with Transformers5.16.1 reproduces metadata workflow using Torch2.14.0; no cross-stack parity has been tested."
+    ],
+    "unsupported_by_source": [
+      "Explicit BF16 on T4 is rejected because it requires SM>=8.",
+      "T4 auto-FP16 is a different numerical reference from BF16 execution on SM>=8; it cannot establish BF16-equivalent decoded quality by assumption."
+    ]
+  },
+  "pins": {
+    "ovis_repo": "ATH-MaaS/OvisOCR2",
+    "ovis_revision": "cbdede82e048659b83310476ff807da825f8fe78",
+    "vllm_commit": "0decac0d96c42b49572498019f0a0e3600f50398",
+    "vllm_tag": "v0.22.1"
+  },
+  "reference_policy": "If T4 is used, label outputs as the README auto-FP16 T4 path; retain a separate BF16-capable SM>=8 reference gate for BF16 parity claims.",
+  "scope": "Pinned public source and existing public metadata only; no installation, model/device execution, kernel compilation, or output parity test",
+  "sources": [
+    {
+      "fact": "Example constructs LLM with gdn_prefill_backend=\"triton\" and no dtype argument.",
+      "path": "ATH-MaaS/OvisOCR2/README.md",
+      "url": "https://huggingface.co/ATH-MaaS/OvisOCR2/blob/cbdede82e048659b83310476ff807da825f8fe78/README.md"
+    },
+    {
+      "fact": "model_type=qwen3_5, root dtype absent, text_config.dtype=bfloat16.",
+      "path": "ATH-MaaS/OvisOCR2/config.json",
+      "url": "https://huggingface.co/ATH-MaaS/OvisOCR2/blob/cbdede82e048659b83310476ff807da825f8fe78/config.json"
+    },
+    {
+      "fact": "Default dtype auto resolves a model config dtype against platform supported dtypes and falls back with warning; qwen3_5 is absent from the float16 exclusion list.",
+      "lines": "159-168,1975-2092",
+      "path": "vllm/config/model.py",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/config/model.py#L1975-L2092"
+    },
+    {
+      "fact": "Missing root dtype falls back to nested text_config.dtype.",
+      "lines": "134-172",
+      "path": "vllm/transformers_utils/model_arch_config_convertor.py",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/transformers_utils/model_arch_config_convertor.py#L134-L172"
+    },
+    {
+      "fact": "CUDA SM>=8 supports BF16; Turing supports FP16 and FP32; explicit BF16 check requires SM>=8.",
+      "lines": "175-183,504-520",
+      "path": "vllm/platforms/cuda.py",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/platforms/cuda.py#L175-L183"
+    },
+    {
+      "fact": "Requested triton selects in-tree Triton/FLA prefill; FlashInfer selection needs SM90 or qualified SM100, and is not required by requested Triton path.",
+      "lines": "150-211,295-312,348-370",
+      "path": "vllm/model_executor/layers/mamba/gdn/qwen_gdn_linear_attn.py",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/model_executor/layers/mamba/gdn/qwen_gdn_linear_attn.py#L150-L211"
+    },
+    {
+      "fact": "Chunk GDN entry check rejects float32 but does not reject float16.",
+      "lines": "212-215",
+      "path": "vllm/model_executor/layers/fla/ops/chunk.py",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/vllm/model_executor/layers/fla/ops/chunk.py#L212-L215"
+    },
+    {
+      "fact": "Pinned vLLM source fixes torch==2.11.0 and flashinfer-python/cubin==0.6.11.post2.",
+      "lines": "7-13",
+      "path": "requirements/cuda.txt",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/requirements/cuda.txt#L7-L13"
+    },
+    {
+      "fact": "Transformers requirement admits 5.16.1.",
+      "lines": "10",
+      "path": "requirements/common.txt",
+      "url": "https://github.com/vllm-project/vllm/blob/0decac0d96c42b49572498019f0a0e3600f50398/requirements/common.txt#L10"
+    },
+    {
+      "fact": "Lists NVIDIA SM>=7.5 including T4; default wheel CUDA12.9, offers CUDA12.8 variant.",
+      "path": "vLLM v0.22.1 GPU installation guide",
+      "url": "https://docs.vllm.ai/en/v0.22.1/getting_started/installation/gpu/"
+    },
+    {
+      "fact": "T4 is SM7.5.",
+      "path": "NVIDIA GPU compute capability table",
+      "url": "https://developer.nvidia.com/cuda/gpus"
+    },
+    {
+      "fact": "Separate metadata/export workflow pins CPU torch==2.14.0 and transformers==5.16.1; this does not prove compatibility with vLLM torch==2.11.0.",
+      "lines": "58-59,94-95",
+      "path": ".github/workflows/ovisocr2-metadata.yml",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/main/.github/workflows/ovisocr2-metadata.yml"
+    }
+  ]
+}

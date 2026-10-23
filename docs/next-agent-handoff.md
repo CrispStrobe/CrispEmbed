@@ -258,3 +258,21 @@ initialization still admits format1 only. Successful frontend comparison would
 not qualify an Ovis model alias. Subsequent model work must capture original
 modules/all layers/caches/logits and actual vLLM raw IDs/stops/decoded and
 cleaned outputs, preserving current LightOn failures and the1024-patch limit.
+
+The following model-reference gate has a
+[pinned vLLM/T4 source audit](../tests/results/qwen35-ocr/ovisocr2-vllm-t4-source-audit.json).
+The unchanged README leaves dtype automatic: Ovis nested BF16 config resolves
+to FP16 on T4/SM7.5; explicit BF16 requires SM≥8. T4 auto-FP16 and newer-GPU
+BF16 are separate numerical references. The requested Triton GDN route has no
+explicit SM8 gate in inspected dispatch, but T4 kernel compilation/output is
+unverified. The CUDA12.8 vLLM variant pins Torch2.11; the earlier metadata
+probe used Torch2.14. Never combine them as if cross-stack parity had passed.
+
+After the frontend gate, use one free authorized GPU session for an isolated
+pinned-vLLM startup and genuine model forward. Preserve the actual resolved
+dtype, device/toolkit/package hashes, original prompt/processor arrays and
+raw IDs/logits/stops/text. Check those processor arrays against the frozen
+metadata anchors before interpreting model differences. Unsupported kernel or
+environment results remain explicit failures; do not redraw GPUs or switch
+dtypes silently. Only then extend existing original-module dumpers and
+crispembed-diff for every layer/cache/logit and composed native output.
