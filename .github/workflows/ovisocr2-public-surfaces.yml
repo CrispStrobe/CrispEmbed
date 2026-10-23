@@ -79,7 +79,7 @@ jobs:
           sdk: '3.13.5'
       - name: Pinned public Python binding dependencies
         run: |
-          python -m pip install numpy==2.2.6 pillow==12.1.0
+          python -m pip install numpy==2.2.6 pillow==12.1.0 gguf==0.19.0
           python -m pip freeze > "$HEAVY_OUT/environment.txt"
       - name: Actual C ABI, Python, CLI, HTTP, Rust and Dart model-backed outputs
         run: |
