@@ -36,9 +36,9 @@ the exact latest workflow reports when recording new totals.
   Corrections establish bounded forward correctness, not improved recognition.
   Original training-checkpoint/full-sequence parity remains unproved.
 - The published PosFormer correction remains on immutable release0.17.12 and
-  draftPR60. Backport its selected normalization/ceil-pooling source changes to
-  current main with fresh reference/decoded checks; do not merge the old release
-  branch wholesale or change the app dependency as documentation cleanup.
+  immutable tag source. PR72 selectively ports the correction behind an opt-in
+  onto main; PR60 is closed. Future release defaults still need comparison to
+  published0.17.12; do not change the app dependency as documentation cleanup.
 - No production cloud backend is selected. Provisioning one is optional future
   work, not a blocker for offline use or App Review demonstration.
 
@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 and typed Gemma | Integration/publication completed in their model documents | Independent task quality, GPU, long-context/performance remain open |
 | Permissive OCR queue | Source/license/architecture/size roadmap retained in PLAN | Re-audit pinned source/base terms; smallest shared backend next; Indra public-code-only |
-| PosFormer/app | Existing released correction and consumer snapshot remain unchanged | Selective PR60 backport, version reconciliation and separately scoped app/portfolio tasks |
+| PosFormer/app | Existing released correction and consumer snapshot remain unchanged | PR72 merged; explicit released-default compatibility, release validation and separately scoped app/portfolio tasks |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
 the remote copy expires21 January2027. Original producer/manifest/payload
@@ -100,8 +100,11 @@ Public support and quantized/default publication require U1–U4 in the executab
 handoff. Original-backend reproducibility39915714794 completes all four controls without
 recovering frozen anchors; [M1 follow-up](handover-m1-validation.md) is ready.
 Selective PosFormer [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) is
-draft: both50-case API/gate arms and corrected Linux reference39918191021 pass;
-remaining platform/secret checks are pending after retained test-only anchor failure. Other portfolio/app owners remain separate.
+merged at7f1ecd33 after full sourcef7c53803 platform/Flutter/style/security and
+bounded original/exported-weight reference success. PR60 is closed. Development
+manifests0.17.13 are not a release or app upgrade. The new main integration runs
+are separate checks; future released-default compatibility remains explicit.
+Other portfolio/app owners remain separate.
 
 ## Recommended order and dependencies
 
@@ -115,30 +118,26 @@ review. R1 is used only when a production app change is ready to ship. C1 and
 F1 require an explicit backend/product decision. B1 is an optional bounded
 math-engine investigation, not a reason to rebuild everything immediately.
 
-### V1 — Qualify the selective PosFormer backport
+### V1 — Qualify successor release defaults and consumer behavior
 
-**Repository:** CrispEmbed. **Draft PR72; bounded reference qualification passed, platform checks pending.**
+**Repository:** CrispEmbed. **Selective source backport complete; release gate open.**
 
-Review [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) at
-`f7c538039f904b35d642f333e9ff98bd9dd1dda3`, selectively ported from PR60.
-It retains the existing main path under unset/literal0 and enables trained input
-LayerNorm/ceil pooling with `CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` at model init.
-Both Linux/macOS50-case normal-API arms pass at the identical C++ source0b73f5f9:
-seven exact matches remain,38 transcriptions change under opt-in, and unset/zero
-outputs equal baseline. This is not improved handwriting recognition.
+PR72 is merged at `7f1ecd33c6a8881cfd0b0c35dc8c32f0cb3ca262` after all exact-source
+f7c53803 platform/Flutter/style/security and original/reference checks pass.
+Historical PR60 is closed without merging its release branch wholesale or
+moving the0.17.12 tag. The old and corrected math remain selectable:
+`CRISPEMBED_POSFORMER_TRAINED_FORWARD=1` selects the trained forward at model init;
+unset/zero preserve the former vendor-main path. Both50-case public-API/gate arms
+and both bounded reference paths pass; recognition remains7/50.
 
-Initial Linux reference instrumentation rejects its gated pool anchor before
-inference; the adapter fix changes only test tools and restores exact production
-branches. Corrected39918191021 passes both five-case/five-step reference arms, all270
-exported tensors and16 pooling/two normalization controls. Inspect remaining
-exact-source platform/secret checks before merging. [Initial reports](../tests/results/posformer/main-backport-initial.json)
-retain producer fields, hashes and failure. Do not repeat the backport from scratch
-or merge PR60's historical release branch wholesale.
-
-**Done when:** actual reference/gate/API evidence qualifies the current source,
-main contains that bounded correction, and PR60's disposition is reconciled.
-Branch development manifests0.17.13 do not authorize release tags/publication.
-Keep the app on immutable0.17.12 until a separately validated successor exists.
+Before a new release, compare actual published0.17.12 (which already enables the
+trained correction) with current main's opt-in on identical50-case/model inputs.
+Require IDs/EOS/text and available confidence evidence, actual library hashes,
+old correct-ID preservation and package/consumer checks. Decide the successor's
+default deliberately while retaining legacy `=0`; do not treat development
+VERSION0.17.13 as release qualification. The app stays on immutable0.17.12.
+[Initial evidence](../tests/results/posformer/main-backport-initial.json),
+[completed reference evidence](../tests/results/posformer/main-backport-reference.json).
 
 ### M1 — Fifty new independent mathematical problems and systemic repairs
 

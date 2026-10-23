@@ -21,5 +21,8 @@ identities are pinned; any missing artifact or changed anchor is a failure.
 
 The development manifests are synchronized to0.17.13 for this actual runtime
 addition. No release tag, package publication, default promotion or app pin change
-is implied. Merge only after actual exact-source checks and report review. PR60
-can be reconciled after this main backport proves equivalent opted-in behavior.
+is implied. PR72 merged at7f1ecd33 after all sourcef7c53803 checks and report review;
+historical PR60 is closed. Release compatibility with actual published0.17.12
+remains separate: that release already uses trained-forward math by default,
+while development main retains the legacy default. Validate this before publishing
+or changing defaults; the opt-in source merge is not a successor release.

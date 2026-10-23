@@ -151,9 +151,14 @@ guide; current CPU/Apple reference jobs are not interchangeable with GPU runs.
 Merged-source CI and live Pages verification are complete (HISTORY23 October).
 Require affected exact-source checks again for each new implementation change.
 
-- [ ] **V1:** reconcile the released PosFormer normalization/ceil-pooling fixes
-  with current main and draftPR60 using native/reference/decoded evidence.
-- [ ] **Release metadata:** reconcile source VERSION0.17.11 and published0.17.12
+- [ ] **Release-default compatibility:** the gated PosFormer source backport is
+  merged viaPR72; historicalPR60 is closed. Before publishing a successor,
+  compare opt-in current main against actual published0.17.12 on the same50
+  cases, model bytes, IDs/EOS/text and available confidence. Published0.17.12
+  already enables trained-forward math; current development main preserves its
+  legacy default. Decide/default-test this explicitly while retaining `=0`.
+  Do not release the development version merely because source integration passed.
+- [ ] **Release metadata:** keep development VERSION0.17.13 distinct from published0.17.12
   before a new release; do not change the app's immutable release pin as cleanup.
 - [ ] **R1:** promote any successor runtime atomically through native/WASM build,
   artifact/hash, regression, model and actual consumer validation.
@@ -298,7 +303,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 |-------|-------------------|------|--------|
 | 2026-10-23 | M1 handover | UltraBERT original CPU/BLAS comparison atf0dbe58d | User confirmed M1 execution; await full stage/projection and raw/normalized CLS evidence. Do not duplicate this experiment here. |
 | 2026-10-23 | `audit/lfm2-cuda-20261023` | Explicit CUDA/no-fallback diff selection and genuine GPU audit against pinned published LFM2 Encoder references | One Kaggle run is active, scriptv1 atb6979a6f, compiled source898af2c2; uploaded bytes verified. Do not duplicate; private locator is ignored. No arithmetic/weight/gate/default changes. |
-| 2026-10-23 | `fix/posformer-main-backport` | Selective trained input LayerNorm/ceil-pool backport, gated alternatives and fresh original/reference/public API checks | Draft [PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) atf7c53803. Linux/macOS50-case API/gates pass at unchanged runtime C++ source0b73f5f9; initial Linux reference instrumentation rejects gated trace anchor. Corrected Linux39918191021 passes both five-case/five-step reference arms,270 tensors,16 pool/two norm controls, public API/gates; full source platform/secret checks remain pending. Initial/final reports retained. Opt-in retains old default/unset/zero path; branch manifests0.17.13, no tag/app pin change. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

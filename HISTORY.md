@@ -1,3 +1,20 @@
+## 2026-10-23 — Qualified PosFormer source backport merged; historical PR closed
+
+[PR72](https://github.com/CrispStrobe/CrispEmbed/pull/72) merges at7f1ecd33 after
+sourcef7c53803 passes the complete10-job [Build/Flutter39918197132](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39918197132),
+WASM39918197094, style39918197335, security39918190973/39918197229, Rust/
+wrapper39918197174 and bounded reference39918191021. Both50-case API/gate arms
+and all270 exported tensors/primitive/reference controls retain their measured
+limits. Initial test-only anchor failure and complete raw reports remain archived.
+Historical PR60 closes after this selective source port; its release branch/tag
+and actual0.17.12 assets stay unchanged.
+
+Development manifests are now0.17.13, with the corrected path opt-in and legacy
+unset/zero retained. This is not a tag, publication, app upgrade or general-quality
+claim. Published0.17.12 already enables trained-forward math; explicit successor
+release/default comparison against those actual assets remains in PLAN. New
+merged-head CI conclusions are separate from the exact completed source checks.
+
 ## 2026-10-23 — Independent CUDA audit submitted while M1 work proceeds
 
 A test-only explicit backend selector at898af2c2 rejects unavailable CUDA or
