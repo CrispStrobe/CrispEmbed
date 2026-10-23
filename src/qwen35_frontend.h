@@ -22,14 +22,20 @@ class frontend_tokenizer {
     std::unordered_map<std::string, int32_t> tokens_, merges_;
     std::vector<int> added_, special_;
     int eos_ = -1;
+    bool ovis_ = false;
+    std::string image_template_;
+    std::vector<int> stops_;
+    bool enabled() const;
 
 public:
     bool load(gguf_context * metadata);
     bool encode(const std::string & text, std::vector<int> & ids) const;
     bool decode(const std::vector<int> & ids, std::string & text) const;
-    // Exact single-image LightOnOCR-3-0.8B user + non-thinking assistant prefix.
+    // LightOn custom text, or the pinned original Ovis prompt (empty argument).
     bool image_prompt(const std::string & prompt, int image_tokens, std::vector<int> & ids,
                       std::vector<int> & modalities, std::string & rendered) const;
     int eos() const { return eos_; }
+    bool is_stop(int id) const;
+    image_config image_limits() const { return ovis_ ? image_config{ 448 * 448, 2880 * 2880 } : image_config{}; }
 };
 } // namespace qwen35_ocr
