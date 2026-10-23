@@ -15,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import zipfile
@@ -31,7 +32,7 @@ MIRROR_FILE = "qwen35-ovisocr2/original-processor/metadata.zip"
 MIRROR_BYTES = 524058
 MIRROR_SHA = "e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5"
 VLLM_COMMIT = "0decac0d96c42b49572498019f0a0e3600f50398"
-WORKER_SHA = "09156255c01a87a292234a5e4b90f10788e8c949e29d27cbf2b3efbc867ac72f"
+WORKER_SHA = "dcc731b512e949b3a82dee4e6706a4560b8efb704ec664d5615d0175f4f3c2af"
 SERVICES = {
     "metadata": (39983101540, "ca3d096fe673f3554e95ef8e5f534b597564233e",
                  ".github/workflows/ovisocr2-metadata.yml"),
@@ -158,7 +159,7 @@ def check_versions():
 def summarize_log(path):
     lines = Path(path).read_text(errors="replace").splitlines()
     metrics = [line for line in lines if re.search(
-        r"\b(?:PASS|FAIL|BUDGET|DECODED|logits|cos_min|decoded|confidence|cache|argmax)\b", line)]
+        r"\b(?:PASS|FAIL|BUDGET|DECODED|IDS|UTF8_HEX|logits|cos_min|decoded|confidence|cache|argmax)\b", line)]
     failures = [line for line in lines if re.search(r"\b(?:FAIL|ERROR|Traceback|Error:)\b", line)]
     return {"bytes": Path(path).stat().st_size, "sha256": sha(path),
             "first_failure": failures[0] if failures else None, "metric_lines": metrics}
@@ -360,6 +361,21 @@ def run_native_matrix(build, models, readable, reference, out, report, save, pre
                 continue
             if not command(label, args, out, report, env=env, timeout=1800):
                 report.setdefault("failures", []).append(label)
+            entry = report["commands"][label]
+            if entry["exit_code"] == 0:
+                metrics = "\n".join(entry["metric_lines"])
+                layers = re.findall(r"^(?:PASS|FAIL) (?:prefill|cached|full_prefix)\.decoder\.layer\.\d+:", metrics, re.M)
+                covered = bool(entry["metric_lines"])
+                if "-decoder-" in label:
+                    covered = covered and len(layers) == 72 and "generated.scores.0" in metrics
+                elif label.endswith("-context"):
+                    covered = covered and "OVIS_CONTEXT raw" in metrics and "OVIS_CONTEXT repeat" in metrics
+                elif label.endswith("-delta"):
+                    covered = covered and "prefill.delta.output" in metrics and "cached.delta.output" in metrics
+                entry["comparison_coverage"] = covered
+                if not covered:
+                    entry["passed"] = False
+                    report.setdefault("failures", []).append(label + "-missing-comparison-coverage")
             save()
 
 
@@ -377,6 +393,8 @@ def run_main(preflight_only=False):
                   "tools/ci-heavy/ovisocr2_model_audit.py", "tools/dump_ovisocr2_reference.py",
                   "tools/dump_qwen35_ocr_reference.py", "models/qwen35_ovis_profile.py",
                   "models/convert-qwen35-ocr-to-gguf.py")}}
+    report["native_source_sha256"] = {str(path.relative_to(ROOT)): sha(path) for path in
+        sorted((ROOT / "src").glob("qwen35*")) if path.is_file() and path.suffix in (".cpp", ".h")}
 
     def save():
         report_path.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
@@ -410,6 +428,8 @@ def run_main(preflight_only=False):
         report["phase"] = "metadata-archive-and-source"
         save()
         metadata, profile = download_metadata_and_archive(policy(), report)
+        shutil.copyfile(metadata / "LICENSE", scratch / "LICENSE")
+        shutil.copyfile(metadata / "README.md", scratch / "UPSTREAM_README.md")
         save()
         report["phase"] = "torch-2.11-processor-replay"
         save()
@@ -464,6 +484,7 @@ def run_main(preflight_only=False):
         if not command("native-target-build", ["cmake", "--build", build, "--config", "Release",
                                                "--target", *NATIVE_TARGETS, "-j2"], out, report, timeout=1800):
             raise ValueError("Native audit target build failed")
+        report["native_binary_sha256"] = {name: sha(build / name) for name in NATIVE_TARGETS}
         save()
 
         report["phase"] = "same-checkpoint-experimental-exports-and-native-arms"

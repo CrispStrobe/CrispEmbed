@@ -36,6 +36,12 @@ static bool compare(qwen35_ocr_context * context, const char * text, int length,
     int n = 0, m = 0;
     const auto * actual = qwen35_ocr_token_ids(context, &n);
     const auto * confidences = qwen35_ocr_confidences(context, &m);
+    std::printf("IDS %s:", label);
+    if (actual)
+        for (int i = 0; i < n; ++i) std::printf(" %d", actual[i]);
+    std::printf("\nUTF8_HEX %s:", label);
+    for (int i = 0; i < length; ++i) std::printf("%02x", static_cast<unsigned char>(text[i]));
+    std::printf("\n");
     bool ok = actual && confidences && n == int(expected.second) && m == n;
     double max_confidence_error = 0;
     if (ok)

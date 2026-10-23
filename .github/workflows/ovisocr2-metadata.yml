@@ -5,10 +5,10 @@ on:
       phase:
         type: choice
         description: 'Original metadata, full export roundtrip, or weight-free native frontend'
-        options: [metadata, export, frontend]
+        options: [metadata, export, frontend, model]
         default: metadata
   push:
-    branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend]
+    branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
     paths:
       - '.github/workflows/ovisocr2-metadata.yml'
       - 'tools/ci-heavy/ovisocr2_metadata.py'
@@ -23,6 +23,13 @@ on:
       - 'src/qwen35_tokenizer.cpp'
       - 'tests/test_ovisocr2_frontend.cpp'
       - 'tests/test_ovisocr2_frontend_driver.py'
+      - 'tools/dump_ovisocr2_reference.py'
+      - 'tools/ci-heavy/ovisocr2_model_audit.py'
+      - 'tests/test_ovisocr2_reference_adapter.py'
+      - 'tests/test_ovisocr2_model_audit.py'
+      - 'tests/test_ovisocr2_context.cpp'
+      - 'src/qwen35_ocr.cpp'
+      - 'src/qwen35_ocr.h'
 permissions:
   contents: read
   actions: read
@@ -41,6 +48,8 @@ jobs:
           python tests/test_ovisocr2_metadata.py -v
           python tests/test_ovisocr2_export_profile.py -v
           python tests/test_ovisocr2_frontend_driver.py -v
+          python tests/test_ovisocr2_reference_adapter.py -v
+          python tests/test_ovisocr2_model_audit.py -v
   metadata:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'metadata'
     needs: controls
@@ -106,6 +115,57 @@ jobs:
         with:
           name: ovisocr2-frontend-${{ github.run_id }}
           path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+  model:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'model'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reviewed original GPU and frontend prerequisites before dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_model_audit.py --preflight
+      - name: Pinned original CPU reference environment
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Original F32 intermediates and actual native F32/F16 graph and API arms
+        run: python tools/ci-heavy/ovisocr2_model_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-reference-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ovis-model/*.npz
+            ${{ runner.temp }}/scratch/ovis-model/*.gguf
+            ${{ runner.temp }}/scratch/ovis-model/*.json
+            ${{ runner.temp }}/scratch/ovis-model/*.png
+            ${{ runner.temp }}/scratch/ovis-model/LICENSE
+            ${{ runner.temp }}/scratch/ovis-model/UPSTREAM_README.md
           if-no-files-found: warn
           retention-days: 90
   export:
