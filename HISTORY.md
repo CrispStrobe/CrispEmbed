@@ -1,3 +1,15 @@
+## 2026-10-23 — UltraBERT F32 API null-failure contract corrected before qualification
+
+DraftPR74 advances from17b668c0 to0e615ea4 after merging the current handoff/
+retrieval contract and resetting dense output dimensions before null input/context
+returns. Both null cases are now explicit public-API regressions. All eight
+model-free evidence/retrieval control groups and changed C++ syntax checks pass.
+The still-queued original API run39938024529 was cancelled without model execution;
+replacement [39939481805](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39939481805)
+checks the exact new source. No arithmetic, precision, reference or tolerance
+changed. Main still has no merged UltraBERT runtime support; the optional M1 native
+handover now pins0e615ea4. Actual model-backed/task results remain pending.
+
 ## 2026-10-23 — Independent owned retrieval gold and scorer frozen before outputs
 
 Eight owned English questions/24 documents, relevance judgements, query/document

@@ -90,7 +90,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json) | Other GPU/precision/MMQ, paired performance, long-context and independent task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
 | Permissive OCR queue | OvisOCR2 pinned source/license/473-tensor header audited; [contract](ovisocr2.md) | MTP/schema/missing-metadata and actual prompt/pixel/EOS profile before conversion/native alias; Indra public-code-only |
-| PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default/reference39933245147 passes; final platform CI pending. PR74 CPU/F32 UltraBERT API job39938024529 queued; no release/consumer upgrade |
+| PosFormer/app | PR72 merged; actual published Linux0.17.12 and trained candidate match all50 IDs/text/EOS; confidence drift retained | PR73 released-default/reference39933245147 passes; final platform CI pending. PR74 CPU/F32 UltraBERT API job39939481805 queued; no release/consumer upgrade |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
 the remote copy expires21 January2027. Original producer/manifest/payload
@@ -98,8 +98,8 @@ identities remain unchanged. [Preservation provenance](../tests/results/ultraber
 Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Public support and quantized/default publication require U1–U4 in the executable
-handoff. DraftPR74 at17b668c0 adds the gated CPU/F32 public-text profile; hosted
-39938024529 is queued. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
+handoff. DraftPR74 at0e615ea4 adds the gated CPU/F32 public-text profile; hosted
+39939481805 is queued. The [owned retrieval smoke/scorer](ultrabert-retrieval-smoke.md)
 is frozen before task outputs; actual SentenceTransformer/native scoring remains
 pending. The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
 complementary Apple coverage, with no repeated Python audit. Original-backend reproducibility39915714794 completes all four controls without
