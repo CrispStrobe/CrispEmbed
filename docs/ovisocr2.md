@@ -1,7 +1,10 @@
 # OvisOCR2 source contract and bounded integration lane
 
-The source/license/header audit is complete; native support is pending. No model
-payloads were fetched and no conversion/inference or benchmark was run.
+The source/license/header and original metadata audits pass. Experimental F32/F16
+conversion and all473-tensor roundtrips pass39992662147; PR77 is merged.
+[Export producer and independent review](../tests/results/qwen35-ocr/ovisocr2-export.json)
+record exact sources, payload/manifest hashes, artifact expiry and review limits.
+Model payloads remain remote. Native model inference and decoded quality are pending.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
 
 Sources inspected23 October2026:
@@ -24,14 +27,15 @@ The473-entry safetensors header describes852,985,920 stored parameters in a
 The58,648-byte header hash and complete names/shapes/dtypes/offsets are retained.
 No tensor value, tied-head equality or native schema roundtrip was checked.
 
-## Concrete blockers and original blueprint differences
+## Initial blockers and original blueprint differences
 
 1. Config declares `mtp_num_hidden_layers=1`; no header tensor name contains
    `mtp`. The unchanged converter rejects it with its explicit MTP-policy error.
-   Establish non-speculative original execution and expected official meta schema
-   before adding a pinned export policy. Never broadly ignore MTP or unknown keys.
+   The qualified exact-source profile now accepts the reviewed non-speculative
+   main-model schema only. Actual vLLM model execution remains pending; unknown
+   config/tensors are still rejected.
 2. `generation_config.json` and `processor_config.json` are absent; the converter
-   currently requires both. Nested text EOS248044 and tokenizer EOS
+   originally required both. Nested text EOS248044 and tokenizer EOS
    `<|im_end|>` need separate effective-generation/stop tracing in vLLM. Do not
    invent LightOn EOS248046 defaults or fabricate missing source files.
 3. The original example uses an explicit content-extraction prompt, thinking
@@ -130,8 +134,8 @@ preserve original packed arrays/IDs/grid plus exact repeat checks remotely.
 It executes no model forward and does not install or qualify a complete vLLM
 runtime. Inspect the full report and retain any failure before a profile change.
 
-Initial hosted metadata run39974181719 is queued at60679016; inspect it rather
-than dispatching another copy. Push-only duplicates39974180947/39974177044 were
+Initial hosted metadata run39974181719 at60679016 was superseded while
+queued; original metadata39983101540 subsequently passed. Push-only duplicates39974180947/39974177044 were
 cancelled before execution; the manual run retains its required controls.
 The source blueprint was also independently reviewed with read-only web tools;
 its installed-vLLM qualification caveat remains. Prior header and source audits
@@ -188,3 +192,45 @@ while its weight-backed job remained queued, before execution. The replacement
 [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147)
 uses that strengthened source. Inspect both F32/F16 reports and original-cast
 payload checks before any conversion qualification; no duplicate local work.
+
+## Separately gated native frontend audit
+
+`feat/ovisocr2-frontend` adds a frontend-only opt-in
+`CRISPEMBED_OVISOCR2_FRONTEND=1` alongside the master Qwen OCR gate. It admits
+only the pinned experimental metadata contract and uses the exact625-byte
+original prompt,448²–2880² image limits and both stop IDs248044/248046. Empty
+custom prompt selects that original template; nonempty overrides are rejected
+until independently qualified. Setting either gate to0 disables already-loaded
+Ovis tokenization. The existing LightOn input surface remains separate. Native
+OCR initialization still requires format1, so this does not enable an Ovis model
+loader or registry alias.
+
+`tools/ci-heavy/ovisocr2_frontend.py` verifies the original metadata run/artifact
+and every frozen NPZ/RGB/field hash, then writes a test-only GGUF and builds
+`test-ovisocr2-frontend` on hosted CI. Three original packed-image cases cover
+784/840/864 patches; the native test compares grids, packed values with the
+unchanged1.2e-7 absolute budget, exact IDs/masks/modalities/template, dual stops
+and16 wrong-profile mutations. Oversized images are rejected at the unchanged
+1024-patch bound; the upstream maximum is not silently resized to that bound.
+Six driver service/artifact controls run without model-framework imports.
+Run `ovisocr2-metadata.yml` with `phase=frontend` at the pinned feature source.
+Retain the original reference, failed output and earliest absolute errors before
+fixing any mismatch; no model-forward quality claim follows from frontend parity.
+
+### Initial frontend failure and tokenizer correction
+
+Run40004747653 at48aefc30 compiled and passed CPU-baseline checks, but exited
+before numerical comparisons. The Ovis source regex contains combining marks
+(`\p{M}`) in letter runs and excludes them from punctuation; the initial loader
+expected LightOn's different regex. The
+[initial receipt](../tests/results/qwen35-ocr/initial-ovisocr2-frontend-pattern-failure.json)
+preserves the original report, log hashes and30MB reference hash/artifact.
+
+The correction selects Ovis's exact pattern and the existing mark-aware BPE
+path by source profile; LightOn retains its original pattern and gated
+alternative. Twelve new original `tokenizers==0.23.3` probes capture NFC,
+pre-tokenizer chunks, IDs and decoded text for combining marks, Indic/Arabic,
+punctuation, whitespace, emoji and special tokens. Native comparisons exercise
+both values of the older marks override without overriding Ovis's source
+contract. Original packed-image captures and the1.2e-7 budget remain unchanged.
+Actual corrected frontend parity awaits a hosted retry.
