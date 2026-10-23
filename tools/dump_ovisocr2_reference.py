@@ -136,6 +136,34 @@ def processor_contract(processor, profile):
     return report
 
 
+def generation_contract(model, profile, raw_config, generation_class):
+    """Check both original metadata and actual pinned HF loader resolution.
+
+    With generation_config.json absent, adjust_generation_fn loads config.json
+    as a raw dict via GenerationConfig.from_pretrained(_from_model_config=True).
+    The metadata-only probe instead used AutoConfig, which injects defaults.
+    Check each against its own original resolution path; do not edit either.
+    """
+    metadata = generation_class.from_model_config(model.config).to_diff_dict()
+    raw_fallback = generation_class.from_model_config(dict(raw_config)).to_diff_dict()
+    actual = model.generation_config.to_diff_dict()
+    checks = {"metadata_autoconfig": metadata == profile["generation"],
+              "loaded_raw_config_fallback": actual == raw_fallback}
+    report = {"checks": checks, "metadata_autoconfig": metadata,
+              "raw_config_fallback": raw_fallback, "loaded_model": actual,
+              "metadata_vs_raw_differences": {
+                  key: {"metadata_present": key in metadata, "metadata_value": metadata.get(key),
+                        "raw_present": key in raw_fallback, "raw_value": raw_fallback.get(key)}
+                  for key in sorted(metadata.keys() | raw_fallback.keys())
+                  if (key in metadata) != (key in raw_fallback) or metadata.get(key) != raw_fallback.get(key)},
+              "resolution": "Pinned HF missing-generation-file fallback from raw config.json; unchanged model settings"}
+    print("OVIS_GENERATION_CONTRACT " + json.dumps(report, sort_keys=True, allow_nan=False), flush=True)
+    if not all(checks.values()):
+        raise ValueError("OvisOCR2 original generation contract differs: "
+                         + ", ".join(key for key, passed in checks.items() if not passed))
+    return report
+
+
 def observed_visual_positions(frame, event, arg, visual, save, phase):
     """Read the real local variable at the original forward return boundary."""
     if event == "return" and frame.f_locals.get("self") is visual:
@@ -205,7 +233,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     import tokenizers
     import gguf
     from PIL import Image
-    from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
+    from transformers import AutoProcessor, GenerationConfig, Qwen3_5ForConditionalGeneration
 
     for name, module in [("transformers", transformers), ("tokenizers", tokenizers), ("torch", torch)]:
         if module.__version__.split("+")[0] != VERSIONS[name]:
@@ -232,8 +260,8 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
     ).eval()
     if model.config.vision_config.depth != 12 or model.config.text_config.num_hidden_layers != 24:
         raise ValueError("OvisOCR2 pinned vision/text layer count differs")
-    if model.generation_config.to_diff_dict() != profile["generation"]:
-        raise ValueError("OvisOCR2 resolved original generation config differs")
+    generation_check = generation_contract(model, profile,
+                                           json.loads((root / "config.json").read_text()), GenerationConfig)
     arrays = {}
     phase = ["prefill"]
     generation_step = [None]
@@ -590,6 +618,7 @@ def dump_reference(model_dir, image_path, output, prompt="", max_new_tokens=12, 
         "resolved_image_processor": type(processor.image_processor).__module__ + "." + type(processor.image_processor).__name__,
         "resolved_image_backend": getattr(processor.image_processor, "backend", None),
         "processor_contract": processor_check,
+        "generation_contract": generation_check,
         "generation_config": model.generation_config.to_dict(),
         "generation_override": {"eos_token_id": profile["stop_ids"],
                                 "reason": "pinned original vLLM effective stop set; missing generation_config.json"},

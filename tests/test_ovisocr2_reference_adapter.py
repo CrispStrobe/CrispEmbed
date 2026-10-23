@@ -89,6 +89,25 @@ class ReferenceAdapterTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "image_backend"):
                 ovis.processor_contract(processor, profile)
 
+    def test_generation_contract_distinguishes_raw_loader_and_autoconfig_defaults(self):
+        metadata = {"eos_token_id": 248044, "use_cache": True, "output_attentions": False}
+        raw = {"eos_token_id": 248044, "use_cache": True}
+        config = object()
+        model = types.SimpleNamespace(config=config,
+                                      generation_config=types.SimpleNamespace(to_diff_dict=lambda: raw))
+        factory = types.SimpleNamespace(from_model_config=mock.Mock(side_effect=lambda value:
+            types.SimpleNamespace(to_diff_dict=lambda: metadata if value is config else raw)))
+        with mock.patch("sys.stdout", new_callable=io.StringIO):
+            report = ovis.generation_contract(model, {"generation": metadata}, {"text_config": {}}, factory)
+            self.assertTrue(all(report["checks"].values()))
+            self.assertNotEqual(report["loaded_model"], report["metadata_autoconfig"])
+            model.generation_config.to_diff_dict = lambda: {**raw, "eos_token_id": 248046}
+            with self.assertRaisesRegex(ValueError, "loaded_raw_config_fallback"):
+                ovis.generation_contract(model, {"generation": metadata}, {}, factory)
+            model.generation_config.to_diff_dict = lambda: raw
+            with self.assertRaisesRegex(ValueError, "metadata_autoconfig"):
+                ovis.generation_contract(model, {"generation": raw}, {}, factory)
+
     def test_generation_bound_reports_both_eos_ids_and_length_cap(self):
         eos_ids = [248044, 248046]
         for stop_id in eos_ids:
