@@ -67,10 +67,15 @@ class RecipeControls(unittest.TestCase):
                                              'https://api.github.com/elsewhere')
         self.assertTrue(same_host.has_header('Authorization'))
 
-    def test_deployed_kernel_has_existing_token_dataset_placeholder(self):
+    def test_deployed_kernel_uses_pinned_public_mirror_without_credential_dataset(self):
         metadata = json.loads((ROOT / 'tools/kaggle/ovisocr2-vllm-reference/kernel-metadata.json').read_text())
-        self.assertEqual(metadata['dataset_sources'], ['${KAGGLE_ACCOUNT}/crispasr-hf-token'])
+        self.assertEqual(metadata['dataset_sources'], [])
+        self.assertEqual(metadata['id'], '${KAGGLE_ACCOUNT}/crispembed-ovisocr2-pinned-vllm-reference')
         self.assertEqual(metadata['code_file'], 'ovisocr2_vllm_reference.py')
+        self.assertEqual(recipe.MIRROR_SHA, self.evidence['artifact']['zip_sha256'])
+        self.assertEqual(recipe.ORIGINAL_ARTIFACT_ID, self.evidence['artifact']['id'])
+        self.assertIn(recipe.MIRROR_REVISION, recipe.MIRROR_URL)
+        self.assertEqual(recipe.MIRROR_BYTES, 524058)
 
     def test_import_does_not_load_model_or_cuda_frameworks(self):
         import sys

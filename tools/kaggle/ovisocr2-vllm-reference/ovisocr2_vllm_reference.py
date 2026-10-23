@@ -6,7 +6,6 @@ receipt is deliberately not a BF16 reference or a task-quality benchmark.
 """
 
 import hashlib
-import functools
 import json
 import os
 from pathlib import Path
@@ -27,6 +26,7 @@ LOGS = OUT / 'ovisocr2-vllm-logs'
 SCRATCH = Path('/tmp/ovisocr2-vllm-reference')
 VENV = SCRATCH / 'venv'
 METADATA_RUN = 39983101540
+ORIGINAL_ARTIFACT_ID = 12515557390
 METADATA_HEAD = 'ca3d096fe673f3554e95ef8e5f534b597564233e'
 FRONTEND_RUN = 40017014043
 FRONTEND_HEAD = 'ccb6059a6b07b1339abc4de7dd085b0f08af8493'
@@ -41,6 +41,12 @@ WHEEL_NAME = 'vllm-0.22.1+cu129-cp38-abi3-manylinux_2_28_x86_64.whl'
 WHEEL_URL = 'https://github.com/vllm-project/vllm/releases/download/v0.22.1/vllm-0.22.1%2Bcu129-cp38-abi3-manylinux_2_28_x86_64.whl'
 WHEEL_SHA = '365ee929afd73bb5d146235b65053fa948788ec2ee00a2c3e957d3f43bf2b0cd'
 WHEEL_BYTES = 473003163
+MIRROR_REPO = 'cstr/crispembed-regression-fixtures'
+MIRROR_REVISION = '50b63a86f2d706491c3cfb953da28b143324fa48'
+MIRROR_URL = (f'https://huggingface.co/datasets/{MIRROR_REPO}/resolve/{MIRROR_REVISION}'
+              '/qwen35-ovisocr2/original-processor/metadata.zip')
+MIRROR_BYTES = 524058
+MIRROR_SHA = 'e3ddf289cbac24d48d4cb4818d7cc17a1ed46be3dd2afd361c6ad747d2c7dde5'
 WORKER_COMMIT = '5374e590a5fe42388861193a0efb051a1ce4ed73'
 WORKER_SHA = '09156255c01a87a292234a5e4b90f10788e8c949e29d27cbf2b3efbc867ac72f'
 WORKER_URL = (f'https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/{WORKER_COMMIT}'
@@ -66,23 +72,6 @@ def canonical_sha(value):
     payload = json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
                          allow_nan=False).encode('utf-8')
     return hashlib.sha256(payload).hexdigest()
-
-
-@functools.cache
-def token():
-    value = os.environ.get('GITHUB_TOKEN', '').strip()
-    if value:
-        return value
-    paths = [Path('/kaggle/input/crispasr-hf-token/gh_token.txt')]
-    paths.extend(Path('/kaggle/input/datasets').glob('*/crispasr-hf-token/gh_token.txt'))
-    for path in paths:
-        if path.is_file():
-            return path.read_text().strip()
-    try:
-        from kaggle_secrets import UserSecretsClient
-        return (UserSecretsClient().get_secret('GITHUB_TOKEN') or '').strip()
-    except Exception:
-        return ''
 
 
 def request(url, auth='', accept='application/vnd.github+json'):
@@ -165,7 +154,7 @@ def save(report):
 
 
 def service_gate(run_id, expected_head, label):
-    data = get_json(f'https://api.github.com/repos/CrispStrobe/CrispEmbed/actions/runs/{run_id}', token())
+    data = get_json(f'https://api.github.com/repos/CrispStrobe/CrispEmbed/actions/runs/{run_id}')
     if (data['id'] != run_id or data['head_sha'] != expected_head
             or data['status'] != 'completed' or data['conclusion'] != 'success'
             or data['path'] != '.github/workflows/ovisocr2-metadata.yml'):
@@ -179,7 +168,8 @@ def metadata_proof(report):
     evidence = get_json(base)
     producer = evidence['producer']
     review = evidence['independent_review']
-    if (evidence['run'] != METADATA_RUN or producer['source_commit'] != METADATA_HEAD
+    if (evidence['run'] != METADATA_RUN or evidence['artifact']['id'] != ORIGINAL_ARTIFACT_ID
+            or producer['source_commit'] != METADATA_HEAD
             or canonical_sha(producer) != PRODUCER_SHA
             or review['producer_canonical_sha256'] != PRODUCER_SHA
             or evidence['artifact']['zip_sha256'] != review['artifact_zip_sha256']
@@ -206,15 +196,14 @@ def metadata_proof(report):
 
 def original_arrays(evidence, report):
     artifact_id = evidence['artifact']['id']
-    artifact = get_json(f'https://api.github.com/repos/CrispStrobe/CrispEmbed/actions/artifacts/{artifact_id}', token())
-    if (artifact['expired'] or artifact['workflow_run']['id'] != METADATA_RUN
-            or artifact['name'] != f'ovisocr2-metadata-{METADATA_RUN}'
-            or artifact['expires_at'] != evidence['artifact']['expires_at']):
-        raise ValueError('Original metadata artifact unavailable')
+    if artifact_id != ORIGINAL_ARTIFACT_ID:
+        raise ValueError('Original metadata artifact identity differs')
     archive = SCRATCH / 'original-metadata.zip'
-    fetch(artifact['archive_download_url'], archive, token())
+    if evidence['artifact']['zip_sha256'] != MIRROR_SHA:
+        raise ValueError('Public mirror identity differs from original ZIP proof')
+    fetch(MIRROR_URL, archive)
     expected = evidence['artifact']['zip_sha256']
-    if digest(archive) != expected:
+    if archive.stat().st_size != MIRROR_BYTES or digest(archive) != expected:
         raise ValueError('Original metadata artifact SHA256 differs')
     root = SCRATCH / 'original'
     root.mkdir(exist_ok=True)
@@ -230,6 +219,8 @@ def original_arrays(evidence, report):
             if digest(root / name) != row['archive_sha256']:
                 raise ValueError('Original processor archive SHA256 differs: ' + name)
     report['original_artifact'] = {'id': artifact_id, 'sha256': expected,
+                                   'transport': {'repo': MIRROR_REPO, 'revision': MIRROR_REVISION,
+                                                 'url': MIRROR_URL, 'bytes': MIRROR_BYTES},
                                    'files': {p.name: digest(p) for p in root.iterdir()}}
     save(report)
     return root
@@ -278,6 +269,8 @@ def main():
                        'worker_commit': WORKER_COMMIT, 'worker_sha256': WORKER_SHA,
                        'vllm_wheel_sha256': WHEEL_SHA, 'vllm_wheel_bytes': WHEEL_BYTES,
                        'checkpoint_sha256': CHECKPOINT_SHA, 'torch': '2.11.0',
+                       'original_mirror_revision': MIRROR_REVISION,
+                       'original_mirror_zip_sha256': MIRROR_SHA,
                        'transformers': '5.16.1', 'tokenizers': '0.23.3'},
               'sources': SOURCES, 'commands': [],
               'limits': ['Published vLLM v0.22.1 release has no cu128 wheel; this recipe uses pinned cu129 only after an actual qualified driver check.',

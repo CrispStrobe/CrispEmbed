@@ -12,12 +12,14 @@ version](https://docs.nvidia.com/cuda/archive/12.9.0/cuda-toolkit-release-notes/
 before installing packages or downloading weights. A lower driver yields an
 inconclusive result with no device redraw or wheel fallback.
 
-The script reads a `GITHUB_TOKEN` Kaggle secret or the existing private token
-dataset's `gh_token.txt` to read the original GitHub Actions artifact. Do not
-put token values or account names in this directory. The recipe uses the
-normal `${KAGGLE_ACCOUNT}` placeholder in its kernel metadata. It fetches its
-worker from immutable Git source and checks the worker SHA-256 because Kaggle
-deploys only `code_file` from this directory.
+The original GitHub Actions artifact download requires authentication. This
+recipe instead fetches a public, immutable byte-identical transport mirror
+from `cstr/crispembed-regression-fixtures` and verifies the original artifact
+ZIP and each processor archive by SHA-256. It still checks the original
+GitHub run, historical artifact identity and canonical producer proof. No credential
+dataset is attached. The recipe uses the normal `${KAGGLE_ACCOUNT}` placeholder
+in kernel metadata and fetches its worker from immutable Git source with a
+SHA-256 check because Kaggle deploys only `code_file` from this directory.
 The top-level script writes its phase journal, command log hashes, and small
 processor replay files to Kaggle output. The checkpoint and wheel stay in
 remote temporary storage.
