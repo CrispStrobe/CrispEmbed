@@ -250,14 +250,20 @@ backend or newer-GPU BF16 equivalence is inferred. Exact input/report/log bytes
 are [preserved immutably](../tests/results/qwen35-ocr/ovisocr2-vllm-reference-preservation.json).
 
 Native draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) and model
-[40040392649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40040392649)
-at 13a093ea are the next measured gate. Initial40034685690 stopped before forward
+[40041958521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40041958521)
+at cc038b00 are the next measured gate. Initial40034685690 stopped before forward
 on a Python tuple/list processor comparison; all three saved processor fields
 and framework source hashes had matched. The correction compares exact JSON
 representations and records each field/type; second40039159696 confirms it.
 That second run stops before forward at generation-default resolution; the
 current retry independently validates original metadata AutoConfig defaults and
 the pinned HF loader raw-config fallback, without editing either configuration.
+Third40040392649 confirms both contracts and completes original CPU/F32
+forward: the same nine GPU IDs/text/EOS, cached/full-prefix max1.335144e-5
+and exact observational controls. It then rejects72 missing cache arrays
+because pinned cache states are dictionaries, not lists. Current cc038b00
+observes integer0 states and demands all871 prior NPY members unchanged plus
+exactly72 cache fields before native. Large initial arrays remain remote.
 It captures original HF CPU/F32 modules and genuine MKLDNN-off controls before
 native outputs, then compares every layer/cache/logit/score and actual decoded
 IDs/EOS/text through the existing harness. Raw native vectors are retained
