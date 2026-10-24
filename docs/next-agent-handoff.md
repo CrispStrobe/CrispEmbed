@@ -357,8 +357,9 @@ is submitted at5296e955; do not duplicate. Independently review its fresh-cache
 CLI/HTTP/offline/hash/text/confidence result, then final exact-source PR79
 CI/merge and documentation.
 Model publication does not upgrade the app or create a runtime release.
-The optional [M1 build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/8b13e839/docs/handover-m1-ovisocr2.md)
-is a build-only fallback; the current original backend-control protocol is Linux.
+The optional [M1 consumer handoff](handover-m1-ovisocr2.md)
+pins the same published model and native code with corrected Darwin RSS units.
+It is an optional Apple alias/API audit; full original backend qualification remains Linux.
 The app remains pinned0.17.12; published F16 and wired source alias do not upgrade it.
 
 See the active Ovis sequence in [PLAN](../PLAN.md). Native, public and first

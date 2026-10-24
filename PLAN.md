@@ -385,6 +385,10 @@ not yet a model-backed consumer result.
 1. **Finish actual published consumer:** [40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
    is submitted at5296e955, phase=consumer and publish_precision=f16 on the
    completion audit branch. Do not duplicate; review its actual outcome.
+   An optional authorized16GB [M1 handoff](docs/handover-m1-ovisocr2.md) pins
+   d4c30424 for the same read-only public alias/API audit while Linux waits.
+   It normalizes Darwin child RSS to KiB; native code is identical to5296.
+   Keep platform reports/source scopes separate; do not duplicate Linux jobs.
    Reuse the positive publication/first-F16/source receipts; no original or
    eleven-case recapture. The registered `ovisocr2-published-consumer.yml` builds
    portable CLI/server on hosted CI, checks two genuinely fresh model caches,

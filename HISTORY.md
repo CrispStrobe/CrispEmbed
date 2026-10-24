@@ -14976,3 +14976,12 @@ in those recorded25 files before build; a mutation regression and all nine pure
 consumer controls pass. Three adapter controls pass; no unqualified default
 `ovisocr2` alias is added. Actual fresh-cache CLI/HTTP consumer execution remains
 required before final integration. No runtime release, app upgrade or default flip.
+
+
+The M1 fallback now pins d4c30424 for the real public alias/API consumer with
+resource/swap gates, isolated source, two fresh caches and small-evidence return.
+A reporting-only correction normalizes Darwin child `ru_maxrss` bytes to KiB;
+Linux numbers are unchanged. A two-platform unit regression and all ten consumer
+controls pass. Native sources/math/build configuration are unchanged; the queued
+Linux consumer at5296 continues. This handoff and pure test are not an M1 runtime
+result, full Apple numerical qualification or a runtime release.

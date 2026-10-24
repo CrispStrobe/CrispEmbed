@@ -1,75 +1,82 @@
-# Bounded M1 OvisOCR2 build and model audit
+# M1 OvisOCR2 published-alias consumer audit
 
-The Linux hosted queue currently has no running job. This optional Apple lane
-can check the same candidate while the original GPU reference is being qualified.
-It supplements Linux coverage and does not replace its numerical result.
-Do not regenerate existing original processor captures or loosen any threshold.
+This is the operator-authorized 16GB M1 fallback while Linux CI is queued.
+Use immutable source `d4c30424af99f1e9970c43449011b290e3721ac6`.
+It contains the real `ovisocr2-f16` alias and fixes Darwin child-RSS reporting;
+native code, ggml and CMake are unchanged from the qualified F16 source.
+Linux [40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
+continues independently at5296e955. Do not cancel it or submit another Linux run.
 
-Use an isolated worktree of `test/ovisocr2-native-parity`, reviewed starting
-source `949a0a45`. Record the exact chosen full source SHA and verify the diff
-before running a newer branch head. Keep all paths, access information and full
-machine output in ignored environment notes, not public Markdown.
+The [qualified public model](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
+is1717222848 bytes, SHA-256
+`d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db`.
+All three smaller quantized attempts are rejected; use only this F16 artifact.
+No publication/write credential or original framework/checkpoint is needed.
 
-Before compiling, inspect load, available memory, swap changes and free space.
-Use at most two build jobs. Stop costly work if the machine is under pressure;
-never delete unrelated caches or projects. A 16GB machine still needs headroom
-for the model and per-projection buffers. No GPU/MPS inference is requested.
+## Resource gate before build or model access
 
-## First stage: build without models
+Inspect `uptime`, `memory_pressure`, `vm_stat`, `sysctl vm.swapusage hw.memsize`
+and `df -h .`. Proceed only with green memory pressure, roughly6GiB available/
+reclaimable RAM, at least10GiB free disk and background load allowing two build/
+inference threads. Record initial swapout counters. Keep `-j2`/two inference
+threads; stop if memory pressure or new swapouts make the run unsuitable.
+Build and inference are sequential, with one loaded model process at a time.
+Two separate task caches download about3.44GB total; keep them outside Git.
 
-After fetching the branch, create an isolated worktree and configure:
+## Exact isolated source and execution
+
+From an existing CrispEmbed clone, preserve unrelated work and create a detached
+worktree. These task-specific temporary directories contain no owner credentials:
 
 ```sh
-cmake -S . -B build-ovis-audit -DCMAKE_BUILD_TYPE=Release \
-  -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_METAL=OFF \
-  -DGGML_BLAS=OFF -DCRISPEMBED_BUILD_SHARED=ON
-python3 scripts/check-cpu-baseline.py build-ovis-audit
-cmake --build build-ovis-audit --target test-qwen35-decoder \
-  test-qwen35-vision test-qwen35-delta test-ovisocr2-context \
-  test-ovisocr2-quality-run -j2
+git fetch origin d4c30424af99f1e9970c43449011b290e3721ac6
+M1_OVIS_WORK="$(mktemp -d)"
+M1_OVIS_OUTPUT="$(mktemp -d)"
+git worktree add --detach "$M1_OVIS_WORK" d4c30424af99f1e9970c43449011b290e3721ac6
+cd "$M1_OVIS_WORK"
+git submodule update --init --recursive
+export GITHUB_SHA="$(git rev-parse HEAD)"
+export HEAVY_OUT="$M1_OVIS_OUTPUT/reports"
+export HEAVY_SCRATCH="$M1_OVIS_OUTPUT/scratch"
+mkdir -p "$HEAVY_OUT" "$HEAVY_SCRATCH"
+python3 tests/test_ovisocr2_published_consumer.py -v
+python3 tools/ci-heavy/ovisocr2_published_consumer.py --preflight --precision f16
+python3 tools/ci-heavy/ovisocr2_published_consumer.py --precision f16
 ```
 
-Preserve configure/build logs and binary hashes. If resources still permit,
-build the shared library, CLI and HTTP server targets to cover the changed
-public dispatch/orchestrator units. Follow the exact target names in CMakeLists.
-Do not launch the full suite or corpus. Report initial compiler/linker errors
-with source and line, then fix only the demonstrated defect in the worktree.
+Use Python3.12 or newer, CMake and an Apple C++17 toolchain. The helper imports
+only the standard library; do not install Torch, Transformers, ONNX or NumPy.
+It builds only CLI/server targets with the explicit portable CPU configuration,
+verifies the25 native source hashes against full quality, retrieves the immutable
+small provenance/PNG fixture, and exercises real model downloads/inference.
+The model and PNG URLs/hashes are already in the reviewed receipts.
 
-## Second stage: original CPU F32 and native F32/F16
+The helper requires genuinely absent CLI/HTTP caches. Preserve a failed output;
+for any retry use a new output/scratch directory, not a reused cache presented as
+fresh. Do not modify source, inject outputs or relax comparisons to obtain a pass.
 
-Wait for `tests/results/qwen35-ocr/ovisocr2-vllm-reference.json` with reviewed
-positive original GPU execution. The hosted model driver deliberately fails
-before dependencies or weights without that receipt. Do not bypass its gate.
-Use an isolated Python3.12 environment, Apple-compatible Torch2.11.0 and
-Torchvision0.26.0 wheels, Transformers5.16.1, Tokenizers0.23.3, NumPy2.2.6,
-Pillow12.1.0, HF Hub1.33.0, GGUF0.19.0 and Safetensors0.8.0. The Linux CPU-wheel
-index is not the source of Apple wheels; record actual wheel hashes/versions.
+## Acceptance and return evidence
 
-The current model controller requires a real MKLDNN-enabled Linux CPU and an
-original MKLDNN-off control. It is deliberately not an executable Apple model
-protocol yet. Finish the build-only first stage; an Apple reference extension
-needs its own explicitly reviewed backend control and separate report. Do not
-fabricate MKLDNN availability or bypass the Linux reference gate on an M1.
-The instructions below describe the remaining contract for that extension.
+Require status `completed published consumer alias audit`, both portable targets,
+two fresh-cache full GGUF SHA/size checks, online and offline CLI results plus
+HTTP result, exact `Hello OCR\n\n12345`/one region, and unchanged confidence
+budgets0.0006 CLI/0.00006 HTTP against the selected F16 mean0.995388269.
+The helper sets the three entry gates and audited `both` vision preset itself,
+uses two threads and a12-token cap. Public APIs expose text/confidence; the nine
+IDs/EOS proof is separately frozen, so do not claim new observed M1 IDs/stops.
 
-The executable source is `tools/ci-heavy/ovisocr2_model_audit.py` and the
-original adapter is `tools/dump_ovisocr2_reference.py`. Its `--preflight` checks
-public service/source receipts before framework imports. If adapting the
-controller for macOS, preserve the original script and all changes in Git,
-including dylib/build-path differences. Keep its three processor-anchor SHA
-comparisons, readable RGB SHA, full473-tensor export hashes, all72 hidden-layer
-comparisons, complete scores/cache/logits/IDs/raw text, owning-context and
-negative controls. CPU Torch on Apple is a distinct backend reference; state
-that explicitly. Keep the original0.002 cache/raw budgets and all strict gates.
+Return only the small report JSON/logs, SHA manifest, source/toolchain/CPU/thread
+record, memory-pressure snapshots and swapout delta. RSS fields are normalized
+to KiB and remain cumulative child high-water upper bounds, not fresh per-call
+peaks. Keep full original logs and actual local paths in ignored private notes;
+audit public review/Markdown for private paths before committing it. Do not pack
+model caches, build trees or credentials into the returned archive or push main.
 
-Run F32 with one owning context; F16 can use the two-context arm only while
-memory permits. Preserve every failed arm and earliest stage/magnitude/error.
-No selected final output or cosine can waive a failed hidden/logit comparison.
+This validates an Apple alias/API case, not full Apple numerical/eleven-case or
+maximum-resolution OCR quality. Linux frozen references and all raw strict flags
+remain unchanged. A failure must retain actual output, magnitudes/logs and the
+first failing stage; it is evidence, not permission to weaken a budget.
 
-Store large model/reference artifacts remotely or in task-owned local storage;
-return only small JSON/log reports, source/binary/input hashes and needed images.
-Include peak RSS, wall time and new swapouts, with private paths scrubbed from
-public evidence. Do not publish models or flip defaults from this build lane.
-
-The primary agent continues GPU, Linux, public API, independent quality and
-calibration/publication work. This handoff does not mark any of them complete.
+The earlier build-only handoff remains available at immutable
+[8b13e839](https://github.com/CrispStrobe/CrispEmbed/blob/8b13e839/docs/handover-m1-ovisocr2.md).
+The app remains on immutable0.17.12; this source audit creates no runtime release.
