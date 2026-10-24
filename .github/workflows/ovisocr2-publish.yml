@@ -1,6 +1,20 @@
 name: OvisOCR2 qualified GGUF publication
 
 on:
+  workflow_call:
+    inputs:
+      precision:
+        required: true
+        type: string
+      model_run_id:
+        required: true
+        type: string
+      quality_run_id:
+        required: true
+        type: string
+    secrets:
+      HF_TOKEN:
+        required: true
   workflow_dispatch:
     inputs:
       precision:
