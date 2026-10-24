@@ -14915,3 +14915,15 @@ and document-quality failures. The unchanged first F16 remains qualified on all
 1841 original IDs/text. [Selection and exact receipts](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
 choose F16; actual publisher receipt preflight passes before auth/packages/weights.
 This is selection, not upload, alias, consumer qualification or runtime release.
+
+
+The [cross-arm tensor review](tests/results/qwen35-ocr/ovisocr2-quant-cross-arm.json)
+compares all473 retained records from the actual Q8/plain-Q4/calibrated-Q4 runs.
+All original input records agree. Q8→Q4 changes only72 FFN matrices; plain→
+calibrated Q4 changes every72 FFN payload hashes while preserving their Q4_K
+types/shapes. All78 attention and323 protected records are identical between
+plain/calibrated Q4. The first QKV payload SHA remains
+`02949b2058722f39cc20496e0fa384a16e12ea48104bf16473a007379dfb951a`
+across all three candidates. Calibration demonstrably affects the intended
+weights and cannot alter this unchanged source-fed QKV projection. This is
+recorded-hash comparison, not local large-model rehashing or quality promotion.

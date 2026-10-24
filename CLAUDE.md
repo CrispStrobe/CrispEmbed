@@ -117,18 +117,21 @@ still runs all eleven OCR cases and complete numerical/tensor checks. Protected
 reviewed and rejected: first decoder-layer error0.00376427, cosine0.999920726,
 and a two-column `Lorem Ipsum`→`Lorem Ispum` regression with697→700 IDs and
 worse raw/content CER/WER. All eleven cases reach EOS; the frozen F16 baseline
-remains qualified. Corrected plain/calibrated Q4 and candidate-only Q8 raw
-replay [runs40066573198/40066574754/40066576197](PLAN.md) are submitted at
-7924d850; the calibrated retry passed controls but its quality outcome is
-pending. Earlier calibrated/raw attempts failed before model access on a
-shallow-checkout test and initial plain Q4 was cancelled before controls;
-the [journal](tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json)
-records the unchanged-math fix. Future Q4 quality reports retain three raw
-numerical probes, all473 tensor records, and four-development-image calibration
-proof where applicable. Follow [PLAN](PLAN.md) through the two actual Q4
-reviews, Q8 raw supplement, conditional publication, real alias,
-consumer audit and final PR79 integration. Retain initial12/14 failures and
-strict flags. No Ovis model weights or alias are published. Development
+remains qualified. Both actual Q4 recipes are now complete and rejected:
+[plain40066573198](tests/results/qwen35-ocr/ovisocr2-q4-quality.json) and
+[calibrated40066574754](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json).
+Each retains11 EOS-completed cases, passing18/18 same-run F16 local controls,
+473 tensor records and261 raw manifest entries; candidate numerical and document
+screens fail. The development-only72-vector calibration proof is positive
+separately from candidate qualification. The separate
+[Q8 raw replay40066576197](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
+retains243 vectors and first source-fed QKV max0.0564889908; the initial Q8
+wrapper remains unchanged. [Selection](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+chooses qualified F16. Actual publication40070360890 is submitted; review its
+immutable full readback before real aliases and published-consumer execution.
+Follow [PLAN](PLAN.md) through those actual results and final PR79 integration.
+Retain initial failures and raw strict flags. No Ovis weights/alias have yet
+been verified published; no runtime release or app upgrade follows. Development
 CPU-baseline PR76 is merged; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with

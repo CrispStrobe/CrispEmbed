@@ -106,8 +106,9 @@ not required. A quantized candidate GGUF and upstream attribution stay in a
 remote workflow artifact for later independent review and possible publication.
 Corrected [plain Q4 40066573198](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066573198)
 and [calibrated Q4 40066574754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066574754)
-are submitted at7924d850; the calibrated retry passed metadata controls but
-no Q4 quality outcome is assumed here. Earlier calibrated Q4 and raw replay
+are complete at7924d850 and independently rejected for numerical/document
+regression. The positive development calibration proof is separate from its
+negative candidate. The completed selection chooses qualified first F16. Earlier calibrated Q4 and raw replay
 attempts failed before model access on a pure historical-Git-object test in
 shallow checkout, while the first plain Q4 attempt was cancelled before
 controls. The [journal](../../tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json)
@@ -129,7 +130,8 @@ the small report keeps actual stage/shape/byte/SHA manifests and logs. All
 three probes and the independently reviewed raw artifact must pass before
 quantized publication. Original Q8 source8b421ba5 lacked raw vectors;
 [candidate-only replay40066576197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066576197)
-is submitted to supplement its immutable negative quality receipt using the
+is complete with243 retained vectors, supplementing its immutable negative
+quality receipt using the
 same retained candidate and frozen original arrays. It omits a same-run F16
 control and does not reconvert, rerun original inference or repeat the panel.
 Raw completeness cannot reverse its numerical or recognition failure.

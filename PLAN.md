@@ -436,7 +436,10 @@ The [Q8 raw replay](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json) locates
 source-fed divergence at `l.layers.0.linear_attn.in_proj_qkv.weight`: input max
 absolute0, QKV max0.0564889908 despite cosine0.999990225. The current two Q4
 recipes retain that projection in Q8; calibrating only FFN inputs cannot change
-its quantized bytes. Do not infer that this alone explains all decoded errors,
+its quantized bytes. The [cross-arm record review](tests/results/qwen35-ocr/ovisocr2-quant-cross-arm.json)
+verifies all72 calibrated FFN payloads change while all78 attention/323 protected
+records stay identical, including the exact first-QKV SHA across all three arms.
+Do not infer that this alone explains all decoded errors,
 or that restoring it will qualify a smaller model. Complete the current three
 attempts/publication/consumer loop before starting this bounded follow-up.
 
