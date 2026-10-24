@@ -21,6 +21,7 @@ static void gate(const char * value) {
 
 class pause_diff_dump {
     std::string previous;
+
 public:
     pause_diff_dump() {
         if (const char * value = std::getenv("CRISPEMBED_DIFF_DUMP_DIR"); value && *value) {
@@ -45,6 +46,7 @@ public:
 
 class scoped_diff_dump {
     std::string previous;
+
 public:
     explicit scoped_diff_dump(const std::string & variant) {
         if (const char * value = std::getenv("CRISPEMBED_DIFF_DUMP_DIR"); value && *value) {
@@ -191,8 +193,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     if (const char * directory = std::getenv("CRISPEMBED_DIFF_DUMP_DIR"); directory && *directory) {
         bool intact = primary_dumps.size() == 4;
-        for (const auto & [stage, values] : primary_dumps)
-            intact &= actual_dump_intact(directory, stage, values);
+        for (const auto & [stage, values] : primary_dumps) intact &= actual_dump_intact(directory, stage, values);
         intact &= actual_dump_intact((std::string(directory) + "/reset").c_str(), "prefill.delta.output", output);
         intact &= actual_dump_intact((std::string(directory) + "/reset").c_str(), "prefill.delta.final_state", state);
         std::printf("%s DELTA_RAW_DUMP_INTEGRITY stages=4 variants=linear-core,reset\n", intact ? "PASS" : "FAIL");
