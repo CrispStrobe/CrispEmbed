@@ -288,6 +288,27 @@ def reviewed_original_artifact(run_id, out):
                     'receipt_sha256': sha(ORIGINAL_REVIEW)}
 
 
+def numerical_reference_artifact(listing, pins, expected):
+    """Bound compressed activation bytes by the reviewed uncompressed payloads."""
+    sizes = [expected.get(name, {}).get('bytes') for name in ('gguf', 'json')]
+    if any(type(size) is not int or size <= 0 for size in sizes):
+        raise ValueError('Reviewed original numerical reference byte counts missing')
+    # The complete frozen activation GGUF compresses to 1.3 GB. The previous
+    # 750 MB bound rejected that real artifact. Allow reviewed payload bytes
+    # plus bounded PNG/LICENSE/ZIP overhead; still verify every extracted SHA.
+    maximum_zip_bytes = sum(sizes) + 5_000_000
+    candidates = [item for item in listing.get('artifacts', [])
+                  if item.get('name') == 'ovisocr2-model-diff-reference-' + str(pins['run'])
+                  and item.get('expired') is False]
+    if (listing.get('total_count', 0) > 100 or len(candidates) != 1
+            or type(candidates[0].get('id')) is not int or candidates[0]['id'] < 1
+            or candidates[0].get('workflow_run', {}).get('id') != pins['run']
+            or not 0 < candidates[0].get('size_in_bytes', 0) <= maximum_zip_bytes
+            or not re.fullmatch('sha256:[0-9a-f]{64}', candidates[0].get('digest', ''))):
+        raise ValueError('Unique bounded original numerical reference artifact missing')
+    return candidates[0]
+
+
 def original_diff_reference(pins, producer, scratch, license_sha):
     """Fetch the separate source-run activation artifact; never fetch model weights."""
     expected = producer.get('reference_artifacts', {})
@@ -300,15 +321,7 @@ def original_diff_reference(pins, producer, scratch, license_sha):
     listing = json.loads(subprocess.check_output([
         'gh', 'api', 'repos/CrispStrobe/CrispEmbed/actions/runs/' + str(pins['run'])
         + '/artifacts?per_page=100'], text=True, timeout=60))
-    candidates = [item for item in listing.get('artifacts', [])
-                  if item.get('name') == 'ovisocr2-model-diff-reference-' + str(pins['run'])
-                  and item.get('expired') is False]
-    if (listing.get('total_count', 0) > 100 or len(candidates) != 1
-            or candidates[0].get('workflow_run', {}).get('id') != pins['run']
-            or not 0 < candidates[0].get('size_in_bytes', 0) <= 750_000_000
-            or not re.fullmatch('sha256:[0-9a-f]{64}', candidates[0].get('digest', ''))):
-        raise ValueError('Unique small original numerical reference artifact missing')
-    artifact = candidates[0]
+    artifact = numerical_reference_artifact(listing, pins, expected)
     folder = scratch / 'ovis-diff-reference'
     folder.mkdir(parents=True, exist_ok=True)
     archive_path = folder / 'reference.zip'
@@ -323,7 +336,7 @@ def original_diff_reference(pins, producer, scratch, license_sha):
                 'owned-readable.png': readable['png_sha256'], 'LICENSE': license_sha}
     with zipfile.ZipFile(archive_path) as archive:
         names = archive.namelist()
-        if (len(names) != len(set(names)) or not set(required) <= set(names)
+        if (len(names) != len(set(names)) or set(required) != set(names)
                 or any(Path(name).is_absolute() or '..' in Path(name).parts
                        or Path(name).name != name for name in names)):
             raise ValueError('Original numerical reference archive member set/path differs')

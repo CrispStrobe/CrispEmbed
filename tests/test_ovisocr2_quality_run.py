@@ -94,6 +94,24 @@ class OvisOCR2Parser:
         with self.assertRaises(ValueError):
             driver.require_baseline('unsupported')
 
+    def test_complete_frozen_activation_artifact_size_and_identity(self):
+        pins = {'run': 40041958521}
+        expected = {'gguf': {'bytes': 1454224192}, 'json': {'bytes': 86906}}
+        artifact = {'id': 12540836880, 'name': 'ovisocr2-model-diff-reference-40041958521',
+                    'expired': False, 'workflow_run': {'id': pins['run']},
+                    'size_in_bytes': 1303553123,
+                    'digest': 'sha256:54c823899bdde33448ff93137fbbf960981fa031877a6e29f76c91b0065d36a4'}
+        def listing(row):
+            return {'total_count': 1, 'artifacts': [row]}
+        self.assertEqual(driver.numerical_reference_artifact(listing(artifact), pins, expected), artifact)
+        for changed in ({'expired': True}, {'workflow_run': {'id': 1}},
+                        {'size_in_bytes': 2_000_000_000}, {'digest': 'sha256:invalid'},
+                        {'id': 0}, {'name': 'model-weights'}):
+            with self.assertRaisesRegex(ValueError, 'bounded original'):
+                driver.numerical_reference_artifact(listing({**artifact, **changed}), pins, expected)
+        with self.assertRaisesRegex(ValueError, 'byte counts'):
+            driver.numerical_reference_artifact(listing(artifact), pins, {'gguf': {'bytes': '1454224192'}})
+
     def test_no_framework_import(self):
         for name in ('torch', 'transformers', 'gguf', 'PIL', 'vllm'):
             self.assertNotIn(name, sys.modules)
