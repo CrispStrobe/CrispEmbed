@@ -583,6 +583,31 @@ class PublicationGate(unittest.TestCase):
             subject.service_artifact(2003, 456, raw['name'], '0'*64,
                                      lambda _: json.dumps(raw).encode())
 
+    def test_f16_preflight_rejects_expired_selected_quality_artifact_before_upload(self):
+        fixtures(self.folder)
+        seen = []
+        original = subject.service_artifact
+
+        def checked_artifact(artifact_id, run_id, name, expected_sha):
+            seen.append(name)
+            row = {'id': artifact_id, 'name': name, 'expired': name == 'ovisocr2-quality-reports-456',
+                   'workflow_run': {'id': int(run_id)}, 'digest': 'sha256:' + expected_sha}
+            return original(artifact_id, run_id, name, expected_sha,
+                            call=lambda _: json.dumps(row).encode())
+
+        with mock.patch.object(subject, 'service_run', return_value={}), \
+                mock.patch.object(subject, 'service_artifact', side_effect=checked_artifact), \
+                mock.patch('sys.argv', ['publisher', '--precision', 'f16',
+                    '--model-run-id', '123', '--quality-run-id', '456', '--preflight']), \
+                mock.patch.dict(os.environ, {'HEAVY_OUT': str(self.folder/'out'),
+                    'HEAVY_SCRATCH': str(self.folder/'scratch'), 'GITHUB_SHA': HEAD}, clear=False):
+            with self.assertRaisesRegex(ValueError, 'Retained artifact service'):
+                subject.main()
+        self.assertEqual(seen, ['ovisocr2-quality-reports-456'])
+        report = json.loads((self.folder/'out/ovisocr2-publication.json').read_text())
+        self.assertEqual(report['status'], 'failed publication or preflight')
+        self.assertNotIn('published_commit', report)
+
     def test_quant_preflight_checks_raw_service_before_hub_access(self):
         fixtures(self.folder, 'q8')
         seen = []

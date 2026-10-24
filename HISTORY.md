@@ -14828,3 +14828,12 @@ printed metrics does not establish old/new raw-byte identity. Actual native test
 use four threads on EPYC9V45, distinct from two-thread quality inference and the
 two-thread environment. No F16 control, conversion, original inference or
 quality-panel rerun occurred; the initial Q8 quality wrapper is unchanged.
+
+
+The publication preflight now checks the selected quality report artifact's
+actual service name/run/expiry/digest for every precision, including F16,
+before dependencies, model bytes or upload. The native report/reference and
+quant raw/candidate checks remain. A regression expires only the selected F16
+quality artifact and confirms rejection before upload;23 publisher controls
+and8 published-consumer controls pass. This is tooling validation, not a
+publication or consumer result.

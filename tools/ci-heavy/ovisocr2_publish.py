@@ -326,6 +326,14 @@ def require_receipts(precision, destination=DESTINATION):
     positive(quality, 'quality_positive')
     qp = producer(quality)
     candidate_artifact = quality.get('candidate_artifact', {})
+    quality_run = quality.get('run')
+    if (type(quality_run) is not int or quality_run < 1
+            or type(quality.get('artifact_id')) is not int or quality['artifact_id'] < 1
+            or quality.get('artifact_name') != f'ovisocr2-quality-reports-{quality_run}'
+            or not sha_field(quality.get('artifact_zip_sha256'))
+            or quality['independent_review'].get('artifact_zip_sha256')
+               != quality['artifact_zip_sha256']):
+        raise ValueError('Selected quality report artifact review differs')
     original_quality, original_quality_sha = load('ovisocr2-original-quality.json')
     if (original_quality.get('independent_review', {}).get('original_11_complete') is not True
             or not sha_field(original_quality.get('report_sha256'))):
@@ -522,6 +530,8 @@ def require_receipts(precision, destination=DESTINATION):
             'model_source_commit': mp['source_commit'], 'public_source_commit': pp['source_commit'],
             'quality_source_commit': qp['source_commit'],
             'quality_run_id': quality.get('run') or qp.get('run'),
+            'quality_report_artifact_id': quality['artifact_id'],
+            'quality_report_artifact_zip_sha256': quality['artifact_zip_sha256'],
             'first_f16_run_id': first_f16_pins['run'],
             'first_f16_source_commit': first_f16_pins['source_commit'],
             'first_f16_artifact_id': first_f16_pins['artifact_id'],
@@ -637,6 +647,10 @@ def main():
                 pins['first_f16_run_id'], pins['first_f16_source_commit'],
                 '.github/workflows/ovisocr2-quality.yml')
         report['service_artifacts'] = {
+            'quality_reports': service_artifact(
+                pins['quality_report_artifact_id'], args.quality_run_id,
+                f'ovisocr2-quality-reports-{args.quality_run_id}',
+                pins['quality_report_artifact_zip_sha256']),
             'model_reports': service_artifact(
                 pins['model_report_artifact_id'], args.model_run_id,
                 f'ovisocr2-model-reports-{args.model_run_id}',
