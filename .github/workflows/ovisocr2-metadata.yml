@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, publish, consumer, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -30,6 +30,10 @@ on:
         description: 'Quant-only F16 host control; original/F16 phases always run all eleven cases'
         options: [dev-hello, full]
         default: dev-hello
+      candidate_run_id:
+        type: string
+        description: 'Quant-raw only: independently reviewed complete quantized candidate run'
+        default: '0'
       publish_precision:
         type: choice
         description: 'Publication/consumer only: separately reviewed positive precision'
@@ -103,6 +107,13 @@ jobs:
       quality_run_id: ${{ inputs.publication_quality_run_id }}
     secrets:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  quant-raw:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'quant-raw'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-quant-raw-replay.yml
+    with:
+      precision: ${{ inputs.quality_phase }}
+      candidate_run_id: ${{ inputs.candidate_run_id }}
   consumer:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'consumer'
     needs: controls
