@@ -78,6 +78,32 @@ def git_blob_sha(path):
     return digest.hexdigest()
 
 
+def frozen_converter():
+    if sha(CONVERTER) != CONVERTER_SHA:
+        raise ValueError("Pinned historical LightOn converter source SHA differs")
+    spec = importlib.util.spec_from_file_location("lighton_receipt_converter_frozen", CONVERTER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    if module.LIGHTON_MODEL != MODEL or module.LIGHTON_REVISION != REVISION:
+        raise ValueError("Historical converter source model/revision differs")
+    return module
+
+
+def receipt_vision_recipe(receipt, converter):
+    """Bind the actual 52 retained vision matrices to the old receipt."""
+    recipe = converter.precision_recipe("vision-f32")
+    records = receipt["weights"]["tensor_audit"]
+    vision_matrices = {record["name"] for record in records
+                       if record["name"].startswith("v.") and len(record["shape"]) == 2
+                       and record["dtype"] == "float32"}
+    if (len(recipe) != 52 or len(set(recipe)) != 52 or set(recipe) != vision_matrices
+            or sum(record["dtype"] == "float32" for record in records) != 286
+            or sum(record["dtype"] == "float16" for record in records) != 187
+            or len({record["name"] for record in records}) != 473):
+        raise ValueError("Receipt vision-F32 matrix recipe/dtype distribution differs")
+    return sorted(recipe)
+
+
 def require_receipt(path=RECEIPT, converter=CONVERTER):
     if sha(path) != RECEIPT_SHA or sha(converter) != CONVERTER_SHA:
         raise ValueError("Pinned LightOn receipt/converter source SHA differs")
@@ -97,6 +123,7 @@ def require_receipt(path=RECEIPT, converter=CONVERTER):
                  "readme_sha256": "87a163af54f32fa608a0f8d3ac67945c53dd2b4a7c96740b3d7fdc28e8458864",
                  "license_sha256": BASE_LICENSE_SHA}]):
         raise ValueError("Pinned LightOn receipt weight/source/provenance differs")
+    receipt_vision_recipe(receipt, frozen_converter())
     return receipt
 
 
@@ -147,8 +174,9 @@ def check_versions():
 
 
 def verify_export(model, manifest, receipt):
+    keep_f32 = receipt_vision_recipe(receipt, frozen_converter())
     if (manifest.get("source_model") != MODEL or manifest.get("source_revision") != REVISION
-            or manifest.get("dtype") != "f16" or manifest.get("keep_f32") != []
+            or manifest.get("dtype") != "f16" or manifest.get("keep_f32") != keep_f32
             or manifest.get("checkpoint_tensor_count") != 473
             or manifest.get("export_tensor_count") != 473
             or manifest.get("records") != receipt["weights"]["tensor_audit"]
@@ -166,7 +194,7 @@ def run_main(preflight=False):
     scratch.mkdir(parents=True, exist_ok=True)
     report_path = out / "ovisocr2-lighton-fixture.json"
     report = {"status": "started", "phase": "preflight", "source_commit": os.environ.get("GITHUB_SHA"),
-              "scope": "Exact historical format-1 wrong-profile fixture reconstruction; no inference, quality or publication claim",
+              "scope": "Exact historical vision-F32 format-1 wrong-profile fixture reconstruction; no inference, quality or publication claim",
               "receipt_sha256": RECEIPT_SHA, "converter_sha256": CONVERTER_SHA,
               "historical_converter_commit": SOURCE_COMMIT, "source_model": MODEL,
               "source_revision": REVISION, "expected_gguf_sha256": GGUF_SHA,
@@ -183,6 +211,9 @@ def run_main(preflight=False):
     save()
     try:
         receipt = require_receipt()
+        report["precision_recipe"] = {"name": "vision-f32", "retained_f32":
+                                      receipt_vision_recipe(receipt, frozen_converter()),
+                                      "f32_tensor_count": 286, "f16_tensor_count": 187}
         report["receipt_run"] = require_source_run(subprocess.check_output)
         report["hub_source"] = require_hub_info(model_api(MODEL, REVISION), MODEL, REVISION, SOURCE_FILES)
         report["hub_base_license"] = require_hub_info(
@@ -221,13 +252,10 @@ def run_main(preflight=False):
 
         report["phase"] = "original-converter-exact-byte-reconstruction"
         save()
-        spec = importlib.util.spec_from_file_location("lighton_receipt_converter_frozen", CONVERTER)
-        converter = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(converter)
-        if converter.LIGHTON_MODEL != MODEL or converter.LIGHTON_REVISION != REVISION:
-            raise ValueError("Historical converter source model/revision differs")
+        converter = frozen_converter()
+        keep_f32 = receipt_vision_recipe(receipt, converter)
         model = scratch / GGUF_NAME
-        manifest = converter.convert(metadata, model, MODEL, REVISION, dtype="f16", keep_f32=())
+        manifest = converter.convert(metadata, model, MODEL, REVISION, dtype="f16", keep_f32=keep_f32)
         report["reconstruction"] = verify_export(model, manifest, receipt)
         manifest_path = model.with_suffix(model.suffix + ".manifest.json")
         report["reconstruction"]["converter_manifest_sha256"] = sha(manifest_path)
@@ -235,6 +263,7 @@ def run_main(preflight=False):
         fixture_manifest = {"purpose": "real format-1 wrong-profile control only", "quality_claim": False,
                             "receipt_sha256": RECEIPT_SHA, "historical_converter_sha256": CONVERTER_SHA,
                             "model": MODEL, "revision": REVISION, "gguf": report["reconstruction"],
+                            "precision_recipe": report["precision_recipe"],
                             "license": {"file": "LICENSE", "sha256": BASE_LICENSE_SHA,
                                         "source_model": BASE, "source_revision": BASE_REVISION,
                                         "upstream_card_license": "apache-2.0"}}

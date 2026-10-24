@@ -32,6 +32,11 @@ class LightOnFixtureControls(unittest.TestCase):
         self.assertEqual(fixture.sha(fixture.CONVERTER), fixture.CONVERTER_SHA)
         self.assertEqual(fixture.sha(fixture.RECEIPT), fixture.RECEIPT_SHA)
         self.assertEqual(len(receipt["weights"]["tensor_audit"]), 473)
+        retained = fixture.receipt_vision_recipe(receipt, fixture.frozen_converter())
+        self.assertEqual(len(retained), 52)
+        self.assertIn("v.blocks.0.attn.proj.weight", retained)
+        records = {row["name"]: row for row in receipt["weights"]["tensor_audit"]}
+        self.assertEqual(records["v.blocks.0.attn.proj.weight"]["dtype"], "float32")
         with tempfile.TemporaryDirectory() as directory:
             tampered = Path(directory) / "converter.py"
             tampered.write_bytes(fixture.CONVERTER.read_bytes() + b"\n# changed")
@@ -84,15 +89,21 @@ class LightOnFixtureControls(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             model = Path(directory) / fixture.GGUF_NAME
             model.write_bytes(b"exact-model")
-            record = {"name": "one", "shape": [1], "sha256": "a" * 64}
+            receipt = fixture.require_receipt()
+            retained = fixture.receipt_vision_recipe(receipt, fixture.frozen_converter())
             manifest = {"source_model": fixture.MODEL, "source_revision": fixture.REVISION,
-                        "dtype": "f16", "keep_f32": [], "checkpoint_tensor_count": 473,
-                        "export_tensor_count": 473, "records": [record], "bytes": len(b"exact-model")}
-            receipt = {"weights": {"tensor_audit": [record]}}
+                        "dtype": "f16", "keep_f32": retained, "checkpoint_tensor_count": 473,
+                        "export_tensor_count": 473,
+                        "records": receipt["weights"]["tensor_audit"], "bytes": len(b"exact-model")}
             with mock.patch.object(fixture, "GGUF_BYTES", len(b"exact-model")), \
                  mock.patch.object(fixture, "GGUF_SHA", hashlib.sha256(b"exact-model").hexdigest()):
                 self.assertEqual(fixture.verify_export(model, manifest, receipt)["format_version"], 1)
-                changed = {**manifest, "records": [{**record, "sha256": "0" * 64}]}
+                all_f16 = {**manifest, "keep_f32": []}
+                with self.assertRaisesRegex(ValueError, "byte/tensor identity"):
+                    fixture.verify_export(model, all_f16, receipt)
+                changed_records = copy.deepcopy(receipt["weights"]["tensor_audit"])
+                changed_records[0]["sha256"] = "0" * 64
+                changed = {**manifest, "records": changed_records}
                 with self.assertRaisesRegex(ValueError, "byte/tensor identity"):
                     fixture.verify_export(model, changed, receipt)
                 model.write_bytes(b"wrong-model")
