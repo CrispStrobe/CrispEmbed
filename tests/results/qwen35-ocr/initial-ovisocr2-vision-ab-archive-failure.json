@@ -1,0 +1,24 @@
+{
+  "run": 40046189758,
+  "source_commit": "214e11c2ea67235804917bc76ca172e17f9d9302",
+  "service_conclusion": "failure",
+  "phase": "large-artifacts",
+  "error_type": "NameError",
+  "error": "name 'report' is not defined",
+  "artifact": {
+    "id": 12541628035,
+    "name": "ovisocr2-vision-ab-reports-40046189758",
+    "bytes": 81106,
+    "zip_sha256": "cb9b19e858e173141f3d80ae35c2225286e089af000876681d1bca168588d180"
+  },
+  "producer_report_sha256": "bdcb0c1a009f2310aa46a0f3e24b86cfc9d94a10d0cfe9ae6f0644b80395dddd",
+  "build_executed": false,
+  "native_forward_executed": false,
+  "reference_recaptured": false,
+  "correction": {
+    "source_commit": "df65e911c08c2f8f87fd6eae96f907d6f5f9e8d4",
+    "change": "Pass report explicitly to checked_archive and both callers; tiny verified ZIP extraction/report regression. No math/comparator/budget changes.",
+    "hosted_retry": 40047163838
+  },
+  "qualification": "Infrastructure failure only; no precision candidate result."
+}

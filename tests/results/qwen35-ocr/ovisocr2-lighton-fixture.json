@@ -1,0 +1,249 @@
+{
+  "run": 40046789339,
+  "source_commit": "da0c8bd5c13991b77238195035df781888ddb0d2",
+  "service_conclusion": "success",
+  "artifact": {
+    "id": 12542746015,
+    "name": "lightonocr3-format1-reports-40046789339",
+    "bytes": 2971,
+    "zip_sha256": "80ec07780b95630aa7a0ae837d48b8aa0aa7715a50a258f4bec0965feed54bdd"
+  },
+  "producer_report_sha256": "bc98f2fa865e595d747f6a2ca63af3a9f7ec8a5750f2b5a2799afda8460aa98a",
+  "producer": {
+    "status": "exact receipt GGUF reconstructed; wrong-profile fixture only",
+    "phase": "complete",
+    "source_commit": "da0c8bd5c13991b77238195035df781888ddb0d2",
+    "scope": "Exact historical vision-F32 format-1 wrong-profile fixture reconstruction; no inference, quality or publication claim",
+    "receipt_sha256": "f23d7fabc74437e2a006439b6b69bfd16c146574cafc60209789fab78decbc8a",
+    "converter_sha256": "b98979524c65a15a95634d1832c0deb66ffaad5585c17f29c76307f0008fbfd3",
+    "historical_converter_commit": "a07e83fbd02e1c8ff73b3f4f9a224ab0cba265c3",
+    "source_model": "lightonai/LightOnOCR-3-0.8B",
+    "source_revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+    "expected_gguf_sha256": "41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4",
+    "expected_gguf_bytes": 1918139328,
+    "dependency_provenance": {
+      "recorded_original_workflow": [
+        "torch",
+        "torchvision",
+        "transformers",
+        "tokenizers",
+        "gguf",
+        "numpy",
+        "huggingface-hub"
+      ],
+      "new_fixed_versions_for_originally_unpinned_dependencies": [
+        "safetensors",
+        "Pillow"
+      ],
+      "acceptance": "Full historical GGUF and every tensor-record byte identity"
+    },
+    "precision_recipe": {
+      "name": "vision-f32",
+      "retained_f32": [
+        "v.blocks.0.attn.proj.weight",
+        "v.blocks.0.attn.qkv.weight",
+        "v.blocks.0.mlp.linear_fc1.weight",
+        "v.blocks.0.mlp.linear_fc2.weight",
+        "v.blocks.1.attn.proj.weight",
+        "v.blocks.1.attn.qkv.weight",
+        "v.blocks.1.mlp.linear_fc1.weight",
+        "v.blocks.1.mlp.linear_fc2.weight",
+        "v.blocks.10.attn.proj.weight",
+        "v.blocks.10.attn.qkv.weight",
+        "v.blocks.10.mlp.linear_fc1.weight",
+        "v.blocks.10.mlp.linear_fc2.weight",
+        "v.blocks.11.attn.proj.weight",
+        "v.blocks.11.attn.qkv.weight",
+        "v.blocks.11.mlp.linear_fc1.weight",
+        "v.blocks.11.mlp.linear_fc2.weight",
+        "v.blocks.2.attn.proj.weight",
+        "v.blocks.2.attn.qkv.weight",
+        "v.blocks.2.mlp.linear_fc1.weight",
+        "v.blocks.2.mlp.linear_fc2.weight",
+        "v.blocks.3.attn.proj.weight",
+        "v.blocks.3.attn.qkv.weight",
+        "v.blocks.3.mlp.linear_fc1.weight",
+        "v.blocks.3.mlp.linear_fc2.weight",
+        "v.blocks.4.attn.proj.weight",
+        "v.blocks.4.attn.qkv.weight",
+        "v.blocks.4.mlp.linear_fc1.weight",
+        "v.blocks.4.mlp.linear_fc2.weight",
+        "v.blocks.5.attn.proj.weight",
+        "v.blocks.5.attn.qkv.weight",
+        "v.blocks.5.mlp.linear_fc1.weight",
+        "v.blocks.5.mlp.linear_fc2.weight",
+        "v.blocks.6.attn.proj.weight",
+        "v.blocks.6.attn.qkv.weight",
+        "v.blocks.6.mlp.linear_fc1.weight",
+        "v.blocks.6.mlp.linear_fc2.weight",
+        "v.blocks.7.attn.proj.weight",
+        "v.blocks.7.attn.qkv.weight",
+        "v.blocks.7.mlp.linear_fc1.weight",
+        "v.blocks.7.mlp.linear_fc2.weight",
+        "v.blocks.8.attn.proj.weight",
+        "v.blocks.8.attn.qkv.weight",
+        "v.blocks.8.mlp.linear_fc1.weight",
+        "v.blocks.8.mlp.linear_fc2.weight",
+        "v.blocks.9.attn.proj.weight",
+        "v.blocks.9.attn.qkv.weight",
+        "v.blocks.9.mlp.linear_fc1.weight",
+        "v.blocks.9.mlp.linear_fc2.weight",
+        "v.merger.linear_fc1.weight",
+        "v.merger.linear_fc2.weight",
+        "v.patch_embed.proj.weight",
+        "v.pos_embed.weight"
+      ],
+      "f32_tensor_count": 286,
+      "f16_tensor_count": 187
+    },
+    "receipt_run": {
+      "id": 38870347237,
+      "head_sha": "a07e83fbd02e1c8ff73b3f4f9a224ab0cba265c3",
+      "path": ".github/workflows/heavy-cpu.yml",
+      "conclusion": "failure (numerical audit; weight identity retained)"
+    },
+    "hub_source": {
+      "model": "lightonai/LightOnOCR-3-0.8B",
+      "revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+      "license": "apache-2.0",
+      "files": {
+        "README.md": {
+          "bytes": 9271,
+          "git_blob_sha1": "afa32cc5457d63f80c4ad410c3c11c8174ef7bb4",
+          "lfs_sha256": null
+        },
+        "chat_template.jinja": {
+          "bytes": 7755,
+          "git_blob_sha1": "0ef09f214eaa6d9bca297988afc1454b5827b2c7",
+          "lfs_sha256": null
+        },
+        "config.json": {
+          "bytes": 2692,
+          "git_blob_sha1": "ecc3812e9f54ae67145b34964e501e179cf6853b",
+          "lfs_sha256": null
+        },
+        "generation_config.json": {
+          "bytes": 205,
+          "git_blob_sha1": "338b88a230e884b84bcd99938df3d00bd97fe0a9",
+          "lfs_sha256": null
+        },
+        "model.safetensors": {
+          "bytes": 1706030528,
+          "git_blob_sha1": "096ddc4f7c69741e355e65b2cd38d56b7086a023",
+          "lfs_sha256": "ae46aa6fd7136d57297ac006ed9ec345b7a2083feb2e99501bedcb014ca3efdf"
+        },
+        "preprocessor_config.json": {
+          "bytes": 390,
+          "git_blob_sha1": "2ea84a437d448ff71b08df68fdd949d5cc4ebb64",
+          "lfs_sha256": null
+        },
+        "processor_config.json": {
+          "bytes": 1191,
+          "git_blob_sha1": "33818c7f9e991ad735fd240209f4fa73e6c28c50",
+          "lfs_sha256": null
+        },
+        "tokenizer.json": {
+          "bytes": 19989325,
+          "git_blob_sha1": "5520bfd2dd834ce386c1312c410fa71af56db5ad",
+          "lfs_sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523"
+        },
+        "tokenizer_config.json": {
+          "bytes": 1168,
+          "git_blob_sha1": "5344df8c8031f929defb2717c227e879120c6b6d",
+          "lfs_sha256": null
+        }
+      }
+    },
+    "hub_base_license": {
+      "model": "Qwen/Qwen3.5-0.8B",
+      "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+      "license": "apache-2.0",
+      "files": {
+        "LICENSE": {
+          "bytes": 11544,
+          "git_blob_sha1": "f938136e3adacfd92be087f6e113b5d6d97f678f",
+          "lfs_sha256": null
+        }
+      }
+    },
+    "versions": {
+      "torch": "2.10.0+cpu",
+      "torchvision": "0.25.0+cpu",
+      "transformers": "5.5.4",
+      "tokenizers": "0.22.2",
+      "gguf": "0.19.0",
+      "numpy": "2.5.2",
+      "huggingface-hub": "1.33.0",
+      "safetensors": "0.8.0",
+      "Pillow": "12.1.0"
+    },
+    "metadata_sha256": {
+      "README.md": "0df44eab78278bad416d8974e96a6a181d59bae8416fa54877bd5b022e76aaf2",
+      "chat_template.jinja": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+      "config.json": "842fafd8f06807269960515fa6f0e4b5dd27f9e645b67a2b3e84f1699ee8d60c",
+      "generation_config.json": "b1cfebea5837fc69aa89c3e2210dbe6494bb29a04e1e88beb227ddad53b9dfc1",
+      "preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+      "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "tokenizer.json": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+      "tokenizer_config.json": "c908cd42c5e6eac721445fb70841e45845a6a269c6ef2c595e97a578a9724671"
+    },
+    "checkpoint_sha256": "ae46aa6fd7136d57297ac006ed9ec345b7a2083feb2e99501bedcb014ca3efdf",
+    "reconstruction": {
+      "filename": "lightonocr-3-0.8b-f16-experimental.gguf",
+      "bytes": 1918139328,
+      "sha256": "41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4",
+      "tensor_count": 473,
+      "format_version": 1,
+      "converter_manifest_sha256": "209656edda5c8c23c014c7de56369142ec32a8b696ddb1cb6353d2b20193ac55"
+    },
+    "artifact": {
+      "name": "lightonocr3-format1-receipt-40046789339",
+      "filename": "lightonocr-3-0.8b-f16-experimental.gguf",
+      "manifest": "lighton-fixture-manifest.json",
+      "license": "LICENSE"
+    }
+  },
+  "reference_artifact": {
+    "id": 12542163496,
+    "name": "lightonocr3-format1-receipt-40046789339",
+    "bytes": 1339726582,
+    "zip_sha256": "08eadc6369156359eb002e297d24e9196903bc223d5054a5c548550835b860f4",
+    "keep_remote": true
+  },
+  "independent_review": {
+    "status": "independent small-evidence positive; full GGUF payload not downloaded or rehashed",
+    "run": 40046789339,
+    "head_sha": "da0c8bd5c13991b77238195035df781888ddb0d2",
+    "report_artifact": {
+      "id": 12542746015,
+      "zip_sha256": "80ec07780b95630aa7a0ae837d48b8aa0aa7715a50a258f4bec0965feed54bdd",
+      "raw_report_sha256": "bc98f2fa865e595d747f6a2ca63af3a9f7ec8a5750f2b5a2799afda8460aa98a"
+    },
+    "large_artifact": {
+      "id": 12542163496,
+      "zip_sha256": "08eadc6369156359eb002e297d24e9196903bc223d5054a5c548550835b860f4",
+      "service_bytes": 1339726582,
+      "payload_not_downloaded": true
+    },
+    "historical_receipt_run": 38870347237,
+    "checks": {
+      "source_and_status": true,
+      "receipt_sha": true,
+      "tensor_record_count_unique": true,
+      "dtype_counts": true,
+      "vision_recipe_52_exact": true,
+      "gguf_declaration_matches_receipt": true,
+      "report_transport_sha": true
+    },
+    "limits": [
+      "The 1.918 GB GGUF payload and 1.340 GB artifact ZIP were not downloaded; payload SHA/record equality is producer-asserted, bound to the pinned code and successful run.",
+      "The historical LightOn model run failed a numerical audit; this fixture is a format-1 wrong-profile control, not inference or quality evidence."
+    ]
+  },
+  "public_workflow_inputs": {
+    "lighton_run_id": "40046789339",
+    "lighton_artifact_name": "lightonocr3-format1-receipt-40046789339",
+    "lighton_filename": "lightonocr-3-0.8b-f16-experimental.gguf"
+  },
+  "quality_claim": false
+}

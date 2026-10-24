@@ -44,25 +44,26 @@ PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated')
 ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
              'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
 DIFF_FLOAT_ZERO = ('CRISPEMBED_QWEN35_PRECISE_RMS',
-                   'CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
-                   'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN',
-                   'CRISPEMBED_QWEN35_VISION_CASCADE_NORM',
                    'CRISPEMBED_QWEN35_IMATRIX', 'CRISPEMBED_QWEN35_PARALLEL_F16',
                    'CRISPEMBED_QWEN35_PROFILE', 'CRISPEMBED_QWEN35_TOKENIZER_MARKS')
 
 
-def native_environment(arm):
+def vision_contract():
+    return load_module('ovis_vision_env_quality', ROOT / 'tools/ci-heavy/ovisocr2_vision_env.py')
+
+
+def native_environment(arm, selection):
     if arm not in ('f16', 'q8', 'q4', 'q4-calibrated'):
         raise ValueError('Unknown native OvisOCR2 quality arm')
     env = dict(os.environ, **ENV_GATES)
     env['CRISPEMBED_QWEN35_QUANT'] = '0' if arm == 'f16' else '1'
-    return env
+    return vision_contract().apply_selection(env, selection)
 
 
-def numerical_environment(arm):
+def numerical_environment(arm, selection):
     if arm not in ('q8', 'q4', 'q4-calibrated'):
         raise ValueError('Numerical OvisOCR2 diff is for a quantized candidate only')
-    env = native_environment(arm)
+    env = native_environment(arm, selection)
     env.update({name: '0' for name in DIFF_FLOAT_ZERO})
     env['CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS'] = '1'
     return env
@@ -116,12 +117,14 @@ def checked_model_receipt(receipt):
             or producer.get('failures') != []
             or producer.get('exports', {}).get('f16', {}).get('model_sha256') != F16_SHA):
         raise ValueError('OvisOCR2 original/native F16 baseline is not positively reviewed')
+    selected_vision = vision_contract().reviewed_selection(producer)
     raw_sha = receipt.get('producer_report_sha256')
     if raw_sha is not None and not re.fullmatch('[0-9a-f]{64}', raw_sha):
         raise ValueError('OvisOCR2 archived raw producer report SHA is invalid')
     return {'run': receipt['run'], 'source_commit': producer['source_commit'],
             'artifact_id': artifact['id'], 'artifact_zip_sha256': artifact['zip_sha256'],
-            'producer_canonical_sha256': canonical, 'producer_report_sha256': raw_sha}
+            'producer_canonical_sha256': canonical, 'producer_report_sha256': raw_sha,
+            'selected_vision_preset': selected_vision}
 
 
 def verify_model_receipt_service(pins):
@@ -198,7 +201,8 @@ def require_baseline(phase, original_run=None):
                 or review.get('original_11_complete') is not True):
             raise ValueError('Original quality artifact lacks a positive independent review')
     return {'baseline_source_commit': pins['source_commit'], 'baseline_sha256': sha(BASELINE),
-            'baseline_pins': pins, 'export_sha256': sha(EXPORT),
+            'baseline_pins': pins, 'selected_vision_preset': pins['selected_vision_preset'],
+            'export_sha256': sha(EXPORT),
             'review': receipt['independent_review'],
             'q8_review_sha256': sha(Q8_REVIEW) if phase in ('q4', 'q4-calibrated') else None,
             'q8_diagnostic_gate': q8_gate if phase in ('q4', 'q4-calibrated') else None,
@@ -424,7 +428,7 @@ def parse_numerical_diagnostic(log_text, exit_code):
             'limits': 'Original F32/F16 absolute and cosine thresholds are diagnostic for quantized weights; failure does not identify a float-runtime bug'}
 
 
-def numerical_diagnostic(binary, candidate, reference, phase, out, report, save):
+def numerical_diagnostic(binary, candidate, reference, phase, out, report, save, selection):
     label = phase + '-official-numerical-diff'
     path = out / (label + '.log')
     started = time.monotonic()
@@ -433,7 +437,7 @@ def numerical_diagnostic(binary, candidate, reference, phase, out, report, save)
         try:
             completed = subprocess.run([str(binary), str(candidate), str(reference), '--native-frontend'],
                                        stdout=stream, stderr=subprocess.STDOUT,
-                                       env=numerical_environment(phase), timeout=1800)
+                                       env=numerical_environment(phase, selection), timeout=1800)
             exit_code = completed.returncode
         except (OSError, subprocess.TimeoutExpired) as exc:
             error = type(exc).__name__
@@ -443,7 +447,8 @@ def numerical_diagnostic(binary, candidate, reference, phase, out, report, save)
                    'source_reference_sha256': sha(reference),
                    'process_error': error,
                    'source_thresholds': {'cos_min': 0.99999, 'absolute_base': 0.002,
-                                         'calibration': 'unchanged named original backend variation'}})
+                                         'calibration': 'unchanged named original backend variation'},
+                   'selected_vision_preset': selection})
     report['quant_numerical'] = result
     save()
     return result
@@ -611,7 +616,7 @@ def gguf_tensors(path):
             for tensor in reader.tensors}
 
 
-def development_imatrix(build, f16, cases, scratch, out, report):
+def development_imatrix(build, f16, cases, scratch, out, report, selection):
     """Collect 72 FFN activation vectors on the four frozen development images only."""
     import gguf
     import numpy as np
@@ -619,8 +624,7 @@ def development_imatrix(build, f16, cases, scratch, out, report):
     if len(development) != 4 or any(case['kind'] != 'synthetic-smoke' for case in development):
         raise ValueError('Ovis importance calibration development split differs')
     stats = scratch / 'development-imatrix-stats.tsv'
-    env = dict(os.environ, **ENV_GATES)
-    env['CRISPEMBED_QWEN35_QUANT'] = '0'
+    env = native_environment('f16', selection)
     log = command('development-imatrix-collector',
                   [build / 'test-qwen35-imatrix', f16, stats,
                    *[case['path'] for case in development]], out, report, timeout=1800, env=env)
@@ -660,9 +664,9 @@ def development_imatrix(build, f16, cases, scratch, out, report):
     return path
 
 
-def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm):
+def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm, selection):
     outputs = {}
-    env = native_environment(arm)
+    env = native_environment(arm, selection)
     for case in cases:
         label = arm + '-' + case['id']
         log = command(label, [binary, model, case['path'], case['cap'], 2],
@@ -692,11 +696,12 @@ def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, ar
     return outputs
 
 
-def cabi_smoke(library, model, case, quantized=False):
+def cabi_smoke(library, model, case, selection, quantized=False):
     """Separate public API smoke; this API does not expose actual IDs/stops."""
     import ctypes
     from PIL import Image
     os.environ.update(ENV_GATES)
+    os.environ.update(vision_contract().apply_selection({}, selection))
     os.environ['CRISPEMBED_QWEN35_QUANT'] = '1' if quantized else '0'
     image = Image.open(case['path']).convert('RGB')
     raw_pixels = image.tobytes()
@@ -959,6 +964,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
               'source_commit': os.environ.get('GITHUB_SHA'), 'commands': {},
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
+                  'tools/ci-heavy/ovisocr2_vision_env.py',
                   'tools/ci-heavy/ovisocr2_quality_contract.py',
                   'tools/ocr_quality.py',
                   'tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json',
@@ -975,6 +981,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
     save()
     try:
         report['prerequisite'] = require_baseline(phase, original_run)
+        selection = report['prerequisite']['selected_vision_preset']
+        report['selected_vision_preset'] = selection
         report['baseline_service'] = verify_model_receipt_service(report['prerequisite']['baseline_pins'])
         contract = load_module('ovis_quality_contract', ROOT / 'tools/ci-heavy/ovisocr2_quality_contract.py')
         contract.load_panel()
@@ -1113,14 +1121,15 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         report['models'] = {'f16': {'sha256': F16_SHA, 'bytes': F16_BYTES}}
         report['phase'] = 'f16-native-quality'
         save()
-        f16_results = native_cases(runner, f16, cases, cleaner, filter_fn, out, report, save, 'f16')
+        f16_results = native_cases(runner, f16, cases, cleaner, filter_fn, out, report, save,
+                                   'f16', selection)
         report['scores']['f16'] = score_outputs(contract, rendered, cases, f16_results)
         report['f16_paired_synthetic'] = contract.paired_quality_screen(
             report['scores']['original']['synthetic'], report['scores']['f16']['synthetic'])
         report['f16_paired_documents'] = contract.paired_document_screen(
             report['scores']['original']['realistic_documents'],
             report['scores']['f16']['realistic_documents'])
-        report['cabi_smoke'] = {'f16': cabi_smoke(library, f16, cases[0])}
+        report['cabi_smoke'] = {'f16': cabi_smoke(library, f16, cases[0], selection)}
         save()
         if not report['f16_paired_synthetic']['screen_passed'] or not report['f16_paired_documents']['screen_passed']:
             raise ValueError('F16 paired OCR quality screen failed; observations retained')
@@ -1135,7 +1144,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         if phase == 'q4-calibrated':
             report['phase'] = 'development-only-native-importance'
             save()
-            imatrix = development_imatrix(build, f16, cases, scratch, out, report)
+            imatrix = development_imatrix(build, f16, cases, scratch, out, report, selection)
         report['phase'] = phase + '-quantize'
         save()
         argv = contract.quant_command(quantizer, f16, candidate, recipe)
@@ -1151,10 +1160,11 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         report['phase'] = phase + '-official-numerical-diagnostic'
         save()
         numerical_diagnostic(build / 'test-qwen35-decoder', candidate, diff_reference,
-                             phase, out, report, save)
+                             phase, out, report, save, selection)
         report['phase'] = phase + '-native-quality'
         save()
-        outputs = native_cases(runner, candidate, cases, cleaner, filter_fn, out, report, save, phase)
+        outputs = native_cases(runner, candidate, cases, cleaner, filter_fn, out, report, save,
+                               phase, selection)
         report['scores'][phase] = score_outputs(contract, rendered, cases, outputs)
         report['paired_synthetic'] = contract.paired_quality_screen(
             report['scores']['f16']['synthetic'], report['scores'][phase]['synthetic'])
@@ -1162,7 +1172,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
             reference: contract.paired_document_screen(report['scores'][reference]['realistic_documents'],
                                                        report['scores'][phase]['realistic_documents'])
             for reference in ('original', 'f16')}
-        report['cabi_smoke'][phase] = cabi_smoke(library, candidate, cases[0], quantized=True)
+        report['cabi_smoke'][phase] = cabi_smoke(library, candidate, cases[0], selection,
+                                                  quantized=True)
         save()
         if (not report['paired_synthetic']['screen_passed']
                 or any(not result['screen_passed'] for result in report['paired_documents'].values())):

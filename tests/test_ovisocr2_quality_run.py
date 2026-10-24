@@ -249,18 +249,29 @@ class OvisOCR2Parser:
             driver.score_ovis_document(scorer, gold, unchanged, complete=True, policy='other')
 
     def test_native_precision_env_has_explicit_calibrated_gate(self):
-        self.assertEqual(driver.native_environment('f16')['CRISPEMBED_QWEN35_QUANT'], '0')
+        selection = {'name': 'cascade_precise_attn',
+                     'enabled_gates': ['CRISPEMBED_QWEN35_VISION_CASCADE_NORM',
+                                       'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],
+                     'values': {'CRISPEMBED_QWEN35_VISION_PRECISE_NORM': '0',
+                                'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN': '1',
+                                'CRISPEMBED_QWEN35_VISION_CASCADE_NORM': '1'}}
+        self.assertEqual(driver.native_environment('f16', selection)['CRISPEMBED_QWEN35_QUANT'], '0')
         for arm in ('q8', 'q4', 'q4-calibrated'):
-            self.assertEqual(driver.native_environment(arm)['CRISPEMBED_QWEN35_QUANT'], '1')
+            env = driver.native_environment(arm, selection)
+            self.assertEqual(env['CRISPEMBED_QWEN35_QUANT'], '1')
+            self.assertEqual(env['CRISPEMBED_QWEN35_VISION_CASCADE_NORM'], '1')
         with self.assertRaises(ValueError):
-            driver.native_environment('unreviewed')
+            driver.native_environment('unreviewed', selection)
         for arm in ('q8', 'q4', 'q4-calibrated'):
-            env = driver.numerical_environment(arm)
+            env = driver.numerical_environment(arm, selection)
             self.assertEqual(env['CRISPEMBED_QWEN35_QUANT'], '1')
             self.assertEqual(env['CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS'], '1')
             self.assertTrue(all(env[name] == '0' for name in driver.DIFF_FLOAT_ZERO))
+            self.assertEqual(env['CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'], '1')
         with self.assertRaises(ValueError):
-            driver.numerical_environment('f16')
+            driver.numerical_environment('f16', selection)
+        with self.assertRaises(ValueError):
+            driver.native_environment('f16', None)
 
     def test_numerical_trace_records_earliest_drift_and_requires_full_coverage(self):
         line = lambda status, stage: (
@@ -313,6 +324,14 @@ class OvisOCR2Parser:
     def test_wrapped_reviewed_model_receipt_binds_producer_and_artifact(self):
         producer = {'status': 'completed diagnostic audit', 'failures': [],
                     'source_commit': 'a' * 40,
+                    'selected_vision_preset': {'name': 'cascade_precise_attn',
+                        'enabled_gates': ['CRISPEMBED_QWEN35_VISION_CASCADE_NORM',
+                                          'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],
+                        'all_other_native_gates_unchanged': True,
+                        'no_production_default_promoted': True},
+                    'native_environment': {'CRISPEMBED_QWEN35_VISION_PRECISE_NORM': '0',
+                        'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN': '1',
+                        'CRISPEMBED_QWEN35_VISION_CASCADE_NORM': '1'},
                     'exports': {'f16': {'model_sha256': driver.F16_SHA}}}
         canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
                                               ensure_ascii=True, allow_nan=False).encode()).hexdigest()
@@ -322,12 +341,15 @@ class OvisOCR2Parser:
                                           'artifact_zip_sha256': 'b' * 64,
                                           'producer_canonical_sha256': canonical}}
         self.assertEqual(driver.checked_model_receipt(receipt)['source_commit'], 'a' * 40)
+        self.assertEqual(driver.checked_model_receipt(receipt)['selected_vision_preset']['name'],
+                         'cascade_precise_attn')
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'model.json'
             path.write_text(json.dumps(receipt))
             with patch.object(driver, 'BASELINE', path):
                 self.assertEqual(driver.require_baseline('original')['baseline_pins']['run'], 123)
-        for change in ('bare', 'failed', 'f16', 'canonical', 'artifact', 'run', 'review'):
+        for change in ('bare', 'failed', 'f16', 'canonical', 'artifact', 'run', 'review',
+                       'missing-vision', 'changed-vision'):
             altered = json.loads(json.dumps(receipt))
             if change == 'bare':
                 altered = producer
@@ -341,6 +363,10 @@ class OvisOCR2Parser:
                 altered['artifact']['zip_sha256'] = 'd' * 64
             elif change == 'run':
                 altered['run'] = 0
+            elif change == 'missing-vision':
+                altered['producer']['native_environment'].pop('CRISPEMBED_QWEN35_VISION_CASCADE_NORM')
+            elif change == 'changed-vision':
+                altered['producer']['native_environment']['CRISPEMBED_QWEN35_VISION_CASCADE_NORM'] = '0'
             else:
                 altered['independent_review']['f16_positive'] = False
             with self.subTest(change=change), self.assertRaises(ValueError):

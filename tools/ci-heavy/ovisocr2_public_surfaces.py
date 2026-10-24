@@ -6,6 +6,7 @@ artifact after --preflight verifies a reviewed positive F16 receipt and run.
 import argparse
 import ctypes
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -24,6 +25,15 @@ RECEIPT = ROOT / "tests/results/qwen35-ocr/ovisocr2-model-audit.json"
 LIGHTON_RECEIPT = ROOT / "tests/results/qwen35-ocr/receipt.json"
 GATES = ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR2_FRONTEND",
          "CRISPEMBED_OVISOCR2_INFERENCE")
+F16_SHA = 'd3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db'
+
+
+def vision_contract():
+    path = ROOT / 'tools/ci-heavy/ovisocr2_vision_env.py'
+    spec = importlib.util.spec_from_file_location('ovis_vision_env_public', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def sha(path):
@@ -39,11 +49,20 @@ def require_receipt(data):
     if not isinstance(data, dict) or not isinstance(data.get("independent_review"), dict):
         raise ValueError("Reviewed Ovis model-audit receipt is absent")
     review = data["independent_review"]
-    producer = data.get("producer", data)
-    if review.get("f16_positive") is not True:
+    producer, artifact = data.get('producer'), data.get('artifact')
+    if not isinstance(producer, dict) or not isinstance(artifact, dict):
+        raise ValueError('Reviewed Ovis model producer/artifact wrapper absent')
+    canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    if (review.get("f16_positive") is not True
+            or review.get('producer_canonical_sha256') != canonical
+            or type(data.get('run')) is not int or data['run'] < 1
+            or type(artifact.get('id')) is not int or artifact['id'] < 1
+            or not re.fullmatch('[0-9a-f]{64}', artifact.get('zip_sha256', ''))
+            or review.get('artifact_zip_sha256') != artifact['zip_sha256']):
         raise ValueError("Independent F16-positive model review is required")
-    if (producer.get("status") not in ("completed diagnostic audit", "completed with failures",
-                                       "failed hosted model audit")
+    if (producer.get("status") != "completed diagnostic audit"
+            or producer.get('failures') != []
             or not isinstance(producer.get("source_commit"), str)
             or not re.fullmatch(r"[0-9a-f]{40}", producer["source_commit"])):
         raise ValueError("Model producer status/source differs")
@@ -64,7 +83,7 @@ def require_receipt(data):
     generation = original.get("generation_result", {})
     cache_error = original.get("cached_vs_full_prefix_max_abs")
     control = original.get("observational_control", {})
-    if (not re.fullmatch(r"[0-9a-f]{64}", export.get("model_sha256", ""))
+    if (export.get('model_sha256') != F16_SHA
             or export.get("tensor_count") != 473
             or not re.fullmatch(r"[0-9a-f]{64}", readable.get("png_sha256", ""))
             or not re.fullmatch(r"[0-9a-f]{64}", readable.get("raw_rgb_sha256", ""))
@@ -81,6 +100,7 @@ def require_receipt(data):
             or not isinstance(cache_error, (int, float)) or not math.isfinite(cache_error)
             or cache_error > .002):
         raise ValueError("Reviewed F16 model/image or bounded original text is missing")
+    selected_vision = vision_contract().reviewed_selection(producer)
     return {"source_commit": producer["source_commit"], "producer_status": producer["status"],
             "producer_failures": producer.get("failures", []),
             "model_sha256": export["model_sha256"],
@@ -88,14 +108,18 @@ def require_receipt(data):
             "expected_text": expected[0], "original_generation": generation,
             "original_generated_ids": generated[0],
             "original_cache_max_abs": cache_error,
-            "f16_context_log_sha256": commands["f16-context"].get("sha256")}
+            "f16_context_log_sha256": commands["f16-context"].get("sha256"),
+            'run': data['run'], 'artifact_id': artifact['id'],
+            'artifact_zip_sha256': artifact['zip_sha256'],
+            'producer_canonical_sha256': canonical,
+            "selected_vision_preset": selected_vision}
 
 
 def service_gate(run_id, head, call=subprocess.check_output):
     if not re.fullmatch(r"[1-9][0-9]*", str(run_id)):
         raise ValueError("An explicit model-audit run ID is required")
     result = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/runs/{run_id}"]))
-    if (result.get("status") != "completed" or result.get("conclusion") not in ("success", "failure")
+    if (result.get("status") != "completed" or result.get("conclusion") != "success"
             or result.get("head_sha") != head
             or result.get("path") != ".github/workflows/ovisocr2-metadata.yml"):
         raise ValueError("Model-audit service run/head/workflow differs")
@@ -195,12 +219,12 @@ def run_cmd(label, args, out, *, env=None, cwd=ROOT, timeout=1800):
             "bytes": log.stat().st_size, "passed": code == 0 and log.stat().st_size > 0}
 
 
-def env_with_gates(enabled=True):
+def env_with_gates(enabled=True, selection=None):
     env = dict(os.environ)
     for gate in GATES:
         env[gate] = "1" if enabled else "0"
     env.update(OMP_NUM_THREADS="2", OPENBLAS_NUM_THREADS="2", MKL_NUM_THREADS="2")
-    return env
+    return vision_contract().apply_selection(env, selection)
 
 
 def image_data(path, pins, scratch):
@@ -289,8 +313,8 @@ def python_arm(repo, lib, model, image, rgb, expected):
             "stage_text_exact": True, "stage_n_regions": result["n_regions"]}
 
 
-def cli_http_arm(build, model, lighton, image, expected, out, report, save, enabled):
-    env = env_with_gates(enabled)
+def cli_http_arm(build, model, lighton, image, expected, out, report, save, enabled, selection):
+    env = env_with_gates(enabled, selection)
     cli = build / "crispembed"
     for label, args, key in (
         ("cli-unified", ["-m", model, "--ocr", image], "text"),
@@ -328,7 +352,7 @@ def cli_http_arm(build, model, lighton, image, expected, out, report, save, enab
         report["arms"][label] = result
         save()
     for gate in GATES:
-        disabled = env_with_gates()
+        disabled = env_with_gates(selection=selection)
         disabled[gate] = "0"
         label = "cli-stage21-gate0-" + gate.lower()
         result = run_cmd(label, [cli, "--ocr-pipeline", image, "--ocr-engine", "ovisocr2",
@@ -344,7 +368,7 @@ def cli_http_arm(build, model, lighton, image, expected, out, report, save, enab
         ("http-start-lighton-profile", "ovisocr2", lighton, [], None),
         ("http-start-ovis-on-stage20", "qwen35-ocr", model, [], None),
         *(("http-start-gate0-" + gate.lower(), "ovisocr2", model, [], gate) for gate in GATES)):
-        startup_env = env_with_gates()
+        startup_env = env_with_gates(selection=selection)
         if disabled_gate: startup_env[disabled_gate] = "0"
         result = run_cmd(label, [server, "--offline", "--ocr-pipeline", "--ocr-engine", engine,
                                  "--ocr-rec", use_model, "--ocr-max-tokens", "12", *extra,
@@ -398,8 +422,8 @@ def cli_http_arm(build, model, lighton, image, expected, out, report, save, enab
     save()
 
 
-def bindings_arm(repo, build, model, raw, image, expected, out, scratch, report, save):
-    env = env_with_gates()
+def bindings_arm(repo, build, model, raw, image, expected, out, scratch, report, save, selection):
+    env = env_with_gates(selection=selection)
     env["CRISPEMBED_SYS_LIB_DIR"] = str(build)
     env["CARGO_BUILD_JOBS"] = "2"
     env["LD_LIBRARY_PATH"] = str(build) + ":" + str(build/"ggml/src") + ":" + env.get("LD_LIBRARY_PATH", "")
@@ -504,6 +528,7 @@ def main():
               "source_commit": os.environ.get("GITHUB_SHA"),
               "source_sha256": {name: sha(ROOT/name) for name in (
                   "tools/ci-heavy/ovisocr2_public_surfaces.py",
+                  "tools/ci-heavy/ovisocr2_vision_env.py",
                   "tools/ci-heavy/ovisocr2_stage_cache_probe.py",
                   "tests/ovisocr2_public_bindings.rs", "tests/ovisocr2_public_bindings.dart")},
               "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
@@ -518,8 +543,11 @@ def main():
         if not RECEIPT.is_file():
             raise ValueError("Reviewed F16-positive receipt absent; stop before imports/weights")
         pins = require_receipt(json.loads(RECEIPT.read_text()))
+        if str(args.model_run_id) != str(pins['run']):
+            raise ValueError('Explicit model run differs from reviewed baseline receipt')
         report["model_prerequisite"] = {**pins, "receipt_sha256": sha(RECEIPT),
             "service_run": service_gate(args.model_run_id, pins["source_commit"])}
+        report['selected_vision_preset'] = pins['selected_vision_preset']
         report["phase"] = "preflight-complete"
         save()
         if args.preflight:
@@ -568,8 +596,9 @@ def main():
         save()
         if not abi_probe["passed"]:
             raise ValueError("Existing native public ABI checker did not return a bounded layout record")
-        env = env_with_gates()
+        env = env_with_gates(selection=pins['selected_vision_preset'])
         os.environ.update({gate: "1" for gate in GATES})
+        os.environ.update(pins['selected_vision_preset']['values'])
         truncated = scratch/"ovisocr2-metadata-complete-truncated.gguf"
         stage_cache = None
         try:
@@ -596,9 +625,11 @@ def main():
             except Exception as exc: report["arms"][label] = {"passed": False, "error": f"{type(exc).__name__}: {exc}"}
             save()
         cli_http_arm(build, artifacts["model"], args.lighton_model, artifacts["image"],
-                     pins["expected_text"], out, report, save, True)
+                     pins["expected_text"], out, report, save, True,
+                     pins['selected_vision_preset'])
         bindings_arm(ROOT, build, artifacts["model"], raw, artifacts["image"],
-                     pins["expected_text"], out, scratch, report, save)
+                     pins["expected_text"], out, scratch, report, save,
+                     pins['selected_vision_preset'])
         try:
             report["abi_layout"] = {"passed": True, **compare_abi(
                 (out/"native-abi-layout.log").read_text(),

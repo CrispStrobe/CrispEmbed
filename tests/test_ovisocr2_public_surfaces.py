@@ -1,5 +1,6 @@
 """Pure preflight tests; no model, native library or framework imports."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -18,11 +19,19 @@ HEAD = "b" * 40
 def receipt():
     arms = ("f16-delta", "f16-vision", "f16-decoder-prepared", "f16-decoder-native-vision",
             "f16-decoder-native-positions", "f16-decoder-native-frontend", "f16-context")
-    return {"producer": {"status": "completed diagnostic audit", "failures": [],
+    producer = {"status": "completed diagnostic audit", "failures": [],
              "source_commit": HEAD,
+             "selected_vision_preset": {"name": "cascade_precise_attn",
+                 "enabled_gates": ["CRISPEMBED_QWEN35_VISION_CASCADE_NORM",
+                                   "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"],
+                 "all_other_native_gates_unchanged": True,
+                 "no_production_default_promoted": True},
+             "native_environment": {"CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "0",
+                 "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+                 "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "1"},
              "commands": {name: {"exit_code": 0, "passed": True, "comparison_coverage": True,
                                   "sha256": HASH} for name in arms},
-             "exports": {"f16": {"model_sha256": HASH, "tensor_count": 473}},
+             "exports": {"f16": {"model_sha256": subject.F16_SHA, "tensor_count": 473}},
              "readable": {"png_sha256": HASH, "raw_rgb_sha256": HASH},
              "original_capture": {"decoded": ["Hello OCR\n12345"],
                                   "generated_ids": [[1, 2, 248044]],
@@ -32,15 +41,23 @@ def receipt():
                                   "observational_control": {"prefill_logits_exact": True,
                                                             "greedy_ids_exact": True},
                                   "cached_vs_full_prefix_same_argmax": True,
-                                  "cached_vs_full_prefix_max_abs": .001}},
-            "independent_review": {"f16_positive": True}}
+                                  "cached_vs_full_prefix_max_abs": .001}}
+    canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    return {'run': 123, 'artifact': {'id': 456, 'zip_sha256': HASH},
+            'producer': producer, 'independent_review': {'f16_positive': True,
+            'artifact_zip_sha256': HASH, 'producer_canonical_sha256': canonical}}
 
 
 class PublicSurfacePreflight(unittest.TestCase):
     def test_reviewed_receipt_has_exact_contract(self):
         pins = subject.require_receipt(receipt())
         self.assertEqual(pins["expected_text"], "Hello OCR\n12345")
-        self.assertEqual(pins["model_sha256"], HASH)
+        self.assertEqual(pins["model_sha256"], subject.F16_SHA)
+        self.assertEqual(pins['selected_vision_preset']['name'], 'cascade_precise_attn')
+        env = subject.env_with_gates(selection=pins['selected_vision_preset'])
+        self.assertEqual(env['CRISPEMBED_QWEN35_VISION_PRECISE_NORM'], '0')
+        self.assertEqual(env['CRISPEMBED_QWEN35_VISION_CASCADE_NORM'], '1')
 
     def test_rejects_absent_or_weakened_review(self):
         for mutation in (lambda d: d.pop("independent_review"),
@@ -57,14 +74,29 @@ class PublicSurfacePreflight(unittest.TestCase):
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 subject.require_receipt(data)
 
+    def test_public_vision_flags_reject_missing_and_changed_baseline(self):
+        for mutation in (
+                lambda d: d['producer'].pop('selected_vision_preset'),
+                lambda d: d['producer']['native_environment'].pop('CRISPEMBED_QWEN35_VISION_CASCADE_NORM'),
+                lambda d: d['producer']['native_environment'].update(CRISPEMBED_QWEN35_VISION_PRECISE_ATTN='0'),
+                lambda d: d['producer']['selected_vision_preset'].update(enabled_gates=[])):
+            data = receipt()
+            mutation(data)
+            with self.assertRaises(ValueError):
+                subject.require_receipt(data)
+        with self.assertRaises(ValueError):
+            subject.env_with_gates()
+        bare = receipt()['producer']
+        with self.assertRaises(ValueError):
+            subject.require_receipt(bare)
+
     def test_run_head_and_workflow_are_bound(self):
         correct = {"id": 123, "status": "completed", "conclusion": "success",
                    "head_sha": HEAD, "path": ".github/workflows/ovisocr2-metadata.yml"}
         self.assertEqual(subject.service_gate("123", HEAD, lambda _: json.dumps(correct).encode())["id"], 123)
-        # An independently reviewed positive F16 arm may coexist with a failed
-        # F32 arm; the service conclusion is retained, not substituted.
         failed_f32 = {**correct, "conclusion": "failure"}
-        self.assertEqual(subject.service_gate("123", HEAD, lambda _: json.dumps(failed_f32).encode())["conclusion"], "failure")
+        with self.assertRaises(ValueError):
+            subject.service_gate("123", HEAD, lambda _: json.dumps(failed_f32).encode())
         for changed in ({**correct, "head_sha": "c"*40},
                         {**correct, "conclusion": "cancelled"},
                         {**correct, "path": ".github/workflows/other.yml"}):
