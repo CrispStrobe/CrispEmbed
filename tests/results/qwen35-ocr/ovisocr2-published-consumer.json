@@ -1,0 +1,341 @@
+{
+  "schema": "crispembed-ovisocr2-published-consumer-review-v1",
+  "run": 40080458492,
+  "source_commit": "5296e955097eba3cfafe5b2d9dd98159122538f1",
+  "artifact": {
+    "id": 12556034926,
+    "name": "ovisocr2-published-consumer-40080458492",
+    "bytes": 15374,
+    "zip_sha256": "2ece2846b20a6e43d9b28bfa8c1b5b1f432c2e89580c484f4d310fe79c9fb30f",
+    "expires_at": "2027-01-22T09:03:42Z"
+  },
+  "producer_report_sha256": "26fefd3aaa6770d87d3028ad95e454bb0827ea4c3a7bfe5c58a9aece5562e23f",
+  "independent_review": {
+    "consumer_positive": true,
+    "service_complete_success": true,
+    "source_commit": "5296e955097eba3cfafe5b2d9dd98159122538f1",
+    "producer_report_sha256": "26fefd3aaa6770d87d3028ad95e454bb0827ea4c3a7bfe5c58a9aece5562e23f",
+    "producer_canonical_sha256": "16def1b5b430df5c4b1402ed9317ca5ac7daf6f438fbcccabb44ebc5e5b33f75",
+    "artifact_zip_sha256": "2ece2846b20a6e43d9b28bfa8c1b5b1f432c2e89580c484f4d310fe79c9fb30f",
+    "all_seven_source_hashes_and_25_native_hashes_verified": true,
+    "all_seven_archive_members_and_six_log_hashes_verified": true,
+    "two_fresh_cache_downloads_and_full_hosted_hash_checks": true,
+    "offline_single_json_no_download_and_exact_repeat": true,
+    "actual_text_region_and_confidence_checks": {
+      "fresh_offline_confidence_exact": true,
+      "reference_mean_confidence": 0.995388269,
+      "cli_mean_confidence_abs": 0.00038826899999999664,
+      "offline_mean_confidence_abs": 0.00038826899999999664,
+      "http_mean_confidence_abs": 1.1730999999959302e-05,
+      "cli_budget": 0.0006,
+      "http_budget": 6e-05
+    },
+    "current_native_cli_server_registry_build_sources_identical_to_audited_source": true,
+    "large_payloads_downloaded_locally": false,
+    "limits": [
+      "Public CLI/HTTP APIs expose text/confidence but no token IDs or stop reason; nine generated IDs and EOS are separately frozen in the reviewed native receipt.",
+      "This checks one frozen 448x448 readable image and a 12-token request cap.",
+      "CLI and HTTP means use existing public printing budgets .0006 and .00006 against the selected quality dev-hello native mean on the byte-identical PNG/RGB.",
+      "CLI online and HTTP wall times include fresh download/startup and are not recognition-only timings.",
+      "Built binary and large cache payload SHA/size checks occurred on hosted CI; local review rehashed only small artifacts/logs and inspected exact source.",
+      "Later changes normalize only Darwin RSS/reporting and update handoff documentation; Linux values and native runtime sources remain unchanged."
+    ]
+  },
+  "second_independent_review": {
+    "artifact": {
+      "bytes": 15374,
+      "expires_at": "2027-01-22T09:03:42Z",
+      "id": 12556034926,
+      "name": "ovisocr2-published-consumer-40080458492",
+      "zip_sha256": "2ece2846b20a6e43d9b28bfa8c1b5b1f432c2e89580c484f4d310fe79c9fb30f"
+    },
+    "checks": {
+      "both_cache_payload_hash_size_reported_correct": true,
+      "frozen_png_and_nine_id_source_bound": true,
+      "http_separate_fresh_alias_download_and_pipeline": true,
+      "offline_cli_no_download_and_same_json": true,
+      "online_cli_fresh_alias_download": true,
+      "portable_build_and_baseline_exits_zero": true,
+      "report_status_complete": true,
+      "seven_consumer_sources_verified_at_head": true,
+      "six_log_hashes_and_byte_counts_verified": true,
+      "text_one_region_and_confidence_budgets_pass": true,
+      "twenty_five_native_sources_verified_at_head": true
+    },
+    "consumer_positive": true,
+    "limits": [
+      "One frozen 448x448 image on one hosted x86_64 CPU; no broad quality or performance claim.",
+      "Public CLI/HTTP APIs do not expose IDs or stop reason; separate reviewed native receipt supplies the nine-ID/EOS proof.",
+      "Large GGUF/cache files and built binaries remained hosted; this review verified service identity and small report/log declarations, not a local payload rehash."
+    ],
+    "producer_canonical_sha256": "16def1b5b430df5c4b1402ed9317ca5ac7daf6f438fbcccabb44ebc5e5b33f75",
+    "report_sha256": "26fefd3aaa6770d87d3028ad95e454bb0827ea4c3a7bfe5c58a9aece5562e23f",
+    "run": 40080458492,
+    "schema": "crispembed-ovisocr2-consumer-independent-review-v1",
+    "service_conclusion": "success",
+    "source_commit": "5296e955097eba3cfafe5b2d9dd98159122538f1",
+    "values": {
+      "alias": "ovisocr2-f16",
+      "cap": 12,
+      "cli_budget": 0.0006,
+      "cli_error": 0.00038826899999999664,
+      "cli_mean_confidence": 0.995,
+      "expected_text": "Hello OCR\n\n12345",
+      "http_budget": 6e-05,
+      "http_error": 1.1730999999959302e-05,
+      "http_mean_confidence": 0.9954,
+      "model_bytes": 1717222848,
+      "model_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+      "n_regions": 1,
+      "native_frozen_ids": [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ],
+      "native_mean_confidence": 0.995388269,
+      "selected_vision_preset": {
+        "enabled_gates": [
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+        ],
+        "name": "both",
+        "values": {
+          "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1"
+        }
+      }
+    },
+    "workflow_path": ".github/workflows/ovisocr2-metadata.yml"
+  },
+  "producer": {
+    "status": "completed published consumer alias audit",
+    "phase": "complete",
+    "precision": "f16",
+    "source_commit": "5296e955097eba3cfafe5b2d9dd98159122538f1",
+    "cpu": {
+      "machine": "x86_64",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "logical_count": 4,
+      "affinity_count": 4,
+      "threads": {
+        "OMP_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2"
+      }
+    },
+    "source_sha256": {
+      "tools/ci-heavy/ovisocr2_published_consumer.py": "88e5cf0e65cda6bf4e4d2453522a920bc59aaaa7386193eda06ac606519173a0",
+      "tools/ci-heavy/ovisocr2_publish.py": "da2b0dcc1924ba85ac78efe92c993d539ba47ac69ea6a19466ea81ce317e2d6d",
+      ".github/workflows/ovisocr2-published-consumer.yml": "24e36f59b8d1ef13218c7f9d03f8ab73e143caece1fe6f8d693dc423a178ba89",
+      "examples/cli/main.cpp": "3501a2880ffc2aeaa5774e37407957c75933f7b545a2da805a9641bd6262e445",
+      "examples/server/server.cpp": "7fa943ca08ad0ed29b96dc4c38e4bea67d0be66a5d24ff08b32c9e8c0b512ed6",
+      "examples/cli/model_mgr.cpp": "53ec070acce5233c08389c798b60b886c39b0cbc9eb0ed0955109e951ec5b16e",
+      "examples/cli/model_hashes.h": "da2da74f69c442f28e4493dcbdb24415474eac3b7ed4c731a6d86e04d7fe8145"
+    },
+    "arms": {
+      "cmake-configure": {
+        "exit_code": 0,
+        "seconds": 5.963,
+        "log": "cmake-configure.log",
+        "log_sha256": "5ec4ad6df412326b91898feb0e80e8660213986d5925ee16c0d043b63c980692",
+        "log_bytes": 1876,
+        "peak_child_rss_kib": 29876
+      },
+      "cpu-baseline-check": {
+        "exit_code": 0,
+        "seconds": 0.114,
+        "log": "cpu-baseline-check.log",
+        "log_sha256": "f47aab0bee339db83322d7d825d54d7a471e59afae85d0ec2b1e0305e8637e1a",
+        "log_bytes": 494,
+        "peak_child_rss_kib": 29876
+      },
+      "consumer-target-build": {
+        "exit_code": 0,
+        "seconds": 188.843,
+        "log": "consumer-target-build.log",
+        "log_sha256": "141745ec1ad7543d81155e421ef064ba2fde7e0edf12f21a92450538bc7d9468",
+        "log_bytes": 255176,
+        "peak_child_rss_kib": 563748
+      },
+      "cli-online-alias": {
+        "exit_code": 0,
+        "seconds": 85.692,
+        "log": "cli-online-alias.log",
+        "log_sha256": "bf08896f2cb786f4ef1bde22bea8b5703e9b7627ef8be81fd2e24ffd3cc9e9a5",
+        "log_bytes": 15848,
+        "peak_child_rss_kib": 3477792,
+        "result": {
+          "text": "Hello OCR\n\n12345",
+          "n_regions": 1,
+          "mean_confidence": 0.995,
+          "max_new_tokens_argument": 12,
+          "token_ids_exposed_by_public_api": false
+        },
+        "cache": {
+          "sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+          "bytes": 1717222848
+        }
+      },
+      "cli-offline-cached": {
+        "exit_code": 0,
+        "seconds": 54.246,
+        "log": "cli-offline-cached.log",
+        "log_sha256": "c65cd76ea47247d97ebd255e39dca86ee6d9e3a754855dcffda770860b00b459",
+        "log_bytes": 73,
+        "peak_child_rss_kib": 3478432,
+        "result": {
+          "text": "Hello OCR\n\n12345",
+          "n_regions": 1,
+          "mean_confidence": 0.995,
+          "max_new_tokens_argument": 12,
+          "token_ids_exposed_by_public_api": false
+        },
+        "cache": {
+          "sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+          "bytes": 1717222848
+        }
+      },
+      "http-online-alias": {
+        "text": "Hello OCR\n\n12345",
+        "n_regions": 1,
+        "mean_confidence": 0.9954,
+        "max_new_tokens_argument": 12,
+        "token_ids_exposed_by_public_api": false,
+        "seconds": 75.892,
+        "log": "http-alias.log",
+        "log_sha256": "fdf94107f96416d5278d57dcd6872724aaa59543d2c848f87083c0f74e4de0b4",
+        "log_bytes": 11009,
+        "cache": {
+          "sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+          "bytes": 1717222848
+        }
+      }
+    },
+    "limits": [
+      "Public CLI/HTTP APIs expose text/confidence but no token IDs or stop reason; nine generated IDs and EOS are separately frozen in the reviewed native receipt.",
+      "This checks one frozen 448x448 readable image and a 12-token request cap.",
+      "CLI and HTTP means use existing public printing budgets .0006 and .00006 against the selected quality dev-hello native mean on the byte-identical PNG/RGB."
+    ],
+    "publication": {
+      "commit": "b7229e46f31bcf342d0999966bae8a03bf02bb07",
+      "registry": {
+        "alias": "ovisocr2-f16",
+        "filename": "ovisocr2-f16.gguf",
+        "url": "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
+        "sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db"
+      },
+      "receipt_sha256": "759817056300bb41cab05b8cd4123254a2a6db326cb52867834a4157f3a9572f",
+      "candidate_bytes": 1717222848,
+      "selected_vision_preset": {
+        "name": "both",
+        "enabled_gates": [
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+        ],
+        "values": {
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+          "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"
+        }
+      }
+    },
+    "native_source_closure": {
+      "quality_source_commit": "638380f6dda262fca486d45a661005ff53dc4818",
+      "file_count": 25,
+      "source_sha256": {
+        "tests/ovisocr2_quality_run.cpp": "07034383eb2d9f19af5b0fe5f08094f77b311025a091a10b2b832a92bbe5368e",
+        "src/crispembed.cpp": "fc811c0754d4838e69d40292e9e168c047197307f0780df2f8c48fd4f20f03e8",
+        "tools/quantize.cpp": "1e84e8f53439bc430e4c7838087e9fe53dfe9fdf963e90fe3b0789373fe46a8e",
+        "src/qwen35_attention.cpp": "e4d363b42d8aab26d14f9889c6dd9b375e84dc0914fe4706d533744fb7068f78",
+        "src/qwen35_attention.h": "bcbd2fa7af050418712d38af7067d8216f736ea026a4c898edead85c9a43f065",
+        "src/qwen35_decoder.cpp": "1ee46b4b5943ac34932a648aeca3e871f3c9918b0f2fe7e25ef1002896dcc575",
+        "src/qwen35_decoder.h": "144b89571245501f6d973db6d4f3754ea5a39ee420b4d0a95ecbca98f1f20eae",
+        "src/qwen35_delta.cpp": "3bbbe6407528dcc30f8a2c722c94324962073176c9fa24e8f655781db7f5df55",
+        "src/qwen35_delta.h": "f28af077faa1989b8ec522f74ddb0dba3acb0945467e534db089acf37f967774",
+        "src/qwen35_frontend.h": "b5cb3cfd327edfa1d7a0db7706d0b47637e38f1bbedc0d48f25b383dc8772760",
+        "src/qwen35_image.cpp": "a4226eb99065de643a746759e82ace89f2a40dbd8b68a0fcb5557deb2f814c08",
+        "src/qwen35_linear.cpp": "9f4c99784d6bcc59b4800f1ebcc5b649dda16e3c77dbae1da7f947bf06141fb0",
+        "src/qwen35_linear.h": "c0c91f42b9936e2d1fabd8101a56409149f41aaa0ef4beb8bbf65611548a81ed",
+        "src/qwen35_math.h": "ae542fa73d48dc622fe0e5813ca49fc9616a343fc9d3ba2a927e2a82d7908357",
+        "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268",
+        "src/qwen35_norm.h": "5838b4d4fce6293abc4c2e43220014e1fcd93e575d1dd1bcf4817c82b27e842f",
+        "src/qwen35_ocr.cpp": "669b37276281b6a60de63cc5ec92d550949c76e77f836c60e8dd5d7c43786f4f",
+        "src/qwen35_ocr.h": "701e16cf00a377dc48003ed2d163808bbfd310d429d7fa93d6294c57b6d5a5ca",
+        "src/qwen35_positions.cpp": "a9e296456072d111d2eda1c543c3059270b1492922db79a8df39325d3a6f91a7",
+        "src/qwen35_positions.h": "4fb1ca7e61d7ccb5c4c66cd280770acd69d739b18e2911bfe941896747757b9b",
+        "src/qwen35_profile.cpp": "1078a8e3d2fcf7c6aa8afe0d28d9dee7067e6d296cdfca018f5e267ba15ed636",
+        "src/qwen35_profile.h": "d342082fe8bb0ba8b851771741573c46f2f68b72775c56ccbeba002ebc8dad00",
+        "src/qwen35_tokenizer.cpp": "8a2f98441e64abb7aaf4865e4170dc05347535f1f301bd018f92c65de1e490a7",
+        "src/qwen35_vision.cpp": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+        "src/qwen35_vision.h": "da38d714b10e7ff0b5e42ab2ba88eff145b113185d6f2e0db55e1a65de08366a"
+      },
+      "scope": "Recorded native files from the selected full quality run"
+    },
+    "native_nine_ids": [
+      9419,
+      77796,
+      271,
+      16,
+      17,
+      18,
+      19,
+      20,
+      248046
+    ],
+    "selected_quality_confidence_reference": {
+      "mean_confidence": 0.995388269,
+      "c_abi_mean_confidence": 0.9953882694244385,
+      "case": "dev-hello",
+      "input_png_sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+      "input_rgb_sha256": "e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27",
+      "token_ids": [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ],
+      "quality_receipt_sha256": "ff68a1cd4c4cc74b5092b748a69bd61c29b80c823b1d4219985ee3595c508bd6"
+    },
+    "capacity": {
+      "disk_free_bytes_before_build": 91499077632,
+      "required_free_bytes": 7434445696,
+      "load_average": [
+        0.43115234375,
+        0.1103515625,
+        0.037109375
+      ],
+      "MemAvailable_kib": 15144484,
+      "SwapFree_kib": 3145724
+    },
+    "small_provenance": {
+      "manifest_sha256": "d8630d8dd4229aa4e7e016754bbad9bc979f5eb5793a3512f3c4e092cfeddc82",
+      "fixture_archive_sha256": "cf45bfd5d9c0dd995391ff6501372a600501bf7eac23e5c81f4fc51844082ac7",
+      "png_sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a"
+    },
+    "native_binary_sha256": {
+      "crispembed": "4ec35cec7ce8c4765ed2b70d8f9dd55b0aaba517ba5cabb42e803605755c7524",
+      "crispembed-server": "fb18e26752cbef50b58e9548a1807325ce34c456d35c39c641135e00bfdea20e"
+    },
+    "public_comparison": {
+      "fresh_offline_confidence_exact": true,
+      "reference_mean_confidence": 0.995388269,
+      "cli_mean_confidence_abs": 0.00038826899999999664,
+      "offline_mean_confidence_abs": 0.00038826899999999664,
+      "http_mean_confidence_abs": 1.1730999999959302e-05,
+      "cli_budget": 0.0006,
+      "http_budget": 6e-05
+    }
+  }
+}

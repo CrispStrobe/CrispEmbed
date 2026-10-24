@@ -1,0 +1,74 @@
+name: OvisOCR2 retained quantized raw diagnostic replay
+
+on:
+  workflow_call:
+    inputs:
+      precision:
+        required: true
+        type: string
+      candidate_run_id:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ovisocr2-quant-raw-${{ github.ref }}-${{ inputs.precision }}
+  cancel-in-progress: false
+
+jobs:
+  raw-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PRECISION: ${{ inputs.precision }}
+      CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pure retained-candidate source and artifact controls
+        run: python tests/test_ovisocr2_quant_raw_replay.py -v
+      - name: Reviewed complete diagnostic and immutable artifact proof before weights
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" \
+            python tools/ci-heavy/ovisocr2_quant_raw_replay.py --preflight \
+              --precision "$PRECISION" --candidate-run-id "$CANDIDATE_RUN"
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovisocr2-quality-candidate-${{ inputs.candidate_run_id }}
+          run-id: ${{ inputs.candidate_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/candidate
+      - name: Reuse exact candidate and frozen original arrays; retain raw local and composed comparisons
+        run: |
+          python tools/ci-heavy/ovisocr2_quant_raw_replay.py --precision "$PRECISION" \
+            --candidate-run-id "$CANDIDATE_RUN" --artifact-dir "$RUNNER_TEMP/candidate"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-quant-raw-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-quant-raw-vectors-${{ github.run_id }}
+          path: ${{ env.HEAVY_SCRATCH }}/ovis-quant-raw/native-diff/
+          if-no-files-found: warn
+          retention-days: 90

@@ -488,6 +488,8 @@ static const ModelHash k_model_hashes[] = {
       "7641ab64d307fcdc983b9d4c91d2c73700f95997a25f2b5bf7484f0129a441ba" },
     { "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF/resolve/main/glm-ocr-q8_0.gguf",
       "26ce9595afa6967a20d0781c2c3e6d01a5eb9a82b7ab25786bbffc6ba9dbeab0" },
+    { "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
+      "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db" },
     { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
       "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613" },
     { "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q4_K_M.gguf",

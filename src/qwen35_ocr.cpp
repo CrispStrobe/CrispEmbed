@@ -51,6 +51,11 @@ struct qwen35_ocr_context {
     }
 };
 namespace {
+bool inference_enabled(const qwen35_ocr_context & c) {
+    return core_env::on("CRISPEMBED_QWEN35_OCR") &&
+           (!c.tokenizer.is_ovisocr2() ||
+            (core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE")));
+}
 bool shape(ggml_tensor * t, int x, int y = 1, int z = 1) {
     return t && t->ne[0] == x && t->ne[1] == y && t->ne[2] == z && t->ne[3] == 1 &&
            ((t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16) ||
@@ -96,7 +101,7 @@ bool image_bounds(int w, int h, int channels) {
 }
 const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, int h, int channels,
                        const char * prompt) {
-    if (!core_env::on("CRISPEMBED_QWEN35_OCR")) return c.fail("experimental OCR gate is off");
+    if (!inference_enabled(c)) return c.fail("experimental OCR gate is off");
     if (!pixels || !image_bounds(w, h, channels)) return c.fail("invalid image dimensions or channels");
     size_t length = 0;
     if (prompt) {
@@ -113,7 +118,8 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         pixels = rgb.data();
     }
     qwen35_ocr::image_inputs image;
-    if (!qwen35_ocr::preprocess_rgb(pixels, h, w, {}, image)) return c.fail("image exceeds native patch bound");
+    if (!qwen35_ocr::preprocess_rgb(pixels, h, w, c.tokenizer.image_limits(), image))
+        return c.fail("image exceeds native patch bound");
     stage.next(profile_event::prompt);
     std::vector<int> ids, modalities;
     std::string rendered;
@@ -155,7 +161,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         for (float x : current.logits) total += std::exp(double(x) - *best);
         c.ids.push_back(id);
         c.confidences.push_back(float(1.0 / total));
-        if (id == c.tokenizer.eos()) {
+        if (c.tokenizer.is_stop(id)) {
             c.stop = QWEN35_OCR_EOS;
             break;
         }
@@ -191,11 +197,13 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
                                                                                     core_gguf::free_metadata);
         auto * meta = metadata.get();
         if (!meta) return nullptr;
-        const bool ready = core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
-                           core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 1 &&
+        const auto format = core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0);
+        const bool allowed_format = format == 1 || (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
+                                                    core_env::on("CRISPEMBED_OVISOCR2_FRONTEND"));
+        const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.tie_word_embeddings", false) &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.zero_centered_text_norm", false) &&
-                           c->tokenizer.load(meta);
+                           c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2());
         metadata.reset();
         if (!ready) return nullptr;
         c->backend = ggml_backend_cpu_init();
@@ -215,6 +223,9 @@ extern "C" int qwen35_ocr_set_max_tokens(qwen35_ocr_context * c, int n) {
     if (!c || n < 1 || n > 4096) return 0;
     c->max_tokens = n;
     return 1;
+}
+extern "C" int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * c) {
+    return c && c->tokenizer.is_ovisocr2();
 }
 extern "C" int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * c) {
     return c ? c->max_tokens : 0;
@@ -240,7 +251,7 @@ extern "C" const char * qwen35_ocr_recognize_file(qwen35_ocr_context * c, const 
     if (!c) return nullptr;
     c->clear();
     try {
-        if (!core_env::on("CRISPEMBED_QWEN35_OCR")) return c->fail("experimental OCR gate is off");
+        if (!inference_enabled(*c)) return c->fail("experimental OCR gate is off");
         qwen35_ocr::profile_timer file_decode(qwen35_ocr::profile_event::file_decode);
         int w = 0, h = 0, ch = 0;
         if (!path || !*path || !stbi_info(path, &w, &h, &ch) || !image_bounds(w, h, 3))

@@ -1585,6 +1585,13 @@ static const ModelEntry k_registry[] = {
       "GLM-OCR document OCR (CogViT + GLM-0.5B, 0.9B, 8 languages, OmniDocBench #1)", "950 MB", "mit",
       "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF" },
 
+    // Qualified experimental format-2 CPU reader; requires all three Ovis gates
+    // and the independently audited vision precision settings documented in docs/ovisocr2.md.
+    { "ovisocr2-f16", "ovisocr2-f16.gguf",
+      "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
+      "OvisOCR2 experimental CPU OCR (853M, f16, format2; gated, <=1024 patches)", "1.717 GB", "apache-2.0",
+      "https://huggingface.co/cstr/OvisOCR2-GGUF" },
+
     { "got-ocr2", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
       "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "445 MB", "apache-2.0",

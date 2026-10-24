@@ -1,0 +1,593 @@
+{
+  "schema": "crispembed-ovisocr2-calibration-review-v1",
+  "run": 40066574754,
+  "source_commit": "7924d8506d452aceefacca68ca64480881530363",
+  "independent_review": {
+    "calibration_positive": true,
+    "candidate_quality_positive": false,
+    "candidate_numerical_positive": false,
+    "scope": "Positive development-only calibration provenance, not candidate qualification",
+    "producer_canonical_sha256": "16750f857de70f7172fd59cc871bbcf2c5b206d0637872aaecd89d322e3eb6c6"
+  },
+  "producer": {
+    "precision": "q4-calibrated",
+    "candidate_sha256": "6e5983e0a328c3ae507936990b5d85c75c5e257263625658e6a04b98e9f027cb",
+    "recipe": "q4-attention-q8",
+    "quality_receipt_sha256": "e6f90f88c59453c8a7d250610f2de739b742def87428947df7c5885be078ee9b",
+    "selection_frozen_before_heldout": true,
+    "heldout_not_used_for_recipe": true,
+    "imatrix_sha256": "80ca50f185e89c178a7f9cbe41f9b79a193a09b246f304958bddf6428e2e896d",
+    "stats_sha256": "f944107bdb97e739dc3317d8361861f95e4412f769f534ef150eeeaf6578f9fb",
+    "calibration": {
+      "scope": "Four frozen synthetic development images only; no heldout images or documents",
+      "input_ids": [
+        "dev-hello",
+        "dev-invoice",
+        "dev-menu",
+        "dev-section"
+      ],
+      "input_rgb_sha256": {
+        "dev-hello": "e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27",
+        "dev-invoice": "02897efd4897f224443701a9e8a1dd7454f231909aa00d701716a31a27489aa8",
+        "dev-menu": "9fcd004dd5f974f241e76fe05283546de7fc42e03a940a9df4dcbd2fd4d242fe",
+        "dev-section": "2fc0241fd6885f0eb2158e07c5bc8f7a29f5f0f3b532c85f19e32898f665c1bb"
+      },
+      "collector_source_sha256": "16a7c819a61f1cc9700cc63afcc88db413067c8413a3a8176ff3ec3b6fc2b71c",
+      "stats_sha256": "f944107bdb97e739dc3317d8361861f95e4412f769f534ef150eeeaf6578f9fb",
+      "imatrix_sha256": "80ca50f185e89c178a7f9cbe41f9b79a193a09b246f304958bddf6428e2e896d",
+      "imatrix_bytes": 549440,
+      "vectors": [
+        {
+          "name": "l.layers.0.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "9befc36f5e224e47e273fb770aaab7d3aef767b42c4a534d671d18d13cfd07d0"
+        },
+        {
+          "name": "l.layers.0.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "55d0231a9e9c31a33e1bb80781486562ab68b7d44c527b6a0cea5c5f8f43493b"
+        },
+        {
+          "name": "l.layers.0.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "55d0231a9e9c31a33e1bb80781486562ab68b7d44c527b6a0cea5c5f8f43493b"
+        },
+        {
+          "name": "l.layers.1.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "01c6a9f271a8ef25c8582a6a03c9c82448a9ca60d44ce1852d97011692331ea4"
+        },
+        {
+          "name": "l.layers.1.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "f263fbc7e93a8e26b558061d2be6269817ae02c5988422561c2fe88cf46224a4"
+        },
+        {
+          "name": "l.layers.1.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "f263fbc7e93a8e26b558061d2be6269817ae02c5988422561c2fe88cf46224a4"
+        },
+        {
+          "name": "l.layers.10.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "089d243c728285638656b3474ba08cae0d10ce0d7909ed8be22b08eb1a00325e"
+        },
+        {
+          "name": "l.layers.10.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "0a808840732c1ee85bc1debbde9a628a7e355f0e1fecfc76541efdb90c550a8c"
+        },
+        {
+          "name": "l.layers.10.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "0a808840732c1ee85bc1debbde9a628a7e355f0e1fecfc76541efdb90c550a8c"
+        },
+        {
+          "name": "l.layers.11.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "1e4bd91b89eb8b8b66b8fec0dd47664a946cff287a5d410967adba8ca85c11b6"
+        },
+        {
+          "name": "l.layers.11.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "7e88c38ccd020796da84868dcb11279e087a6f162e42a815b7d014eb544678f1"
+        },
+        {
+          "name": "l.layers.11.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "7e88c38ccd020796da84868dcb11279e087a6f162e42a815b7d014eb544678f1"
+        },
+        {
+          "name": "l.layers.12.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "3dfe19cd1fa2a517c0c8f38b90436d7c419bdd3a53f347b662a961c8e24a45c1"
+        },
+        {
+          "name": "l.layers.12.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "28f9bf7d95dc54f605d92c838c75572d0d69ed5877842361b2b4a77456b2fd21"
+        },
+        {
+          "name": "l.layers.12.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "28f9bf7d95dc54f605d92c838c75572d0d69ed5877842361b2b4a77456b2fd21"
+        },
+        {
+          "name": "l.layers.13.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "698cf55cf4624ac436fb56cc6dd58d0693a6495a7a52d581a498bd0b7c22bc06"
+        },
+        {
+          "name": "l.layers.13.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "5ac43a180cfe1304a4cd33d67b0d9da577524580d5bead509a61f8fc301b2dc7"
+        },
+        {
+          "name": "l.layers.13.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "5ac43a180cfe1304a4cd33d67b0d9da577524580d5bead509a61f8fc301b2dc7"
+        },
+        {
+          "name": "l.layers.14.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "c38c17345aafb5ed012902ffdbdad3dfef8a7ec170600acfdc2988c49657c784"
+        },
+        {
+          "name": "l.layers.14.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "780cd21bb43bf1d43a87b859fdedac9d41da7bf25965c572b9264628a82d8b2e"
+        },
+        {
+          "name": "l.layers.14.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "780cd21bb43bf1d43a87b859fdedac9d41da7bf25965c572b9264628a82d8b2e"
+        },
+        {
+          "name": "l.layers.15.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "c80c411f8ca198e9a12a1e8bc5294fc51b839d50e598afec11453f1cb110408f"
+        },
+        {
+          "name": "l.layers.15.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "77f5095f730c4885b86ccca64c90e6f3a7e8935fd69052898b78bc46a0cee9a9"
+        },
+        {
+          "name": "l.layers.15.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "77f5095f730c4885b86ccca64c90e6f3a7e8935fd69052898b78bc46a0cee9a9"
+        },
+        {
+          "name": "l.layers.16.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "9c8fc402af575978aabc268448edbb348e6a15a01fd6b299479af8ad18940b26"
+        },
+        {
+          "name": "l.layers.16.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "072b29ad5a1a459790bc37f2a376db899da97032f5742d328150a53c2de506c2"
+        },
+        {
+          "name": "l.layers.16.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "072b29ad5a1a459790bc37f2a376db899da97032f5742d328150a53c2de506c2"
+        },
+        {
+          "name": "l.layers.17.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "9da55b5354b9a4027a0fa73ed73d8bdee5c92a1d3996f38354093eff08f27e14"
+        },
+        {
+          "name": "l.layers.17.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "fd9b5a15084f4cedf00d36d86e8e9515c8e8783deb294ccfc6467f80d98901d2"
+        },
+        {
+          "name": "l.layers.17.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "fd9b5a15084f4cedf00d36d86e8e9515c8e8783deb294ccfc6467f80d98901d2"
+        },
+        {
+          "name": "l.layers.18.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "3627c64a4acd538545b9c45518eaec7bd6235341e1cc26d9c5372972dd551311"
+        },
+        {
+          "name": "l.layers.18.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "1440cf798bd2f1109b52a416011acda3f49bf39d28650d904d2ae3c626f26f61"
+        },
+        {
+          "name": "l.layers.18.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "1440cf798bd2f1109b52a416011acda3f49bf39d28650d904d2ae3c626f26f61"
+        },
+        {
+          "name": "l.layers.19.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "720acd4ba970b427ec041c93e79207c7419c1a891c13c28a1218fbf633fdb5c5"
+        },
+        {
+          "name": "l.layers.19.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "f76256719eb94e106497f8a3efadb2fd9eee92fad78a87a2a96ea20c8ee6358c"
+        },
+        {
+          "name": "l.layers.19.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "f76256719eb94e106497f8a3efadb2fd9eee92fad78a87a2a96ea20c8ee6358c"
+        },
+        {
+          "name": "l.layers.2.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "3fa92ef4b48b5ac62630f36c89a5efad9714b6879160ef3c5150aa44fcf07b4f"
+        },
+        {
+          "name": "l.layers.2.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "d806f84c3c7714af1c5ddf4d6cdcfc7f8b7ce7ab26c81fcd3fb116d0a077b82c"
+        },
+        {
+          "name": "l.layers.2.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "d806f84c3c7714af1c5ddf4d6cdcfc7f8b7ce7ab26c81fcd3fb116d0a077b82c"
+        },
+        {
+          "name": "l.layers.20.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "5728d978e7722e62ac5142c51b834911dbbab688f4dd694dfc7216ad2678c6c7"
+        },
+        {
+          "name": "l.layers.20.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "482c332f6e66e01a5b104e7e2d50ecbb5e923e2ae6a8277720db0e949bfb775b"
+        },
+        {
+          "name": "l.layers.20.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "482c332f6e66e01a5b104e7e2d50ecbb5e923e2ae6a8277720db0e949bfb775b"
+        },
+        {
+          "name": "l.layers.21.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "dd95bc2073c23eb46bd9ec0ed510d4744cc0da302c22b17ccb1d31c454ab5806"
+        },
+        {
+          "name": "l.layers.21.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "03b81aaf617843099f3c21f783e1ad1a41a1e4821ac6b6ac69bd676e88138bc5"
+        },
+        {
+          "name": "l.layers.21.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "03b81aaf617843099f3c21f783e1ad1a41a1e4821ac6b6ac69bd676e88138bc5"
+        },
+        {
+          "name": "l.layers.22.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "7725355ecfd4d74e1f3e072fcc26838d850529778c36918494699b4386744fb5"
+        },
+        {
+          "name": "l.layers.22.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "5740db9f22cecc140347bd82f3c6c3c5ae4ca686e8c4ef59934ff33adfdf28af"
+        },
+        {
+          "name": "l.layers.22.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "5740db9f22cecc140347bd82f3c6c3c5ae4ca686e8c4ef59934ff33adfdf28af"
+        },
+        {
+          "name": "l.layers.23.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "a179576ba64f61f0a9855ccf10854675450f706a96119c09c41691071e0743d8"
+        },
+        {
+          "name": "l.layers.23.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "e60b8232f6e434b6ef58c45e41ef211ba9eb11105062c7466b3ed616a3af1df5"
+        },
+        {
+          "name": "l.layers.23.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "e60b8232f6e434b6ef58c45e41ef211ba9eb11105062c7466b3ed616a3af1df5"
+        },
+        {
+          "name": "l.layers.3.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "7f63d936dbc5cd3e27648d35cfc840990245ec7579f574ff317de01df81a3d5a"
+        },
+        {
+          "name": "l.layers.3.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "210765693caf91ff28771b945d47bd3870e3a99307c7f65bfc4e5817e038ab9b"
+        },
+        {
+          "name": "l.layers.3.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "210765693caf91ff28771b945d47bd3870e3a99307c7f65bfc4e5817e038ab9b"
+        },
+        {
+          "name": "l.layers.4.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "22db1ec56b1d9cda3bbb54bd7a81b86d81cd9f269209a95c05f62df3b8cbf6e3"
+        },
+        {
+          "name": "l.layers.4.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "4724732b288e64055336152b291c04f09b8b6c4ab1349eb291eebb7ebeabe13b"
+        },
+        {
+          "name": "l.layers.4.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "4724732b288e64055336152b291c04f09b8b6c4ab1349eb291eebb7ebeabe13b"
+        },
+        {
+          "name": "l.layers.5.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "d1952ab451cdcb1866c45982d931b7d53fac6661e316d06f698c727206786df6"
+        },
+        {
+          "name": "l.layers.5.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "d8d2f00c8bbe737ac2a389b0346051e6793ebc792f2cacf2b6832bd8a9fcf74f"
+        },
+        {
+          "name": "l.layers.5.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "d8d2f00c8bbe737ac2a389b0346051e6793ebc792f2cacf2b6832bd8a9fcf74f"
+        },
+        {
+          "name": "l.layers.6.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "3be61b6b0f6972b2f0c92acb33724113caec80fd5f1414776423af8bd14494f8"
+        },
+        {
+          "name": "l.layers.6.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "a7874429d51b614ed24253bf82ae5164c0faf7f32a5547c72b7181a04b3417fb"
+        },
+        {
+          "name": "l.layers.6.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "a7874429d51b614ed24253bf82ae5164c0faf7f32a5547c72b7181a04b3417fb"
+        },
+        {
+          "name": "l.layers.7.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "e57fefcb8f41df3f67c26fd96c754aff8c706b002dee248c1b0cdbde4959452c"
+        },
+        {
+          "name": "l.layers.7.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "9d2084bc6fd612389132a0f379bb3bf1b9209332a8b00593dbb440ebdc669480"
+        },
+        {
+          "name": "l.layers.7.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "9d2084bc6fd612389132a0f379bb3bf1b9209332a8b00593dbb440ebdc669480"
+        },
+        {
+          "name": "l.layers.8.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "d64dcbf8355240169495ca389290e3f7d919301f7deed72822ac519b0a4bdac8"
+        },
+        {
+          "name": "l.layers.8.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "d66ad59d96a1dc9be8e072128bd3b94dcb4a7db2ff08a717b9e5a05a0ad0138a"
+        },
+        {
+          "name": "l.layers.8.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "d66ad59d96a1dc9be8e072128bd3b94dcb4a7db2ff08a717b9e5a05a0ad0138a"
+        },
+        {
+          "name": "l.layers.9.mlp.down_proj.weight",
+          "rows": 1327,
+          "columns": 3584,
+          "sum_sha256": "762c5ae30fee331750b9a68b19ceb4ea30ec2aab40627a8ebde0b5d7cc6e7c00"
+        },
+        {
+          "name": "l.layers.9.mlp.gate_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "2042b153868c7783d02c633122f061d8395ac8b9fc7b3c3692cada6a66ec8260"
+        },
+        {
+          "name": "l.layers.9.mlp.up_proj.weight",
+          "rows": 1327,
+          "columns": 1024,
+          "sum_sha256": "2042b153868c7783d02c633122f061d8395ac8b9fc7b3c3692cada6a66ec8260"
+        }
+      ],
+      "report_files": {
+        "development-imatrix-stats.tsv": {
+          "path": "calibration/development-imatrix-stats.tsv",
+          "sha256": "f944107bdb97e739dc3317d8361861f95e4412f769f534ef150eeeaf6578f9fb",
+          "bytes": 2562821
+        },
+        "development-imatrix.gguf": {
+          "path": "calibration/development-imatrix.gguf",
+          "sha256": "80ca50f185e89c178a7f9cbe41f9b79a193a09b246f304958bddf6428e2e896d",
+          "bytes": 549440
+        }
+      }
+    },
+    "evidence": {
+      "run": 40066574754,
+      "source_commit": "7924d8506d452aceefacca68ca64480881530363",
+      "report_artifact": {
+        "id": 12550642557,
+        "name": "ovisocr2-quality-reports-40066574754",
+        "bytes": 4934025,
+        "zip_sha256": "0eee2adf5a4a7c45636cc17c98514f785b8d34dee9c7084970c558e2d2aa9dbd"
+      },
+      "calibration_report_files_verified": true,
+      "calibration": {
+        "scope": "Four frozen synthetic development images only; no heldout images or documents",
+        "input_ids": [
+          "dev-hello",
+          "dev-invoice",
+          "dev-menu",
+          "dev-section"
+        ],
+        "inputs_match_frozen_first_f16": true,
+        "collector_ids_match_frozen_first_f16": true,
+        "collector_eos_all_four": true,
+        "collector_source_sha256": "16a7c819a61f1cc9700cc63afcc88db413067c8413a3a8176ff3ec3b6fc2b71c",
+        "stats_sha256": "f944107bdb97e739dc3317d8361861f95e4412f769f534ef150eeeaf6578f9fb",
+        "stats_bytes": 2562821,
+        "imatrix_sha256": "80ca50f185e89c178a7f9cbe41f9b79a193a09b246f304958bddf6428e2e896d",
+        "imatrix_bytes": 549440,
+        "vector_count": 72,
+        "rows_per_vector": 1327,
+        "matrix_widths": [
+          1024,
+          3584
+        ],
+        "all_vectors_nonnegative_finite_and_nonzero": true,
+        "reported_sum_sha256_all_match": true,
+        "gguf_version": 3,
+        "gguf_architecture": "crispembed-imatrix",
+        "gguf_metadata_fields": 74,
+        "gguf_tensor_count": 72,
+        "gguf_all_F32_payloads_match_stats": true,
+        "quantizer_log_72_with_imatrix": true
+      },
+      "selected_candidate": {
+        "sha256": "6e5983e0a328c3ae507936990b5d85c75c5e257263625658e6a04b98e9f027cb",
+        "bytes": 1119141376,
+        "recipe": "q4-attention-q8"
+      },
+      "outcome": {
+        "run_conclusion": "failure",
+        "reason": "Quantized paired OCR quality screen failed; observations retained",
+        "paired_documents_original": {
+          "screen_passed": false,
+          "failures": [
+            "historical-receipt: content/cer increased",
+            "historical-receipt: content/wer increased",
+            "inventory-table: raw/cer increased",
+            "inventory-table: raw/wer increased"
+          ],
+          "scope": "Three reviewed licensed documents; completion, raw/content CER/WER, and 15 table cells"
+        },
+        "paired_documents_f16": {
+          "screen_passed": false,
+          "failures": [
+            "historical-receipt: content/cer increased",
+            "historical-receipt: content/wer increased",
+            "inventory-table: raw/cer increased",
+            "inventory-table: raw/wer increased"
+          ],
+          "scope": "Three reviewed licensed documents; completion, raw/content CER/WER, and 15 table cells"
+        },
+        "quant_first_linear_control_passed": true,
+        "quant_first_linear_candidate_passed": false,
+        "quant_numerical_passed": false,
+        "quant_raw_complete": true,
+        "quality_positive": false,
+        "numerical_positive": false
+      },
+      "limits": [
+        "Calibration proof review verifies the copied small TSV and imatrix payload; the retained 934 MB candidate ZIP and 183 MB raw vector ZIP were not downloaded locally.",
+        "No positive quality or numerical publication claim follows from valid calibration provenance."
+      ],
+      "raw_diff_manifest_review": {
+        "source_original_capture_sha256": "7534b151236cb61b943d2ad1a769fb15a65f0e83f48034d483e423b81d18a658",
+        "f16_first_linear_control": {
+          "metric_lines": 18,
+          "raw_files": 18,
+          "coverage_complete": true,
+          "frozen_shapes_and_byte_counts_match": true,
+          "passed": true
+        },
+        "candidate_first_linear": {
+          "metric_lines": 18,
+          "raw_files": 18,
+          "coverage_complete": true,
+          "frozen_shapes_and_byte_counts_match": true,
+          "passed": false
+        },
+        "candidate_full_decoder": {
+          "metric_lines": 189,
+          "raw_files": 225,
+          "coverage_complete": true,
+          "frozen_shapes_and_byte_counts_match": true,
+          "passed": false
+        },
+        "raw_archive_payload_not_downloaded": true
+      }
+    }
+  }
+}

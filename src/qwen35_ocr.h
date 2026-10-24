@@ -4,7 +4,9 @@
 extern "C" {
 #endif
 // Experimental owning CPU context. Requires CRISPEMBED_QWEN35_OCR=1.
-// Pinned LightOnOCR-3-0.8B format only. Q8_0/Q4_K/Q6_K matrices additionally
+// Pinned LightOnOCR-3-0.8B format1. Experimental Ovis format2 additionally requires
+// CRISPEMBED_OVISOCR2_FRONTEND=1 and CRISPEMBED_OVISOCR2_INFERENCE=1.
+// Q8_0/Q4_K/Q6_K matrices additionally
 // require CRISPEMBED_QWEN35_QUANT=1; small vectors/convolutions remain F32/F16.
 // One context is not reentrant; independent contexts own independent state.
 typedef struct qwen35_ocr_context qwen35_ocr_context;
@@ -17,6 +19,8 @@ typedef enum qwen35_ocr_stop {
 } qwen35_ocr_stop;
 qwen35_ocr_context * qwen35_ocr_init(const char * model_path, int n_threads);
 void qwen35_ocr_free(qwen35_ocr_context * ctx);
+// Immutable loaded-profile query; null contexts return zero.
+int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * ctx);
 // Invalid settings reject without changing the current setting.
 int qwen35_ocr_set_max_tokens(qwen35_ocr_context * ctx, int max_tokens);
 int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * ctx);

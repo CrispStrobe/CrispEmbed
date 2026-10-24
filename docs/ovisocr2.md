@@ -5,9 +5,62 @@ conversion and all473-tensor roundtrips pass39992662147; PR77 is merged.
 [Export producer and independent review](../tests/results/qwen35-ocr/ovisocr2-export.json)
 record exact sources, payload/manifest hashes, artifact expiry and review limits.
 Model payloads remain remote. Exact frontend parity passes40017014043; PR78
-merged918c1c8d. Native draftPR79 prepares inference and audits; model-backed
-numerical/decoded and independent quality results remain pending.
+merged918c1c8d. DraftPR79 contains gated CPU format-2 inference. Reviewed
+[native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json)
+passes all14 F32/F16 arms over943 frozen fields using the explicit `both`
+vision preset; four raw strict0.002 vision flags remain. Actual
+[public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+passes27 C/Python/CLI/HTTP/Rust/Dart arms. The frozen
+[first F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+matches all1841 original Python IDs and raw/processed text over11 cases,
+all EOS/no caps. This preserves the original recognition errors; it does not
+establish broad benchmark accuracy or interactive CPU speed.
+
+[Protected Q8](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is rejected
+for numerical drift and worse two-column recognition. Its separate
+[raw replay](../tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json) retains243
+vectors and locates the first source-fed QKV error0.0564889908 despite cosine
+0.999990225. Both actual Q4 recipes are complete and rejected for numerical/document
+regression; the [selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+chooses qualified F16. [Actual publication40074370335](../tests/results/qwen35-ocr/ovisocr2-publication.json)
+verifies the immutable [F16 model](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
+by hosted empty-cache full readback and independent anonymous provenance/tree
+checks. The real `ovisocr2-f16` URL/SHA registry alias and CLI/server resolution
+pass [actual consumer40080458492](../tests/results/qwen35-ocr/ovisocr2-published-consumer.json):
+two fresh-cache full model hashes, offline reuse and exact CLI/HTTP text, one
+region and bounded confidence. Public APIs expose no IDs/stops; the native
+proof remains separate.
+Follow the [active completion sequence](../PLAN.md#active-ovis-completion-sequence)
+through final PR79 integration. The three entry gates and audited
+vision settings remain explicit; no default model, runtime release or app upgrade
+is activated. Development is0.17.13; the app stays on immutable0.17.12.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
+
+## Using the qualified F16 alias
+
+Use a compatible development build containing PR79 and an image within the
+1024-visual-patch bound. This command uses the reviewed `both` vision preset:
+
+```sh
+CRISPEMBED_QWEN35_OCR=1 \
+CRISPEMBED_OVISOCR2_FRONTEND=1 \
+CRISPEMBED_OVISOCR2_INFERENCE=1 \
+CRISPEMBED_QWEN35_VISION_PRECISE_NORM=1 \
+CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=1 \
+CRISPEMBED_QWEN35_VISION_CASCADE_NORM=0 \
+crispembed --ocr-pipeline document.png --ocr-engine ovisocr2 \
+  --ocr-rec ovisocr2-f16 --ocr-max-tokens 1024 --json -t 2
+```
+
+The registry verifies the full SHA before installing the immutable model. After
+the first download, the same command accepts `--offline` for cached use. The
+consumer audit used a12-token cap on the frozen readable image; larger document
+caps still require actual EOS/completion checks. Custom prompts remain rejected
+by this fixed-profile reader. Source support does not upgrade a released binary.
+
+The dated sections below retain the original source investigations and initial
+implementation gates. Their historical pending statements are superseded by
+this status and the active PLAN; preserve their evidence and failed alternatives.
 
 Sources inspected23 October2026:
 
@@ -58,7 +111,7 @@ original/cast tensor; its complete evidence is linked above.
    tables, LaTeX, reading order and scaled `[0,1000)` image boxes independently;
    a cleanup routine cannot make a capped raw decode count as complete.
 
-## Next implementation and acceptance
+## Initial implementation and acceptance protocol (historical)
 
 Start with a metadata-only model profile and exporter preparation on an isolated
 branch; keep the current source checks and all unknown-tensor failures. Pin and
@@ -239,7 +292,7 @@ both values of the older marks override without overriding Ovis's source
 contract. Original packed-image captures and the1.2e-7 budget remain unchanged.
 Actual corrected frontend parity awaits a hosted retry.
 
-## Current execution sequence
+## Original execution sequence and retained initial failures (historical)
 
 Full export and exact native frontend qualification are complete. The
 [controlled original GPU reference](../tests/results/qwen35-ocr/ovisocr2-vllm-reference.json)

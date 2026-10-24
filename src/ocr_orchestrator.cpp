@@ -344,6 +344,8 @@ struct context {
     pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
     granite_vision_context * gv = nullptr;    // Granite Vision (LLaVA-Next)
     qwen35_ocr_context * qwen35 = nullptr;
+    qwen35_ocr_context * ovis = nullptr; // separate from a LightOn stage in the same pipeline
+    std::string ovis_model_path;
     lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
     lfm2_vl_ocr_context * lfm2vl = nullptr;      // LFM2.5-VL (SigLIP2 NaFlex multi-tile)
     unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
@@ -1568,19 +1570,45 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
-    case engine::qwen35_ocr: {
-        if (!ctx->qwen35) {
-            if (st.model_a.empty()) {
-                fprintf(stderr, "ocr_orchestrator: qwen35_ocr stage missing model_a\n");
+    case engine::qwen35_ocr:
+    case engine::ovisocr2: {
+        const bool ovis = st.eng == engine::ovisocr2;
+        if (ovis) {
+            if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
+                !core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") || !st.params.vlm_prompt.empty())
                 return {};
-            }
-            ctx->qwen35 = qwen35_ocr_init(st.model_a.c_str(), ctx->n_threads);
-            if (!ctx->qwen35) {
-                fprintf(stderr, "ocr_orchestrator: qwen35_ocr load failed\n");
-                return {};
-            }
+            auto * meta = core_gguf::open_metadata(st.model_a.c_str());
+            const bool exact_profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 2 &&
+                                       core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr2";
+            if (meta) core_gguf::free_metadata(meta);
+            if (!exact_profile) return {};
         }
-        if (!qwen35_ocr_set_max_tokens(ctx->qwen35, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048))
+        if (!ovis) {
+            auto * meta = core_gguf::open_metadata(st.model_a.c_str());
+            const bool legacy_profile = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 1;
+            if (meta) core_gguf::free_metadata(meta);
+            if (!legacy_profile) return {};
+        }
+        // Each ordered Ovis stage owns its model path, including fallbacks.
+        if (ovis && st.model_a != ctx->ovis_model_path) {
+            if (ctx->ovis) qwen35_ocr_free(ctx->ovis);
+            ctx->ovis = nullptr;
+            ctx->ovis_model_path.clear();
+        }
+        auto *& selected = ovis ? ctx->ovis : ctx->qwen35;
+        if (!selected) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: qwen35/ovis stage missing model_a\n");
+                return {};
+            }
+            selected = qwen35_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!selected) {
+                fprintf(stderr, "ocr_orchestrator: qwen35/ovis load failed\n");
+                return {};
+            }
+            if (ovis) ctx->ovis_model_path = st.model_a;
+        }
+        if (!qwen35_ocr_set_max_tokens(selected, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048))
             return {};
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
@@ -1593,10 +1621,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!img) return {};
         int len = 0;
         const char * t = qwen35_ocr_recognize_raw(
-            ctx->qwen35, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
+            selected, img, w, h, 3, st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str(), &len);
         int nconf = 0;
-        const float * conf = qwen35_ocr_confidences(ctx->qwen35, &nconf);
-        auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(ctx->qwen35));
+        const float * conf = qwen35_ocr_confidences(selected, &nconf);
+        auto out = wrap_fulltext(t, w, h, conf, nconf, qwen35_ocr_mean_confidence(selected));
         if (loaded) stbi_image_free(loaded);
         return out;
     }
@@ -2096,6 +2124,8 @@ static const char * engine_name(engine e) {
         return "granite_vision";
     case engine::qwen35_ocr:
         return "qwen35_ocr";
+    case engine::ovisocr2:
+        return "ovisocr2";
     case engine::lightonocr:
         return "lightonocr";
     case engine::lfm2_vl:
@@ -2140,6 +2170,7 @@ static bool is_vlm_engine(engine e) {
     case engine::pix2struct:
     case engine::granite_vision:
     case engine::qwen35_ocr:
+    case engine::ovisocr2:
     case engine::lightonocr:
     case engine::unlimited_ocr:
     case engine::lfm2_vl:
@@ -2419,6 +2450,7 @@ void free(context * ctx) {
     if (ctx->p2s) pix2struct_free(ctx->p2s);
     if (ctx->gv) granite_vision_free(ctx->gv);
     if (ctx->qwen35) qwen35_ocr_free(ctx->qwen35);
+    if (ctx->ovis) qwen35_ocr_free(ctx->ovis);
     if (ctx->locr) lightonocr_free(ctx->locr);
     if (ctx->lfm2vl) lfm2_vl_ocr_free(ctx->lfm2vl);
     if (ctx->uocr) unlimited_ocr_free(ctx->uocr);

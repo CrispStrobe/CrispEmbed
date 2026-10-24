@@ -1,0 +1,105 @@
+name: OvisOCR2 bounded original and native OCR quality
+on:
+  workflow_call:
+    inputs:
+      phase:
+        type: string
+        default: original
+      original_run:
+        type: string
+        default: '0'
+      f16_host_control:
+        type: string
+        default: dev-hello
+  workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        description: 'Reviewed native baseline required; Q4 additionally requires reviewed Q8'
+        options: [original, f16, q8, q4, q4-calibrated]
+        default: original
+      original_run:
+        type: string
+        description: 'Required for all precision arms: reviewed original quality workflow run number'
+        default: '0'
+      f16_host_control:
+        type: choice
+        description: 'Quant F16 same-run control; original/F16 phases always retain the full eleven cases'
+        options: [dev-hello, full]
+        default: dev-hello
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ovisocr2-quality-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      F16_HOST_CONTROL: ${{ inputs.f16_host_control }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reviewed baseline, panel, and source proof before dependencies
+        env:
+          QUALITY_PHASE: ${{ inputs.phase }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL" --preflight
+      - name: Reuse immutable reviewed document PNGs before model outputs
+        env:
+          QUALITY_PHASE: ${{ inputs.phase }}
+        run: |
+          python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL" --prepare-documents
+      - name: Pinned original HF CPU stack
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Frozen original and selected experimental quality arm
+        env:
+          QUALITY_PHASE: ${{ inputs.phase }}
+        run: python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-quality-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always() && (inputs.phase == 'q8' || inputs.phase == 'q4' || inputs.phase == 'q4-calibrated')
+        with:
+          name: ovisocr2-quality-native-diff-${{ github.run_id }}
+          path: ${{ env.HEAVY_SCRATCH }}/ovis-quality/native-diff/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always() && (inputs.phase == 'q8' || inputs.phase == 'q4' || inputs.phase == 'q4-calibrated')
+        with:
+          name: ovisocr2-quality-candidate-${{ github.run_id }}
+          path: |
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q8.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q4.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q4-calibrated.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/development-imatrix.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/development-imatrix-stats.tsv
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/LICENSE
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/UPSTREAM_README.md
+          if-no-files-found: warn
+          retention-days: 90

@@ -1238,6 +1238,7 @@ final class CrispembedOcrStageFFI extends Struct {
   @Int32()
   external int sourceType;
   @Int32()
+  // 20=qwen35_ocr; 21=ovisocr2 (explicit format2, three opt-in gates).
   external int engine;
   external Pointer<Utf8> modelA;
   external Pointer<Utf8> modelB;

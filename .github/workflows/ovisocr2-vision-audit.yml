@@ -1,0 +1,57 @@
+name: OvisOCR2 vision gate A/B diagnostic
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ovisocr2-vision-ab-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ovisocr2_vision_audit.py -v
+  vision-ab:
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Task-owned scratch and reviewed source preflight
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_vision_audit.py --preflight
+      - name: Exact source models and reference, portable vision-only target, twelve diagnostic arms
+        run: python tools/ci-heavy/ovisocr2_vision_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-vision-ab-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-vision-ab-vectors-${{ github.run_id }}
+          path: ${{ runner.temp }}/scratch/ovis-vision-ab/vision-vectors/
+          if-no-files-found: warn
+          retention-days: 90

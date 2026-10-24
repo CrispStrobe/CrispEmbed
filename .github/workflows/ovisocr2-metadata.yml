@@ -1,16 +1,55 @@
-name: OvisOCR2 metadata, export and frontend audits
+name: OvisOCR2 metadata, export, frontend and fixture audits
 on:
   workflow_dispatch:
     inputs:
       phase:
         type: choice
-        description: 'Original metadata, full export roundtrip, or weight-free native frontend'
-        options: [metadata, export, frontend]
+        description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, lighton-fixture]
         default: metadata
+      native_run_id:
+        type: string
+        description: 'Public/publication phases: reviewed positive Ovis native replay run ID'
+        default: '0'
+      vision_preset:
+        type: choice
+        description: 'Frozen replay only: explicit independently reviewed existing math preset'
+        options: [baseline, precise_norm, precise_attn, both, cascade, cascade_precise_attn]
+        default: baseline
+      quality_phase:
+        type: choice
+        description: 'Quality phase; original freezes eleven HF cases before candidate comparison'
+        options: [original, f16, q8, q4, q4-calibrated]
+        default: original
+      original_run:
+        type: string
+        description: 'Reviewed original quality run ID, required after original phase'
+        default: '0'
+      quality_f16_control:
+        type: choice
+        description: 'Quant-only F16 host control; original/F16 phases always run all eleven cases'
+        options: [dev-hello, full]
+        default: dev-hello
+      candidate_run_id:
+        type: string
+        description: 'Quant-raw only: independently reviewed complete quantized candidate run'
+        default: '0'
+      publish_precision:
+        type: choice
+        description: 'Publication/consumer only: separately reviewed positive precision'
+        options: [f16, q8, q4, q4-calibrated]
+        default: f16
+      publication_quality_run_id:
+        type: string
+        description: 'Publication only: reviewed selected-precision quality run ID'
+        default: '0'
   push:
-    branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend]
+    branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
     paths:
       - '.github/workflows/ovisocr2-metadata.yml'
+      - '.github/workflows/ovisocr2-native-replay.yml'
+      - 'tools/ci-heavy/ovisocr2_native_replay.py'
+      - 'tests/test_ovisocr2_native_replay.py'
       - 'tools/ci-heavy/ovisocr2_metadata.py'
       - 'tests/test_ovisocr2_metadata.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
@@ -23,6 +62,13 @@ on:
       - 'src/qwen35_tokenizer.cpp'
       - 'tests/test_ovisocr2_frontend.cpp'
       - 'tests/test_ovisocr2_frontend_driver.py'
+      - 'tools/dump_ovisocr2_reference.py'
+      - 'tools/ci-heavy/ovisocr2_model_audit.py'
+      - 'tests/test_ovisocr2_reference_adapter.py'
+      - 'tests/test_ovisocr2_model_audit.py'
+      - 'tests/test_ovisocr2_context.cpp'
+      - 'src/qwen35_ocr.cpp'
+      - 'src/qwen35_ocr.h'
 permissions:
   contents: read
   actions: read
@@ -30,6 +76,50 @@ concurrency:
   group: ovisocr2-metadata-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  vision:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'vision'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-vision-audit.yml
+  public:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'public'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-public-surfaces.yml
+    with:
+      model_run_id: ${{ inputs.native_run_id }}
+      lighton_run_id: '40046789339'
+      lighton_artifact_name: lightonocr3-format1-receipt-40046789339
+      lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
+  quality:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'quality'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-quality.yml
+    with:
+      phase: ${{ inputs.quality_phase }}
+      original_run: ${{ inputs.original_run }}
+      f16_host_control: ${{ inputs.quality_f16_control }}
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'publish'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-publish.yml
+    with:
+      precision: ${{ inputs.publish_precision }}
+      model_run_id: ${{ inputs.native_run_id }}
+      quality_run_id: ${{ inputs.publication_quality_run_id }}
+    secrets:
+      HF_OVISOCR2_PUBLISH_TOKEN: ${{ secrets.HF_OVISOCR2_PUBLISH_TOKEN }}
+  quant-raw:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'quant-raw'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-quant-raw-replay.yml
+    with:
+      precision: ${{ inputs.quality_phase }}
+      candidate_run_id: ${{ inputs.candidate_run_id }}
+  consumer:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'consumer'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-published-consumer.yml
+    with:
+      precision: ${{ inputs.publish_precision }}
   controls:
     runs-on: ubuntu-latest
     steps:
@@ -41,6 +131,66 @@ jobs:
           python tests/test_ovisocr2_metadata.py -v
           python tests/test_ovisocr2_export_profile.py -v
           python tests/test_ovisocr2_frontend_driver.py -v
+          python tests/test_ovisocr2_reference_adapter.py -v
+          python tests/test_ovisocr2_model_audit.py -v
+          python tests/test_ovisocr2_adapter_contract.py -v
+          python tests/test_ovisocr2_quality_contract.py -v
+          python tests/test_ovisocr2_quality_run.py -v
+          python tests/test_ovisocr2_vllm_recipe.py -v
+          python tests/test_ovisocr2_vllm_review.py -v
+          python tests/test_ovisocr2_lighton_fixture.py -v
+          python tests/test_ovisocr2_vision_audit.py -v
+          python tests/test_ovisocr2_native_replay.py -v
+          python tests/test_ovisocr2_vision_env.py -v
+  lighton-fixture:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned receipt, original converter, source metadata and run before dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_lighton_fixture.py --preflight
+      - name: Pinned CPU converter environment
+        run: |
+          python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.5.4 tokenizers==0.22.2 numpy==2.5.2 gguf==0.19.0 huggingface-hub==1.33.0 safetensors==0.8.0 pillow==12.1.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Exact format-1 receipt GGUF reconstruction
+        run: python tools/ci-heavy/ovisocr2_lighton_fixture.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lightonocr3-format1-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: lightonocr3-format1-receipt-${{ github.run_id }}
+          path: |
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/lightonocr-3-0.8b-f16-experimental.gguf
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/lightonocr-3-0.8b-f16-experimental.gguf.manifest.json
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/lighton-fixture-manifest.json
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/LICENSE
+          if-no-files-found: error
+          retention-days: 90
   metadata:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'metadata'
     needs: controls
@@ -108,6 +258,75 @@ jobs:
           path: ${{ env.HEAVY_OUT }}/
           if-no-files-found: warn
           retention-days: 90
+  model:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'model'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reviewed original GPU and frontend prerequisites before dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_model_audit.py --preflight
+      - name: Pinned original CPU reference environment
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Original F32 intermediates and actual native F32/F16 graph and API arms
+        run: python tools/ci-heavy/ovisocr2_model_audit.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-reference-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ovis-model/*.npz
+            ${{ runner.temp }}/scratch/ovis-model/*.gguf
+            ${{ runner.temp }}/scratch/ovis-model/*.json
+            ${{ runner.temp }}/scratch/ovis-model/*.png
+            ${{ runner.temp }}/scratch/ovis-model/LICENSE
+            ${{ runner.temp }}/scratch/ovis-model/UPSTREAM_README.md
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-diff-reference-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ovis-model/official-delta.gguf
+            ${{ runner.temp }}/scratch/ovis-model/ovisocr2-original.json
+            ${{ runner.temp }}/scratch/ovis-model/owned-readable.png
+            ${{ runner.temp }}/scratch/ovis-model/LICENSE
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-native-diff-${{ github.run_id }}
+          path: ${{ runner.temp }}/scratch/ovis-model/native-diff/
+          if-no-files-found: warn
+          retention-days: 90
   export:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'export'
     needs: controls
@@ -155,3 +374,9 @@ jobs:
             ${{ runner.temp }}/scratch/ovis-export/README.md
           if-no-files-found: warn
           retention-days: 90
+  replay:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'replay'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-native-replay.yml
+    with:
+      preset: ${{ inputs.vision_preset }}

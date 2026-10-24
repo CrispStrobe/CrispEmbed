@@ -1,0 +1,117 @@
+name: OvisOCR2 qualified GGUF publication
+
+on:
+  workflow_call:
+    inputs:
+      precision:
+        required: true
+        type: string
+      model_run_id:
+        required: true
+        type: string
+      quality_run_id:
+        required: true
+        type: string
+    secrets:
+      HF_OVISOCR2_PUBLISH_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      precision:
+        description: 'Only a separately reviewed positive precision may publish'
+        required: true
+        type: choice
+        options: [f16, q8, q4, q4-calibrated]
+      model_run_id:
+        description: 'Reviewed original/native model-audit run ID'
+        required: true
+        type: string
+      quality_run_id:
+        description: 'Reviewed selected-precision quality run ID'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ovisocr2-publication-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ovisocr2_publish.py -v
+
+  publish:
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PRECISION: ${{ inputs.precision }}
+      MODEL_RUN_ID: ${{ inputs.model_run_id }}
+      QUALITY_RUN_ID: ${{ inputs.quality_run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reviewed source, public, quality and calibration gate before auth/packages/weights
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" \
+            python tools/ci-heavy/ovisocr2_publish.py --preflight --precision "$PRECISION" \
+              --model-run-id "$MODEL_RUN_ID" --quality-run-id "$QUALITY_RUN_ID"
+      - name: Publication credential configured before large artifact transfer
+        env:
+          HF_TOKEN: ${{ secrets.HF_OVISOCR2_PUBLISH_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Dedicated Ovis publication credential is unavailable."
+            exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovisocr2-model-reference-${{ inputs.model_run_id }}
+          run-id: ${{ inputs.model_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/model-reference
+      - uses: actions/download-artifact@v4
+        if: inputs.precision != 'f16'
+        with:
+          name: ovisocr2-quality-candidate-${{ inputs.quality_run_id }}
+          run-id: ${{ inputs.quality_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/quality-candidate
+      - name: Pinned publication client after qualification
+        run: python -m pip install huggingface-hub==1.33.0
+      - name: Publish exact selected artifact and verify immutable empty-cache download
+        env:
+          HF_TOKEN: ${{ secrets.HF_OVISOCR2_PUBLISH_TOKEN }}
+          HF_HOME: ${{ runner.temp }}/scratch/ovis-publish/fresh-hf-home
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          if [ "$PRECISION" = f16 ]; then
+            CANDIDATE_DIR="$RUNNER_TEMP/model-reference"
+          else
+            CANDIDATE_DIR="$RUNNER_TEMP/quality-candidate"
+          fi
+          python tools/ci-heavy/ovisocr2_publish.py --precision "$PRECISION" \
+            --model-run-id "$MODEL_RUN_ID" --quality-run-id "$QUALITY_RUN_ID" \
+            --artifact-dir "$CANDIDATE_DIR" --license-dir "$RUNNER_TEMP/model-reference"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-publication-report-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90

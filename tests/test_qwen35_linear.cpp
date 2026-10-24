@@ -26,7 +26,8 @@ static bool include(const char * name, void *) {
 }
 
 static int crispembed_test_main(int argc, char ** argv) {
-    if (argc != 3) return 2;
+    const bool first_layer = argc == 4 && std::string(argv[3]) == "--first-layer";
+    if (argc != 3 && !first_layer) return 2;
 #ifdef _WIN32
     _putenv_s("CRISPEMBED_QWEN35_OCR", "1");
 #else
@@ -40,6 +41,7 @@ static int crispembed_test_main(int argc, char ** argv) {
         return 2;
     bool ok = loaded.tensors.size() == 18 * 9;
     for (int index = 0; index < 24; ++index) {
+        if (first_layer && index > 0) break;
         if (index % 4 == 3) continue;
         auto tensor = [&](const char * suffix) {
             const std::string name = std::string("l.layers.") + std::to_string(index) + ".linear_attn." + suffix;
@@ -64,6 +66,9 @@ static int crispembed_test_main(int argc, char ** argv) {
                 ok = false;
                 break;
             }
+            if (first_layer)
+                ok &= compare(ref, phase + ".linear." + std::to_string(index) + ".input",
+                              std::vector<float>(hidden.first, hidden.first + hidden.second));
             qwen35_ocr::projected_linear_outputs current;
             if (!qwen35_ocr::linear_cpu(weights, hidden.first, int(shape[2]), int(shape[1]), 4,
                                         previous.core.conv_history.empty() ? nullptr
@@ -85,8 +90,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("%s GGUF-weighted Qwen3.5 all 18 linear-attention blocks; full OCR remains pending\n",
-                ok ? "PASS" : "FAIL");
+    std::printf("%s GGUF-weighted Qwen3.5 %s linear-attention blocks; full OCR remains pending\n", ok ? "PASS" : "FAIL",
+                first_layer ? "first" : "all 18");
     return ok ? 0 : 1;
 }
 

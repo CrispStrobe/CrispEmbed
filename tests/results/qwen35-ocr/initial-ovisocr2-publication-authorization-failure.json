@@ -1,0 +1,226 @@
+{
+  "schema": "crispembed-ovisocr2-initial-publication-authorization-failure-v1",
+  "run": 40070360890,
+  "source_commit": "79c712244e4d77f39f0e52f9cc901a26c0edca73",
+  "service_conclusion": "failure",
+  "artifact": {
+    "id": 12552441116,
+    "name": "ovisocr2-publication-report-40070360890",
+    "zip_sha256": "e29e6b06ccf6a6545cc0f69091b13d2f2125ea9db2c57fc360a424902aa15624",
+    "bytes": 7242,
+    "members": [
+      "README.md",
+      "manifest.json",
+      "ovisocr2-publication.json"
+    ]
+  },
+  "producer_report_sha256": "88fc53f420eecc1b1d5002188038c2afac22ffa197242c83ad18d0ae09eb34a8",
+  "independent_review": {
+    "schema": "ovisocr2-publication-failed-at-namespace-create-independent-review-v1",
+    "run": 40070360890,
+    "source_commit": "79c712244e4d77f39f0e52f9cc901a26c0edca73",
+    "service_status": "completed",
+    "service_conclusion": "failure",
+    "artifact": {
+      "id": 12552441116,
+      "name": "ovisocr2-publication-report-40070360890",
+      "zip_sha256": "e29e6b06ccf6a6545cc0f69091b13d2f2125ea9db2c57fc360a424902aa15624",
+      "bytes": 7242,
+      "members": [
+        "README.md",
+        "manifest.json",
+        "ovisocr2-publication.json"
+      ]
+    },
+    "retained_small_files": {
+      "README.md": {
+        "sha256": "53201e428fce3b8842a8af16a21ce8506723a28db0d0de90948f215fa3050392",
+        "bytes": 5136,
+        "scope": "generated locally by hosted publisher; never uploaded"
+      },
+      "manifest.json": {
+        "sha256": "8d691e3b5c42441f9b3fd763c23bbab0d9ffee4b211e10caf4ada0525b96de25",
+        "bytes": 4751,
+        "scope": "generated locally by hosted publisher; never uploaded"
+      },
+      "ovisocr2-publication.json": {
+        "sha256": "88fc53f420eecc1b1d5002188038c2afac22ffa197242c83ad18d0ae09eb34a8",
+        "bytes": 7394
+      }
+    },
+    "review": {
+      "publication_positive": false,
+      "hosted_preflight_passed": true,
+      "exact_selected_artifact_verified_before_Hub": true,
+      "six_source_file_sha256_match_Git_blobs": true,
+      "three_prerequisite_GitHub_artifacts_current_digest_expiry_match": true,
+      "model_and_quality_service_runs_success_source_match": true,
+      "manifest_candidate_matches_selected_F16": true,
+      "manifest_receipts_and_license_chain_match_qualification": true,
+      "pinned_original_LICENSE_and_README_public_small_bytes_SHA_match": true,
+      "published_commit": null,
+      "remote_empty_cache_download_completed": false,
+      "remote_five_file_allowlist_verified": false,
+      "remote_small_files_available_for_immutable_review": false
+    },
+    "failure": {
+      "phase": "exact-artifact-verified",
+      "api_call": "HfApi.create_repo",
+      "http_status": 403,
+      "reason": "Hugging Face rejected model creation under namespace cstr for the supplied hosted token. No commit was created.",
+      "classification": "external namespace/token permission; qualification and numeric evidence unchanged"
+    },
+    "limits": [
+      "No model repository commit was returned, so published card/manifest/license cannot be inspected at an immutable commit.",
+      "A public API request for the destination did not reveal a public model; this does not prove whether an inaccessible private repository already exists.",
+      "No large GGUF or raw vector artifact was downloaded locally."
+    ]
+  },
+  "producer": {
+    "status": "failed publication or preflight",
+    "phase": "exact-artifact-verified",
+    "source_commit": "79c712244e4d77f39f0e52f9cc901a26c0edca73",
+    "source_sha256": {
+      "tools/ci-heavy/ovisocr2_publish.py": "da2b0dcc1924ba85ac78efe92c993d539ba47ac69ea6a19466ea81ce317e2d6d",
+      "models/cards/ovisocr2-card.template.md": "519b02c7cb1e21081bf7deb61065de9c3835b3d0e53614a97861ac577f0e5684",
+      "tools/ci-heavy/ovisocr2_vision_env.py": "bfa6f9f6b22720d9bae8a8b1f6eb3a32ae2598e1453560edec5b34c2f6b54a06",
+      ".github/workflows/ovisocr2-publish.yml": "fe2082d090c9a571439f36201b7b87a4d89f44007d295c6243e33d26cbb254e8",
+      "tests/results/qwen35-ocr/ovisocr2-license-chain.json": "1614862ff965aee172b70f504efd883ddff88cc6bba550c439a648ece5b5d098",
+      "tests/results/qwen35-ocr/ovisocr2-source-contract.json": "81a6b3ea839bba0a8b0b1308bb064c363654dbb793f759ec6976d45218d6e43c"
+    },
+    "destination": "cstr/OvisOCR2-GGUF",
+    "qualification": {
+      "precision": "f16",
+      "recipe": "original-f16",
+      "selected_vision_preset": {
+        "name": "both",
+        "enabled_gates": [
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+        ],
+        "values": {
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+          "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"
+        }
+      },
+      "candidate_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+      "candidate_bytes": 1717222848,
+      "model_run_id": 40049244654,
+      "model_report_artifact_id": 12543923060,
+      "model_report_artifact_zip_sha256": "8a76764605c504de2834709ddef26de725845ad0f9ce69ccc1565a0a60b87c07",
+      "model_reference_artifact_id": 12544161103,
+      "model_reference_artifact_zip_sha256": "c96ef75e61ab461c87f912766483071db923113aa854d4174fe627c43b37dc9e",
+      "model_producer_canonical_sha256": "20c34689ab5ed8c87d9ba2bb5b6e09eebc40027dc15e610203c80d8331ce7569",
+      "model_source_commit": "a2a17735d05f172c3ec7ce9675ad51a6adc313f6",
+      "public_source_commit": "b33c5bad6d47433ea1f3f1fa1c9025d3d22e6fe5",
+      "quality_source_commit": "638380f6dda262fca486d45a661005ff53dc4818",
+      "quality_run_id": 40056641800,
+      "quality_report_artifact_id": 12547361841,
+      "quality_report_artifact_zip_sha256": "e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f",
+      "first_f16_run_id": 40056641800,
+      "first_f16_source_commit": "638380f6dda262fca486d45a661005ff53dc4818",
+      "first_f16_artifact_id": 12547361841,
+      "first_f16_artifact_zip_sha256": "e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f",
+      "candidate_artifact_id": null,
+      "candidate_artifact_zip_sha256": null,
+      "receipt_sha256": {
+        "gpu": "fbec0f4b75576e93bc32db26e645be0764b23be3a5a6be3e84e04854db1bab4c",
+        "model": "e28d1e4b8cc3cfc941f9521cdf44185542867a9607f5997ba42f8e0bb542d91c",
+        "public": "9ce8edb9c1ab3462fdcd1b9d12574314c2a4cb96d1d2ba6d37db356af0e569ff",
+        "quality": "ff68a1cd4c4cc74b5092b748a69bd61c29b80c823b1d4219985ee3595c508bd6",
+        "original_quality": "e0ecd33bb9bf07a258e513da5662d4a5ed8950fd139cf9bc606edbf658637e35",
+        "first_f16_quality": "ff68a1cd4c4cc74b5092b748a69bd61c29b80c823b1d4219985ee3595c508bd6",
+        "quant_attempts": "0094da077e91fac6f710270eed32e5b57d9f7aef85d8ffacdcc37235103aeea9"
+      },
+      "license_chain": {
+        "scope": "Pinned public metadata and LICENSE text inspection only; no checkpoint payload or legal conclusion",
+        "source_contract": {
+          "path": "tests/results/qwen35-ocr/ovisocr2-source-contract.json",
+          "sha256": "81a6b3ea839bba0a8b0b1308bb064c363654dbb793f759ec6976d45218d6e43c"
+        },
+        "models": {
+          "ATH-MaaS/OvisOCR2": {
+            "revision": "cbdede82e048659b83310476ff807da825f8fe78",
+            "declared_license": "apache-2.0",
+            "declared_base": "Qwen/Qwen3.5-0.8B",
+            "license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+            "readme_sha256": "f2510d6d02471c01a2808102da79cb47106963f18486f2ac05dd5c0b53fc1c7a",
+            "notice_present_in_listed_files": false
+          },
+          "Qwen/Qwen3.5-0.8B": {
+            "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+            "declared_license": "apache-2.0",
+            "declared_base": [
+              "Qwen/Qwen3.5-0.8B-Base"
+            ],
+            "license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+            "readme_sha256": "87a163af54f32fa608a0f8d3ac67945c53dd2b4a7c96740b3d7fdc28e8458864",
+            "notice_present_in_listed_files": false
+          },
+          "Qwen/Qwen3.5-0.8B-Base": {
+            "revision": "dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68",
+            "declared_license": "apache-2.0",
+            "declared_base": null,
+            "license_sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+            "license_bytes": 11343,
+            "readme_sha256": "3cff39d2674e28b95e2df75cdb2d7a687ec391931065b05df83dbae12b447b11",
+            "readme_bytes": 3727,
+            "notice_present_in_listed_files": false,
+            "evidence": "Pinned root-base metadata and LICENSE/card read-only inspection",
+            "metadata_record_sha256": "7f78cc6516bfc7d5fa27e57901cffa2699dd42f88ae1336eafbcf74bd8b198f8"
+          }
+        },
+        "license_text_comparison": {
+          "method": "UTF-8 text read with universal newline translation only",
+          "normalized_sha256": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+          "exact_normalized_text_equal": true,
+          "raw_license_sha256_equal": false,
+          "compared_models": [
+            "ATH-MaaS/OvisOCR2",
+            "Qwen/Qwen3.5-0.8B-Base"
+          ]
+        }
+      },
+      "license_chain_sha256": "1614862ff965aee172b70f504efd883ddff88cc6bba550c439a648ece5b5d098",
+      "source_contract_sha256": "81a6b3ea839bba0a8b0b1308bb064c363654dbb793f759ec6976d45218d6e43c",
+      "destination": "cstr/OvisOCR2-GGUF"
+    },
+    "service_runs": {
+      "model": {
+        "id": 40049244654,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "a2a17735d05f172c3ec7ce9675ad51a6adc313f6",
+        "path": ".github/workflows/ovisocr2-metadata.yml"
+      },
+      "quality": {
+        "id": 40056641800,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "638380f6dda262fca486d45a661005ff53dc4818",
+        "path": ".github/workflows/ovisocr2-metadata.yml"
+      }
+    },
+    "service_artifacts": {
+      "quality_reports": {
+        "id": 12547361841,
+        "name": "ovisocr2-quality-reports-40056641800",
+        "zip_sha256": "e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f"
+      },
+      "model_reports": {
+        "id": 12543923060,
+        "name": "ovisocr2-model-reports-40049244654",
+        "zip_sha256": "8a76764605c504de2834709ddef26de725845ad0f9ce69ccc1565a0a60b87c07"
+      },
+      "model_reference": {
+        "id": 12544161103,
+        "name": "ovisocr2-model-reference-40049244654",
+        "zip_sha256": "c96ef75e61ab461c87f912766483071db923113aa854d4174fe627c43b37dc9e"
+      }
+    },
+    "error": "HfHubHTTPError: (Request ID: Root=1-6adc5c2c-12de79af278c42a95dbc18e0;492be62b-e27b-4d84-85b8-b4b73dbd5663)\n\n403 Forbidden: You don't have the rights to create a model under the namespace \"cstr\".\nCannot access content at: https://huggingface.co/api/repos/create.\nMake sure your token has the correct permissions."
+  },
+  "classification": "Publication namespace authorization; all model/quality qualification is unchanged",
+  "subsequent_correction": "Dedicated publisher credential binding and a pre-transfer missing-credential guard. The failed run is immutable; actual retry/readback still required."
+}

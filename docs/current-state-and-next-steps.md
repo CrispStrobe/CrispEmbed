@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Consumer snapshot verified5 October2026; vendor roadmap updated 23 October 2026.
+Consumer snapshot verified5 October2026; vendor roadmap updated 24 October 2026.
 For current vendor work, start with the [executable handoff](next-agent-handoff.md).
 The application snapshot below keeps its original verification dates. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
@@ -69,7 +69,7 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Vendor status — updated 23 October 2026
+## Vendor status — updated 24 October 2026
 
 [Executable next-agent tasks](next-agent-handoff.md) give exact sources, tool paths,
 corrected audit, artifact expiry and acceptance checks. [PLAN](../PLAN.md) contains
@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 full F32/F16 export, exact frontend PR78 and controlled original T4/FP16/TRITON_ATTN GPU reference pass | DraftPR79 native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. Existing precision A/B40047163838 passes two common presets; full fourteen-arm frozen replay40049244654 is pending; actual public interfaces, independent quality, quantization/calibration and conditional publication remain. No alias or Ovis model weights published. Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is complete and rejected for numerical and two-column text regression. All three quantization attempts are rejected; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Published CLI/HTTP/offline consumer40080458492 passes independent review; final PR79 integration remains. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; F16 publication and actual source alias consumer are verified. Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 | Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](../tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
 
@@ -384,20 +384,77 @@ Do not treat this longer-term idea as an unfinished build 23 feature.
 ## Current Ovis execution checkpoint
 
 Frontend PR78 and the controlled original T4/FP16/TRITON_ATTN reference pass.
-Raw saved inputs/stops/IDs/text, default-FlashInfer failure and immutable
-preservation are archived in vendor HISTORY. The completed initial native numerical audit is
-[40041958521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40041958521)
-at cc038b00:943 frozen fields,12/14 native arms pass. Both vision arms fail
-unchanged budgets. Retained initial failures remain in HISTORY. Review pending
-full fourteen-arm frozen replay40049244654 with reviewed preset=both, then replay all arms against the frozen
-reference without HF recapture. Follow
-[the executable handoff](next-agent-handoff.md) and five-step [PLAN](../PLAN.md)
-through native parity, actual public bindings, independent quality, protected
-quantization/calibration and conditional publication. Prepared tools do not
-qualify those results. No model alias, runtime tag or app pin change occurs.
+The initial [native40041958521](../tests/results/qwen35-ocr/initial-ovisocr2-model-vision-failure.json)
+retains its12/14 result and vision failures. Existing precision A/B40047163838
+selects the explicit `both` vision preset. The reviewed frozen
+[replay40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes
+all14 F32/F16 arms without recapturing the943 original fields; nine generated
+IDs reach EOS248046 and decode to `Hello OCR\n\n12345`. Four vision stages still
+exceed raw0.002 absolute error and pass the unchanged original backend-calibrated
+budgets. [Public audit40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+passes27 C/Python/CLI/HTTP/Rust/Dart arms with exact text and bounded confidence.
+The frozen [original HF eleven-case quality reference40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json)
+has eight synthetic WER0 cases, all EOS/no cap, and15/15 inventory table cells;
+newline CER and strict-v1 border parse failures remain visible.
 
-Ovis native40041958521 completes943 frozen fields and12/14 arms. Both vision
-arms fail unchanged budgets; review full frozen replay40049244654 at a2a17735 (preset=both) without HF
-recapture. A/B40047163838 passes both F32/F16 vision arms without budget changes.
-See the active Ovis sequence in [PLAN](../PLAN.md). Public interfaces, quality,
-all three quantization/calibration arms and conditional publication remain open.
+The [first native F16 quality run40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+at638380f6 has a positive independent review. Its eleven native cases retain
+all1,841 generated IDs and match the frozen original HF IDs, raw text and
+processed text exactly; all stop at EOS248046 without a cap hit. Eight authored
+cases have WER0 and the inventory table has15/15 cells. The paired synthetic
+and three-document quality screens pass within their bounded panel. This is
+the immutable first F16 baseline for subsequent quantized comparisons.
+Its native CPU was AMD EPYC7763 with two threads; the original HF CPU was a
+different model. The recorded per-case times and cumulative child RSS are
+diagnostics, not a causal paired speed result.
+
+The [quality workflow](../.github/workflows/ovisocr2-quality.yml) now selects
+one same-run `dev-hello` F16 host control for quant phases after exact first
+F16 receipt, source, build and runtime checks. Direct driver calls still default
+to the full eleven-case control, and the workflow accepts `full` explicitly.
+The short control does not establish eleven-case cross-host F16 identity; its
+paired scores come from the reviewed first F16 run. Every quantized candidate
+still runs all eleven cases and the complete numerical and 473-tensor checks;
+calibrated Q4 also retains the development-only importance proof. Each new Q4
+run captures a same-run F16 first-linear control, candidate first-linear probe
+and full decoder probe with unchanged thresholds. Raw vectors stay in a separate
+remote artifact; small manifests and all failures stay in the report. Protected
+[Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is
+complete and rejected: its first decoder-layer error is0.00376427 with minimum
+cosine0.999920726, and the two-column page changes `Lorem Ipsum` to `Lorem Ispum`
+with697→700 IDs and increased raw/content CER/WER. All eleven cases reach EOS;
+the frozen first F16 baseline remains qualified. Reviewed Q8 diagnostic
+completion permits separate Q4 experiments, without qualifying Q8 publication.
+Actual [plain Q4](../tests/results/qwen35-ocr/ovisocr2-q4-quality.json) and
+[calibrated Q4](../tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json)
+are complete and rejected for numerical and document nonregression failures.
+All11 cases in each reach EOS without caps; F16 local controls pass18/18.
+The72-vector [development-only calibration proof](../tests/results/qwen35-ocr/ovisocr2-q4-calibrated-calibration.json)
+is positive separately from candidate qualification. All473 tensor records and
+261 raw manifest entries per Q4 arm are retained; large payloads stay remote.
+[Q8 candidate-only replay](../tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
+retains243 vectors and first QKV max0.0564889908, without replacing the rejected
+Q8 quality wrapper. Earlier pre-model failures and raw strict flags stay in
+HISTORY and their immutable receipts.
+
+[Completed selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+chooses qualified first F16. [Actual publication40074370335](../tests/results/qwen35-ocr/ovisocr2-publication.json)
+at121dc943 passes upload and immutable empty-cache full readback at
+[Hub b7229e46](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07).
+Anonymous tree/small-file verification passes; no probes/test weights are
+included. The [initial403](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
+stays separate; the temporary publisher binding is removed after success.
+The real `ovisocr2-f16` URL/SHA alias and both loader fixes are wired. All25
+recorded native source files and qualified `src`/ggml/CMake objects remain
+unchanged; ten current consumer controls pass, including native-source drift
+rejection and Darwin RSS units. Actual
+[consumer40080458492](../tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+at5296e955 passes two fresh-cache full model hash checks, offline CLI cache
+reuse and actual CLI/HTTP text, region and existing confidence budgets. Both
+independent reviews verify all seven report members/six logs, seven helper and
+25 native source hashes. Public APIs expose no IDs/stops; the separately frozen
+native nine-ID/EOS proof remains unchanged. Final exact-source PR79 CI/merge and
+the vendor-only documentation mirror remain before closing integration.
+Model publication does not upgrade the app or create a runtime release.
+Follow the [executable handoff](next-agent-handoff.md) and [PLAN](../PLAN.md).
+The app remains on immutable0.17.12; published F16 and wired source alias do not upgrade it.

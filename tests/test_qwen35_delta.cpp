@@ -5,7 +5,10 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 static void gate(const char * value) {
@@ -14,6 +17,70 @@ static void gate(const char * value) {
 #else
     setenv("CRISPEMBED_QWEN35_OCR", value, 1);
 #endif
+}
+
+class pause_diff_dump {
+    std::string previous;
+
+public:
+    pause_diff_dump() {
+        if (const char * value = std::getenv("CRISPEMBED_DIFF_DUMP_DIR"); value && *value) {
+            previous = value;
+#ifdef _WIN32
+            _putenv_s("CRISPEMBED_DIFF_DUMP_DIR", "");
+#else
+            setenv("CRISPEMBED_DIFF_DUMP_DIR", "", 1);
+#endif
+        }
+    }
+    ~pause_diff_dump() {
+        if (!previous.empty()) {
+#ifdef _WIN32
+            _putenv_s("CRISPEMBED_DIFF_DUMP_DIR", previous.c_str());
+#else
+            setenv("CRISPEMBED_DIFF_DUMP_DIR", previous.c_str(), 1);
+#endif
+        }
+    }
+};
+
+class scoped_diff_dump {
+    std::string previous;
+
+public:
+    explicit scoped_diff_dump(const std::string & variant) {
+        if (const char * value = std::getenv("CRISPEMBED_DIFF_DUMP_DIR"); value && *value) {
+            previous = value;
+            const std::string directory = previous + "/" + variant;
+            std::filesystem::create_directories(directory);
+#ifdef _WIN32
+            _putenv_s("CRISPEMBED_DIFF_DUMP_DIR", directory.c_str());
+#else
+            setenv("CRISPEMBED_DIFF_DUMP_DIR", directory.c_str(), 1);
+#endif
+        }
+    }
+    ~scoped_diff_dump() {
+        if (!previous.empty()) {
+#ifdef _WIN32
+            _putenv_s("CRISPEMBED_DIFF_DUMP_DIR", previous.c_str());
+#else
+            setenv("CRISPEMBED_DIFF_DUMP_DIR", previous.c_str(), 1);
+#endif
+        }
+    }
+};
+
+static bool actual_dump_intact(const char * directory, const std::string & stage, const std::vector<float> & actual) {
+    const std::string path = std::string(directory) + "/" + stage + ".f32";
+    FILE * file = std::fopen(path.c_str(), "rb");
+    if (!file) return false;
+    std::vector<float> saved(actual.size());
+    const size_t count = std::fread(saved.data(), sizeof(float), saved.size(), file);
+    const bool exact = count == actual.size() && std::fgetc(file) == EOF &&
+                       std::memcmp(saved.data(), actual.data(), actual.size() * sizeof(float)) == 0;
+    std::fclose(file);
+    return exact;
 }
 
 static bool compare(const crispembed_diff::Ref & ref, const std::string & name, const std::vector<float> & values) {
@@ -33,6 +100,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (!ref.load(argv[1])) return 2;
     std::vector<float> previous_state, output, state;
     qwen35_ocr::linear_outputs previous_linear;
+    std::vector<std::pair<std::string, std::vector<float>>> primary_dumps;
     bool ok = true;
     for (const std::string phase : { "prefill", "cached" }) {
         auto tensor = [&](const char * field) { return ref.get_f32(phase + ".delta." + field); };
@@ -56,6 +124,8 @@ static int crispembed_test_main(int argc, char ** argv) {
             return 1;
         ok &= compare(ref, phase + ".delta.output", output);
         ok &= compare(ref, phase + ".delta.final_state", state);
+        primary_dumps.emplace_back(phase + ".delta.output", output);
+        primary_dumps.emplace_back(phase + ".delta.final_state", state);
         previous_state = state;
         if (ref.has(phase + ".linear.qkv")) {
             auto field = [&](const std::string & name) { return ref.get_f32(name).first; };
@@ -93,7 +163,10 @@ static int crispembed_test_main(int argc, char ** argv) {
             if (!qwen35_ocr::linear_core_cpu(input, current)) return 1;
             ok &= compare(ref, phase + ".linear.norm", current.values);
             ok &= compare(ref, phase + ".cache.0.conv_states", current.conv_history);
-            ok &= compare(ref, phase + ".delta.final_state", current.state);
+            {
+                scoped_diff_dump variant("linear-core");
+                ok &= compare(ref, phase + ".delta.final_state", current.state);
+            }
             previous_linear = std::move(current);
         }
     }
@@ -105,13 +178,27 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (!qwen35_ocr::delta_cpu(q.first, k.first, v.first, g.first, beta.first, nullptr, int(shape[3]), int(shape[2]),
                                int(shape[1]), int(shape[0]), 4, output, state))
         return 1;
-    ok &= compare(ref, "prefill.delta.output", output);
-    ok &= compare(ref, "prefill.delta.final_state", state);
+    {
+        scoped_diff_dump variant("reset");
+        ok &= compare(ref, "prefill.delta.output", output);
+        ok &= compare(ref, "prefill.delta.final_state", state);
+    }
     // Prove that the comparator rejects corruption even when cosine is high.
     auto perturbed = output;
     perturbed.front() += 1.0f;
-    const auto bad = ref.compare("prefill.delta.output", perturbed.data(), perturbed.size());
-    ok &= bad.found && bad.max_abs > 0.5f;
+    {
+        pause_diff_dump pause;
+        const auto bad = ref.compare("prefill.delta.output", perturbed.data(), perturbed.size());
+        ok &= bad.found && bad.max_abs > 0.5f;
+    }
+    if (const char * directory = std::getenv("CRISPEMBED_DIFF_DUMP_DIR"); directory && *directory) {
+        bool intact = primary_dumps.size() == 4;
+        for (const auto & [stage, values] : primary_dumps) intact &= actual_dump_intact(directory, stage, values);
+        intact &= actual_dump_intact((std::string(directory) + "/reset").c_str(), "prefill.delta.output", output);
+        intact &= actual_dump_intact((std::string(directory) + "/reset").c_str(), "prefill.delta.final_state", state);
+        std::printf("%s DELTA_RAW_DUMP_INTEGRITY stages=4 variants=linear-core,reset\n", intact ? "PASS" : "FAIL");
+        ok &= intact;
+    }
     ok &= !qwen35_ocr::delta_cpu(nullptr, k.first, v.first, g.first, beta.first, nullptr, 1, 1, 16, 128, 4, output,
                                  state);
     std::printf("%s Qwen3.5 delta recurrence + continuation + reset + disabled/invalid controls\n",

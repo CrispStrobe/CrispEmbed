@@ -1,3 +1,27 @@
+## 24 October 2026 — Published Ovis alias and real consumers qualify
+
+[40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
+at5296e955 completes the real `ovisocr2-f16` CLI/server consumer. Both independent
+reviews verify portable CPU configuration, seven helper/25 native source hashes,
+all seven report members/six log hashes and actual API results. Separate CLI and
+HTTP fresh caches download and verify the entire1717222848-byte published F16
+SHA d3a733a5…. Offline CLI reuses that cache without downloading. All three arms
+return `Hello OCR\n\n12345`, one region and confidence within the existing
+0.0006 CLI/0.00006 HTTP budgets against frozen first-F160.995388269.
+
+[Unchanged producer and two independent reviews](tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+retain exact source, binary hashes and logs. Small artifact12556034926 is15374
+bytes, ZIP SHA-256 `2ece2846b20a6e43d9b28bfa8c1b5b1f432c2e89580c484f4d310fe79c9fb30f`,
+expires22 January2027. Producer SHA-256
+`26fefd3aaa6770d87d3028ad95e454bb0827ea4c3a7bfe5c58a9aece5562e23f`.
+All25 native source files match the first qualified F16 source; later Darwin
+RSS reporting and optional M1 handoff changes do not change Linux arithmetic.
+Ten current pure consumer controls pass. Actual API IDs/stops remain unexposed,
+with the separate native proof retained. PERFORMANCE records timing boundaries.
+Final exact-source PR79 CI/main integration and vendor mirror remain; no runtime
+release/default/app pin change. The M1 handoff is now optional complementary
+Apple coverage, with no returned Apple result claimed.
+
 ## 2026-10-23 — Original Ovis F32 forward completes; cache observer failure retained
 
 [40040392649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40040392649)
@@ -14660,3 +14684,328 @@ recorded native source files (27 unchanged plus two test-only dump fixes), and
 retains every metric/TRACE vector and positive delta variant separately.
 Public/quality/calibration/numerical tools transfer the exact reviewed math
 configuration; no production default, alias or model publication is activated.
+
+## 24 October 2026 — Ovis native, public interfaces and original quality reference complete
+
+Full frozen native replay [40049244654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40049244654)
+at a2a17735 passes all fourteen F32/F16 arms. Independent review verifies all17
+logs,12 raw manifests/1,662 vector declarations,29 source files (27 unchanged
+and two exact dump-only test fixes),943 frozen original fields, cache/logit
+coverage, nine generated IDs/EOS and `Hello OCR\n\n12345`. Each composed
+decoder has189 comparisons, min printed cosine0.99999994 and max absolute
+0.0016772747 F32/0.00183558464 F16; confidence max2.62314e-7. Repeat, gate
+recovery, F32 single/F16 two-context and survivor controls pass. Existing vision
+calibrated budgets pass; the four raw strict exceedances remain recorded.
+[Full producer, independent review and four remote artifact identities](tests/results/qwen35-ocr/ovisocr2-model-audit.json).
+No original forward or weight conversion is repeated.
+
+Actual [public audit40053283383](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40053283383)
+at b33c5bad passes all27 arms: C/Python/CLI/HTTP/Rust/Dart text/confidence, real
+ABI layouts, caps, twelve prompt/gate/profile rejections and the two-stage model
+path check. The second complete metadata header opens, then its truncated
+weights fail to load; the first-stage fallback survives. Stage/cleanup/params
+sizes168/60/136 and offsets136/144 match actual C authority and bindings.
+CLI mean0.995 versus C0.9953882694 gives rounding error0.0003882694 within
+the pre-existing0.0006 public-format budget. [Actual interface evidence](tests/results/qwen35-ocr/ovisocr2-public-surfaces.json).
+This remains a one-image public smoke; no runtime release or app pin change.
+
+Original HF CPU/F32 quality [40054043629](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40054043629)
+at a0784b19 completes all eleven frozen cases with EOS248046 and no cap hits.
+All16 small archive members, source/config/framework identities, eleven PNG/RGB
+hashes, confidence records and scores are independently checked. Synthetic8/8
+WER0 retains newline CER; realistic token counts882/697/174. Receipt content
+CER/WER0.0533854/0.2222222, two-column0.1107011/0.1852518 and inventory0/0
+with all15 cells exact. Raw markup CER1.3411458/0.1351895/1.2727273 and
+strict-v1 border-attribute parse failures stay visible. The frozen Ovis
+presentation policy precedes these outputs and the old scorer is unchanged.
+[Immutable original quality reference and review](tests/results/qwen35-ocr/ovisocr2-original-quality.json).
+AMD EPYC9V74, four logical/affinity CPUs, two runtime threads; process high-water
+RSS5,601,852 KiB includes the loaded original model. These observations do not
+establish native quality or representative OCR benchmark performance.
+
+The original quality runner reuses the exact processor JSON and metadata/raw
+generation guards already validated by the943-field capture. Actual hosted
+execution confirms both contracts, avoiding duplicate tuple/list and raw-config
+assumptions. Subsequent native/quantized quality reuses the same original
+artifact and exact scores; never recapture or replace it.
+
+
+## 24 October 2026 — First native Ovis F16 quality matches all eleven Python outputs
+
+[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
+at638380f6 completes the first full F16 task panel. Independent review verifies
+all33 small-report ZIP members, eleven frozen PNG identities, retained original
+ZIP bytes, source/log hashes and recomputed unchanged quality scores. All25
+recorded native source files also match the positive fourteen-arm a2a17735 audit.
+All1841 generated token IDs and every raw/processed text match the frozen
+original HF reference on all eleven cases. Every case reaches EOS248046 without
+caps; all eight synthetic WER values are0 and inventory has15/15 exact cells.
+Raw/parsed receipt and two-column recognition errors remain unchanged, as do
+strict-v1 table-border parse failures and the four raw strict vision flags.
+[First qualified F16 producer and independent review](tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+is now frozen; later host controls cannot replace its outputs or scores.
+
+Actual F16 GGUF remains1717222848 bytes/SHA d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db.
+Report artifact12547361841 is1679537 bytes, ZIP SHA
+`e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f`,
+raw report SHA `648b2c252b08e1e56008fe81b2ce5aa9c1390eaf9cf93b7b8e5699303cf0925e`.
+Actual native CPU is AMD EPYC7763 with four logical/affinity CPUs and two
+OMP/MKL/OpenBLAS threads. Native document walls are1375.87791/1110.88488/293.464767
+seconds; child RSS upper bound3533312KiB. Original HF used a different EPYC9V74
+CPU and timing boundary. These are separate measurements, not a causal speed
+comparison; native latency remains a measured follow-up. No broad benchmark,
+quantized qualification, model publication, alias or runtime release follows.
+
+The quant harness now binds the frozen first eleven-case F16 scores. Explicit
+full same-run controls remain available; source-guarded one-image host controls
+avoid three repeated full F16 panels without claiming cross-host identity or
+paired document speed. Each candidate still runs all eleven cases and the full
+numeric diagnostic. Reports retain473 before/after tensor records and, for the
+calibrated arm, actual small stats/imatrix bytes; no heldout/document calibration.
+Pure quality/publisher controls pass41 tests with one existing skip; actual
+quant outcomes remain required. The registered published-consumer harness has
+8 pure controls and will require real immutable publication/registry pins and
+fresh CLI/HTTP downloads before claiming a consumer result. No such result yet.
+
+
+## 24 October 2026 — Quant raw evidence retention and shallow-checkout control correction
+
+Future Q4 quality jobs retain source-fed F16/candidate first-layer projections and
+full decoder Ref.compare/TRACE vectors in a separate remote artifact. Every raw
+manifest binds original943-stage JSON shapes, bytes and hashes; no comparator or
+threshold changes. A candidate-only hosted replay supplements the earlier Q8
+run without Python inference, conversion or an eleven-case rerun. Raw completeness
+is separate from numerical/quality success; probes stay outside model publication.
+The source-only controls pass30 quality tests (one existing skip),22 publication
+tests and6 candidate-replay tests. Hosted CPP formatting40064658040 initially
+failed on summary-line wrapping; correction0c480ca3 passes40065342652.
+
+Initial calibrated-Q4 [40065871086](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40065871086)
+and Q8 raw replay [40065872699](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40065872699)
+at816f97a9 fail metadata controls before model access: a pure test used a historical
+Git object absent from the shallow checkout. Plain Q4
+[40065869287](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40065869287)
+was cancelled while controls were queued, with zero steps. None produced a model
+or report artifact. Correction8fdf28f1 checks the unchanged comparison-body SHA
+locally;30 quality controls and5 metadata controls pass. Runtime/probe arithmetic
+and0.99999/0.002 gates are unchanged. Actual Q4/calibration and raw-replay outcomes
+require fresh corrected runs.
+[Initial control failures, cancellations and exact proof](tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json).
+
+
+## 24 October 2026 — Protected Ovis Q8 completed and rejected
+
+[40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+at8b421ba5 completes all eleven candidate cases, both frozen-reference quality
+comparisons,473-tensor audit and189 numerical metrics across72 decoder layers.
+All protected tensor hashes remain exact;150 matrices change from F16 to Q8_0.
+Candidate size1251261952 bytes, SHA
+`f0bccbed39f6189a95519997a7c36a1938d7fd5fe81a8b93ac44634d0886d13b`.
+First captured numerical failure is prefill.decoder.layer.0:
+cos_min0.999920726, max_abs0.00376427174, native/reference norms38.6133461/38.6110916;
+183 metrics fail unchanged gates. The one numerical image still has exact nine
+IDs/EOS/text, which does not settle document quality.
+
+All eleven full quality cases reach EOS248046 without caps, ten match first
+F16 token IDs/raw text. Two-column first token difference is index2,
+59289→353; `Lorem Ipsum` becomes `Lorem Ispum`,697→700 tokens. Its raw CER/WER
+increase0.13518953/0.18705036→0.13619591/0.19064748; content CER/WER
+0.11070111/0.18525180→0.11170748/0.18884892. Both document nonregression screens
+fail; synthetic screens pass and inventory retains15 exact cells. This is a
+complete negative diagnostic, authorizing Q4 comparison while blocking Q8
+publication. [Full immutable producer/review](tests/results/qwen35-ocr/ovisocr2-q8-quality.json).
+
+Small artifact12549202094,3494221 bytes, ZIP
+`2466774cfc7bdf324ddce15205c1257deb4c790f6c39b005f9bac457d8431ce0`, raw report
+`babffc936af26676d74a116c6281f704c5c982a8e4f03ed97544568bc5cd1e76`.
+Candidate artifact12549570352,1057884535 bytes, ZIP
+`f02a52a9b64f063afdb29553ee4ca16f2a3bd248af14be596e843428f74c07f4`
+stays remote. Review verifies all38 small-ZIP members, actual logs/inputs/scoring,
+first-F16 receipt/scores,10 exact Git path OIDs,25 native source hashes and6 AST
+contracts. Python3.13 show_empty=True reproduces the pinned hosted3.12 AST
+serialization; all six digests independently match both source commits. No
+weights/binaries were downloaded locally. Original Q8 raw vectors are absent;
+the candidate-only supplemental replay remains a separate pending result.
+
+
+## 24 October 2026 — Q8 raw replay preserves the earliest projection divergence
+
+[40066576197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066576197)
+at7924d850 completes candidate-only replay of the exact rejected Q8 bytes.
+Independent small-report review verifies all source/command/log hashes, original
+943-stage shape map,473 tensor records and all243 raw manifest names/sizes/hash
+fields. Eighteen local metrics include12 failures;225 composed vectors cover189
+metrics and36 TRACE arrays, with183 metric failures. Every printed decoder
+metric line matches the first Q8 run. Source-fed inputs are exact; first actual
+QKV projection differs by max0.0564889908, mean0.00313537405, cosine0.999990225,
+native/reference norms1710.70459/1710.69543. First composed hidden error remains
+0.00376427174. Nine IDs/EOS/readable text remain exact; document rejection stands.
+
+[Separate producer, manifests and independent review](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json).
+Small ZIP12550520522:95992 bytes, SHA
+`ab82634f4bf9fb3c29863719a224e5d3d6cb71028771cef7384fe31b3b558cbb`.
+Raw ZIP12549564579:166755252 bytes, SHA
+`eef492a4b9140da2a6910efc935344f7665c6d6b624852686f4c830081db237d`,
+expires22 January2027. Large payloads remain remote; service digest verification
+is not independent payload rehashing. Earlier Q8 had no raw vectors, so matching
+printed metrics does not establish old/new raw-byte identity. Actual native tests
+use four threads on EPYC9V45, distinct from two-thread quality inference and the
+two-thread environment. No F16 control, conversion, original inference or
+quality-panel rerun occurred; the initial Q8 quality wrapper is unchanged.
+
+
+The publication preflight now checks the selected quality report artifact's
+actual service name/run/expiry/digest for every precision, including F16,
+before dependencies, model bytes or upload. The native report/reference and
+quant raw/candidate checks remain. A regression expires only the selected F16
+quality artifact and confirms rejection before upload;23 publisher controls
+and8 published-consumer controls pass. This is tooling validation, not a
+publication or consumer result.
+
+
+## 24 October 2026 — Development-only calibrated Ovis Q4 completes and is rejected
+
+[40066574754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066574754)
+at7924d850 completes all eleven candidate cases, the same-run F16 host/local
+controls, full numerical diagnostic and473-tensor audit. Candidate1119141376
+bytes/SHA `6e5983e0a328c3ae507936990b5d85c75c5e257263625658e6a04b98e9f027cb`
+has72 Q4_K FFN/78 Q8_0 attention/89 F16/234 F32 tensors; all323 protected
+records remain byte exact. F16 first-linear control passes18/18. Candidate
+first QKV max0.0564889908/cosine0.999990225 matches the Q8 projection diagnostic;
+full first hidden error grows to0.021024704/cosine0.998080194. Candidate local
+12/18 and composed183/189 metrics fail unchanged gates, despite exact readable
+nine IDs/text/EOS. All261 raw manifest names/shapes/bytes are verified against
+the original943-stage map; large payloads remain remote.
+
+Eight synthetic ID/text sequences match first F16; all11 cases reach EOS without
+caps. Receipt882→468 tokens worsens content CER/WER0.0533854/0.222222→0.0703125/0.319444.
+Two-column697→699 tokens improves raw/content CER/WER. Inventory retains174
+tokens/all15 exact cells but raw CER/WER increase1.272727/0.625→1.278788/0.65625.
+Both original/F16 document nonregression screens fail. Smaller/faster and correct
+cells cannot override retained numerical/document failures.
+[Complete producer, raw manifests and independent review](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json).
+
+Independent [calibration provenance](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-calibration.json)
+is positive separately from the negative candidate. The exact four development
+PNGs/RGB/collector IDs/EOS match first F16; no heldout or document enters
+calibration. Standard-library parsing verifies72 vectors with1327 rows each,
+widths1024/3584, finite nonnegative nonzero statistics, every F32-cast SHA and
+all72 exact GGUF payloads. Quantizer applies all72 importance vectors.
+Stats2562821 bytes/SHA `f944107bdb97e739dc3317d8361861f95e4412f769f534ef150eeeaf6578f9fb`;
+imatrix549440 bytes/SHA `80ca50f185e89c178a7f9cbe41f9b79a193a09b246f304958bddf6428e2e896d`.
+
+Small report12550642557 is4934025 bytes/SHA
+`0eee2adf5a4a7c45636cc17c98514f785b8d34dee9c7084970c558e2d2aa9dbd`;
+raw report SHA `36859aaae06fe4c15cd030955312941e460fdd4960f91b2438767762585fdebb`.
+Candidate12550513447:934639093 bytes/SHA
+`3d75f850e85d237dbff896241911917235816c3cea15ade7ac8fbc41152f205f`;
+raw12550667524:183583702 bytes/SHA
+`aa5fd78aceda0efeeb893486deea13fe5808f7e4108054fa91ebb5cd57f60067`.
+Large ZIPs remain remote with service digest verification only; expire22 January2027.
+Source/log hashes, exact first-F16 baseline, ten Git OID pairs, six AST contracts,
+25 native source hashes and recomputed unchanged scores independently pass.
+
+
+## 24 October 2026 — Plain Ovis Q4 rejected; F16 selected after all three attempts
+
+[40066573198](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066573198)
+at7924d850 completes all11 candidate cases,473-tensor proof and three complete
+raw probes. F16 local control passes18/18; Q4 local12/18 and full183/189 metrics
+fail. First QKV max0.0564889908/cosine0.999990225, first hidden
+0.0316588879/cosine0.997843027. Exact readable nine IDs/EOS/text remain.
+All11 cases reach EOS without caps; eight synthetic cases and inventory match
+first F16 IDs/raw text. Receipt882→473 tokens worsens content CER/WER
+0.0533854/0.222222→0.0703125/0.319444. Two-column697→699 tokens raises raw WER
+0.1870504→0.1942446/content WER0.1852518→0.1924460. Inventory retains15 exact
+cells. Both original/F16 document screens fail.
+[Full original producer, raw manifests and independent review](tests/results/qwen35-ocr/ovisocr2-q4-quality.json).
+
+Candidate1119141376 bytes/SHA
+`aa6516815bd4d5418e7f4d96b8977019a9b59a64863d52e2cda75b029bfd748e`.
+All72 Q4_K FFN/78 Q8_0 attention matrices account for150 changes;323 protected
+tensor records remain byte exact. Independent reviews recompute scores, ten Git
+OID pairs/six AST contracts/25 native source hashes and261 raw manifest shapes,
+bytes and hash fields. Report12550638818:3515833 bytes/SHA
+`16aee2d0b646c67481f3bc40080ed84e6e8f5ee108f493826e93838aaced6c04`;
+candidate12551051507:933151485 bytes/SHA
+`fd6ecd4654e657615385d8f01279fbe0cb89059df98c90f58156f89fde497270`;
+raw12551125991:183568552 bytes/SHA
+`f7a039e3e99e1afd80f98dbf6fc9764e38d77d72c4eeed29103c30d332872495`.
+Large payloads stay remote; service digests are verified, not independently
+rehashable local vector bytes. Artifacts expire22 January2027.
+
+All three actual Q8/plain-Q4/calibrated-Q4 attempts are rejected for numerical
+and document-quality failures. The unchanged first F16 remains qualified on all
+1841 original IDs/text. [Selection and exact receipts](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+choose F16; actual publisher receipt preflight passes before auth/packages/weights.
+This is selection, not upload, alias, consumer qualification or runtime release.
+
+
+The [cross-arm tensor review](tests/results/qwen35-ocr/ovisocr2-quant-cross-arm.json)
+compares all473 retained records from the actual Q8/plain-Q4/calibrated-Q4 runs.
+All original input records agree. Q8→Q4 changes only72 FFN matrices; plain→
+calibrated Q4 changes every72 FFN payload hashes while preserving their Q4_K
+types/shapes. All78 attention and323 protected records are identical between
+plain/calibrated Q4. The first QKV payload SHA remains
+`02949b2058722f39cc20496e0fa384a16e12ea48104bf16473a007379dfb951a`
+across all three candidates. Calibration demonstrably affects the intended
+weights and cannot alter this unchanged source-fed QKV projection. This is
+recorded-hash comparison, not local large-model rehashing or quality promotion.
+
+
+## 24 October 2026 — Initial F16 publication reaches exact artifact, then namespace denial
+
+[40070360890](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40070360890)
+at79c71224 passes both hosted control layers, all receipt/service gates and
+exact1717222848-byte/d3a733a5… F16 payload verification. Generated model card,
+manifest and original Apache LICENSE/README hashes match their pins. Hugging Face
+then denies repository creation with403. The run returns no uploaded GGUF,
+publication commit or empty-cache remote readback. Qualification remains positive;
+publication remains negative. [Initial producer and independent failure review](tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json).
+Small report12552441116:7242 bytes/SHA
+`e29e6b06ccf6a6545cc0f69091b13d2f2125ea9db2c57fc360a424902aa15624`;
+producer SHA `88fc53f420eecc1b1d5002188038c2afac22ffa197242c83ad18d0ae09eb34a8`.
+The dedicated publisher credential binding and pre-transfer presence guard are
+corrected separately from model code, math, quality or selection. A corrected
+hosted retry is required; never mark this initial failure as publication success.
+
+
+## 24 October 2026 — Qualified Ovis F16 published; immutable readback and real alias wired
+
+Corrected [40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
+at121dc943 succeeds after both hosted control layers, receipt/service/source
+gates, exact artifact verification, actual Hub upload and forced empty-cache full
+readback. [Immutable model b7229e46f31bcf342d0999966bae8a03bf02bb07](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
+contains exactly the1717222848-byte F16/SHA
+`d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db`,
+LICENSE, original README, generated card/manifest and `.gitattributes`.
+Independent anonymous immutable-tree/small-file checks match all reported hashes
+and Git blob IDs, original license provenance and selected receipt chain.
+[Producer, two independent reviews and scope](tests/results/qwen35-ocr/ovisocr2-publication.json).
+No raw probes/test weights are distributed. Full GGUF rehashing occurred on
+hosted CI; local review used only small reports/files and authoritative LFS
+metadata. Small report12553849069:7212 bytes/SHA
+`c75769588e95621d3314ea241f737b4d619ccde901dc86bc89098548ff249449`;
+producer SHA `98346a2eb464fb7bf252774d3d44362f9e98a1626103da19e80ab37d394e0691`.
+The task-only publisher binding is removed after terminal success; general
+credentials are unchanged. Initial403 remains a separate immutable failure.
+
+The actual `ovisocr2-f16` registry alias now pins that commit and full SHA;
+official hash-fetch/render helpers verify the new file while preserving all304
+existing pins. Both CLI/server resolve Ovis21 before exact profile checks, after
+all gate/prompt/empty-input rejection; legacy engine20 ordering is unchanged.
+All25 native quality source files and the complete qualified `src` tree,
+ggml gitlink and CMake blob remain exact. New consumer preflight rejects drift
+in those recorded25 files before build; a mutation regression and all nine pure
+consumer controls pass. Three adapter controls pass; no unqualified default
+`ovisocr2` alias is added. Actual fresh-cache CLI/HTTP consumer execution remains
+required before final integration. No runtime release, app upgrade or default flip.
+
+
+The M1 fallback now pins d4c30424 for the real public alias/API consumer with
+resource/swap gates, isolated source, two fresh caches and small-evidence return.
+A reporting-only correction normalizes Darwin child `ru_maxrss` bytes to KiB;
+Linux numbers are unchanged. A two-platform unit regression and all ten consumer
+controls pass. Native sources/math/build configuration are unchanged; the queued
+Linux consumer at5296 continues. This handoff and pure test are not an M1 runtime
+result, full Apple numerical qualification or a runtime release.

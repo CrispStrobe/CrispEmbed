@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "source_model": "ATH-MaaS/OvisOCR2",
+  "source_revision": "cbdede82e048659b83310476ff807da825f8fe78",
+  "scope": "Eight original, self-authored, text-only synthetic pages frozen before Ovis candidate outputs. Smoke quality and regression panel, not a document benchmark.",
+  "license": "CC0-1.0",
+  "renderer": {
+    "library": "Pillow",
+    "version": "12.1.0",
+    "mode": "RGB",
+    "size": [448, 448],
+    "background": "white",
+    "fill": "black",
+    "font": "Pillow default via ImageDraw.text(font_size=...)"
+  },
+  "prompt": "original single-image OvisOCR2 README prompt at pinned source revision",
+  "max_new_tokens": 256,
+  "cases": [
+    {"id": "dev-hello", "split": "development", "gold": "Hello OCR\n12345", "x": 30, "y": 80, "font_size": 24},
+    {"id": "dev-invoice", "split": "development", "gold": "Invoice 042\nTotal $12.50", "x": 22, "y": 64, "font_size": 22},
+    {"id": "dev-menu", "split": "development", "gold": "Menu\nTea $2.40", "x": 25, "y": 74, "font_size": 24},
+    {"id": "dev-section", "split": "development", "gold": "Section B\nDraft copy", "x": 28, "y": 68, "font_size": 22},
+    {"id": "hold-batch", "split": "heldout", "gold": "Batch ZX9\nPage 17", "x": 26, "y": 76, "font_size": 25},
+    {"id": "hold-paid", "split": "heldout", "gold": "PAID\nOrder 6842", "x": 32, "y": 70, "font_size": 26},
+    {"id": "hold-date", "split": "heldout", "gold": "Date 2030-04-19\nRoom C7", "x": 21, "y": 61, "font_size": 21},
+    {"id": "hold-code", "split": "heldout", "gold": "Code Q5K\nAmount 73.08", "x": 24, "y": 66, "font_size": 23}
+  ]
+}

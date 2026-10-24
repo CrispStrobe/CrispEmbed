@@ -6391,3 +6391,220 @@ in every passing arm; existing original-backend variation budgets pass without
 any changed threshold or comparator. This is component evidence, not decoded
 quality. Baseline/two-forward test wall times33.98/34.33 seconds versus selected
 60.67/60.77 include loading, dumps and controls; one case is not production latency.
+
+
+## Ovis full native and public audit — 24 October 2026
+
+[Native40049244654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40049244654)
+at a2a17735 passes all fourteen F32/F16 arms against the unchanged943-field
+reference: delta state/reset, vision, prepared decoder, native vision/positions,
+full frontend and owning-context lifecycle. Each full frontend has189 comparisons;
+minimum printed cosine0.99999994 and maximum absolute errors0.0016772747 F32 /
+0.00183558464 F16. Actual nine IDs end at EOS248046 and decode exactly to
+`Hello OCR\n\n12345`. Context confidence maximum error is2.62314e-7. Existing
+vision backend budgets pass; the four raw strict0.002 exceedances remain visible.
+[Reviewed producer and limits](tests/results/qwen35-ocr/ovisocr2-model-audit.json).
+
+The F32/F16 frontend command walls60.87/64.23 seconds include loads, raw dumps
+and controls. Context walls238.48/364.38 seconds include repeated initialization,
+multiple contexts and recovery. These are audit-command costs, not production
+OCR latency. This replay does not record its own CPU fingerprint; do not infer
+cross-hardware speed from its original reference CPU metadata.
+
+[Public40053283383](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40053283383)
+at b33c5bad passes27 arms across C/Python/CLI/HTTP/Rust/Dart. Actual text is exact;
+C mean confidence0.9953882694244385 and printed CLI0.995 differ0.0003882694,
+within the pre-existing0.0006 formatting allowance. The six interfaces establish
+one-image reachability, gate/profile/prompt rejection, ABI layout and model-cache
+recovery. They do not establish eleven-case task quality or expose public token
+IDs/stops. [Full public evidence](tests/results/qwen35-ocr/ovisocr2-public-surfaces.json).
+
+## Ovis frozen original HF quality — 24 October 2026
+
+[Original40054043629](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40054043629)
+at a0784b19 completes all eleven cases on the frozen pixels, before native
+candidate task outputs. All reach EOS248046 without caps; all eight synthetic
+cases have WER0. The three realistic documents remain a bounded evaluation.
+
+| Original HF document | Actual tokens | Raw CER / WER | Parsed content CER / WER | Generation wall seconds |
+| --- | --- | --- | --- | --- |
+| Historical receipt | 882 | 1.34114583 /0.74305556 | 0.05338542 /0.22222222 | 149.6715 |
+| Two-column page | 697 | 0.13518953 /0.18705036 | 0.11070111 /0.18525180 | 117.7048 |
+| Inventory table | 174 | 1.27272727 /0.625 | 0 /0 | 32.2243 |
+
+Inventory has15/15 exact controlled cells. Raw errors retain actual Markdown/HTML;
+the separately frozen Ovis integer-border presentation view parses tables while
+preserving the strict-v1 receipt/inventory parse failures and raw metrics.
+Actual CPU is AMD EPYC9V74, four logical/affinity CPUs with two OMP/MKL/OpenBLAS
+threads. Process high-water RSS5601852KiB includes the loaded original model
+and is a per-case upper bound. Generation timing includes confidence extraction
+and decoding, excludes processor preparation; it is not directly comparable to
+GPU engine or native initialization/audit-command timings. No native task or
+quantized quality claim follows from these original-only scores.
+[Full original outputs, source hashes and independent review](tests/results/qwen35-ocr/ovisocr2-original-quality.json).
+
+
+## Ovis first native F16 task quality — 24 October 2026
+
+[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
+at638380f6 matches every original HF token ID/raw/processed text on all eleven
+frozen inputs:1841 generated IDs, eleven EOS248046 completions, no caps, eight
+synthetic WER0 cases and15/15 inventory cells. All raw/content CER/WER values
+match the original table above, including its recognition errors. Selected-token
+probability maximum absolute difference is0.00012046128 and per-case mean maximum
+is0.00001599052; score objects retain these actual confidence differences.
+The original comparators and raw vision exceedances are unchanged.
+[Full frozen first F16 outputs and review](tests/results/qwen35-ocr/ovisocr2-f16-quality.json).
+
+| Native F16 case | Recognition wall seconds | Initialization seconds | Actual tokens |
+| --- | ---: | ---: | ---: |
+| Hello OCR | 51.1448 | 0.4217 | 9 |
+| Historical receipt | 1375.8779 | 0.4082 | 882 |
+| Two-column page | 1110.8849 | 0.4151 | 697 |
+| Inventory table | 293.4648 | 0.4036 | 174 |
+
+All eight synthetic recognition walls range46.94–62.16 seconds. Actual CPU is
+AMD EPYC7763, four logical/affinity CPUs with two OMP/MKL/OpenBLAS threads;
+child-process high-water RSS3533312KiB (3.37GiB) is a per-case upper bound,
+not a fresh per-case peak. Recognition walls include native preprocessing,
+vision, decoding and confidence, exclude initialization. The HF EPYC9V74 run
+and its processor-excluding boundary differ: do not claim a same-host speed
+ratio. Native latency is substantial despite decoded parity. Profile separately
+and measure gated unchanged-output alternatives before optimization/default
+changes; do not repeat this qualified first F16/reference panel merely for timing.
+
+Quant short host controls reuse this first eleven-case F16 evidence and still
+run every candidate on all eleven inputs. One same-run control cannot establish
+all-case cross-host F16 equivalence or causal document speed. Keep explicit full
+host controls available and preserve all candidate timings/CPU/RSS separately.
+
+
+## Ovis protected Q8 — complete negative result, 24 October 2026
+
+[40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+at8b421ba5 measures1251261952-byte Q8 against1717222848-byte F16. All473 tensor
+names/shapes match;150 eligible F16 matrices become Q8_0, all323 other records
+retain their types/hashes. Vision, embedding, norms and recurrent A/B gates are
+protected. First captured decoder error0.00376427174 with min cosine0.999920726
+fails the unchanged0.002/0.99999 gates;183/189 metric verdicts fail. Numerical
+image IDs/text remain exact, but the full two-column output regresses.
+
+All11 candidate cases reach EOS without caps. Ten match first F16 IDs/raw text;
+two-column changes697→700 tokens, including `Ipsum`→`Ispum`. Raw CER/WER rise
+0.13518953/0.18705036→0.13619591/0.19064748; parsed content CER/WER rise
+0.11070111/0.18525180→0.11170748/0.18884892. Eight synthetic WER0 and15 correct
+inventory cells do not qualify this candidate. It is rejected for both numeric
+and document nonregression. [Full scores/operands/source proof](tests/results/qwen35-ocr/ovisocr2-q8-quality.json).
+
+Native Q8 recognition walls: Hello48.4166 seconds, receipt917.0298,
+two-column755.8296, inventory207.7254. CPU model EPYC7763/four logical and affinity
+CPUs/two inference threads matches the earlier F16 model name, but these are
+separate sessions and document boundaries are cross-run. Only the single same-run
+F16 owned-image control is paired. Retain actual per-case values; no general or
+causal document speed ratio follows. Original raw vector dumps were not saved;
+the separate candidate-only replay will preserve operation-level diagnostics
+without replacing these initial quality/numerical observations.
+
+
+## Ovis Q8 first projection diagnostic — 24 October 2026
+
+[Candidate-only replay40066576197](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
+uses the exact rejected1251261952-byte Q8 candidate. Source-fed first-block inputs
+have max absolute0; first QKV max/mean error0.0564889908/0.00313537405 with minimum
+cosine0.999990225 and norms1710.70459/1710.69543. The cosine alone passes0.99999,
+but the unchanged absolute0.002 gate fails. Local12/18 and full183/189 metrics
+fail; first composed hidden error remains0.00376427174. The single readable-image
+nine-ID match does not override the earlier two-column quality regression.
+All243 raw vectors are retained remotely with verified manifest shapes/byte
+counts; local review used small reports and service metadata only. Four-thread
+numerical tests on EPYC9V45 are diagnostic, not production latency measurements.
+
+
+## Ovis calibrated Q4 — mixed quality, rejected, 24 October 2026
+
+[Actual40066574754](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json)
+measures1119141376 bytes (1.119GB), with72 FFN Q4_K matrices and78 attention
+Q8_0 matrices. Four development-only images produce72 importance vectors;
+independent GGUF/statistics proof passes. First source-fed QKV max0.0564889908
+is unchanged from Q8; first composed hidden error0.021024704/cosine0.998080194
+fails unchanged thresholds. The same-run F16 local control passes18/18.
+
+| Document | First F16 content CER/WER | Calibrated Q4 content CER/WER | F16 → candidate tokens |
+| --- | --- | --- | --- |
+| Receipt | 0.0533854 /0.222222 | 0.0703125 /0.319444 | 882 →468 |
+| Two-column | 0.1107011 /0.185252 | 0.0959410 /0.165468 | 697 →699 |
+| Inventory | 0 /0,15 exact cells | 0 /0,15 exact cells | 174 →174 |
+
+Inventory raw CER/WER worsens1.272727/0.625→1.278788/0.65625. All11 cases reach
+EOS/no caps, eight synthetic IDs/text remain exact. Both original/F16 document
+screens fail; improved two-column quality cannot compensate for regressions.
+
+Native recognition walls on EPYC9V45/four logical CPUs/two inference threads:
+Hello26.0617s, receipt324.0875s, two-column478.9670s, inventory130.3026s. Collector
+145.8085s and quantizer23.9241s are separate command timings. Maximum cumulative
+child RSS4342928KiB is an upper bound, including earlier child commands, not a
+fresh per-case peak. F16's first panel used EPYC7763; no paired document speed
+ratio follows. First-F16 one-case host control is29.2631s. Numerical probes use
+four native threads, separately from two-thread quality inference.
+
+
+## Ovis plain Q4 and completed selection — 24 October 2026
+
+[Plain40066573198](tests/results/qwen35-ocr/ovisocr2-q4-quality.json) measures
+1119141376 bytes, same tensor types/size as calibrated Q4 but different bytes.
+First QKV max0.0564889908 is unchanged; first composed hidden error is
+0.0316588879/cosine0.997843027. F16 local18/18 passes; Q4 local12/18 and composed
+183/189 fail unchanged gates. All11 cases reach EOS; nine match first F16 IDs/text.
+Receipt content CER/WER worsens0.0533854/0.222222→0.0703125/0.319444; two-column
+raw WER0.1870504→0.1942446/content WER0.1852518→0.1924460. Inventory stays15/15.
+Native walls on EPYC9V74/two inference threads: Hello33.8184s, receipt404.1246s,
+two-column583.3674s, inventory161.5264s; cumulative child RSS upper4343776KiB.
+The first F16/calibrated runs used different CPUs; no causal paired speed claim.
+
+| Actual candidate | File bytes | Numerical/task qualification |
+| --- | ---: | --- |
+| First F16 | 1717222848 | Qualified on the bounded frozen panel; selected |
+| Protected Q8 | 1251261952 | Rejected; numerical and two-column regression |
+| Attention-Q8 /FFN-Q4 | 1119141376 | Rejected; numerical, receipt and two-column regression |
+| Development-calibrated same Q4 recipe | 1119141376 | Rejected; numerical, receipt and inventory raw regression |
+
+[Exact three-attempt selection](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+retains every smaller failed candidate; calibration provenance alone is positive.
+
+
+## Ovis immutable distribution — 24 October 2026
+
+[Published/readback40074370335](tests/results/qwen35-ocr/ovisocr2-publication.json)
+serves exactly the already-qualified1717222848-byte F16 at immutable Hub commit
+b7229e46f31bcf342d0999966bae8a03bf02bb07. Hosted forced empty-cache download
+matches SHA d3a733a5…; independent anonymous small-file/LFS metadata checks pass.
+Publication changes delivery, not model arithmetic or the measured CPU latency.
+All three smaller candidates stay rejected. Actual alias consumer results follow;
+first-F16 recognition errors/latency and1024-patch scope remain as above.
+
+
+## Ovis published CLI/HTTP consumer — 24 October 2026
+
+[Actual40080458492](tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+at5296e955 builds portable CPU CLI/server in188.843s on AMD EPYC7763,
+four logical/affinity CPUs and two inference threads. Two genuinely fresh caches
+independently verify all1717222848 model bytes/SHA d3a733a5…. Each API returns
+`Hello OCR\n\n12345` with one region. Online/offline CLI mean0.995 differs
+from frozen native0.995388269 by0.000388269 (budget0.0006); HTTP0.9954 differs
+by0.000011731 (budget0.00006). Offline emits only its single result JSON and
+reuses the verified cache. Public APIs expose no token IDs or stop reason.
+
+| Actual arm | Wall seconds | Boundary |
+| --- | ---: | --- |
+| Fresh CLI alias | 85.692 | Download, initialization and recognition |
+| Offline CLI | 54.246 | Initialization and recognition, cached model |
+| Fresh HTTP alias | 75.892 | Download, server startup and request |
+
+CLI child RSS upper bounds3477792/3478432KiB are cumulative process-child
+high-water values, not isolated inference peaks. HTTP has no equivalent isolated
+RSS measurement. The one-image delivery audit is not an eleven-case rerun,
+Apple qualification, broad OCR benchmark or recognition-only speed comparison.
+All25 native source hashes match the frozen first-F16 quality source. Two
+independent reviews verify the small report, all six log hashes, source closure,
+binary declarations and unchanged output/confidence gates. Large payload checks
+occurred on hosted CI; only small reports/logs were downloaded for review.
