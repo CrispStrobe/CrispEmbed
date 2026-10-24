@@ -354,7 +354,7 @@ def preflight(out, scratch, report):
     return source
 
 
-def checked_archive(pin, scratch, out, label):
+def checked_archive(pin, scratch, out, label, report):
     path = scratch / (label + '.zip')
     download_artifact(pin, path)
     with zipfile.ZipFile(path) as archive:
@@ -402,8 +402,8 @@ def main(preflight_only=False):
             raise ValueError('Hosted scratch has under 9 GiB free before bounded artifacts')
         # Extract the two models and remove their verified ZIP first. Keeping
         # the reference file during that ZIP's extraction adds ~1.45 GB peak.
-        checked_archive(EXPORT_ARTIFACT, scratch, out, 'export')
-        checked_archive(SOURCE_REFERENCE_ARTIFACT, scratch, out, 'reference')
+        checked_archive(EXPORT_ARTIFACT, scratch, out, 'export', report)
+        checked_archive(SOURCE_REFERENCE_ARTIFACT, scratch, out, 'reference', report)
         report['disk_free_after_extraction_bytes'] = shutil.disk_usage(scratch).free
         save(out, report)
         report['phase'] = 'portable-native-build'; save(out, report)
