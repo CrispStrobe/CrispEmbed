@@ -1,6 +1,24 @@
 name: OvisOCR2 gated public surfaces
 
 on:
+  workflow_call:
+    inputs:
+      model_run_id:
+        description: 'Reviewed positive Ovis model-audit run ID'
+        required: true
+        type: string
+      lighton_run_id:
+        description: 'Existing qualified LightOn model artifact run ID'
+        required: true
+        type: string
+      lighton_artifact_name:
+        description: 'Existing qualified LightOn model artifact name'
+        required: true
+        type: string
+      lighton_filename:
+        description: 'Format-1 LightOn GGUF filename within that artifact'
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       model_run_id:

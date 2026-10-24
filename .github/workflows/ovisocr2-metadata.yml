@@ -4,9 +4,13 @@ on:
     inputs:
       phase:
         type: choice
-        description: 'Metadata/export/frontend, historical model capture, frozen replay, vision A/B or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, lighton-fixture]
+        description: 'Metadata/export/frontend, historical model capture, frozen replay, vision A/B, public surfaces or wrong-profile fixture'
+        options: [metadata, export, frontend, model, replay, vision, public, lighton-fixture]
         default: metadata
+      native_run_id:
+        type: string
+        description: 'Public phase only: reviewed positive Ovis native replay run ID'
+        default: '0'
       vision_preset:
         type: choice
         description: 'Frozen replay only: explicit independently reviewed existing math preset'
@@ -49,6 +53,15 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'vision'
     needs: controls
     uses: ./.github/workflows/ovisocr2-vision-audit.yml
+  public:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'public'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-public-surfaces.yml
+    with:
+      model_run_id: ${{ inputs.native_run_id }}
+      lighton_run_id: '40046789339'
+      lighton_artifact_name: lightonocr3-format1-receipt-40046789339
+      lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
   controls:
     runs-on: ubuntu-latest
     steps:
