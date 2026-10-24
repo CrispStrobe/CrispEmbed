@@ -25,16 +25,7 @@ concurrency:
   group: ovisocr2-native-replay-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  controls:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python tests/test_ovisocr2_native_replay.py -v
   replay:
-    needs: controls
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
@@ -49,6 +40,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Source controls before artifacts or builds
+        run: python tests/test_ovisocr2_native_replay.py -v
       - name: Task-owned scratch and frozen-source preflight
         run: |
           mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"

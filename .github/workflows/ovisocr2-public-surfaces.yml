@@ -47,17 +47,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  controls:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python tests/test_ovisocr2_public_surfaces.py -v
-
   public:
-    needs: controls
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -74,6 +64,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Source controls before artifacts or builds
+        run: python tests/test_ovisocr2_public_surfaces.py -v
       - name: Reviewed F16-positive model gate before dependencies and weights
         run: |
           mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
