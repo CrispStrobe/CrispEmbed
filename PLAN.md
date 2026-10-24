@@ -409,6 +409,33 @@ model publication. The original GPU automatic-FlashInfer failure, both original
 configuration failures, cache-observer failure, initial vision failures and
 archive-helper failure remain preserved in HISTORY.
 
+## Ovis latency/RSS follow-up — after the current qualification/publication loop
+
+The first qualified [F16 panel](tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+has exact Python IDs/text on all eleven cases but native recognition walls of
+51.14 seconds for Hello OCR,1375.88 seconds for the receipt and1110.88 seconds
+for the two-column page. Native/HF CPU models and timing boundaries differ;
+recognition parity does not settle latency. This is a later bounded lane, not
+permission to recapture or weaken the original/F16 quality anchors.
+
+1. On hosted CPU, adapt `tests/test_qwen35_profile.cpp` to the explicit Ovis
+   format-2 context and reviewed math/gates. Use `src/qwen35_profile.{h,cpp}`
+   counters to separate setup/materialization/read/conversion/validation/matmul,
+   vision/prefill/decode and initialization. Start with the frozen owned image;
+   a capped document prefix is a profile only, not EOS/decoded-quality proof.
+   Check profile on/off neutrality against the frozen first outputs and record
+   actual source, CPU/compiler/library/thread, RSS and timing boundaries.
+2. Only after measured attribution, evaluate one gated optimization at a time
+   in `src/qwen35_linear.cpp::project_cpu`/`tensor_floats`, such as per-context
+   converted-weight reuse or backend/context reuse. Keep the existing path and
+   bound any extra RAM. Cover context separation, reset, failed load, free and
+   survivor behavior; do not introduce a shared stale tensor-pointer cache.
+3. Require the full frozen original-module/crispembed-diff stage/cache/logit
+   gates and all eleven actual first-F16 IDs/text/EOS/caps/quality/confidence
+   comparisons for a changed runtime. Measure paired same-host baseline/new
+   latency and RSS; report any memory tradeoff. Preserve every failure and raw
+   strict flag. No default or app-runtime flip without separate qualification.
+
 ## Pipeline cache identity follow-up
 
 The Ovis-only path-key correction is prepared in PR79: ordered Ovis stages
