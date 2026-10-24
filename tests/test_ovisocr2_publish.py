@@ -1,5 +1,6 @@
 """Pure publication qualification tests. No hub client, auth or weights."""
 import importlib.util
+import io
 import hashlib
 import json
 from pathlib import Path
@@ -13,6 +14,9 @@ subject = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(subject)
 HASH = 'a'*64
 HEAD = 'b'*40
+SELECTION = {'name': 'both', 'enabled_gates': list(subject.vision_contract().PRESETS['both']),
+             'values': {flag: ('1' if flag in subject.vision_contract().PRESETS['both'] else '0')
+                        for flag in subject.vision_contract().FLAGS}}
 
 
 def write(folder, name, value):
@@ -35,6 +39,10 @@ def fixtures(folder, precision='f16'):
                                     'name': 'ovisocr2-model-reference-123'},
              'producer': {'status': 'completed diagnostic audit', 'failures': [],
                           'source_commit': HEAD,
+                          'selected_vision_preset': {**SELECTION,
+                              'all_other_native_gates_unchanged': True,
+                              'no_production_default_promoted': True},
+                          'native_environment': SELECTION['values'],
                           'gpu_prerequisite': {'receipt_sha256': gpu_sha},
                           'exports': {'f16': {'model_sha256': subject.F16_SHA}},
                           'reference_artifacts': {'gguf': {'sha256': HASH}},
@@ -47,7 +55,7 @@ def fixtures(folder, precision='f16'):
         allow_nan=False).encode()).hexdigest()
     model_sha = write(folder, 'ovisocr2-model-audit.json', model)
     public = {'producer': {'status': 'completed public audit', 'failures': [],
-                           'source_commit': HEAD,
+                           'source_commit': HEAD, 'selected_vision_preset': SELECTION,
                            'model_prerequisite': {'receipt_sha256': model_sha},
                            'artifacts': {'model': {'sha256': subject.F16_SHA}},
                            'public_confidence_comparison': {'passed': True},
@@ -64,7 +72,8 @@ def fixtures(folder, precision='f16'):
         'status': ('completed F16 quality observations; independent review pending'
                    if precision == 'f16' else 'completed quantized quality observations; independent review pending'),
         'requested_phase': precision, 'source_commit': HEAD,
-        'prerequisite': {'baseline_sha256': model_sha,
+        'selected_vision_preset': SELECTION,
+        'prerequisite': {'baseline_sha256': model_sha, 'selected_vision_preset': SELECTION,
                          'original_review_sha256': original_sha},
         'models': {precision: {'sha256': candidate_sha, 'bytes': 1_717_222_848,
                                **({} if precision == 'f16' else {'recipe': subject.RECIPES[precision]})}},
@@ -251,12 +260,43 @@ class PublicationGate(unittest.TestCase):
         with self.assertRaises(ValueError):
             subject.find_artifact(self.folder, 'ovisocr2-f32.gguf', expected, candidate.stat().st_size)
 
+    def test_public_and_quality_must_use_reviewed_vision_math(self):
+        for filename, slot in (('ovisocr2-public-surfaces.json', 'selected_vision_preset'),
+                               ('ovisocr2-f16-quality.json', 'selected_vision_preset')):
+            fixtures(self.folder)
+            path = self.folder / filename
+            receipt = json.loads(path.read_text())
+            receipt['producer'][slot] = {**SELECTION, 'name': 'baseline'}
+            path.write_text(json.dumps(receipt))
+            with self.assertRaisesRegex(ValueError, 'review/source|phase/model'):
+                subject.require_receipts('f16')
+
+    def test_source_readme_recovery_and_tamper_rejection(self):
+        payload = b'pinned source card'
+        with mock.patch.object(subject, 'UPSTREAM_README_SHA', hashlib.sha256(payload).hexdigest()):
+            calls = []
+            def opener(url, **kwargs):
+                calls.append(url)
+                return io.BytesIO(payload)
+            path = subject.pinned_upstream_readme(self.folder / 'empty', self.folder / 'scratch', opener)
+            self.assertEqual(path.read_bytes(), payload)
+            self.assertEqual(calls, [subject.UPSTREAM_README_URL])
+            path.write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError, 'provenance altered'):
+                subject.pinned_upstream_readme(path.parent, self.folder, opener)
+            with self.assertRaisesRegex(ValueError, 'payload SHA'):
+                subject.pinned_upstream_readme(self.folder / 'empty', self.folder,
+                                               lambda *args, **kwargs: io.BytesIO(b'changed'))
+
     def test_card_placeholders_and_allowlist(self):
         pins = {'public_source_commit': HEAD, 'candidate_sha256': HASH,
-                'candidate_bytes': 1_717_222_848, 'precision': 'f16', 'recipe': 'original-f16'}
+                'candidate_bytes': 1_717_222_848, 'precision': 'f16', 'recipe': 'original-f16',
+                'selected_vision_preset': SELECTION}
         rendered = subject.card(pins, 'ovisocr2-f16.gguf')
         self.assertIn(HEAD, rendered)
         self.assertNotIn('${', rendered)
+        for name, value in SELECTION['values'].items():
+            self.assertIn(name + '=' + value, rendered)
         with self.assertRaises(ValueError): subject.require_receipts('f32')
 
 

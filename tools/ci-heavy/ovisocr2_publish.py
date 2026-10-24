@@ -5,6 +5,7 @@ This module never uploads original probes, NPZ files, or test-only weights.
 """
 import argparse
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -12,6 +13,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / 'tests/results/qwen35-ocr'
@@ -21,6 +23,7 @@ DESTINATION = 'cstr/OvisOCR2-GGUF'
 F16_SHA = 'd3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db'
 LICENSE_SHA = 'bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a'
 UPSTREAM_README_SHA = 'f2510d6d02471c01a2808102da79cb47106963f18486f2ac05dd5c0b53fc1c7a'
+UPSTREAM_README_URL = f'https://huggingface.co/{MODEL}/resolve/{REVISION}/README.md'
 LICENSE_CHAIN_PATH = EVIDENCE/'ovisocr2-license-chain.json'
 LICENSE_CHAIN_SHA = '1614862ff965aee172b70f504efd883ddff88cc6bba550c439a648ece5b5d098'
 SOURCE_CONTRACT_PATH = EVIDENCE/'ovisocr2-source-contract.json'
@@ -28,6 +31,36 @@ SOURCE_CONTRACT_SHA = '81a6b3ea839bba0a8b0b1308bb064c363654dbb793f759ec6976d4521
 ROOT_LICENSE_SHA = '50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32'
 RECIPES = {'f16': 'original-f16', 'q8': 'q8-protected', 'q4': 'q4-attention-q8',
            'q4-calibrated': 'q4-attention-q8'}
+
+
+def vision_contract():
+    path = ROOT / 'tools/ci-heavy/ovisocr2_vision_env.py'
+    spec = importlib.util.spec_from_file_location('ovis_vision_env_publish', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def pinned_upstream_readme(artifact_dir, scratch, opener=urllib.request.urlopen):
+    """Preserve exact source card even when frozen-reference transport omits it."""
+    candidates = list(Path(artifact_dir).rglob('UPSTREAM_README.md'))
+    if len(candidates) > 1:
+        raise ValueError('Pinned upstream card provenance is ambiguous')
+    if candidates:
+        path = candidates[0]
+    else:
+        # Full native replay reuses only the original four reference members;
+        # README is fetched independently from the immutable public source pin.
+        with opener(UPSTREAM_README_URL, timeout=60) as response:
+            payload = response.read(1_000_001)
+        if len(payload) > 1_000_000 or hashlib.sha256(payload).hexdigest() != UPSTREAM_README_SHA:
+            raise ValueError('Pinned upstream card payload SHA/size differs')
+        Path(scratch).mkdir(parents=True, exist_ok=True)
+        path = Path(scratch) / 'UPSTREAM_README.md'
+        path.write_bytes(payload)
+    if digest(path) != UPSTREAM_README_SHA:
+        raise ValueError('Pinned upstream card provenance altered')
+    return path
 
 
 def digest(path):
@@ -166,6 +199,7 @@ def require_receipts(precision, destination=DESTINATION):
             or mp.get('original_capture', {}).get('cached_vs_full_prefix_same_argmax') is not True
             or not valid_cache_error(cache_error)):
         raise ValueError('Original/native F16 source or cache receipt differs')
+    selected_vision = vision_contract().reviewed_selection(mp)
     public, public_sha = load('ovisocr2-public-surfaces.json')
     positive(public, 'public_positive')
     pp = producer(public)
@@ -174,7 +208,8 @@ def require_receipts(precision, destination=DESTINATION):
             or pp.get('model_prerequisite', {}).get('receipt_sha256') != model_sha
             or pp.get('artifacts', {}).get('model', {}).get('sha256') != F16_SHA
             or pp.get('public_confidence_comparison', {}).get('passed') is not True
-            or pp.get('abi_layout', {}).get('passed') is not True):
+            or pp.get('abi_layout', {}).get('passed') is not True
+            or pp.get('selected_vision_preset') != selected_vision):
         raise ValueError('Model-backed public surface review/source differs')
     decision, decision_sha = load('ovisocr2-quant-attempts.json')
     decision_review = positive(decision, 'selection_positive')
@@ -210,7 +245,9 @@ def require_receipts(precision, destination=DESTINATION):
             or (precision != 'f16' and candidate.get('recipe') != RECIPES[precision])
             or qp.get('prerequisite', {}).get('original_review_sha256') != original_quality_sha
             or 'original' not in qp.get('scores', {}) or 'f16' not in qp.get('scores', {})
-            or precision not in qp['scores'] or qp.get('cabi_smoke', {}).get(precision) is None):
+            or precision not in qp['scores'] or qp.get('cabi_smoke', {}).get(precision) is None
+            or qp.get('selected_vision_preset') != selected_vision
+            or qp.get('prerequisite', {}).get('selected_vision_preset') != selected_vision):
         raise ValueError('Reviewed quality phase/model/recipe differs')
     if precision != 'f16' and (type(candidate_artifact.get('id')) is not int
                                or not sha_field(candidate_artifact.get('zip_sha256'))
@@ -289,6 +326,7 @@ def require_receipts(precision, destination=DESTINATION):
                                or attempts[precision].get('report_sha256') != quality_sha):
         raise ValueError('Selected quant recipe was failed, unqualified, or points to another report')
     return {'precision': precision, 'recipe': RECIPES[precision],
+            'selected_vision_preset': selected_vision,
             'candidate_sha256': candidate['sha256'], 'candidate_bytes': candidate['bytes'],
             'model_run_id': mp.get('service_run', {}).get('id') or
                             model.get('run') or model.get('model_run_id'),
@@ -345,7 +383,9 @@ def find_artifact(folder, name, expected_sha, expected_bytes):
 
 def card(pins, filename):
     template = (ROOT/'models/cards/ovisocr2-card.template.md').read_text()
+    selected_flags = vision_contract().apply_selection({}, pins['selected_vision_preset'])
     values = {'source_model': MODEL, 'source_revision': REVISION,
+              'vision_gates': ' '.join(name + '=' + value for name, value in selected_flags.items()) + ' ',
               'audited_source_commit': pins['public_source_commit'],
               'filename': filename, 'model_sha256': pins['candidate_sha256'],
               'model_bytes': str(pins['candidate_bytes']), 'precision': pins['precision'],
@@ -379,6 +419,7 @@ def main():
     report = {'status': 'started', 'phase': 'preflight', 'source_commit': os.environ.get('GITHUB_SHA'),
               'source_sha256': {name: digest(ROOT/name) for name in (
                   'tools/ci-heavy/ovisocr2_publish.py', 'models/cards/ovisocr2-card.template.md',
+                  'tools/ci-heavy/ovisocr2_vision_env.py',
                   '.github/workflows/ovisocr2-publish.yml',
                   'tests/results/qwen35-ocr/ovisocr2-license-chain.json',
                   'tests/results/qwen35-ocr/ovisocr2-source-contract.json')},
@@ -425,9 +466,7 @@ def main():
         license_candidates = list(args.license_dir.rglob('LICENSE'))
         if len(license_candidates) != 1 or digest(license_candidates[0]) != LICENSE_SHA:
             raise ValueError('Pinned original Apache-2.0 LICENSE missing or altered')
-        readme_candidates = list(args.license_dir.rglob('UPSTREAM_README.md'))
-        if len(readme_candidates) != 1 or digest(readme_candidates[0]) != UPSTREAM_README_SHA:
-            raise ValueError('Pinned upstream card provenance missing or altered')
+        upstream_readme = pinned_upstream_readme(args.license_dir, scratch)
         manifest = {'source_model': MODEL, 'source_revision': REVISION,
                     'audited_source_commit': pins['public_source_commit'],
                     'model_audit_source_commit': pins['model_source_commit'],
@@ -443,6 +482,8 @@ def main():
                     'source_contract_sha256': pins['source_contract_sha256'],
                     'license_chain': pins['license_chain'],
                     'upstream_readme_sha256': UPSTREAM_README_SHA,
+                    'upstream_readme_url': UPSTREAM_README_URL,
+                    'selected_vision_preset': pins['selected_vision_preset'],
                     'receipts': pins['receipt_sha256'],
                     'limits': ['CrispEmbed experimental format-2 reader; no stock llama.cpp claim',
                                'No runtime model alias or release tag is activated by this upload',
@@ -467,7 +508,7 @@ def main():
         operations = [CommitOperationAdd(path_in_repo=filename, path_or_fileobj=str(model)),
                       CommitOperationAdd(path_in_repo='LICENSE', path_or_fileobj=str(license_candidates[0])),
                       CommitOperationAdd(path_in_repo='UPSTREAM_README.md',
-                                         path_or_fileobj=str(readme_candidates[0])),
+                                         path_or_fileobj=str(upstream_readme)),
                       CommitOperationAdd(path_in_repo='README.md', path_or_fileobj=card_bytes),
                       CommitOperationAdd(path_in_repo='manifest.json', path_or_fileobj=manifest_bytes)]
         commit = api.create_commit(repo_id=args.destination, operations=operations,

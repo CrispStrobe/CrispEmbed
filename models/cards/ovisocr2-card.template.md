@@ -32,10 +32,11 @@ CrispEmbed source commit is `${audited_source_commit}`. This is a CPU-only
 experimental reader. After the original image resize it accepts at most 1024
 visual patches; the original 2880²-pixel maximum has not been qualified.
 Until a qualified release includes it, build that source and enable the three
-experimental gates to load the GGUF by its explicit local path:
+experimental entry gates and the audited vision math settings to load the GGUF
+by its explicit local path:
 
 ```sh
-CRISPEMBED_QWEN35_OCR=1 CRISPEMBED_OVISOCR2_FRONTEND=1 CRISPEMBED_OVISOCR2_INFERENCE=1 ${quant_gate}\
+CRISPEMBED_QWEN35_OCR=1 CRISPEMBED_OVISOCR2_FRONTEND=1 CRISPEMBED_OVISOCR2_INFERENCE=1 ${vision_gates}${quant_gate}\
   crispembed --ocr-pipeline page.png --ocr-engine ovisocr2 --ocr-rec ${filename}
 ```
 
