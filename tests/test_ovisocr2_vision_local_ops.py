@@ -78,6 +78,24 @@ class VisionLocalOpsControls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'complete comparator outcome'):
             driver.validate_ab_outcome(report, labels)
 
+    def test_actual_ab_metadata_phase_service_path(self):
+        pin = (12542806209, 'ovisocr2-vision-ab-reports-40047163838', 155975, 'a' * 64)
+        run = {'id': 40047163838, 'status': 'completed', 'conclusion': 'success',
+               'head_sha': 'b' * 40, 'path': '.github/workflows/ovisocr2-metadata.yml'}
+        artifact = {'id': pin[0], 'name': pin[1], 'size_in_bytes': pin[2],
+                    'digest': 'sha256:' + pin[3], 'expired': False,
+                    'workflow_run': {'id': run['id'], 'head_sha': run['head_sha']}}
+        with mock.patch.object(driver, 'AB_RUN', run['id']), \
+                mock.patch.object(driver, 'AB_HEAD', run['head_sha']), \
+                mock.patch.object(driver, 'api_json', side_effect=[run, artifact]):
+            self.assertEqual(driver.service_ab(pin)['artifact_id'], pin[0])
+        run['path'] = '.github/workflows/ovisocr2-vision-audit.yml'
+        with mock.patch.object(driver, 'AB_RUN', run['id']), \
+                mock.patch.object(driver, 'AB_HEAD', run['head_sha']), \
+                mock.patch.object(driver, 'api_json', side_effect=[run, artifact]):
+            with self.assertRaisesRegex(ValueError, 'service run/artifact proof differs'):
+                driver.service_ab(pin)
+
     def test_every_member_verified_and_only_four_per_arm_extracted(self):
         records, payload = self.records()
         path = self.archive(payload)

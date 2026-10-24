@@ -23,6 +23,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 AB_HELPER = ROOT / 'tools/ci-heavy/ovisocr2_vision_audit.py'
 AB_HELPER_SHA256 = 'a812910212ac030e13aa2e77bbab26460b6375f8978a802bf44c829c95f0a9c3'
+AB_WORKFLOW_PATH = '.github/workflows/ovisocr2-metadata.yml'
 TARGET_SOURCE_SHA256 = '3af6a2fd37e5fbc089056fae527f12c211f420823b3ce5959e23478216085b15'
 OPERATOR_HEADER_SHA256 = '8c90bbd42464fb7998e4ffec251a6dc7d50839e8e05a99437a82971e3ace0723'
 AB_RUN = None
@@ -100,7 +101,7 @@ def service_ab(pin):
     artifact = api_json('actions/artifacts/' + str(ident))
     if (run.get('id') != AB_RUN or run.get('status') != 'completed' or run.get('conclusion') != 'success'
             or run.get('head_sha') != AB_HEAD
-            or run.get('path') != '.github/workflows/ovisocr2-vision-audit.yml'
+            or run.get('path') != AB_WORKFLOW_PATH
             or artifact.get('id') != ident or artifact.get('name') != name
             or artifact.get('expired') is not False or artifact.get('size_in_bytes') != size
             or artifact.get('digest') != 'sha256:' + digest
