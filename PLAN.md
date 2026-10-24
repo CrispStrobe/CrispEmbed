@@ -368,7 +368,15 @@ platform rebuild for each report update. No model alias or HF weights exist yet.
    every failed numerical/recognition/format/cap result and actual weight hashes.
    Paired F16 host controls must not replace or weaken the first qualified F16
    baseline: independently compare each quantized candidate against that first
-   F16 AND the frozen original. No heldout/document input enters calibration.
+   F16 AND the frozen original. `quality_f16_control=dev-hello` reuses the
+   independently reviewed full F16 scores and runs one same-host diagnostic,
+   only after exact native/GGML/build/environment source closure. Explicit
+   `quality_f16_control=full` retains the full eleven-case host control. Direct
+   tool calls default to full. The short mode is cross-run reference evidence,
+   not proof of eleven-case cross-host F16 identity or paired document speed.
+   Preserve all473 before/after tensor records; calibrated small-report artifacts
+   retain actual stats/imatrix bytes for independent72-vector checks. No
+   heldout/document input enters calibration.
    Keep all raw vectors, original fixed budgets and real decoded outputs.
 3. **Conditional publication, real aliases and final integration:** decide only
    after all three quantization outcomes are reviewed. Select a qualified F16
