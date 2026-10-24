@@ -530,10 +530,13 @@ def find_artifact(folder, name, expected_sha, expected_bytes):
     return matches[0]
 
 
-def card(pins, filename):
+def card(pins, filename, *, evidence_source_commit):
+    if not source_head(evidence_source_commit):
+        raise ValueError('Model card requires the immutable evidence source commit')
     template = (ROOT/'models/cards/ovisocr2-card.template.md').read_text()
     selected_flags = vision_contract().apply_selection({}, pins['selected_vision_preset'])
     values = {'source_model': MODEL, 'source_revision': REVISION,
+              'evidence_source_commit': evidence_source_commit,
               'vision_gates': ' '.join(name + '=' + value for name, value in selected_flags.items()) + ' ',
               'audited_source_commit': pins['public_source_commit'],
               'filename': filename, 'model_sha256': pins['candidate_sha256'],
@@ -647,7 +650,7 @@ def main():
                                'Bounded OCR panels do not establish broad OCR quality']}
         report['phase'] = 'exact-artifact-verified'
         save()
-        card_bytes = card(pins, filename).encode()
+        card_bytes = card(pins, filename, evidence_source_commit=report['source_commit']).encode()
         manifest_bytes = (json.dumps(manifest, indent=2, allow_nan=False)+'\n').encode()
         (out/'README.md').write_bytes(card_bytes)
         (out/'manifest.json').write_bytes(manifest_bytes)

@@ -541,7 +541,11 @@ class PublicationGate(unittest.TestCase):
         pins = {'public_source_commit': HEAD, 'candidate_sha256': HASH,
                 'candidate_bytes': 1_717_222_848, 'precision': 'f16', 'recipe': 'original-f16',
                 'selected_vision_preset': SELECTION}
-        rendered = subject.card(pins, 'ovisocr2-f16.gguf')
+        rendered = subject.card(pins, 'ovisocr2-f16.gguf', evidence_source_commit=HEAD)
+        self.assertIn('/blob/' + HEAD + '/tests/results/qwen35-ocr/', rendered)
+        for invalid in ('main', '', None):
+            with self.assertRaises(ValueError):
+                subject.card(pins, 'ovisocr2-f16.gguf', evidence_source_commit=invalid)
         self.assertIn(HEAD, rendered)
         self.assertNotIn('${', rendered)
         for name, value in SELECTION['values'].items():

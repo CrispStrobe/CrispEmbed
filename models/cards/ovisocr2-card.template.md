@@ -51,6 +51,23 @@ panels cover four short self-authored heldout pages and three reviewed documents
 they do not establish broad OCR accuracy. The publication workflow verifies the
 uploaded GGUF again from an empty cache at its immutable Hugging Face commit.
 
+The immutable CrispEmbed evidence revision is `${evidence_source_commit}`:
+
+- [Native stages/cache/logits/IDs](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/tests/results/qwen35-ocr/ovisocr2-model-audit.json)
+- [C/Python/CLI/HTTP/Rust/Dart interfaces](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+- [Original Python reference](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/tests/results/qwen35-ocr/ovisocr2-original-quality.json) and [first F16 quality](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+- [Selected ${precision} quality](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/tests/results/qwen35-ocr/ovisocr2-${precision}-quality.json) and [all quantization outcomes/selection](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+- [Measured quality, timing boundaries and limits](https://github.com/CrispStrobe/CrispEmbed/blob/${evidence_source_commit}/PERFORMANCE.md)
+
+The first F16 run matches all1841 generated Python IDs and all eleven raw texts,
+with EOS and no caps. The original receipt/two-column recognition errors remain.
+Vision retains four raw strict0.002 exceedances while passing its pre-existing
+original-backend calibrated budgets; the linked reports retain both views.
+The CPU reader has substantial latency: the first F16 receipt took about23
+minutes on an EPYC7763 with two inference threads. Its HF comparison used a
+different CPU and timing boundary. See the linked measurements before choosing
+this experimental reader for interactive work.
+
 No default model alias, CrispEmbed runtime release, or app selection is activated
 by this model repository. Original model probes and test-only weights are held
 separately from this distribution.
