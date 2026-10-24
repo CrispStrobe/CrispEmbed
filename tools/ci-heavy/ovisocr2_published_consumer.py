@@ -305,6 +305,12 @@ def capacity_record(scratch, candidate_bytes):
             **memory}
 
 
+def child_peak_rss_kib():
+    """Normalize the cumulative child high-water mark across Linux and macOS."""
+    value = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+    return value / 1024 if sys.platform == 'darwin' else value
+
+
 def run(label, command, out, env=None, timeout=2400):
     path = out / (label + '.log')
     start = time.monotonic()
@@ -318,7 +324,7 @@ def run(label, command, out, env=None, timeout=2400):
             code = 124
     return {'exit_code': code, 'seconds': round(time.monotonic() - start, 3),
             'log': path.name, 'log_sha256': sha(path), 'log_bytes': path.stat().st_size,
-            'peak_child_rss_kib': resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss}
+            'peak_child_rss_kib': child_peak_rss_kib()}
 
 
 def parse_cli(log, expected):
@@ -435,7 +441,8 @@ def main():
                                      'nine generated IDs and EOS are separately frozen in the reviewed native receipt.',
                                      'This checks one frozen 448x448 readable image and a 12-token request cap.',
                                      'CLI and HTTP means use existing public printing budgets .0006 and .00006 '
-                                     'against the selected quality dev-hello native mean on the byte-identical PNG/RGB.']}
+                                     'against the selected quality dev-hello native mean on the byte-identical PNG/RGB.',
+                                     'Child RSS is a cumulative high-water upper bound, normalized to KiB on Linux/macOS.']}
     def save():
         report_path.write_text(json.dumps(report, indent=2, allow_nan=False) + '\n')
     save()

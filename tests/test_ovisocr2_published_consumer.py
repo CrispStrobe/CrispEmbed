@@ -59,6 +59,13 @@ class PublishedConsumerControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 CONSUMER.require_frozen_image(bad, receipt)
 
+    def test_child_rss_uses_the_same_kib_for_linux_and_darwin(self):
+        for platform_name, raw in [('linux', 2048), ('darwin', 2 * 1024 * 1024)]:
+            with mock.patch.object(CONSUMER.sys, 'platform', platform_name), \
+                    mock.patch.object(CONSUMER.resource, 'getrusage',
+                                      return_value=mock.Mock(ru_maxrss=raw)):
+                self.assertEqual(CONSUMER.child_peak_rss_kib(), 2048)
+
     def test_changed_native_source_cannot_reuse_frozen_full_quality(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
