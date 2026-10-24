@@ -353,8 +353,11 @@ def service_run(run_id, head, workflow, call=subprocess.check_output):
     if not str(run_id).isdigit() or not int(run_id):
         raise ValueError('Exact hosted artifact run ID required')
     value = json.loads(call(['gh', 'api', f'repos/CrispStrobe/CrispEmbed/actions/runs/{run_id}']))
+    allowed_paths = ({'.github/workflows/ovisocr2-quality.yml',
+                      '.github/workflows/ovisocr2-metadata.yml'}
+                     if workflow == '.github/workflows/ovisocr2-quality.yml' else {workflow})
     if (value.get('status') != 'completed' or value.get('head_sha') != head or
-            value.get('path') != workflow or value.get('conclusion') != 'success'):
+            value.get('path') not in allowed_paths or value.get('conclusion') != 'success'):
         raise ValueError('Retained artifact service run differs')
     return {key: value[key] for key in ('id', 'status', 'conclusion', 'head_sha', 'path')}
 

@@ -260,6 +260,27 @@ class PublicationGate(unittest.TestCase):
         with self.assertRaises(ValueError):
             subject.find_artifact(self.folder, 'ovisocr2-f32.gguf', expected, candidate.stat().st_size)
 
+    def test_quality_service_accepts_only_direct_or_registered_metadata_workflow(self):
+        quality = '.github/workflows/ovisocr2-quality.yml'
+        metadata = '.github/workflows/ovisocr2-metadata.yml'
+        row = {'id': 123, 'status': 'completed', 'conclusion': 'success',
+               'head_sha': 'a' * 40, 'path': quality}
+        for actual in (quality, metadata):
+            row['path'] = actual
+            result = subject.service_run(123, 'a' * 40, quality,
+                                         lambda _: json.dumps(row).encode())
+            self.assertEqual(result['path'], actual)
+        row['path'] = '.github/workflows/other.yml'
+        with self.assertRaises(ValueError):
+            subject.service_run(123, 'a' * 40, quality, lambda _: json.dumps(row).encode())
+        row['path'] = quality
+        with self.assertRaises(ValueError):
+            subject.service_run(123, 'a' * 40, metadata, lambda _: json.dumps(row).encode())
+        row['path'] = metadata
+        row['head_sha'] = 'b' * 40
+        with self.assertRaises(ValueError):
+            subject.service_run(123, 'a' * 40, quality, lambda _: json.dumps(row).encode())
+
     def test_public_and_quality_must_use_reviewed_vision_math(self):
         for filename, slot in (('ovisocr2-public-surfaces.json', 'selected_vision_preset'),
                                ('ovisocr2-f16-quality.json', 'selected_vision_preset')):

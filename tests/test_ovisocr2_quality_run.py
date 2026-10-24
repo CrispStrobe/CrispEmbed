@@ -19,6 +19,39 @@ spec.loader.exec_module(driver)
 
 
 class QualityDriverControls(unittest.TestCase):
+    def test_original_report_accepts_only_two_registered_workflow_paths(self):
+        payload = json.dumps({'status': 'completed original HF quality baseline; review pending'}).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            archive = folder / 'fixture.zip'
+            with zipfile.ZipFile(archive, 'w') as output:
+                output.writestr('ovisocr2-quality.json', payload)
+            receipt_path = folder / 'review.json'
+            receipt_path.write_text(json.dumps({'source_commit': 'a' * 40, 'artifact_id': 456,
+                'artifact_zip_sha256': driver.sha(archive),
+                'report_sha256': hashlib.sha256(payload).hexdigest()}))
+            artifact = {'name': 'ovisocr2-quality-reports-123', 'expired': False,
+                        'workflow_run': {'id': 123}, 'digest': 'sha256:' + driver.sha(archive),
+                        'size_in_bytes': archive.stat().st_size, 'id': 456}
+            for workflow in (*driver.QUALITY_WORKFLOW_PATHS, '.github/workflows/other.yml'):
+                run = {'id': 123, 'head_sha': 'a' * 40, 'status': 'completed',
+                       'conclusion': 'success', 'path': workflow}
+                def api(argv, **_):
+                    value = run if argv[-1].endswith('/runs/123') else artifact
+                    return json.dumps(value).encode()
+                def download(argv, **kwargs):
+                    kwargs['stdout'].write(archive.read_bytes())
+                with patch.object(driver, 'ORIGINAL_REVIEW', receipt_path), \
+                     patch.object(driver.subprocess, 'check_output', side_effect=api), \
+                     patch.object(driver.subprocess, 'run', side_effect=download):
+                    if workflow in driver.QUALITY_WORKFLOW_PATHS:
+                        value, proof = driver.reviewed_original_artifact(123, folder)
+                        self.assertEqual(value['status'], 'completed original HF quality baseline; review pending')
+                        self.assertEqual(proof['report_sha256'], hashlib.sha256(payload).hexdigest())
+                    else:
+                        with self.assertRaisesRegex(ValueError, 'workflow differs'):
+                            driver.reviewed_original_artifact(123, folder)
+
     def test_immutable_prepared_zip_members_and_path_tamper(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)

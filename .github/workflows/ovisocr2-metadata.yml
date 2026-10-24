@@ -4,8 +4,8 @@ on:
     inputs:
       phase:
         type: choice
-        description: 'Metadata/export/frontend, historical model capture, frozen replay, vision A/B, public surfaces or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, lighton-fixture]
+        description: 'Metadata/export/frontend, model capture/replay, vision, public, quality or wrong-profile fixture'
+        options: [metadata, export, frontend, model, replay, vision, public, quality, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -16,6 +16,15 @@ on:
         description: 'Frozen replay only: explicit independently reviewed existing math preset'
         options: [baseline, precise_norm, precise_attn, both, cascade, cascade_precise_attn]
         default: baseline
+      quality_phase:
+        type: choice
+        description: 'Quality phase; original freezes eleven HF cases before candidate comparison'
+        options: [original, f16, q8, q4, q4-calibrated]
+        default: original
+      original_run:
+        type: string
+        description: 'Reviewed original quality run ID, required after original phase'
+        default: '0'
   push:
     branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
     paths:
@@ -62,6 +71,13 @@ jobs:
       lighton_run_id: '40046789339'
       lighton_artifact_name: lightonocr3-format1-receipt-40046789339
       lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
+  quality:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'quality'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-quality.yml
+    with:
+      phase: ${{ inputs.quality_phase }}
+      original_run: ${{ inputs.original_run }}
   controls:
     runs-on: ubuntu-latest
     steps:

@@ -41,6 +41,8 @@ F16_BYTES = 1717222848
 MODEL = 'ATH-MaaS/OvisOCR2'
 REVISION = 'cbdede82e048659b83310476ff807da825f8fe78'
 PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated')
+QUALITY_WORKFLOW_PATHS = ('.github/workflows/ovisocr2-quality.yml',
+                          '.github/workflows/ovisocr2-metadata.yml')
 ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
              'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
 DIFF_FLOAT_ZERO = ('CRISPEMBED_QWEN35_PRECISE_RMS',
@@ -261,7 +263,7 @@ def reviewed_original_artifact(run_id, out):
     run = api('actions/runs/' + str(run_id))
     if (run.get('id') != run_id or run.get('head_sha') != receipt['source_commit']
             or run.get('status') != 'completed' or run.get('conclusion') != 'success'
-            or run.get('path') != '.github/workflows/ovisocr2-quality.yml'):
+            or run.get('path') not in QUALITY_WORKFLOW_PATHS):
         raise ValueError('Reviewed original quality service run/source/workflow differs')
     artifact = api('actions/artifacts/' + str(receipt['artifact_id']))
     if (artifact.get('name') != 'ovisocr2-quality-reports-' + str(run_id)
