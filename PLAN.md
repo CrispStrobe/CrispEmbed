@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 complete943-field reference and12/14 native arms pass; both vision arms fail unchanged budgets. Existing precision retry40047163838 pending after a retained pre-inference archive-helper failure; no alias yet |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | ~0.74 GB estimated | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 complete943-field reference and12/14 native arms pass; both vision arms fail unchanged budgets. Vision A/B40047163838 passes two existing presets for both precisions; full fourteen-arm frozen replay40049244654 at a2a17735 pending; no alias yet |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -322,7 +322,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. First vision A/B40046189758 stopped before inference on an archive report-variable error; corrected retry40047163838 is pending. Review all stages/IDs/text/raw vectors, then actual public interfaces and independently frozen quality/precision gates. No default, alias or publication before qualification. |
+| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. First vision A/B40046189758 stopped before inference on an archive report-variable error; corrected A/B40047163838 passes two common presets; full frozen replay40049244654 is pending. Review all stages/IDs/text/raw vectors, then actual public interfaces and independently frozen quality/precision gates. No default, alias or publication before qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -344,13 +344,19 @@ The original automatic FlashInfer T4 failure remains retained. Continue:
    Preserve the943-field original reference and reuse it for every native retry.
    First A/B40046189758 stopped before build/inference on an unpassed report
    variable; [retained infrastructure evidence](tests/results/qwen35-ocr/initial-ovisocr2-vision-ab-archive-failure.json).
-   Corrected existing-gate vision-only retry [40047163838](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40047163838)
-   atdf65e911 is dispatched once through phase=vision. It tests six presets per
-   precision with all37 raw vision vectors and post-control dump integrity; no
-   threshold or implementation change. Review earliest operation, magnitudes
-   and preserved alternatives before selecting any correction. Then replay all
-   fourteen native arms against the frozen reference, including final IDs/EOS
-   and full frontend/cache/context controls. A component pass is not this gate.
+   Corrected existing-gate vision A/B [40047163838](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40047163838)
+   atdf65e911 is complete: all twelve arms/37 vectors each have intact dumps;
+   baseline metrics exactly reproduce both original failures. `both` and
+   `cascade_precise_attn` pass existing calibrated budgets in F32/F16. Four
+   strict0.002 exceedances remain; no budget changed. [All metrics/review](tests/results/qwen35-ocr/ovisocr2-vision-ab.json).
+   Full fourteen-arm replay [40049244654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40049244654)
+   at a2a17735 is dispatched once, phase=replay, vision_preset=both. This
+   selects precise norm+attention for the lowest merger error and reuses the
+   complete943-stage source without HF recapture/conversion. Review actual
+   layers/cache/logits/IDs/EOS/text, contexts and every raw/TRACE vector before
+   declaring native qualification. Source closure requires27 unchanged native
+   files plus two exact reviewed dump-only test changes. Keep both alternatives,
+   the initial failures and every raw strict/calibrated flag. Do not duplicate.
    Initial40034685690 stopped before forward on a raw Python tuple/list processor
    guard; [initial evidence](tests/results/qwen35-ocr/initial-ovisocr2-model-processor-contract-failure.json)
    preserves all three exact processor anchors and source hashes. The correction

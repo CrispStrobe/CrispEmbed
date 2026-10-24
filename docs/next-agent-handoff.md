@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header, full473-tensor export, exact frontend and controlled original GPU execution pass | Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. Corrected existing precision A/B40047163838 is running after a retained pre-inference archive-helper failure; do not duplicate. Follow the active PLAN sequence through public interfaces, independent quality, protected/calibrated quantization and conditional publication. No alias yet. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/license/header, full473-tensor export, exact frontend and controlled original GPU execution pass | Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. Existing precision A/B40047163838 passes two common presets; full fourteen-arm frozen replay40049244654 is pending; do not duplicate. Follow the active PLAN sequence through public interfaces, independent quality, protected/calibrated quantization and conditional publication. No alias yet. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -250,7 +250,7 @@ Continue the five pending steps in [PLAN](../PLAN.md). Native model run
 at cc038b00 is complete:943 frozen fields, all871 earlier members unchanged,
 12/14 native arms pass. Both vision arms fail unchanged budgets;
 [initial numerical evidence](../tests/results/qwen35-ocr/initial-ovisocr2-model-vision-failure.json).
-Corrected existing precision A/B40047163838 atdf65e911 is running; do not duplicate it. Initial40034685690 stopped before
+Existing precision A/B40047163838 atdf65e911 passes both/common cascade alternatives; full fourteen-arm frozen replay40049244654 at a2a17735 is pending. Do not duplicate it. Initial40034685690 stopped before
 forward on the tuple/list processor guard. The correction compares exact JSON
 values and records every field/type; second40039159696 confirms it before
 stopping on the generation-config assumption. Currentcc038b00 checks metadata
@@ -284,7 +284,7 @@ is a build-only fallback; the current original backend-control protocol is Linux
 The app remains pinned0.17.12. No Ovis model weights or alias are published.
 
 Ovis native40041958521 completes943 frozen fields and12/14 arms. Both vision
-arms fail unchanged budgets; review corrected existing precision A/B40047163838 and then
-replay all native arms against this frozen reference without HF recapture.
+arms fail unchanged budgets; review full frozen replay40049244654 at a2a17735 (preset=both) without HF
+recapture. A/B40047163838 passes both F32/F16 vision arms without budget changes.
 See the active Ovis sequence in [PLAN](../PLAN.md). Public interfaces, quality,
 all three quantization/calibration arms and conditional publication remain open.
