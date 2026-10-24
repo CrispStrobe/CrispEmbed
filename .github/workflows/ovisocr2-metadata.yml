@@ -25,6 +25,11 @@ on:
         type: string
         description: 'Reviewed original quality run ID, required after original phase'
         default: '0'
+      quality_f16_control:
+        type: choice
+        description: 'Quant-only F16 host control; original/F16 phases always run all eleven cases'
+        options: [dev-hello, full]
+        default: dev-hello
       publish_precision:
         type: choice
         description: 'Publication/consumer only: separately reviewed positive precision'
@@ -87,6 +92,7 @@ jobs:
     with:
       phase: ${{ inputs.quality_phase }}
       original_run: ${{ inputs.original_run }}
+      f16_host_control: ${{ inputs.quality_f16_control }}
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'publish'
     needs: controls
