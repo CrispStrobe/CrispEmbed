@@ -1,11 +1,13 @@
 # M1 OvisOCR2 published-alias consumer audit
 
-This is the operator-authorized 16GB M1 fallback while Linux CI is queued.
+This is the operator-authorized optional 16GB M1 consumer audit. Linux has now
+[passed independent review](../tests/results/qwen35-ocr/ovisocr2-published-consumer.json);
+Apple coverage remains complementary and is not required to repeat Linux.
 Use immutable source `d4c30424af99f1e9970c43449011b290e3721ac6`.
 It contains the real `ovisocr2-f16` alias and fixes Darwin child-RSS reporting;
 native code, ggml and CMake are unchanged from the qualified F16 source.
 Linux [40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
-continues independently at5296e955. Do not cancel it or submit another Linux run.
+completed successfully at5296e955. Do not submit another Linux run.
 
 The [qualified public model](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
 is1717222848 bytes, SHA-256

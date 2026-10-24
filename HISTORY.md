@@ -1,3 +1,27 @@
+## 24 October 2026 — Published Ovis alias and real consumers qualify
+
+[40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
+at5296e955 completes the real `ovisocr2-f16` CLI/server consumer. Both independent
+reviews verify portable CPU configuration, seven helper/25 native source hashes,
+all seven report members/six log hashes and actual API results. Separate CLI and
+HTTP fresh caches download and verify the entire1717222848-byte published F16
+SHA d3a733a5…. Offline CLI reuses that cache without downloading. All three arms
+return `Hello OCR\n\n12345`, one region and confidence within the existing
+0.0006 CLI/0.00006 HTTP budgets against frozen first-F160.995388269.
+
+[Unchanged producer and two independent reviews](tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+retain exact source, binary hashes and logs. Small artifact12556034926 is15374
+bytes, ZIP SHA-256 `2ece2846b20a6e43d9b28bfa8c1b5b1f432c2e89580c484f4d310fe79c9fb30f`,
+expires22 January2027. Producer SHA-256
+`26fefd3aaa6770d87d3028ad95e454bb0827ea4c3a7bfe5c58a9aece5562e23f`.
+All25 native source files match the first qualified F16 source; later Darwin
+RSS reporting and optional M1 handoff changes do not change Linux arithmetic.
+Ten current pure consumer controls pass. Actual API IDs/stops remain unexposed,
+with the separate native proof retained. PERFORMANCE records timing boundaries.
+Final exact-source PR79 CI/main integration and vendor mirror remain; no runtime
+release/default/app pin change. The M1 handoff is now optional complementary
+Apple coverage, with no returned Apple result claimed.
+
 ## 2026-10-23 — Original Ovis F32 forward completes; cache observer failure retained
 
 [40040392649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40040392649)

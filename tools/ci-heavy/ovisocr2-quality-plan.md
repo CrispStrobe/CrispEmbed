@@ -138,3 +138,14 @@ Raw completeness cannot reverse its numerical or recognition failure.
 Paired realistic document gates reject increased raw or parsed CER/WER,
 incomplete or malformed output, and any error in the controlled 15-cell grid.
 No model alias or release is qualified by this workflow alone.
+
+
+The completed selection/publication loop chooses qualified F16; all three actual
+quantized attempts remain rejected. [Publication](../../tests/results/qwen35-ocr/ovisocr2-publication.json)
+verifies immutable hosted upload/readback and the restricted distribution inventory.
+[Published consumer40080458492](../../tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+passes real fresh-cache CLI/HTTP full hashes, offline reuse and unchanged text/
+confidence checks. This one-image delivery result supplements the frozen eleven-
+case quality proof; it does not replace numerical or independent-document gates.
+Further precision recipes need a separate development-frozen lane and versioned
+selection/publication evidence as scoped in PLAN. Do not rerun completed panels.

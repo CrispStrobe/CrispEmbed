@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 23 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 24 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all three quant recipes rejected; F16 published/alias wired; actual consumer/final integration pending |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all three quant recipes rejected; F16 published/alias wired; actual consumer40080458492 passes; final integration pending |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -322,7 +322,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. First vision A/B40046189758 stopped before inference on an archive report-variable error; corrected A/B40047163838 passes two common presets; full frozen replay40049244654, public27-arm40053283383 and original HF11 quality40054043629 are complete. First F16 quality40056641800 matches all eleven Python ID/text outputs; Q8 40061433357 is rejected with all eleven cases retained. All three quant attempts rejected; F16 published and real alias wired; finish actual consumer/final integration. No default, alias or publication before qualification. |
+| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. First vision A/B40046189758 stopped before inference on an archive report-variable error; corrected A/B40047163838 passes two common presets; full frozen replay40049244654, public27-arm40053283383 and original HF11 quality40054043629 are complete. First F16 quality40056641800 matches all eleven Python ID/text outputs; Q8 40061433357 is rejected with all eleven cases retained. All three quant attempts rejected; F16 published and real alias wired; actual consumer40080458492 passes; finish final integration. Retain all qualification gates. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -354,7 +354,7 @@ Audits transfer this exact reviewed configuration; no production default flips.
 Keep follow-on evidence on the completion audit branch until final reconciliation
 with draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79), avoiding a full
 platform rebuild for each report update. Qualified F16 is now published and its
-real precision alias is wired; the actual consumer remains pending.
+real precision alias and actual consumer40080458492 pass independent review.
 
 The three actual quantization attempts are complete and rejected. The
 [selection receipt](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
@@ -379,30 +379,23 @@ CLI/server Ovis21 resolve aliases before exact profile validation, after gate/
 prompt checks; older engine20 retains its original ordering. All25 recorded
 native source files, complete `src` tree, ggml gitlink and CMake blob still match
 the first qualified F16 source. The consumer now rejects changed recorded
-native source before build; nine pure controls pass. Prepared alias wiring is
-not yet a model-backed consumer result.
+native source before build; ten current pure controls pass. The
+[published consumer40080458492](tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+at5296e955 independently passes the real portable CLI/server build, two fresh-cache
+full hashes, offline reuse, exact text/one region and unchanged confidence budgets.
+All six logs, seven helper and25 native hashes pass both reviews. APIs expose no
+IDs/stops; the separately frozen native proof remains unchanged. Do not repeat
+original capture, eleven-case quality, quantization or Linux consumer jobs.
+The [M1 handoff](docs/handover-m1-ovisocr2.md) is optional complementary Apple
+coverage; no Apple result is claimed.
 
-1. **Finish actual published consumer:** [40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
-   is submitted at5296e955, phase=consumer and publish_precision=f16 on the
-   completion audit branch. Do not duplicate; review its actual outcome.
-   An optional authorized16GB [M1 handoff](docs/handover-m1-ovisocr2.md) pins
-   d4c30424 for the same read-only public alias/API audit while Linux waits.
-   It normalizes Darwin child RSS to KiB; native code is identical to5296.
-   Keep platform reports/source scopes separate; do not duplicate Linux jobs.
-   Reuse the positive publication/first-F16/source receipts; no original or
-   eleven-case recapture. The registered `ovisocr2-published-consumer.yml` builds
-   portable CLI/server on hosted CI, checks two genuinely fresh model caches,
-   full hashes, offline CLI repeat, real text/region/confidence against the
-   byte-identical frozen PNG and existing `.0006`/`.00006` printing budgets.
-   Review actual source/binary hashes, logs, native-source closure and all arms;
-   record API limits (no exposed IDs/stop) alongside the frozen native proof.
-2. **Final integration:** reconcile the audit branch into PR79 once, finish
-   exact final-source platform/Flutter/WASM/style/security checks, merge and
-   update public handoffs/HISTORY/PERFORMANCE and the vendor-only CrispMath mirror.
-   Keep failed quantized candidates, initial failures and all strict flags.
-   No runtime tag, default or app pin change follows from model publication;
-   the app remains on immutable0.17.12, development0.17.13. External consumer
-   catalog/provider activation still waits for a compatible immutable library.
+**Remaining final integration:** reconcile the audit branch into PR79 once,
+finish exact final-source platform/Flutter/WASM/style/security checks, merge and
+update public handoffs/HISTORY/PERFORMANCE and the vendor-only CrispMath mirror.
+Keep failed quantized candidates, initial failures and all strict flags.
+No runtime tag, default or app pin change follows from model publication;
+the app remains on immutable0.17.12, development0.17.13. External consumer
+catalog/provider activation waits for a compatible immutable library.
 
 Large model/reference/vector artifacts stay remote. Preserve the original871
 archive before21 January2027 and the complete943 source plus native/public/

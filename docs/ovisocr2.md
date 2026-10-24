@@ -26,12 +26,37 @@ chooses qualified F16. [Actual publication40074370335](../tests/results/qwen35-o
 verifies the immutable [F16 model](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
 by hosted empty-cache full readback and independent anonymous provenance/tree
 checks. The real `ovisocr2-f16` URL/SHA registry alias and CLI/server resolution
-are wired; actual fresh-cache model-backed consumer execution is pending.
+pass [actual consumer40080458492](../tests/results/qwen35-ocr/ovisocr2-published-consumer.json):
+two fresh-cache full model hashes, offline reuse and exact CLI/HTTP text, one
+region and bounded confidence. Public APIs expose no IDs/stops; the native
+proof remains separate.
 Follow the [active completion sequence](../PLAN.md#active-ovis-completion-sequence)
-through that result and final PR79 integration. The three entry gates and audited
+through final PR79 integration. The three entry gates and audited
 vision settings remain explicit; no default model, runtime release or app upgrade
 is activated. Development is0.17.13; the app stays on immutable0.17.12.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
+
+## Using the qualified F16 alias
+
+Use a compatible development build containing PR79 and an image within the
+1024-visual-patch bound. This command uses the reviewed `both` vision preset:
+
+```sh
+CRISPEMBED_QWEN35_OCR=1 \
+CRISPEMBED_OVISOCR2_FRONTEND=1 \
+CRISPEMBED_OVISOCR2_INFERENCE=1 \
+CRISPEMBED_QWEN35_VISION_PRECISE_NORM=1 \
+CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=1 \
+CRISPEMBED_QWEN35_VISION_CASCADE_NORM=0 \
+crispembed --ocr-pipeline document.png --ocr-engine ovisocr2 \
+  --ocr-rec ovisocr2-f16 --ocr-max-tokens 1024 --json -t 2
+```
+
+The registry verifies the full SHA before installing the immutable model. After
+the first download, the same command accepts `--offline` for cached use. The
+consumer audit used a12-token cap on the frozen readable image; larger document
+caps still require actual EOS/completion checks. Custom prompts remain rejected
+by this fixed-profile reader. Source support does not upgrade a released binary.
 
 The dated sections below retain the original source investigations and initial
 implementation gates. Their historical pending statements are superseded by

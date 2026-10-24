@@ -6579,6 +6579,32 @@ serves exactly the already-qualified1717222848-byte F16 at immutable Hub commit
 b7229e46f31bcf342d0999966bae8a03bf02bb07. Hosted forced empty-cache download
 matches SHA d3a733a5…; independent anonymous small-file/LFS metadata checks pass.
 Publication changes delivery, not model arithmetic or the measured CPU latency.
-All three smaller candidates stay rejected. Actual alias consumer timing and
-quality are separate pending results; first-F16 recognition errors/latency and
-1024-patch scope remain as above.
+All three smaller candidates stay rejected. Actual alias consumer results follow;
+first-F16 recognition errors/latency and1024-patch scope remain as above.
+
+
+## Ovis published CLI/HTTP consumer — 24 October 2026
+
+[Actual40080458492](tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+at5296e955 builds portable CPU CLI/server in188.843s on AMD EPYC7763,
+four logical/affinity CPUs and two inference threads. Two genuinely fresh caches
+independently verify all1717222848 model bytes/SHA d3a733a5…. Each API returns
+`Hello OCR\n\n12345` with one region. Online/offline CLI mean0.995 differs
+from frozen native0.995388269 by0.000388269 (budget0.0006); HTTP0.9954 differs
+by0.000011731 (budget0.00006). Offline emits only its single result JSON and
+reuses the verified cache. Public APIs expose no token IDs or stop reason.
+
+| Actual arm | Wall seconds | Boundary |
+| --- | ---: | --- |
+| Fresh CLI alias | 85.692 | Download, initialization and recognition |
+| Offline CLI | 54.246 | Initialization and recognition, cached model |
+| Fresh HTTP alias | 75.892 | Download, server startup and request |
+
+CLI child RSS upper bounds3477792/3478432KiB are cumulative process-child
+high-water values, not isolated inference peaks. HTTP has no equivalent isolated
+RSS measurement. The one-image delivery audit is not an eleven-case rerun,
+Apple qualification, broad OCR benchmark or recognition-only speed comparison.
+All25 native source hashes match the frozen first-F16 quality source. Two
+independent reviews verify the small report, all six log hashes, source closure,
+binary declarations and unchanged output/confidence gates. Large payload checks
+occurred on hosted CI; only small reports/logs were downloaded for review.
