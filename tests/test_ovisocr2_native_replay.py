@@ -27,6 +27,24 @@ class ReplayControls(unittest.TestCase):
         self.assertEqual(len(model.NATIVE_TARGETS), 5)
         self.assertEqual(Sha.sha(ROOT / 'tests/test_qwen35_delta.cpp'), replay.TRACE_DELTA_TEST_SHA)
 
+    def test_complete_native_source_closure_and_norm_mutation(self):
+        ab, _ = replay.source_helpers()
+        paths = [*sorted((ROOT / 'src').glob('qwen35*')),
+                 *(ROOT / name for name in (
+                     'src/crispembed_diff.h', 'tests/qwen35_parity.h',
+                     'tests/test_qwen35_decoder.cpp', 'tests/test_qwen35_vision.cpp',
+                     'tests/test_qwen35_delta.cpp', 'tests/test_ovisocr2_context.cpp',
+                     'tests/ovisocr2_quality_run.cpp'))]
+        frozen = {str(path.relative_to(ROOT)): Sha.sha(path) for path in paths
+                  if path.is_file() and path.suffix in ('.cpp', '.h')}
+        frozen['tests/test_qwen35_vision.cpp'] = ab.SOURCE_TEST_SHA
+        frozen['tests/test_qwen35_delta.cpp'] = replay.SOURCE_DELTA_TEST_SHA
+        self.assertEqual(replay.native_source_closure({'native_source_sha256': frozen}, ab)
+                         ['unchanged_files'], 27)
+        frozen['src/qwen35_norm.cpp'] = '0' * 64
+        with self.assertRaisesRegex(ValueError, 'implementation/comparator changed'):
+            replay.native_source_closure({'native_source_sha256': frozen}, ab)
+
     def test_unreviewed_or_different_preset_cannot_execute(self):
         ab, _ = replay.source_helpers()
         if replay.APPROVED_PRESET is None:

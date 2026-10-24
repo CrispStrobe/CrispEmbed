@@ -76,6 +76,37 @@ def approved_preset(requested, ab):
             'scope': 'Existing runtime gates only; no model, comparator, tolerance or default change'}
 
 
+def native_source_closure(source, ab):
+    """The source report fixes every implementation and comparison file, not only vision."""
+    original = source.get('native_source_sha256')
+    exceptions = {'tests/test_qwen35_vision.cpp': (ab.SOURCE_TEST_SHA, ab.TRACE_TEST_SHA),
+                  'tests/test_qwen35_delta.cpp': (SOURCE_DELTA_TEST_SHA, TRACE_DELTA_TEST_SHA)}
+    if (not isinstance(original, dict) or len(original) != 29
+            or not set(exceptions).issubset(original)
+            or not {'src/qwen35_norm.cpp', 'src/qwen35_math.h', 'src/qwen35_linear.cpp',
+                    'src/qwen35_attention.cpp', 'src/crispembed_diff.h',
+                    'tests/qwen35_parity.h', 'tests/test_qwen35_decoder.cpp',
+                    'tests/test_ovisocr2_context.cpp'}.issubset(original)):
+        raise ValueError('Frozen native implementation/comparison source set differs')
+    reviewed = {}
+    for name, old_sha in original.items():
+        if (not isinstance(name, str) or not re.fullmatch(r'(?:src|tests)/[A-Za-z0-9_./-]+\.(?:h|cpp)', name)
+                or '..' in Path(name).parts or not re.fullmatch('[0-9a-f]{64}', old_sha)):
+            raise ValueError('Frozen native source path/hash differs')
+        current_sha = ab.sha(ROOT / name)
+        if name in exceptions:
+            if (old_sha, current_sha) != exceptions[name]:
+                raise ValueError('Reviewed test-only trace fix source differs: ' + name)
+            reviewed[name] = {'original_sha256': old_sha, 'replay_sha256': current_sha,
+                              'scope': 'test-only raw-dump preservation'}
+        elif current_sha != old_sha:
+            raise ValueError('Native implementation/comparator changed since frozen source: ' + name)
+    return {'all_original_source_files_checked': len(original),
+            'unchanged_files': len(original) - len(exceptions),
+            'reviewed_test_only_differences': reviewed,
+            'implementation_and_comparison_source_unchanged': True}
+
+
 def source_reference(ab, scratch, out, report, source):
     pin = ab.SOURCE_REFERENCE_ARTIFACT
     archive_path = scratch / 'frozen-reference.zip'
@@ -415,8 +446,7 @@ def main(*, preflight_only=False, requested_preset=None):
         if ab.sha(source_path) != SOURCE_REPORT_SHA:
             raise ValueError('Pinned source model report differs')
         source = json.loads(source_path.read_text())
-        if source.get('native_source_sha256', {}).get('tests/test_qwen35_delta.cpp') != SOURCE_DELTA_TEST_SHA:
-            raise ValueError('Source delta test differs before test-only dump fix')
+        report['native_source_closure'] = native_source_closure(source, ab)
         report['source_reference_provenance'] = {'run': ab.SOURCE_RUN, 'head': ab.SOURCE_HEAD,
             'report_sha256': SOURCE_REPORT_SHA, 'original_871_npy_exact': True,
             'new_cache_states': 72, 'original_report_status': source['status'],
