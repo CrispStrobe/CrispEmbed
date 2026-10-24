@@ -6477,3 +6477,30 @@ Quant short host controls reuse this first eleven-case F16 evidence and still
 run every candidate on all eleven inputs. One same-run control cannot establish
 all-case cross-host F16 equivalence or causal document speed. Keep explicit full
 host controls available and preserve all candidate timings/CPU/RSS separately.
+
+
+## Ovis protected Q8 — complete negative result, 24 October 2026
+
+[40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+at8b421ba5 measures1251261952-byte Q8 against1717222848-byte F16. All473 tensor
+names/shapes match;150 eligible F16 matrices become Q8_0, all323 other records
+retain their types/hashes. Vision, embedding, norms and recurrent A/B gates are
+protected. First captured decoder error0.00376427174 with min cosine0.999920726
+fails the unchanged0.002/0.99999 gates;183/189 metric verdicts fail. Numerical
+image IDs/text remain exact, but the full two-column output regresses.
+
+All11 candidate cases reach EOS without caps. Ten match first F16 IDs/raw text;
+two-column changes697→700 tokens, including `Ipsum`→`Ispum`. Raw CER/WER rise
+0.13518953/0.18705036→0.13619591/0.19064748; parsed content CER/WER rise
+0.11070111/0.18525180→0.11170748/0.18884892. Eight synthetic WER0 and15 correct
+inventory cells do not qualify this candidate. It is rejected for both numeric
+and document nonregression. [Full scores/operands/source proof](tests/results/qwen35-ocr/ovisocr2-q8-quality.json).
+
+Native Q8 recognition walls: Hello48.4166 seconds, receipt917.0298,
+two-column755.8296, inventory207.7254. CPU model EPYC7763/four logical and affinity
+CPUs/two inference threads matches the earlier F16 model name, but these are
+separate sessions and document boundaries are cross-run. Only the single same-run
+F16 owned-image control is paired. Retain actual per-case values; no general or
+causal document speed ratio follows. Original raw vector dumps were not saved;
+the separate candidate-only replay will preserve operation-level diagnostics
+without replacing these initial quality/numerical observations.

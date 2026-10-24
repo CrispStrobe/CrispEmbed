@@ -14767,3 +14767,38 @@ locally;30 quality controls and5 metadata controls pass. Runtime/probe arithmeti
 and0.99999/0.002 gates are unchanged. Actual Q4/calibration and raw-replay outcomes
 require fresh corrected runs.
 [Initial control failures, cancellations and exact proof](tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json).
+
+
+## 24 October 2026 — Protected Ovis Q8 completed and rejected
+
+[40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+at8b421ba5 completes all eleven candidate cases, both frozen-reference quality
+comparisons,473-tensor audit and189 numerical metrics across72 decoder layers.
+All protected tensor hashes remain exact;150 matrices change from F16 to Q8_0.
+Candidate size1251261952 bytes, SHA
+`f0bccbed39f6189a95519997a7c36a1938d7fd5fe81a8b93ac44634d0886d13b`.
+First captured numerical failure is prefill.decoder.layer.0:
+cos_min0.999920726, max_abs0.00376427174, native/reference norms38.6133461/38.6110916;
+183 metrics fail unchanged gates. The one numerical image still has exact nine
+IDs/EOS/text, which does not settle document quality.
+
+All eleven full quality cases reach EOS248046 without caps, ten match first
+F16 token IDs/raw text. Two-column first token difference is index2,
+59289→353; `Lorem Ipsum` becomes `Lorem Ispum`,697→700 tokens. Its raw CER/WER
+increase0.13518953/0.18705036→0.13619591/0.19064748; content CER/WER
+0.11070111/0.18525180→0.11170748/0.18884892. Both document nonregression screens
+fail; synthetic screens pass and inventory retains15 exact cells. This is a
+complete negative diagnostic, authorizing Q4 comparison while blocking Q8
+publication. [Full immutable producer/review](tests/results/qwen35-ocr/ovisocr2-q8-quality.json).
+
+Small artifact12549202094,3494221 bytes, ZIP
+`2466774cfc7bdf324ddce15205c1257deb4c790f6c39b005f9bac457d8431ce0`, raw report
+`babffc936af26676d74a116c6281f704c5c982a8e4f03ed97544568bc5cd1e76`.
+Candidate artifact12549570352,1057884535 bytes, ZIP
+`f02a52a9b64f063afdb29553ee4ca16f2a3bd248af14be596e843428f74c07f4`
+stays remote. Review verifies all38 small-ZIP members, actual logs/inputs/scoring,
+first-F16 receipt/scores,10 exact Git path OIDs,25 native source hashes and6 AST
+contracts. Python3.13 show_empty=True reproduces the pinned hosted3.12 AST
+serialization; all six digests independently match both source commits. No
+weights/binaries were downloaded locally. Original Q8 raw vectors are absent;
+the candidate-only supplemental replay remains a separate pending result.
