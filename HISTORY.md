@@ -14603,3 +14603,28 @@ vectors and checks byte integrity after those controls. Existing comparator,
 numerical budgets and runtime math are unchanged. Actual hosted validation is
 part of the subsequent vision experiment; this source correction is not yet a
 measured precision improvement.
+
+## 24 October 2026 — Vision diagnostic transport failure retained
+
+[40046189758](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40046189758)
+at214e11c2 verifies/extracts the exact export, then stops before build/inference:
+`checked_archive` references an unpassed report variable. [Initial evidence](tests/results/qwen35-ocr/initial-ovisocr2-vision-ab-archive-failure.json)
+retains its source/report/artifact hash. Correctiondf65e911 passes the report
+explicitly to the helper and both callers; a tiny actual ZIP extraction/report
+regression passes with the other four controls. Undefined-name static checks pass
+all Ovis drivers. No mathematical path, reference or budget changed.
+
+## 24 October 2026 — Exact historical wrong-profile fixture retained
+
+[40046789339](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40046789339)
+atda0c8bd5 reconstructs the missing LightOn format1 control with the unchanged
+historical converter and actual vision-F32 recipe:52 retained matrices,286 F32
+and187 F16 tensors. All473 receipt records and the full1,918,139,328-byte GGUF
+SHA41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4
+match in the hosted producer. [Small-report/service/source review](tests/results/qwen35-ocr/ovisocr2-lighton-fixture.json)
+passes; the large GGUF stays remote and was not independently downloaded on the
+shared host. The dedicated `lightonocr3-format1-receipt-40046789339` artifact
+is available for public-interface wrong-profile checks. The historical LightOn
+numerical failures remain: this is fixture reconstruction, not OCR qualification.
+Exact public-workflow inputs and both artifact identities are recorded in the
+receipt. Preserve this control remotely before its ninety-day expiry.

@@ -101,7 +101,7 @@ no current candidate qualifies. OvisOCR2 metadata/schema/processor capture
 passes; experimental full-weight export and exact frontend parity pass, with PR77/78
 merged. Controlled original T4 GPU execution passes; full native inference, public
 consumers and independent quality/calibration/publication remain pending.
-Continue the active PLAN sequence:40041958521 completes943 frozen fields and12/14 native arms; both vision arms fail unchanged budgets. Review existing precision A/B40046189758, then replay all arms against the frozen reference. Development CPU-baseline PR76 is merged, with actual
+Continue the active PLAN sequence:40041958521 completes943 frozen fields and12/14 native arms; both vision arms fail unchanged budgets. Review corrected existing precision A/B40047163838, then replay all arms against the frozen reference. Development CPU-baseline PR76 is merged, with actual
 three-platform desktop jobs passing; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with
@@ -112,7 +112,7 @@ its name. Never append private environment/access details here. Optional private
 continuity is stored in ignored `.claude/local-handoff/AGENTS.md` when available.
 
 Ovis native40041958521 completes943 frozen fields and12/14 arms. Both vision
-arms fail unchanged budgets; review existing precision A/B40046189758 and then
+arms fail unchanged budgets; review corrected existing precision A/B40047163838 and then
 replay all native arms against this frozen reference without HF recapture.
 See the active Ovis sequence in [PLAN](PLAN.md). Public interfaces, quality,
 all three quantization/calibration arms and conditional publication remain open.
