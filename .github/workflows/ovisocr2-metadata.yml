@@ -70,6 +70,7 @@ jobs:
           python tests/test_ovisocr2_lighton_fixture.py -v
           python tests/test_ovisocr2_vision_audit.py -v
           python tests/test_ovisocr2_native_replay.py -v
+          python tests/test_ovisocr2_vision_env.py -v
   lighton-fixture:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'
     needs: controls
