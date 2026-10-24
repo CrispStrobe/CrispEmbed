@@ -127,8 +127,10 @@ separately from candidate qualification. The separate
 [Q8 raw replay40066576197](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
 retains243 vectors and first source-fed QKV max0.0564889908; the initial Q8
 wrapper remains unchanged. [Selection](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
-chooses qualified F16. Actual publication40070360890 is submitted; review its
-immutable full readback before real aliases and published-consumer execution.
+chooses qualified F16. Initial publication40070360890 failed at namespace authorization after exact
+artifact verification. Its failure receipt is preserved; dedicated binding is
+corrected. Run the fresh corrected publication and verify immutable full
+readback before real aliases and published-consumer execution.
 Follow [PLAN](PLAN.md) through those actual results and final PR79 integration.
 Retain initial failures and raw strict flags. No Ovis weights/alias have yet
 been verified published; no runtime release or app upgrade follows. Development

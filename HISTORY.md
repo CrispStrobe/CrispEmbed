@@ -14927,3 +14927,20 @@ plain/calibrated Q4. The first QKV payload SHA remains
 across all three candidates. Calibration demonstrably affects the intended
 weights and cannot alter this unchanged source-fed QKV projection. This is
 recorded-hash comparison, not local large-model rehashing or quality promotion.
+
+
+## 24 October 2026 — Initial F16 publication reaches exact artifact, then namespace denial
+
+[40070360890](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40070360890)
+at79c71224 passes both hosted control layers, all receipt/service gates and
+exact1717222848-byte/d3a733a5… F16 payload verification. Generated model card,
+manifest and original Apache LICENSE/README hashes match their pins. Hugging Face
+then denies repository creation with403. The run returns no uploaded GGUF,
+publication commit or empty-cache remote readback. Qualification remains positive;
+publication remains negative. [Initial producer and independent failure review](tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json).
+Small report12552441116:7242 bytes/SHA
+`e29e6b06ccf6a6545cc0f69091b13d2f2125ea9db2c57fc360a424902aa15624`;
+producer SHA `88fc53f420eecc1b1d5002188038c2afac22ffa197242c83ad18d0ae09eb34a8`.
+The dedicated publisher credential binding and pre-transfer presence guard are
+corrected separately from model code, math, quality or selection. A corrected
+hosted retry is required; never mark this initial failure as publication success.

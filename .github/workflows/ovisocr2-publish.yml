@@ -13,7 +13,7 @@ on:
         required: true
         type: string
     secrets:
-      HF_TOKEN:
+      HF_OVISOCR2_PUBLISH_TOKEN:
         required: true
   workflow_dispatch:
     inputs:
@@ -71,6 +71,14 @@ jobs:
           HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" \
             python tools/ci-heavy/ovisocr2_publish.py --preflight --precision "$PRECISION" \
               --model-run-id "$MODEL_RUN_ID" --quality-run-id "$QUALITY_RUN_ID"
+      - name: Publication credential configured before large artifact transfer
+        env:
+          HF_TOKEN: ${{ secrets.HF_OVISOCR2_PUBLISH_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "::error::Dedicated Ovis publication credential is unavailable."
+            exit 1
+          fi
       - uses: actions/download-artifact@v4
         with:
           name: ovisocr2-model-reference-${{ inputs.model_run_id }}
@@ -88,7 +96,7 @@ jobs:
         run: python -m pip install huggingface-hub==1.33.0
       - name: Publish exact selected artifact and verify immutable empty-cache download
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_OVISOCR2_PUBLISH_TOKEN }}
           HF_HOME: ${{ runner.temp }}/scratch/ovis-publish/fresh-hf-home
           HF_HUB_DISABLE_XET: '1'
         run: |

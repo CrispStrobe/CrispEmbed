@@ -372,7 +372,11 @@ all measured failures, hashes, sizes and limits. Do not repeat the panels.
    Run `ovisocr2-metadata.yml` on the completion audit branch with phase=publish,
    publish_precision=f16, native_run_id=40049244654 and
    publication_quality_run_id=40056641800. The pure receipt gate passes; an
-   actual upload/immutable full readback is still required.
+   actual upload/immutable full readback is still required. Initial
+   [40070360890](tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
+   failed with403 namespace creation after exact-artifact verification. Its
+   report is preserved. Dedicated publisher binding is corrected; use a fresh
+   dispatch at the corrected source, not a rerun of its old credential mapping.
    The publisher requires source/license/base, original/native/public/quality,
    all-attempt selection and conditional calibration receipts. Verify immutable
    HF bytes by an empty-cache full download; keep probes outside the five-file
@@ -458,7 +462,11 @@ file bytes/tensor types, paired host latency/RSS and calibration separation;
 no size estimate or component cosine is a quality result. Use hosted CPU only.
 Failed numerical or document screens still block the candidate; any proposal
 for different quantization acceptance criteria is a separately documented
-methodology task and must not rewrite historical float comparisons.
+methodology task and must not rewrite historical float comparisons. Keep the
+current F16 selection/publication receipts and model pin immutable. A future
+qualified precision needs versioned decision/publication evidence and a reviewed
+destination/allowlist: the present publisher intentionally permits one GGUF plus
+four provenance files and refuses additional unreviewed model files.
 
 ## Ovis larger-input qualification — after latency/resource attribution
 

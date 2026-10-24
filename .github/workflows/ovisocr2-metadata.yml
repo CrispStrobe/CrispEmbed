@@ -9,7 +9,7 @@ on:
         default: metadata
       native_run_id:
         type: string
-        description: 'Public phase only: reviewed positive Ovis native replay run ID'
+        description: 'Public/publication phases: reviewed positive Ovis native replay run ID'
         default: '0'
       vision_preset:
         type: choice
@@ -106,7 +106,7 @@ jobs:
       model_run_id: ${{ inputs.native_run_id }}
       quality_run_id: ${{ inputs.publication_quality_run_id }}
     secrets:
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_OVISOCR2_PUBLISH_TOKEN: ${{ secrets.HF_OVISOCR2_PUBLISH_TOKEN }}
   quant-raw:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'quant-raw'
     needs: controls
