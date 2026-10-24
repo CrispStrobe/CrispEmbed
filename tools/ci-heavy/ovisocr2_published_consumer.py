@@ -62,6 +62,9 @@ def module(name, relative):
 
 def registry_entry(registry, hashes, alias, filename, url, expected_sha):
     """Require one literal C++ registry row and one generated URL pin."""
+    # clang-format may wrap an immutable URL into adjacent C++ string literals.
+    registry = re.sub(r'"\s*"', '', registry)
+    hashes = re.sub(r'"\s*"', '', hashes)
     row = re.compile(r'^\s*\{\s*"' + re.escape(alias)
                      + r'"\s*,\s*"([^"\n]+)"\s*,\s*"([^"\n]+)"\s*,', re.MULTILINE)
     rows = row.findall(registry)
@@ -151,7 +154,48 @@ def preflight(precision):
     model_receipt = json.loads((EVIDENCE / 'ovisocr2-model-audit.json').read_text())
     preservation = json.loads(PRESERVATION.read_text())
     fixture = require_frozen_image(preservation, model_receipt)
-    return publication, fixture
+    quality_path = EVIDENCE / f'ovisocr2-{precision}-quality.json'
+    if sha(quality_path) != pins['receipt_sha256']['quality']:
+        raise ValueError('Selected quality receipt SHA differs from publisher gate')
+    quality = json.loads(quality_path.read_text())
+    reference = require_quality_confidence(quality, pins, fixture)
+    return publication, fixture, reference
+
+
+def require_quality_confidence(receipt, pins, fixture):
+    """Bind the selected candidate's reviewed mean to the exact frozen PNG."""
+    if not isinstance(receipt, dict):
+        raise ValueError('Selected positive quality receipt absent')
+    producer = receipt.get('producer')
+    review = receipt.get('independent_review')
+    if not isinstance(producer, dict) or not isinstance(review, dict):
+        raise ValueError('Selected quality producer/review absent')
+    precision = pins['precision']
+    case = producer.get('native_cases', {}).get(precision, {}).get('dev-hello', {})
+    smoke = producer.get('cabi_smoke', {}).get(precision, {})
+    mean = case.get('mean_confidence')
+    smoke_mean = smoke.get('mean_confidence')
+    if (review.get('quality_positive') is not True
+            or producer.get('models', {}).get(precision, {}).get('sha256') != pins['candidate_sha256']
+            or case.get('input_png_sha256') != fixture['png_sha256']
+            or case.get('input_rgb_sha256') != fixture['rgb_sha256']
+            or case.get('raw_text') != fixture['expected_text']
+            or case.get('stop_id') != 248046
+            or case.get('finish_reason') != 'stop'
+            or case.get('token_ids') != FROZEN_IDS
+            or not isinstance(case.get('cap'), int) or case['cap'] < len(FROZEN_IDS)
+            or not isinstance(case.get('confidences'), list)
+            or len(case['confidences']) != len(FROZEN_IDS)
+            or smoke.get('case') != 'dev-hello'
+            or smoke.get('raw_text') != fixture['expected_text']
+            or type(mean) not in (int, float) or not math.isfinite(mean)
+            or type(smoke_mean) not in (int, float) or not math.isfinite(smoke_mean)
+            or not 0 <= mean <= 1 or abs(mean - smoke_mean) > 1e-5):
+        raise ValueError('Selected quality dev-hello native/C ABI confidence or exact image differs')
+    return {'mean_confidence': mean, 'c_abi_mean_confidence': smoke_mean,
+            'case': 'dev-hello', 'input_png_sha256': fixture['png_sha256'],
+            'input_rgb_sha256': fixture['rgb_sha256'], 'token_ids': FROZEN_IDS,
+            'quality_receipt_sha256': pins['receipt_sha256']['quality']}
 
 
 def bounded_get(url, limit, opener=urllib.request.urlopen):
@@ -284,14 +328,26 @@ def check_cached(path, remote):
     return {'sha256': remote['sha256'], 'bytes': remote['bytes']}
 
 
-def compare_public_answers(online, offline, http):
+def compare_public_answers(online, offline, http, reference):
+    mean = reference['mean_confidence']
+    values = (mean, online['mean_confidence'], offline['mean_confidence'], http['mean_confidence'])
+    if any(type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1
+           for value in values):
+        raise ValueError('Public confidence mean missing, nonfinite, or out of range')
+    cli_error = abs(online['mean_confidence'] - mean)
+    offline_error = abs(offline['mean_confidence'] - mean)
+    http_error = abs(http['mean_confidence'] - mean)
     if (online['text'] != offline['text'] or online['text'] != http['text']
             or online['n_regions'] != offline['n_regions'] or online['n_regions'] != http['n_regions']
             or online['mean_confidence'] != offline['mean_confidence']
-            or abs(online['mean_confidence'] - http['mean_confidence']) > .005):
+            or cli_error > .0006 or offline_error > .0006 or http_error > .00006):
         raise ValueError('CLI fresh/offline or HTTP decoded output/confidence differs')
     return {'fresh_offline_confidence_exact': True,
-            'cli_http_mean_confidence_abs': abs(online['mean_confidence'] - http['mean_confidence'])}
+            'reference_mean_confidence': mean,
+            'cli_mean_confidence_abs': cli_error,
+            'offline_mean_confidence_abs': offline_error,
+            'http_mean_confidence_abs': http_error,
+            'cli_budget': .0006, 'http_budget': .00006}
 
 
 def http_arm(build, alias, image, expected, cache, selection, precision, out):
@@ -360,18 +416,21 @@ def main():
                   'examples/cli/model_mgr.cpp', 'examples/cli/model_hashes.h')},
               'arms': {}, 'limits': ['Public CLI/HTTP APIs expose text/confidence but no token IDs or stop reason; '
                                      'nine generated IDs and EOS are separately frozen in the reviewed native receipt.',
-                                     'This checks one frozen 448x448 readable image and a 12-token request cap.']}
+                                     'This checks one frozen 448x448 readable image and a 12-token request cap.',
+                                     'CLI and HTTP means use existing public printing budgets .0006 and .00006 '
+                                     'against the selected quality dev-hello native mean on the byte-identical PNG/RGB.']}
     def save():
         report_path.write_text(json.dumps(report, indent=2, allow_nan=False) + '\n')
     save()
     try:
-        publication, fixture = preflight(args.precision)
+        publication, fixture, reference = preflight(args.precision)
         report['publication'] = {'commit': publication['commit'],
                                  'registry': publication['registry'],
                                  'receipt_sha256': publication['receipt_sha256'],
                                  'candidate_bytes': publication['remote']['bytes'],
                                  'selected_vision_preset': publication['qualification']['selected_vision_preset']}
         report['native_nine_ids'] = fixture['native_ids']
+        report['selected_quality_confidence_reference'] = reference
         report['phase'] = 'preflight-complete'
         save()
         if args.preflight:
@@ -441,7 +500,7 @@ def main():
         report['arms']['http-online-alias']['cache'] = check_cached(http_cache / filename,
                                                                     publication['remote'])
         report['public_comparison'] = compare_public_answers(first['result'], repeat['result'],
-                                                              report['arms']['http-online-alias'])
+                                                              report['arms']['http-online-alias'], reference)
         report['status'] = 'completed published consumer alias audit'
         report['phase'] = 'complete'
         save()
