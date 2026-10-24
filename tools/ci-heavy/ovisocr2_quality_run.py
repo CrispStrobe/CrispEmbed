@@ -964,6 +964,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
               'source_commit': os.environ.get('GITHUB_SHA'), 'commands': {},
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
+                  'tools/ci-heavy/ovisocr2_model_audit.py',
                   'tools/ci-heavy/ovisocr2_vision_env.py',
                   'tools/ci-heavy/ovisocr2_quality_contract.py',
                   'tools/ocr_quality.py',
@@ -981,6 +982,9 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
     save()
     try:
         report['prerequisite'] = require_baseline(phase, original_run)
+        report['cpu_runtime'] = load_module(
+            'ovis_quality_cpu_runtime', ROOT / 'tools/ci-heavy/ovisocr2_model_audit.py'
+        ).cpu_runtime_attribution()
         selection = report['prerequisite']['selected_vision_preset']
         report['selected_vision_preset'] = selection
         report['baseline_service'] = verify_model_receipt_service(report['prerequisite']['baseline_pins'])
