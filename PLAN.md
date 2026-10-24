@@ -330,7 +330,7 @@ The registry warning in the SAM ownership row describes the pre-repair state;
 with preserved digests and complete freshness evidence in HISTORY. SAM quality
 and performance follow-ups remain with their owner.
 
-## Active Ovis completion sequence — finish the remaining qualified publication gates
+## Active Ovis completion sequence
 
 Frontend PR78, original controlled GPU execution, full fourteen-arm native
 replay40049244654 and public C/Python/CLI/HTTP/Rust/Dart40053283383 are complete.
@@ -353,7 +353,8 @@ required. Preserve every baseline/cascade alternative and raw strict flag.
 Audits transfer this exact reviewed configuration; no production default flips.
 Keep follow-on evidence on the completion audit branch until final reconciliation
 with draft [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79), avoiding a full
-platform rebuild for each report update. No model alias or HF weights exist yet.
+platform rebuild for each report update. Qualified F16 is now published and its
+real precision alias is wired; the actual consumer remains pending.
 
 The three actual quantization attempts are complete and rejected. The
 [selection receipt](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
@@ -381,8 +382,9 @@ the first qualified F16 source. The consumer now rejects changed recorded
 native source before build; nine pure controls pass. Prepared alias wiring is
 not yet a model-backed consumer result.
 
-1. **Finish actual published consumer:** dispatch `ovisocr2-metadata.yml` on the
-   completion audit branch with phase=consumer and publish_precision=f16.
+1. **Finish actual published consumer:** [40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)
+   is submitted at5296e955, phase=consumer and publish_precision=f16 on the
+   completion audit branch. Do not duplicate; review its actual outcome.
    Reuse the positive publication/first-F16/source receipts; no original or
    eleven-case recapture. The registered `ovisocr2-published-consumer.yml` builds
    portable CLI/server on hosted CI, checks two genuinely fresh model caches,
