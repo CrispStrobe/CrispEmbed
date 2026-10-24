@@ -44,6 +44,17 @@ REVISION = 'cbdede82e048659b83310476ff807da825f8fe78'
 PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated')
 QUALITY_WORKFLOW_PATHS = ('.github/workflows/ovisocr2-quality.yml',
                           '.github/workflows/ovisocr2-metadata.yml')
+F16_HOST_CONTROLS = ('full', 'dev-hello')
+# The tree closes over all native runtime sources. The remaining paths are the
+# exact build recipe, test runner, quantizer, registry source used by the shared
+# library, and ggml gitlink. A changed source uses the explicit full control.
+F16_SOURCE_CLOSURE_PATHS = ('src', 'CMakeLists.txt', 'tests/ovisocr2_quality_run.cpp',
+    'tools/quantize.cpp', 'examples/cli/model_mgr.cpp', 'ggml',
+    'tools/ci-heavy/ovisocr2_vision_env.py', 'tools/ci-heavy/ovisocr2_quality_contract.py',
+    'tools/ocr_quality.py', 'models/convert-qwen35-ocr-to-gguf.py')
+F16_AST_FUNCTIONS = ('native_environment', 'numerical_environment', 'vision_contract')
+F16_AST_GLOBALS = ('ENV_GATES', 'DIFF_FLOAT_ZERO')
+F16_AST_CONTRACTS = (*F16_AST_FUNCTIONS, *F16_AST_GLOBALS, 'cmake-configure')
 ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
              'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
 DIFF_FLOAT_ZERO = ('CRISPEMBED_QWEN35_PRECISE_RMS',
@@ -96,6 +107,132 @@ def load_module(name, path):
     result = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(result)
     return result
+
+
+def f16_runtime_ast_contracts(source):
+    """Fingerprint the two native env builders and literal CMake configure argv."""
+    tree = ast.parse(source)
+    result = {}
+    for name in F16_AST_FUNCTIONS:
+        nodes = [node for node in tree.body
+                 if isinstance(node, ast.FunctionDef) and node.name == name]
+        if len(nodes) != 1:
+            raise ValueError('First F16 native environment source is ambiguous: ' + name)
+        result[name] = hashlib.sha256(ast.dump(nodes[0], include_attributes=False).encode()).hexdigest()
+    for name in F16_AST_GLOBALS:
+        nodes = [node for node in tree.body if isinstance(node, ast.Assign)
+                 and any(isinstance(target, ast.Name) and target.id == name
+                         for target in node.targets)]
+        if len(nodes) != 1:
+            raise ValueError('First F16 native gate constant is ambiguous: ' + name)
+        result[name] = hashlib.sha256(ast.dump(nodes[0], include_attributes=False).encode()).hexdigest()
+    calls = [node for node in ast.walk(tree) if isinstance(node, ast.Call)
+             and isinstance(node.func, ast.Name) and node.func.id == 'command'
+             and len(node.args) >= 2 and isinstance(node.args[0], ast.Constant)
+             and node.args[0].value == 'cmake-configure' and isinstance(node.args[1], ast.List)]
+    if len(calls) != 1:
+        raise ValueError('First F16 CMake configure argv is ambiguous')
+    result['cmake-configure'] = hashlib.sha256(
+        ast.dump(calls[0].args[1], include_attributes=False).encode()).hexdigest()
+    return result
+
+
+def validate_f16_source_closure(record, first_head, candidate_head, first_native, candidate_native):
+    """Pure proof used by both the hosted driver and publication reviewer."""
+    if not isinstance(record, dict):
+        raise ValueError('First F16 source closure absent')
+    def head(value):
+        return isinstance(value, str) and re.fullmatch('[0-9a-f]{40}', value) is not None
+    paths = record.get('paths')
+    asts = record.get('ast_contracts')
+    if (not head(first_head) or not head(candidate_head)
+            or record.get('first_f16_source_commit') != first_head
+            or record.get('candidate_source_commit') != candidate_head
+            or not isinstance(paths, dict) or set(paths) != set(F16_SOURCE_CLOSURE_PATHS)
+            or not isinstance(asts, dict) or set(asts) != set(F16_AST_CONTRACTS)
+            or not isinstance(first_native, dict) or not first_native
+            or not isinstance(candidate_native, dict)
+            or first_native != candidate_native):
+        raise ValueError('First F16 source closure path/source/map differs')
+    for name, pair in paths.items():
+        if (not isinstance(pair, dict) or set(pair) != {'first_oid', 'candidate_oid'}
+                or not head(pair['first_oid']) or pair['candidate_oid'] != pair['first_oid']):
+            raise ValueError('First F16 source tree differs: ' + name)
+    for name, pair in asts.items():
+        if (not isinstance(pair, dict) or set(pair) != {'first_sha256', 'candidate_sha256'}
+                or not isinstance(pair['first_sha256'], str)
+                or re.fullmatch('[0-9a-f]{64}', pair['first_sha256']) is None
+                or pair['candidate_sha256'] != pair['first_sha256']):
+            raise ValueError('First F16 native environment/build AST differs: ' + name)
+    if record.get('first_native_source_sha256') != first_native:
+        raise ValueError('First F16 recorded native source map differs')
+    return True
+
+
+def f16_source_closure(first_producer, first_head, candidate_head):
+    """Compare exact first/current Git blobs and build/environment AST before weights."""
+    if (not isinstance(first_producer, dict)
+            or first_producer.get('source_commit') != first_head
+            or not isinstance(first_producer.get('native_source_sha256'), dict)
+            or not isinstance(first_producer.get('source_sha256'), dict)):
+        raise ValueError('First F16 source proof absent')
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(ROOT), *args], text=True, timeout=120).strip()
+    if git('rev-parse', 'HEAD') != candidate_head:
+        raise ValueError('Candidate checkout differs from declared source commit')
+    try:
+        git('cat-file', '-e', first_head + '^{commit}')
+    except subprocess.CalledProcessError:
+        subprocess.run(['git', '-C', str(ROOT), 'fetch', '--depth=1', 'origin', first_head],
+                       check=True, timeout=180, stdout=subprocess.DEVNULL)
+        git('cat-file', '-e', first_head + '^{commit}')
+    if git('status', '--porcelain', '--', *F16_SOURCE_CLOSURE_PATHS):
+        raise ValueError('Candidate native source closure has uncommitted changes')
+    paths = {name: {'first_oid': git('rev-parse', first_head + ':' + name),
+                    'candidate_oid': git('rev-parse', candidate_head + ':' + name)}
+             for name in F16_SOURCE_CLOSURE_PATHS}
+    first_bytes = subprocess.check_output(['git', '-C', str(ROOT), 'show',
+        first_head + ':tools/ci-heavy/ovisocr2_quality_run.py'], timeout=120)
+    first_source = first_bytes.decode('utf-8')
+    first_sha = hashlib.sha256(first_bytes).hexdigest()
+    if first_sha != first_producer['source_sha256'].get('tools/ci-heavy/ovisocr2_quality_run.py'):
+        raise ValueError('First F16 runner source differs from reviewed report')
+    old_ast = f16_runtime_ast_contracts(first_source)
+    new_ast = f16_runtime_ast_contracts((ROOT / 'tools/ci-heavy/ovisocr2_quality_run.py').read_text())
+    asts = {name: {'first_sha256': old_ast[name], 'candidate_sha256': new_ast[name]}
+            for name in F16_AST_CONTRACTS}
+    first_native = first_producer['native_source_sha256']
+    if any(Path(name).is_absolute() or '..' in Path(name).parts
+           or not (ROOT / name).is_file() for name in first_native):
+        raise ValueError('First F16 native source map contains an unsafe or missing path')
+    current_native = {name: sha(ROOT / name) for name in first_native}
+    record = {'first_f16_source_commit': first_head, 'candidate_source_commit': candidate_head,
+              'paths': paths, 'ast_contracts': asts,
+              'first_native_source_sha256': first_native,
+              'first_runner_source_sha256': first_sha}
+    validate_f16_source_closure(record, first_head, candidate_head, first_native, current_native)
+    return record
+
+
+def f16_runtime_closure(first_producer, candidate_report):
+    """Require same pinned packages, thread settings, and machine ISA family."""
+    first_cpu = first_producer.get('cpu_runtime', {})
+    candidate_cpu = candidate_report.get('cpu_runtime', {})
+    versions = first_producer.get('versions')
+    threads = first_cpu.get('thread_env')
+    if (not isinstance(versions, dict) or not versions
+            or versions != candidate_report.get('versions')
+            or not isinstance(threads, dict) or not threads
+            or threads != candidate_cpu.get('thread_env')
+            or not first_cpu.get('machine')
+            or first_cpu['machine'] != candidate_cpu.get('machine')):
+        raise ValueError('First F16 package, thread or CPU architecture differs')
+    return {'first_versions': versions, 'candidate_versions': candidate_report['versions'],
+            'first_thread_env': threads, 'candidate_thread_env': candidate_cpu['thread_env'],
+            'first_machine': first_cpu['machine'], 'candidate_machine': candidate_cpu['machine'],
+            'first_cpu_model': first_cpu.get('cpu_model'),
+            'candidate_cpu_model': candidate_cpu.get('cpu_model'),
+            'scope': 'Exact packages/threads/architecture; CPU model recorded, not assumed equivalent'}
 
 
 def checked_model_receipt(receipt):
@@ -582,6 +719,49 @@ def validate_reused_f16(previous, current, cases, rendered, contract):
     return outputs, scores
 
 
+def validate_short_f16_host_control(actual, frozen, case):
+    """One same-run smoke; it does not assert eleven-case host equivalence."""
+    if case.get('id') != 'dev-hello' or not isinstance(actual, dict) or not isinstance(frozen, dict):
+        raise ValueError('Short F16 host control requires frozen dev-hello')
+    try:
+        ids = actual['token_ids']
+        confidences = actual['confidences']
+        mean = validate_selected_confidences(ids, confidences, case['cap'])
+        actual_mean = actual['mean_confidence']
+        frozen_mean = frozen['mean_confidence']
+    except (KeyError, TypeError) as exc:
+        raise ValueError('Short F16 host control lacks actual selected-token scores') from exc
+    if (actual.get('input_rgb_sha256') != case.get('rgb_sha256')
+            or actual.get('input_png_sha256') != case.get('png_sha256')
+            or actual.get('cap') != case.get('cap')
+            or ids != frozen.get('token_ids') or ids[-1] != 248046
+            or actual.get('raw_text') != frozen.get('raw_text')
+            or actual.get('processed_text') != frozen.get('processed_text')
+            or actual.get('stop_id') != frozen.get('stop_id') or actual.get('stop_id') != 248046
+            or actual.get('finish_reason') != 'stop'
+            or type(actual_mean) not in (int, float) or not math.isfinite(actual_mean)
+            or not math.isclose(actual_mean, mean, rel_tol=0, abs_tol=1e-6)
+            or type(frozen_mean) not in (int, float) or not math.isfinite(frozen_mean)
+            or not isinstance(actual.get('raw_text'), str) or not actual['raw_text']
+            or not isinstance(actual.get('processed_text'), str)
+            or type(actual.get('wall_seconds')) not in (int, float)
+            or not math.isfinite(actual['wall_seconds']) or actual['wall_seconds'] < 0
+            or type(actual.get('child_peak_rss_kib_upper_bound')) is not int
+            or actual['child_peak_rss_kib_upper_bound'] <= 0):
+        raise ValueError('Short F16 host control differs in frozen pixels, IDs, text, EOS or mean')
+    return {'mode': 'dev-hello', 'native_case_count': 1,
+            'case_id': 'dev-hello', 'input_rgb_sha256': case['rgb_sha256'],
+            'input_png_sha256': case['png_sha256'], 'token_ids': ids,
+            'raw_text': actual['raw_text'], 'processed_text': actual['processed_text'],
+            'stop_id': 248046, 'cap': case['cap'],
+            'actual_mean_confidence': actual_mean,
+            'frozen_first_f16_mean_confidence': frozen_mean,
+            'mean_confidence_abs_delta': abs(actual_mean - frozen_mean),
+            'wall_seconds': actual.get('wall_seconds'),
+            'child_peak_rss_kib_upper_bound': actual.get('child_peak_rss_kib_upper_bound'),
+            'scope': 'One same-run F16 dev-hello diagnostic; all eleven F16 scores come from the reviewed first run'}
+
+
 def command(label, argv, out, report, timeout=1800, env=None):
     path = out / (label + '.log')
     start = time.monotonic()
@@ -706,6 +886,28 @@ def gguf_tensors(path):
             for tensor in reader.tensors}
 
 
+def preserve_calibration_proof(stats, imatrix, out, report):
+    """Keep exact small development-only vector proof in the report artifact."""
+    folder = Path(out) / 'calibration'
+    folder.mkdir(parents=True, exist_ok=True)
+    expected = {'development-imatrix-stats.tsv': report['calibration']['stats_sha256'],
+                'development-imatrix.gguf': report['calibration']['imatrix_sha256']}
+    copied = {}
+    for name, source in (('development-imatrix-stats.tsv', stats),
+                         ('development-imatrix.gguf', imatrix)):
+        source = Path(source)
+        if not source.is_file() or source.stat().st_size <= 0 or sha(source) != expected[name]:
+            raise ValueError('Development-only calibration proof source differs: ' + name)
+        target = folder / name
+        shutil.copyfile(source, target)
+        if sha(target) != expected[name] or target.stat().st_size != source.stat().st_size:
+            raise ValueError('Retained calibration proof differs: ' + name)
+        copied[name] = {'path': 'calibration/' + name, 'sha256': expected[name],
+                        'bytes': target.stat().st_size}
+    report['calibration']['report_files'] = copied
+    return copied
+
+
 def development_imatrix(build, f16, cases, scratch, out, report, selection):
     """Collect 72 FFN activation vectors on the four frozen development images only."""
     import gguf
@@ -751,6 +953,7 @@ def development_imatrix(build, f16, cases, scratch, out, report, selection):
         'collector_source_sha256': sha(ROOT / 'tests/test_qwen35_imatrix.cpp'),
         'stats_sha256': sha(stats), 'imatrix_sha256': sha(path),
         'imatrix_bytes': path.stat().st_size, 'vectors': rows}
+    preserve_calibration_proof(stats, path, out, report)
     return path
 
 
@@ -1045,12 +1248,18 @@ def download_original(report, save, checkpoint=True):
     return source, profile
 
 
-def run_main(phase, preflight=False, documents=False, original_run=None):
+def run_main(phase, preflight=False, documents=False, original_run=None,
+             f16_host_control='full'):
+    if f16_host_control not in F16_HOST_CONTROLS:
+        raise ValueError('Unknown F16 host control mode')
+    effective_control = f16_host_control if phase in ('q8', 'q4', 'q4-calibrated') else 'full'
     out = Path(os.environ['HEAVY_OUT'])
     scratch = Path(os.environ['HEAVY_SCRATCH']) / 'ovis-quality'
     out.mkdir(parents=True, exist_ok=True)
     report_path = out / 'ovisocr2-quality.json'
     report = {'status': 'started', 'phase': 'preflight', 'requested_phase': phase,
+              'requested_f16_host_control': f16_host_control,
+              'effective_f16_host_control': effective_control,
               'source_commit': os.environ.get('GITHUB_SHA'), 'commands': {},
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
@@ -1161,6 +1370,40 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
             save()
             return report
 
+        first_f16, frozen_rows, frozen_scores = None, None, None
+        if phase in ('q8', 'q4', 'q4-calibrated'):
+            report['phase'] = 'reviewed-first-f16-artifact-and-source-before-weights'
+            save()
+            first_f16, first_proof = reviewed_quality_artifact(
+                report['prerequisite']['first_f16_pins']['run'], out, F16_REVIEW,
+                'reviewed-first-f16-quality')
+            frozen_rows, frozen_scores = validate_reused_f16(
+                first_f16, report, cases, rendered, contract)
+            if first_proof['receipt_sha256'] != report['prerequisite']['first_f16_review_sha256']:
+                raise ValueError('First F16 receipt changed after preflight')
+            report['first_f16_baseline'] = {**first_proof,
+                'producer_canonical_sha256': report['prerequisite']['first_f16_pins']['producer_canonical_sha256'],
+                'case_count': len(frozen_rows), 'model_sha256': F16_SHA,
+                'selected_vision_preset': selection}
+            if effective_control == 'dev-hello':
+                report['f16_source_closure'] = f16_source_closure(
+                    first_f16, report['prerequisite']['first_f16_pins']['source_commit'],
+                    report['source_commit'])
+                report['f16_runtime_closure'] = f16_runtime_closure(first_f16, report)
+            report['scores']['f16'] = frozen_scores
+            report['f16_paired_synthetic'] = contract.paired_quality_screen(
+                report['scores']['original']['synthetic'], frozen_scores['synthetic'])
+            report['f16_paired_documents'] = contract.paired_document_screen(
+                report['scores']['original']['realistic_documents'],
+                frozen_scores['realistic_documents'])
+            if (report['f16_paired_synthetic'] != first_f16.get('f16_paired_synthetic')
+                    or report['f16_paired_documents'] != first_f16.get('f16_paired_documents')
+                    or report['f16_paired_synthetic'].get('screen_passed') is not True
+                    or report['f16_paired_documents'].get('screen_passed') is not True):
+                raise ValueError('Frozen first F16 paired screens changed before candidate weights')
+            report['f16_paired_source'] = 'reviewed first F16 eleven-case receipt, recomputed on unchanged originals'
+            save()
+
         diff_reference = None
         if phase in ('q8', 'q4', 'q4-calibrated'):
             report['phase'] = 'reviewed-original-numerical-reference'
@@ -1216,43 +1459,36 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         report['models'] = {'f16': {'sha256': F16_SHA, 'bytes': F16_BYTES}}
         report['phase'] = 'f16-native-quality'
         save()
-        f16_results = native_cases(runner, f16, cases, cleaner, filter_fn, out, report, save,
+        f16_cases = cases if effective_control == 'full' else [cases[0]]
+        f16_results = native_cases(runner, f16, f16_cases, cleaner, filter_fn, out, report, save,
                                    'f16', selection)
-        report['scores']['f16'] = score_outputs(contract, rendered, cases, f16_results)
-        report['f16_paired_synthetic'] = contract.paired_quality_screen(
-            report['scores']['original']['synthetic'], report['scores']['f16']['synthetic'])
-        report['f16_paired_documents'] = contract.paired_document_screen(
-            report['scores']['original']['realistic_documents'],
-            report['scores']['f16']['realistic_documents'])
+        if effective_control == 'full':
+            host_scores = score_outputs(contract, rendered, cases, f16_results)
+            host_synthetic = contract.paired_quality_screen(
+                report['scores']['original']['synthetic'], host_scores['synthetic'])
+            host_documents = contract.paired_document_screen(
+                report['scores']['original']['realistic_documents'],
+                host_scores['realistic_documents'])
+            if host_synthetic.get('screen_passed') is not True or host_documents.get('screen_passed') is not True:
+                raise ValueError('Same-run full F16 quality screens failed')
+            if phase == 'f16':
+                report['scores']['f16'] = host_scores
+                report['f16_paired_synthetic'] = host_synthetic
+                report['f16_paired_documents'] = host_documents
+            else:
+                report['scores']['f16_host_control'] = host_scores
+                report['f16_host_control'] = {'mode': 'full', 'native_case_count': len(f16_results),
+                    'paired_synthetic': host_synthetic, 'paired_documents': host_documents,
+                    'scope': 'Same-run F16 eleven-case diagnostic; frozen first F16 is the quant comparison baseline'}
+        else:
+            report['f16_host_control'] = validate_short_f16_host_control(
+                f16_results['dev-hello'], frozen_rows['dev-hello'], cases[0])
         report['cabi_smoke'] = {'f16': cabi_smoke(library, f16, cases[0], selection)}
         save()
-        if not report['f16_paired_synthetic']['screen_passed'] or not report['f16_paired_documents']['screen_passed']:
-            raise ValueError('F16 paired OCR quality screen failed; observations retained')
         if phase == 'f16':
             report['status'] = 'completed F16 quality observations; independent review pending'
             save()
             return report
-
-        report['phase'] = 'reviewed-first-f16-artifact-reuse'
-        save()
-        first_f16, first_proof = reviewed_quality_artifact(
-            report['prerequisite']['first_f16_pins']['run'], out, F16_REVIEW,
-            'reviewed-first-f16-quality')
-        frozen_rows, frozen_scores = validate_reused_f16(
-            first_f16, report, cases, rendered, contract)
-        report['first_f16_baseline'] = {**first_proof,
-            'producer_canonical_sha256': report['prerequisite']['first_f16_pins']['producer_canonical_sha256'],
-            'case_count': len(frozen_rows), 'model_sha256': F16_SHA,
-            'selected_vision_preset': selection}
-        if first_proof['receipt_sha256'] != report['prerequisite']['first_f16_review_sha256']:
-            raise ValueError('First F16 receipt changed after preflight')
-        report['scores']['f16_host_control'] = report['scores']['f16']
-        report['f16_host_control'] = {'native_case_count': len(f16_results),
-            'paired_synthetic': report['f16_paired_synthetic'],
-            'paired_documents': report['f16_paired_documents'],
-            'scope': 'Same-run F16 diagnostic; frozen first F16 is the quant comparison baseline'}
-        report['scores']['f16'] = frozen_scores
-        save()
 
         recipe = 'q8-protected' if phase == 'q8' else 'q4-attention-q8'
         candidate = scratch / ('ovisocr2-' + phase + '.gguf')
@@ -1271,8 +1507,11 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
             raise ValueError('Quantizer skipped one or more development FFN importance vectors')
         report['models'][phase] = {'sha256': sha(candidate), 'bytes': candidate.stat().st_size,
                                    'recipe': recipe}
+        before_tensors, after_tensors = gguf_tensors(f16), gguf_tensors(candidate)
         report['tensor_audit'] = contract.validate_quant_tensors(
-            gguf_tensors(f16), gguf_tensors(candidate), recipe)
+            before_tensors, after_tensors, recipe)
+        report['tensor_records'] = {'before': before_tensors, 'after': after_tensors}
+        save()
         report['phase'] = phase + '-official-numerical-diagnostic'
         save()
         numerical_diagnostic(build / 'test-qwen35-decoder', candidate, diff_reference,
@@ -1317,7 +1556,9 @@ if __name__ == '__main__':
     parser.add_argument('--preflight', action='store_true')
     parser.add_argument('--prepare-documents', action='store_true')
     parser.add_argument('--original-run', type=int)
+    parser.add_argument('--f16-host-control', choices=F16_HOST_CONTROLS, default='full')
     args = parser.parse_args()
     if args.preflight and args.prepare_documents:
         parser.error('Choose one preparation mode')
-    run_main(args.phase, args.preflight, args.prepare_documents, args.original_run)
+    run_main(args.phase, args.preflight, args.prepare_documents, args.original_run,
+             args.f16_host_control)

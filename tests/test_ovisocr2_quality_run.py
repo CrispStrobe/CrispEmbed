@@ -1,6 +1,9 @@
 """Pure source and phase gates; no model or renderer imports."""
 
 import importlib.util
+import inspect
+import copy
+import subprocess
 import sys
 import json
 import hashlib
@@ -19,6 +22,111 @@ spec.loader.exec_module(driver)
 
 
 class QualityDriverControls(unittest.TestCase):
+    def test_short_control_is_explicit_and_full_driver_default_remains(self):
+        self.assertEqual(inspect.signature(driver.run_main).parameters[
+            'f16_host_control'].default, 'full')
+        workflow = (ROOT/'.github/workflows/ovisocr2-quality.yml').read_text()
+        self.assertIn('f16_host_control:', workflow)
+        self.assertIn('default: dev-hello', workflow)
+        self.assertEqual(driver.F16_HOST_CONTROLS, ('full', 'dev-hello'))
+        with self.assertRaisesRegex(ValueError, 'Unknown F16 host control mode'):
+            driver.run_main('q8', f16_host_control='invented')
+
+    def test_exact_git_and_ast_source_closure_rejects_any_drift(self):
+        first, candidate = 'a'*40, 'b'*40
+        first_native = {'src/qwen35_vision.cpp': 'c'*64}
+        paths = {name: {'first_oid': 'd'*40, 'candidate_oid': 'd'*40}
+                 for name in driver.F16_SOURCE_CLOSURE_PATHS}
+        asts = {name: {'first_sha256': 'e'*64, 'candidate_sha256': 'e'*64}
+                for name in driver.F16_AST_CONTRACTS}
+        record = {'first_f16_source_commit': first, 'candidate_source_commit': candidate,
+                  'paths': paths, 'ast_contracts': asts,
+                  'first_native_source_sha256': first_native}
+        self.assertTrue(driver.validate_f16_source_closure(
+            record, first, candidate, first_native, first_native))
+        for change in ('src', 'ggml', 'ast', 'first_map', 'candidate_map', 'first_head'):
+            altered = copy.deepcopy(record)
+            first_map, candidate_map, old_head = first_native, first_native, first
+            if change in ('src', 'ggml'):
+                altered['paths'][change]['candidate_oid'] = 'f'*40
+            elif change == 'ast':
+                altered['ast_contracts']['cmake-configure']['candidate_sha256'] = 'f'*64
+            elif change == 'first_map':
+                altered['first_native_source_sha256'] = {}
+            elif change == 'candidate_map':
+                candidate_map = {}
+            else:
+                old_head = 'f'*40
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                driver.validate_f16_source_closure(
+                    altered, old_head, candidate, first_map, candidate_map)
+        old_ast = driver.f16_runtime_ast_contracts((ROOT/'tools/ci-heavy/ovisocr2_quality_run.py').read_text())
+        changed = (ROOT/'tools/ci-heavy/ovisocr2_quality_run.py').read_text().replace(
+            "env['CRISPEMBED_QWEN35_QUANT'] = '0' if arm == 'f16' else '1'",
+            "env['CRISPEMBED_QWEN35_QUANT'] = '1' if arm == 'f16' else '0'")
+        self.assertNotEqual(old_ast['native_environment'],
+                            driver.f16_runtime_ast_contracts(changed)['native_environment'])
+
+    def test_actual_git_blob_closure_matches_same_source_without_model_access(self):
+        head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                                       text=True).strip()
+        first_bytes = subprocess.check_output(['git', 'show',
+            head+':tools/ci-heavy/ovisocr2_quality_run.py'], cwd=ROOT)
+        native = {'tests/ovisocr2_quality_run.cpp': driver.sha(
+            ROOT/'tests/ovisocr2_quality_run.cpp')}
+        producer = {'source_commit': head, 'native_source_sha256': native,
+                    'source_sha256': {'tools/ci-heavy/ovisocr2_quality_run.py':
+                                      hashlib.sha256(first_bytes).hexdigest()}}
+        proof = driver.f16_source_closure(producer, head, head)
+        self.assertEqual(proof['paths']['ggml']['first_oid'],
+                         proof['paths']['ggml']['candidate_oid'])
+        producer['native_source_sha256'] = {'tests/ovisocr2_quality_run.cpp': '0'*64}
+        with self.assertRaises(ValueError):
+            driver.f16_source_closure(producer, head, head)
+
+    def test_dev_hello_short_control_binds_pixels_ids_text_eos_and_actual_mean(self):
+        case = {'id': 'dev-hello', 'cap': 256, 'rgb_sha256': 'a'*64,
+                'png_sha256': 'b'*64}
+        ids = [9419, 77796, 271, 16, 17, 18, 19, 20, 248046]
+        frozen = {'token_ids': ids, 'raw_text': 'Hello OCR\n\n12345',
+                  'processed_text': 'Hello OCR\n\n12345', 'mean_confidence': .9,
+                  'stop_id': 248046}
+        actual = {'input_rgb_sha256': case['rgb_sha256'],
+                  'input_png_sha256': case['png_sha256'], 'cap': case['cap'],
+                  'token_ids': ids, 'confidences': [.91]*9,
+                  'mean_confidence': .91, 'raw_text': frozen['raw_text'],
+                  'processed_text': frozen['processed_text'],
+                  'stop_id': 248046, 'finish_reason': 'stop',
+                  'wall_seconds': 2.5, 'child_peak_rss_kib_upper_bound': 500000}
+        result = driver.validate_short_f16_host_control(actual, frozen, case)
+        self.assertEqual(result['native_case_count'], 1)
+        self.assertAlmostEqual(result['mean_confidence_abs_delta'], .01)
+        for field, value in (('input_png_sha256', '0'*64), ('token_ids', ids[:-1]+[248044]),
+                             ('raw_text', 'wrong'), ('stop_id', 248044),
+                             ('mean_confidence', float('nan'))):
+            altered = copy.deepcopy(actual)
+            altered[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                driver.validate_short_f16_host_control(altered, frozen, case)
+
+    def test_small_calibration_proof_copy_is_hash_bound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stats, matrix = root/'stats.tsv', root/'imatrix.gguf'
+            stats.write_bytes(b'one development row\n')
+            matrix.write_bytes(b'GGUF development vectors')
+            report = {'calibration': {'stats_sha256': driver.sha(stats),
+                                      'imatrix_sha256': driver.sha(matrix)}}
+            copied = driver.preserve_calibration_proof(stats, matrix, root/'reports', report)
+            self.assertEqual(set(copied), {'development-imatrix-stats.tsv',
+                                           'development-imatrix.gguf'})
+            self.assertEqual(copied['development-imatrix.gguf']['bytes'], matrix.stat().st_size)
+            self.assertEqual((root/'reports/calibration/development-imatrix.gguf').read_bytes(),
+                             matrix.read_bytes())
+            stats.write_bytes(b'changed')
+            with self.assertRaises(ValueError):
+                driver.preserve_calibration_proof(stats, matrix, root/'reports', report)
+
     def test_first_f16_receipt_requires_reviewed_eleven_case_source(self):
         selection = {'name': 'both', 'enabled_gates': ['CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
                                                       'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],
