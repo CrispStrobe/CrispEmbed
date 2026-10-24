@@ -514,6 +514,12 @@ def command(label, argv, out, report, timeout=1800, env=None):
     return path
 
 
+def reference_contracts():
+    """Reuse the exact processor/generation guards validated by frozen capture."""
+    return load_module('ovis_quality_reference_contracts',
+                       ROOT / 'tools/dump_ovisocr2_reference.py')
+
+
 def original_cases(source, cases, profile, out, report, save):
     import torch
     import transformers
@@ -532,13 +538,9 @@ def original_cases(source, cases, profile, out, report, save):
     actual_sources = {name: sha(inspect.getfile(cls)) for name, cls in sources.items()}
     if actual_sources != profile['qualification']['loaded_source_sha256']:
         raise ValueError('Original OvisOCR2 quality framework source bytes differ')
-    if (processor.tokenizer.eos_token_id != profile['primary_eos']
-            or type(processor).__module__ + '.' + type(processor).__name__ != profile['processor']['class_name']
-            or type(processor.image_processor).__module__ + '.' + type(processor.image_processor).__name__
-            != profile['processor']['image_class']
-            or getattr(processor.image_processor, 'backend', None) != profile['processor']['image_backend']
-            or processor.image_processor.to_dict() != profile['processor']['image_config']):
-        raise ValueError('Original OvisOCR2 quality processor/EOS differs')
+    contracts = reference_contracts()
+    report['original_processor_contract'] = contracts.processor_contract(processor, profile)
+    save()
     readme = (source / 'README.md').read_text()
     prompt, cleaner, filter_fn = original_readme_functions(readme)
     messages = [{'role': 'user', 'content': [{'type': 'image'}, {'type': 'text', 'text': prompt}]}]
@@ -553,8 +555,9 @@ def original_cases(source, cases, profile, out, report, save):
     model = Qwen3_5ForConditionalGeneration.from_pretrained(
         source, local_files_only=True, trust_remote_code=False,
         dtype=torch.float32, attn_implementation='eager').eval()
-    if model.generation_config.to_diff_dict() != profile['generation']:
-        raise ValueError('Original OvisOCR2 generation configuration differs')
+    report['original_generation_contract'] = contracts.generation_contract(
+        model, profile, json.loads((source / 'config.json').read_text()), GenerationConfig)
+    save()
     outputs = {}
     for case in cases:
         image = Image.open(case['path']).convert('RGB')
@@ -964,6 +967,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
               'source_commit': os.environ.get('GITHUB_SHA'), 'commands': {},
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
+                  'tools/dump_ovisocr2_reference.py',
                   'tools/ci-heavy/ovisocr2_model_audit.py',
                   'tools/ci-heavy/ovisocr2_vision_env.py',
                   'tools/ci-heavy/ovisocr2_quality_contract.py',
