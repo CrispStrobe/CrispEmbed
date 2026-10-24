@@ -436,6 +436,28 @@ permission to recapture or weaken the original/F16 quality anchors.
    latency and RSS; report any memory tradeoff. Preserve every failure and raw
    strict flag. No default or app-runtime flip without separate qualification.
 
+## Ovis larger-input qualification — after latency/resource attribution
+
+The qualified reader caps the original-resized image at1024 visual patches;
+upstream's2880-squared-pixel maximum remains unqualified. Keep that bound in
+`src/qwen35_vision.cpp::geometry` and the owning-context validation until this
+separate lane passes. Source parity on eleven bounded pages is not full upstream
+input-range or OCRBench/OmniDocBench qualification.
+
+Freeze separately licensed additional pages, original resize/grid/masks/positions,
+expected greedy IDs/EOS/text and quality policy before a larger native candidate.
+Use the original-module dumper and crispembed-diff on a bounded incremental grid
+panel, including non-square images and boundary rejection; preserve the current
+943-field/eleven-case anchors. Record visual attention/prefill/cache/logit errors
+and actual decoded output, wall/RSS and backend/precision. Identify the necessary
+native allocation/attention/reduction changes from the real blueprint before
+raising dimensions; the current scalar attention cost makes a cap-only change
+insufficient. Run heavy captures/model batches only on hosted/authorized resources
+with an explicit RAM/time budget. Keep larger inputs gated until the same
+original numerical and decoded-quality gates pass, with safe failure/recovery.
+Broad benchmark claims require their own fixed revision/split/input/metric and
+license plan; do not infer them from this owned panel or published weight size.
+
 ## Pipeline cache identity follow-up
 
 The Ovis-only path-key correction is prepared in PR79: ordered Ovis stages
