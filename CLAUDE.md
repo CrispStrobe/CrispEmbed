@@ -113,9 +113,20 @@ hosts are diagnostic only. The quant workflow defaults to one `dev-hello` F16
 host control after exact source/runtime checks, while direct driver calls and
 an explicit workflow option retain the full eleven-case control. Each candidate
 still runs all eleven OCR cases and complete numerical/tensor checks. Protected
-Q8 [40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
-is submitted without a reviewed outcome. Follow [PLAN](PLAN.md) through Q8,
-Q4 and development-only calibrated Q4, conditional publication, real alias,
+[Q8 40061433357](tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is fully
+reviewed and rejected: first decoder-layer error0.00376427, cosine0.999920726,
+and a two-column `Lorem Ipsum`→`Lorem Ispum` regression with697→700 IDs and
+worse raw/content CER/WER. All eleven cases reach EOS; the frozen F16 baseline
+remains qualified. Corrected plain/calibrated Q4 and candidate-only Q8 raw
+replay [runs40066573198/40066574754/40066576197](PLAN.md) are submitted at
+7924d850; the calibrated retry passed controls but its quality outcome is
+pending. Earlier calibrated/raw attempts failed before model access on a
+shallow-checkout test and initial plain Q4 was cancelled before controls;
+the [journal](tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json)
+records the unchanged-math fix. Future Q4 quality reports retain three raw
+numerical probes, all473 tensor records, and four-development-image calibration
+proof where applicable. Follow [PLAN](PLAN.md) through the two actual Q4
+reviews, Q8 raw supplement, conditional publication, real alias,
 consumer audit and final PR79 integration. Retain initial12/14 failures and
 strict flags. No Ovis model weights or alias are published. Development
 CPU-baseline PR76 is merged; successor release assets remain separate.

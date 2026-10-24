@@ -67,7 +67,14 @@ always retain their full eleven-case executions.
 After the F16 native model has passed its original and owning-context checks,
 test only `q8-protected` first. That
 [hosted attempt40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
-is submitted; its numerical and OCR outcome is not independently reviewed.
+is complete and [independently rejected](../../tests/results/qwen35-ocr/ovisocr2-q8-quality.json).
+The first captured decoder-layer error is0.00376427 with cosine0.999920726;
+183 numerical metrics fail unchanged gates. All eleven candidate cases reach
+EOS without a cap, but the two-column page changes `Lorem Ipsum` to
+`Lorem Ispum`, grows697→700 generated IDs and worsens raw/content CER/WER.
+Ten cases retain first-F16 IDs/text; the first F16 eleven-case baseline stays
+qualified. This complete Q8 diagnostic permits the two Q4 experiments but
+does not qualify Q8 for publication.
 Its `crispembed-quantize` command is generated
 by `quant_command()` from the reviewed 473-tensor source schema. It preserves
 the F16 visual tower, token embedding, recurrent A/B gate matrices and all
@@ -97,6 +104,15 @@ require a reviewed complete
 Q8 diagnostic and explicit permission to measure Q4; positive Q8 quality is
 not required. A quantized candidate GGUF and upstream attribution stay in a
 remote workflow artifact for later independent review and possible publication.
+Corrected [plain Q4 40066573198](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066573198)
+and [calibrated Q4 40066574754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066574754)
+are submitted at7924d850; the calibrated retry passed metadata controls but
+no Q4 quality outcome is assumed here. Earlier calibrated Q4 and raw replay
+attempts failed before model access on a pure historical-Git-object test in
+shallow checkout, while the first plain Q4 attempt was cancelled before
+controls. The [journal](../../tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json)
+keeps exact sources and failures; correction8fdf28f1 pins the unchanged
+comparison function body SHA without changing model arithmetic or thresholds.
 Each quantized phase also downloads the small original activation artifact from
 the reviewed model-audit run, verifies its ZIP and reference GGUF/JSON/image
 SHA-256 values, and runs `test-qwen35-decoder --native-frontend` with the
@@ -105,6 +121,18 @@ every metric, the earliest failing stage and magnitudes, IDs/stop/text evidence,
 and the complete log. This is a quantization drift diagnostic. Its failure
 does not stop the separate full OCR quality panel, but it blocks candidate
 qualification.
+Corrected Q4 runs additionally record a same-run F16 first-linear control
+(`QUANT=0`), candidate first-linear probe (`QUANT=1`) and full decoder probe
+with unchanged cosine/absolute thresholds. Every observed `Ref.compare` and
+TRACE vector is retained under the separate remote `native-diff` artifact;
+the small report keeps actual stage/shape/byte/SHA manifests and logs. All
+three probes and the independently reviewed raw artifact must pass before
+quantized publication. Original Q8 source8b421ba5 lacked raw vectors;
+[candidate-only replay40066576197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066576197)
+is submitted to supplement its immutable negative quality receipt using the
+same retained candidate and frozen original arrays. It omits a same-run F16
+control and does not reconvert, rerun original inference or repeat the panel.
+Raw completeness cannot reverse its numerical or recognition failure.
 Paired realistic document gates reject increased raw or parsed CER/WER,
 incomplete or malformed output, and any error in the controlled 15-cell grid.
 No model alias or release is qualified by this workflow alone.

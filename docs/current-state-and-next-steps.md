@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | Protected Q8 [40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357) is submitted; its actual outcome, Q4 and development-only calibrated Q4 outcomes, conditional publication, real alias, consumer audit and final PR79 integration remain. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; no Ovis model weights or alias published. Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is complete and rejected for numerical and two-column text regression. Corrected plain/calibrated Q4 and Q8 raw replay are submitted; their outcomes, conditional publication, real alias, consumer audit and final PR79 integration remain. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; no Ovis model weights or alias published. Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 | Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](../tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
 
@@ -415,10 +415,26 @@ to the full eleven-case control, and the workflow accepts `full` explicitly.
 The short control does not establish eleven-case cross-host F16 identity; its
 paired scores come from the reviewed first F16 run. Every quantized candidate
 still runs all eleven cases and the complete numerical and 473-tensor checks;
-calibrated Q4 also retains the development-only importance proof. Protected Q8
-[40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
-is submitted, with no reviewed Q8 outcome yet. Review Q8, Q4 and calibrated Q4
-separately, then decide conditional HF publication, immutable empty-cache
+calibrated Q4 also retains the development-only importance proof. Each new Q4
+run captures a same-run F16 first-linear control, candidate first-linear probe
+and full decoder probe with unchanged thresholds. Raw vectors stay in a separate
+remote artifact; small manifests and all failures stay in the report. Protected
+[Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is
+complete and rejected: its first decoder-layer error is0.00376427 with minimum
+cosine0.999920726, and the two-column page changes `Lorem Ipsum` to `Lorem Ispum`
+with697→700 IDs and increased raw/content CER/WER. All eleven cases reach EOS;
+the frozen first F16 baseline remains qualified. Reviewed Q8 diagnostic
+completion permits separate Q4 experiments, without qualifying Q8 publication.
+Corrected [plain Q4 40066573198](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066573198),
+[calibrated Q4 40066574754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066574754)
+and [candidate-only Q8 raw replay 40066576197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066576197)
+are submitted at7924d850. The initial calibrated/raw attempts failed before
+model access on a shallow-checkout test; the initial plain Q4 attempt was
+cancelled before controls. Their [journal](../tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json)
+retains the failures and unchanged-math fix. The Q8 raw replay does not repeat
+conversion, original inference or the eleven-case panel and cannot reverse its
+negative numerical/quality verdict. Review both actual Q4 outcomes and the
+raw supplement, then decide conditional HF publication, immutable empty-cache
 readback, real alias, CLI/server resolver checks, published consumer audit and
 final [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) integration.
 Follow the [executable handoff](next-agent-handoff.md) and [PLAN](../PLAN.md).
