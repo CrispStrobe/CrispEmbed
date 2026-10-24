@@ -1,0 +1,96 @@
+name: OvisOCR2 frozen full native replay
+on:
+  workflow_call:
+    inputs:
+      preset:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: Independently reviewed existing vision gate preset
+        required: true
+        type: choice
+        options:
+          - baseline
+          - precise_norm
+          - precise_attn
+          - both
+          - cascade
+          - cascade_precise_attn
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ovisocr2-native-replay-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ovisocr2_native_replay.py -v
+  replay:
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Task-owned scratch and frozen-source preflight
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_native_replay.py --preflight
+      - name: Reuse frozen 943-stage source and qualified exports for fourteen native arms
+        run: python tools/ci-heavy/ovisocr2_native_replay.py --preset "${{ inputs.preset }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-reference-${{ github.run_id }}
+          path: |
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/ovisocr2-f16.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/official-delta.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/ovisocr2-original.json
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/owned-readable.png
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/LICENSE
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-model-diff-reference-${{ github.run_id }}
+          path: |
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/official-delta.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/ovisocr2-original.json
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/owned-readable.png
+            ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/LICENSE
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-native-diff-${{ github.run_id }}
+          path: ${{ env.HEAVY_SCRATCH }}/ovis-native-replay/native-diff/
+          if-no-files-found: warn
+          retention-days: 90
