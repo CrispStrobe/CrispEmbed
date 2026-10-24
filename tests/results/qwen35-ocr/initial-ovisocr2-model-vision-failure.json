@@ -1,0 +1,5001 @@
+{
+  "run": 40041958521,
+  "source_commit": "cc038b0041e6ace09cf413dc18aafccdd1b31c35",
+  "service_conclusion": "failure",
+  "scope": "Complete frozen original reference; 12/14 native arms pass. Both vision arms fail unchanged budgets. No full-model qualification.",
+  "artifact": {
+    "id": 12540483904,
+    "name": "ovisocr2-model-reports-40041958521",
+    "bytes": 271125,
+    "zip_sha256": "86ea94b185eed85fd3bd09320124a0860fb985021af0cc4253e7eadae59b19a1"
+  },
+  "producer_report_sha256": "bdcfc725ccdf4a13d4f16ed3f7238d12f103ddc4d0e47a861c82122a9c7b98ca",
+  "prior_reference_comparison": {
+    "passed": true,
+    "prior_stage_count": 871,
+    "fresh_stage_count": 943,
+    "expected_fresh_stage_count": 943,
+    "comparison_order": "Original capture order, final decoded fields after intermediates",
+    "prior_generated_ids": [
+      [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ]
+    ],
+    "fresh_generated_ids": [
+      [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ]
+    ],
+    "prior_decoded": [
+      "Hello OCR\n\n12345"
+    ],
+    "fresh_decoded": [
+      "Hello OCR\n\n12345"
+    ],
+    "prior_raw_decoded": [
+      "Hello OCR\n\n12345<|im_end|>"
+    ],
+    "fresh_raw_decoded": [
+      "Hello OCR\n\n12345<|im_end|>"
+    ],
+    "missing_fresh_stages": [],
+    "unexpected_fresh_stages": [],
+    "changed_stage_shapes": [],
+    "unchanged_prior_members": 871,
+    "changed_prior_members": [],
+    "added_cache_members": 72,
+    "fresh_npz_sha256": "001b14125531b2c03142d49bafdac47f9c5cbb35d3f31c899a3adc4644a38e15",
+    "first_failure": null
+  },
+  "reference_artifacts": {
+    "npz": {
+      "sha256": "001b14125531b2c03142d49bafdac47f9c5cbb35d3f31c899a3adc4644a38e15",
+      "bytes": 1452634670
+    },
+    "json": {
+      "sha256": "7534b151236cb61b943d2ad1a769fb15a65f0e83f48034d483e423b81d18a658",
+      "bytes": 86906
+    },
+    "gguf": {
+      "sha256": "e8e20c654645092ef11e8632db6d84393761df3f8b1d34bc48ae1ddac668e588",
+      "bytes": 1454224192
+    }
+  },
+  "original_capture": {
+    "sha256": "7534b151236cb61b943d2ad1a769fb15a65f0e83f48034d483e423b81d18a658",
+    "generation_result": {
+      "max_new_tokens": 12,
+      "generated_token_count": 9,
+      "eos_ids": [
+        248044,
+        248046
+      ],
+      "reached_eos": true,
+      "stop_id": 248046,
+      "max_tokens_consumed": false,
+      "length_limited": false,
+      "raw_sequence_shape": [
+        1,
+        332
+      ],
+      "generated_id_shape": [
+        1,
+        9
+      ],
+      "score_count": 9,
+      "raw_decoded_utf8_length": 26,
+      "decoded_utf8_length": 16
+    },
+    "cached_vs_full_prefix_max_abs": 1.33514404296875e-05,
+    "cached_vs_full_prefix_same_argmax": true,
+    "observational_control": {
+      "prefill_logits_exact": true,
+      "greedy_ids_exact": true
+    },
+    "backend_off_control": {
+      "mkldnn_available": true,
+      "enabled_before": true,
+      "enabled_inside": false,
+      "enabled_after": true,
+      "generated_ids": [
+        [
+          9419,
+          77796,
+          271,
+          16,
+          17,
+          18,
+          19,
+          20,
+          248046
+        ]
+      ],
+      "decoded": [
+        "Hello OCR\n\n12345"
+      ],
+      "raw_decoded": [
+        "Hello OCR\n\n12345<|im_end|>"
+      ],
+      "stage_max_abs": {
+        "backend_off.vision.layer.0": 4.5299530029296875e-06,
+        "backend_off.vision.layer.1": 3.3974647521972656e-06,
+        "backend_off.vision.layer.2": 2.86102294921875e-06,
+        "backend_off.vision.layer.3": 2.384185791015625e-06,
+        "backend_off.vision.layer.4": 3.0994415283203125e-06,
+        "backend_off.vision.layer.5": 7.62939453125e-05,
+        "backend_off.vision.layer.6": 7.82012939453125e-05,
+        "backend_off.vision.layer.7": 8.0108642578125e-05,
+        "backend_off.vision.layer.8": 8.0108642578125e-05,
+        "backend_off.vision.layer.9": 7.82012939453125e-05,
+        "backend_off.vision.layer.10": 7.62939453125e-05,
+        "backend_off.vision.layer.11": 0.02685546875,
+        "backend_off.vision.patch_embed": 2.86102294921875e-06,
+        "backend_off.vision.position": 0.0,
+        "backend_off.vision.embedded": 2.86102294921875e-06,
+        "backend_off.vision.rotary_cos": 0.0,
+        "backend_off.vision.rotary_sin": 0.0,
+        "backend_off.vision.merger.norm": 0.0002529621124267578,
+        "backend_off.vision.merger.up": 6.109476089477539e-05,
+        "backend_off.vision.merger.activation": 2.345442771911621e-05,
+        "backend_off.vision.merger": 1.7404556274414062e-05,
+        "backend_off.vision.output": 1.7404556274414062e-05,
+        "backend_off.vision.probe.5.norm1": 2.288818359375e-05,
+        "backend_off.vision.probe.5.qkv": 2.4199485778808594e-05,
+        "backend_off.vision.probe.5.pooled": 1.424551010131836e-05,
+        "backend_off.vision.probe.5.attention": 1.7881393432617188e-06,
+        "backend_off.vision.probe.5.norm2": 2.574920654296875e-05,
+        "backend_off.vision.probe.5.up": 8.177757263183594e-05,
+        "backend_off.vision.probe.5.activation": 7.62939453125e-05,
+        "backend_off.vision.probe.5.down": 7.43865966796875e-05,
+        "backend_off.vision.probe.11.norm1": 0.00016188621520996094,
+        "backend_off.vision.probe.11.qkv": 8.559226989746094e-05,
+        "backend_off.vision.probe.11.pooled": 6.306171417236328e-05,
+        "backend_off.vision.probe.11.attention": 7.593631744384766e-05,
+        "backend_off.vision.probe.11.norm2": 0.0010690689086914062,
+        "backend_off.vision.probe.11.up": 0.005157470703125,
+        "backend_off.vision.probe.11.activation": 0.005157470703125,
+        "backend_off.vision.probe.11.down": 0.02685546875,
+        "backend_off.decoder.norm": 0.0014805793762207031,
+        "backend_off.logits": 1.33514404296875e-05,
+        "backend_off.argmax_id": 0.0,
+        "backend_off_full_prefix.vision.layer.0": 4.5299530029296875e-06,
+        "backend_off_full_prefix.vision.layer.1": 3.3974647521972656e-06,
+        "backend_off_full_prefix.vision.layer.2": 2.86102294921875e-06,
+        "backend_off_full_prefix.vision.layer.3": 2.384185791015625e-06,
+        "backend_off_full_prefix.vision.layer.4": 3.0994415283203125e-06,
+        "backend_off_full_prefix.vision.layer.5": 7.62939453125e-05,
+        "backend_off_full_prefix.vision.layer.6": 7.82012939453125e-05,
+        "backend_off_full_prefix.vision.layer.7": 8.0108642578125e-05,
+        "backend_off_full_prefix.vision.layer.8": 8.0108642578125e-05,
+        "backend_off_full_prefix.vision.layer.9": 7.82012939453125e-05,
+        "backend_off_full_prefix.vision.layer.10": 7.62939453125e-05,
+        "backend_off_full_prefix.vision.layer.11": 0.02685546875,
+        "backend_off_full_prefix.vision.patch_embed": 2.86102294921875e-06,
+        "backend_off_full_prefix.vision.position": 0.0,
+        "backend_off_full_prefix.vision.embedded": 2.86102294921875e-06,
+        "backend_off_full_prefix.vision.rotary_cos": 0.0,
+        "backend_off_full_prefix.vision.rotary_sin": 0.0,
+        "backend_off_full_prefix.vision.merger.norm": 0.0002529621124267578,
+        "backend_off_full_prefix.vision.merger.up": 6.109476089477539e-05,
+        "backend_off_full_prefix.vision.merger.activation": 2.345442771911621e-05,
+        "backend_off_full_prefix.vision.merger": 1.7404556274414062e-05,
+        "backend_off_full_prefix.vision.output": 1.7404556274414062e-05,
+        "backend_off_full_prefix.vision.probe.5.norm1": 2.288818359375e-05,
+        "backend_off_full_prefix.vision.probe.5.qkv": 2.4199485778808594e-05,
+        "backend_off_full_prefix.vision.probe.5.pooled": 1.424551010131836e-05,
+        "backend_off_full_prefix.vision.probe.5.attention": 1.7881393432617188e-06,
+        "backend_off_full_prefix.vision.probe.5.norm2": 2.574920654296875e-05,
+        "backend_off_full_prefix.vision.probe.5.up": 8.177757263183594e-05,
+        "backend_off_full_prefix.vision.probe.5.activation": 7.62939453125e-05,
+        "backend_off_full_prefix.vision.probe.5.down": 7.43865966796875e-05,
+        "backend_off_full_prefix.vision.probe.11.norm1": 0.00016188621520996094,
+        "backend_off_full_prefix.vision.probe.11.qkv": 8.559226989746094e-05,
+        "backend_off_full_prefix.vision.probe.11.pooled": 6.306171417236328e-05,
+        "backend_off_full_prefix.vision.probe.11.attention": 7.593631744384766e-05,
+        "backend_off_full_prefix.vision.probe.11.norm2": 0.0010690689086914062,
+        "backend_off_full_prefix.vision.probe.11.up": 0.005157470703125,
+        "backend_off_full_prefix.vision.probe.11.activation": 0.005157470703125,
+        "backend_off_full_prefix.vision.probe.11.down": 0.02685546875,
+        "backend_off_full_prefix.decoder.norm": 0.0014781951904296875,
+        "backend_off_full_prefix.logits": 1.5020370483398438e-05,
+        "backend_off_full_prefix.argmax_id": 0.0
+      }
+    },
+    "stages": {
+      "input.rgb": [
+        448,
+        448,
+        3
+      ],
+      "input.prompt_utf8": [
+        1
+      ],
+      "input.prompt_length": [
+        1
+      ],
+      "input.rendered_prompt_utf8": [
+        625
+      ],
+      "input.rendered_prompt_length": [
+        1
+      ],
+      "input.decoded_utf8": [
+        16
+      ],
+      "input.decoded_length": [
+        1
+      ],
+      "input.raw_decoded_utf8": [
+        26
+      ],
+      "input.raw_decoded_length": [
+        1
+      ],
+      "input.input_ids": [
+        1,
+        323
+      ],
+      "input.attention_mask": [
+        1,
+        323
+      ],
+      "input.mm_token_type_ids": [
+        1,
+        323
+      ],
+      "input.pixel_values": [
+        784,
+        1536
+      ],
+      "input.image_grid_thw": [
+        1,
+        3
+      ],
+      "linear.conv_weights": [
+        6144,
+        1,
+        4
+      ],
+      "linear.a_log": [
+        16
+      ],
+      "linear.dt_bias": [
+        16
+      ],
+      "linear.norm_weights": [
+        128
+      ],
+      "prefill.vision.patch_embed": [
+        784,
+        768
+      ],
+      "prefill.vision.embedded": [
+        784,
+        768
+      ],
+      "prefill.vision.rotary_cos": [
+        784,
+        64
+      ],
+      "prefill.vision.rotary_sin": [
+        784,
+        64
+      ],
+      "prefill.vision.layer.0": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.1": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.2": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.3": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.4": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.5.norm1": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.5.qkv": [
+        784,
+        2304
+      ],
+      "prefill.vision.probe.5.pooled": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.5.attention": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.5.norm2": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.5.up": [
+        784,
+        3072
+      ],
+      "prefill.vision.probe.5.activation": [
+        784,
+        3072
+      ],
+      "prefill.vision.probe.5.down": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.5": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.6": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.7": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.8": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.9": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.10": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.11.norm1": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.11.qkv": [
+        784,
+        2304
+      ],
+      "prefill.vision.probe.11.pooled": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.11.attention": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.11.norm2": [
+        784,
+        768
+      ],
+      "prefill.vision.probe.11.up": [
+        784,
+        3072
+      ],
+      "prefill.vision.probe.11.activation": [
+        784,
+        3072
+      ],
+      "prefill.vision.probe.11.down": [
+        784,
+        768
+      ],
+      "prefill.vision.layer.11": [
+        784,
+        768
+      ],
+      "prefill.vision.merger.norm": [
+        784,
+        768
+      ],
+      "prefill.vision.merger.up": [
+        196,
+        3072
+      ],
+      "prefill.vision.merger.activation": [
+        196,
+        3072
+      ],
+      "prefill.vision.merger": [
+        196,
+        1024
+      ],
+      "prefill.vision.position": [
+        784,
+        768
+      ],
+      "prefill.vision.output": [
+        196,
+        1024
+      ],
+      "prefill.decoder.position_ids": [
+        4,
+        1,
+        323
+      ],
+      "prefill.decoder.inputs_embeds": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.0.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.0.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.0.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.0.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.0.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.delta.q": [
+        1,
+        323,
+        16,
+        128
+      ],
+      "prefill.delta.k": [
+        1,
+        323,
+        16,
+        128
+      ],
+      "prefill.delta.v": [
+        1,
+        323,
+        16,
+        128
+      ],
+      "prefill.delta.g": [
+        1,
+        323,
+        16
+      ],
+      "prefill.delta.beta": [
+        1,
+        323,
+        16
+      ],
+      "prefill.delta.output": [
+        1,
+        323,
+        16,
+        128
+      ],
+      "prefill.delta.final_state": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.linear.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.0.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.0.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.0": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.1.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.1.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.1.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.1.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.1.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.1.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.1.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.1": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.2.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.2.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.2.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.2.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.2.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.2.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.2.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.2": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.3.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.3.q": [
+        1,
+        323,
+        4096
+      ],
+      "prefill.attention.3.q_norm": [
+        1,
+        323,
+        8,
+        256
+      ],
+      "prefill.attention.3.k": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.3.k_norm": [
+        1,
+        323,
+        2,
+        256
+      ],
+      "prefill.attention.3.v": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.3.pooled": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.attention.3.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.3": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.4.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.4.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.4.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.4.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.4.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.4.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.4.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.4": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.5.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.5.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.5.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.5.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.5.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.5.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.5.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.5": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.6.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.6.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.6.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.6.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.6.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.6.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.6.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.6": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.7.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.7.q": [
+        1,
+        323,
+        4096
+      ],
+      "prefill.attention.7.q_norm": [
+        1,
+        323,
+        8,
+        256
+      ],
+      "prefill.attention.7.k": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.7.k_norm": [
+        1,
+        323,
+        2,
+        256
+      ],
+      "prefill.attention.7.v": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.7.pooled": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.attention.7.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.7": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.8.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.8.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.8.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.8.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.8.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.8.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.8.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.8": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.9.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.9.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.9.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.9.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.9.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.9.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.9.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.9": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.10.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.10.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.10.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.10.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.10.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.10.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.10.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.10": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.11.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.11.q": [
+        1,
+        323,
+        4096
+      ],
+      "prefill.attention.11.q_norm": [
+        1,
+        323,
+        8,
+        256
+      ],
+      "prefill.attention.11.k": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.11.k_norm": [
+        1,
+        323,
+        2,
+        256
+      ],
+      "prefill.attention.11.v": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.11.pooled": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.attention.11.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.11": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.12.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.12.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.12.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.12.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.12.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.12.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.12.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.12": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.13.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.13.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.13.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.13.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.13.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.13.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.13.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.13": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.14.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.14.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.14.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.14.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.14.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.14.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.14.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.14": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.15.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.15.q": [
+        1,
+        323,
+        4096
+      ],
+      "prefill.attention.15.q_norm": [
+        1,
+        323,
+        8,
+        256
+      ],
+      "prefill.attention.15.k": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.15.k_norm": [
+        1,
+        323,
+        2,
+        256
+      ],
+      "prefill.attention.15.v": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.15.pooled": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.attention.15.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.15": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.16.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.16.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.16.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.16.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.16.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.16.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.16.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.16": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.17.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.17.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.17.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.17.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.17.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.17.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.17.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.17": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.18.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.18.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.18.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.18.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.18.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.18.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.18.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.18": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.19.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.19.q": [
+        1,
+        323,
+        4096
+      ],
+      "prefill.attention.19.q_norm": [
+        1,
+        323,
+        8,
+        256
+      ],
+      "prefill.attention.19.k": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.19.k_norm": [
+        1,
+        323,
+        2,
+        256
+      ],
+      "prefill.attention.19.v": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.19.pooled": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.attention.19.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.19": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.20.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.20.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.20.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.20.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.20.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.20.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.20.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.20": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.21.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.21.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.21.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.21.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.21.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.21.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.21.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.21": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.22.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.linear.22.qkv": [
+        1,
+        323,
+        6144
+      ],
+      "prefill.linear.22.z": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.linear.22.b": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.22.a": [
+        1,
+        323,
+        16
+      ],
+      "prefill.linear.22.norm": [
+        5168,
+        128
+      ],
+      "prefill.linear.22.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.22": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.23.input": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.attention.23.q": [
+        1,
+        323,
+        4096
+      ],
+      "prefill.attention.23.q_norm": [
+        1,
+        323,
+        8,
+        256
+      ],
+      "prefill.attention.23.k": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.23.k_norm": [
+        1,
+        323,
+        2,
+        256
+      ],
+      "prefill.attention.23.v": [
+        1,
+        323,
+        512
+      ],
+      "prefill.attention.23.pooled": [
+        1,
+        323,
+        2048
+      ],
+      "prefill.attention.23.output": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.layer.23": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.decoder.norm": [
+        1,
+        323,
+        1024
+      ],
+      "prefill.logits": [
+        1,
+        248320
+      ],
+      "prefill.argmax_id": [
+        1
+      ],
+      "prefill.cache.0.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.0.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.1.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.1.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.2.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.2.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.3.keys": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.3.values": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.4.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.4.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.5.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.5.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.6.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.6.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.7.keys": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.7.values": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.8.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.8.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.9.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.9.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.10.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.10.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.11.keys": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.11.values": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.12.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.12.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.13.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.13.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.14.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.14.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.15.keys": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.15.values": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.16.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.16.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.17.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.17.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.18.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.18.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.19.keys": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.19.values": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.20.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.20.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.21.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.21.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.22.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "prefill.cache.22.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "prefill.cache.23.keys": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "prefill.cache.23.values": [
+        1,
+        2,
+        323,
+        256
+      ],
+      "cached.decoder.position_ids": [
+        1,
+        1,
+        1
+      ],
+      "cached.decoder.inputs_embeds": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.0.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.0.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.0.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.0.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.0.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.delta.q": [
+        1,
+        1,
+        16,
+        128
+      ],
+      "cached.delta.k": [
+        1,
+        1,
+        16,
+        128
+      ],
+      "cached.delta.v": [
+        1,
+        1,
+        16,
+        128
+      ],
+      "cached.delta.g": [
+        1,
+        1,
+        16
+      ],
+      "cached.delta.beta": [
+        1,
+        1,
+        16
+      ],
+      "cached.delta.initial_state": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.delta.output": [
+        1,
+        1,
+        16,
+        128
+      ],
+      "cached.delta.final_state": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.linear.norm": [
+        16,
+        128
+      ],
+      "cached.linear.0.norm": [
+        16,
+        128
+      ],
+      "cached.linear.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.0.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.0": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.1.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.1.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.1.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.1.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.1.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.1.norm": [
+        16,
+        128
+      ],
+      "cached.linear.1.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.1": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.2.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.2.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.2.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.2.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.2.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.2.norm": [
+        16,
+        128
+      ],
+      "cached.linear.2.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.2": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.3.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.3.q": [
+        1,
+        1,
+        4096
+      ],
+      "cached.attention.3.q_norm": [
+        1,
+        1,
+        8,
+        256
+      ],
+      "cached.attention.3.k": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.3.k_norm": [
+        1,
+        1,
+        2,
+        256
+      ],
+      "cached.attention.3.v": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.3.pooled": [
+        1,
+        1,
+        2048
+      ],
+      "cached.attention.3.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.3": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.4.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.4.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.4.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.4.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.4.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.4.norm": [
+        16,
+        128
+      ],
+      "cached.linear.4.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.4": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.5.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.5.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.5.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.5.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.5.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.5.norm": [
+        16,
+        128
+      ],
+      "cached.linear.5.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.5": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.6.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.6.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.6.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.6.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.6.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.6.norm": [
+        16,
+        128
+      ],
+      "cached.linear.6.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.6": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.7.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.7.q": [
+        1,
+        1,
+        4096
+      ],
+      "cached.attention.7.q_norm": [
+        1,
+        1,
+        8,
+        256
+      ],
+      "cached.attention.7.k": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.7.k_norm": [
+        1,
+        1,
+        2,
+        256
+      ],
+      "cached.attention.7.v": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.7.pooled": [
+        1,
+        1,
+        2048
+      ],
+      "cached.attention.7.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.7": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.8.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.8.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.8.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.8.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.8.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.8.norm": [
+        16,
+        128
+      ],
+      "cached.linear.8.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.8": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.9.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.9.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.9.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.9.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.9.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.9.norm": [
+        16,
+        128
+      ],
+      "cached.linear.9.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.9": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.10.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.10.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.10.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.10.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.10.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.10.norm": [
+        16,
+        128
+      ],
+      "cached.linear.10.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.10": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.11.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.11.q": [
+        1,
+        1,
+        4096
+      ],
+      "cached.attention.11.q_norm": [
+        1,
+        1,
+        8,
+        256
+      ],
+      "cached.attention.11.k": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.11.k_norm": [
+        1,
+        1,
+        2,
+        256
+      ],
+      "cached.attention.11.v": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.11.pooled": [
+        1,
+        1,
+        2048
+      ],
+      "cached.attention.11.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.11": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.12.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.12.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.12.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.12.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.12.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.12.norm": [
+        16,
+        128
+      ],
+      "cached.linear.12.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.12": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.13.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.13.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.13.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.13.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.13.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.13.norm": [
+        16,
+        128
+      ],
+      "cached.linear.13.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.13": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.14.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.14.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.14.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.14.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.14.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.14.norm": [
+        16,
+        128
+      ],
+      "cached.linear.14.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.14": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.15.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.15.q": [
+        1,
+        1,
+        4096
+      ],
+      "cached.attention.15.q_norm": [
+        1,
+        1,
+        8,
+        256
+      ],
+      "cached.attention.15.k": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.15.k_norm": [
+        1,
+        1,
+        2,
+        256
+      ],
+      "cached.attention.15.v": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.15.pooled": [
+        1,
+        1,
+        2048
+      ],
+      "cached.attention.15.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.15": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.16.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.16.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.16.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.16.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.16.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.16.norm": [
+        16,
+        128
+      ],
+      "cached.linear.16.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.16": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.17.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.17.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.17.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.17.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.17.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.17.norm": [
+        16,
+        128
+      ],
+      "cached.linear.17.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.17": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.18.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.18.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.18.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.18.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.18.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.18.norm": [
+        16,
+        128
+      ],
+      "cached.linear.18.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.18": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.19.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.19.q": [
+        1,
+        1,
+        4096
+      ],
+      "cached.attention.19.q_norm": [
+        1,
+        1,
+        8,
+        256
+      ],
+      "cached.attention.19.k": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.19.k_norm": [
+        1,
+        1,
+        2,
+        256
+      ],
+      "cached.attention.19.v": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.19.pooled": [
+        1,
+        1,
+        2048
+      ],
+      "cached.attention.19.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.19": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.20.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.20.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.20.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.20.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.20.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.20.norm": [
+        16,
+        128
+      ],
+      "cached.linear.20.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.20": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.21.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.21.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.21.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.21.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.21.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.21.norm": [
+        16,
+        128
+      ],
+      "cached.linear.21.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.21": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.22.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.linear.22.qkv": [
+        1,
+        1,
+        6144
+      ],
+      "cached.linear.22.z": [
+        1,
+        1,
+        2048
+      ],
+      "cached.linear.22.b": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.22.a": [
+        1,
+        1,
+        16
+      ],
+      "cached.linear.22.norm": [
+        16,
+        128
+      ],
+      "cached.linear.22.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.22": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.23.input": [
+        1,
+        1,
+        1024
+      ],
+      "cached.attention.23.q": [
+        1,
+        1,
+        4096
+      ],
+      "cached.attention.23.q_norm": [
+        1,
+        1,
+        8,
+        256
+      ],
+      "cached.attention.23.k": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.23.k_norm": [
+        1,
+        1,
+        2,
+        256
+      ],
+      "cached.attention.23.v": [
+        1,
+        1,
+        512
+      ],
+      "cached.attention.23.pooled": [
+        1,
+        1,
+        2048
+      ],
+      "cached.attention.23.output": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.layer.23": [
+        1,
+        1,
+        1024
+      ],
+      "cached.decoder.norm": [
+        1,
+        1,
+        1024
+      ],
+      "cached.logits": [
+        1,
+        248320
+      ],
+      "cached.argmax_id": [
+        1
+      ],
+      "cached.cache.0.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.0.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.1.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.1.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.2.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.2.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.3.keys": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.3.values": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.4.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.4.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.5.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.5.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.6.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.6.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.7.keys": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.7.values": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.8.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.8.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.9.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.9.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.10.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.10.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.11.keys": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.11.values": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.12.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.12.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.13.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.13.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.14.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.14.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.15.keys": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.15.values": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.16.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.16.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.17.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.17.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.18.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.18.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.19.keys": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.19.values": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.20.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.20.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.21.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.21.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.22.conv_states": [
+        1,
+        6144,
+        4
+      ],
+      "cached.cache.22.recurrent_states": [
+        1,
+        16,
+        128,
+        128
+      ],
+      "cached.cache.23.keys": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "cached.cache.23.values": [
+        1,
+        2,
+        324,
+        256
+      ],
+      "full_prefix.vision.patch_embed": [
+        784,
+        768
+      ],
+      "full_prefix.vision.embedded": [
+        784,
+        768
+      ],
+      "full_prefix.vision.rotary_cos": [
+        784,
+        64
+      ],
+      "full_prefix.vision.rotary_sin": [
+        784,
+        64
+      ],
+      "full_prefix.vision.layer.0": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.1": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.2": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.3": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.4": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.5.norm1": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.5.qkv": [
+        784,
+        2304
+      ],
+      "full_prefix.vision.probe.5.pooled": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.5.attention": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.5.norm2": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.5.up": [
+        784,
+        3072
+      ],
+      "full_prefix.vision.probe.5.activation": [
+        784,
+        3072
+      ],
+      "full_prefix.vision.probe.5.down": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.5": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.6": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.7": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.8": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.9": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.10": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.11.norm1": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.11.qkv": [
+        784,
+        2304
+      ],
+      "full_prefix.vision.probe.11.pooled": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.11.attention": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.11.norm2": [
+        784,
+        768
+      ],
+      "full_prefix.vision.probe.11.up": [
+        784,
+        3072
+      ],
+      "full_prefix.vision.probe.11.activation": [
+        784,
+        3072
+      ],
+      "full_prefix.vision.probe.11.down": [
+        784,
+        768
+      ],
+      "full_prefix.vision.layer.11": [
+        784,
+        768
+      ],
+      "full_prefix.vision.merger.norm": [
+        784,
+        768
+      ],
+      "full_prefix.vision.merger.up": [
+        196,
+        3072
+      ],
+      "full_prefix.vision.merger.activation": [
+        196,
+        3072
+      ],
+      "full_prefix.vision.merger": [
+        196,
+        1024
+      ],
+      "full_prefix.vision.position": [
+        784,
+        768
+      ],
+      "full_prefix.vision.output": [
+        196,
+        1024
+      ],
+      "full_prefix.decoder.position_ids": [
+        4,
+        1,
+        324
+      ],
+      "full_prefix.decoder.inputs_embeds": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.0.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.0.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.0.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.0.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.0.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.delta.q": [
+        1,
+        324,
+        16,
+        128
+      ],
+      "full_prefix.delta.k": [
+        1,
+        324,
+        16,
+        128
+      ],
+      "full_prefix.delta.v": [
+        1,
+        324,
+        16,
+        128
+      ],
+      "full_prefix.delta.g": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.delta.beta": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.delta.output": [
+        1,
+        324,
+        16,
+        128
+      ],
+      "full_prefix.linear.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.0.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.0.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.0": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.1.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.1.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.1.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.1.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.1.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.1.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.1.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.1": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.2.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.2.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.2.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.2.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.2.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.2.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.2.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.2": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.3.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.3.q": [
+        1,
+        324,
+        4096
+      ],
+      "full_prefix.attention.3.q_norm": [
+        1,
+        324,
+        8,
+        256
+      ],
+      "full_prefix.attention.3.k": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.3.k_norm": [
+        1,
+        324,
+        2,
+        256
+      ],
+      "full_prefix.attention.3.v": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.3.pooled": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.attention.3.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.3": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.4.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.4.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.4.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.4.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.4.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.4.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.4.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.4": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.5.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.5.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.5.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.5.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.5.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.5.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.5.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.5": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.6.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.6.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.6.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.6.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.6.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.6.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.6.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.6": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.7.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.7.q": [
+        1,
+        324,
+        4096
+      ],
+      "full_prefix.attention.7.q_norm": [
+        1,
+        324,
+        8,
+        256
+      ],
+      "full_prefix.attention.7.k": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.7.k_norm": [
+        1,
+        324,
+        2,
+        256
+      ],
+      "full_prefix.attention.7.v": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.7.pooled": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.attention.7.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.7": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.8.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.8.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.8.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.8.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.8.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.8.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.8.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.8": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.9.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.9.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.9.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.9.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.9.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.9.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.9.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.9": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.10.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.10.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.10.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.10.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.10.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.10.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.10.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.10": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.11.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.11.q": [
+        1,
+        324,
+        4096
+      ],
+      "full_prefix.attention.11.q_norm": [
+        1,
+        324,
+        8,
+        256
+      ],
+      "full_prefix.attention.11.k": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.11.k_norm": [
+        1,
+        324,
+        2,
+        256
+      ],
+      "full_prefix.attention.11.v": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.11.pooled": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.attention.11.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.11": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.12.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.12.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.12.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.12.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.12.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.12.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.12.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.12": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.13.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.13.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.13.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.13.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.13.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.13.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.13.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.13": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.14.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.14.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.14.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.14.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.14.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.14.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.14.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.14": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.15.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.15.q": [
+        1,
+        324,
+        4096
+      ],
+      "full_prefix.attention.15.q_norm": [
+        1,
+        324,
+        8,
+        256
+      ],
+      "full_prefix.attention.15.k": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.15.k_norm": [
+        1,
+        324,
+        2,
+        256
+      ],
+      "full_prefix.attention.15.v": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.15.pooled": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.attention.15.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.15": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.16.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.16.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.16.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.16.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.16.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.16.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.16.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.16": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.17.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.17.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.17.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.17.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.17.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.17.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.17.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.17": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.18.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.18.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.18.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.18.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.18.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.18.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.18.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.18": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.19.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.19.q": [
+        1,
+        324,
+        4096
+      ],
+      "full_prefix.attention.19.q_norm": [
+        1,
+        324,
+        8,
+        256
+      ],
+      "full_prefix.attention.19.k": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.19.k_norm": [
+        1,
+        324,
+        2,
+        256
+      ],
+      "full_prefix.attention.19.v": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.19.pooled": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.attention.19.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.19": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.20.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.20.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.20.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.20.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.20.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.20.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.20.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.20": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.21.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.21.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.21.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.21.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.21.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.21.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.21.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.21": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.22.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.linear.22.qkv": [
+        1,
+        324,
+        6144
+      ],
+      "full_prefix.linear.22.z": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.linear.22.b": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.22.a": [
+        1,
+        324,
+        16
+      ],
+      "full_prefix.linear.22.norm": [
+        5184,
+        128
+      ],
+      "full_prefix.linear.22.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.22": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.23.input": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.attention.23.q": [
+        1,
+        324,
+        4096
+      ],
+      "full_prefix.attention.23.q_norm": [
+        1,
+        324,
+        8,
+        256
+      ],
+      "full_prefix.attention.23.k": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.23.k_norm": [
+        1,
+        324,
+        2,
+        256
+      ],
+      "full_prefix.attention.23.v": [
+        1,
+        324,
+        512
+      ],
+      "full_prefix.attention.23.pooled": [
+        1,
+        324,
+        2048
+      ],
+      "full_prefix.attention.23.output": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.layer.23": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.decoder.norm": [
+        1,
+        324,
+        1024
+      ],
+      "full_prefix.logits": [
+        1,
+        248320
+      ],
+      "full_prefix.argmax_id": [
+        1
+      ],
+      "backend_off.vision.patch_embed": [
+        784,
+        768
+      ],
+      "backend_off.vision.embedded": [
+        784,
+        768
+      ],
+      "backend_off.vision.rotary_cos": [
+        784,
+        64
+      ],
+      "backend_off.vision.rotary_sin": [
+        784,
+        64
+      ],
+      "backend_off.vision.layer.0": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.1": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.2": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.3": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.4": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.5.norm1": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.5.qkv": [
+        784,
+        2304
+      ],
+      "backend_off.vision.probe.5.pooled": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.5.attention": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.5.norm2": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.5.up": [
+        784,
+        3072
+      ],
+      "backend_off.vision.probe.5.activation": [
+        784,
+        3072
+      ],
+      "backend_off.vision.probe.5.down": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.5": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.6": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.7": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.8": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.9": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.10": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.11.norm1": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.11.qkv": [
+        784,
+        2304
+      ],
+      "backend_off.vision.probe.11.pooled": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.11.attention": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.11.norm2": [
+        784,
+        768
+      ],
+      "backend_off.vision.probe.11.up": [
+        784,
+        3072
+      ],
+      "backend_off.vision.probe.11.activation": [
+        784,
+        3072
+      ],
+      "backend_off.vision.probe.11.down": [
+        784,
+        768
+      ],
+      "backend_off.vision.layer.11": [
+        784,
+        768
+      ],
+      "backend_off.vision.merger.norm": [
+        784,
+        768
+      ],
+      "backend_off.vision.merger.up": [
+        196,
+        3072
+      ],
+      "backend_off.vision.merger.activation": [
+        196,
+        3072
+      ],
+      "backend_off.vision.merger": [
+        196,
+        1024
+      ],
+      "backend_off.vision.position": [
+        784,
+        768
+      ],
+      "backend_off.vision.output": [
+        196,
+        1024
+      ],
+      "backend_off.decoder.norm": [
+        1,
+        323,
+        1024
+      ],
+      "backend_off.logits": [
+        1,
+        248320
+      ],
+      "backend_off.argmax_id": [
+        1
+      ],
+      "backend_off_full_prefix.vision.patch_embed": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.embedded": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.rotary_cos": [
+        784,
+        64
+      ],
+      "backend_off_full_prefix.vision.rotary_sin": [
+        784,
+        64
+      ],
+      "backend_off_full_prefix.vision.layer.0": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.1": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.2": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.3": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.4": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.5.norm1": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.5.qkv": [
+        784,
+        2304
+      ],
+      "backend_off_full_prefix.vision.probe.5.pooled": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.5.attention": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.5.norm2": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.5.up": [
+        784,
+        3072
+      ],
+      "backend_off_full_prefix.vision.probe.5.activation": [
+        784,
+        3072
+      ],
+      "backend_off_full_prefix.vision.probe.5.down": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.5": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.6": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.7": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.8": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.9": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.10": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.11.norm1": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.11.qkv": [
+        784,
+        2304
+      ],
+      "backend_off_full_prefix.vision.probe.11.pooled": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.11.attention": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.11.norm2": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.probe.11.up": [
+        784,
+        3072
+      ],
+      "backend_off_full_prefix.vision.probe.11.activation": [
+        784,
+        3072
+      ],
+      "backend_off_full_prefix.vision.probe.11.down": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.layer.11": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.merger.norm": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.merger.up": [
+        196,
+        3072
+      ],
+      "backend_off_full_prefix.vision.merger.activation": [
+        196,
+        3072
+      ],
+      "backend_off_full_prefix.vision.merger": [
+        196,
+        1024
+      ],
+      "backend_off_full_prefix.vision.position": [
+        784,
+        768
+      ],
+      "backend_off_full_prefix.vision.output": [
+        196,
+        1024
+      ],
+      "backend_off_full_prefix.decoder.norm": [
+        1,
+        324,
+        1024
+      ],
+      "backend_off_full_prefix.logits": [
+        1,
+        248320
+      ],
+      "backend_off_full_prefix.argmax_id": [
+        1
+      ],
+      "backend_off.generated.ids": [
+        1,
+        9
+      ],
+      "generated.0.decoder.position_ids": [
+        4,
+        1,
+        323
+      ],
+      "generated.1.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.2.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.3.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.4.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.5.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.6.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.7.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.8.decoder.position_ids": [
+        4,
+        1,
+        1
+      ],
+      "generated.ids": [
+        1,
+        9
+      ],
+      "generated.scores.0": [
+        1,
+        248320
+      ],
+      "generated.scores.1": [
+        1,
+        248320
+      ],
+      "generated.scores.2": [
+        1,
+        248320
+      ],
+      "generated.scores.3": [
+        1,
+        248320
+      ],
+      "generated.scores.4": [
+        1,
+        248320
+      ],
+      "generated.scores.5": [
+        1,
+        248320
+      ],
+      "generated.scores.6": [
+        1,
+        248320
+      ],
+      "generated.scores.7": [
+        1,
+        248320
+      ],
+      "generated.scores.8": [
+        1,
+        248320
+      ]
+    },
+    "decoded": [
+      "Hello OCR\n\n12345"
+    ],
+    "raw_decoded": [
+      "Hello OCR\n\n12345<|im_end|>"
+    ],
+    "generated_ids": [
+      [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ]
+    ]
+  },
+  "cross_precision_decoded_observation": {
+    "cpu_hf_f32": "Hello OCR\n\n12345",
+    "gpu_vllm_t4_f16": "Hello OCR\n\n12345",
+    "exact_raw_text_match": true,
+    "gate": "observation only; different runtime and precision"
+  },
+  "cpu_runtime": {
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "machine": "x86_64",
+    "logical_cpu_count": 4,
+    "affinity_cpu_count": 4,
+    "thread_env": {
+      "OMP_NUM_THREADS": "2",
+      "MKL_NUM_THREADS": "2",
+      "OPENBLAS_NUM_THREADS": "2"
+    }
+  },
+  "native_environment": {
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_OVISOCR2_FRONTEND": "1",
+    "CRISPEMBED_OVISOCR2_INFERENCE": "1",
+    "CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS": "1",
+    "CRISPEMBED_QWEN35_PRECISE_RMS": "0",
+    "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "0",
+    "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "0",
+    "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0",
+    "CRISPEMBED_QWEN35_IMATRIX": "0",
+    "CRISPEMBED_QWEN35_PARALLEL_F16": "0",
+    "CRISPEMBED_QWEN35_PROFILE": "0",
+    "CRISPEMBED_QWEN35_QUANT": "0",
+    "CRISPEMBED_QWEN35_TOKENIZER_MARKS": "0"
+  },
+  "arms": {
+    "f32-delta": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "a2d639cc37bfc0afe5dfe6cd9defcd2b70164f08b8d7fbf5a68304a8417db843",
+      "comparison_coverage": true
+    },
+    "f32-vision": {
+      "passed": false,
+      "exit_code": 1,
+      "sha256": "8b60d6b6982922f22296d79a97bc42ea761335b33e77f586f3351a07b15c86cf"
+    },
+    "f32-decoder-prepared": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "471cbd7b7b9e3b7afd2a826aa80f425504764dac642d8e80bfb592212a5aefd6",
+      "comparison_coverage": true
+    },
+    "f32-decoder-native-vision": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "c2bf76f4ccad9cf24b2715183957dab9d8f0ff4ac2151ad17311ee616d34ab7b",
+      "comparison_coverage": true
+    },
+    "f32-decoder-native-positions": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "8c7195ffacd00cadc09f9c400248df04414c308179f1a0c228a8ec1710e9c90d",
+      "comparison_coverage": true
+    },
+    "f32-decoder-native-frontend": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "fae069e995d3f20ff731951be14eb715e1f4c01332fe2a2fdf7bea09b5b7f0a3",
+      "comparison_coverage": true
+    },
+    "f32-context": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "9e53b95783b9db2ea16b71316e8c93f253cb3f16fe2ff93783e12f16631d4e0f",
+      "comparison_coverage": true
+    },
+    "f16-delta": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "a2d639cc37bfc0afe5dfe6cd9defcd2b70164f08b8d7fbf5a68304a8417db843",
+      "comparison_coverage": true
+    },
+    "f16-vision": {
+      "passed": false,
+      "exit_code": 1,
+      "sha256": "b7d29c3928fbbe2a03e3d146979769b504a4ce3896c48714502881cb4be4be98"
+    },
+    "f16-decoder-prepared": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "652efc8da7421f3bb94c9d9fd2a7a2a8a1f13d184e7614fa23c877f014ef9de1",
+      "comparison_coverage": true
+    },
+    "f16-decoder-native-vision": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "e97ad9105cbc4668a96e89f90fb3172c72e883b55c138c81d77d6d36e5aa7e66",
+      "comparison_coverage": true
+    },
+    "f16-decoder-native-positions": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "06a0fc4417147c2040352a166b61c9e0d8d4588bfded2a176a7b88e100c8a02a",
+      "comparison_coverage": true
+    },
+    "f16-decoder-native-frontend": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "8f80c5cc1cef21cc04ba0bfae5c223405a93a4d3ee94ff8090a08d9ddd5aff05",
+      "comparison_coverage": true
+    },
+    "f16-context": {
+      "passed": true,
+      "exit_code": 0,
+      "sha256": "6f36caa8a2dcdb029fd78a99a6f482c5f4eb319b22a8da2ad17d7101427fc5cb",
+      "comparison_coverage": true
+    }
+  },
+  "vision_failures": {
+    "f32": {
+      "earliest_failing_actual_operation": "prefill.vision.probe.11.up",
+      "display_order_is_not_execution_order": true,
+      "metric_lines": [
+        "FAIL prefill.vision.layer.11: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.0943603516 mean_abs=9.04599437e-05 norms=46262.3164/46262.3008",
+        "BUDGET prefill.vision.layer.11: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0268554688 max_ratio=1.69374912",
+        "PASS prefill.vision.probe.11.norm1: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000597894192 mean_abs=8.62018351e-06 norms=1430.77234/1430.77222",
+        "BUDGET prefill.vision.probe.11.norm1: strict_absolute_pass=1 calibrated=1 self_max_abs=0.000161886215 max_ratio=0.25729464",
+        "PASS prefill.vision.probe.11.qkv: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000240802765 mean_abs=4.92005256e-06 norms=1872.6748/1872.67456",
+        "BUDGET prefill.vision.probe.11.qkv: strict_absolute_pass=1 calibrated=1 self_max_abs=8.55922699e-05 max_ratio=0.110908474",
+        "PASS prefill.vision.probe.11.pooled: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000193119049 mean_abs=2.14640636e-06 norms=540.245422/540.245361",
+        "BUDGET prefill.vision.probe.11.pooled: strict_absolute_pass=1 calibrated=1 self_max_abs=6.30617142e-05 max_ratio=0.0908315324",
+        "PASS prefill.vision.probe.11.attention: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.00022482872 mean_abs=1.65534823e-06 norms=288.511932/288.511871",
+        "BUDGET prefill.vision.probe.11.attention: strict_absolute_pass=1 calibrated=1 self_max_abs=7.59363174e-05 max_ratio=0.104480496",
+        "PASS prefill.vision.probe.11.norm2: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.00345993042 mean_abs=6.70194131e-05 norms=9175.52539/9175.52539",
+        "BUDGET prefill.vision.probe.11.norm2: strict_absolute_pass=0 calibrated=1 self_max_abs=0.00106906891 max_ratio=0.836108069",
+        "FAIL prefill.vision.probe.11.up: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.018119812 mean_abs=3.17228696e-05 norms=23990.998/23990.9961",
+        "BUDGET prefill.vision.probe.11.up: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0051574707 max_ratio=1.47136811",
+        "FAIL prefill.vision.probe.11.activation: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.018119812 mean_abs=7.28690702e-06 norms=16431.2266/16431.2207",
+        "BUDGET prefill.vision.probe.11.activation: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0051574707 max_ratio=1.47136811",
+        "FAIL prefill.vision.probe.11.down: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.0944213867 mean_abs=9.04971166e-05 norms=46193.7344/46193.7188",
+        "BUDGET prefill.vision.probe.11.down: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0268554688 max_ratio=1.69484469"
+      ]
+    },
+    "f16": {
+      "earliest_failing_actual_operation": "prefill.vision.probe.11.norm2",
+      "display_order_is_not_execution_order": true,
+      "metric_lines": [
+        "FAIL prefill.vision.layer.11: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.114868164 mean_abs=8.5727399e-05 norms=46262.293/46262.3008",
+        "BUDGET prefill.vision.layer.11: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0268554688 max_ratio=2.06186019",
+        "PASS prefill.vision.probe.11.norm1: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000597000122 mean_abs=8.5915126e-06 norms=1430.77222/1430.77222",
+        "BUDGET prefill.vision.probe.11.norm1: strict_absolute_pass=1 calibrated=1 self_max_abs=0.000161886215 max_ratio=0.256909891",
+        "PASS prefill.vision.probe.11.qkv: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000290989876 mean_abs=4.89448894e-06 norms=1872.6748/1872.67456",
+        "BUDGET prefill.vision.probe.11.qkv: strict_absolute_pass=1 calibrated=1 self_max_abs=8.55922699e-05 max_ratio=0.134023557",
+        "PASS prefill.vision.probe.11.pooled: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000218868256 mean_abs=2.11886118e-06 norms=540.245361/540.245361",
+        "BUDGET prefill.vision.probe.11.pooled: strict_absolute_pass=1 calibrated=1 self_max_abs=6.30617142e-05 max_ratio=0.102942403",
+        "PASS prefill.vision.probe.11.attention: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.000316739082 mean_abs=1.60267439e-06 norms=288.511902/288.511871",
+        "BUDGET prefill.vision.probe.11.attention: strict_absolute_pass=1 calibrated=1 self_max_abs=7.59363174e-05 max_ratio=0.1471923",
+        "FAIL prefill.vision.probe.11.norm2: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.00448036194 mean_abs=6.61488812e-05 norms=9175.52539/9175.52539",
+        "BUDGET prefill.vision.probe.11.norm2: strict_absolute_pass=0 calibrated=1 self_max_abs=0.00106906891 max_ratio=1.08270003",
+        "FAIL prefill.vision.probe.11.up: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.0225219727 mean_abs=3.11898184e-05 norms=23990.9941/23990.9961",
+        "BUDGET prefill.vision.probe.11.up: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0051574707 max_ratio=1.82883312",
+        "FAIL prefill.vision.probe.11.activation: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.0225219727 mean_abs=6.94248638e-06 norms=16431.2188/16431.2207",
+        "BUDGET prefill.vision.probe.11.activation: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0051574707 max_ratio=1.82883312",
+        "FAIL prefill.vision.probe.11.down: cos_min=1.000000000 cos_global=1.000000000 max_abs=0.115234375 mean_abs=8.57633495e-05 norms=46193.7109/46193.7188",
+        "BUDGET prefill.vision.probe.11.down: strict_absolute_pass=0 calibrated=1 self_max_abs=0.0268554688 max_ratio=2.0684336"
+      ]
+    }
+  },
+  "remote_artifacts": [
+    {
+      "id": 12540713707,
+      "name": "ovisocr2-model-reference-40041958521",
+      "bytes": 3923864738,
+      "zip_sha256": "ad85d6e347783759c91bf4dcaa6ee1c8f851dce7de9562b8e2b0150907719024",
+      "keep_remote": true
+    },
+    {
+      "id": 12540836880,
+      "name": "ovisocr2-model-diff-reference-40041958521",
+      "bytes": 1303553123,
+      "zip_sha256": "54c823899bdde33448ff93137fbbf960981fa031877a6e29f76c91b0065d36a4",
+      "keep_remote": true
+    },
+    {
+      "id": 12541006318,
+      "name": "ovisocr2-native-diff-40041958521",
+      "bytes": 299899334,
+      "zip_sha256": "479f42da0d19497d6fc026465df8dd68d4720acf94f728b49df88582c068ae2c",
+      "keep_remote": true
+    }
+  ],
+  "limits": [
+    "Final decoded agreement does not waive either failed vision arm.",
+    "Raw strict-absolute flags remain alongside unchanged original-backend calibrated budgets.",
+    "The failing vision test did not retain raw vectors. Its negative controls could overwrite dumps if enabled; a566399a scopes those controls and verifies dump integrity for subsequent experiments. Decoder raw vectors are unaffected.",
+    "Reuse this complete original reference; do not regenerate its 943 fields for native retries."
+  ]
+}

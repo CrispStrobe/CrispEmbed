@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 full F32/F16 export, exact frontend PR78 and controlled original T4/FP16/TRITON_ATTN GPU reference pass | DraftPR79 native retry40040392649 at 13a093ea is pending after two retained pre-forward reference-contract failures; actual public interfaces, independent quality, quantization/calibration and conditional publication remain. No alias or Ovis model weights published. Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 full F32/F16 export, exact frontend PR78 and controlled original T4/FP16/TRITON_ATTN GPU reference pass | DraftPR79 native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. Existing precision A/B40046189758 is pending; actual public interfaces, independent quality, quantization/calibration and conditional publication remain. No alias or Ovis model weights published. Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 | Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](../tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
 
@@ -385,10 +385,19 @@ Do not treat this longer-term idea as an unfinished build 23 feature.
 
 Frontend PR78 and the controlled original T4/FP16/TRITON_ATTN reference pass.
 Raw saved inputs/stops/IDs/text, default-FlashInfer failure and immutable
-preservation are archived in vendor HISTORY. The next actual model audit is
-[40040392649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40040392649)
-at 13a093ea, dispatched after the retained40034685690 pre-forward processor-guard failure. No duplicate is needed. Follow
+preservation are archived in vendor HISTORY. The completed initial native numerical audit is
+[40041958521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40041958521)
+at cc038b00:943 frozen fields,12/14 native arms pass. Both vision arms fail
+unchanged budgets. Retained initial failures remain in HISTORY. Review pending
+existing precision A/B40046189758, then replay all arms against the frozen
+reference without HF recapture. Follow
 [the executable handoff](next-agent-handoff.md) and five-step [PLAN](../PLAN.md)
 through native parity, actual public bindings, independent quality, protected
 quantization/calibration and conditional publication. Prepared tools do not
 qualify those results. No model alias, runtime tag or app pin change occurs.
+
+Ovis native40041958521 completes943 frozen fields and12/14 arms. Both vision
+arms fail unchanged budgets; review existing precision A/B40046189758 and then
+replay all native arms against this frozen reference without HF recapture.
+See the active Ovis sequence in [PLAN](../PLAN.md). Public interfaces, quality,
+all three quantization/calibration arms and conditional publication remain open.
