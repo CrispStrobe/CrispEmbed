@@ -1,9 +1,11 @@
 """Pure publication qualification tests. No hub client, auth or weights."""
 import importlib.util
+import copy
 import fnmatch
 import io
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -24,6 +26,12 @@ def write(folder, name, value):
     path = folder/name
     path.write_text(json.dumps(value))
     return subject.digest(path)
+
+
+def refresh_producer_review(receipt):
+    receipt['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+        receipt['producer'], sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        allow_nan=False).encode()).hexdigest()
 
 
 def tensor_proof(recipe):
@@ -122,6 +130,23 @@ def fixtures(folder, precision='f16'):
                                'artifact_zip_sha256': HASH,
                                **({} if precision == 'f16' else {'numerical_positive': True})}}
     if precision != 'f16':
+        def probe(label, model_sha, gate):
+            return {'passed': True, 'exit_code': 0, 'comparison_coverage': True,
+                    'first_failure': None, 'model_sha256': model_sha,
+                    'quant_gate': gate, 'source_reference_sha256': HASH,
+                    'log': f'{precision}-{label}.log', 'log_sha256': HASH,
+                    'raw_diff_manifest': f'{precision}-{label}-raw-manifest.json',
+                    'raw_diff_manifest_sha256': HASH,
+                    'raw_diff_coverage_complete': True,
+                    'metric_lines': ['PASS prefill.linear.0.qkv']}
+        quality['producer']['quant_first_linear_control'] = probe(
+            'f16-first-linear-control', subject.F16_SHA, '0')
+        quality['producer']['quant_first_linear'] = probe(
+            'first-linear-diff', candidate_sha, '1')
+        quality['producer']['quant_numerical'].update(probe(
+            'official-numerical-diff', candidate_sha, '1'))
+        quality['producer']['quant_numerical']['metric_lines'] = ['PASS generated.scores.0']
+        quality['producer']['quant_raw_complete'] = True
         records, audit = tensor_proof(subject.RECIPES[precision])
         quality['producer']['tensor_records'] = records
         quality['producer']['tensor_audit'] = audit
@@ -134,6 +159,9 @@ def fixtures(folder, precision='f16'):
         first_producer.pop('tensor_audit', None)
         first_producer.pop('tensor_records', None)
         first_producer.pop('quant_numerical', None)
+        first_producer.pop('quant_first_linear_control', None)
+        first_producer.pop('quant_first_linear', None)
+        first_producer.pop('quant_raw_complete', None)
         first_producer.pop('paired_synthetic', None)
         first_producer.pop('paired_synthetic_original', None)
         first_producer.pop('paired_documents', None)
@@ -162,6 +190,10 @@ def fixtures(folder, precision='f16'):
     if precision != 'f16':
         quality['candidate_artifact'] = {'id': 2002, 'zip_sha256': HASH}
         quality['independent_review']['candidate_artifact_zip_sha256'] = HASH
+        quality['raw_diff_artifact'] = {
+            'id': 2003, 'name': 'ovisocr2-quality-native-diff-456', 'zip_sha256': HASH}
+        quality['independent_review']['raw_diff_verified'] = True
+        quality['independent_review']['raw_diff_artifact_zip_sha256'] = HASH
     quality_sha = write(folder, f'ovisocr2-{precision}-quality.json', quality)
     attempts = {name: {'status': 'rejected', 'report_sha256': HASH,
                        'run': 789, 'reason': 'Independent quality review rejected this attempt'}
@@ -408,6 +440,66 @@ class PublicationGate(unittest.TestCase):
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
         with self.assertRaises(ValueError): subject.require_receipts('q8')
 
+    def test_quant_raw_probes_fail_on_control_candidate_and_source_drift(self):
+        model, _, quality, _, _ = fixtures(self.folder, 'q8')
+        self.assertEqual(subject.checked_quant_raw_proofs(
+            quality, model['producer'], 'q8', HASH)['id'], 2003)
+        changes = (
+            ('f16 negative', 'quant_first_linear_control', 'passed', False),
+            ('candidate negative', 'quant_first_linear', 'passed', False),
+            ('full decoder negative', 'quant_numerical', 'passed', False),
+            ('f16 wrong model', 'quant_first_linear_control', 'model_sha256', HASH),
+            ('candidate wrong model', 'quant_first_linear', 'model_sha256', subject.F16_SHA),
+            ('f16 wrong gate', 'quant_first_linear_control', 'quant_gate', '1'),
+            ('candidate wrong gate', 'quant_first_linear', 'quant_gate', '0'),
+            ('missing raw', 'quant_first_linear', 'raw_diff_coverage_complete', False),
+            ('wrong source', 'quant_numerical', 'source_reference_sha256', '0'*64),
+            ('missing manifest SHA', 'quant_first_linear_control',
+             'raw_diff_manifest_sha256', None),
+            ('missing log SHA', 'quant_first_linear', 'log_sha256', None),
+        )
+        for label, probe, key, value in changes:
+            altered = copy.deepcopy(quality)
+            altered['producer'][probe][key] = value
+            with self.subTest(label=label), self.assertRaisesRegex(ValueError,
+                    'Reviewed quant raw probe differs'):
+                subject.checked_quant_raw_proofs(altered, model['producer'], 'q8', HASH)
+        incomplete = copy.deepcopy(quality)
+        incomplete['producer']['quant_raw_complete'] = False
+        with self.assertRaisesRegex(ValueError, 'raw artifact or completeness'):
+            subject.checked_quant_raw_proofs(incomplete, model['producer'], 'q8', HASH)
+
+    def test_quant_raw_artifact_requires_reviewed_exact_service_identity(self):
+        model, _, quality, _, decision = fixtures(self.folder, 'q8')
+        pins = subject.require_receipts('q8')
+        self.assertEqual(pins['raw_diff_artifact_id'], 2003)
+        self.assertEqual(pins['raw_diff_artifact_zip_sha256'], HASH)
+        changes = (
+            ('id', 0), ('id', True), ('name', 'ovisocr2-quality-native-diff-455'),
+            ('zip_sha256', '0'*64), ('zip_sha256', None))
+        for key, value in changes:
+            altered = copy.deepcopy(quality)
+            altered['raw_diff_artifact'][key] = value
+            with self.subTest(field=key, value=value), self.assertRaisesRegex(
+                    ValueError, 'raw artifact or completeness'):
+                subject.checked_quant_raw_proofs(altered, model['producer'], 'q8', HASH)
+        for field in ('raw_diff_verified', 'raw_diff_artifact_zip_sha256'):
+            altered = copy.deepcopy(quality)
+            altered['independent_review'][field] = False
+            with self.subTest(field=field), self.assertRaisesRegex(
+                    ValueError, 'raw artifact or completeness'):
+                subject.checked_quant_raw_proofs(altered, model['producer'], 'q8', HASH)
+        altered = copy.deepcopy(quality)
+        altered['independent_review']['producer_canonical_sha256'] = '0'*64
+        with self.assertRaisesRegex(ValueError, 'does not bind the producer'):
+            subject.checked_quant_raw_proofs(altered, model['producer'], 'q8', HASH)
+        quality['raw_diff_artifact']['name'] = 'ovisocr2-quality-native-diff-455'
+        quality_sha = write(self.folder, 'ovisocr2-q8-quality.json', quality)
+        decision['attempts']['q8']['report_sha256'] = quality_sha
+        write(self.folder, 'ovisocr2-quant-attempts.json', decision)
+        with self.assertRaisesRegex(ValueError, 'raw artifact or completeness'):
+            subject.require_receipts('q8')
+
     def test_retained_473_tensor_records_recompute_protected_bytes(self):
         _, _, quality, _, decision = fixtures(self.folder, 'q8')
         self.assertEqual(len(quality['producer']['tensor_records']['before']), 473)
@@ -422,7 +514,9 @@ class PublicationGate(unittest.TestCase):
 
     def test_f16_can_select_after_all_three_quant_attempts_rejected(self):
         _, _, _, _, decision = fixtures(self.folder)
-        self.assertEqual(subject.require_receipts('f16')['precision'], 'f16')
+        f16_pins = subject.require_receipts('f16')
+        self.assertEqual(f16_pins['precision'], 'f16')
+        self.assertNotIn('raw_diff_artifact_id', f16_pins)
         decision['attempts'].pop('q4')
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
         with self.assertRaises(ValueError): subject.require_receipts('f16')
@@ -441,6 +535,7 @@ class PublicationGate(unittest.TestCase):
                                                       'sha256': HASH, 'bytes': 200}},
                                               'input_ids': [f'dev-{n}' for n in range(4)]}
         quality['independent_review']['calibration_report_files_verified'] = True
+        refresh_producer_review(quality)
         quality_sha = write(self.folder, 'ovisocr2-q4-calibrated-quality.json', quality)
         decision['attempts']['q4-calibrated']['report_sha256'] = quality_sha
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
@@ -453,6 +548,7 @@ class PublicationGate(unittest.TestCase):
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
         self.assertEqual(subject.require_receipts('q4-calibrated')['recipe'], 'q4-attention-q8')
         quality['producer']['calibration']['report_files']['development-imatrix.gguf']['bytes'] = 1
+        refresh_producer_review(quality)
         quality_sha = write(self.folder, 'ovisocr2-q4-calibrated-quality.json', quality)
         decision['attempts']['q4-calibrated']['report_sha256'] = quality_sha
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
@@ -460,6 +556,7 @@ class PublicationGate(unittest.TestCase):
         write(self.folder, 'ovisocr2-q4-calibrated-calibration.json', calibration)
         with self.assertRaises(ValueError): subject.require_receipts('q4-calibrated')
         quality['producer']['calibration']['report_files']['development-imatrix.gguf']['bytes'] = 200
+        refresh_producer_review(quality)
         quality_sha = write(self.folder, 'ovisocr2-q4-calibrated-quality.json', quality)
         decision['attempts']['q4-calibrated']['report_sha256'] = quality_sha
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
@@ -476,6 +573,34 @@ class PublicationGate(unittest.TestCase):
         self.assertEqual(subject.service_artifact(1001, 123, row['name'], HASH, call)['id'], 1001)
         with self.assertRaises(ValueError):
             subject.service_artifact(1001, 124, row['name'], HASH, call)
+        raw = {'id': 2003, 'name': 'ovisocr2-quality-native-diff-456',
+               'expired': False, 'workflow_run': {'id': 456},
+               'digest': 'sha256:'+HASH}
+        self.assertEqual(subject.service_artifact(
+            2003, 456, raw['name'], HASH,
+            lambda _: json.dumps(raw).encode())['id'], 2003)
+        with self.assertRaises(ValueError):
+            subject.service_artifact(2003, 456, raw['name'], '0'*64,
+                                     lambda _: json.dumps(raw).encode())
+
+    def test_quant_preflight_checks_raw_service_before_hub_access(self):
+        fixtures(self.folder, 'q8')
+        seen = []
+
+        def artifact(*args):
+            seen.append(args)
+            return {'id': args[0], 'name': args[2]}
+
+        with mock.patch.object(subject, 'service_run', return_value={}), \
+                mock.patch.object(subject, 'service_artifact', side_effect=artifact), \
+                mock.patch('sys.argv', ['publisher', '--precision', 'q8',
+                    '--model-run-id', '123', '--quality-run-id', '456', '--preflight']), \
+                mock.patch.dict(os.environ, {'HEAVY_OUT': str(self.folder/'out'),
+                    'HEAVY_SCRATCH': str(self.folder/'scratch'), 'GITHUB_SHA': HEAD}, clear=False):
+            subject.main()
+        self.assertIn((2003, '456', 'ovisocr2-quality-native-diff-456', HASH), seen)
+        report = json.loads((self.folder/'out/ovisocr2-publication.json').read_text())
+        self.assertEqual(report['status'], 'preflight passed; no auth/packages/weights accessed')
 
     def test_only_exact_selected_artifact_bytes_are_accepted(self):
         candidate = self.folder/'ovisocr2-f16.gguf'
