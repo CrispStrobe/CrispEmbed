@@ -68,16 +68,21 @@ def fixtures(folder, precision='f16'):
     candidate_sha = subject.F16_SHA if precision == 'f16' else HASH
     native = {f'case-{index}': {'token_ids': [1], 'confidences': [.9], 'cap': 12}
               for index in range(11)}
-    quality = {'run': 456, 'producer': {
+    inputs = [{'id': f'case-{index}'} for index in range(11)]
+    quality = {'run': 456, 'source_commit': HEAD, 'artifact_id': 3001,
+        'artifact_name': 'ovisocr2-quality-reports-456', 'artifact_zip_sha256': HASH,
+        'report_sha256': HASH, 'producer': {
         'status': ('completed F16 quality observations; independent review pending'
                    if precision == 'f16' else 'completed quantized quality observations; independent review pending'),
         'requested_phase': precision, 'source_commit': HEAD,
         'selected_vision_preset': SELECTION,
+        'inputs': inputs,
         'prerequisite': {'baseline_sha256': model_sha, 'selected_vision_preset': SELECTION,
                          'original_review_sha256': original_sha},
         'models': {precision: {'sha256': candidate_sha, 'bytes': 1_717_222_848,
                                **({} if precision == 'f16' else {'recipe': subject.RECIPES[precision]})}},
         'scores': {'original': {}, 'f16': {}, precision: {}},
+        'native_cases': {'f16': native, **({} if precision == 'f16' else {precision: native})},
         'cabi_smoke': {precision: {'text': 'Hello'}},
         'f16_paired_synthetic': {'screen_passed': True},
         'f16_paired_documents': {'screen_passed': True},
@@ -87,12 +92,47 @@ def fixtures(folder, precision='f16'):
             'quant_numerical': {'passed': True, 'exit_code': 0, 'comparison_coverage': True,
                                 'first_failure': None, 'source_reference_sha256': HASH,
                                 'log_sha256': HASH, 'metric_lines': ['PASS generated.scores.0']},
-            'native_cases': {precision: native},
             'paired_synthetic': {'screen_passed': True},
+            'paired_synthetic_original': {'screen_passed': True},
             'paired_documents': {'original': {'screen_passed': True},
                                  'f16': {'screen_passed': True}}})},
-        'independent_review': {'quality_positive': True,
+        'independent_review': {'quality_positive': True, 'f16_11_complete': precision == 'f16',
+                               'artifact_zip_sha256': HASH,
                                **({} if precision == 'f16' else {'numerical_positive': True})}}
+    if precision != 'f16':
+        first_producer = json.loads(json.dumps(quality['producer']))
+        first_producer['requested_phase'] = 'f16'
+        first_producer['status'] = 'completed F16 quality observations; independent review pending'
+        first_producer['models'] = {'f16': {'sha256': subject.F16_SHA, 'bytes': 1_717_222_848}}
+        first_producer['native_cases'] = {'f16': native}
+        first_producer['scores'] = {'original': {}, 'f16': {}}
+        first_producer.pop('tensor_audit', None)
+        first_producer.pop('quant_numerical', None)
+        first_producer.pop('paired_synthetic', None)
+        first_producer.pop('paired_synthetic_original', None)
+        first_producer.pop('paired_documents', None)
+        first = {'run': 455, 'source_commit': HEAD, 'artifact_id': 3000,
+                 'artifact_name': 'ovisocr2-quality-reports-455',
+                 'artifact_zip_sha256': HASH, 'report_sha256': HASH,
+                 'producer': first_producer,
+                 'independent_review': {'quality_positive': True, 'f16_11_complete': True,
+                                        'artifact_zip_sha256': HASH}}
+        first['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+            first_producer, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+            allow_nan=False).encode()).hexdigest()
+        first_sha = write(folder, 'ovisocr2-f16-quality.json', first)
+        quality['producer']['first_f16_baseline'] = {'run': 455, 'source_commit': HEAD,
+            'artifact_zip_sha256': HASH, 'report_sha256': HASH,
+            'producer_canonical_sha256': first['independent_review']['producer_canonical_sha256'],
+            'receipt_sha256': first_sha, 'case_count': 11}
+        quality['producer']['prerequisite']['first_f16_review_sha256'] = first_sha
+        quality['producer']['scores']['f16_host_control'] = {}
+        quality['producer']['f16_host_control'] = {'native_case_count': 11,
+            'paired_synthetic': {'screen_passed': True},
+            'paired_documents': {'screen_passed': True}}
+    quality['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+        quality['producer'], sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        allow_nan=False).encode()).hexdigest()
     if precision != 'f16':
         quality['candidate_artifact'] = {'id': 2002, 'zip_sha256': HASH}
         quality['independent_review']['candidate_artifact_zip_sha256'] = HASH
@@ -124,6 +164,30 @@ def fixtures(folder, precision='f16'):
 
 
 class PublicationGate(unittest.TestCase):
+    def test_quant_cannot_substitute_host_f16_for_first_reviewed_f16(self):
+        fixtures(self.folder, 'q8')
+        self.assertEqual(subject.require_receipts('q8')['first_f16_run_id'], 455)
+        quality_path = self.folder/'ovisocr2-q8-quality.json'
+        original = quality_path.read_bytes()
+        for mutate in (
+                lambda p: p['first_f16_baseline'].update(receipt_sha256=HASH),
+                lambda p: p['scores'].update(f16={'host-only': True}),
+                lambda p: p['paired_synthetic_original'].update(screen_passed=False),
+                lambda p: p.pop('f16_host_control')):
+            quality_path.write_bytes(original)
+            data = json.loads(original)
+            mutate(data['producer'])
+            quality_path.write_text(json.dumps(data))
+            with self.assertRaises(ValueError):
+                subject.require_receipts('q8')
+        quality_path.write_bytes(original)
+        first_path = self.folder/'ovisocr2-f16-quality.json'
+        first = json.loads(first_path.read_text())
+        first['independent_review']['f16_11_complete'] = False
+        first_path.write_text(json.dumps(first))
+        with self.assertRaises(ValueError):
+            subject.require_receipts('q8')
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.folder = Path(self.temp.name)
@@ -289,7 +353,7 @@ class PublicationGate(unittest.TestCase):
             receipt = json.loads(path.read_text())
             receipt['producer'][slot] = {**SELECTION, 'name': 'baseline'}
             path.write_text(json.dumps(receipt))
-            with self.assertRaisesRegex(ValueError, 'review/source|phase/model'):
+            with self.assertRaisesRegex(ValueError, 'review/source|phase/model|First reviewed F16'):
                 subject.require_receipts('f16')
 
     def test_source_readme_recovery_and_tamper_rejection(self):

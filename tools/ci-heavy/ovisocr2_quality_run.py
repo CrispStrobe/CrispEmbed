@@ -31,6 +31,7 @@ EVIDENCE = ROOT / 'tests/results/qwen35-ocr'
 BASELINE = EVIDENCE / 'ovisocr2-model-audit.json'
 Q8_REVIEW = EVIDENCE / 'ovisocr2-q8-quality.json'
 ORIGINAL_REVIEW = EVIDENCE / 'ovisocr2-original-quality.json'
+F16_REVIEW = EVIDENCE / 'ovisocr2-f16-quality.json'
 EXPORT = EVIDENCE / 'ovisocr2-export.json'
 PREPARED_PRESERVATION = EVIDENCE / 'ovisocr2-quality-prepared-preservation.json'
 PREPARED_PRESERVATION_SHA = '6cf0c8750202b0c11480ac7a22970ed2e9d1dd40121c7ba185cc46b916aef46f'
@@ -173,6 +174,45 @@ def checked_q8_diagnostic_review(q8):
             'q8_positive_for_publication': q8_review.get('q8_positive_for_publication') is True}
 
 
+def checked_f16_quality_receipt(receipt, model_sha, original_sha, selection):
+    """Require the first independently reviewed eleven-case F16 run for quant arms."""
+    if not isinstance(receipt, dict):
+        raise ValueError('First reviewed F16 quality receipt absent')
+    producer, review = receipt.get('producer'), receipt.get('independent_review')
+    if not isinstance(producer, dict) or not isinstance(review, dict):
+        raise ValueError('First F16 producer/review absent')
+    canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    cases = producer.get('native_cases', {}).get('f16', {})
+    inputs = producer.get('inputs', [])
+    if (review.get('quality_positive') is not True or review.get('f16_11_complete') is not True
+            or review.get('producer_canonical_sha256') != canonical
+            or type(receipt.get('run')) is not int or receipt['run'] < 1
+            or not re.fullmatch('[0-9a-f]{40}', receipt.get('source_commit', ''))
+            or producer.get('source_commit') != receipt['source_commit']
+            or type(receipt.get('artifact_id')) is not int or receipt['artifact_id'] < 1
+            or receipt.get('artifact_name') != f"ovisocr2-quality-reports-{receipt['run']}"
+            or not re.fullmatch('[0-9a-f]{64}', receipt.get('artifact_zip_sha256', ''))
+            or review.get('artifact_zip_sha256') != receipt['artifact_zip_sha256']
+            or not re.fullmatch('[0-9a-f]{64}', receipt.get('report_sha256', ''))
+            or producer.get('status') != 'completed F16 quality observations; independent review pending'
+            or producer.get('requested_phase') != 'f16'
+            or producer.get('prerequisite', {}).get('baseline_sha256') != model_sha
+            or producer.get('prerequisite', {}).get('original_review_sha256') != original_sha
+            or producer.get('selected_vision_preset') != selection
+            or producer.get('models', {}).get('f16', {}).get('sha256') != F16_SHA
+            or producer.get('f16_paired_synthetic', {}).get('screen_passed') is not True
+            or producer.get('f16_paired_documents', {}).get('screen_passed') is not True
+            or not isinstance(inputs, list) or len(inputs) != 11
+            or len({row.get('id') for row in inputs if isinstance(row, dict)}) != 11
+            or not isinstance(cases, dict) or set(cases) != {row['id'] for row in inputs}
+            or not isinstance(producer.get('scores', {}).get('f16'), dict)):
+        raise ValueError('First F16 quality source, cases or independent proof differs')
+    return {'run': receipt['run'], 'source_commit': receipt['source_commit'],
+            'artifact_id': receipt['artifact_id'], 'artifact_zip_sha256': receipt['artifact_zip_sha256'],
+            'report_sha256': receipt['report_sha256'], 'producer_canonical_sha256': canonical}
+
+
 def require_baseline(phase, original_run=None):
     if phase not in PHASES:
         raise ValueError('Unknown OvisOCR2 quality phase')
@@ -202,13 +242,21 @@ def require_baseline(phase, original_run=None):
                 or type(original_receipt.get('artifact_id')) is not int
                 or review.get('original_11_complete') is not True):
             raise ValueError('Original quality artifact lacks a positive independent review')
+    f16_pins = None
+    if phase in ('q8', 'q4', 'q4-calibrated'):
+        if not F16_REVIEW.is_file():
+            raise ValueError('First reviewed F16 quality receipt required before quantization')
+        f16_pins = checked_f16_quality_receipt(json.loads(F16_REVIEW.read_text()), sha(BASELINE),
+                                                sha(ORIGINAL_REVIEW), pins['selected_vision_preset'])
     return {'baseline_source_commit': pins['source_commit'], 'baseline_sha256': sha(BASELINE),
             'baseline_pins': pins, 'selected_vision_preset': pins['selected_vision_preset'],
             'export_sha256': sha(EXPORT),
             'review': receipt['independent_review'],
             'q8_review_sha256': sha(Q8_REVIEW) if phase in ('q4', 'q4-calibrated') else None,
             'q8_diagnostic_gate': q8_gate if phase in ('q4', 'q4-calibrated') else None,
-            'original_review_sha256': sha(ORIGINAL_REVIEW) if phase != 'original' else None}
+            'original_review_sha256': sha(ORIGINAL_REVIEW) if phase != 'original' else None,
+            'first_f16_review_sha256': sha(F16_REVIEW) if f16_pins else None,
+            'first_f16_pins': f16_pins}
 
 
 def original_readme_functions(readme):
@@ -254,9 +302,9 @@ def process_readme_output(raw, cleaner, filter_fn):
     return cleaner(filter_fn(stripped))
 
 
-def reviewed_original_artifact(run_id, out):
-    """Fetch only the small reviewed original report archive, with service proof."""
-    receipt = json.loads(ORIGINAL_REVIEW.read_text())
+def reviewed_quality_artifact(run_id, out, receipt_path, retained_name):
+    """Fetch only a small reviewed quality report, with exact service proof."""
+    receipt = json.loads(Path(receipt_path).read_text())
     def api(path):
         return json.loads(subprocess.check_output(
             ['gh', 'api', 'repos/CrispStrobe/CrispEmbed/' + path], text=True, timeout=60))
@@ -264,34 +312,38 @@ def reviewed_original_artifact(run_id, out):
     if (run.get('id') != run_id or run.get('head_sha') != receipt['source_commit']
             or run.get('status') != 'completed' or run.get('conclusion') != 'success'
             or run.get('path') not in QUALITY_WORKFLOW_PATHS):
-        raise ValueError('Reviewed original quality service run/source/workflow differs')
+        raise ValueError('Reviewed quality service run/source/workflow differs')
     artifact = api('actions/artifacts/' + str(receipt['artifact_id']))
     if (artifact.get('name') != 'ovisocr2-quality-reports-' + str(run_id)
             or artifact.get('expired') is not False
             or artifact.get('workflow_run', {}).get('id') != run_id
             or artifact.get('digest') != 'sha256:' + receipt['artifact_zip_sha256']
             or not 0 < artifact.get('size_in_bytes', 0) <= 50_000_000):
-        raise ValueError('Reviewed original quality artifact identity/digest differs')
-    archive_path = out / 'reviewed-original-quality.zip'
+        raise ValueError('Reviewed quality artifact identity/digest differs')
+    archive_path = out / (retained_name + '.zip')
     with archive_path.open('wb') as stream:
         subprocess.run(['gh', 'api', 'repos/CrispStrobe/CrispEmbed/actions/artifacts/'
                         + str(artifact['id']) + '/zip'], stdout=stream, check=True, timeout=300)
     if sha(archive_path) != receipt['artifact_zip_sha256']:
-        raise ValueError('Reviewed original quality ZIP payload differs')
+        raise ValueError('Reviewed quality ZIP payload differs')
     with zipfile.ZipFile(archive_path) as archive:
         names = archive.namelist()
         if (len(names) != len(set(names)) or names.count('ovisocr2-quality.json') != 1
                 or any(Path(name).is_absolute() or '..' in Path(name).parts for name in names)):
-            raise ValueError('Reviewed original quality archive members differ')
+            raise ValueError('Reviewed quality archive members differ')
         payload = archive.read('ovisocr2-quality.json')
     if hashlib.sha256(payload).hexdigest() != receipt['report_sha256']:
-        raise ValueError('Reviewed original quality report bytes differ')
+        raise ValueError('Reviewed quality report bytes differ')
     report = json.loads(payload)
-    (out / 'reviewed-original-quality.json').write_bytes(payload)
+    (out / (retained_name + '.json')).write_bytes(payload)
     return report, {'run': run_id, 'source_commit': run['head_sha'],
                     'artifact_id': artifact['id'], 'artifact_zip_sha256': sha(archive_path),
                     'report_sha256': hashlib.sha256(payload).hexdigest(),
-                    'receipt_sha256': sha(ORIGINAL_REVIEW)}
+                    'receipt_sha256': sha(receipt_path)}
+
+
+def reviewed_original_artifact(run_id, out):
+    return reviewed_quality_artifact(run_id, out, ORIGINAL_REVIEW, 'reviewed-original-quality')
 
 
 def numerical_reference_artifact(listing, pins, expected):
@@ -494,6 +546,39 @@ def validate_reused_original(previous, current, cases, rendered, contract, profi
     scores = score_outputs(contract, rendered, cases, outputs)
     if scores != previous.get('scores', {}).get('original'):
         raise ValueError('Reviewed original quality score recomputation differs')
+    return outputs, scores
+
+
+def validate_reused_f16(previous, current, cases, rendered, contract):
+    """Recompute the first reviewed F16 scores on exactly these eleven inputs."""
+    receipt = json.loads(F16_REVIEW.read_text())
+    if (previous != receipt.get('producer')
+            or previous.get('inputs') != current.get('inputs')
+            or previous.get('original_source') != current.get('original_source')
+            or previous.get('scores', {}).get('original') != current.get('scores', {}).get('original')
+            or previous.get('selected_vision_preset') != current.get('selected_vision_preset')):
+        raise ValueError('First F16 source, frozen HF scores or eleven inputs differ')
+    outputs = previous.get('native_cases', {}).get('f16', {})
+    if not isinstance(outputs, dict) or set(outputs) != {case['id'] for case in cases}:
+        raise ValueError('First F16 native case coverage differs')
+    for case in cases:
+        row = outputs[case['id']]
+        ids, confidence = row.get('token_ids'), row.get('confidences')
+        try:
+            mean = validate_selected_confidences(ids, confidence, case['cap'])
+        except ValueError as exc:
+            raise ValueError('First F16 ID/confidence record differs: ' + case['id']) from exc
+        stop = ids[-1] if ids[-1] in (248044, 248046) else None
+        if (row.get('input_rgb_sha256') != case['rgb_sha256']
+                or row.get('input_png_sha256') != case['png_sha256']
+                or row.get('cap') != case['cap'] or row.get('stop_id') != stop
+                or row.get('finish_reason') != ('stop' if stop is not None else 'length')
+                or type(row.get('mean_confidence')) not in (int, float)
+                or not math.isclose(row['mean_confidence'], mean, rel_tol=0, abs_tol=1e-6)):
+            raise ValueError('First F16 source case or stop differs: ' + case['id'])
+    scores = score_outputs(contract, rendered, cases, outputs)
+    if scores != previous.get('scores', {}).get('f16'):
+        raise ValueError('First F16 quality score recomputation differs')
     return outputs, scores
 
 
@@ -1148,6 +1233,27 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
             save()
             return report
 
+        report['phase'] = 'reviewed-first-f16-artifact-reuse'
+        save()
+        first_f16, first_proof = reviewed_quality_artifact(
+            report['prerequisite']['first_f16_pins']['run'], out, F16_REVIEW,
+            'reviewed-first-f16-quality')
+        frozen_rows, frozen_scores = validate_reused_f16(
+            first_f16, report, cases, rendered, contract)
+        report['first_f16_baseline'] = {**first_proof,
+            'producer_canonical_sha256': report['prerequisite']['first_f16_pins']['producer_canonical_sha256'],
+            'case_count': len(frozen_rows), 'model_sha256': F16_SHA,
+            'selected_vision_preset': selection}
+        if first_proof['receipt_sha256'] != report['prerequisite']['first_f16_review_sha256']:
+            raise ValueError('First F16 receipt changed after preflight')
+        report['scores']['f16_host_control'] = report['scores']['f16']
+        report['f16_host_control'] = {'native_case_count': len(f16_results),
+            'paired_synthetic': report['f16_paired_synthetic'],
+            'paired_documents': report['f16_paired_documents'],
+            'scope': 'Same-run F16 diagnostic; frozen first F16 is the quant comparison baseline'}
+        report['scores']['f16'] = frozen_scores
+        save()
+
         recipe = 'q8-protected' if phase == 'q8' else 'q4-attention-q8'
         candidate = scratch / ('ovisocr2-' + phase + '.gguf')
         imatrix = None
@@ -1178,6 +1284,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
         report['scores'][phase] = score_outputs(contract, rendered, cases, outputs)
         report['paired_synthetic'] = contract.paired_quality_screen(
             report['scores']['f16']['synthetic'], report['scores'][phase]['synthetic'])
+        report['paired_synthetic_original'] = contract.paired_quality_screen(
+            report['scores']['original']['synthetic'], report['scores'][phase]['synthetic'])
         report['paired_documents'] = {
             reference: contract.paired_document_screen(report['scores'][reference]['realistic_documents'],
                                                        report['scores'][phase]['realistic_documents'])
@@ -1186,6 +1294,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None):
                                                   quantized=True)
         save()
         if (not report['paired_synthetic']['screen_passed']
+                or not report['paired_synthetic_original']['screen_passed']
                 or any(not result['screen_passed'] for result in report['paired_documents'].values())):
             raise ValueError('Quantized paired OCR quality screen failed; observations retained')
         if report['quant_numerical']['passed'] is not True:

@@ -19,6 +19,82 @@ spec.loader.exec_module(driver)
 
 
 class QualityDriverControls(unittest.TestCase):
+    def test_first_f16_receipt_requires_reviewed_eleven_case_source(self):
+        selection = {'name': 'both', 'enabled_gates': ['CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
+                                                      'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],
+                     'values': {'CRISPEMBED_QWEN35_VISION_PRECISE_NORM': '1',
+                                'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN': '1',
+                                'CRISPEMBED_QWEN35_VISION_CASCADE_NORM': '0'}}
+        producer = {'status': 'completed F16 quality observations; independent review pending',
+                    'requested_phase': 'f16', 'source_commit': 'a' * 40,
+                    'selected_vision_preset': selection,
+                    'prerequisite': {'baseline_sha256': 'b' * 64,
+                                     'original_review_sha256': 'c' * 64},
+                    'models': {'f16': {'sha256': driver.F16_SHA}},
+                    'inputs': [{'id': f'case-{i}'} for i in range(11)],
+                    'native_cases': {'f16': {f'case-{i}': {} for i in range(11)}},
+                    'scores': {'f16': {}},
+                    'f16_paired_synthetic': {'screen_passed': True},
+                    'f16_paired_documents': {'screen_passed': True}}
+        canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                              ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+        receipt = {'run': 123, 'source_commit': 'a' * 40, 'artifact_id': 456,
+                   'artifact_name': 'ovisocr2-quality-reports-123',
+                   'artifact_zip_sha256': 'd' * 64, 'report_sha256': 'e' * 64,
+                   'producer': producer, 'independent_review': {
+                       'quality_positive': True, 'f16_11_complete': True,
+                       'producer_canonical_sha256': canonical,
+                       'artifact_zip_sha256': 'd' * 64}}
+        self.assertEqual(driver.checked_f16_quality_receipt(receipt, 'b' * 64, 'c' * 64,
+                                                               selection)['run'], 123)
+        for field in ('quality_positive', 'f16_11_complete'):
+            changed = json.loads(json.dumps(receipt))
+            changed['independent_review'][field] = False
+            with self.assertRaises(ValueError):
+                driver.checked_f16_quality_receipt(changed, 'b' * 64, 'c' * 64, selection)
+        changed = json.loads(json.dumps(receipt))
+        changed['producer']['inputs'][0]['id'] = 'changed'
+        changed['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+            changed['producer'], sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+            allow_nan=False).encode()).hexdigest()
+        with self.assertRaises(ValueError):
+            driver.checked_f16_quality_receipt(changed, 'b' * 64, 'c' * 64, selection)
+        changed = json.loads(json.dumps(receipt))
+        changed['producer']['prerequisite']['original_review_sha256'] = 'f' * 64
+        changed['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+            changed['producer'], sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+            allow_nan=False).encode()).hexdigest()
+        with self.assertRaises(ValueError):
+            driver.checked_f16_quality_receipt(changed, 'b' * 64, 'c' * 64, selection)
+
+    def test_first_f16_replay_recomputes_scores_and_rejects_case_drift(self):
+        cases = [{'id': f'case-{i}', 'cap': 12, 'rgb_sha256': 'a' * 64,
+                  'png_sha256': 'b' * 64} for i in range(11)]
+        outputs = {row['id']: {'token_ids': [248046], 'confidences': [.9],
+                   'mean_confidence': .9, 'input_rgb_sha256': row['rgb_sha256'],
+                   'input_png_sha256': row['png_sha256'], 'cap': 12, 'stop_id': 248046,
+                   'finish_reason': 'stop'} for row in cases}
+        current = {'inputs': cases, 'original_source': {'readme_sha256': 'c' * 64},
+                   'scores': {'original': {'unchanged': True}},
+                   'selected_vision_preset': {'name': 'both'}}
+        frozen = {'inputs': cases, 'original_source': current['original_source'],
+                  'scores': {'original': current['scores']['original'],
+                             'f16': {'frozen': True}},
+                  'selected_vision_preset': current['selected_vision_preset'],
+                  'native_cases': {'f16': outputs}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory)/'f16.json'
+            path.write_text(json.dumps({'producer': frozen}))
+            with patch.object(driver, 'F16_REVIEW', path), \
+                 patch.object(driver, 'score_outputs', return_value={'frozen': True}):
+                self.assertEqual(driver.validate_reused_f16(
+                    frozen, current, cases, None, None)[1], {'frozen': True})
+                changed = json.loads(json.dumps(frozen))
+                changed['native_cases']['f16']['case-0']['stop_id'] = None
+                path.write_text(json.dumps({'producer': changed}))
+                with self.assertRaisesRegex(ValueError, 'stop differs'):
+                    driver.validate_reused_f16(changed, current, cases, None, None)
+
     def test_original_report_accepts_only_two_registered_workflow_paths(self):
         payload = json.dumps({'status': 'completed original HF quality baseline; review pending'}).encode()
         with tempfile.TemporaryDirectory() as directory:
