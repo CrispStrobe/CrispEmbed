@@ -18,7 +18,9 @@ import time
 
 ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE = ROOT / 'tests/results/qwen35-ocr'
-PHASES = ('q8', 'q4', 'q4-calibrated')
+RECIPES = {'q8': 'q8-protected', 'q4': 'q4-attention-q8',
+           'q4-calibrated': 'q4-attention-q8'}
+PHASES = tuple(RECIPES)
 WORKFLOWS = {'.github/workflows/ovisocr2-quality.yml',
              '.github/workflows/ovisocr2-metadata.yml'}
 
@@ -64,6 +66,7 @@ def checked_receipt(receipt, phase, run_id):
             or receipt.get('artifact_name') != f'ovisocr2-quality-reports-{run_id}'
             or not hex_value(receipt.get('artifact_zip_sha256'), 64)
             or review.get('artifact_zip_sha256') != receipt['artifact_zip_sha256']
+            or model.get('recipe') != RECIPES[phase]
             or not hex_value(model.get('sha256'), 64)
             or type(model.get('bytes')) is not int or model['bytes'] < 200_000_000
             or not isinstance(inputs, list) or len(inputs) != 11

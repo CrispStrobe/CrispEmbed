@@ -27,7 +27,7 @@ def refresh(receipt):
 def fixture():
     names = [f'case-{i}' for i in range(11)]
     producer = {'source_commit': HEAD, 'requested_phase': 'q8',
-        'models': {'q8': {'sha256': SHA, 'bytes': 1_200_000_000}},
+        'models': {'q8': {'sha256': SHA, 'bytes': 1_200_000_000, 'recipe': 'q8-protected'}},
         'inputs': [{'id': name} for name in names],
         'native_cases': {'q8': {name: {'token_ids': [248046], 'confidences': [1.0], 'cap': 256}
                                for name in names}},
@@ -66,6 +66,13 @@ class QuantRawReplayControls(unittest.TestCase):
         for phase, run in (('f16', RUN), ('q8', 0), ('q8', RUN + 1)):
             with self.subTest(phase=phase, run=run), self.assertRaises(ValueError):
                 SUBJECT.checked_receipt(value, phase, run)
+
+    def test_phase_recipe_mismatch_rejected_before_weights(self):
+        value = fixture()
+        value['producer']['models']['q8']['recipe'] = 'q4-attention-q8'
+        refresh(value)
+        with self.assertRaises(ValueError):
+            SUBJECT.checked_receipt(value, 'q8', RUN)
 
     def test_partial_panel_stale_canonical_nan_and_bad_id_are_rejected(self):
         for change in ('partial', 'canonical', 'nan', 'ids', 'score-count', 'caps'):
