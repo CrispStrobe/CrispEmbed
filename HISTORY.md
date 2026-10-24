@@ -14802,3 +14802,29 @@ contracts. Python3.13 show_empty=True reproduces the pinned hosted3.12 AST
 serialization; all six digests independently match both source commits. No
 weights/binaries were downloaded locally. Original Q8 raw vectors are absent;
 the candidate-only supplemental replay remains a separate pending result.
+
+
+## 24 October 2026 — Q8 raw replay preserves the earliest projection divergence
+
+[40066576197](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066576197)
+at7924d850 completes candidate-only replay of the exact rejected Q8 bytes.
+Independent small-report review verifies all source/command/log hashes, original
+943-stage shape map,473 tensor records and all243 raw manifest names/sizes/hash
+fields. Eighteen local metrics include12 failures;225 composed vectors cover189
+metrics and36 TRACE arrays, with183 metric failures. Every printed decoder
+metric line matches the first Q8 run. Source-fed inputs are exact; first actual
+QKV projection differs by max0.0564889908, mean0.00313537405, cosine0.999990225,
+native/reference norms1710.70459/1710.69543. First composed hidden error remains
+0.00376427174. Nine IDs/EOS/readable text remain exact; document rejection stands.
+
+[Separate producer, manifests and independent review](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json).
+Small ZIP12550520522:95992 bytes, SHA
+`ab82634f4bf9fb3c29863719a224e5d3d6cb71028771cef7384fe31b3b558cbb`.
+Raw ZIP12549564579:166755252 bytes, SHA
+`eef492a4b9140da2a6910efc935344f7665c6d6b624852686f4c830081db237d`,
+expires22 January2027. Large payloads remain remote; service digest verification
+is not independent payload rehashing. Earlier Q8 had no raw vectors, so matching
+printed metrics does not establish old/new raw-byte identity. Actual native tests
+use four threads on EPYC9V45, distinct from two-thread quality inference and the
+two-thread environment. No F16 control, conversion, original inference or
+quality-panel rerun occurred; the initial Q8 quality wrapper is unchanged.

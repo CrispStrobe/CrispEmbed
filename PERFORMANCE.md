@@ -6504,3 +6504,17 @@ F16 owned-image control is paired. Retain actual per-case values; no general or
 causal document speed ratio follows. Original raw vector dumps were not saved;
 the separate candidate-only replay will preserve operation-level diagnostics
 without replacing these initial quality/numerical observations.
+
+
+## Ovis Q8 first projection diagnostic — 24 October 2026
+
+[Candidate-only replay40066576197](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
+uses the exact rejected1251261952-byte Q8 candidate. Source-fed first-block inputs
+have max absolute0; first QKV max/mean error0.0564889908/0.00313537405 with minimum
+cosine0.999990225 and norms1710.70459/1710.69543. The cosine alone passes0.99999,
+but the unchanged absolute0.002 gate fails. Local12/18 and full183/189 metrics
+fail; first composed hidden error remains0.00376427174. The single readable-image
+nine-ID match does not override the earlier two-column quality regression.
+All243 raw vectors are retained remotely with verified manifest shapes/byte
+counts; local review used small reports and service metadata only. Four-thread
+numerical tests on EPYC9V45 are diagnostic, not production latency measurements.
