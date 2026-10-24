@@ -1,11 +1,11 @@
-name: OvisOCR2 metadata, export and frontend audits
+name: OvisOCR2 metadata, export, frontend and fixture audits
 on:
   workflow_dispatch:
     inputs:
       phase:
         type: choice
-        description: 'Original metadata/export, frontend, or gated full-model parity'
-        options: [metadata, export, frontend, model, vision]
+        description: 'Original metadata/export, frontend, full-model parity, vision A/B or exact wrong-profile fixture'
+        options: [metadata, export, frontend, model, vision, lighton-fixture]
         default: metadata
   push:
     branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
@@ -59,6 +59,56 @@ jobs:
           python tests/test_ovisocr2_quality_run.py -v
           python tests/test_ovisocr2_vllm_recipe.py -v
           python tests/test_ovisocr2_vllm_review.py -v
+          python tests/test_ovisocr2_lighton_fixture.py -v
+  lighton-fixture:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pinned receipt, original converter, source metadata and run before dependencies
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_lighton_fixture.py --preflight
+      - name: Pinned CPU converter environment
+        run: |
+          python -m pip install torch==2.10.0 torchvision==0.25.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.5.4 tokenizers==0.22.2 numpy==2.5.2 gguf==0.19.0 huggingface-hub==1.33.0 safetensors==0.8.0 pillow==12.1.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Exact format-1 receipt GGUF reconstruction
+        run: python tools/ci-heavy/ovisocr2_lighton_fixture.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lightonocr3-format1-reports-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: lightonocr3-format1-receipt-${{ github.run_id }}
+          path: |
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/lightonocr-3-0.8b-f16-experimental.gguf
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/lightonocr-3-0.8b-f16-experimental.gguf.manifest.json
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/lighton-fixture-manifest.json
+            ${{ env.HEAVY_SCRATCH }}/lighton-format1-fixture/LICENSE
+          if-no-files-found: error
+          retention-days: 90
   metadata:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'metadata'
     needs: controls
