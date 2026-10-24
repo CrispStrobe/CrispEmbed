@@ -41,6 +41,22 @@ def vision_contract():
     return module
 
 
+def quality_driver_contract():
+    path = ROOT / 'tools/ci-heavy/ovisocr2_quality_run.py'
+    spec = importlib.util.spec_from_file_location('ovis_quality_driver_publish', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def quant_tensor_contract():
+    path = ROOT / 'tools/ci-heavy/ovisocr2_quality_contract.py'
+    spec = importlib.util.spec_from_file_location('ovis_quality_tensor_publish', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def pinned_upstream_readme(artifact_dir, scratch, opener=urllib.request.urlopen):
     """Preserve exact source card even when frozen-reference transport omits it."""
     candidates = list(Path(artifact_dir).rglob('UPSTREAM_README.md'))
@@ -322,6 +338,8 @@ def require_receipts(precision, destination=DESTINATION):
         cases = qp.get('native_cases', {}).get(precision, {})
         first = qp.get('first_f16_baseline', {})
         frozen = first_f16['producer']
+        host = qp.get('f16_host_control', {})
+        host_mode = host.get('mode', 'full')
         if (first.get('run') != first_f16_pins['run']
                 or first.get('source_commit') != first_f16_pins['source_commit']
                 or first.get('receipt_sha256') != first_f16_sha
@@ -333,12 +351,49 @@ def require_receipts(precision, destination=DESTINATION):
                 or qp.get('inputs') != frozen.get('inputs')
                 or qp.get('scores', {}).get('f16') != frozen.get('scores', {}).get('f16')
                 or qp.get('scores', {}).get('original') != frozen.get('scores', {}).get('original')
-                or not isinstance(qp.get('scores', {}).get('f16_host_control'), dict)
-                or qp.get('f16_host_control', {}).get('native_case_count') != 11
-                or qp.get('f16_host_control', {}).get('paired_synthetic', {}).get('screen_passed') is not True
-                or qp.get('f16_host_control', {}).get('paired_documents', {}).get('screen_passed') is not True
+                or qp.get('f16_paired_synthetic') != frozen.get('f16_paired_synthetic')
+                or qp.get('f16_paired_documents') != frozen.get('f16_paired_documents')
                 or qp.get('paired_synthetic_original', {}).get('screen_passed') is not True):
             raise ValueError('Quantized quality did not compare with frozen first F16 and HF baselines')
+        if host_mode == 'full':
+            expected_ids = {row['id'] for row in qp['inputs']}
+            if (host.get('native_case_count') != 11
+                    or set(qp.get('native_cases', {}).get('f16', {})) != expected_ids
+                    or not isinstance(qp.get('scores', {}).get('f16_host_control'), dict)
+                    or host.get('paired_synthetic', {}).get('screen_passed') is not True
+                    or host.get('paired_documents', {}).get('screen_passed') is not True):
+                raise ValueError('Same-run full F16 host control is incomplete')
+        elif host_mode == 'dev-hello':
+            driver = quality_driver_contract()
+            closure = qp.get('f16_source_closure', {})
+            candidate_native = qp.get('native_source_sha256', {})
+            driver.validate_f16_source_closure(closure, first_f16_pins['source_commit'],
+                qp['source_commit'], frozen.get('native_source_sha256'), candidate_native)
+            if closure.get('first_runner_source_sha256') != frozen.get('source_sha256', {}).get(
+                    'tools/ci-heavy/ovisocr2_quality_run.py'):
+                raise ValueError('Short control first runner source hash differs')
+            if qp.get('f16_runtime_closure') != driver.f16_runtime_closure(frozen, qp):
+                raise ValueError('Short control package/thread/CPU architecture proof differs')
+            current_cases = qp.get('native_cases', {}).get('f16', {})
+            quant_canonical = hashlib.sha256(json.dumps(qp, sort_keys=True,
+                separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+            if (quality.get('independent_review', {}).get('short_host_control_positive') is not True
+                    or quality.get('independent_review', {}).get('producer_canonical_sha256')
+                       != quant_canonical
+                    or host.get('native_case_count') != 1
+                    or set(current_cases) != {'dev-hello'}
+                    or qp.get('inputs', [{}])[0].get('id') != 'dev-hello'
+                    or 'f16_host_control' in qp.get('scores', {})
+                    or qp.get('f16_paired_source') !=
+                       'reviewed first F16 eleven-case receipt, recomputed on unchanged originals'):
+                raise ValueError('Short F16 host control review, coverage or score scope differs')
+            expected_host = driver.validate_short_f16_host_control(
+                current_cases['dev-hello'], frozen['native_cases']['f16']['dev-hello'],
+                qp['inputs'][0])
+            if host != expected_host:
+                raise ValueError('Short F16 host control actual/frozen case proof differs')
+        else:
+            raise ValueError('Unrecognized F16 host-control mode')
         if (quality.get('independent_review', {}).get('numerical_positive') is not True
                 or audit.get('recipe') != RECIPES[precision]
                 or audit.get('tensor_count') != 473
@@ -356,6 +411,13 @@ def require_receipts(precision, destination=DESTINATION):
                 or not numerical['metric_lines']
                 or len(cases) != 11):
             raise ValueError('Quantized protected tensors or native numeric evidence differ')
+        records = qp.get('tensor_records', {})
+        if (not isinstance(records, dict) or set(records) != {'before', 'after'}
+                or not isinstance(records['before'], dict)
+                or not isinstance(records['after'], dict)
+                or quant_tensor_contract().validate_quant_tensors(
+                    records['before'], records['after'], RECIPES[precision]) != audit):
+            raise ValueError('Retained per-tensor protected/changed GGUF proof differs')
         for case in cases.values():
             ids, scores, cap = (case.get('token_ids'), case.get('confidences'), case.get('cap'))
             if (not isinstance(ids, list) or not isinstance(scores, list)
@@ -371,6 +433,10 @@ def require_receipts(precision, destination=DESTINATION):
             raise ValueError('Quantized heldout/doc quality screens did not pass')
     if precision == 'q4-calibrated':
         calibration_record = qp.get('calibration', {})
+        report_files = calibration_record.get('report_files', {})
+        expected_files = {
+            'development-imatrix-stats.tsv': calibration_record.get('stats_sha256'),
+            'development-imatrix.gguf': calibration_record.get('imatrix_sha256')}
         panel = json.loads((EVIDENCE/'ovisocr2-quality-panel.json').read_text())
         development_ids = [row['id'] for row in panel['cases'] if row['split'] == 'development']
         heldout_ids = {row['id'] for row in panel['cases'] if row['split'] == 'heldout'}
@@ -379,7 +445,16 @@ def require_receipts(precision, destination=DESTINATION):
                 or not sha_field(calibration_record.get('stats_sha256'))
                 or calibration_record.get('input_ids') != development_ids
                 or set(development_ids) & heldout_ids
-                or cp.get('imatrix_sha256') != calibration_record['imatrix_sha256']):
+                or cp.get('imatrix_sha256') != calibration_record['imatrix_sha256']
+                or set(report_files) != set(expected_files)
+                or quality.get('independent_review', {}).get('calibration_report_files_verified') is not True
+                or any(record.get('path') != 'calibration/' + name
+                       or record.get('sha256') != digest
+                       or type(record.get('bytes')) is not int or record['bytes'] <= 0
+                       for name, digest in expected_files.items()
+                       for record in [report_files[name]])
+                or report_files['development-imatrix.gguf']['bytes']
+                   != calibration_record.get('imatrix_bytes')):
             raise ValueError('Calibrated Q4 lacks exact development-only importance evidence')
     if precision in ('q4', 'q4-calibrated'):
         q8, q8_sha = load('ovisocr2-q8-quality.json')

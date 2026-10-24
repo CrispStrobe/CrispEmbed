@@ -1,5 +1,6 @@
 """Pure publication qualification tests. No hub client, auth or weights."""
 import importlib.util
+import fnmatch
 import io
 import hashlib
 import json
@@ -23,6 +24,27 @@ def write(folder, name, value):
     path = folder/name
     path.write_text(json.dumps(value))
     return subject.digest(path)
+
+
+def tensor_proof(recipe):
+    contract = subject.quant_tensor_contract()
+    schema = contract.source_schema()
+    kind, overrides = contract.RECIPES[recipe]
+    before, after = {}, {}
+    for name, shape in schema.items():
+        old = {'shape': list(reversed(shape)), 'type': 'F16', 'sha256': HASH}
+        before[name] = old
+        if contract._protected(name, shape):
+            after[name] = dict(old)
+            continue
+        chosen = kind.upper()
+        for rule in overrides:
+            pattern, precision = rule.rsplit('=', 1)
+            if fnmatch.fnmatchcase(name, pattern):
+                chosen = precision.upper()
+        after[name] = {**old, 'type': chosen, 'sha256': 'c'*64}
+    return {'before': before, 'after': after}, contract.validate_quant_tensors(
+        before, after, recipe)
 
 
 def fixtures(folder, precision='f16'):
@@ -100,6 +122,9 @@ def fixtures(folder, precision='f16'):
                                'artifact_zip_sha256': HASH,
                                **({} if precision == 'f16' else {'numerical_positive': True})}}
     if precision != 'f16':
+        records, audit = tensor_proof(subject.RECIPES[precision])
+        quality['producer']['tensor_records'] = records
+        quality['producer']['tensor_audit'] = audit
         first_producer = json.loads(json.dumps(quality['producer']))
         first_producer['requested_phase'] = 'f16'
         first_producer['status'] = 'completed F16 quality observations; independent review pending'
@@ -107,6 +132,7 @@ def fixtures(folder, precision='f16'):
         first_producer['native_cases'] = {'f16': native}
         first_producer['scores'] = {'original': {}, 'f16': {}}
         first_producer.pop('tensor_audit', None)
+        first_producer.pop('tensor_records', None)
         first_producer.pop('quant_numerical', None)
         first_producer.pop('paired_synthetic', None)
         first_producer.pop('paired_synthetic_original', None)
@@ -163,7 +189,111 @@ def fixtures(folder, precision='f16'):
     return model, public, quality, calibration, decision
 
 
+def short_quant_fixtures(folder):
+    _, _, quality, _, decision = fixtures(folder, 'q8')
+    first_path = folder/'ovisocr2-f16-quality.json'
+    first = json.loads(first_path.read_text())
+    first_producer = first['producer']
+    case = {'id': 'dev-hello', 'cap': 12, 'rgb_sha256': '1'*64,
+            'png_sha256': '2'*64}
+    ids = [9419, 77796, 271, 16, 17, 18, 19, 20, 248046]
+    frozen = {'input_rgb_sha256': case['rgb_sha256'],
+              'input_png_sha256': case['png_sha256'], 'cap': 12,
+              'token_ids': ids, 'confidences': [.9]*9,
+              'mean_confidence': .9, 'raw_text': 'Hello OCR\n\n12345',
+              'processed_text': 'Hello OCR\n\n12345',
+              'stop_id': 248046, 'finish_reason': 'stop'}
+    first_producer['inputs'][0] = case
+    first_producer['native_cases']['f16'].pop('case-0')
+    first_producer['native_cases']['f16']['dev-hello'] = frozen
+    native_source = {'src/qwen35_vision.cpp': '3'*64}
+    first_producer['native_source_sha256'] = native_source
+    first_producer['source_sha256'] = {'tools/ci-heavy/ovisocr2_quality_run.py': '4'*64}
+    first_producer['versions'] = {'torch': '2.11.0', 'gguf': '0.19.0'}
+    first_producer['cpu_runtime'] = {'machine': 'x86_64', 'cpu_model': 'first CPU',
+                                     'thread_env': {'OMP_NUM_THREADS': '2',
+                                                    'MKL_NUM_THREADS': '2',
+                                                    'OPENBLAS_NUM_THREADS': '2'}}
+    first['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+        first_producer, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        allow_nan=False).encode()).hexdigest()
+    first_sha = write(folder, first_path.name, first)
+    producer = quality['producer']
+    producer['inputs'][0] = case
+    producer['native_cases']['q8'].pop('case-0')
+    producer['native_cases']['q8']['dev-hello'] = {'token_ids': ids,
+        'confidences': [.9]*9, 'cap': 12}
+    actual = {**frozen, 'confidences': [.91]*9, 'mean_confidence': .91,
+              'wall_seconds': 2.5, 'child_peak_rss_kib_upper_bound': 500000}
+    producer['native_cases']['f16'] = {'dev-hello': actual}
+    producer['native_source_sha256'] = native_source
+    producer['versions'] = dict(first_producer['versions'])
+    producer['cpu_runtime'] = {**first_producer['cpu_runtime'], 'cpu_model': 'second CPU'}
+    producer['prerequisite']['first_f16_review_sha256'] = first_sha
+    producer['first_f16_baseline'].update(
+        receipt_sha256=first_sha,
+        producer_canonical_sha256=first['independent_review']['producer_canonical_sha256'])
+    producer['scores'].pop('f16_host_control')
+    producer['f16_paired_source'] = (
+        'reviewed first F16 eleven-case receipt, recomputed on unchanged originals')
+    driver = subject.quality_driver_contract()
+    producer['f16_host_control'] = driver.validate_short_f16_host_control(actual, frozen, case)
+    producer['f16_source_closure'] = {
+        'first_f16_source_commit': HEAD, 'candidate_source_commit': HEAD,
+        'paths': {name: {'first_oid': '5'*40, 'candidate_oid': '5'*40}
+                  for name in driver.F16_SOURCE_CLOSURE_PATHS},
+        'ast_contracts': {name: {'first_sha256': '6'*64, 'candidate_sha256': '6'*64}
+                          for name in driver.F16_AST_CONTRACTS},
+        'first_native_source_sha256': native_source,
+        'first_runner_source_sha256': '4'*64}
+    producer['f16_runtime_closure'] = driver.f16_runtime_closure(first_producer, producer)
+    quality['independent_review']['short_host_control_positive'] = True
+    quality['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+        producer, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+        allow_nan=False).encode()).hexdigest()
+    quality_sha = write(folder, 'ovisocr2-q8-quality.json', quality)
+    decision['attempts']['q8']['report_sha256'] = quality_sha
+    write(folder, 'ovisocr2-quant-attempts.json', decision)
+    return quality, decision
+
+
 class PublicationGate(unittest.TestCase):
+    def test_short_host_control_requires_exact_source_review_and_frozen_case(self):
+        quality, decision = short_quant_fixtures(self.folder)
+        self.assertEqual(subject.require_receipts('q8')['precision'], 'q8')
+        for change in ('src', 'ggml', 'cmake-ast', 'runtime-threads', 'wrong-ids', 'wrong-text',
+                       'wrong-eos', 'frozen-score', 'fake-eleven-score', 'review'):
+            altered = json.loads(json.dumps(quality))
+            producer = altered['producer']
+            if change in ('src', 'ggml'):
+                producer['f16_source_closure']['paths'][change]['candidate_oid'] = '7'*40
+            elif change == 'cmake-ast':
+                producer['f16_source_closure']['ast_contracts']['cmake-configure'][
+                    'candidate_sha256'] = '7'*64
+            elif change == 'runtime-threads':
+                producer['cpu_runtime']['thread_env']['OMP_NUM_THREADS'] = '8'
+            elif change == 'wrong-ids':
+                producer['native_cases']['f16']['dev-hello']['token_ids'][-1] = 248044
+            elif change == 'wrong-text':
+                producer['native_cases']['f16']['dev-hello']['raw_text'] = 'wrong'
+            elif change == 'wrong-eos':
+                producer['native_cases']['f16']['dev-hello']['stop_id'] = 248044
+            elif change == 'frozen-score':
+                producer['scores']['f16'] = {'changed': True}
+            elif change == 'fake-eleven-score':
+                producer['scores']['f16_host_control'] = {}
+            else:
+                altered['independent_review']['short_host_control_positive'] = False
+            altered['independent_review']['producer_canonical_sha256'] = hashlib.sha256(json.dumps(
+                producer, sort_keys=True, separators=(',', ':'), ensure_ascii=True,
+                allow_nan=False).encode()).hexdigest()
+            changed_sha = write(self.folder, 'ovisocr2-q8-quality.json', altered)
+            changed_decision = json.loads(json.dumps(decision))
+            changed_decision['attempts']['q8']['report_sha256'] = changed_sha
+            write(self.folder, 'ovisocr2-quant-attempts.json', changed_decision)
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                subject.require_receipts('q8')
+
     def test_quant_cannot_substitute_host_f16_for_first_reviewed_f16(self):
         fixtures(self.folder, 'q8')
         self.assertEqual(subject.require_receipts('q8')['first_f16_run_id'], 455)
@@ -278,6 +408,18 @@ class PublicationGate(unittest.TestCase):
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
         with self.assertRaises(ValueError): subject.require_receipts('q8')
 
+    def test_retained_473_tensor_records_recompute_protected_bytes(self):
+        _, _, quality, _, decision = fixtures(self.folder, 'q8')
+        self.assertEqual(len(quality['producer']['tensor_records']['before']), 473)
+        self.assertEqual(subject.require_receipts('q8')['precision'], 'q8')
+        name = 'v.patch_embed.proj.weight'
+        quality['producer']['tensor_records']['after'][name]['sha256'] = '9'*64
+        quality_sha = write(self.folder, 'ovisocr2-q8-quality.json', quality)
+        decision['attempts']['q8']['report_sha256'] = quality_sha
+        write(self.folder, 'ovisocr2-quant-attempts.json', decision)
+        with self.assertRaises(ValueError):
+            subject.require_receipts('q8')
+
     def test_f16_can_select_after_all_three_quant_attempts_rejected(self):
         _, _, _, _, decision = fixtures(self.folder)
         self.assertEqual(subject.require_receipts('f16')['precision'], 'f16')
@@ -289,7 +431,16 @@ class PublicationGate(unittest.TestCase):
         _, _, quality, calibration, decision = fixtures(self.folder, 'q4-calibrated')
         quality['producer']['calibration'] = {'vectors': [{} for _ in range(72)],
                                               'imatrix_sha256': HASH, 'stats_sha256': HASH,
+                                              'imatrix_bytes': 200,
+                                              'report_files': {
+                                                  'development-imatrix-stats.tsv': {
+                                                      'path': 'calibration/development-imatrix-stats.tsv',
+                                                      'sha256': HASH, 'bytes': 100},
+                                                  'development-imatrix.gguf': {
+                                                      'path': 'calibration/development-imatrix.gguf',
+                                                      'sha256': HASH, 'bytes': 200}},
                                               'input_ids': [f'dev-{n}' for n in range(4)]}
+        quality['independent_review']['calibration_report_files_verified'] = True
         quality_sha = write(self.folder, 'ovisocr2-q4-calibrated-quality.json', quality)
         decision['attempts']['q4-calibrated']['report_sha256'] = quality_sha
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
@@ -301,6 +452,19 @@ class PublicationGate(unittest.TestCase):
         decision['attempts']['q8']['report_sha256'] = q8_sha
         write(self.folder, 'ovisocr2-quant-attempts.json', decision)
         self.assertEqual(subject.require_receipts('q4-calibrated')['recipe'], 'q4-attention-q8')
+        quality['producer']['calibration']['report_files']['development-imatrix.gguf']['bytes'] = 1
+        quality_sha = write(self.folder, 'ovisocr2-q4-calibrated-quality.json', quality)
+        decision['attempts']['q4-calibrated']['report_sha256'] = quality_sha
+        write(self.folder, 'ovisocr2-quant-attempts.json', decision)
+        calibration['producer']['quality_receipt_sha256'] = quality_sha
+        write(self.folder, 'ovisocr2-q4-calibrated-calibration.json', calibration)
+        with self.assertRaises(ValueError): subject.require_receipts('q4-calibrated')
+        quality['producer']['calibration']['report_files']['development-imatrix.gguf']['bytes'] = 200
+        quality_sha = write(self.folder, 'ovisocr2-q4-calibrated-quality.json', quality)
+        decision['attempts']['q4-calibrated']['report_sha256'] = quality_sha
+        write(self.folder, 'ovisocr2-quant-attempts.json', decision)
+        calibration['producer']['quality_receipt_sha256'] = quality_sha
+        write(self.folder, 'ovisocr2-q4-calibrated-calibration.json', calibration)
         calibration['producer']['imatrix_sha256'] = 'c'*64
         write(self.folder, 'ovisocr2-q4-calibrated-calibration.json', calibration)
         with self.assertRaises(ValueError): subject.require_receipts('q4-calibrated')

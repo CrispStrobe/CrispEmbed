@@ -8,6 +8,9 @@ on:
       original_run:
         type: string
         default: '0'
+      f16_host_control:
+        type: string
+        default: dev-hello
   workflow_dispatch:
     inputs:
       phase:
@@ -19,6 +22,11 @@ on:
         type: string
         description: 'Required for all precision arms: reviewed original quality workflow run number'
         default: '0'
+      f16_host_control:
+        type: choice
+        description: 'Quant F16 same-run control; original/F16 phases always retain the full eleven cases'
+        options: [dev-hello, full]
+        default: dev-hello
 permissions:
   contents: read
   actions: read
@@ -34,6 +42,7 @@ jobs:
       OMP_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '2'
       MKL_NUM_THREADS: '2'
+      F16_HOST_CONTROL: ${{ inputs.f16_host_control }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,15 +55,17 @@ jobs:
           QUALITY_PHASE: ${{ inputs.phase }}
         run: |
           mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
-          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
-          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
-          echo "HF_HOME=$RUNNER_TEMP/scratch/hf" >> "$GITHUB_ENV"
-          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --preflight
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL" --preflight
       - name: Reuse immutable reviewed document PNGs before model outputs
         env:
           QUALITY_PHASE: ${{ inputs.phase }}
         run: |
-          python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --prepare-documents
+          python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL" --prepare-documents
       - name: Pinned original HF CPU stack
         run: |
           python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
@@ -63,7 +74,7 @@ jobs:
       - name: Frozen original and selected experimental quality arm
         env:
           QUALITY_PHASE: ${{ inputs.phase }}
-        run: python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}"
+        run: python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
