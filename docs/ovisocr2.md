@@ -20,7 +20,9 @@ establish broad benchmark accuracy or interactive CPU speed.
 for numerical drift and worse two-column recognition. Its separate
 [raw replay](../tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json) retains243
 vectors and locates the first source-fed QKV error0.0564889908 despite cosine
-0.999990225. Both actual Q4 recipes are still running. No Ovis model weights,
+0.999990225. Both actual Q4 recipes are complete and rejected for numerical/document
+regression; the [selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+chooses qualified F16. No Ovis model weights,
 registry alias, runtime release or app upgrade are qualified by prepared tooling.
 Follow the [active completion sequence](../PLAN.md#active-ovis-completion-sequence)
 for those outcomes, conditional qualified publication, real aliases/consumer and

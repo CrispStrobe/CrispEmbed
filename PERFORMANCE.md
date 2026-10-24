@@ -6546,3 +6546,27 @@ child RSS4342928KiB is an upper bound, including earlier child commands, not a
 fresh per-case peak. F16's first panel used EPYC7763; no paired document speed
 ratio follows. First-F16 one-case host control is29.2631s. Numerical probes use
 four native threads, separately from two-thread quality inference.
+
+
+## Ovis plain Q4 and completed selection — 24 October 2026
+
+[Plain40066573198](tests/results/qwen35-ocr/ovisocr2-q4-quality.json) measures
+1119141376 bytes, same tensor types/size as calibrated Q4 but different bytes.
+First QKV max0.0564889908 is unchanged; first composed hidden error is
+0.0316588879/cosine0.997843027. F16 local18/18 passes; Q4 local12/18 and composed
+183/189 fail unchanged gates. All11 cases reach EOS; nine match first F16 IDs/text.
+Receipt content CER/WER worsens0.0533854/0.222222→0.0703125/0.319444; two-column
+raw WER0.1870504→0.1942446/content WER0.1852518→0.1924460. Inventory stays15/15.
+Native walls on EPYC9V74/two inference threads: Hello33.8184s, receipt404.1246s,
+two-column583.3674s, inventory161.5264s; cumulative child RSS upper4343776KiB.
+The first F16/calibrated runs used different CPUs; no causal paired speed claim.
+
+| Actual candidate | File bytes | Numerical/task qualification |
+| --- | ---: | --- |
+| First F16 | 1717222848 | Qualified on the bounded frozen panel; selected |
+| Protected Q8 | 1251261952 | Rejected; numerical and two-column regression |
+| Attention-Q8 /FFN-Q4 | 1119141376 | Rejected; numerical, receipt and two-column regression |
+| Development-calibrated same Q4 recipe | 1119141376 | Rejected; numerical, receipt and inventory raw regression |
+
+[Exact three-attempt selection](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+retains every smaller failed candidate; calibration provenance alone is positive.

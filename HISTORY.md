@@ -14880,3 +14880,38 @@ raw12550667524:183583702 bytes/SHA
 Large ZIPs remain remote with service digest verification only; expire22 January2027.
 Source/log hashes, exact first-F16 baseline, ten Git OID pairs, six AST contracts,
 25 native source hashes and recomputed unchanged scores independently pass.
+
+
+## 24 October 2026 — Plain Ovis Q4 rejected; F16 selected after all three attempts
+
+[40066573198](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066573198)
+at7924d850 completes all11 candidate cases,473-tensor proof and three complete
+raw probes. F16 local control passes18/18; Q4 local12/18 and full183/189 metrics
+fail. First QKV max0.0564889908/cosine0.999990225, first hidden
+0.0316588879/cosine0.997843027. Exact readable nine IDs/EOS/text remain.
+All11 cases reach EOS without caps; eight synthetic cases and inventory match
+first F16 IDs/raw text. Receipt882→473 tokens worsens content CER/WER
+0.0533854/0.222222→0.0703125/0.319444. Two-column697→699 tokens raises raw WER
+0.1870504→0.1942446/content WER0.1852518→0.1924460. Inventory retains15 exact
+cells. Both original/F16 document screens fail.
+[Full original producer, raw manifests and independent review](tests/results/qwen35-ocr/ovisocr2-q4-quality.json).
+
+Candidate1119141376 bytes/SHA
+`aa6516815bd4d5418e7f4d96b8977019a9b59a64863d52e2cda75b029bfd748e`.
+All72 Q4_K FFN/78 Q8_0 attention matrices account for150 changes;323 protected
+tensor records remain byte exact. Independent reviews recompute scores, ten Git
+OID pairs/six AST contracts/25 native source hashes and261 raw manifest shapes,
+bytes and hash fields. Report12550638818:3515833 bytes/SHA
+`16aee2d0b646c67481f3bc40080ed84e6e8f5ee108f493826e93838aaced6c04`;
+candidate12551051507:933151485 bytes/SHA
+`fd6ecd4654e657615385d8f01279fbe0cb89059df98c90f58156f89fde497270`;
+raw12551125991:183568552 bytes/SHA
+`f7a039e3e99e1afd80f98dbf6fc9764e38d77d72c4eeed29103c30d332872495`.
+Large payloads stay remote; service digests are verified, not independently
+rehashable local vector bytes. Artifacts expire22 January2027.
+
+All three actual Q8/plain-Q4/calibrated-Q4 attempts are rejected for numerical
+and document-quality failures. The unchanged first F16 remains qualified on all
+1841 original IDs/text. [Selection and exact receipts](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+choose F16; actual publisher receipt preflight passes before auth/packages/weights.
+This is selection, not upload, alias, consumer qualification or runtime release.
