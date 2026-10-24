@@ -97,12 +97,19 @@ scoped targets separately from the original frozen full-model references.
 Read exact contracts before runtime work, use original-module intermediate dumps
 and crispembed-diff, keep gates/old alternatives, and require actual output and
 quality evidence before promotion. OCR quantized publication remains conditional;
-no current candidate qualifies. OvisOCR2 metadata/schema/processor capture
-passes; experimental full-weight export and exact frontend parity pass, with PR77/78
-merged. Controlled original T4 GPU execution passes; full native inference, public
-consumers and independent quality/calibration/publication remain pending.
-Continue the active PLAN sequence:40041958521 completes943 frozen fields and12/14 native arms; both vision arms fail unchanged budgets. Review full fourteen-arm frozen replay40049244654 with reviewed preset=both, then replay all arms against the frozen reference. Development CPU-baseline PR76 is merged, with actual
-three-platform desktop jobs passing; successor release assets remain separate.
+no current candidate qualifies. OvisOCR2 metadata/export/frontend and controlled
+original T4 GPU execution pass. Reviewed [native40049244654](tests/results/qwen35-ocr/ovisocr2-model-audit.json)
+passes all14 F32/F16 arms on943 frozen fields with the explicit `both` preset;
+four raw strict0.002 vision exceedances remain under unchanged calibrated
+budgets. [Public40053283383](tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+passes27 C/Python/CLI/HTTP/Rust/Dart arms, and the
+[original HF eleven-case reference40054043629](tests/results/qwen35-ocr/ovisocr2-original-quality.json)
+is frozen. First native F16 task quality40056641800 is running, without a
+qualified result yet. Follow [PLAN](PLAN.md) through protected Q8, Q4 and
+development-only calibrated Q4, conditional publication, real alias and final
+PR79 integration. Retain initial12/14 failures and strict flags. No Ovis model
+weights or alias are published. Development
+CPU-baseline PR76 is merged; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with
 its existing owner. The app remains pinned to immutable0.17.12.
@@ -110,9 +117,3 @@ its existing owner. The app remains pinned to immutable0.17.12.
 This file is tracked public documentation even though an ignore pattern matches
 its name. Never append private environment/access details here. Optional private
 continuity is stored in ignored `.claude/local-handoff/AGENTS.md` when available.
-
-Ovis native40041958521 completes943 frozen fields and12/14 arms. Both vision
-arms fail unchanged budgets; review full frozen replay40049244654 at a2a17735 (preset=both) without HF
-recapture. A/B40047163838 passes both F32/F16 vision arms without budget changes.
-See the active Ovis sequence in [PLAN](PLAN.md). Public interfaces, quality,
-all three quantization/calibration arms and conditional publication remain open.
