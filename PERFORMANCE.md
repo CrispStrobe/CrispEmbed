@@ -6351,3 +6351,22 @@ max error 0. Three actual small-document arms again match all IDs/text/EOS. All
 3,204 vectors are retained; the job exits1 for 45 known prefill comparisons, with
 zero failed native controls. No thresholds, defaults, large-document quality or
 performance claims change. [Final measurements](tests/results/qwen35-ocr/cascade-norm.json).
+
+## Ovis native numerical baseline — 24 October 2026
+
+[40041958521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40041958521) at `cc038b0041e6ace09cf413dc18aafccdd1b31c35`
+retains all871 prior NPY members byte-identically and adds exactly72 cache
+states, completing943 frozen fields. Native12/14 arms pass: delta, all four
+decoder input paths and context controls in both F32/F16. Each fully composed
+decoder compares189 stages; maximum absolute errors are0.00180101395 F32 and
+0.00139713287 F16. Both produce the original nine IDs/EOS and
+`Hello OCR\n\n12345`. The two vision arms fail unchanged calibrated budgets:
+first actual failing operations are F32 block11 up projection (0.018119812)
+and F16 block11 norm2 (0.00448036194). Final block maxima are0.0943603516 and
+0.114868164 against a reference norm46262.3. Printed cosine1.0 does not waive
+these failures; merger errors below4.1e-5 and decoded agreement remain scoped.
+[Initial numerical evidence](tests/results/qwen35-ocr/initial-ovisocr2-model-vision-failure.json)
+records raw budget flags, original self-variation, all14 outcomes and remote
+artifact identities. Preserve the complete reference; subsequent native work
+reuses it without HF recapture. No model alias, weights publication or full-model
+qualification follows.
