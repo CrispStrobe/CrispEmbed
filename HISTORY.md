@@ -14660,3 +14660,47 @@ recorded native source files (27 unchanged plus two test-only dump fixes), and
 retains every metric/TRACE vector and positive delta variant separately.
 Public/quality/calibration/numerical tools transfer the exact reviewed math
 configuration; no production default, alias or model publication is activated.
+
+## 24 October 2026 — Ovis native, public interfaces and original quality reference complete
+
+Full frozen native replay [40049244654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40049244654)
+at a2a17735 passes all fourteen F32/F16 arms. Independent review verifies all17
+logs,12 raw manifests/1,662 vector declarations,29 source files (27 unchanged
+and two exact dump-only test fixes),943 frozen original fields, cache/logit
+coverage, nine generated IDs/EOS and `Hello OCR\n\n12345`. Each composed
+decoder has189 comparisons, min printed cosine0.99999994 and max absolute
+0.0016772747 F32/0.00183558464 F16; confidence max2.62314e-7. Repeat, gate
+recovery, F32 single/F16 two-context and survivor controls pass. Existing vision
+calibrated budgets pass; the four raw strict exceedances remain recorded.
+[Full producer, independent review and four remote artifact identities](tests/results/qwen35-ocr/ovisocr2-model-audit.json).
+No original forward or weight conversion is repeated.
+
+Actual [public audit40053283383](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40053283383)
+at b33c5bad passes all27 arms: C/Python/CLI/HTTP/Rust/Dart text/confidence, real
+ABI layouts, caps, twelve prompt/gate/profile rejections and the two-stage model
+path check. The second complete metadata header opens, then its truncated
+weights fail to load; the first-stage fallback survives. Stage/cleanup/params
+sizes168/60/136 and offsets136/144 match actual C authority and bindings.
+CLI mean0.995 versus C0.9953882694 gives rounding error0.0003882694 within
+the pre-existing0.0006 public-format budget. [Actual interface evidence](tests/results/qwen35-ocr/ovisocr2-public-surfaces.json).
+This remains a one-image public smoke; no runtime release or app pin change.
+
+Original HF CPU/F32 quality [40054043629](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40054043629)
+at a0784b19 completes all eleven frozen cases with EOS248046 and no cap hits.
+All16 small archive members, source/config/framework identities, eleven PNG/RGB
+hashes, confidence records and scores are independently checked. Synthetic8/8
+WER0 retains newline CER; realistic token counts882/697/174. Receipt content
+CER/WER0.0533854/0.2222222, two-column0.1107011/0.1852518 and inventory0/0
+with all15 cells exact. Raw markup CER1.3411458/0.1351895/1.2727273 and
+strict-v1 border-attribute parse failures stay visible. The frozen Ovis
+presentation policy precedes these outputs and the old scorer is unchanged.
+[Immutable original quality reference and review](tests/results/qwen35-ocr/ovisocr2-original-quality.json).
+AMD EPYC9V74, four logical/affinity CPUs, two runtime threads; process high-water
+RSS5,601,852 KiB includes the loaded original model. These observations do not
+establish native quality or representative OCR benchmark performance.
+
+The original quality runner reuses the exact processor JSON and metadata/raw
+generation guards already validated by the943-field capture. Actual hosted
+execution confirms both contracts, avoiding duplicate tuple/list and raw-config
+assumptions. Subsequent native/quantized quality reuses the same original
+artifact and exact scores; never recapture or replace it.

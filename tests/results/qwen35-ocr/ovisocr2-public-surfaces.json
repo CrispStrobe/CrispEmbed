@@ -1,0 +1,527 @@
+{
+  "run": 40053283383,
+  "source_commit": "b33c5bad6d47433ea1f3f1fa1c9025d3d22e6fe5",
+  "service_conclusion": "success",
+  "artifact": {
+    "id": 12544704544,
+    "name": "ovisocr2-public-surfaces-40053283383",
+    "bytes": 25689,
+    "zip_sha256": "db7a2121f0b1b0dd5217c9059cb07dcf73de43a2a87e3c0fcc8e97070a29c38d"
+  },
+  "producer_report_sha256": "b0235c7a03f7fd3d254c19764a20fbf83b38e5b7fd5d698cee1224213daca02b",
+  "producer": {
+    "status": "completed public audit",
+    "phase": "public-model-backed-arms",
+    "arms": {
+      "cmake-configure": {
+        "exit_code": 0,
+        "log": "cmake-configure.log",
+        "log_sha256": "66485ddabba822d2407059b572008d80f18ddf2722fbe105c1d5602c2bc8f1eb",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 1874,
+        "passed": true
+      },
+      "cpu-baseline-check": {
+        "exit_code": 0,
+        "log": "cpu-baseline-check.log",
+        "log_sha256": "3fb64578466a7787b5b16307c5d402864e6381dcaaddf7a3f9f74eda5e42b93e",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 492,
+        "passed": true
+      },
+      "public-target-build": {
+        "exit_code": 0,
+        "log": "public-target-build.log",
+        "log_sha256": "43b01fb75a4a8f24e93a34402f1bc0581d31869d5632b17da75465293ae88e37",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 518750,
+        "passed": true
+      },
+      "native-abi-layout": {
+        "exit_code": 2,
+        "log": "native-abi-layout.log",
+        "log_sha256": "7688b50a8932a6d28b76a1ade22b152c5a1f3989257d4a55fd86b202cbbcd3d4",
+        "first_failure": null,
+        "metric_lines": [
+          "ABI stage_size=168 cleanup_size=60 params_size=136 vlm_max_tokens_offset=136 vlm_prompt_offset=144"
+        ],
+        "bytes": 529,
+        "passed": true
+      },
+      "python-stage21-two-model-cache": {
+        "exit_code": 0,
+        "log": "python-stage21-two-model-cache.log",
+        "log_sha256": "9842374b74c466465e910cf2fdb6a9fa3bbcd86b56d008c0dae0348b0f8d7d9c",
+        "first_failure": null,
+        "metric_lines": [
+          "RESULT stage-cache {\"stages_tried\": 2, \"metrics\": [{\"index\": 1, \"engine\": \"ovisocr2\", \"accepted\": false, \"text_chars\": 16, \"mean_confidence\": 0.9953882694244385}, {\"index\": 2, \"engine\": \"ovisocr2\", \"accepted\": false, \"text_chars\": 0, \"mean_confidence\": 0.0}], \"fallback_text\": \"Hello OCR\\n\\n12345\", \"fallback_n_regions\": 1}"
+        ],
+        "bytes": 573,
+        "passed": true,
+        "stages_tried": 2,
+        "metrics": [
+          {
+            "index": 1,
+            "engine": "ovisocr2",
+            "accepted": false,
+            "text_chars": 16,
+            "mean_confidence": 0.9953882694244385
+          },
+          {
+            "index": 2,
+            "engine": "ovisocr2",
+            "accepted": false,
+            "text_chars": 0,
+            "mean_confidence": 0.0
+          }
+        ],
+        "fallback_text": "Hello OCR\n\n12345",
+        "metadata_opened_second": true,
+        "second_weight_load_failed": true
+      },
+      "c-abi": {
+        "passed": true,
+        "text_exact": true,
+        "text_bytes": 16,
+        "confidence_count": 9,
+        "mean_confidence": 0.9953882694244385
+      },
+      "python": {
+        "passed": true,
+        "text_exact": true,
+        "confidence_count": 9,
+        "mean_confidence": 0.9953882694244385,
+        "stage_text_exact": true,
+        "stage_n_regions": 1
+      },
+      "cli-unified": {
+        "exit_code": 0,
+        "log": "cli-unified.log",
+        "log_sha256": "d3e43a4c2de6ce5c1a01b498baf3ca269ad4c747577e8c68541aef90035931fc",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 30,
+        "passed": true,
+        "decoded": "Hello OCR\n\n12345"
+      },
+      "cli-stage21": {
+        "exit_code": 0,
+        "log": "cli-stage21.log",
+        "log_sha256": "c65cd76ea47247d97ebd255e39dca86ee6d9e3a754855dcffda770860b00b459",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 73,
+        "passed": true,
+        "decoded": "Hello OCR\n\n12345",
+        "mean_confidence": 0.995,
+        "n_regions": 1
+      },
+      "cli-stage21-custom-prompt": {
+        "exit_code": 1,
+        "log": "cli-stage21-custom-prompt.log",
+        "log_sha256": "b24ef9221ac67ae3f1b454630958cad8dafeeb986967f96590d7451bd76fcfcc",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "cli-stage21-lighton-profile": {
+        "exit_code": 1,
+        "log": "cli-stage21-lighton-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "cli-stage20-ovis-profile": {
+        "exit_code": 1,
+        "log": "cli-stage20-ovis-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "cli-stage21-gate0-crispembed_qwen35_ocr": {
+        "exit_code": 1,
+        "log": "cli-stage21-gate0-crispembed_qwen35_ocr.log",
+        "log_sha256": "b24ef9221ac67ae3f1b454630958cad8dafeeb986967f96590d7451bd76fcfcc",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "cli-stage21-gate0-crispembed_ovisocr2_frontend": {
+        "exit_code": 1,
+        "log": "cli-stage21-gate0-crispembed_ovisocr2_frontend.log",
+        "log_sha256": "b24ef9221ac67ae3f1b454630958cad8dafeeb986967f96590d7451bd76fcfcc",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "cli-stage21-gate0-crispembed_ovisocr2_inference": {
+        "exit_code": 1,
+        "log": "cli-stage21-gate0-crispembed_ovisocr2_inference.log",
+        "log_sha256": "b24ef9221ac67ae3f1b454630958cad8dafeeb986967f96590d7451bd76fcfcc",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "http-start-custom-prompt": {
+        "exit_code": 1,
+        "log": "http-start-custom-prompt.log",
+        "log_sha256": "ea3cddaf0625a409243911b415fb1f29f396fc80560e89583c47fbacc96bf0eb",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-start-lighton-profile": {
+        "exit_code": 1,
+        "log": "http-start-lighton-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "http-start-ovis-on-stage20": {
+        "exit_code": 1,
+        "log": "http-start-ovis-on-stage20.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "http-start-gate0-crispembed_qwen35_ocr": {
+        "exit_code": 1,
+        "log": "http-start-gate0-crispembed_qwen35_ocr.log",
+        "log_sha256": "ea3cddaf0625a409243911b415fb1f29f396fc80560e89583c47fbacc96bf0eb",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-start-gate0-crispembed_ovisocr2_frontend": {
+        "exit_code": 1,
+        "log": "http-start-gate0-crispembed_ovisocr2_frontend.log",
+        "log_sha256": "ea3cddaf0625a409243911b415fb1f29f396fc80560e89583c47fbacc96bf0eb",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-start-gate0-crispembed_ovisocr2_inference": {
+        "exit_code": 1,
+        "log": "http-start-gate0-crispembed_ovisocr2_inference.log",
+        "log_sha256": "ea3cddaf0625a409243911b415fb1f29f396fc80560e89583c47fbacc96bf0eb",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-stage21": {
+        "passed": true,
+        "log": "http-stage21.log",
+        "decoded": "Hello OCR\n\n12345",
+        "n_regions": 1,
+        "mean_confidence": 0.9954,
+        "log_sha256": "4cd93c1084da9b6e3cab42180a8054f3d0151cc8e1f0f6b8e76be03be6e6f25a",
+        "bytes": 993
+      },
+      "rust-build": {
+        "exit_code": 0,
+        "log": "rust-build.log",
+        "log_sha256": "90a92d3c5d897059522acc21f61cd329aeb35ea2fbc0ebd71e43341f294eaf07",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 512,
+        "passed": true
+      },
+      "rust-run": {
+        "exit_code": 0,
+        "log": "rust-run.log",
+        "log_sha256": "ce530e4516f1fc51b4e890a66dabe32565e410f6b19188e12dee01f3e9d53e9a",
+        "first_failure": null,
+        "metric_lines": [
+          "PASS Rust unified RGB cap=12 prompt-rejection text_bytes=16 confidence_count=9 mean=0.995388269",
+          "PASS Rust orchestrator engine=21"
+        ],
+        "bytes": 129,
+        "passed": true
+      },
+      "dart-pub": {
+        "exit_code": 0,
+        "log": "dart-pub.log",
+        "log_sha256": "be199790216bed300ccef3847508510e54033bd81d63f09a7da87c00cafe6520",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 84,
+        "passed": true
+      },
+      "dart-analyze": {
+        "exit_code": 0,
+        "log": "dart-analyze.log",
+        "log_sha256": "0eb51e379b3200dc0289bd8df63fdfeb4bdab2c536357cabd5367b1c929c97c2",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 47,
+        "passed": true
+      },
+      "dart-run": {
+        "exit_code": 0,
+        "log": "dart-run.log",
+        "log_sha256": "36a4cad98a36a2498af48e70d10de899fb976bcb7db61293e7dfc901b423fa0d",
+        "first_failure": null,
+        "metric_lines": [
+          "ABI stage_size=168 cleanup_size=60 params_size=136",
+          "PASS Dart unified RGB cap=12 prompt-rejection text_bytes=16 confidence_count=9 mean=0.9953882694244385",
+          "PASS Dart orchestrator engine=21"
+        ],
+        "bytes": 187,
+        "passed": true
+      }
+    },
+    "failures": [],
+    "source_commit": "b33c5bad6d47433ea1f3f1fa1c9025d3d22e6fe5",
+    "source_sha256": {
+      "tools/ci-heavy/ovisocr2_public_surfaces.py": "72a52c615728fae659254e1663209129e46b8a8bbccaffa8d775c928a6dd0dc2",
+      "tools/ci-heavy/ovisocr2_vision_env.py": "bfa6f9f6b22720d9bae8a8b1f6eb3a32ae2598e1453560edec5b34c2f6b54a06",
+      "tools/ci-heavy/ovisocr2_stage_cache_probe.py": "fd3cc0b7814dfdd6e78faabd3555609d407600b4569b8f14d2159d31e2e44ab5",
+      "tests/ovisocr2_public_bindings.rs": "94fd35e21d2777943d1d64644723c3d1657c0681342fe1b035ab8db9f56e3629",
+      "tests/ovisocr2_public_bindings.dart": "5c4a6f92071d81ad2523986e39564687ca872572ceb36ee9b1e1448928396d6b"
+    },
+    "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
+    "generic_prompt_semantics": {
+      "single_model_cli": "Fixed-task Ovis prompt override is ignored with an explicit warning; the default task still runs.",
+      "single_model_http": "A custom fixed-task prompt returns prompt_applied:false; the default task still runs.",
+      "explicit_ovis_stage": "CLI/HTTP startup rejects a nonempty custom prompt; binding setters return false without mutation."
+    },
+    "model_prerequisite": {
+      "source_commit": "a2a17735d05f172c3ec7ce9675ad51a6adc313f6",
+      "producer_status": "completed diagnostic audit",
+      "producer_failures": [],
+      "model_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+      "image_sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+      "rgb_sha256": "e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27",
+      "expected_text": "Hello OCR\n\n12345",
+      "original_generation": {
+        "max_new_tokens": 12,
+        "generated_token_count": 9,
+        "eos_ids": [
+          248044,
+          248046
+        ],
+        "reached_eos": true,
+        "stop_id": 248046,
+        "max_tokens_consumed": false,
+        "length_limited": false,
+        "raw_sequence_shape": [
+          1,
+          332
+        ],
+        "generated_id_shape": [
+          1,
+          9
+        ],
+        "score_count": 9,
+        "raw_decoded_utf8_length": 26,
+        "decoded_utf8_length": 16
+      },
+      "original_generated_ids": [
+        9419,
+        77796,
+        271,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ],
+      "original_cache_max_abs": 1.33514404296875e-05,
+      "f16_context_log_sha256": "b5b70e3e0e942571107fb35af59c2f2b2f299a7dd32a6822b1e8319beff79cee",
+      "run": 40049244654,
+      "artifact_id": 12543923060,
+      "artifact_zip_sha256": "8a76764605c504de2834709ddef26de725845ad0f9ce69ccc1565a0a60b87c07",
+      "producer_canonical_sha256": "20c34689ab5ed8c87d9ba2bb5b6e09eebc40027dc15e610203c80d8331ce7569",
+      "selected_vision_preset": {
+        "name": "both",
+        "enabled_gates": [
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+        ],
+        "values": {
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+          "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"
+        }
+      },
+      "receipt_sha256": "e28d1e4b8cc3cfc941f9521cdf44185542867a9607f5997ba42f8e0bb542d91c",
+      "service_run": {
+        "id": 40049244654,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "a2a17735d05f172c3ec7ce9675ad51a6adc313f6",
+        "path": ".github/workflows/ovisocr2-metadata.yml"
+      }
+    },
+    "selected_vision_preset": {
+      "name": "both",
+      "enabled_gates": [
+        "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+        "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+      ],
+      "values": {
+        "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+        "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+        "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"
+      }
+    },
+    "artifacts": {
+      "model": {
+        "sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+        "bytes": 1717222848
+      },
+      "image": {
+        "sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+        "bytes": 5247
+      },
+      "lighton": {
+        "sha256": "41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4",
+        "bytes": 1918139328
+      }
+    },
+    "binary_sha256": {
+      "shared": "3ac4815000d80485d462eeedc4cdfa562ddb09f9684754e52c3838e65cad8a2d",
+      "cli": "d20f8725092ce6898c90c92b549e3da32f386a4aa3f2aeeb589affd4c8bd9ba5",
+      "server": "e6eec65d0b4326b81c1b813f1cb93078b915682bf74aa7f3b8a1abe4caa8f6f3"
+    },
+    "stage_cache_truncation": {
+      "sha256": "0c1fece23c4133721955f76389fc26489e3a05414d3d276da721b5c5bd3b6a63",
+      "bytes": 10001664,
+      "metadata_bytes": 10001600,
+      "retained_tensor_bytes": 64,
+      "tensor_count": 473,
+      "source_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db"
+    },
+    "abi_layout": {
+      "passed": true,
+      "native": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "python": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "dart": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136
+      }
+    },
+    "public_confidence_comparison": {
+      "passed": true,
+      "confidence_count": 9,
+      "c_abi_mean": 0.9953882694244385,
+      "max_abs_public_mean_error": 0.000388269424438481
+    }
+  },
+  "independent_review": {
+    "run": 40053283383,
+    "source_commit": "b33c5bad6d47433ea1f3f1fa1c9025d3d22e6fe5",
+    "status": "independently positive small public-surface evidence; large model payloads not downloaded",
+    "public_positive": true,
+    "producer_report_sha256": "b0235c7a03f7fd3d254c19764a20fbf83b38e5b7fd5d698cee1224213daca02b",
+    "producer_canonical_sha256": "df6c569655cd5b45e187884b81ff4fb1c1ff635e37aa5202d5c19b3507ffe0cf",
+    "artifact": {
+      "id": 12544704544,
+      "name": "ovisocr2-public-surfaces-40053283383",
+      "zip_sha256": "db7a2121f0b1b0dd5217c9059cb07dcf73de43a2a87e3c0fcc8e97070a29c38d",
+      "bytes": 25689,
+      "expires_at": "2027-01-22T02:13:40Z"
+    },
+    "checks": {
+      "service_success_artifact": true,
+      "report_zip_and_raw_sha": true,
+      "status_27_positive": true,
+      "all_five_source_sha": true,
+      "all_25_command_log_sha": true,
+      "reviewed_f16_model_receipt": true,
+      "reviewed_both_mode": true,
+      "decoded_c_python_cli_http": true,
+      "confidence_rounding_original_thresholds": true,
+      "actual_native_python_dart_abi": true,
+      "rust_dart_outputs": true,
+      "all_prompt_gate_profile_negative_controls": true,
+      "two_model_cache_reload_control": true
+    },
+    "confidence": {
+      "c_mean": 0.9953882694244385,
+      "other_abs_errors": {
+        "python": 0.0,
+        "cli": 0.000388269424438481,
+        "http": 1.1730575561474943e-05
+      },
+      "count": 9
+    },
+    "abi": {
+      "passed": true,
+      "native": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "python": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "dart": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136
+      }
+    },
+    "negative_controls": [
+      "cli-stage21-custom-prompt",
+      "cli-stage21-lighton-profile",
+      "cli-stage20-ovis-profile",
+      "cli-stage21-gate0-crispembed_qwen35_ocr",
+      "cli-stage21-gate0-crispembed_ovisocr2_frontend",
+      "cli-stage21-gate0-crispembed_ovisocr2_inference",
+      "http-start-custom-prompt",
+      "http-start-lighton-profile",
+      "http-start-ovis-on-stage20",
+      "http-start-gate0-crispembed_qwen35_ocr",
+      "http-start-gate0-crispembed_ovisocr2_frontend",
+      "http-start-gate0-crispembed_ovisocr2_inference"
+    ],
+    "errors": [],
+    "limits": [
+      "F16 Ovis/LightOn GGUF payloads and hosted binaries were not downloaded or independently rehashed; producer assertions are bound to pinned source, small logs and successful service artifact.",
+      "The public API exposes text/confidence, while nine generated IDs and EOS stop are established by the separately reviewed low-level native replay.",
+      "This one owned readable image is a bounded public surface smoke audit, not eleven-case OCR quality or release qualification."
+    ],
+    "artifact_zip_sha256": "db7a2121f0b1b0dd5217c9059cb07dcf73de43a2a87e3c0fcc8e97070a29c38d"
+  },
+  "qualification_scope": "One-image actual C/Python/CLI/HTTP/Rust/Dart smoke and rejection/layout/cache controls. Independent OCR quality, quantization and publication remain separate."
+}
