@@ -28,7 +28,7 @@ def sample():
     pins = {'precision': 'f16', 'destination': 'cstr/OvisOCR2-GGUF',
             'candidate_sha256': SHA, 'candidate_bytes': 1717222848,
             'recipe': 'original-f16', 'selected_vision_preset': PRESET,
-            'receipt_sha256': {'model': SHA}}
+            'receipt_sha256': {'model': SHA, 'quality': SHA}}
     filename = 'ovisocr2-f16.gguf'
     url = f'https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/{COMMIT}/{filename}'
     receipt = {'producer': {'status': 'published and immutable remote file reverified',
@@ -63,6 +63,10 @@ class PublishedConsumerControls(unittest.TestCase):
         pins, receipt, registry, hashes = sample()
         valid = CONSUMER.require_publication(receipt, pins, registry, hashes)
         self.assertEqual(valid['registry']['alias'], 'ovisocr2-f16')
+        wrapped_registry = registry.replace(f'/{COMMIT}/ovisocr2-f16.gguf"',
+                                            f'/{COMMIT}/"\n        "ovisocr2-f16.gguf"')
+        self.assertEqual(CONSUMER.require_publication(receipt, pins, wrapped_registry,
+                                                      hashes)['registry']['url'], valid['registry']['url'])
         for section, field, value in (
                 ('independent_review', 'publication_positive', False),
                 ('producer', 'published_commit', 'main'),
@@ -166,13 +170,51 @@ class PublishedConsumerControls(unittest.TestCase):
     def test_fresh_offline_http_confidence_comparison(self):
         cli = {'text': 'Hello OCR\n\n12345', 'n_regions': 1, 'mean_confidence': .995}
         http = {'text': cli['text'], 'n_regions': 1, 'mean_confidence': .9954}
-        self.assertTrue(CONSUMER.compare_public_answers(cli, cli, http)['fresh_offline_confidence_exact'])
-        for altered in ({**http, 'mean_confidence': .94},
+        reference = {'mean_confidence': .9953883820109897}
+        self.assertTrue(CONSUMER.compare_public_answers(cli, cli, http,
+                                                        reference)['fresh_offline_confidence_exact'])
+        for altered in ({**http, 'mean_confidence': .997},
                         {**http, 'text': 'wrong'}):
             with self.assertRaises(ValueError):
-                CONSUMER.compare_public_answers(cli, cli, altered)
+                CONSUMER.compare_public_answers(cli, cli, altered, reference)
         with self.assertRaises(ValueError):
-            CONSUMER.compare_public_answers(cli, {**cli, 'mean_confidence': .994}, http)
+            CONSUMER.compare_public_answers(cli, {**cli, 'mean_confidence': .994}, http, reference)
+        # The previous arbitrary .005 allowance accepted this; the reviewed
+        # CLI printing budget must reject it.
+        with self.assertRaises(ValueError):
+            CONSUMER.compare_public_answers({**cli, 'mean_confidence': .998},
+                                            {**cli, 'mean_confidence': .998}, http, reference)
+        with self.assertRaises(ValueError):
+            CONSUMER.compare_public_answers(cli, cli, {**http, 'mean_confidence': float('nan')},
+                                            reference)
+
+    def test_quality_reference_requires_same_png_rgb_and_candidate(self):
+        model = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-model-audit.json').read_text())
+        preserved = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-vllm-reference-preservation.json').read_text())
+        fixture = CONSUMER.require_frozen_image(preserved, model)
+        original = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-original-quality.json').read_text())
+        case = original['producer']['original_cases']['dev-hello']
+        self.assertEqual(case['input_png_sha256'], fixture['png_sha256'])
+        self.assertEqual(case['input_rgb_sha256'], fixture['rgb_sha256'])
+        pins, _, _, _ = sample()
+        quality = {'independent_review': {'quality_positive': True},
+                   'producer': {'models': {'f16': {'sha256': SHA}},
+                                'native_cases': {'f16': {'dev-hello': case}},
+                                'cabi_smoke': {'f16': {'case': 'dev-hello',
+                                                       'raw_text': fixture['expected_text'],
+                                                       'mean_confidence': case['mean_confidence']}}}}
+        self.assertEqual(CONSUMER.require_quality_confidence(quality, pins, fixture)['token_ids'],
+                         CONSUMER.FROZEN_IDS)
+        for section, field, value in (('native_cases', 'input_png_sha256', '0'*64),
+                                      ('native_cases', 'mean_confidence', .4),
+                                      ('cabi_smoke', 'mean_confidence', .4)):
+            bad = copy.deepcopy(quality)
+            if section == 'native_cases':
+                bad['producer']['native_cases']['f16']['dev-hello'][field] = value
+            else:
+                bad['producer']['cabi_smoke']['f16'][field] = value
+            with self.assertRaises(ValueError):
+                CONSUMER.require_quality_confidence(bad, pins, fixture)
 
 
 if __name__ == '__main__':
