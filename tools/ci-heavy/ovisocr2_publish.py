@@ -120,6 +120,46 @@ def valid_cache_error(value):
     return type(value) in (int, float) and math.isfinite(value) and 0 <= value <= .002
 
 
+def checked_quant_raw_proofs(quality, model_producer, precision, candidate_sha):
+    """Require reviewed raw control, local candidate, and full decoder evidence."""
+    qp = producer(quality)
+    review = quality.get('independent_review', {})
+    run = quality.get('run')
+    artifact = quality.get('raw_diff_artifact', {})
+    source_sha = model_producer.get('reference_artifacts', {}).get('gguf', {}).get('sha256')
+    if (type(run) is not int or run < 1 or qp.get('quant_raw_complete') is not True
+            or review.get('raw_diff_verified') is not True
+            or type(artifact.get('id')) is not int or artifact['id'] < 1
+            or artifact.get('name') != f'ovisocr2-quality-native-diff-{run}'
+            or not sha_field(artifact.get('zip_sha256'))
+            or review.get('raw_diff_artifact_zip_sha256') != artifact['zip_sha256']
+            or not sha_field(source_sha)):
+        raise ValueError('Reviewed quant raw artifact or completeness proof absent')
+    probes = (('quant_first_linear_control', 'f16-first-linear-control', F16_SHA, '0'),
+              ('quant_first_linear', 'first-linear-diff', candidate_sha, '1'),
+              ('quant_numerical', 'official-numerical-diff', candidate_sha, '1'))
+    for key, label, model_sha, quant_gate in probes:
+        row = qp.get(key, {})
+        if (row.get('passed') is not True or row.get('exit_code') != 0
+                or row.get('comparison_coverage') is not True
+                or row.get('first_failure') is not None
+                or row.get('raw_diff_coverage_complete') is not True
+                or row.get('model_sha256') != model_sha
+                or row.get('quant_gate') != quant_gate
+                or row.get('source_reference_sha256') != source_sha
+                or row.get('log') != f'{precision}-{label}.log'
+                or row.get('raw_diff_manifest') != f'{precision}-{label}-raw-manifest.json'
+                or not sha_field(row.get('log_sha256'))
+                or not sha_field(row.get('raw_diff_manifest_sha256'))
+                or not isinstance(row.get('metric_lines'), list) or not row['metric_lines']):
+            raise ValueError('Reviewed quant raw probe differs: ' + key)
+    canonical = hashlib.sha256(json.dumps(qp, sort_keys=True, separators=(',', ':'),
+                                    ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    if review.get('producer_canonical_sha256') != canonical:
+        raise ValueError('Independent quant raw review does not bind the producer')
+    return artifact
+
+
 def checked_first_f16(receipt, model_sha, original_sha, selected):
     """Bind quant selection to the first reviewed eleven-case F16 baseline."""
     value, review = receipt.get('producer'), receipt.get('independent_review')
@@ -321,6 +361,7 @@ def require_receipts(precision, destination=DESTINATION):
             or qp.get('f16_paired_documents', {}).get('screen_passed') is not True):
         raise ValueError('F16 quality screens did not pass')
     calibration_sha = None
+    raw_diff_artifact = None
     cp = {}
     if precision == 'q4-calibrated':
         calibration, calibration_sha = load('ovisocr2-q4-calibrated-calibration.json')
@@ -335,6 +376,8 @@ def require_receipts(precision, destination=DESTINATION):
     if precision != 'f16':
         audit = qp.get('tensor_audit', {})
         numerical = qp.get('quant_numerical', {})
+        raw_diff_artifact = checked_quant_raw_proofs(quality, mp, precision,
+                                                     candidate['sha256'])
         cases = qp.get('native_cases', {}).get(precision, {})
         first = qp.get('first_f16_baseline', {})
         frozen = first_f16['producer']
@@ -485,6 +528,9 @@ def require_receipts(precision, destination=DESTINATION):
             'first_f16_artifact_zip_sha256': first_f16_pins['artifact_zip_sha256'],
             'candidate_artifact_id': candidate_artifact.get('id'),
             'candidate_artifact_zip_sha256': candidate_artifact.get('zip_sha256'),
+            **({'raw_diff_artifact_id': raw_diff_artifact['id'],
+                'raw_diff_artifact_zip_sha256': raw_diff_artifact['zip_sha256']}
+               if raw_diff_artifact else {}),
             'receipt_sha256': {'gpu': gpu_sha, 'model': model_sha, 'public': public_sha,
                                'quality': quality_sha, 'original_quality': original_quality_sha,
                                'first_f16_quality': first_f16_sha,
@@ -608,6 +654,10 @@ def main():
                 pins['candidate_artifact_id'], args.quality_run_id,
                 f'ovisocr2-quality-candidate-{args.quality_run_id}',
                 pins['candidate_artifact_zip_sha256'])
+            report['service_artifacts']['native_diff'] = service_artifact(
+                pins['raw_diff_artifact_id'], args.quality_run_id,
+                f'ovisocr2-quality-native-diff-{args.quality_run_id}',
+                pins['raw_diff_artifact_zip_sha256'])
         if pins['model_run_id'] is not None and int(args.model_run_id) != int(pins['model_run_id']):
             raise ValueError('Model artifact run ID differs from reviewed receipt')
         if pins['quality_run_id'] is not None and int(args.quality_run_id) != int(pins['quality_run_id']):
