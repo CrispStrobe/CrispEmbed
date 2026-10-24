@@ -377,6 +377,10 @@ all measured failures, hashes, sizes and limits. Do not repeat the panels.
    failed with403 namespace creation after exact-artifact verification. Its
    report is preserved. Dedicated publisher binding is corrected; use a fresh
    dispatch at the corrected source, not a rerun of its old credential mapping.
+   Corrected [retry40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
+   is submitted at121dc943. Do not duplicate; review its actual upload/readback.
+   Repository provisioning is complete, but empty-repository creation is not
+   model publication.
    The publisher requires source/license/base, original/native/public/quality,
    all-attempt selection and conditional calibration receipts. Verify immutable
    HF bytes by an empty-cache full download; keep probes outside the five-file

@@ -346,8 +346,11 @@ chooses the qualified first F16 artifact. Actual
 [publication40070360890](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40070360890)
 failed at79c71224 on namespace authorization after exact artifact verification.
 The [initial failure](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
-is preserved; dedicated publisher binding is corrected. Dispatch the corrected
-source once. Then verify immutable full readback, install the actual registry URL/SHA,
+is preserved; dedicated publisher binding is corrected. Corrected
+[retry40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
+is submitted at121dc943; do not duplicate. Repository provisioning is complete,
+but no model upload/readback is yet verified. After its actual success, verify
+immutable full readback, install the actual registry URL/SHA,
 resolve Ovis aliases before CLI/server profile checks, run the actual fresh-cache
 published-consumer audit, then finish exact-source PR79 CI/merge and documentation.
 No model alias, runtime release or app upgrade follows merely from selection.
