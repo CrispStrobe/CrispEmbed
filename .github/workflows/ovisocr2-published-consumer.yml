@@ -1,0 +1,51 @@
+name: OvisOCR2 published alias consumer audit
+
+on:
+  workflow_call:
+    inputs:
+      precision:
+        description: 'Independently published selected precision'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ovisocr2-published-consumer-${{ github.ref }}-${{ inputs.precision }}
+  cancel-in-progress: false
+
+jobs:
+  consumer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      PRECISION: ${{ inputs.precision }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pure fail-closed contract controls
+        run: python tests/test_ovisocr2_published_consumer.py -v
+      - name: Reviewed publication, original/native/public/quality and exact registry gate
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" \
+            python tools/ci-heavy/ovisocr2_published_consumer.py --preflight --precision "$PRECISION"
+      - name: Portable real CLI and HTTP alias download, cache and OCR audit
+        run: python tools/ci-heavy/ovisocr2_published_consumer.py --precision "$PRECISION"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-published-consumer-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
