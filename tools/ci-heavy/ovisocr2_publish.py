@@ -104,6 +104,47 @@ def valid_cache_error(value):
     return type(value) in (int, float) and math.isfinite(value) and 0 <= value <= .002
 
 
+def checked_first_f16(receipt, model_sha, original_sha, selected):
+    """Bind quant selection to the first reviewed eleven-case F16 baseline."""
+    value, review = receipt.get('producer'), receipt.get('independent_review')
+    if not isinstance(value, dict) or not isinstance(review, dict):
+        raise ValueError('First F16 quality producer/review absent')
+    canonical = hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    run = receipt.get('run')
+    inputs = value.get('inputs')
+    cases = value.get('native_cases', {}).get('f16')
+    if (review.get('quality_positive') is not True or review.get('f16_11_complete') is not True
+            or review.get('producer_canonical_sha256') != canonical
+            or type(run) is not int or run < 1
+            or not source_head(receipt.get('source_commit'))
+            or value.get('source_commit') != receipt['source_commit']
+            or type(receipt.get('artifact_id')) is not int or receipt['artifact_id'] < 1
+            or receipt.get('artifact_name') != f'ovisocr2-quality-reports-{run}'
+            or not sha_field(receipt.get('artifact_zip_sha256'))
+            or review.get('artifact_zip_sha256') != receipt['artifact_zip_sha256']
+            or not sha_field(receipt.get('report_sha256'))
+            or value.get('requested_phase') != 'f16'
+            or value.get('status') != 'completed F16 quality observations; independent review pending'
+            or value.get('prerequisite', {}).get('baseline_sha256') != model_sha
+            or value.get('prerequisite', {}).get('original_review_sha256') != original_sha
+            or value.get('selected_vision_preset') != selected
+            or value.get('models', {}).get('f16', {}).get('sha256') != F16_SHA
+            or value.get('f16_paired_synthetic', {}).get('screen_passed') is not True
+            or value.get('f16_paired_documents', {}).get('screen_passed') is not True
+            or not isinstance(inputs, list) or len(inputs) != 11
+            or len({row.get('id') for row in inputs if isinstance(row, dict)}) != 11
+            or not isinstance(cases, dict) or set(cases) !=
+               {row.get('id') for row in inputs if isinstance(row, dict)}
+            or not isinstance(value.get('scores', {}).get('f16'), dict)):
+        raise ValueError('First reviewed F16 quality case/source proof differs')
+    return {'run': run, 'source_commit': receipt['source_commit'],
+            'artifact_id': receipt['artifact_id'],
+            'artifact_zip_sha256': receipt['artifact_zip_sha256'],
+            'report_sha256': receipt['report_sha256'],
+            'producer_canonical_sha256': canonical}
+
+
 def require_license_chain():
     """Check pinned, small public provenance before auth or weight access."""
     if (not LICENSE_CHAIN_PATH.is_file() or digest(LICENSE_CHAIN_PATH) != LICENSE_CHAIN_SHA
@@ -233,6 +274,12 @@ def require_receipts(precision, destination=DESTINATION):
     if (original_quality.get('independent_review', {}).get('original_11_complete') is not True
             or not sha_field(original_quality.get('report_sha256'))):
         raise ValueError('Reviewed original 11-case quality baseline differs')
+    if precision == 'f16':
+        first_f16, first_f16_sha = quality, quality_sha
+    else:
+        first_f16, first_f16_sha = load('ovisocr2-f16-quality.json')
+    first_f16_pins = checked_first_f16(first_f16, model_sha, original_quality_sha,
+                                       selected_vision)
     expected_status = ('completed F16 quality observations; independent review pending'
                        if precision == 'f16' else
                        'completed quantized quality observations; independent review pending')
@@ -273,6 +320,25 @@ def require_receipts(precision, destination=DESTINATION):
         audit = qp.get('tensor_audit', {})
         numerical = qp.get('quant_numerical', {})
         cases = qp.get('native_cases', {}).get(precision, {})
+        first = qp.get('first_f16_baseline', {})
+        frozen = first_f16['producer']
+        if (first.get('run') != first_f16_pins['run']
+                or first.get('source_commit') != first_f16_pins['source_commit']
+                or first.get('receipt_sha256') != first_f16_sha
+                or first.get('artifact_zip_sha256') != first_f16_pins['artifact_zip_sha256']
+                or first.get('report_sha256') != first_f16_pins['report_sha256']
+                or first.get('producer_canonical_sha256') != first_f16_pins['producer_canonical_sha256']
+                or first.get('case_count') != 11
+                or qp.get('prerequisite', {}).get('first_f16_review_sha256') != first_f16_sha
+                or qp.get('inputs') != frozen.get('inputs')
+                or qp.get('scores', {}).get('f16') != frozen.get('scores', {}).get('f16')
+                or qp.get('scores', {}).get('original') != frozen.get('scores', {}).get('original')
+                or not isinstance(qp.get('scores', {}).get('f16_host_control'), dict)
+                or qp.get('f16_host_control', {}).get('native_case_count') != 11
+                or qp.get('f16_host_control', {}).get('paired_synthetic', {}).get('screen_passed') is not True
+                or qp.get('f16_host_control', {}).get('paired_documents', {}).get('screen_passed') is not True
+                or qp.get('paired_synthetic_original', {}).get('screen_passed') is not True):
+            raise ValueError('Quantized quality did not compare with frozen first F16 and HF baselines')
         if (quality.get('independent_review', {}).get('numerical_positive') is not True
                 or audit.get('recipe') != RECIPES[precision]
                 or audit.get('tensor_count') != 473
@@ -338,10 +404,15 @@ def require_receipts(precision, destination=DESTINATION):
             'model_source_commit': mp['source_commit'], 'public_source_commit': pp['source_commit'],
             'quality_source_commit': qp['source_commit'],
             'quality_run_id': quality.get('run') or qp.get('run'),
+            'first_f16_run_id': first_f16_pins['run'],
+            'first_f16_source_commit': first_f16_pins['source_commit'],
+            'first_f16_artifact_id': first_f16_pins['artifact_id'],
+            'first_f16_artifact_zip_sha256': first_f16_pins['artifact_zip_sha256'],
             'candidate_artifact_id': candidate_artifact.get('id'),
             'candidate_artifact_zip_sha256': candidate_artifact.get('zip_sha256'),
             'receipt_sha256': {'gpu': gpu_sha, 'model': model_sha, 'public': public_sha,
                                'quality': quality_sha, 'original_quality': original_quality_sha,
+                               'first_f16_quality': first_f16_sha,
                                'quant_attempts': decision_sha,
                                **({'calibration': calibration_sha} if calibration_sha else {})},
             'license_chain': license_chain, 'license_chain_sha256': LICENSE_CHAIN_SHA,
@@ -437,6 +508,10 @@ def main():
                                  '.github/workflows/ovisocr2-metadata.yml'),
             'quality': service_run(args.quality_run_id, pins['quality_source_commit'],
                                    '.github/workflows/ovisocr2-quality.yml')}
+        if args.precision != 'f16':
+            report['service_runs']['first_f16'] = service_run(
+                pins['first_f16_run_id'], pins['first_f16_source_commit'],
+                '.github/workflows/ovisocr2-quality.yml')
         report['service_artifacts'] = {
             'model_reports': service_artifact(
                 pins['model_report_artifact_id'], args.model_run_id,
@@ -447,6 +522,10 @@ def main():
                 f'ovisocr2-model-reference-{args.model_run_id}',
                 pins['model_reference_artifact_zip_sha256'])}
         if args.precision != 'f16':
+            report['service_artifacts']['first_f16_reports'] = service_artifact(
+                pins['first_f16_artifact_id'], pins['first_f16_run_id'],
+                f"ovisocr2-quality-reports-{pins['first_f16_run_id']}",
+                pins['first_f16_artifact_zip_sha256'])
             report['service_artifacts']['candidate'] = service_artifact(
                 pins['candidate_artifact_id'], args.quality_run_id,
                 f'ovisocr2-quality-candidate-{args.quality_run_id}',
