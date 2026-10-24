@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, and [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen | Native F16 quality40056641800 is running; no task-quality qualification yet. Next review that actual output, then protected Q8/Q4/development-only calibrated Q4 outcomes, conditional publication, real alias and final PR79 integration. Preserve initial12/14 failures and raw strict flags. No Ovis weights/alias published. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) is independently qualified | Protected Q8 [40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357) is submitted; review its actual output, then Q4/development-only calibrated Q4, conditional publication, real alias, consumer audit and final PR79 integration. Preserve initial12/14 failures and raw strict flags. No Ovis weights/alias published. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -234,7 +234,7 @@ pin both native-off options and pass the release CPU-baseline checker before
 compilation. [Reviewed flags and log hashes](../tests/results/packaging/development-cpu-baseline.json).
 Cross-host installed bundle reuse and successor release assets remain separate.
 
-## Ovis — native and public parity complete; F16 task quality running
+## Ovis — native, public and first F16 quality reviewed; quantization pending
 
 Frontend PR78 merged918c1c8d after exact pixels/IDs/grids/masks/template,
 Unicode and negative controls40017014043. Controlled original GPU recipe5fe3fc90
@@ -288,20 +288,52 @@ exact text and bounded confidence. The frozen
 at a0784b19 has all11 EOS248046/no cap, eight synthetic WER0 cases and15/15
 inventory cells under the predeclared Ovis presentation policy. Its raw
 newline CER, high realistic document text errors and strict-v1 border parse
-failures remain visible. First native F16 quality
-[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
-is running; no F16 task-quality receipt exists yet. Require its actual eleven
-IDs/stops/caps, CER/WER, format, confidence and table result against the frozen
-original, then run and review protected Q8, Q4 and four-development-image
+failures remain visible. The independently reviewed
+[first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+at638380f6 completes all eleven cases. Its1,841 generated IDs, raw text and
+processed text match frozen original HF case by case; every case stops at
+EOS248046 without a cap hit. The eight authored cases have WER0, the inventory
+has15/15 cells, and bounded synthetic/document paired screens pass. Its
+F16 GGUF remains the qualified `d3a733a5...` checkpoint, not a published model.
+The first F16 wrapper was frozen at8b421ba5 with file SHA-256
+`ff68a1cd4c4cc74b5092b748a69bd61c29b80c823b1d4219985ee3595c508bd6`.
+Its small report artifact is12547361841 (`ovisocr2-quality-reports-40056641800`),
+ZIP SHA-256 `e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f`;
+the producer JSON SHA-256 is `648b2c252b08e1e56008fe81b2ce5aa9c1390eaf9cf93b7b8e5699303cf0925e`.
+Reuse the reviewed wrapper and small report for quant source/score gates.
+The first native run used an AMD EPYC7763 CPU with two threads; original HF ran
+on a different CPU. Per-case wall times and cumulative child RSS are diagnostic;
+do not claim a paired speed result or eleven-case identity across hosts.
+
+Quant phases use the immutable first F16 eleven-case scores, original inputs
+and independent review. The reusable
+[quality workflow](../.github/workflows/ovisocr2-quality.yml) defaults its
+quant host control to one actual `dev-hello` F16 case after exact source-tree,
+ggml gitlink, runner/environment/CMake AST, package and thread checks against
+the first run: ten Git tree/blob paths, six AST contracts and25 recorded
+native source hashes must agree. Its actual PNG/RGB, nine IDs, text, EOS,
+cap, confidence, wall time and cumulative RSS upper bound are recorded.
+Direct driver calls default
+to the original `full` eleven-case host control; the workflow also accepts
+`full`. The short control supports only a one-case host check. The full
+eleven-case F16 quality baseline remains the first reviewed run, while each
+quantized candidate still runs all eleven cases, the complete original
+numerical comparison and a retained before/after 473-tensor audit. Calibrated
+Q4 additionally retains the small development importance files separately
+from the large candidate GGUF.
+
+Protected Q8 [40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+is submitted; no reviewed Q8 result is available yet. Review its actual
+numeric, OCR, table and confidence evidence, then Q4 and four-development-image
 calibrated Q4 separately. Q4 requires a reviewed complete Q8 diagnostic, not
-positive Q8 quality. Conditional publication additionally requires the
-license chain, all actual attempt outcomes, qualified candidate hash and
-immutable empty-cache HF readback. Finish real alias and PR79 integration only
-after qualification.
+positive Q8 quality. Conditional publication requires the license chain, all
+actual attempt outcomes, qualified candidate hash and immutable empty-cache
+HF readback. Only then finish the real registry alias, CLI/server alias loader,
+published consumer test and PR79 integration.
 The optional [M1 build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/8b13e839/docs/handover-m1-ovisocr2.md)
 is a build-only fallback; the current original backend-control protocol is Linux.
 The app remains pinned0.17.12. No Ovis model weights or alias are published.
 
-See the active Ovis sequence in [PLAN](../PLAN.md). Native and public smoke
-receipts are complete; native quality, all three quantization/calibration
-outcomes and conditional publication remain open.
+See the active Ovis sequence in [PLAN](../PLAN.md). Native, public and first
+F16 quality receipts are complete; all three quantization/calibration outcomes
+and conditional publication remain open.
