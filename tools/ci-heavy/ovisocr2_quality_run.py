@@ -619,30 +619,169 @@ def parse_numerical_diagnostic(log_text, exit_code):
             'limits': 'Original F32/F16 absolute and cosine thresholds are diagnostic for quantized weights; failure does not identify a float-runtime bug'}
 
 
-def numerical_diagnostic(binary, candidate, reference, phase, out, report, save, selection):
-    label = phase + '-official-numerical-diff'
+def parse_first_linear_diagnostic(log_text, exit_code):
+    """Require the observed first linear operation only, without decoder coverage."""
+    result = parse_numerical_diagnostic(log_text, exit_code)
+    expected = {f'{phase}.linear.0.{stage}' for phase in ('prefill', 'cached')
+                for stage in ('input', 'qkv', 'z', 'a', 'b', 'norm', 'output')}
+    expected |= {f'{phase}.cache.0.{stage}' for phase in ('prefill', 'cached')
+                 for stage in ('conv_states', 'recurrent_states')}
+    actual = {row['stage'] for row in result['metrics']}
+    result['local_expected_stages'] = sorted(expected)
+    result['local_missing_stages'] = sorted(expected - actual)
+    result['comparison_coverage'] = actual == expected
+    result['passed'] = bool(exit_code == 0 and result['first_failure'] is None
+                            and result['comparison_coverage']
+                            and all(row['verdict'] == 'PASS' and row['finite']
+                                    for row in result['metrics']))
+    result['scope'] = 'First linear attention block only; no decoded OCR or full decoder claim'
+    return result
+
+
+def frozen_numerical_shapes(reference, baseline_producer):
+    """Bind extracted original stage shapes to the reviewed 943-stage capture SHA."""
+    original = Path(reference).with_name('ovisocr2-original.json')
+    expected = baseline_producer['original_capture']['sha256']
+    if sha(original) != expected:
+        raise ValueError('Frozen original numerical stage JSON SHA differs')
+    data = json.loads(original.read_text())
+    stages = data.get('stages')
+    if (not isinstance(stages, dict) or len(stages) != 943
+            or data.get('missing_stages') != []
+            or any(not isinstance(shape, list) or not shape
+                   or any(type(dim) is not int or dim <= 0 for dim in shape)
+                   for shape in stages.values())):
+        raise ValueError('Frozen original numerical stage shapes incomplete')
+    return stages, expected
+
+
+def first_linear_weight_records(tensor_records):
+    """Bind the first operation's nine loaded GGUF weights to the tensor audit."""
+    suffixes = ('in_proj_qkv.weight', 'in_proj_z.weight', 'in_proj_a.weight',
+                'in_proj_b.weight', 'out_proj.weight', 'conv1d.weight',
+                'A_log', 'dt_bias', 'norm.weight')
+    names = ['l.layers.0.linear_attn.' + suffix for suffix in suffixes]
+    result = {}
+    for precision in ('before', 'after'):
+        records = tensor_records.get(precision, {})
+        if any(name not in records for name in names):
+            raise ValueError('First linear operation GGUF tensor record absent: ' + precision)
+        result[precision] = {name: records[name] for name in names}
+    return {'weights': result,
+            'scope': 'Actual F16 and candidate GGUF tensor hashes/types/shapes; activations compared separately'}
+
+
+def quant_raw_diff_manifest(folder, stages, metric_lines, trace_lines, phase, probe, capture_sha):
+    """Inventory every actual Ref.compare dump against original F32 stage shapes."""
+    folder = Path(folder)
+    observed_lines = [match.group(1) for line in metric_lines
+                      if (match := re.match(r'^(?:PASS|FAIL) ([A-Za-z0-9_.]+): cos_min=', line))]
+    observed_lines += [match.group(1) for line in trace_lines
+                       if (match := re.match(r'^TRACE ([A-Za-z0-9_.]+) ', line))]
+    observed = set(observed_lines)
+    duplicates = sorted(name for name in observed if observed_lines.count(name) != 1)
+    required = set(observed)
+    if probe == 'decoder':
+        required |= {f'{part}.decoder.layer.{index}' for part in
+                     ('prefill', 'cached', 'full_prefix') for index in range(24)}
+        required |= {name for name in stages if re.fullmatch(r'generated\.scores\.\d+', name)}
+        required.add('generated.scores.0')
+    elif probe == 'first-linear':
+        required |= set(parse_first_linear_diagnostic('', 1)['local_expected_stages'])
+    else:
+        raise ValueError('Unknown quant raw diff probe')
+    records, invalid = [], []
+    for path in sorted(folder.glob('*.f32')):
+        stage = path.name[:-4]
+        shape = stages.get(stage)
+        shape_valid = (isinstance(shape, list) and bool(shape)
+                       and all(type(dim) is int and dim > 0 for dim in shape))
+        if not shape_valid:
+            invalid.append(stage + ': frozen original shape absent')
+        expected_bytes = math.prod(shape) * 4 if shape_valid else None
+        actual_bytes = path.stat().st_size
+        if shape_valid and actual_bytes != expected_bytes:
+            invalid.append(stage + ': raw F32 byte count differs')
+        records.append({'stage': stage, 'file': f'native-diff/{phase}/{probe}/{path.name}',
+                        'original_shape': shape if shape_valid else None, 'bytes': actual_bytes,
+                        'expected_bytes': expected_bytes, 'sha256': sha(path)})
+    actual = {row['stage'] for row in records}
+    missing = sorted(required - actual)
+    unexpected = sorted(actual - observed)
+    return {'phase': phase, 'probe': probe, 'original_capture_sha256': capture_sha,
+            'observed_metric_stages': sorted(observed), 'required_stages': sorted(required),
+            'missing_stages': missing, 'unreported_dump_stages': unexpected,
+            'duplicate_observed_stages': duplicates,
+            'invalid_files': invalid, 'file_count': len(records), 'files': records,
+            'coverage_complete': bool(observed) and not missing and not invalid
+                                 and not unexpected and not duplicates,
+            'scope': 'Actual native Ref.compare/TRACE raw F32 vectors; shapes from frozen original JSON'}
+
+
+def quant_probe(binary, candidate, reference, phase, out, scratch, report, save,
+                selection, stages, capture_sha, probe):
+    label = phase + ('-official-numerical-diff' if probe == 'decoder' else '-first-linear-diff')
+    dump = Path(scratch) / 'native-diff' / phase / probe
+    dump.mkdir(parents=True, exist_ok=True)
+    env = numerical_environment(phase, selection)
+    env['CRISPEMBED_DIFF_DUMP_DIR'] = str(dump)
     path = out / (label + '.log')
     started = time.monotonic()
     exit_code, error = None, None
     with path.open('w') as stream:
         try:
-            completed = subprocess.run([str(binary), str(candidate), str(reference), '--native-frontend'],
+            args = [str(binary), str(candidate), str(reference)]
+            args += ['--native-frontend'] if probe == 'decoder' else ['--first-layer']
+            completed = subprocess.run(args,
                                        stdout=stream, stderr=subprocess.STDOUT,
-                                       env=numerical_environment(phase, selection), timeout=1800)
+                                       env=env, timeout=1800)
             exit_code = completed.returncode
         except (OSError, subprocess.TimeoutExpired) as exc:
             error = type(exc).__name__
             stream.write('\nDiagnostic process error: ' + error + '\n')
-    result = parse_numerical_diagnostic(path.read_bytes(), exit_code)
+    parser = parse_numerical_diagnostic if probe == 'decoder' else parse_first_linear_diagnostic
+    result = parser(path.read_bytes(), exit_code)
     result.update({'log': path.name, 'log_sha256': sha(path), 'wall_seconds': time.monotonic() - started,
                    'source_reference_sha256': sha(reference),
                    'process_error': error,
                    'source_thresholds': {'cos_min': 0.99999, 'absolute_base': 0.002,
                                          'calibration': 'unchanged named original backend variation'},
                    'selected_vision_preset': selection})
-    report['quant_numerical'] = result
+    try:
+        manifest = quant_raw_diff_manifest(dump, stages, result['metric_lines'],
+                                           result['trace_lines'], phase, probe, capture_sha)
+        manifest_path = out / (label + '-raw-manifest.json')
+        manifest_path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + '\n')
+        result['raw_diff_manifest'] = manifest_path.name
+        result['raw_diff_manifest_sha256'] = sha(manifest_path)
+        result['raw_diff_coverage_complete'] = manifest['coverage_complete']
+        if not manifest['coverage_complete']:
+            result['passed'] = False
+    except (OSError, ValueError, TypeError) as exc:
+        result['raw_diff_error'] = type(exc).__name__
+        result['raw_diff_coverage_complete'] = False
+        result['passed'] = False
+    report['quant_numerical' if probe == 'decoder' else 'quant_first_linear'] = result
     save()
     return result
+
+
+def quant_numerical_diagnostics(build, candidate, reference, phase, out, report, save,
+                               selection, scratch):
+    """Run both bounded probes; reusable by candidate-only hosted raw replay."""
+    baseline = json.loads(BASELINE.read_text())['producer']
+    stages, capture_sha = frozen_numerical_shapes(reference, baseline)
+    results = {}
+    for probe, target in (('first-linear', 'test-qwen35-linear'),
+                          ('decoder', 'test-qwen35-decoder')):
+        results[probe] = quant_probe(Path(build) / target, candidate, reference, phase,
+                                     out, scratch, report, save, selection,
+                                     stages, capture_sha, probe)
+    results['raw_complete'] = all(results[probe]['raw_diff_coverage_complete']
+                                  for probe in ('first-linear', 'decoder'))
+    report['quant_raw_complete'] = results['raw_complete']
+    save()
+    return results
 
 
 def validate_reused_original(previous, current, cases, rendered, contract, profile, readme_sha):
@@ -1435,7 +1574,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
                 out, report, timeout=120)
         targets = ['test-ovisocr2-quality-run', 'crispembed-shared', 'crispembed-quantize']
         if phase in ('q8', 'q4', 'q4-calibrated'):
-            targets.append('test-qwen35-decoder')
+            targets.extend(('test-qwen35-linear', 'test-qwen35-decoder'))
         if phase == 'q4-calibrated':
             targets.append('test-qwen35-imatrix')
         command('native-build', ['cmake', '--build', build, '--config', 'Release', '--target',
@@ -1446,6 +1585,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         report['native_binary_sha256'] = {p.name: sha(p) for p in
                                           [runner, library, quantizer,
                                            *([build / 'test-qwen35-decoder'] if diff_reference else []),
+                                           *([build / 'test-qwen35-linear'] if diff_reference else []),
                                            *([build / 'test-qwen35-imatrix'] if phase == 'q4-calibrated' else [])]}
         report['native_source_sha256'] = {
             str(p.relative_to(ROOT)): sha(p) for p in
@@ -1516,11 +1656,12 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         report['tensor_audit'] = contract.validate_quant_tensors(
             before_tensors, after_tensors, recipe)
         report['tensor_records'] = {'before': before_tensors, 'after': after_tensors}
+        report['first_linear_weights'] = first_linear_weight_records(report['tensor_records'])
         save()
         report['phase'] = phase + '-official-numerical-diagnostic'
         save()
-        numerical_diagnostic(build / 'test-qwen35-decoder', candidate, diff_reference,
-                             phase, out, report, save, selection)
+        quant_numerical_diagnostics(build, candidate, diff_reference, phase, out,
+                                    report, save, selection, scratch)
         report['phase'] = phase + '-native-quality'
         save()
         outputs = native_cases(runner, candidate, cases, cleaner, filter_fn, out, report, save,
@@ -1541,6 +1682,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
                 or not report['paired_synthetic_original']['screen_passed']
                 or any(not result['screen_passed'] for result in report['paired_documents'].values())):
             raise ValueError('Quantized paired OCR quality screen failed; observations retained')
+        if report['quant_raw_complete'] is not True:
+            raise ValueError('Quantized native raw diagnostic capture incomplete; quality observations retained')
         if report['quant_numerical']['passed'] is not True:
             raise ValueError('Quantized numerical diagnostic failed; quality observations retained')
         report['status'] = 'completed quantized quality observations; independent review pending'

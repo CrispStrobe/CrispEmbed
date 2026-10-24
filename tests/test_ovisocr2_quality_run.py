@@ -22,6 +22,116 @@ spec.loader.exec_module(driver)
 
 
 class QualityDriverControls(unittest.TestCase):
+    def test_first_linear_local_parser_requires_every_observed_operation(self):
+        expected = driver.parse_first_linear_diagnostic('', 1)['local_expected_stages']
+        def line(stage):
+            return (f'PASS {stage}: cos_min=1 cos_global=1 '
+                    'max_abs=0 mean_abs=0 norms=1/1')
+        complete = '\n'.join(map(line, expected))
+        positive = driver.parse_first_linear_diagnostic(complete, 0)
+        self.assertTrue(positive['passed'])
+        self.assertEqual(len(expected), 18)
+        self.assertEqual(positive['decoder_layer_count'], 0)
+        self.assertFalse(driver.parse_first_linear_diagnostic(
+            '\n'.join(map(line, expected[:-1])), 0)['comparison_coverage'])
+        self.assertFalse(driver.parse_first_linear_diagnostic(
+            complete.replace('PASS ', 'FAIL ', 1), 1)['passed'])
+
+    def test_raw_quant_manifest_inventories_metrics_traces_and_partial_vectors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            metrics = ['PASS prefill.decoder.layer.0: cos_min=1 cos_global=1 '
+                       'max_abs=0 mean_abs=0 norms=1/1']
+            traces = ['TRACE prefill.attention.3.input max_abs=0 cos=1 norms=1/1']
+            stages = {'prefill.decoder.layer.0': [2], 'prefill.attention.3.input': [1]}
+            (folder/'prefill.decoder.layer.0.f32').write_bytes(b'12345678')
+            (folder/'prefill.attention.3.input.f32').write_bytes(b'1234')
+            manifest = driver.quant_raw_diff_manifest(
+                folder, stages, metrics, traces, 'q8', 'decoder', 'a'*64)
+            self.assertEqual(manifest['file_count'], 2)
+            self.assertIn('prefill.attention.3.input', manifest['observed_metric_stages'])
+            self.assertIn('cached.decoder.layer.0', manifest['missing_stages'])
+            self.assertFalse(manifest['coverage_complete'])
+            first = manifest['files'][0]
+            self.assertEqual(first['sha256'], driver.sha(folder/(first['stage']+'.f32')))
+            (folder/'prefill.attention.3.input.f32').write_bytes(b'bad')
+            changed = driver.quant_raw_diff_manifest(folder, stages, metrics, traces,
+                                                     'q8', 'decoder', 'a'*64)
+            self.assertTrue(changed['invalid_files'])
+
+    def test_first_linear_dump_and_weight_records_fail_closed(self):
+        expected = driver.parse_first_linear_diagnostic('', 1)['local_expected_stages']
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            shapes = {stage: [1] for stage in expected}
+            metrics = [f'PASS {stage}: cos_min=1 cos_global=1 max_abs=0 '
+                       'mean_abs=0 norms=1/1' for stage in expected]
+            for stage in expected:
+                (folder/(stage+'.f32')).write_bytes(b'\0'*4)
+            manifest = driver.quant_raw_diff_manifest(folder, shapes, metrics, [],
+                                                      'q4', 'first-linear', 'a'*64)
+            self.assertTrue(manifest['coverage_complete'])
+            (folder/(expected[0]+'.f32')).unlink()
+            self.assertFalse(driver.quant_raw_diff_manifest(folder, shapes, metrics, [],
+                             'q4', 'first-linear', 'a'*64)['coverage_complete'])
+        names = [f'l.layers.0.linear_attn.{name}' for name in (
+            'in_proj_qkv.weight', 'in_proj_z.weight', 'in_proj_a.weight',
+            'in_proj_b.weight', 'out_proj.weight', 'conv1d.weight',
+            'A_log', 'dt_bias', 'norm.weight')]
+        records = {'before': {name: {'type': 'F16'} for name in names},
+                   'after': {name: {'type': 'Q8_0'} for name in names}}
+        self.assertEqual(len(driver.first_linear_weight_records(records)['weights']['after']), 9)
+        del records['after'][names[0]]
+        with self.assertRaisesRegex(ValueError, 'First linear operation'):
+            driver.first_linear_weight_records(records)
+
+    def test_both_quant_probes_run_after_first_numeric_failure(self):
+        calls = []
+
+        def fake_probe(*args):
+            probe = args[-1]
+            calls.append(probe)
+            return {'passed': False, 'raw_diff_coverage_complete': True}
+
+        report = {}
+        with patch.object(driver, 'frozen_numerical_shapes', return_value=({}, 'a'*64)), \
+                patch.object(driver, 'quant_probe', side_effect=fake_probe):
+            result = driver.quant_numerical_diagnostics(
+                Path('/unused'), Path('/unused.gguf'), Path('/unused.ref'), 'q8',
+                Path('/unused-out'), report, lambda: None, {}, Path('/unused-scratch'))
+        self.assertEqual(calls, ['first-linear', 'decoder'])
+        self.assertTrue(result['raw_complete'])
+        self.assertTrue(report['quant_raw_complete'])
+        self.assertFalse(result['decoder']['passed'])
+
+    def test_frozen_stage_shapes_bind_exact_original_json_sha(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            reference = folder/'official-delta.gguf'
+            original = folder/'ovisocr2-original.json'
+            original.write_text(json.dumps({'stages': {f'stage.{i}': [1] for i in range(943)},
+                                            'missing_stages': []}))
+            producer = {'original_capture': {'sha256': driver.sha(original)}}
+            shapes, digest = driver.frozen_numerical_shapes(reference, producer)
+            self.assertEqual(len(shapes), 943)
+            self.assertEqual(digest, driver.sha(original))
+            original.write_text(original.read_text().replace('"stage.0": [1]', '"stage.0": [2]'))
+            with self.assertRaisesRegex(ValueError, 'SHA differs'):
+                driver.frozen_numerical_shapes(reference, producer)
+
+    def test_quant_workflow_uploads_raw_separately(self):
+        workflow = (ROOT/'.github/workflows/ovisocr2-quality.yml').read_text()
+        self.assertIn('ovisocr2-quality-native-diff-${{ github.run_id }}', workflow)
+        self.assertIn('/ovis-quality/native-diff/', workflow)
+        source = (ROOT/'tests/test_qwen35_linear.cpp').read_text()
+        self.assertIn('std::string(argv[3]) == "--first-layer"', source)
+        self.assertIn('if (first_layer && index > 0) break;', source)
+        original = subprocess.check_output(['git', 'show',
+            '638380f6:tests/test_qwen35_linear.cpp'], cwd=ROOT, text=True)
+        def compare_body(text):
+            return text.split('static bool compare(', 1)[1].split('static bool include(', 1)[0]
+        self.assertEqual(compare_body(source), compare_body(original))
+
     def test_short_control_is_explicit_and_full_driver_default_remains(self):
         self.assertEqual(inspect.signature(driver.run_main).parameters[
             'f16_host_control'].default, 'full')
