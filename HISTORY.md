@@ -14837,3 +14837,46 @@ quant raw/candidate checks remain. A regression expires only the selected F16
 quality artifact and confirms rejection before upload;23 publisher controls
 and8 published-consumer controls pass. This is tooling validation, not a
 publication or consumer result.
+
+
+## 24 October 2026 — Development-only calibrated Ovis Q4 completes and is rejected
+
+[40066574754](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40066574754)
+at7924d850 completes all eleven candidate cases, the same-run F16 host/local
+controls, full numerical diagnostic and473-tensor audit. Candidate1119141376
+bytes/SHA `6e5983e0a328c3ae507936990b5d85c75c5e257263625658e6a04b98e9f027cb`
+has72 Q4_K FFN/78 Q8_0 attention/89 F16/234 F32 tensors; all323 protected
+records remain byte exact. F16 first-linear control passes18/18. Candidate
+first QKV max0.0564889908/cosine0.999990225 matches the Q8 projection diagnostic;
+full first hidden error grows to0.021024704/cosine0.998080194. Candidate local
+12/18 and composed183/189 metrics fail unchanged gates, despite exact readable
+nine IDs/text/EOS. All261 raw manifest names/shapes/bytes are verified against
+the original943-stage map; large payloads remain remote.
+
+Eight synthetic ID/text sequences match first F16; all11 cases reach EOS without
+caps. Receipt882→468 tokens worsens content CER/WER0.0533854/0.222222→0.0703125/0.319444.
+Two-column697→699 tokens improves raw/content CER/WER. Inventory retains174
+tokens/all15 exact cells but raw CER/WER increase1.272727/0.625→1.278788/0.65625.
+Both original/F16 document nonregression screens fail. Smaller/faster and correct
+cells cannot override retained numerical/document failures.
+[Complete producer, raw manifests and independent review](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json).
+
+Independent [calibration provenance](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-calibration.json)
+is positive separately from the negative candidate. The exact four development
+PNGs/RGB/collector IDs/EOS match first F16; no heldout or document enters
+calibration. Standard-library parsing verifies72 vectors with1327 rows each,
+widths1024/3584, finite nonnegative nonzero statistics, every F32-cast SHA and
+all72 exact GGUF payloads. Quantizer applies all72 importance vectors.
+Stats2562821 bytes/SHA `f944107bdb97e739dc3317d8361861f95e4412f769f534ef150eeeaf6578f9fb`;
+imatrix549440 bytes/SHA `80ca50f185e89c178a7f9cbe41f9b79a193a09b246f304958bddf6428e2e896d`.
+
+Small report12550642557 is4934025 bytes/SHA
+`0eee2adf5a4a7c45636cc17c98514f785b8d34dee9c7084970c558e2d2aa9dbd`;
+raw report SHA `36859aaae06fe4c15cd030955312941e460fdd4960f91b2438767762585fdebb`.
+Candidate12550513447:934639093 bytes/SHA
+`3d75f850e85d237dbff896241911917235816c3cea15ade7ac8fbc41152f205f`;
+raw12550667524:183583702 bytes/SHA
+`aa5fd78aceda0efeeb893486deea13fe5808f7e4108054fa91ebb5cd57f60067`.
+Large ZIPs remain remote with service digest verification only; expire22 January2027.
+Source/log hashes, exact first-F16 baseline, ten Git OID pairs, six AST contracts,
+25 native source hashes and recomputed unchanged scores independently pass.

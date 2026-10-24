@@ -6518,3 +6518,31 @@ nine-ID match does not override the earlier two-column quality regression.
 All243 raw vectors are retained remotely with verified manifest shapes/byte
 counts; local review used small reports and service metadata only. Four-thread
 numerical tests on EPYC9V45 are diagnostic, not production latency measurements.
+
+
+## Ovis calibrated Q4 — mixed quality, rejected, 24 October 2026
+
+[Actual40066574754](tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json)
+measures1119141376 bytes (1.119GB), with72 FFN Q4_K matrices and78 attention
+Q8_0 matrices. Four development-only images produce72 importance vectors;
+independent GGUF/statistics proof passes. First source-fed QKV max0.0564889908
+is unchanged from Q8; first composed hidden error0.021024704/cosine0.998080194
+fails unchanged thresholds. The same-run F16 local control passes18/18.
+
+| Document | First F16 content CER/WER | Calibrated Q4 content CER/WER | F16 → candidate tokens |
+| --- | --- | --- | --- |
+| Receipt | 0.0533854 /0.222222 | 0.0703125 /0.319444 | 882 →468 |
+| Two-column | 0.1107011 /0.185252 | 0.0959410 /0.165468 | 697 →699 |
+| Inventory | 0 /0,15 exact cells | 0 /0,15 exact cells | 174 →174 |
+
+Inventory raw CER/WER worsens1.272727/0.625→1.278788/0.65625. All11 cases reach
+EOS/no caps, eight synthetic IDs/text remain exact. Both original/F16 document
+screens fail; improved two-column quality cannot compensate for regressions.
+
+Native recognition walls on EPYC9V45/four logical CPUs/two inference threads:
+Hello26.0617s, receipt324.0875s, two-column478.9670s, inventory130.3026s. Collector
+145.8085s and quantizer23.9241s are separate command timings. Maximum cumulative
+child RSS4342928KiB is an upper bound, including earlier child commands, not a
+fresh per-case peak. F16's first panel used EPYC7763; no paired document speed
+ratio follows. First-F16 one-case host control is29.2631s. Numerical probes use
+four native threads, separately from two-thread quality inference.
