@@ -6391,3 +6391,54 @@ in every passing arm; existing original-backend variation budgets pass without
 any changed threshold or comparator. This is component evidence, not decoded
 quality. Baseline/two-forward test wall times33.98/34.33 seconds versus selected
 60.67/60.77 include loading, dumps and controls; one case is not production latency.
+
+
+## Ovis full native and public audit — 24 October 2026
+
+[Native40049244654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40049244654)
+at a2a17735 passes all fourteen F32/F16 arms against the unchanged943-field
+reference: delta state/reset, vision, prepared decoder, native vision/positions,
+full frontend and owning-context lifecycle. Each full frontend has189 comparisons;
+minimum printed cosine0.99999994 and maximum absolute errors0.0016772747 F32 /
+0.00183558464 F16. Actual nine IDs end at EOS248046 and decode exactly to
+`Hello OCR\n\n12345`. Context confidence maximum error is2.62314e-7. Existing
+vision backend budgets pass; the four raw strict0.002 exceedances remain visible.
+[Reviewed producer and limits](tests/results/qwen35-ocr/ovisocr2-model-audit.json).
+
+The F32/F16 frontend command walls60.87/64.23 seconds include loads, raw dumps
+and controls. Context walls238.48/364.38 seconds include repeated initialization,
+multiple contexts and recovery. These are audit-command costs, not production
+OCR latency. This replay does not record its own CPU fingerprint; do not infer
+cross-hardware speed from its original reference CPU metadata.
+
+[Public40053283383](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40053283383)
+at b33c5bad passes27 arms across C/Python/CLI/HTTP/Rust/Dart. Actual text is exact;
+C mean confidence0.9953882694244385 and printed CLI0.995 differ0.0003882694,
+within the pre-existing0.0006 formatting allowance. The six interfaces establish
+one-image reachability, gate/profile/prompt rejection, ABI layout and model-cache
+recovery. They do not establish eleven-case task quality or expose public token
+IDs/stops. [Full public evidence](tests/results/qwen35-ocr/ovisocr2-public-surfaces.json).
+
+## Ovis frozen original HF quality — 24 October 2026
+
+[Original40054043629](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40054043629)
+at a0784b19 completes all eleven cases on the frozen pixels, before native
+candidate task outputs. All reach EOS248046 without caps; all eight synthetic
+cases have WER0. The three realistic documents remain a bounded evaluation.
+
+| Original HF document | Actual tokens | Raw CER / WER | Parsed content CER / WER | Generation wall seconds |
+| --- | --- | --- | --- | --- |
+| Historical receipt | 882 | 1.34114583 /0.74305556 | 0.05338542 /0.22222222 | 149.6715 |
+| Two-column page | 697 | 0.13518953 /0.18705036 | 0.11070111 /0.18525180 | 117.7048 |
+| Inventory table | 174 | 1.27272727 /0.625 | 0 /0 | 32.2243 |
+
+Inventory has15/15 exact controlled cells. Raw errors retain actual Markdown/HTML;
+the separately frozen Ovis integer-border presentation view parses tables while
+preserving the strict-v1 receipt/inventory parse failures and raw metrics.
+Actual CPU is AMD EPYC9V74, four logical/affinity CPUs with two OMP/MKL/OpenBLAS
+threads. Process high-water RSS5601852KiB includes the loaded original model
+and is a per-case upper bound. Generation timing includes confidence extraction
+and decoding, excludes processor preparation; it is not directly comparable to
+GPU engine or native initialization/audit-command timings. No native task or
+quantized quality claim follows from these original-only scores.
+[Full original outputs, source hashes and independent review](tests/results/qwen35-ocr/ovisocr2-original-quality.json).
