@@ -31,7 +31,7 @@ class OvisAdapterContract(unittest.TestCase):
         self.assertIn("ctx->ovis", case)
         self.assertIn("ctx->qwen35", case)
 
-    def test_cli_and_server_require_explicit_model_without_registry_alias(self):
+    def test_cli_and_server_require_explicit_model_and_no_default_alias(self):
         cli = (ROOT / "examples/cli/main.cpp").read_text()
         server = (ROOT / "examples/server/server.cpp").read_text()
         for source in (cli, server):

@@ -1358,6 +1358,11 @@ static int cli_main(int argc, char ** argv) {
                     "error: experimental ovisocr2 needs --ocr-rec FILE, an empty custom prompt, and all three gates\n");
                 return 1;
             }
+            // Resolve the qualified Ovis alias before checking its exact profile.
+            if (eid == 21) {
+                ocr_rec_path = resolve(ocr_rec_path);
+                if (ocr_rec_path.empty()) return 1;
+            }
             if (eid == 20 || eid == 21) {
                 auto * meta = core_gguf::open_metadata(ocr_rec_path.c_str());
                 const bool profile =

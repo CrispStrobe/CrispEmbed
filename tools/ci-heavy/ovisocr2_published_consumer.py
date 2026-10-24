@@ -158,8 +158,24 @@ def preflight(precision):
     if sha(quality_path) != pins['receipt_sha256']['quality']:
         raise ValueError('Selected quality receipt SHA differs from publisher gate')
     quality = json.loads(quality_path.read_text())
+    publication['native_source_closure'] = require_native_source_closure(quality)
     reference = require_quality_confidence(quality, pins, fixture)
     return publication, fixture, reference
+
+
+def require_native_source_closure(receipt, root=ROOT):
+    """Keep an alias smoke from substituting for changed-model qualification."""
+    producer = receipt.get('producer', {})
+    sources = producer.get('native_source_sha256')
+    if not isinstance(sources, dict) or not sources or not hex_field(producer.get('source_commit'), 40):
+        raise ValueError('Qualified native source map is missing')
+    for relative, expected in sources.items():
+        path = Path(relative)
+        if (path.is_absolute() or '..' in path.parts or not hex_field(expected, 64)
+                or not (root / path).is_file() or sha(root / path) != expected):
+            raise ValueError('Consumer native source differs from qualified quality snapshot: ' + relative)
+    return {'quality_source_commit': producer['source_commit'], 'file_count': len(sources),
+            'source_sha256': sources, 'scope': 'Recorded native files from the selected full quality run'}
 
 
 def require_quality_confidence(receipt, pins, fixture):
@@ -430,6 +446,7 @@ def main():
                                  'receipt_sha256': publication['receipt_sha256'],
                                  'candidate_bytes': publication['remote']['bytes'],
                                  'selected_vision_preset': publication['qualification']['selected_vision_preset']}
+        report['native_source_closure'] = publication['native_source_closure']
         report['native_nine_ids'] = fixture['native_ids']
         report['selected_quality_confidence_reference'] = reference
         report['phase'] = 'preflight-complete'

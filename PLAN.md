@@ -93,7 +93,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all three quant recipes rejected; F16 selected; publication/alias pending |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. DraftPR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all three quant recipes rejected; F16 published/alias wired; actual consumer/final integration pending |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -322,7 +322,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. First vision A/B40046189758 stopped before inference on an archive report-variable error; corrected A/B40047163838 passes two common presets; full frozen replay40049244654, public27-arm40053283383 and original HF11 quality40054043629 are complete. First F16 quality40056641800 matches all eleven Python ID/text outputs; Q8 40061433357 is rejected with all eleven cases retained. All three quant attempts rejected and F16 selected; finish publication/real aliases/consumer/final integration. No default, alias or publication before qualification. |
+| 2026-10-23 | `test/ovisocr2-native-parity` | Complete the bounded Ovis native/API/quality/calibration/publication lane | Original controlled GPU reference passes at5fe3fc90; preserve receipt bytes. Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. First vision A/B40046189758 stopped before inference on an archive report-variable error; corrected A/B40047163838 passes two common presets; full frozen replay40049244654, public27-arm40053283383 and original HF11 quality40054043629 are complete. First F16 quality40056641800 matches all eleven Python ID/text outputs; Q8 40061433357 is rejected with all eleven cases retained. All three quant attempts rejected; F16 published and real alias wired; finish actual consumer/final integration. No default, alias or publication before qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -367,34 +367,36 @@ The [development-only calibration proof](tests/results/qwen35-ocr/ovisocr2-q4-ca
 is positive separately from candidate quality. See HISTORY/PERFORMANCE for
 all measured failures, hashes, sizes and limits. Do not repeat the panels.
 
-1. **Publish selected F16, then real aliases and final integration:** the actual
-   three-attempt review is complete; failed quantized candidates cannot publish.
-   Run `ovisocr2-metadata.yml` on the completion audit branch with phase=publish,
-   publish_precision=f16, native_run_id=40049244654 and
-   publication_quality_run_id=40056641800. The pure receipt gate passes; an
-   actual upload/immutable full readback is still required. Initial
-   [40070360890](tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
-   failed with403 namespace creation after exact-artifact verification. Its
-   report is preserved. Dedicated publisher binding is corrected; use a fresh
-   dispatch at the corrected source, not a rerun of its old credential mapping.
-   Corrected [retry40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
-   is submitted at121dc943. Do not duplicate; review its actual upload/readback.
-   Repository provisioning is complete, but empty-repository creation is not
-   model publication.
-   The publisher requires source/license/base, original/native/public/quality,
-   all-attempt selection and conditional calibration receipts. Verify immutable
-   HF bytes by an empty-cache full download; keep probes outside the five-file
-   model distribution. Then add the actual URL/SHA experimental registry/catalog
-   entries and empty-cache consumer checks. Move the Ovis CLI and HTTP-server
-   profile checks after alias resolution only when a real qualified alias is
-   available, preserving the older engine20 guard behavior. The registered
-   metadata phase=consumer calls `ovisocr2-published-consumer.yml`: it requires
-   the positive publication receipt and real immutable registry/pin, then checks
-   two fresh CLI/HTTP caches, full model hashes, an offline CLI repeat and actual
-   OCR text/confidence. Prepared tooling is not a consumer result.
-   Reconcile the audit branch into PR79, finish exact final-source checks,
-   merge and update public handoffs. No runtime tag, default or app pin change
-   follows from model publication; the app remains immutable0.17.12.
+The [F16 publication](tests/results/qwen35-ocr/ovisocr2-publication.json)
+is independently positive: immutable
+[Hub b7229e46](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07),
+1717222848 bytes/SHA d3a733a5…, hosted empty-cache full readback and exact
+five-file distribution plus `.gitattributes`. Initial namespace denial remains
+preserved; the temporary publisher binding was removed after success. The real
+`ovisocr2-f16` registry URL/SHA is wired; all304 prior pins are unchanged.
+CLI/server Ovis21 resolve aliases before exact profile validation, after gate/
+prompt checks; older engine20 retains its original ordering. All25 recorded
+native source files, complete `src` tree, ggml gitlink and CMake blob still match
+the first qualified F16 source. The consumer now rejects changed recorded
+native source before build; nine pure controls pass. Prepared alias wiring is
+not yet a model-backed consumer result.
+
+1. **Finish actual published consumer:** dispatch `ovisocr2-metadata.yml` on the
+   completion audit branch with phase=consumer and publish_precision=f16.
+   Reuse the positive publication/first-F16/source receipts; no original or
+   eleven-case recapture. The registered `ovisocr2-published-consumer.yml` builds
+   portable CLI/server on hosted CI, checks two genuinely fresh model caches,
+   full hashes, offline CLI repeat, real text/region/confidence against the
+   byte-identical frozen PNG and existing `.0006`/`.00006` printing budgets.
+   Review actual source/binary hashes, logs, native-source closure and all arms;
+   record API limits (no exposed IDs/stop) alongside the frozen native proof.
+2. **Final integration:** reconcile the audit branch into PR79 once, finish
+   exact final-source platform/Flutter/WASM/style/security checks, merge and
+   update public handoffs/HISTORY/PERFORMANCE and the vendor-only CrispMath mirror.
+   Keep failed quantized candidates, initial failures and all strict flags.
+   No runtime tag, default or app pin change follows from model publication;
+   the app remains on immutable0.17.12, development0.17.13. External consumer
+   catalog/provider activation still waits for a compatible immutable library.
 
 Large model/reference/vector artifacts stay remote. Preserve the original871
 archive before21 January2027 and the complete943 source plus native/public/

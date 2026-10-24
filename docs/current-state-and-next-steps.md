@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is complete and rejected for numerical and two-column text regression. All three quantization attempts are rejected; qualified F16 is selected. Initial publication40070360890 failed namespace authorization; corrected publication, real alias, consumer audit and final PR79 integration remain. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; no Ovis model weights or alias published. Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is complete and rejected for numerical and two-column text regression. All three quantization attempts are rejected; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Actual published consumer and final PR79 integration remain. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; no Ovis model weights or alias published. Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 | Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](../tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
 
@@ -438,18 +438,17 @@ Q8 quality wrapper. Earlier pre-model failures and raw strict flags stay in
 HISTORY and their immutable receipts.
 
 [Completed selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
-chooses the qualified first F16 artifact. Actual
-[publication40070360890](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40070360890)
-failed at79c71224 on namespace authorization after exact artifact verification.
-The [initial failure](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
-is preserved; dedicated publisher binding is corrected. Corrected
-[retry40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
-is submitted at121dc943; do not duplicate. Repository provisioning is complete,
-but no model upload/readback is yet verified. After its actual success, verify
-immutable full readback, install the actual registry URL/SHA,
-resolve Ovis aliases before CLI/server profile checks, run the actual fresh-cache
-published-consumer audit, then finish exact-source PR79 CI/merge and documentation.
-No model alias, runtime release or app upgrade follows merely from selection.
+chooses qualified first F16. [Actual publication40074370335](../tests/results/qwen35-ocr/ovisocr2-publication.json)
+at121dc943 passes upload and immutable empty-cache full readback at
+[Hub b7229e46](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07).
+Anonymous tree/small-file verification passes; no probes/test weights are
+included. The [initial403](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
+stays separate; the temporary publisher binding is removed after success.
+The real `ovisocr2-f16` URL/SHA alias and both loader fixes are wired. All25
+recorded native source files and qualified `src`/ggml/CMake objects remain
+unchanged; nine consumer controls pass, including native-source drift rejection.
+Next run and independently review the actual fresh-cache CLI/HTTP/offline/hash/
+text/confidence consumer, then final exact-source PR79 CI/merge and documentation.
+Model publication does not upgrade the app or create a runtime release.
 Follow the [executable handoff](next-agent-handoff.md) and [PLAN](../PLAN.md).
-No Ovis model weights or alias have been published; the app remains on
-immutable0.17.12.
+The app remains on immutable0.17.12; published F16 and wired source alias do not upgrade it.

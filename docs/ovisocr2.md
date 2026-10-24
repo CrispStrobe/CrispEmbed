@@ -22,11 +22,15 @@ for numerical drift and worse two-column recognition. Its separate
 vectors and locates the first source-fed QKV error0.0564889908 despite cosine
 0.999990225. Both actual Q4 recipes are complete and rejected for numerical/document
 regression; the [selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
-chooses qualified F16. No Ovis model weights,
-registry alias, runtime release or app upgrade are qualified by prepared tooling.
+chooses qualified F16. [Actual publication40074370335](../tests/results/qwen35-ocr/ovisocr2-publication.json)
+verifies the immutable [F16 model](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
+by hosted empty-cache full readback and independent anonymous provenance/tree
+checks. The real `ovisocr2-f16` URL/SHA registry alias and CLI/server resolution
+are wired; actual fresh-cache model-backed consumer execution is pending.
 Follow the [active completion sequence](../PLAN.md#active-ovis-completion-sequence)
-for those outcomes, conditional qualified publication, real aliases/consumer and
-final PR79 integration. Development is0.17.13; the app stays on immutable0.17.12.
+through that result and final PR79 integration. The three entry gates and audited
+vision settings remain explicit; no default model, runtime release or app upgrade
+is activated. Development is0.17.13; the app stays on immutable0.17.12.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
 
 The dated sections below retain the original source investigations and initial

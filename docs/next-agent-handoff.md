@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) is independently qualified | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is rejected for numerical and two-column text regression. Both Q4 attempts and Q8 raw supplement are reviewed negative; qualified F16 is selected. Initial publication40070360890 failed namespace authorization; corrected publication, real alias, consumer audit and final PR79 integration remain. Preserve initial12/14 failures and raw strict flags. No Ovis weights/alias published. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) is independently qualified | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is rejected for numerical and two-column text regression. Both Q4 attempts and Q8 raw supplement are reviewed negative; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Actual published consumer and final PR79 integration remain. Preserve initial12/14 failures and raw strict flags. No Ovis weights/alias published. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -342,22 +342,22 @@ Q8 quality wrapper. Earlier pre-model failures and raw strict flags stay in
 HISTORY and their immutable receipts.
 
 [Completed selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
-chooses the qualified first F16 artifact. Actual
-[publication40070360890](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40070360890)
-failed at79c71224 on namespace authorization after exact artifact verification.
-The [initial failure](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
-is preserved; dedicated publisher binding is corrected. Corrected
-[retry40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
-is submitted at121dc943; do not duplicate. Repository provisioning is complete,
-but no model upload/readback is yet verified. After its actual success, verify
-immutable full readback, install the actual registry URL/SHA,
-resolve Ovis aliases before CLI/server profile checks, run the actual fresh-cache
-published-consumer audit, then finish exact-source PR79 CI/merge and documentation.
-No model alias, runtime release or app upgrade follows merely from selection.
+chooses qualified first F16. [Actual publication40074370335](../tests/results/qwen35-ocr/ovisocr2-publication.json)
+at121dc943 passes upload and immutable empty-cache full readback at
+[Hub b7229e46](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07).
+Anonymous tree/small-file verification passes; no probes/test weights are
+included. The [initial403](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
+stays separate; the temporary publisher binding is removed after success.
+The real `ovisocr2-f16` URL/SHA alias and both loader fixes are wired. All25
+recorded native source files and qualified `src`/ggml/CMake objects remain
+unchanged; nine consumer controls pass, including native-source drift rejection.
+Next run and independently review the actual fresh-cache CLI/HTTP/offline/hash/
+text/confidence consumer, then final exact-source PR79 CI/merge and documentation.
+Model publication does not upgrade the app or create a runtime release.
 The optional [M1 build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/8b13e839/docs/handover-m1-ovisocr2.md)
 is a build-only fallback; the current original backend-control protocol is Linux.
-The app remains pinned0.17.12. No Ovis model weights or alias are published.
+The app remains pinned0.17.12; published F16 and wired source alias do not upgrade it.
 
 See the active Ovis sequence in [PLAN](../PLAN.md). Native, public and first
-F16 quality receipts are complete; all three quantization/calibration outcomes
-and conditional publication remain open.
+F16 quality and all three quantization/calibration reviews are complete; F16
+publication passes. Actual published consumer and final integration remain open.

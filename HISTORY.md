@@ -14944,3 +14944,35 @@ producer SHA `88fc53f420eecc1b1d5002188038c2afac22ffa197242c83ad18d0ae09eb34a8`.
 The dedicated publisher credential binding and pre-transfer presence guard are
 corrected separately from model code, math, quality or selection. A corrected
 hosted retry is required; never mark this initial failure as publication success.
+
+
+## 24 October 2026 — Qualified Ovis F16 published; immutable readback and real alias wired
+
+Corrected [40074370335](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40074370335)
+at121dc943 succeeds after both hosted control layers, receipt/service/source
+gates, exact artifact verification, actual Hub upload and forced empty-cache full
+readback. [Immutable model b7229e46f31bcf342d0999966bae8a03bf02bb07](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07)
+contains exactly the1717222848-byte F16/SHA
+`d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db`,
+LICENSE, original README, generated card/manifest and `.gitattributes`.
+Independent anonymous immutable-tree/small-file checks match all reported hashes
+and Git blob IDs, original license provenance and selected receipt chain.
+[Producer, two independent reviews and scope](tests/results/qwen35-ocr/ovisocr2-publication.json).
+No raw probes/test weights are distributed. Full GGUF rehashing occurred on
+hosted CI; local review used only small reports/files and authoritative LFS
+metadata. Small report12553849069:7212 bytes/SHA
+`c75769588e95621d3314ea241f737b4d619ccde901dc86bc89098548ff249449`;
+producer SHA `98346a2eb464fb7bf252774d3d44362f9e98a1626103da19e80ab37d394e0691`.
+The task-only publisher binding is removed after terminal success; general
+credentials are unchanged. Initial403 remains a separate immutable failure.
+
+The actual `ovisocr2-f16` registry alias now pins that commit and full SHA;
+official hash-fetch/render helpers verify the new file while preserving all304
+existing pins. Both CLI/server resolve Ovis21 before exact profile checks, after
+all gate/prompt/empty-input rejection; legacy engine20 ordering is unchanged.
+All25 native quality source files and the complete qualified `src` tree,
+ggml gitlink and CMake blob remain exact. New consumer preflight rejects drift
+in those recorded25 files before build; a mutation regression and all nine pure
+consumer controls pass. Three adapter controls pass; no unqualified default
+`ovisocr2` alias is added. Actual fresh-cache CLI/HTTP consumer execution remains
+required before final integration. No runtime release, app upgrade or default flip.

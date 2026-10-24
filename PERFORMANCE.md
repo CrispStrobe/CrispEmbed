@@ -6570,3 +6570,15 @@ The first F16/calibrated runs used different CPUs; no causal paired speed claim.
 
 [Exact three-attempt selection](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
 retains every smaller failed candidate; calibration provenance alone is positive.
+
+
+## Ovis immutable distribution — 24 October 2026
+
+[Published/readback40074370335](tests/results/qwen35-ocr/ovisocr2-publication.json)
+serves exactly the already-qualified1717222848-byte F16 at immutable Hub commit
+b7229e46f31bcf342d0999966bae8a03bf02bb07. Hosted forced empty-cache download
+matches SHA d3a733a5…; independent anonymous small-file/LFS metadata checks pass.
+Publication changes delivery, not model arithmetic or the measured CPU latency.
+All three smaller candidates stay rejected. Actual alias consumer timing and
+quality are separate pending results; first-F16 recognition errors/latency and
+1024-patch scope remain as above.

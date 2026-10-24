@@ -127,13 +127,16 @@ separately from candidate qualification. The separate
 [Q8 raw replay40066576197](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
 retains243 vectors and first source-fed QKV max0.0564889908; the initial Q8
 wrapper remains unchanged. [Selection](tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
-chooses qualified F16. Initial publication40070360890 failed at namespace authorization after exact
-artifact verification. Its failure receipt is preserved; dedicated binding is
-corrected. Run the fresh corrected publication and verify immutable full
-readback before real aliases and published-consumer execution.
-Follow [PLAN](PLAN.md) through those actual results and final PR79 integration.
-Retain initial failures and raw strict flags. No Ovis weights/alias have yet
-been verified published; no runtime release or app upgrade follows. Development
+chooses qualified F16. [Publication40074370335](tests/results/qwen35-ocr/ovisocr2-publication.json)
+passes actual upload and immutable empty-cache full readback at Hub b7229e46;
+anonymous small-file/tree review is positive. The initial namespace denial is
+preserved separately and the temporary publisher binding removed. The real
+`ovisocr2-f16` alias and CLI/server resolution are wired; actual published
+consumer execution and final PR79 integration remain. All25 native source files
+and qualified `src`/ggml/CMake objects stay unchanged. Nine consumer controls and
+three adapter controls pass; the consumer rejects native-source drift before
+build. Retain initial failures and raw strict flags. No runtime release, app
+upgrade or default flip follows from model publication. Development
 CPU-baseline PR76 is merged; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with

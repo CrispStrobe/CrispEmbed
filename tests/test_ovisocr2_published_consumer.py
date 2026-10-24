@@ -59,6 +59,21 @@ class PublishedConsumerControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 CONSUMER.require_frozen_image(bad, receipt)
 
+    def test_changed_native_source_cannot_reuse_frozen_full_quality(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            path = root / 'native.cpp'
+            path.write_bytes(b'qualified native math')
+            receipt = {'producer': {'source_commit': COMMIT,
+                'native_source_sha256': {'native.cpp': hashlib.sha256(path.read_bytes()).hexdigest()}}}
+            self.assertEqual(CONSUMER.require_native_source_closure(receipt, root)['file_count'], 1)
+            path.write_bytes(b'changed native math')
+            with self.assertRaisesRegex(ValueError, 'differs from qualified quality'):
+                CONSUMER.require_native_source_closure(receipt, root)
+            receipt['producer']['native_source_sha256'] = {'../outside.cpp': SHA}
+            with self.assertRaises(ValueError):
+                CONSUMER.require_native_source_closure(receipt, root)
+
     def test_publication_exact_source_alias_and_generated_pin(self):
         pins, receipt, registry, hashes = sample()
         valid = CONSUMER.require_publication(receipt, pins, registry, hashes)

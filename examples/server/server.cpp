@@ -1429,6 +1429,11 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "error: ovisocr2 requires an empty custom prompt and all three experimental gates\n");
             return 1;
         }
+        // Resolve the qualified Ovis alias before checking its exact profile.
+        if (eid == 21) {
+            ocr_rec_model_path = crispembed_mgr::resolve_model(ocr_rec_model_path, true);
+            if (ocr_rec_model_path.empty()) return 1;
+        }
         if (eid == 20 || eid == 21) {
             auto * meta = core_gguf::open_metadata(ocr_rec_model_path.c_str());
             const bool profile = meta && ((eid == 20 && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 1) ||
