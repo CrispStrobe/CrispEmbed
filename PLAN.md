@@ -377,8 +377,13 @@ platform rebuild for each report update. No model alias or HF weights exist yet.
    all-attempt selection and conditional calibration receipts. Verify immutable
    HF bytes by an empty-cache full download; keep probes outside the five-file
    model distribution. Then add the actual URL/SHA experimental registry/catalog
-   entries and empty-cache consumer checks. Move the Ovis CLI profile check
-   after alias resolution only when a real qualified alias is available.
+   entries and empty-cache consumer checks. Move the Ovis CLI and HTTP-server
+   profile checks after alias resolution only when a real qualified alias is
+   available, preserving the older engine20 guard behavior. The registered
+   metadata phase=consumer calls `ovisocr2-published-consumer.yml`: it requires
+   the positive publication receipt and real immutable registry/pin, then checks
+   two fresh CLI/HTTP caches, full model hashes, an offline CLI repeat and actual
+   OCR text/confidence. Prepared tooling is not a consumer result.
    Reconcile the audit branch into PR79, finish exact final-source checks,
    merge and update public handoffs. No runtime tag, default or app pin change
    follows from model publication; the app remains immutable0.17.12.
