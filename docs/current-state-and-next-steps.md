@@ -89,7 +89,7 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
 | LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, and [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen | First native F16 eleven-case quality40056641800 is running, with no task-quality qualification yet. Protected Q8, Q4 and development-only calibrated Q4 outcomes, conditional publication, real alias and final PR79 integration remain. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; no Ovis model weights or alias published. Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | Protected Q8 [40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357) is submitted; its actual outcome, Q4 and development-only calibrated Q4 outcomes, conditional publication, real alias, consumer audit and final PR79 integration remain. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; no Ovis model weights or alias published. Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
 | Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](../tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
 
@@ -397,12 +397,30 @@ The frozen [original HF eleven-case quality reference40054043629](../tests/resul
 has eight synthetic WER0 cases, all EOS/no cap, and15/15 inventory table cells;
 newline CER and strict-v1 border parse failures remain visible.
 
-First native F16 quality run
-[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
-is active; no native task-quality result is qualified yet. Next complete and
-review protected Q8, Q4 and development-only calibrated Q4 diagnostics, then
-decide conditional HF publication, immutable empty-cache readback, real alias
-and final [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) integration.
+The [first native F16 quality run40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+at638380f6 has a positive independent review. Its eleven native cases retain
+all1,841 generated IDs and match the frozen original HF IDs, raw text and
+processed text exactly; all stop at EOS248046 without a cap hit. Eight authored
+cases have WER0 and the inventory table has15/15 cells. The paired synthetic
+and three-document quality screens pass within their bounded panel. This is
+the immutable first F16 baseline for subsequent quantized comparisons.
+Its native CPU was AMD EPYC7763 with two threads; the original HF CPU was a
+different model. The recorded per-case times and cumulative child RSS are
+diagnostics, not a causal paired speed result.
+
+The [quality workflow](../.github/workflows/ovisocr2-quality.yml) now selects
+one same-run `dev-hello` F16 host control for quant phases after exact first
+F16 receipt, source, build and runtime checks. Direct driver calls still default
+to the full eleven-case control, and the workflow accepts `full` explicitly.
+The short control does not establish eleven-case cross-host F16 identity; its
+paired scores come from the reviewed first F16 run. Every quantized candidate
+still runs all eleven cases and the complete numerical and 473-tensor checks;
+calibrated Q4 also retains the development-only importance proof. Protected Q8
+[40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+is submitted, with no reviewed Q8 outcome yet. Review Q8, Q4 and calibrated Q4
+separately, then decide conditional HF publication, immutable empty-cache
+readback, real alias, CLI/server resolver checks, published consumer audit and
+final [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) integration.
 Follow the [executable handoff](next-agent-handoff.md) and [PLAN](../PLAN.md).
 No Ovis model weights or alias have been published; the app remains on
 immutable0.17.12.

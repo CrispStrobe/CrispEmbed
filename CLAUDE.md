@@ -104,11 +104,20 @@ four raw strict0.002 vision exceedances remain under unchanged calibrated
 budgets. [Public40053283383](tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
 passes27 C/Python/CLI/HTTP/Rust/Dart arms, and the
 [original HF eleven-case reference40054043629](tests/results/qwen35-ocr/ovisocr2-original-quality.json)
-is frozen. First native F16 task quality40056641800 is running, without a
-qualified result yet. Follow [PLAN](PLAN.md) through protected Q8, Q4 and
-development-only calibrated Q4, conditional publication, real alias and final
-PR79 integration. Retain initial12/14 failures and strict flags. No Ovis model
-weights or alias are published. Development
+is frozen. Independently reviewed
+[first native F16 quality40056641800](tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+passes all eleven cases with1,841 IDs and exact original HF raw/processed text,
+all EOS/no cap, eight synthetic WER0 and15/15 inventory cells. It is the frozen
+F16 baseline for quantized comparisons; per-case CPU timings across different
+hosts are diagnostic only. The quant workflow defaults to one `dev-hello` F16
+host control after exact source/runtime checks, while direct driver calls and
+an explicit workflow option retain the full eleven-case control. Each candidate
+still runs all eleven OCR cases and complete numerical/tensor checks. Protected
+Q8 [40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+is submitted without a reviewed outcome. Follow [PLAN](PLAN.md) through Q8,
+Q4 and development-only calibrated Q4, conditional publication, real alias,
+consumer audit and final PR79 integration. Retain initial12/14 failures and
+strict flags. No Ovis model weights or alias are published. Development
 CPU-baseline PR76 is merged; successor release assets remain separate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with

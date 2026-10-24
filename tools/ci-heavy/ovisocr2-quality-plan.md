@@ -37,8 +37,38 @@ workflow source, artifact ZIP digest, report SHA, all 11 frozen input
 identities and caps, README/source proof, and recomputed scores. They reuse
 the original outputs without rerunning original inference.
 
+The first independently reviewed native F16 quality run
+[40056641800](../../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+at638380f6 completes all eleven cases. All1,841 generated IDs and every raw
+and processed text match the frozen original HF outputs; all cases reach
+EOS248046 before the cap. The eight authored cases have WER0 and the inventory
+table has15/15 cells. Both bounded paired screens pass. This exact reviewed
+report and its F16 GGUF SHA are the immutable eleven-case baseline for each
+quantized comparison. The native run used AMD EPYC7763, four logical CPUs and
+two threads; original HF used a different CPU. Its recorded wall times and
+cumulative child RSS are diagnostics, not paired speed evidence.
+
+Quant phases first fetch and recompute the small reviewed F16 report on all
+eleven preserved inputs before candidate weights or the large original
+activation reference. The reusable workflow defaults `f16_host_control` to
+`dev-hello`: after exact source-tree, ggml gitlink, native runner/quantizer,
+vision/scorer/converter, CMake, environment AST, package and thread checks
+against the first F16 source, the current host executes that one F16 case.
+Its PNG/RGB hashes, nine IDs, raw/processed text, EOS, cap, confidence,
+wall time and cumulative child RSS upper bound are retained. The observed
+confidence difference is recorded without an invented cross-host waiver.
+This one case does not prove eleven-case F16 identity across hosts. Quantized
+candidate comparisons use the reviewed first F16 eleven-case scores, and
+paired document scores do not establish a causal speed comparison. Direct
+driver calls default to `full`; the workflow accepts `full` explicitly for
+the original eleven-case same-run host control. Original and first F16 phases
+always retain their full eleven-case executions.
+
 After the F16 native model has passed its original and owning-context checks,
-test only `q8-protected` first. Its `crispembed-quantize` command is generated
+test only `q8-protected` first. That
+[hosted attempt40061433357](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40061433357)
+is submitted; its numerical and OCR outcome is not independently reviewed.
+Its `crispembed-quantize` command is generated
 by `quant_command()` from the reviewed 473-tensor source schema. It preserves
 the F16 visual tower, token embedding, recurrent A/B gate matrices and all
 non-matrix/norm tensors; other eligible matrices use Q8_0. Compare the F16
@@ -55,11 +85,15 @@ measured. The native
 unsupported Q4_0 fallback is a failed tensor audit. For each
 candidate, read actual GGUF tensor names, shapes, types and raw byte hashes,
 then call `validate_quant_tensors()`. Retain the quantizer log, input/output
-GGUF SHA-256, every per-tensor record, original/native decoded outputs and
-failure reports remotely. A separate `q4-calibrated` phase invokes the existing
+GGUF SHA-256, all473 before/after name/shape/type/raw-hash records in the small
+quality report, original/native decoded outputs and failure reports remotely.
+A separate `q4-calibrated` phase invokes the existing
 native importance collector on only the four frozen development images and
 requires all 72 FFN importance vectors to be applied; heldout images and
-documents never enter calibration. Both Q4 arms require a reviewed complete
+documents never enter calibration. It retains the small exact stats TSV and
+importance GGUF with SHA-256/byte declarations in the quality report artifact;
+the large candidate GGUF stays in its separate remote artifact. Both Q4 arms
+require a reviewed complete
 Q8 diagnostic and explicit permission to measure Q4; positive Q8 quality is
 not required. A quantized candidate GGUF and upstream attribution stay in a
 remote workflow artifact for later independent review and possible publication.
