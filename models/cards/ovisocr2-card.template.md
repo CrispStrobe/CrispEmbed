@@ -37,11 +37,13 @@ by its explicit local path:
 
 ```sh
 CRISPEMBED_QWEN35_OCR=1 CRISPEMBED_OVISOCR2_FRONTEND=1 CRISPEMBED_OVISOCR2_INFERENCE=1 ${vision_gates}${quant_gate}\
-  crispembed --ocr-pipeline page.png --ocr-engine ovisocr2 --ocr-rec ${filename}
+  crispembed -t 2 --ocr-pipeline page.png --ocr-engine ovisocr2 \
+    --ocr-rec ${filename} --ocr-max-tokens 1024
 ```
 
-The reader uses the pinned original task prompt and rejects a custom prompt on
-the explicit Ovis stage. The bounded original/native, public API, independent
+Recognition returns raw generated Markdown/HTML. The quality reports separately
+record the upstream parser cleanup/filter view. The reader uses the pinned
+original task prompt and rejects a custom prompt on the explicit Ovis stage. The bounded original/native, public API, independent
 quality and quantization-selection receipts were reviewed before this file was
 uploaded. ${calibration_note}
 Their exact SHA-256 values and source commits are in `manifest.json`. The quality
