@@ -14742,3 +14742,28 @@ Pure quality/publisher controls pass41 tests with one existing skip; actual
 quant outcomes remain required. The registered published-consumer harness has
 8 pure controls and will require real immutable publication/registry pins and
 fresh CLI/HTTP downloads before claiming a consumer result. No such result yet.
+
+
+## 24 October 2026 — Quant raw evidence retention and shallow-checkout control correction
+
+Future Q4 quality jobs retain source-fed F16/candidate first-layer projections and
+full decoder Ref.compare/TRACE vectors in a separate remote artifact. Every raw
+manifest binds original943-stage JSON shapes, bytes and hashes; no comparator or
+threshold changes. A candidate-only hosted replay supplements the earlier Q8
+run without Python inference, conversion or an eleven-case rerun. Raw completeness
+is separate from numerical/quality success; probes stay outside model publication.
+The source-only controls pass30 quality tests (one existing skip),22 publication
+tests and6 candidate-replay tests. Hosted CPP formatting40064658040 initially
+failed on summary-line wrapping; correction0c480ca3 passes40065342652.
+
+Initial calibrated-Q4 [40065871086](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40065871086)
+and Q8 raw replay [40065872699](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40065872699)
+at816f97a9 fail metadata controls before model access: a pure test used a historical
+Git object absent from the shallow checkout. Plain Q4
+[40065869287](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40065869287)
+was cancelled while controls were queued, with zero steps. None produced a model
+or report artifact. Correction8fdf28f1 checks the unchanged comparison-body SHA
+locally;30 quality controls and5 metadata controls pass. Runtime/probe arithmetic
+and0.99999/0.002 gates are unchanged. Actual Q4/calibration and raw-replay outcomes
+require fresh corrected runs.
+[Initial control failures, cancellations and exact proof](tests/results/qwen35-ocr/initial-ovisocr2-quant-shallow-control-failure.json).

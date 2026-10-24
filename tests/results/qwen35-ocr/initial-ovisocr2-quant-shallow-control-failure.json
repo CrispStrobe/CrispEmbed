@@ -1,0 +1,251 @@
+{
+  "schema": "ovisocr2-initial-quant-control-shallow-history-failure-v1",
+  "runs": [
+    {
+      "run": 40065869287,
+      "source_commit": "816f97a972c6aa55dd75e4669a90703e23070d54",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "workflow": ".github/workflows/ovisocr2-metadata.yml",
+      "jobs": [
+        {
+          "name": "controls",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "name": "publish",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "public",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "frontend",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "name": "quant-raw",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "metadata",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "name": "vision",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "lighton-fixture",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "name": "consumer",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "quality",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "replay",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "model",
+          "status": "completed",
+          "conclusion": "cancelled"
+        },
+        {
+          "name": "export",
+          "status": "completed",
+          "conclusion": "cancelled"
+        }
+      ],
+      "model_access": false,
+      "artifact_count": 0,
+      "scope": "Cancelled while controls still queued; zero control steps or model evidence"
+    },
+    {
+      "run": 40065871086,
+      "source_commit": "816f97a972c6aa55dd75e4669a90703e23070d54",
+      "status": "completed",
+      "conclusion": "failure",
+      "workflow": ".github/workflows/ovisocr2-metadata.yml",
+      "jobs": [
+        {
+          "name": "controls",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "frontend",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "metadata",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "vision",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "export",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "model",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "quant-raw",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "lighton-fixture",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "consumer",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "public",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "quality",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "publish",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "replay",
+          "status": "completed",
+          "conclusion": "skipped"
+        }
+      ],
+      "model_access": false,
+      "artifact_count": 0,
+      "failed_log_sha256": "ea64f8cdf2322bac84e35fccae94011aba5d9533f46b21f428228353c1b234b0",
+      "error": "Pure test invoked git show 638380f6 in a shallow hosted checkout; historical object absent"
+    },
+    {
+      "run": 40065872699,
+      "source_commit": "816f97a972c6aa55dd75e4669a90703e23070d54",
+      "status": "completed",
+      "conclusion": "failure",
+      "workflow": ".github/workflows/ovisocr2-metadata.yml",
+      "jobs": [
+        {
+          "name": "controls",
+          "status": "completed",
+          "conclusion": "failure"
+        },
+        {
+          "name": "vision",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "replay",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "frontend",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "consumer",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "metadata",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "publish",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "quality",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "public",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "export",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "lighton-fixture",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "model",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "quant-raw",
+          "status": "completed",
+          "conclusion": "skipped"
+        }
+      ],
+      "model_access": false,
+      "artifact_count": 0,
+      "failed_log_sha256": "94f017be9090e6e3571182a822dd408dda5ee7e1d811fcd7acbc83e661d2104b",
+      "error": "Pure test invoked git show 638380f6 in a shallow hosted checkout; historical object absent"
+    }
+  ],
+  "fix": {
+    "commit": "8fdf28f1",
+    "scope": "Pin unchanged local C++ comparison-body SHA instead of requiring a historical Git object in a pure test",
+    "original_comparison_body_sha256": "aef6d2e5de7092b90eb9f2e1c31629e2733fcac80edf535f32ad249baa82e7e7",
+    "quality_tests": 30,
+    "existing_skip": 1,
+    "metadata_tests": 5,
+    "thresholds_or_runtime_math_changed": false
+  },
+  "limits": [
+    "No Q4/calibration/raw-vector candidate outcome is established by these initial runs.",
+    "The completed negative Q8 model result remains separate and unchanged."
+  ]
+}
