@@ -90,8 +90,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
-    std::printf("%s GGUF-weighted Qwen3.5 %s linear-attention blocks; full OCR remains pending\n",
-                ok ? "PASS" : "FAIL", first_layer ? "first" : "all 18");
+    std::printf("%s GGUF-weighted Qwen3.5 %s linear-attention blocks; full OCR remains pending\n", ok ? "PASS" : "FAIL",
+                first_layer ? "first" : "all 18");
     return ok ? 0 : 1;
 }
 
