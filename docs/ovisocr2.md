@@ -5,9 +5,31 @@ conversion and all473-tensor roundtrips pass39992662147; PR77 is merged.
 [Export producer and independent review](../tests/results/qwen35-ocr/ovisocr2-export.json)
 record exact sources, payload/manifest hashes, artifact expiry and review limits.
 Model payloads remain remote. Exact frontend parity passes40017014043; PR78
-merged918c1c8d. Native draftPR79 prepares inference and audits; model-backed
-numerical/decoded and independent quality results remain pending.
+merged918c1c8d. DraftPR79 contains gated CPU format-2 inference. Reviewed
+[native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json)
+passes all14 F32/F16 arms over943 frozen fields using the explicit `both`
+vision preset; four raw strict0.002 vision flags remain. Actual
+[public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+passes27 C/Python/CLI/HTTP/Rust/Dart arms. The frozen
+[first F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+matches all1841 original Python IDs and raw/processed text over11 cases,
+all EOS/no caps. This preserves the original recognition errors; it does not
+establish broad benchmark accuracy or interactive CPU speed.
+
+[Protected Q8](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is rejected
+for numerical drift and worse two-column recognition. Its separate
+[raw replay](../tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json) retains243
+vectors and locates the first source-fed QKV error0.0564889908 despite cosine
+0.999990225. Both actual Q4 recipes are still running. No Ovis model weights,
+registry alias, runtime release or app upgrade are qualified by prepared tooling.
+Follow the [active completion sequence](../PLAN.md#active-ovis-completion-sequence)
+for those outcomes, conditional qualified publication, real aliases/consumer and
+final PR79 integration. Development is0.17.13; the app stays on immutable0.17.12.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
+
+The dated sections below retain the original source investigations and initial
+implementation gates. Their historical pending statements are superseded by
+this status and the active PLAN; preserve their evidence and failed alternatives.
 
 Sources inspected23 October2026:
 
@@ -58,7 +80,7 @@ original/cast tensor; its complete evidence is linked above.
    tables, LaTeX, reading order and scaled `[0,1000)` image boxes independently;
    a cleanup routine cannot make a capped raw decode count as complete.
 
-## Next implementation and acceptance
+## Initial implementation and acceptance protocol (historical)
 
 Start with a metadata-only model profile and exporter preparation on an isolated
 branch; keep the current source checks and all unknown-tensor failures. Pin and
@@ -239,7 +261,7 @@ both values of the older marks override without overriding Ovis's source
 contract. Original packed-image captures and the1.2e-7 budget remain unchanged.
 Actual corrected frontend parity awaits a hosted retry.
 
-## Current execution sequence
+## Original execution sequence and retained initial failures (historical)
 
 Full export and exact native frontend qualification are complete. The
 [controlled original GPU reference](../tests/results/qwen35-ocr/ovisocr2-vllm-reference.json)
