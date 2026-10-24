@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/license/header, full473-tensor export, exact frontend and controlled original GPU execution pass | Native40041958521 completes943 frozen fields and12/14 arms; both vision arms fail unchanged budgets. Existing precision A/B40047163838 passes two common presets; full fourteen-arm frozen replay40049244654 is pending; do not duplicate. Follow the active PLAN sequence through public interfaces, independent quality, protected/calibrated quantization and conditional publication. No alias yet. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, and [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen | Native F16 quality40056641800 is running; no task-quality qualification yet. Next review that actual output, then protected Q8/Q4/development-only calibrated Q4 outcomes, conditional publication, real alias and final PR79 integration. Preserve initial12/14 failures and raw strict flags. No Ovis weights/alias published. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -234,7 +234,7 @@ pin both native-off options and pass the release CPU-baseline checker before
 compilation. [Reviewed flags and log hashes](../tests/results/packaging/development-cpu-baseline.json).
 Cross-host installed bundle reuse and successor release assets remain separate.
 
-## Ovis — original GPU reference complete; native and quality execution pending
+## Ovis — native and public parity complete; F16 task quality running
 
 Frontend PR78 merged918c1c8d after exact pixels/IDs/grids/masks/template,
 Unicode and negative controls40017014043. Controlled original GPU recipe5fe3fc90
@@ -245,19 +245,26 @@ and [immutable fixture preservation](../tests/results/qwen35-ocr/ovisocr2-vllm-r
 keep the exact original bytes; do not regenerate them or modify the positive
 GPU receipt now consumed by downstream source/hash gates.
 
-Continue the five pending steps in [PLAN](../PLAN.md). Native model run
+The initial native run
 [40041958521](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40041958521)
-at cc038b00 is complete:943 frozen fields, all871 earlier members unchanged,
-12/14 native arms pass. Both vision arms fail unchanged budgets;
+at cc038b00 retains its943 frozen fields,871 earlier byte-identical members
+and12/14 result; both vision arms fail unchanged budgets in the
 [initial numerical evidence](../tests/results/qwen35-ocr/initial-ovisocr2-model-vision-failure.json).
-Existing precision A/B40047163838 atdf65e911 passes both/common cascade alternatives; full fourteen-arm frozen replay40049244654 at a2a17735 is pending. Do not duplicate it. Initial40034685690 stopped before
+Existing precision A/B40047163838 atdf65e911 passes the `both` and
+`cascade_precise_attn` presets for F32/F16. The reviewed
+[full frozen replay40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json)
+at a2a17735 uses explicit `both`, passes all14 native arms, retains all943
+original fields and matches nine IDs/EOS248046/`Hello OCR\n\n12345`.
+Its four raw strict0.002 vision exceedances remain recorded and pass the
+unchanged backend-calibrated budgets. Do not recapture the original reference.
+Initial40034685690 stopped before
 forward on the tuple/list processor guard. The correction compares exact JSON
 values and records every field/type; second40039159696 confirms it before
-stopping on the generation-config assumption. Currentcc038b00 checks metadata
+stopping on the generation-config assumption. The corrected source checks metadata
 AutoConfig and actual raw-config fallback separately, with exact equality.
 Third40040392649 confirms both, completes original forward, and stops on72
-uncaptured dictionary-backed cache fields. Current cc038b00 observes integer0
-states and requires all871 retained NPY members unchanged plus exactly72 new
+uncaptured dictionary-backed cache fields. The completed cc038b00 capture observes integer0
+states and required all871 retained NPY members unchanged plus exactly72 new
 stages before native work. Artifact12539012965 stays remote, expires21 January
 2027; preserve it remotely before expiry. Raw decoded output and all source
 contracts remain unchanged.
@@ -274,17 +281,27 @@ The eleven-case original GPU quality reference is complete and
 cases reach EOS; all eight authored texts have WER0. Strict-v1 table border
 attribute failures remain retained. Original HF and native quality are separate.
 
-Actual public C/Python/CLI/HTTP/Rust/Dart, independent quality, protected Q8/Q4
-and development-only calibration workflows are prepared in draftPR79. They
-require reviewed predecessor evidence; none has a model-backed result yet.
-Publication is conditional on all planned outcomes, license-chain provenance,
-qualified candidate hashes and actual immutable empty-cache HF readback.
+Actual [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+at b33c5bad passes27 C/Python/CLI/HTTP/Rust/Dart model-backed arms with
+exact text and bounded confidence. The frozen
+[original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json)
+at a0784b19 has all11 EOS248046/no cap, eight synthetic WER0 cases and15/15
+inventory cells under the predeclared Ovis presentation policy. Its raw
+newline CER, high realistic document text errors and strict-v1 border parse
+failures remain visible. First native F16 quality
+[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
+is running; no F16 task-quality receipt exists yet. Require its actual eleven
+IDs/stops/caps, CER/WER, format, confidence and table result against the frozen
+original, then run and review protected Q8, Q4 and four-development-image
+calibrated Q4 separately. Q4 requires a reviewed complete Q8 diagnostic, not
+positive Q8 quality. Conditional publication additionally requires the
+license chain, all actual attempt outcomes, qualified candidate hash and
+immutable empty-cache HF readback. Finish real alias and PR79 integration only
+after qualification.
 The optional [M1 build handoff](https://github.com/CrispStrobe/CrispEmbed/blob/8b13e839/docs/handover-m1-ovisocr2.md)
 is a build-only fallback; the current original backend-control protocol is Linux.
 The app remains pinned0.17.12. No Ovis model weights or alias are published.
 
-Ovis native40041958521 completes943 frozen fields and12/14 arms. Both vision
-arms fail unchanged budgets; review full frozen replay40049244654 at a2a17735 (preset=both) without HF
-recapture. A/B40047163838 passes both F32/F16 vision arms without budget changes.
-See the active Ovis sequence in [PLAN](../PLAN.md). Public interfaces, quality,
-all three quantization/calibration arms and conditional publication remain open.
+See the active Ovis sequence in [PLAN](../PLAN.md). Native and public smoke
+receipts are complete; native quality, all three quantization/calibration
+outcomes and conditional publication remain open.

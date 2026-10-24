@@ -8,12 +8,15 @@ synthetic text and cannot establish broad document quality.
 
 The manual [hosted workflow](../../.github/workflows/ovisocr2-quality.yml)
 requires a retained positive native baseline review before packages or weights.
-It first reproduces the three previously reviewed, separately licensed
-[OCR documents](../../tests/regression/ocr-quality/panel.json) using their
-original Pillow 11.3.0/CairoSVG 2.8.2 renderer and checks exact PNG/RGB hashes.
-Only then does it install the pinned original HF CPU stack and call
-`render_panel()` using Pillow 12.1.0,
-preserve `rendered-panel.json`, every PNG and their raw RGB hashes, then run
+It downloads the immutable reviewed archive of three separately licensed
+[OCR document PNGs and prepared metadata](../../tests/regression/ocr-quality/panel.json)
+before installing model dependencies. It verifies the pinned archive revision,
+ZIP SHA-256/size, exact four members, member hashes, source/split/license
+contracts and saved PNG/RGB hashes. It reuses those exact derivatives; the
+original Pillow 11.3.0/CairoSVG 2.8.2 document renderer is recorded provenance.
+After installing the pinned original HF CPU stack, it calls `render_panel()`
+only for the eight authored synthetic cases using Pillow 12.1.0, preserves
+`rendered-panel.json`, every PNG and raw RGB hash, then runs
 the pinned original and each candidate on the exact same pixels and prompt.
 Keep raw generated IDs/text, processed text, finish and stop reasons, token
 cap, source commit, model checksum, runner log and package versions. `score_panel()`
@@ -56,8 +59,9 @@ GGUF SHA-256, every per-tensor record, original/native decoded outputs and
 failure reports remotely. A separate `q4-calibrated` phase invokes the existing
 native importance collector on only the four frozen development images and
 requires all 72 FFN importance vectors to be applied; heldout images and
-documents never enter calibration. Both Q4 arms require a reviewed positive
-Q8 diagnostic review. A quantized candidate GGUF and upstream attribution stay in a
+documents never enter calibration. Both Q4 arms require a reviewed complete
+Q8 diagnostic and explicit permission to measure Q4; positive Q8 quality is
+not required. A quantized candidate GGUF and upstream attribution stay in a
 remote workflow artifact for later independent review and possible publication.
 Each quantized phase also downloads the small original activation artifact from
 the reviewed model-audit run, verifies its ZIP and reference GGUF/JSON/image
