@@ -471,14 +471,17 @@ def main(preflight_only=False):
         report['diagnostic_errors'] = diagnostic_errors
         if diagnostic_errors:
             raise ValueError('Vision A/B diagnostic arm integrity failed: ' + ', '.join(diagnostic_errors))
-        report['all_arms_strict_vision_pass'] = all(row['exit_code'] == 0 and
+        report['all_arms_pass_existing_comparator'] = all(row['exit_code'] == 0 and
             row['metrics']['first_failing_operation'] is None for row in report['arms'].values())
+        report['passing_arms'] = [label for label, row in report['arms'].items()
+            if row['exit_code'] == 0 and row['metrics']['first_failing_operation'] is None]
         report['status'] = 'completed diagnostic vision A/B; no qualification'
         report['phase'] = 'complete'; save(out, report)
         return report
     except BaseException as error:
         report['status'] = 'failed diagnostic vision A/B infrastructure'
         report['error_type'] = type(error).__name__
+        report['error'] = str(error)
         report['error_phase'] = report['phase']
         save(out, report)
         raise
