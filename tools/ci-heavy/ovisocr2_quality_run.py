@@ -763,6 +763,7 @@ def validate_short_f16_host_control(actual, frozen, case):
 
 
 def command(label, argv, out, report, timeout=1800, env=None):
+    print('OVIS_QUALITY_COMMAND start ' + label, flush=True)
     path = out / (label + '.log')
     start = time.monotonic()
     try:
@@ -774,6 +775,8 @@ def command(label, argv, out, report, timeout=1800, env=None):
         exit_code, timed_out = None, True
     record = {'exit_code': exit_code, 'timed_out': timed_out, 'log': path.name,
               'log_sha256': sha(path), 'wall_seconds': time.monotonic() - start}
+    print(f'OVIS_QUALITY_COMMAND done {label} exit={exit_code} '
+          f'timeout={timed_out} seconds={record["wall_seconds"]:.3f}', flush=True)
     report['commands'][label] = record
     (out / 'ovisocr2-quality.json').write_text(json.dumps(report, indent=2, allow_nan=False) + '\n')
     if timed_out or exit_code:
@@ -984,6 +987,8 @@ def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, ar
             'confidences': data['confidences'], 'mean_confidence': data['mean_confidence'],
             'wall_seconds': data['wall_seconds'],
             'child_peak_rss_kib_upper_bound': resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss}
+        print(f'OVIS_QUALITY_CASE {label} tokens={len(data["token_ids"])} '
+              f'stop={data["stop_id"]} seconds={data["wall_seconds"]:.3f}', flush=True)
         report.setdefault('native_cases', {})[arm] = outputs
         save()
     return outputs
