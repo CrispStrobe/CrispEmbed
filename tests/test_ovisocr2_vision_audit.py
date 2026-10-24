@@ -1,5 +1,8 @@
 """Pure source and metric guards for hosted Ovis vision A/B; no model imports."""
 
+import hashlib
+import zipfile
+from unittest.mock import patch
 import importlib.util
 import json
 from pathlib import Path
@@ -80,6 +83,26 @@ class OvisVisionAuditControls(unittest.TestCase):
         self.assertTrue(all(vision.BASE_ENV[name] == '0' for name in options))
         self.assertEqual(vision.MODELS['f32'][2],
                          '7f04dbc597e122fc3f1db2d96a64e8d7759be9f62dca4bc4a472fe5f0db9bfd9')
+
+    def test_verified_archive_updates_explicit_report_after_extraction(self):
+        # Exercise the real extraction/report path that previously raised
+        # NameError only after the large hosted export finished downloading.
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            models = {name: (name + '.gguf', len(name), hashlib.sha256(name.encode()).hexdigest())
+                      for name in ('f32', 'f16')}
+            def download(pin, destination):
+                with zipfile.ZipFile(destination, 'w') as archive:
+                    for name, (filename, _, _) in models.items():
+                        archive.writestr(filename, name.encode())
+            report = {}
+            pin = (1, 'test-export', 1, 'a' * 64)
+            with patch.object(vision, 'MODELS', models), patch.object(vision, 'download_artifact', download):
+                vision.checked_archive(pin, folder, folder, 'export', report)
+            self.assertTrue(report['extracted']['export']['verified_zip_removed'])
+            self.assertEqual(set(report['extracted']['export']['files']), {'f32.gguf', 'f16.gguf'})
+            self.assertFalse((folder / 'export.zip').exists())
+            self.assertEqual(json.loads((folder / 'ovisocr2-vision-audit.json').read_text()), report)
 
     def test_no_framework_import(self):
         import sys
