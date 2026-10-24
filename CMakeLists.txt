@@ -1214,6 +1214,9 @@ target_link_libraries(test-qwen35-vision-blocks PRIVATE crispembed-qwen35-delta 
 add_executable(test-qwen35-vision-ops tests/test_qwen35_vision_ops.cpp)
 target_compile_definitions(test-qwen35-vision-ops PRIVATE CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1)
 target_link_libraries(test-qwen35-vision-ops PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-ovisocr2-vision-local-ops tests/test_ovisocr2_vision_local_ops.cpp)
+target_compile_definitions(test-ovisocr2-vision-local-ops PRIVATE CRISPEMBED_QWEN35_VISION_OPERATOR_AUDIT=1)
+target_link_libraries(test-ovisocr2-vision-local-ops PRIVATE crispembed-qwen35-delta crispembed-core)
 
 add_executable(test-qwen35-positions tests/test_qwen35_positions.cpp)
 target_link_libraries(test-qwen35-positions PRIVATE crispembed-qwen35-delta)
