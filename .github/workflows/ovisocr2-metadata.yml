@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Original metadata/export, frontend, or gated full-model parity'
-        options: [metadata, export, frontend, model]
+        options: [metadata, export, frontend, model, vision]
         default: metadata
   push:
     branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
@@ -37,6 +37,10 @@ concurrency:
   group: ovisocr2-metadata-${{ github.ref }}
   cancel-in-progress: false
 jobs:
+  vision:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'vision'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-vision-audit.yml
   controls:
     runs-on: ubuntu-latest
     steps:
