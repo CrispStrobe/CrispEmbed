@@ -88,6 +88,14 @@ def native_source_closure(source, ab):
                     'tests/qwen35_parity.h', 'tests/test_qwen35_decoder.cpp',
                     'tests/test_ovisocr2_context.cpp'}.issubset(original)):
         raise ValueError('Frozen native implementation/comparison source set differs')
+    discovered = {str(path.relative_to(ROOT)) for path in (ROOT / 'src').glob('qwen35*')
+                  if path.is_file() and path.suffix in ('.cpp', '.h')}
+    discovered |= {'src/crispembed_diff.h', 'tests/qwen35_parity.h',
+                   'tests/test_qwen35_decoder.cpp', 'tests/test_qwen35_vision.cpp',
+                   'tests/test_qwen35_delta.cpp', 'tests/test_ovisocr2_context.cpp',
+                   'tests/ovisocr2_quality_run.cpp'}
+    if set(original) != discovered:
+        raise ValueError('Current native implementation/comparison source set differs')
     reviewed = {}
     for name, old_sha in original.items():
         if (not isinstance(name, str) or not re.fullmatch(r'(?:src|tests)/[A-Za-z0-9_./-]+\.(?:h|cpp)', name)
