@@ -4,8 +4,8 @@ on:
     inputs:
       phase:
         type: choice
-        description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, publish, lighton-fixture]
+        description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
+        options: [metadata, export, frontend, model, replay, vision, public, quality, publish, consumer, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -27,7 +27,7 @@ on:
         default: '0'
       publish_precision:
         type: choice
-        description: 'Publication only: separately reviewed positive precision'
+        description: 'Publication/consumer only: separately reviewed positive precision'
         options: [f16, q8, q4, q4-calibrated]
         default: f16
       publication_quality_run_id:
@@ -97,6 +97,12 @@ jobs:
       quality_run_id: ${{ inputs.publication_quality_run_id }}
     secrets:
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  consumer:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'consumer'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-published-consumer.yml
+    with:
+      precision: ${{ inputs.publish_precision }}
   controls:
     runs-on: ubuntu-latest
     steps:
