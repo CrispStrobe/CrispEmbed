@@ -14628,3 +14628,35 @@ is available for public-interface wrong-profile checks. The historical LightOn
 numerical failures remain: this is fixture reconstruction, not OCR qualification.
 Exact public-workflow inputs and both artifact identities are recorded in the
 receipt. Preserve this control remotely before its ninety-day expiry.
+
+## 24 October 2026 — Existing precision modes pass the Ovis vision comparator
+
+[40047163838](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40047163838)
+atdf65e911 completes all twelve F32/F16 vision arms with37 raw vectors each and
+byte-integrity controls. Both baseline arms reproduce every original metric and
+failure exactly. `both` (precise norm and attention) and `cascade_precise_attn`
+pass all37 unchanged backend-calibrated comparisons in each precision; other
+presets fail and remain retained. Independent review checks the full small ZIP,
+all twelve logs/manifests,444 vector declarations and live artifact metadata.
+Large vectors remain remote and were not independently downloaded.
+[All arm metrics, raw flags, artifacts and review](tests/results/qwen35-ocr/ovisocr2-vision-ab.json).
+
+`both` is selected for full replay: its merger maximum errors1.80006027e-5 F32
+and2.36034393e-5 F16 are the lowest in the panel; cascade/precise attention has
+lower block11 up errors but higher merger errors and remains available. Four
+strict0.002 exceedances (block11 up, activation, down and layer output) remain
+in every passing arm; existing original-backend variation budgets pass without
+any changed threshold or comparator. This is component evidence, not decoded
+quality. Baseline/two-forward test wall times33.98/34.33 seconds versus selected
+60.67/60.77 include loading, dumps and controls; one case is not production latency.
+
+The selected configuration keeps `VISION_PRECISE_NORM=1`,
+`VISION_PRECISE_ATTN=1`, `VISION_CASCADE_NORM=0` (each with the existing
+`CRISPEMBED_QWEN35_` prefix); all three Ovis entry gates remain required.
+Full frozen fourteen-arm replay [40049244654](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40049244654)
+is dispatched once at a2a17735. It reuses the exact943-stage original reference
+and qualified exports without HF recapture or conversion, verifies all29
+recorded native source files (27 unchanged plus two test-only dump fixes), and
+retains every metric/TRACE vector and positive delta variant separately.
+Public/quality/calibration/numerical tools transfer the exact reviewed math
+configuration; no production default, alias or model publication is activated.

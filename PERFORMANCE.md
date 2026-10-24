@@ -6370,3 +6370,24 @@ records raw budget flags, original self-variation, all14 outcomes and remote
 artifact identities. Preserve the complete reference; subsequent native work
 reuses it without HF recapture. No model alias, weights publication or full-model
 qualification follows.
+
+## Ovis existing precision A/B — 24 October 2026
+
+[40047163838](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40047163838)
+atdf65e911 completes all twelve F32/F16 vision arms with37 raw vectors each and
+byte-integrity controls. Both baseline arms reproduce every original metric and
+failure exactly. `both` (precise norm and attention) and `cascade_precise_attn`
+pass all37 unchanged backend-calibrated comparisons in each precision; other
+presets fail and remain retained. Independent review checks the full small ZIP,
+all twelve logs/manifests,444 vector declarations and live artifact metadata.
+Large vectors remain remote and were not independently downloaded.
+[All arm metrics, raw flags, artifacts and review](tests/results/qwen35-ocr/ovisocr2-vision-ab.json).
+
+`both` is selected for full replay: its merger maximum errors1.80006027e-5 F32
+and2.36034393e-5 F16 are the lowest in the panel; cascade/precise attention has
+lower block11 up errors but higher merger errors and remains available. Four
+strict0.002 exceedances (block11 up, activation, down and layer output) remain
+in every passing arm; existing original-backend variation budgets pass without
+any changed threshold or comparator. This is component evidence, not decoded
+quality. Baseline/two-forward test wall times33.98/34.33 seconds versus selected
+60.67/60.77 include loading, dumps and controls; one case is not production latency.
