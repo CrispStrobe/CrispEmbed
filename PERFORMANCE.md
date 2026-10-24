@@ -6442,3 +6442,38 @@ and decoding, excludes processor preparation; it is not directly comparable to
 GPU engine or native initialization/audit-command timings. No native task or
 quantized quality claim follows from these original-only scores.
 [Full original outputs, source hashes and independent review](tests/results/qwen35-ocr/ovisocr2-original-quality.json).
+
+
+## Ovis first native F16 task quality — 24 October 2026
+
+[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
+at638380f6 matches every original HF token ID/raw/processed text on all eleven
+frozen inputs:1841 generated IDs, eleven EOS248046 completions, no caps, eight
+synthetic WER0 cases and15/15 inventory cells. All raw/content CER/WER values
+match the original table above, including its recognition errors. Selected-token
+probability maximum absolute difference is0.00012046128 and per-case mean maximum
+is0.00001599052; score objects retain these actual confidence differences.
+The original comparators and raw vision exceedances are unchanged.
+[Full frozen first F16 outputs and review](tests/results/qwen35-ocr/ovisocr2-f16-quality.json).
+
+| Native F16 case | Recognition wall seconds | Initialization seconds | Actual tokens |
+| --- | ---: | ---: | ---: |
+| Hello OCR | 51.1448 | 0.4217 | 9 |
+| Historical receipt | 1375.8779 | 0.4082 | 882 |
+| Two-column page | 1110.8849 | 0.4151 | 697 |
+| Inventory table | 293.4648 | 0.4036 | 174 |
+
+All eight synthetic recognition walls range46.94–62.16 seconds. Actual CPU is
+AMD EPYC7763, four logical/affinity CPUs with two OMP/MKL/OpenBLAS threads;
+child-process high-water RSS3533312KiB (3.37GiB) is a per-case upper bound,
+not a fresh per-case peak. Recognition walls include native preprocessing,
+vision, decoding and confidence, exclude initialization. The HF EPYC9V74 run
+and its processor-excluding boundary differ: do not claim a same-host speed
+ratio. Native latency is substantial despite decoded parity. Profile separately
+and measure gated unchanged-output alternatives before optimization/default
+changes; do not repeat this qualified first F16/reference panel merely for timing.
+
+Quant short host controls reuse this first eleven-case F16 evidence and still
+run every candidate on all eleven inputs. One same-run control cannot establish
+all-case cross-host F16 equivalence or causal document speed. Keep explicit full
+host controls available and preserve all candidate timings/CPU/RSS separately.

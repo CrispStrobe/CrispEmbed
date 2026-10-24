@@ -14704,3 +14704,41 @@ generation guards already validated by the943-field capture. Actual hosted
 execution confirms both contracts, avoiding duplicate tuple/list and raw-config
 assumptions. Subsequent native/quantized quality reuses the same original
 artifact and exact scores; never recapture or replace it.
+
+
+## 24 October 2026 — First native Ovis F16 quality matches all eleven Python outputs
+
+[40056641800](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40056641800)
+at638380f6 completes the first full F16 task panel. Independent review verifies
+all33 small-report ZIP members, eleven frozen PNG identities, retained original
+ZIP bytes, source/log hashes and recomputed unchanged quality scores. All25
+recorded native source files also match the positive fourteen-arm a2a17735 audit.
+All1841 generated token IDs and every raw/processed text match the frozen
+original HF reference on all eleven cases. Every case reaches EOS248046 without
+caps; all eight synthetic WER values are0 and inventory has15/15 exact cells.
+Raw/parsed receipt and two-column recognition errors remain unchanged, as do
+strict-v1 table-border parse failures and the four raw strict vision flags.
+[First qualified F16 producer and independent review](tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+is now frozen; later host controls cannot replace its outputs or scores.
+
+Actual F16 GGUF remains1717222848 bytes/SHA d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db.
+Report artifact12547361841 is1679537 bytes, ZIP SHA
+`e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f`,
+raw report SHA `648b2c252b08e1e56008fe81b2ce5aa9c1390eaf9cf93b7b8e5699303cf0925e`.
+Actual native CPU is AMD EPYC7763 with four logical/affinity CPUs and two
+OMP/MKL/OpenBLAS threads. Native document walls are1375.87791/1110.88488/293.464767
+seconds; child RSS upper bound3533312KiB. Original HF used a different EPYC9V74
+CPU and timing boundary. These are separate measurements, not a causal speed
+comparison; native latency remains a measured follow-up. No broad benchmark,
+quantized qualification, model publication, alias or runtime release follows.
+
+The quant harness now binds the frozen first eleven-case F16 scores. Explicit
+full same-run controls remain available; source-guarded one-image host controls
+avoid three repeated full F16 panels without claiming cross-host identity or
+paired document speed. Each candidate still runs all eleven cases and the full
+numeric diagnostic. Reports retain473 before/after tensor records and, for the
+calibrated arm, actual small stats/imatrix bytes; no heldout/document calibration.
+Pure quality/publisher controls pass41 tests with one existing skip; actual
+quant outcomes remain required. The registered published-consumer harness has
+8 pure controls and will require real immutable publication/registry pins and
+fresh CLI/HTTP downloads before claiming a consumer result. No such result yet.
