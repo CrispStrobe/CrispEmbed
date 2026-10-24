@@ -686,7 +686,7 @@ def quant_raw_diff_manifest(folder, stages, metric_lines, trace_lines, phase, pr
                      ('prefill', 'cached', 'full_prefix') for index in range(24)}
         required |= {name for name in stages if re.fullmatch(r'generated\.scores\.\d+', name)}
         required.add('generated.scores.0')
-    elif probe == 'first-linear':
+    elif probe in ('first-linear', 'first-linear-control'):
         required |= set(parse_first_linear_diagnostic('', 1)['local_expected_stages'])
     else:
         raise ValueError('Unknown quant raw diff probe')
@@ -720,10 +720,14 @@ def quant_raw_diff_manifest(folder, stages, metric_lines, trace_lines, phase, pr
 
 def quant_probe(binary, candidate, reference, phase, out, scratch, report, save,
                 selection, stages, capture_sha, probe):
-    label = phase + ('-official-numerical-diff' if probe == 'decoder' else '-first-linear-diff')
+    label = phase + {'decoder': '-official-numerical-diff',
+                     'first-linear': '-first-linear-diff',
+                     'first-linear-control': '-f16-first-linear-control'}[probe]
     dump = Path(scratch) / 'native-diff' / phase / probe
     dump.mkdir(parents=True, exist_ok=True)
     env = numerical_environment(phase, selection)
+    if probe == 'first-linear-control':
+        env['CRISPEMBED_QWEN35_QUANT'] = '0'
     env['CRISPEMBED_DIFF_DUMP_DIR'] = str(dump)
     path = out / (label + '.log')
     started = time.monotonic()
@@ -743,6 +747,8 @@ def quant_probe(binary, candidate, reference, phase, out, scratch, report, save,
     result = parser(path.read_bytes(), exit_code)
     result.update({'log': path.name, 'log_sha256': sha(path), 'wall_seconds': time.monotonic() - started,
                    'source_reference_sha256': sha(reference),
+                   'model_sha256': sha(candidate),
+                   'quant_gate': env['CRISPEMBED_QWEN35_QUANT'],
                    'process_error': error,
                    'source_thresholds': {'cos_min': 0.99999, 'absolute_base': 0.002,
                                          'calibration': 'unchanged named original backend variation'},
@@ -761,24 +767,40 @@ def quant_probe(binary, candidate, reference, phase, out, scratch, report, save,
         result['raw_diff_error'] = type(exc).__name__
         result['raw_diff_coverage_complete'] = False
         result['passed'] = False
-    report['quant_numerical' if probe == 'decoder' else 'quant_first_linear'] = result
+    key = {'decoder': 'quant_numerical', 'first-linear': 'quant_first_linear',
+           'first-linear-control': 'quant_first_linear_control'}[probe]
+    report[key] = result
     save()
     return result
 
 
 def quant_numerical_diagnostics(build, candidate, reference, phase, out, report, save,
-                               selection, scratch):
-    """Run both bounded probes; reusable by candidate-only hosted raw replay."""
+                               selection, scratch, *, baseline_f16=None):
+    """Run candidate probes and optional same-run F16 local control."""
     baseline = json.loads(BASELINE.read_text())['producer']
     stages, capture_sha = frozen_numerical_shapes(reference, baseline)
     results = {}
+    invoked = []
+    if baseline_f16 is not None:
+        results['first-linear-control'] = quant_probe(
+            Path(build) / 'test-qwen35-linear', baseline_f16, reference, phase,
+            out, scratch, report, save, selection, stages, capture_sha,
+            'first-linear-control')
+        invoked.append('first-linear-control')
+    else:
+        results['first-linear-control'] = None
+        report['quant_first_linear_control'] = {
+            'run': False, 'reason': 'Candidate-only replay; no F16 file supplied'}
+        save()
     for probe, target in (('first-linear', 'test-qwen35-linear'),
                           ('decoder', 'test-qwen35-decoder')):
         results[probe] = quant_probe(Path(build) / target, candidate, reference, phase,
                                      out, scratch, report, save, selection,
                                      stages, capture_sha, probe)
+        invoked.append(probe)
     results['raw_complete'] = all(results[probe]['raw_diff_coverage_complete']
-                                  for probe in ('first-linear', 'decoder'))
+                                  for probe in invoked)
+    results['invoked_probes'] = invoked
     report['quant_raw_complete'] = results['raw_complete']
     save()
     return results
@@ -1661,7 +1683,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         report['phase'] = phase + '-official-numerical-diagnostic'
         save()
         quant_numerical_diagnostics(build, candidate, diff_reference, phase, out,
-                                    report, save, selection, scratch)
+                                    report, save, selection, scratch, baseline_f16=f16)
         report['phase'] = phase + '-native-quality'
         save()
         outputs = native_cases(runner, candidate, cases, cleaner, filter_fn, out, report, save,
@@ -1684,6 +1706,9 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
             raise ValueError('Quantized paired OCR quality screen failed; observations retained')
         if report['quant_raw_complete'] is not True:
             raise ValueError('Quantized native raw diagnostic capture incomplete; quality observations retained')
+        if (report['quant_first_linear_control']['passed'] is not True
+                or report['quant_first_linear']['passed'] is not True):
+            raise ValueError('First linear F16 control or candidate diagnostic failed; quality observations retained')
         if report['quant_numerical']['passed'] is not True:
             raise ValueError('Quantized numerical diagnostic failed; quality observations retained')
         report['status'] = 'completed quantized quality observations; independent review pending'

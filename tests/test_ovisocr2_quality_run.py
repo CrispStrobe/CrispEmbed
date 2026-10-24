@@ -103,6 +103,62 @@ class QualityDriverControls(unittest.TestCase):
         self.assertTrue(result['raw_complete'])
         self.assertTrue(report['quant_raw_complete'])
         self.assertFalse(result['decoder']['passed'])
+        self.assertIsNone(result['first-linear-control'])
+        self.assertFalse(report['quant_first_linear_control']['run'])
+
+    def test_optional_f16_control_runs_first_and_is_part_of_raw_completeness(self):
+        calls = []
+
+        def fake_probe(*args):
+            probe = args[-1]
+            calls.append(probe)
+            return {'passed': probe != 'first-linear-control',
+                    'raw_diff_coverage_complete': probe != 'first-linear-control'}
+
+        report = {}
+        with patch.object(driver, 'frozen_numerical_shapes', return_value=({}, 'a'*64)), \
+                patch.object(driver, 'quant_probe', side_effect=fake_probe):
+            result = driver.quant_numerical_diagnostics(
+                Path('/unused'), Path('/candidate.gguf'), Path('/unused.ref'), 'q8',
+                Path('/unused-out'), report, lambda: None, {}, Path('/unused-scratch'),
+                baseline_f16=Path('/baseline-f16.gguf'))
+        self.assertEqual(calls, ['first-linear-control', 'first-linear', 'decoder'])
+        self.assertEqual(result['invoked_probes'], calls)
+        self.assertFalse(result['raw_complete'])
+        self.assertFalse(report['quant_raw_complete'])
+        self.assertTrue(result['decoder']['passed'])
+
+    def test_f16_control_probe_has_separate_path_and_quant_gate_zero(self):
+        expected = driver.parse_first_linear_diagnostic('', 1)['local_expected_stages']
+        text = '\n'.join(f'PASS {stage}: cos_min=1 cos_global=1 '
+                         'max_abs=0 mean_abs=0 norms=1/1' for stage in expected)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model, reference = root/'f16.gguf', root/'official-delta.gguf'
+            model.write_bytes(b'f16')
+            reference.write_bytes(b'ref')
+            seen = []
+
+            def fake_run(args, **kwargs):
+                seen.append((args, kwargs['env'].copy()))
+                kwargs['stdout'].write(text)
+                return type('Result', (), {'returncode': 0})()
+
+            with patch.object(driver, 'numerical_environment', return_value={
+                    'CRISPEMBED_QWEN35_QUANT': '1'}), \
+                    patch.object(driver.subprocess, 'run', side_effect=fake_run), \
+                    patch.object(driver, 'quant_raw_diff_manifest', return_value={
+                    'coverage_complete': True}):
+                report = {}
+                result = driver.quant_probe(root/'test-qwen35-linear', model, reference,
+                    'q4', root, root, report, lambda: None, {}, {}, 'a'*64,
+                    'first-linear-control')
+            self.assertEqual(seen[0][0][-1], '--first-layer')
+            self.assertEqual(seen[0][1]['CRISPEMBED_QWEN35_QUANT'], '0')
+            self.assertIn('/native-diff/q4/first-linear-control',
+                          seen[0][1]['CRISPEMBED_DIFF_DUMP_DIR'])
+            self.assertIn('q4-f16-first-linear-control', result['log'])
+            self.assertEqual(report['quant_first_linear_control']['model_sha256'], driver.sha(model))
 
     def test_frozen_stage_shapes_bind_exact_original_json_sha(self):
         with tempfile.TemporaryDirectory() as directory:
