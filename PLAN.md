@@ -408,3 +408,23 @@ caches separately, beginning with legacy engine20: ordered stages permit distinc
 model paths, while several existing caches are keyed only by engine. Preserve
 working paths, add a forced-rejection/second-model regression, and scope any
 correction to the demonstrated engine rather than changing all backends at once.
+
+## Downstream OCR provider/catalog follow-up — after qualified runtime assets
+
+CrispEmbed source/model publication does not upgrade a consumer's immutable
+runtime. Keep CrispMath pinned0.17.12 until the separate successor-asset and
+consumer lane qualifies its actual library hashes. Do not expose engine21 as a
+working option against an older runtime.
+
+For CrispSorter, the public source inspected at
+[a142496e](https://github.com/CrispStrobe/CrispSorter/tree/a142496ead324b47c83faaa31a5bb7b12f91a04f)
+uses Rust/Tauri/Svelte, not the old Dart paths in the contribution guide.
+After native/model qualification and a compatible immutable runtime are ready:
+update `src-tauri/src/extractors/mod.rs::engine_id`, the qualified default-model
+mapping in `src-tauri/src/extractors/ocr_crispembed.rs`, and the actual engine
+configuration/selector. Use orchestrator stage21 for Ovis; the older
+`vlm_engine_id` escalation API uses a different number space. Preserve existing
+default engines and the three experimental gates. Acceptance requires actual
+selected-library identity, empty-cache model hash resolution, output/confidence,
+cap/custom-prompt rejection and fallback-stage behavior. Record the consumer
+source/artifact proof separately; do not claim it from vendor component parity.

@@ -210,14 +210,24 @@ together and verify they agree.
 > `tests/test_ocr_max_tokens_surfaces.py` now fails on any of it — run it after
 > adding an engine.
 
-### 5e. Expose in CrispSorter (`CrispSorter/lib/engine/`)
+### 5e. Expose in CrispSorter
 
-CrispSorter (the Tauri desktop app) selects engines by the same int IDs.
-When adding a new engine to CrispEmbed, also add it to:
+CrispSorter is a Tauri/Rust/Svelte application. Its current integration is in
+[`src-tauri/src/extractors/mod.rs`](https://github.com/CrispStrobe/CrispSorter/blob/main/src-tauri/src/extractors/mod.rs)
+and [`ocr_crispembed.rs`](https://github.com/CrispStrobe/CrispSorter/blob/main/src-tauri/src/extractors/ocr_crispembed.rs),
+not the Dart catalog paths used by CrispCalc below. Trace the current consumer
+source before editing its engine selector or model defaults.
 
-1. `ocr_providers_init.dart` — register with `engine_id: N`
-2. `ocr_model_manager.dart` — add `OcrModelVariant` entries
-3. UI dropdown label (if not auto-generated from registry)
+1. Keep `engine_id()` consistent with the public orchestrator stage IDs.
+2. Wire qualified registry defaults and the actual UI/configuration selector.
+3. Check the selected runtime artifact exports the new engine, then exercise
+   model resolution, cap/prompt handling and an actual stage result.
+
+`vlm_engine_id()` in the older escalation pipeline has a different numbering
+scheme; an orchestrator stage ID cannot be inserted there as an equivalent.
+Experimental source support does not upgrade a consumer's pinned runtime.
+Enable a consumer option only after its immutable runtime and model artifacts
+are qualified; keep pending provider/catalog work and that dependency in PLAN.
 
 If you don't have access to the CrispSorter repo, leave a TODO in the
 commit message so it gets picked up.
