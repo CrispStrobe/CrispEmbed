@@ -182,11 +182,11 @@ class QualityDriverControls(unittest.TestCase):
         source = (ROOT/'tests/test_qwen35_linear.cpp').read_text()
         self.assertIn('std::string(argv[3]) == "--first-layer"', source)
         self.assertIn('if (first_layer && index > 0) break;', source)
-        original = subprocess.check_output(['git', 'show',
-            '638380f6:tests/test_qwen35_linear.cpp'], cwd=ROOT, text=True)
         def compare_body(text):
             return text.split('static bool compare(', 1)[1].split('static bool include(', 1)[0]
-        self.assertEqual(compare_body(source), compare_body(original))
+        # Hosted checkout is shallow; pin the original comparison body directly.
+        self.assertEqual(hashlib.sha256(compare_body(source).encode()).hexdigest(),
+                         'aef6d2e5de7092b90eb9f2e1c31629e2733fcac80edf535f32ad249baa82e7e7')
 
     def test_short_control_is_explicit_and_full_driver_default_remains(self):
         self.assertEqual(inspect.signature(driver.run_main).parameters[
