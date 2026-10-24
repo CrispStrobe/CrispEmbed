@@ -1,3 +1,51 @@
+## 24 October 2026 — Ovis qualification loop integrated and closed
+
+[PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) merges qualified head
+`bf0bbccb55ffa845d61088333ad178dcaf10848f` as main commit
+`dd64c7e9068bab73b85eb32d7c86444a78f9d1cb`. All final-source checks and merged-source
+platform/Flutter/WASM/style/security/regression checks complete successfully;
+conditional full-corpus/model jobs retain their actual executed/skipped statuses
+in the linked runs. No conditional skip is counted as a model quality pass.
+The merge tree is byte-identical to the qualified PR tree
+`95a54ea6706ee1991d65684382996149048319e3`; no model/source recapture was needed.
+
+- [PR79: Quantizer precision overrides](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086737015) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Rust crates](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736934) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Build WASM](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736930) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736926) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736935) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: LFM2 precise arithmetic fixture](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736917) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Lint](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736924) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Qwen3.5 decoded audit controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736921) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: OCR regression](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086736911) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086735434) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Lint](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086735469) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: OvisOCR2 metadata, export, frontend and fixture audits](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086735521) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [PR79: Secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40086730615) at `bf0bbccb55ffa845d61088333ad178dcaf10848f` — success
+- [Main: Qwen3.5 decoded audit controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775908) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Build WASM (text embeddings)](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775869) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: OvisOCR2 metadata, export, frontend and fixture audits](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775919) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Rust crates](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775895) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Secret scan](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775956) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Lint](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775868) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: LFM2 precise arithmetic fixture](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775904) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Quantizer precision overrides](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775915) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Build WASM](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775873) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Deploy WASM demo (GitHub Pages)](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775861) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: OCR regression](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775837) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+- [Main: Build](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40089775899) at `dd64c7e9068bab73b85eb32d7c86444a78f9d1cb` — success
+
+This closes the approved frontend → original GPU → native/full-diff → public/
+quality → three quantization decisions → qualified F16 publication/real consumer
+sequence. It does not qualify rejected Q8/Q4 recipes or remove raw strict vision
+flags. All25 native source hashes remain those of the qualified first F16 run.
+Development stays0.17.13; app/published runtime stays immutable0.17.12. External
+catalog/provider activation remains dependent on qualified immutable successor
+binaries. Future latency/RSS, selective precision, larger inputs and remote
+artifact preservation are separately scoped in PLAN. The optional M1 consumer
+handoff has no returned result yet. The vendor-only CrispMath handoff mirrors
+this outcome while retaining consumer-owned work.
+
 ## 24 October 2026 — Published Ovis alias and real consumers qualify
 
 [40080458492](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40080458492)

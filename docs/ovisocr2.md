@@ -5,7 +5,7 @@ conversion and all473-tensor roundtrips pass39992662147; PR77 is merged.
 [Export producer and independent review](../tests/results/qwen35-ocr/ovisocr2-export.json)
 record exact sources, payload/manifest hashes, artifact expiry and review limits.
 Model payloads remain remote. Exact frontend parity passes40017014043; PR78
-merged918c1c8d. DraftPR79 contains gated CPU format-2 inference. Reviewed
+merged918c1c8d. PR79 integrates gated CPU format-2 inference. Reviewed
 [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json)
 passes all14 F32/F16 arms over943 frozen fields using the explicit `both`
 vision preset; four raw strict0.002 vision flags remain. Actual
@@ -31,14 +31,14 @@ two fresh-cache full model hashes, offline reuse and exact CLI/HTTP text, one
 region and bounded confidence. Public APIs expose no IDs/stops; the native
 proof remains separate.
 Follow the [active completion sequence](../PLAN.md#active-ovis-completion-sequence)
-through final PR79 integration. The three entry gates and audited
+for completed integration and bounded follow-ups. The three entry gates and audited
 vision settings remain explicit; no default model, runtime release or app upgrade
 is activated. Development is0.17.13; the app stays on immutable0.17.12.
 [Full configuration, hashes and473-tensor header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
 
 ## Using the qualified F16 alias
 
-Use a compatible development build containing PR79 and an image within the
+Use a compatible development build containing merged PR79 and an image within the
 1024-visual-patch bound. This command uses the reviewed `both` vision preset:
 
 ```sh

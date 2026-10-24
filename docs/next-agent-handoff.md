@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) is independently qualified | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is rejected for numerical and two-column text regression. Both Q4 attempts and Q8 raw supplement are reviewed negative; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Published CLI/HTTP/offline consumer40080458492 passes independent review; final PR79 integration remains. Preserve initial12/14 failures and raw strict flags. F16 publication and actual alias consumer are verified. Xiaomi follows; Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 source/export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 binding/CLI/HTTP arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) is independently qualified | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is rejected for numerical and two-column text regression. Both Q4 attempts and Q8 raw supplement are reviewed negative; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Published CLI/HTTP/offline consumer40080458492 passes; PR79 and final platform/Flutter/WASM/style/security checks are integrated. Next: bounded latency/RSS attribution. Preserve initial12/14 failures and raw strict flags. F16 publication and actual alias consumer are verified. Xiaomi follows; Indra public-code-only |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -234,7 +234,7 @@ pin both native-off options and pass the release CPU-baseline checker before
 compilation. [Reviewed flags and log hashes](../tests/results/packaging/development-cpu-baseline.json).
 Cross-host installed bundle reuse and successor release assets remain separate.
 
-## OvisOCR2 qualification and remaining integration
+## OvisOCR2 completed qualification and follow-ups
 
 Frontend PR78 merged918c1c8d after exact pixels/IDs/grids/masks/template,
 Unicode and negative controls40017014043. Controlled original GPU recipe5fe3fc90
@@ -358,8 +358,9 @@ at5296e955 passes two fresh-cache full model hash checks, offline CLI cache
 reuse and actual CLI/HTTP text, region and existing confidence budgets. Both
 independent reviews verify all seven report members/six logs, seven helper and
 25 native source hashes. Public APIs expose no IDs/stops; the separately frozen
-native nine-ID/EOS proof remains unchanged. Final exact-source PR79 CI/merge and
-the vendor-only documentation mirror remain before closing integration.
+native nine-ID/EOS proof remains unchanged. PR79 is merged after final-source
+and merged-source checks. The qualification loop is closed; next select the
+bounded latency/RSS profiling lane in PLAN.
 Model publication does not upgrade the app or create a runtime release.
 The optional [M1 consumer handoff](handover-m1-ovisocr2.md)
 pins the same published model and native code with corrected Darwin RSS units.
@@ -368,4 +369,5 @@ The app remains pinned0.17.12; published F16 and wired source alias do not upgra
 
 See the active Ovis sequence in [PLAN](../PLAN.md). Native, public and first
 F16 quality and all three quantization/calibration reviews are complete; F16
-publication and actual published consumer pass. Final integration remains open.
+publication, actual published consumer and final integration pass. Continue the
+separately scoped follow-ups in PLAN, starting with latency/RSS attribution.

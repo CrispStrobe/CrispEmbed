@@ -133,7 +133,8 @@ anonymous small-file/tree review is positive. The initial namespace denial is
 preserved separately and the temporary publisher binding removed. The real
 `ovisocr2-f16` alias and CLI/server resolution pass actual published
 consumer40080458492: two fresh-cache hashes, offline reuse and CLI/HTTP text/
-confidence. Final PR79 integration remains. All25 native source files
+confidence. PR79 and final-source/merged-source checks are integrated; continue
+the bounded latency/RSS profiling lane in PLAN. All25 native source files
 and qualified `src`/ggml/CMake objects stay unchanged. Ten current consumer controls and
 three adapter controls pass; the consumer rejects native-source drift before
 build. Retain initial failures and raw strict flags. No runtime release, app
