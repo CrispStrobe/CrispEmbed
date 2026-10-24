@@ -360,7 +360,7 @@ def http_arm(build, alias, image, expected, cache, selection, precision, out):
     with log_path.open('wb') as log:
         proc = subprocess.Popen([str(build / 'crispembed-server'), '--ocr-pipeline',
                                  '--ocr-engine', 'ovisocr2', '--ocr-rec', alias,
-                                 '--ocr-max-tokens', str(MAX_TOKENS), '--host', '127.0.0.1',
+                                 '--ocr-max-tokens', str(MAX_TOKENS), '-t', '2', '--host', '127.0.0.1',
                                  '--port', str(port), '--image-root', str(image.parent)],
                                 cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
         try:
@@ -413,6 +413,7 @@ def main():
                   'tools/ci-heavy/ovisocr2_published_consumer.py',
                   'tools/ci-heavy/ovisocr2_publish.py',
                   '.github/workflows/ovisocr2-published-consumer.yml',
+                  'examples/cli/main.cpp', 'examples/server/server.cpp',
                   'examples/cli/model_mgr.cpp', 'examples/cli/model_hashes.h')},
               'arms': {}, 'limits': ['Public CLI/HTTP APIs expose text/confidence but no token IDs or stop reason; '
                                      'nine generated IDs and EOS are separately frozen in the reviewed native receipt.',
@@ -457,6 +458,9 @@ def main():
             save()
             if result['exit_code'] != 0 or result['log_bytes'] == 0:
                 raise ValueError(label + ' failed or returned empty diagnostics')
+        report['native_binary_sha256'] = {name: sha(build / name)
+                                          for name in ('crispembed', 'crispembed-server')}
+        save()
         alias = publication['registry']['alias']
         filename = publication['registry']['filename']
         selection = publication['qualification']['selected_vision_preset']
