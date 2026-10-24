@@ -4,13 +4,21 @@ on:
     inputs:
       phase:
         type: choice
-        description: 'Original metadata/export, frontend, full-model parity, vision A/B or exact wrong-profile fixture'
-        options: [metadata, export, frontend, model, vision, lighton-fixture]
+        description: 'Metadata/export/frontend, historical model capture, frozen replay, vision A/B or wrong-profile fixture'
+        options: [metadata, export, frontend, model, replay, vision, lighton-fixture]
         default: metadata
+      vision_preset:
+        type: choice
+        description: 'Frozen replay only: explicit independently reviewed existing math preset'
+        options: [baseline, precise_norm, precise_attn, both, cascade, cascade_precise_attn]
+        default: baseline
   push:
     branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
     paths:
       - '.github/workflows/ovisocr2-metadata.yml'
+      - '.github/workflows/ovisocr2-native-replay.yml'
+      - 'tools/ci-heavy/ovisocr2_native_replay.py'
+      - 'tests/test_ovisocr2_native_replay.py'
       - 'tools/ci-heavy/ovisocr2_metadata.py'
       - 'tests/test_ovisocr2_metadata.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
@@ -60,6 +68,8 @@ jobs:
           python tests/test_ovisocr2_vllm_recipe.py -v
           python tests/test_ovisocr2_vllm_review.py -v
           python tests/test_ovisocr2_lighton_fixture.py -v
+          python tests/test_ovisocr2_vision_audit.py -v
+          python tests/test_ovisocr2_native_replay.py -v
   lighton-fixture:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'
     needs: controls
@@ -292,3 +302,9 @@ jobs:
             ${{ runner.temp }}/scratch/ovis-export/README.md
           if-no-files-found: warn
           retention-days: 90
+  replay:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'replay'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-native-replay.yml
+    with:
+      preset: ${{ inputs.vision_preset }}
