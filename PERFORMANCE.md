@@ -1,3 +1,33 @@
+## OvisOCR2 bounded larger-input audit — 25 October 2026
+
+[Four-case evidence](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json) preserves
+all raw/calibrated numerical flags. Frozen control and1024/1200 patches pass14/14
+arms. The2048 boundary passes8/14: six composed decoder arms first fail final
+prefill normalization, max0.00394558907 F32/0.00438690186 F16 versus replay with original
+prepared embeddings0.000289916992/0.000239372253. Norms round3187.82251 on both sides and
+cosine rounds1.0; calibrated ratios1.073/1.193 still reject. All nine IDs/raw text/
+EOS match at every size. The source adds a blank line: raw CER1/15, WER0;
+whitespace-normalized CER/WER0. No2048 numerical qualification follows.
+
+The recorded AMD EPYC7763 host exposes four logical CPUs. Native owning calls
+use two threads; initialization and recognition are separate below. Fresh-process
+RSS includes model load and recognition, without large reference arrays.
+
+| Input / patches | Native F16 recognition s | Initialization s | Process peak RSS GiB |
+| --- | ---: | ---: | ---: |
+| 512x512 /1024 | 80.660 | 0.475 | 3.36 |
+| 640x480 /1200 | 104.080 | 0.473 | 3.40 |
+| 1024x512 /2048 | 311.293 | 2.246 | 3.58 |
+
+Original HF capture uses **four** threads, includes framework/array-dump work and
+has different timing boundaries, so its71.23/79.79/121.13 process seconds are
+not a paired speed comparison. Native intermediate-audit processes use much more
+memory than owning calls; the failed F32 native-vision arm reaches9,762,208 KiB.
+Its GNU-time resource file includes a nonzero-exit prefix; the independent review
+retains that fact and recovers the measurements. Large raw arrays remain hosted.
+These are single owned text samples at each geometry, not dense-page throughput,
+full upstream resolution, OCRBench/OmniDocBench or GPU qualification.
+
 ## OvisOCR2 attention-F16 / FFN-Q4 — 25 October 2026
 
 The independently reviewed [selective attempt](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)

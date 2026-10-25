@@ -15327,3 +15327,37 @@ ends23 January2027. Later diagnostic workers require the complete reviewed
 `src` Git tree, exact CMake/ggml identities and clean checkouts. They explicitly
 apply the reviewed native gate values, including in-process ctypes probes, with
 ambient-variable negative controls; no reference probe enters production weights.
+
+## 25 October 2026 — Final Ovis2 quality and rejected 2048-patch boundary
+
+[Final-source F16 quality40183493328](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183493328)
+at26dcb07f is independently positive. [The new receipt](tests/results/qwen35-ocr/ovisocr2-final-runtime-f16-quality.json)
+retains the complete producer and checks36 source hashes,15 logs and all11 PNG/RGB
+inputs. All1,841 IDs, raw/processed text, stops, caps, per-token confidences and
+means exactly match the frozen first-F16 result and earlier expanded-runtime
+replay. Recomputed original/F16 quality and both paired screens match. The first
+baseline remains unchanged. Different host wall/RSS values are diagnostic only.
+
+[Larger-input40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574)
+atac1bb9cb is complete with a **negative2048 numerical outcome**. The old frozen
+control, authored512-square/1024 patches and640x480/1200 patches each pass14/14
+F32/F16 arms. The1024x512/2048 boundary passes8/14: six native-vision/positions/
+frontend decoder arms fail first at prefill.decoder.norm, and again at full-prefix
+norm. F32/F16 maximum errors are0.00394558907/0.00438690186, calibrated ratios
+1.07317429/1.19320846, despite reported cosine1.0 and norms3187.82251/3187.82251.
+Decoder replay with the original prepared embeddings passes at0.000289916992/0.000239372253. This
+isolates the composed native-vision boundary but does not identify a defective
+operator. No precision, budget, prompt, pixel, gold or reference change follows.
+
+All three new originals capture943 stages, with observed/unobserved output
+identity and complete EOS. Both native owning calls for all three new inputs
+return the same nine IDs, raw `Hello OCR\n\n12345` and EOS248046. Raw authored
+CER1/15 is the source's extra newline; raw WER and whitespace-normalized CER/WER
+are zero. Exact decoded output does not waive the six numerical failures.
+Default1024 remains; the four-gate2048 path remains experimental and unqualified.
+The independent [combined receipt](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
+checks four small ZIPs, source/log/resource hashes and1,662 raw declarations per
+case. All four full producer JSON files are preserved byte-exact in Git. Large
+reference/model/vector bytes remain remote and were not independently downloaded.
+Six failed-arm GNU-time files prepend an exit-status line; review recovers their
+resource JSON explicitly without rewriting producer records.

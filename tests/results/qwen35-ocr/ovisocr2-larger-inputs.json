@@ -155,7 +155,8 @@
         "native_vision_full_prefix_budget": "BUDGET full_prefix.decoder.norm: strict_absolute_pass=0 calibrated=1 self_max_abs=0.00217819214 max_ratio=1.19320846"
       }
     },
-    "failed_arm_resources_recovered_from_small_time_file_not_producer_resource_field": true
+    "failed_arm_resources_recovered_from_small_time_file_not_producer_resource_field": true,
+    "full_producer_report_bytes_preserved_in_git": true
   },
   "cases": {
     "frozen-control": {
@@ -392,7 +393,8 @@
           "raw_manifest_record_count": 0,
           "raw_manifest_coverage_complete": true
         }
-      }
+      },
+      "producer_report_git_path": "tests/results/qwen35-ocr/ovisocr2-larger-input-producers/frozen-control.json"
     },
     "control-square": {
       "status": "completed larger-input audit",
@@ -822,7 +824,8 @@
           "max_rss_kib": 3526732,
           "resource_parsed_from_failed_time_output": false
         }
-      }
+      },
+      "producer_report_git_path": "tests/results/qwen35-ocr/ovisocr2-larger-input-producers/control-square.json"
     },
     "large-landscape": {
       "status": "completed larger-input audit",
@@ -1252,7 +1255,8 @@
           "max_rss_kib": 3565668,
           "resource_parsed_from_failed_time_output": false
         }
-      }
+      },
+      "producer_report_git_path": "tests/results/qwen35-ocr/ovisocr2-larger-input-producers/large-landscape.json"
     },
     "large-boundary": {
       "status": "rejected larger-input numerical/decoded audit",
@@ -1707,7 +1711,8 @@
           "max_rss_kib": 3750476,
           "resource_parsed_from_failed_time_output": false
         }
-      }
+      },
+      "producer_report_git_path": "tests/results/qwen35-ocr/ovisocr2-larger-input-producers/large-boundary.json"
     }
   }
 }
