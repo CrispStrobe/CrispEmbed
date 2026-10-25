@@ -60,6 +60,22 @@ def observe(mlp, x):
     return {'input': x, **captured}
 
 
+def require_environment():
+    import importlib.metadata
+    import torch
+    import transformers
+    from transformers.models.qwen3_5 import modeling_qwen3_5 as blueprint
+    expected = {'transformers':'5.16.1','tokenizers':'0.23.3','numpy':'2.2.6',
+                'gguf':'0.19.0','safetensors':'0.8.0','huggingface-hub':'1.33.0','pillow':'12.1.0'}
+    actual = {name:importlib.metadata.version(name) for name in expected}
+    if actual != expected or torch.__version__.split('+')[0] != '2.11.0':
+        raise ValueError('Original framework environment differs')
+    source = Path(inspect.getfile(blueprint))
+    if sha(source) != SOURCE_SHA: raise ValueError('Actual original Python module differs')
+    torch.set_num_threads(2)
+    return {'packages':actual,'torch':torch.__version__,'blueprint_sha256':sha(source)}
+
+
 def build(original_file, candidate_file, model_dir, native_input, native_layer, output, baseline_records):
     import gguf
     from gguf.quants import dequantize
@@ -69,11 +85,8 @@ def build(original_file, candidate_file, model_dir, native_input, native_layer, 
     from safetensors import safe_open
     from transformers.models.qwen3_5 import modeling_qwen3_5 as blueprint
     from transformers import Qwen3_5TextConfig
-    if transformers.__version__ != '5.16.1' or torch.__version__.split('+')[0] != '2.11.0':
-        raise ValueError('Original Torch/Transformers versions differ')
+    require_environment()
     source = Path(inspect.getfile(blueprint))
-    if sha(source) != SOURCE_SHA: raise ValueError('Actual original Python module differs')
-    torch.set_num_threads(2)
     frozen = {t.name: t for t in gguf.GGUFReader(str(original_file)).tensors}
     def original(name):
         t = frozen[name]

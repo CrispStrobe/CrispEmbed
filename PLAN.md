@@ -443,6 +443,14 @@ All four current attempts are rejected in
 [selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json).
 Keep the published F16 bytes/pin and all previous wrappers unchanged.
 
+The bounded prefill layer0 implementation is on `audit/ovis-ffn-20261025`;
+[its frozen protocol](docs/ovisocr2-first-ffn-attribution.md) defines all five
+source-fed/natural arms, independent Python dequantization, immutable F16
+payload checks and unchanged acceptance gates. Actual hosted execution is
+pending; no numerical or quality result is claimed by the implementation.
+The first dispatch was superseded before execution to add an explicit allocator
+header found in source review; retain its cancellation separately from results.
+
 - [ ] First audit the same candidate weights and activation semantics against
   an independent Python/ONNX blueprint. Start at the first FFN boundary after
   the passing source-fed linear block for the attention-F16/FFN-Q4 file. Use

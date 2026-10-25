@@ -248,6 +248,7 @@ jobs:
           python tests/test_ovisocr2_large_inputs.py -v
           python tests/test_ovisocr2_weight_cache.py -v
           python tests/test_ovisocr2_weight_cache_reanalysis.py -v
+          python tests/test_ovisocr2_ffn.py -v
   lighton-fixture:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'
     needs: controls

@@ -479,3 +479,31 @@ The active order and acceptance gates remain in [PLAN](../PLAN.md). Preserve
 large model/reference/raw-vector artifacts remotely and inspect only small
 reports here. Do not promote queued work, a component cosine, or a source audit
 to decoded-quality or publication proof.
+
+
+### Active bounded first-FFN attribution
+
+`audit/ovis-ffn-20261025` implements the [frozen five-arm protocol](ovisocr2-first-ffn-attribution.md).
+Use metadata workflow `phase=first-ffn` on that branch. The test-only executable
+includes the actual decoder source; production `src` remains byte-identical to
+native tree `e5cbd629818f0424e272bc84469e9375eee804d2`, ggml `890278a8`.
+It consumes rejected run40172527229's exact candidate/raw artifacts and original
+reference40049244654, with service/ZIP/member hashes checked remotely. Original
+SF-derived F16 matrix hashes must reproduce the frozen before-quantization
+records. No original array is regenerated, and no new candidate is quantized.
+
+Execution and review remain pending until an actual successful hosted receipt.
+The initial source-only review fixed a receipt-key assumption, test-head backend
+allocation, allocator include and required clean exit before model execution.
+Cancelled superseded queued dispatches are not numerical failures or results.
+Retrieve only `ovisocr2-ffn-reports-RUN`; large weight/reference/activation arrays
+stay in `ovisocr2-ffn-raw-RUN`. Preserve any actual failed producer before fixing
+its cause. Review input/dequant/observer bit equality and unchanged0.002/0.99999
+local stage gates, then absolute errors/norms and intended Q4-versus-F16 loss.
+The final layer comparison includes the native attention residual and is a
+composed control; source-fed local operators establish FFN attribution. A local
+pass cannot override the immutable eleven-case quality rejection. If positive,
+scope a new development/evaluation precision protocol separately; otherwise fix
+the earliest real same-weight mismatch behind a gate and run full qualification
+before claiming decoded correctness. Keep2048 attribution and MI-GAN queued as
+separate lanes, and leave SAM with its existing owner.

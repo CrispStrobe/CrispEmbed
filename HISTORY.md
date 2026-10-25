@@ -15506,3 +15506,15 @@ had exercised its12-token cap; the guard now maps it to the shared `QWEN35_OCR`
 owning API and passes for15 VLM engines/11 owning tags. [Initial CI evidence](tests/results/qwen35-ocr/initial-ovisocr3-cap-routing-guard.json)
 is retained. This is a test-catalogue completion; the audited runtime source,
 model data and numerical/quality verdicts remain unchanged.
+
+
+## 25 October 2026 — bounded first-FFN audit tooling
+
+Added the [test-only OvisOCR2 first-FFN protocol](docs/ovisocr2-first-ffn-attribution.md),
+original-module/independent-Q4 reference dumper, native source observer and hosted
+workflow on `audit/ovis-ffn-20261025`. Source review checked the pinned original
+MLP/RMSNorm/residual semantics and corrected four harness setup issues before
+model execution. Four weight-free contract checks pass locally; no shared-host
+build or inference ran. Actual hosted numerical execution and independent raw
+report review are still pending in PLAN. This tooling milestone does not qualify
+the rejected Q4 candidate, change published F16, or create a runtime release.

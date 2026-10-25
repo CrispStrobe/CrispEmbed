@@ -88,6 +88,9 @@ def run():
     save()
     try:
         if shutil.disk_usage(scratch).free<18*1024**3:raise ValueError('At least18GiB hosted scratch required')
+        from dump_ovisocr2_ffn_reference import require_environment
+        report['environment']=require_environment()
+        save()
         report['artifacts']={}
         report_pin=(receipt['artifact_id'],receipt['artifact_name'],receipt['artifact_bytes'],receipt['artifact_zip_sha256'])
         for key,p in [('reports',report_pin),('candidate',pin(receipt['candidate_artifact'])),('raw',pin(receipt['raw_diff_artifact']))]:
@@ -149,14 +152,16 @@ def run():
         from dump_ovisocr2_ffn_reference import metrics
         expected={t.name:t.data for t in gguf.GGUFReader(str(reference)).tensors}
         report['native_metrics']={}
-        for path in sorted(rawdir.glob('*/*.f32')):
+        for path in sorted(rawdir.rglob('*.f32')):
             name=path.stem;a=np.fromfile(path,dtype='<f4').reshape(expected[name].shape)
             report['native_metrics'][path.relative_to(rawdir).as_posix()]={**metrics(a,expected[name]),'sha256':sha(path),'bytes':path.stat().st_size}
         required={f'source_input/quant.{s}.f32' for s in ('input','gate','up','product','down')}|{
-            'source_gate_up/quant.product.f32','source_gate_up/quant.down.f32','source_silu/quant.silu.f32','source_product/quant.down.f32','natural/native.layer0.f32','source_input/quant.layer0.f32'}
+            'source_gate_up/quant.product.f32','source_gate_up/quant.down.f32','source_silu/quant.silu.f32','source_product/quant.down.f32','natural/native.layer0.f32','source_input/quant.layer0.f32'}|{
+            f'weight.{name}.f32' for name in ('gate','up','down')}
         if not required.issubset(report['native_metrics']):raise ValueError('Missing native stage coverage')
         report['same_weight_passed']=(all(report['native_metrics'][n]['passed'] for n in required)
-            and report['native_metrics']['source_input/quant.input.f32']['bit_exact'])
+            and report['native_metrics']['source_input/quant.input.f32']['bit_exact']
+            and all(report['native_metrics'][f'weight.{name}.f32']['bit_exact'] for name in ('gate','up','down')))
         report['old_decoded_quality']={
             'retained_receipt':'tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json',
             'receipt_sha256':sha(ROOT/'tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json'),

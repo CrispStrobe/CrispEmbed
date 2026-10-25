@@ -113,6 +113,7 @@ static int run(int argc, char ** argv) {
         const bool same = exact(x, expected);
         std::printf("%s dequant.%s bit_exact=%d elements=%zu\n", same ? "PASS" : "FAIL", pair.first, same, x.size());
         ok &= same;
+        ok &= qwen35_compare(ref, "weight." + std::string(pair.first), x);
     }
     // The real first-layer computation needs neither the vocabulary embedding nor
     // full LM head. A test-only zero head satisfies the outer decoder interface.
