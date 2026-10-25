@@ -39,6 +39,45 @@ class Controls(unittest.TestCase):
             report={'commands':{}}
             self.assertTrue(driver.timed_command('probe',[sys.executable,'-c','print(42)'],Path(directory),report))
             self.assertGreater(report['commands']['probe']['resources']['max_rss_kib'],0)
+            self.assertFalse(report['commands']['probe']['resources_recovered_from_gnu_failure_prefix'])
+    def test_observed_gnu_failure_prefix_retains_resources_and_failure(self):
+        measured={'max_rss_kib':9762208,'wall_seconds':307.06}
+        parsed,recovered=driver.parse_gnu_time_resources(
+            'Command exited with non-zero status 1\n'+json.dumps(measured)+'\n',1)
+        self.assertEqual(parsed,measured)
+        self.assertTrue(recovered)
+        self.assertEqual(driver.parse_gnu_time_resources(json.dumps(measured),0),(measured,False))
+    @unittest.skipUnless(platform.system()=='Linux' and Path('/usr/bin/time').is_file(),'GNU time on hosted Linux')
+    def test_actual_failed_command_retains_resources_without_passing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report={'commands':{}}
+            self.assertFalse(driver.timed_command('probe',[sys.executable,'-c','raise SystemExit(1)'],Path(directory),report))
+            command=report['commands']['probe']
+            self.assertEqual(command['exit_code'],1)
+            self.assertFalse(command['passed'])
+            self.assertTrue(command['resources_recovered_from_gnu_failure_prefix'])
+            self.assertGreater(command['resources']['max_rss_kib'],0)
+    def test_gnu_resource_parser_rejects_junk_status_and_invalid_values(self):
+        good='{"max_rss_kib":100,"wall_seconds":0.01}'
+        bad=[
+            ('garbage\n'+good,1),
+            ('Command exited with non-zero status 2\n'+good,1),
+            ('Command exited with non-zero status 1\n'+good,0),
+            ('Command exited with non-zero status 1\n'+good+'junk',1),
+            ('{"max_rss_kib":true,"wall_seconds":0.01}',0),
+            ('{"max_rss_kib":0,"wall_seconds":0.01}',0),
+            ('{"max_rss_kib":-1,"wall_seconds":0.01}',0),
+            ('{"max_rss_kib":100,"wall_seconds":-1}',0),
+            ('{"max_rss_kib":100,"wall_seconds":false}',0),
+            ('{"max_rss_kib":100,"wall_seconds":NaN}',0),
+            ('{"max_rss_kib":100,"wall_seconds":Infinity}',0),
+            ('{"max_rss_kib":100,"wall_seconds":"1"}',0),
+            ('{"max_rss_kib":100,"wall_seconds":0.01,"extra":1}',0),
+        ]
+        for contents,exit_code in bad:
+            with self.subTest(contents=contents):
+                with self.assertRaises(ValueError):
+                    driver.parse_gnu_time_resources(contents,exit_code)
     def test_actual_environment_override_with_existing_baseline_keys(self):
         with mock.patch.dict(driver.os.environ,{'CRISPEMBED_DIFF_COS_THRESHOLD':'0.5'}):
             frozen=driver.native_environment('frozen-control')
