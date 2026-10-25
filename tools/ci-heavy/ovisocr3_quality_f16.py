@@ -183,7 +183,7 @@ def main(preflight=False):
         model = scratch / "ovisocr3-f16.gguf"
         converted, _ = command("f16-convert", [sys.executable, ROOT / "models/convert-qwen35-ocr-to-gguf.py",
                                                 "--model", policy.MODEL, "--revision", policy.REVISION,
-                                                "--profile", "ovisocr3", "--dtype", "f16", "--output", model],
+                                                "--profile", "ovisocr3-hf-reference", "--dtype", "f16", "--output", model],
                                out, report, save, timeout=3600)
         if not converted or not model.is_file() or sha(model) != native["exports"]["f16"]["model_sha256"]:
             raise ValueError("OvisOCR3 F16 reconstructed model differs from reviewed fourteen-arm export")

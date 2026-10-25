@@ -23,7 +23,7 @@ Rules:
 3. Output plain text only. Use spaces and line breaks only to preserve text separation and reading order.
 4. Do not output Markdown, HTML, JSON, bounding boxes, category labels, explanations, or code fences.)OVIS3";
 // Original prompt and metadata producer are independently reviewed. Format 3
-// still requires separate qualified processor and effective-stop GGUF fields.
+// requires a separate, reviewed HF-forward stop policy; vLLM remains unqualified.
 const char * ovis3_rendered_template = R"OVIS3(<|im_start|>user
 <|vision_start|><|image_pad|><|vision_end|>Read all the text in the image. Directly output the content.
 
@@ -39,6 +39,7 @@ Rules:
 
 )OVIS3";
 const char * ovis3_metadata_sha256 = "804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2";
+const char * ovis3_reference_sha256 = "";
 std::string replace_invalid_utf8(const std::string & input) {
     std::string result;
     for (size_t i = 0; i < input.size();) {
@@ -76,8 +77,7 @@ std::string replace_invalid_utf8(const std::string & input) {
 } // namespace
 
 bool frontend_tokenizer::enabled() const {
-    return core_env::on("CRISPEMBED_QWEN35_OCR") &&
-           (!ovis_ || core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) &&
+    return core_env::on("CRISPEMBED_QWEN35_OCR") && (!ovis_ || core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) &&
            (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
 }
 bool frontend_tokenizer::is_stop(int id) const {
@@ -111,31 +111,35 @@ bool frontend_tokenizer::load(gguf_context * meta) {
                  core_gguf::kv_str_array(meta, "qwen35_ocr.missing_source_files") !=
                      std::vector<std::string>{ "processor_config.json", "generation_config.json" }))
         return false;
-    if (ovis3 && (!core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") ||
-                  !*ovis3_rendered_template || std::strlen(ovis3_metadata_sha256) != 64 ||
-                  core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 3 ||
-                  core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "ovisocr3" ||
-                  core_gguf::kv_str(meta, "qwen35_ocr.profile.task", "") != "plain_ocr" ||
-                  core_gguf::kv_str(meta, "qwen35_ocr.profile.task_prompt", "") != ovis3_task_prompt ||
-                  core_gguf::kv_str(meta, "qwen35_ocr.checkpoint_sha256", "") !=
-                      "aa2311c6b22b07cf3afe9aac6e8bcb02a2b19dd8671b2a91d0b144071577e600" ||
-                  core_gguf::kv_str(meta, "qwen35_ocr.metadata_qualification", "") != ovis3_metadata_sha256 ||
-                  core_gguf::kv_str(meta, "qwen35_ocr.profile.rendered_prompt", "") != ovis3_rendered_template ||
-                  !core_gguf::kv_bool(meta, "qwen35_ocr.rendered_prompt_qualified", false) ||
-                  !core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", false) ||
-                  !core_gguf::kv_bool(meta, "qwen35_ocr.processor_qualified", false) ||
-                  core_gguf::kv_bool(meta, "qwen35_ocr.native_alias_qualified", true) ||
-                  core_gguf::kv_bool(meta, "qwen35_ocr.image_max_qualified", true) ||
-                  core_gguf::kv_u32(meta, "qwen35_ocr.image_min_pixels", 0) != 448 * 448 ||
-                  core_gguf::kv_u32(meta, "qwen35_ocr.image_max_pixels", 0) != 2880 * 2880 ||
-                  core_gguf::kv_u32(meta, "qwen35_ocr.primary_eos_id", 0) != 248046 ||
-                  core_gguf::kv_u32(meta, "tokenizer.ggml.eos_token_id", 0) != 248046 ||
-                  core_gguf::kv_i32_array(meta, "qwen35_ocr.source_eos_token_ids") !=
-                      std::vector<int>{ 248044, 248046 } ||
-                  core_gguf::kv_i32_array(meta, "qwen35_ocr.stop_token_ids") !=
-                      std::vector<int>{ 248044, 248046 } ||
-                  core_gguf::kv_str_array(meta, "qwen35_ocr.missing_source_files") !=
-                      std::vector<std::string>{ "processor_config.json" }))
+    if (ovis3 &&
+        (!core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") || !*ovis3_rendered_template ||
+         std::strlen(ovis3_metadata_sha256) != 64 || std::strlen(ovis3_reference_sha256) != 64 ||
+         core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 3 ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "ovisocr3" ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile.task", "") != "plain_ocr" ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile.task_prompt", "") != ovis3_task_prompt ||
+         core_gguf::kv_str(meta, "qwen35_ocr.checkpoint_sha256", "") !=
+             "aa2311c6b22b07cf3afe9aac6e8bcb02a2b19dd8671b2a91d0b144071577e600" ||
+         core_gguf::kv_str(meta, "qwen35_ocr.metadata_qualification", "") != ovis3_metadata_sha256 ||
+         core_gguf::kv_str(meta, "qwen35_ocr.original_reference_qualification", "") != ovis3_reference_sha256 ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile.rendered_prompt", "") != ovis3_rendered_template ||
+         !core_gguf::kv_bool(meta, "qwen35_ocr.rendered_prompt_qualified", false) ||
+         !core_gguf::kv_bool(meta, "qwen35_ocr.hf_stop_policy_qualified", false) ||
+         core_gguf::kv_str(meta, "qwen35_ocr.hf_stop_runtime_proof_sha256", "").size() != 64 ||
+         core_gguf::kv_str(meta, "qwen35_ocr.stop_qualification_scope", "") !=
+             "hf5.16.1-explicit-eos-list-forward; vllm-runtime-unobserved" ||
+         core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", true) ||
+         !core_gguf::kv_bool(meta, "qwen35_ocr.processor_qualified", false) ||
+         core_gguf::kv_bool(meta, "qwen35_ocr.native_alias_qualified", true) ||
+         core_gguf::kv_bool(meta, "qwen35_ocr.image_max_qualified", true) ||
+         core_gguf::kv_u32(meta, "qwen35_ocr.image_min_pixels", 0) != 448 * 448 ||
+         core_gguf::kv_u32(meta, "qwen35_ocr.image_max_pixels", 0) != 2880 * 2880 ||
+         core_gguf::kv_u32(meta, "qwen35_ocr.primary_eos_id", 0) != 248046 ||
+         core_gguf::kv_u32(meta, "tokenizer.ggml.eos_token_id", 0) != 248046 ||
+         core_gguf::kv_i32_array(meta, "qwen35_ocr.source_eos_token_ids") != std::vector<int>{ 248044, 248046 } ||
+         core_gguf::kv_i32_array(meta, "qwen35_ocr.stop_token_ids") != std::vector<int>{ 248044, 248046 } ||
+         core_gguf::kv_str_array(meta, "qwen35_ocr.missing_source_files") !=
+             std::vector<std::string>{ "processor_config.json" }))
         return false;
     const std::string actual_pattern =
         (ovis || ovis3)
@@ -159,7 +163,8 @@ bool frontend_tokenizer::load(gguf_context * meta) {
     if (result.vocab_.size() != 248320 || merges.empty() || result.added_.empty() || result.added_.size() > 256 ||
         result.special_.size() > result.added_.size())
         return false;
-    if ((ovis || ovis3) && (result.vocab_[248044] != "<|endoftext|>" || result.vocab_[248046] != "<|im_end|>")) return false;
+    if ((ovis || ovis3) && (result.vocab_[248044] != "<|endoftext|>" || result.vocab_[248046] != "<|im_end|>"))
+        return false;
     for (size_t i = 0; i < result.vocab_.size(); ++i)
         if (!result.vocab_[i].empty() && !result.tokens_.emplace(result.vocab_[i], int32_t(i)).second) return false;
     for (size_t i = 0; i < merges.size(); ++i)
@@ -239,8 +244,8 @@ bool frontend_tokenizer::image_prompt(const std::string & prompt, int image_toke
     rendered.clear();
     if (!enabled() || image_tokens < 1 || image_tokens > 1024 || ((ovis_ || ovis3_) && !prompt.empty())) return false;
     rendered = (ovis_ || ovis3_) ? image_template_
-                     : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + prompt +
-                           "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
+                                 : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + prompt +
+                                       "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
     std::vector<int> initial;
     if (!encode(rendered, initial) || std::count(initial.begin(), initial.end(), 248056) != 1 ||
         initial.size() + image_tokens - 1 > 4096) {

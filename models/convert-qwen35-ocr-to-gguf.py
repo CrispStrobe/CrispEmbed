@@ -36,6 +36,13 @@ def _ovis3_profile():
     return module
 
 
+@lru_cache(maxsize=1)
+def _ovis3_hf_profile():
+    spec=importlib.util.spec_from_file_location('qwen35_ovis3_hf_profile',Path(__file__).with_name('qwen35_ovis3_hf_profile.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+
 def precision_recipe(name):
     if name == "original-f16":
         return []
@@ -113,7 +120,9 @@ def validate_config(config, profile=None):
     }:
         raise ValueError("Invalid or unsupported decoder layer schedule")
     if profile is not None:
-        if profile.get("name") == "ovisocr3":
+        if profile.get("qualification_kind") == "hf5.16.1-original-reference":
+            _ovis3_hf_profile().validate_config(config,profile)
+        elif profile.get("name") == "ovisocr3":
             _ovis3_profile().validate_config(config,profile)
         else:
             _ovis_profiles().validate_config(config,profile)
@@ -149,9 +158,10 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     output = Path(output)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("An immutable 40-hex source revision is required")
-    if profile not in (None,"ovisocr2","ovisocr3"):
+    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference"):
         raise ValueError("Unknown export profile")
-    policy=_ovis3_profile() if profile=="ovisocr3" else _ovis_profiles()
+    policy=(_ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
+            _ovis3_profile() if profile=="ovisocr3" else _ovis_profiles())
     pinned=policy.load_profile(root,source_model,source_revision) if profile else None
     config = json.loads((root / "config.json").read_text())
     text, vision = validate_config(config,pinned)
@@ -228,7 +238,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                 raise ValueError("Checkpoint claims tied weights but stores unequal head/embedding")
 
     tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"],pinned["generation"] if pinned else None,
-                                            allow_generation_eos_list=profile=="ovisocr3")
+                                            allow_generation_eos_list=profile in ("ovisocr3","ovisocr3-hf-reference"))
 
     output.parent.mkdir(parents=True, exist_ok=True)
     pending = output.with_name(output.name + ".partial")
@@ -262,7 +272,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
         writer.add_bool(f"{ARCH}.image_max_qualified",False)
         writer.add_bool(f"{ARCH}.native_alias_qualified",False)
-    elif profile=="ovisocr3":
+    elif profile in ("ovisocr3","ovisocr3-hf-reference"):
         writer.add_string(f"{ARCH}.profile",pinned['name'])
         writer.add_string(f"{ARCH}.profile.task",pinned['task'])
         writer.add_string(f"{ARCH}.profile.task_prompt",pinned['task_prompt'])
@@ -274,9 +284,24 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_uint32(f"{ARCH}.image_min_pixels",pinned['image_min_pixels'])
         writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
         writer.add_bool(f"{ARCH}.image_max_qualified",False)
-        writer.add_bool(f"{ARCH}.rendered_prompt_qualified",False)
-        writer.add_bool(f"{ARCH}.effective_stops_qualified",False)
-        writer.add_bool(f"{ARCH}.processor_qualified",False)
+        if profile=="ovisocr3-hf-reference":
+            writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
+            writer.add_key_value(f"{ARCH}.stop_token_ids",pinned['stop_ids'],
+                                 gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
+            writer.add_uint32(f"{ARCH}.primary_eos_id",pinned['primary_eos'])
+            writer.add_string(f"{ARCH}.metadata_qualification",pinned['metadata_producer_canonical_sha256'])
+            writer.add_string(f"{ARCH}.original_reference_qualification",pinned['original_reference_producer_canonical_sha256'])
+            writer.add_bool(f"{ARCH}.rendered_prompt_qualified",True)
+            writer.add_bool(f"{ARCH}.processor_qualified",True)
+            writer.add_bool(f"{ARCH}.hf_stop_policy_qualified",True)
+            writer.add_string(f"{ARCH}.hf_stop_runtime_proof_sha256",pinned['hf_stop_runtime_proof_sha256'])
+            writer.add_string(f"{ARCH}.stop_qualification_scope",pinned['stop_qualification_scope'])
+            writer.add_bool(f"{ARCH}.effective_stops_qualified",False)
+        else:
+            writer.add_bool(f"{ARCH}.rendered_prompt_qualified",False)
+            writer.add_bool(f"{ARCH}.processor_qualified",False)
+            writer.add_bool(f"{ARCH}.hf_stop_policy_qualified",False)
+            writer.add_bool(f"{ARCH}.effective_stops_qualified",False)
         writer.add_bool(f"{ARCH}.native_alias_qualified",False)
 
     records = []
@@ -326,7 +351,7 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=LIGHTON_MODEL)
-    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3"],
+    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference"],
                         help="Pinned experimental Ovis export-only profile; not a native alias")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
@@ -339,15 +364,16 @@ def main():
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
     if args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
-        policy=_ovis3_profile() if args.profile=="ovisocr3" else _ovis_profiles()
-        if args.profile not in ("ovisocr2","ovisocr3") or args.model!=policy.MODEL or args.revision!=policy.REVISION:
+        policy=(_ovis3_hf_profile() if args.profile=="ovisocr3-hf-reference" else
+                _ovis3_profile() if args.profile=="ovisocr3" else _ovis_profiles())
+        if args.profile not in ("ovisocr2","ovisocr3","ovisocr3-hf-reference") or args.model!=policy.MODEL or args.revision!=policy.REVISION:
             parser.error("Ovis export requires its exact source/revision and matching --profile")
         metadata=snapshot_download(args.model,revision=args.revision,
                                   allow_patterns=list(policy.metadata_files()))
         policy.load_profile(metadata,args.model,args.revision)  # Before any weight download.
     directory = snapshot_download(args.model, revision=args.revision,
                                   allow_patterns=(list(_ovis3_profile().metadata_files())+["*.safetensors"]
-                                                  if args.profile=="ovisocr3" else
+                                                  if args.profile in ("ovisocr3","ovisocr3-hf-reference") else
                                                   ["*.json", "*.jinja", "*.safetensors", "LICENSE*"]))
     retained = sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32))
     manifest = convert(directory, args.output, args.model, args.revision, args.dtype, retained,profile=args.profile)

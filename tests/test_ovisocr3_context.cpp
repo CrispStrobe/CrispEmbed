@@ -72,20 +72,21 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (argc == 3 && std::string(argv[2]) == "--source-only") {
         // The reviewed metadata alone does not qualify a native forward.
         const char * gates[] = { "CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR3_FRONTEND",
-                               "CRISPEMBED_OVISOCR3_INFERENCE" };
+                                 "CRISPEMBED_OVISOCR3_INFERENCE" };
         for (const char * name : gates) gate(name, "1");
         auto * meta = core_gguf::open_metadata(argv[1]);
-        const bool source_only = meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 3 &&
-                                 core_gguf::kv_str(meta, "general.source.huggingface.repository", "") == "ATH-MaaS/OvisOCR3" &&
-                                 core_gguf::kv_str(meta, "general.source.huggingface.revision", "") ==
-                                     "5f6ce6932efee9ec10c30746db55bd780214b7fd" &&
-                                 core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr3" &&
-                                 !core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", true) &&
-                                 !core_gguf::kv_bool(meta, "qwen35_ocr.native_alias_qualified", true);
+        const bool source_only =
+            meta && core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) == 3 &&
+            core_gguf::kv_str(meta, "general.source.huggingface.repository", "") == "ATH-MaaS/OvisOCR3" &&
+            core_gguf::kv_str(meta, "general.source.huggingface.revision", "") ==
+                "5f6ce6932efee9ec10c30746db55bd780214b7fd" &&
+            core_gguf::kv_str(meta, "qwen35_ocr.profile", "") == "ovisocr3" &&
+            !core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", true) &&
+            !core_gguf::kv_bool(meta, "qwen35_ocr.native_alias_qualified", true);
         if (meta) core_gguf::free_metadata(meta);
         auto * unexpected = source_only ? qwen35_ocr_init(argv[1], 2) : nullptr;
-        const bool rejected = source_only && !unexpected &&
-                              !qwen35_ocr_is_ovisocr3(nullptr) && !qwen35_ocr_is_ovisocr2(nullptr);
+        const bool rejected =
+            source_only && !unexpected && !qwen35_ocr_is_ovisocr3(nullptr) && !qwen35_ocr_is_ovisocr2(nullptr);
         if (unexpected) qwen35_ocr_free(unexpected);
         std::printf("%s OVIS3_SOURCE_ONLY_REJECTION\n", rejected ? "PASS" : "FAIL");
         return rejected ? 0 : 1;
@@ -110,7 +111,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     owner a(qwen35_ocr_init(argv[1], 2), qwen35_ocr_free);
     owner b(single ? nullptr : qwen35_ocr_init(argv[1], 2), qwen35_ocr_free);
     if (!a || (!single && !b)) return 2;
-    ok &= qwen35_ocr_is_ovisocr3(a.get()) == 1 && qwen35_ocr_is_ovisocr3(nullptr) == 0 && qwen35_ocr_is_ovisocr2(a.get()) == 0;
+    ok &= qwen35_ocr_is_ovisocr3(a.get()) == 1 && qwen35_ocr_is_ovisocr3(nullptr) == 0 &&
+          qwen35_ocr_is_ovisocr2(a.get()) == 0;
     if (b) ok &= qwen35_ocr_is_ovisocr3(b.get()) == 1 && qwen35_ocr_is_ovisocr2(b.get()) == 0;
     int w = 0, h = 0, channels = 0;
     std::unique_ptr<unsigned char, decltype(&stbi_image_free)> pixels(stbi_load(argv[2], &w, &h, &channels, 3),
