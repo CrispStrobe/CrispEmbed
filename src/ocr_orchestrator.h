@@ -61,6 +61,7 @@ enum class engine {
     lfm2_vl,           // lfm2_vl_ocr.cpp (SigLIP2 NaFlex multi-tile + LFM2 hybrid conv/attn)
     qwen35_ocr,        // experimental LightOnOCR-3-0.8B, native Qwen3.5 CPU
     ovisocr2,          // explicit gated format2 OvisOCR2; no registry default
+    ovisocr3,          // explicit gated format3 OvisOCR3 plain OCR; no registry default
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.

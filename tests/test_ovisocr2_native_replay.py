@@ -6,6 +6,7 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'tools/ci-heavy/ovisocr2_native_replay.py'
@@ -29,21 +30,38 @@ class ReplayControls(unittest.TestCase):
 
     def test_complete_native_source_closure_and_norm_mutation(self):
         ab, _ = replay.source_helpers()
-        paths = [*sorted((ROOT / 'src').glob('qwen35*')),
-                 *(ROOT / name for name in (
-                     'src/crispembed_diff.h', 'tests/qwen35_parity.h',
-                     'tests/test_qwen35_decoder.cpp', 'tests/test_qwen35_vision.cpp',
-                     'tests/test_qwen35_delta.cpp', 'tests/test_ovisocr2_context.cpp',
-                     'tests/ovisocr2_quality_run.cpp'))]
-        frozen = {str(path.relative_to(ROOT)): Sha.sha(path) for path in paths
-                  if path.is_file() and path.suffix in ('.cpp', '.h')}
-        frozen['tests/test_qwen35_vision.cpp'] = ab.SOURCE_TEST_SHA
-        frozen['tests/test_qwen35_delta.cpp'] = replay.SOURCE_DELTA_TEST_SHA
-        self.assertEqual(replay.native_source_closure({'native_source_sha256': frozen}, ab)
-                         ['unchanged_files'], 27)
-        frozen['src/qwen35_norm.cpp'] = '0' * 64
-        with self.assertRaisesRegex(ValueError, 'implementation/comparator changed'):
-            replay.native_source_closure({'native_source_sha256': frozen}, ab)
+        # The historical replay deliberately closes over its original 29-file
+        # scope. New opt-in image/profile files use a versioned current-runtime
+        # audit; they must not silently expand the historical proof.
+        paths = [p for p in sorted((ROOT / 'src').glob('qwen35*'))
+                 if p.name != 'qwen35_image_bounds.h']
+        paths += [ROOT / name for name in (
+            'src/crispembed_diff.h', 'tests/qwen35_parity.h',
+            'tests/test_qwen35_decoder.cpp', 'tests/test_qwen35_vision.cpp',
+            'tests/test_qwen35_delta.cpp', 'tests/test_ovisocr2_context.cpp',
+            'tests/ovisocr2_quality_run.cpp')]
+        with tempfile.TemporaryDirectory() as directory:
+            controlled = Path(directory)
+            frozen = {}
+            for path in paths:
+                if not path.is_file() or path.suffix not in ('.cpp', '.h'):
+                    continue
+                relative = path.relative_to(ROOT)
+                target = controlled / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(path.read_bytes())
+                frozen[str(relative)] = Sha.sha(target)
+            frozen['tests/test_qwen35_vision.cpp'] = ab.SOURCE_TEST_SHA
+            frozen['tests/test_qwen35_delta.cpp'] = replay.SOURCE_DELTA_TEST_SHA
+            with mock.patch.object(replay, 'ROOT', controlled):
+                self.assertEqual(replay.native_source_closure({'native_source_sha256': frozen}, ab)
+                                 ['unchanged_files'], 27)
+                frozen['src/qwen35_norm.cpp'] = '0' * 64
+                with self.assertRaisesRegex(ValueError, 'implementation/comparator changed'):
+                    replay.native_source_closure({'native_source_sha256': frozen}, ab)
+        if (ROOT / 'src/qwen35_image_bounds.h').is_file():
+            with self.assertRaises(ValueError):
+                replay.native_source_closure({'native_source_sha256': frozen}, ab)
 
     def test_unreviewed_or_different_preset_cannot_execute(self):
         ab, _ = replay.source_helpers()

@@ -1,4 +1,5 @@
 #include "qwen35_frontend.h"
+#include "qwen35_image_bounds.h"
 #include "core/env_gate.h"
 #include <algorithm>
 #include <cmath>
@@ -77,7 +78,9 @@ bool preprocess_rgb(const uint8_t * rgb, int height, int width, const image_conf
         rh = int(std::ceil(height * beta / 32)) * 32;
         rw = int(std::ceil(width * beta / 32)) * 32;
     }
-    if (rh < 32 || rw < 32 || int64_t(rh) * rw / 256 > 1024) return false;
+    const int bound =
+        config.min_pixels == 448 * 448 && config.max_pixels == 2880 * 2880 ? ovisocr2_patch_limit() : 1024;
+    if (rh < 32 || rw < 32 || int64_t(rh) * rw / 256 > bound) return false;
     std::vector<uint8_t> horizontal;
     const uint8_t * intermediate = rgb;
     if (rw != width) {
