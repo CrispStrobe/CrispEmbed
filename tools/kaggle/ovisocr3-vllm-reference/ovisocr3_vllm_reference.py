@@ -39,8 +39,8 @@ METADATA_ARTIFACT_ZIP_SHA = '0' * 64
 METADATA_REPORT_SHA = '0' * 64
 PROOF_COMMIT = '0' * 40
 PRODUCER_SHA = '0' * 64
-WORKER_COMMIT = '1706adf8c544ae5ad20a4d2b75fc0b32eb2da50b'
-WORKER_SHA = '51e87df5ab03c7ca4a7d10964344fe6158c2138428830c2f77e67b8c0a12b4f2'
+WORKER_COMMIT = 'd493bd12ab9745e4bd091abb09fbd90a3bc4038b'
+WORKER_SHA = 'e9e41e1d4c3b613ad56ce58ceba9cd1b0fe39aaba7ee29d08c394a26aad5bdb6'
 WHEEL_URL = ('https://github.com/vllm-project/vllm/releases/download/v0.22.1/'
              'vllm-0.22.1%2Bcu129-cp38-abi3-manylinux_2_28_x86_64.whl')
 WHEEL_NAME = 'vllm-0.22.1+cu129-cp38-abi3-manylinux_2_28_x86_64.whl'
