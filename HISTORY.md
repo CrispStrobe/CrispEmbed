@@ -15411,3 +15411,38 @@ model transfer or native build; [the original failure](tests/results/qwen35-ocr/
 is retained. This was an operator argument error, not an inference or quality
 result. Retry40196755934 uses the unchanged93da2dbd source and explicit
 `ovisocr3-native14-f16-40183489780`; no guard was relaxed.
+
+## 25 October 2026 — OvisOCR3 public diagnostic complete; bounded audit outcomes closed
+
+[Actual interface diagnostic40196755934](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40196755934)
+at93da2dbd has a positive independent [diagnostic review](tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json):
+29 recorded checks across C/Python/CLI/HTTP/Rust/Dart,27 hashed logs, six public
+source blobs,29 native blobs, exact whole-src/CMake/ggml identities and live
+native/original/F16 artifact lineage. ABI sizes/offsets agree. Fourteen expected
+negative prompt/profile/gate probes exit1; the ABI-only missing-reference probe
+intentionally exits2. Actual model-backed output is the owned `Hello OCR\n12345`
+image. The two-stage probe attempts a second truncated model and rejects it,
+rather than reusing the first context. No reference probe enters model weights.
+
+The C ABI/Python mean is0.9994447827339172 with nine selected confidences;
+Rust/Dart agree within the existing1e-5 budget. CLI and HTTP retain their existing
+rounding budgets0.0006/0.00006; maximum reported public mean difference is
+0.0004447827339172372. Public APIs expose text/confidence, not generated IDs or
+stop IDs; native14 and the independently paired eleven-case capture supply
+that separate evidence. Only the27,341-byte report ZIP was downloaded for review.
+
+The result is `public_diagnostic_positive=true`, `model_qualified=false`,
+`publication_eligible=false`; it is **not** a strict public/model quality pass.
+The source two-column page still caps1024 without EOS. Strict publication and
+an OvisOCR3 registry alias remain blocked. The initial omitted-artifact-name
+preflight failure remains separate and unchanged.
+
+The approved bounded audits now have actual outcomes: profiling is complete;
+issue71 feasibility is source-only and leaves implementation open; all four Ovis2
+quantized recipes are rejected and published F16 stays selected; final-source
+Ovis2 frozen14/eleven-case F16 regressions pass; larger1024/1200 pass while2048
+is numerically unqualified; Ovis3 original/native/paired/interface evidence is
+complete for the declared HF plain-OCR scope, with source-quality debt preserved.
+Further work is scoped in PLAN. Development remains0.17.13, the app's immutable
+runtime remains0.17.12, and no runtime release, model3 publication, app upgrade
+or default flip follows from this audit loop.

@@ -1,3 +1,24 @@
+## OvisOCR3 bounded fidelity and interface diagnostics — 25 October 2026
+
+[Native14](tests/results/qwen35-ocr/ovisocr3-native-model.json) passes F32/F16
+against943 original stages; [native F16 eleven-case capture](tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+matches all1,679 source IDs/raw text/stops/caps. Ten cases reach EOS; original
+and native two-column both cap1024 without EOS (raw CER0.52365/WER0.83993).
+Eight authored cases have zero raw CER/WER. Model qualification remains false.
+Selected probabilities are finite/aligned, with max native-versus-original F32
+absolute difference0.00024628627 and max mean difference0.00003014292; they
+are not bit-exact. Driver RSS excludes native child memory, so it is not a
+native inference memory measurement. No paired Ovis3 speedup is established.
+
+[All29 public diagnostic checks](tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
+pass across six interfaces. C/Python mean confidence is0.9994447827339172 with
+nine values; Rust/Dart use the unchanged1e-5 budget. Existing CLI/HTTP rounding
+budgets remain0.0006/0.00006 (max public mean error0.00044478273). These are
+bounded text/confidence/ABI/cache/gate/profile checks on the owned readable
+image, not OCR benchmark or model-quality qualification. F16 GGUF size is
+1,717,223,072 bytes. Publication and a model alias remain blocked by the original
+completion failure; raw vectors/models stay hosted.
+
 ## OvisOCR2 bounded larger-input audit — 25 October 2026
 
 [Four-case evidence](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json) preserves

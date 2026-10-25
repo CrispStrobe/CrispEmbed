@@ -464,7 +464,9 @@ The app remains on immutable0.17.12; published F16 and wired source alias do not
 ## Ovis follow-up outcomes — 25 October 2026
 
 Profiling, source feasibility, selective quantization and larger-input audits
-have reviewed outcomes; the OvisOCR3 paired/interface diagnostic remains open. Use the [executable vendor handoff](next-agent-handoff.md) and
+have reviewed outcomes, including the OvisOCR3 paired/interface diagnostics.
+The remaining work is source-quality/numerical attribution and the separately
+scoped implementation, benchmark, preservation and immutable-release lanes. Use the [executable vendor handoff](next-agent-handoff.md) and
 [PLAN](../PLAN.md) for current dependencies. The application remains pinned to
 published0.17.12; development0.17.13 and model experiments do not upgrade it.
 
@@ -502,9 +504,11 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   passes14/14 with exact nine-ID smoke output and profile-bound isolation.
   Its original plain OCR11 capture is complete, but two-column output caps1024
   without EOS (CER0.52365/WER0.83993). [Paired F16 run40187405735](../tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
-  faithfully matches all11 cases/1,679 IDs/raw text/stops/caps. Public-interface
-  diagnostic40196755934 remains pending; the initial missing-artifact-name
-  dispatch failed safe before dependencies/model transfer/build.
+  faithfully matches all11 cases/1,679 IDs/raw text/stops/caps. [Public-interface
+  diagnostic40196755934](../tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
+  passes all29 recorded checks across six clients, ABI/cache and negative guards.
+  It retains model-qualified=false/publication-eligible=false. The initial
+  missing-artifact-name dispatch failed safe before dependencies/model transfer/build.
   A faithful diagnostic cannot override source-quality failure: no qualification,
   model alias or publication. Preserve unchanged prompts/gold/caps/scorers.
   [Original quality evidence](../tests/results/qwen35-ocr/ovisocr3-original-quality.json).

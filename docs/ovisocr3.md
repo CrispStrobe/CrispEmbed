@@ -154,7 +154,9 @@ Original eleven-case capture is reviewed. [Final-source native14](../tests/resul
 passes all14 F32/F16 arms with exact nine-ID smoke output, context recovery and
 profile-isolated1024 bounds. [Paired native F16 capture40187405735](../tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
 faithfully matches all11 source cases, while retaining qualified=false. The
-six-interface diagnostic40196755934 remains an acceptance gate for API behavior. Fresh immutable download/publication requires a
+[six-interface diagnostic40196755934](../tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
+passes29 recorded checks for API behavior, ABI/cache and negative controls,
+with model-qualified=false/publication-eligible=false. Fresh immutable download/publication requires a
 qualified source-quality protocol and is blocked by the current result. Other17
 tasks, multi-image inference and the official2880² pixel maximum remain outside
 the initial single-image plain OCR claim.

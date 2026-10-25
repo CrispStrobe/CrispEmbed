@@ -10,33 +10,39 @@ records exact sources, remaining work, acceptance checks and artifact expiry.
 
 ## Execution order
 
-### Active approved Ovis follow-up loop
+### Next bounded lanes after the completed Ovis audits
 
-Profiling, issue71 source feasibility, the rejected fourth precision attempt,
-final-source Ovis2 frozen14/F16 eleven-case replays and the four-case larger-input
-audit have reviewed outcomes in HISTORY/PERFORMANCE. The2048 boundary is a
-numerical rejection; exact text does not change that result. Remaining work:
+The25 October bounded audits and their initial failures are archived in HISTORY;
+measurements are in PERFORMANCE. Start one lane at a time, using its exact
+sources and acceptance gates below:
 
-1. Review [OvisOCR3 six-interface diagnostic40196755934](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40196755934)
-   at93da2dbd. [Native14](tests/results/qwen35-ocr/ovisocr3-native-model.json) and
-   [F16 eleven-case capture](tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
-   are independently reviewed: all1,679 source IDs/raw text/stops/caps match,
-   including the unchanged two-column1024 cap/no EOS. The public diagnostic
-   requires current whole-src/CMake/ggml identity, exact native gates and live
-   source/artifact proofs before model transfer. Require actual C/Python/CLI/
-   HTTP/Rust/Dart outputs, ABI/cache/gate/profile controls and confidence budgets.
-   Preserve model-qualified=false/publication-eligible=false and the distinct
-   diagnostic review key. No prompt/cap/gold/scorer change, alias or publication.
-2. Consolidate the final actual interface outcome in HISTORY/PERFORMANCE and
-   model documents; leave only executable pending tasks here. Complete normal
-   PR/merged-source checks, then mirror the vendor handoff into CrispMath while
-   preserving its application release pin and unrelated app/SAM owner work.
+1. **Converted-weight reuse:** use the completed profile to prototype one
+   per-context byte-budgeted default-off cache. Require full numerical/decoded
+   regression, survivor/error handling and paired cold/warm latency/RSS before
+   any default or release decision.
+2. **Numerical attribution:** independently compare quantized weights/activation
+   semantics before another precision selection; separately trace the2048
+   original-embedding versus composed native-vision normalization difference.
+   Preserve all failed recipes, raw strict flags and the unqualified2048 path.
+3. **Next permissive implementation:** MI-GAN single-resolution still-image
+   references and native F32 prototype, or the next declared OCR source audit.
+   Code/checkpoint/base licensing and original blueprint come first. LaMa's
+   checkpoint terms/FFT and Indra's restricted weight scope remain unresolved.
+4. **Delivery/portfolio:** UltraBERT attribution and representative/pair quality,
+   immutable successor runtime assets/consumers and the other scoped lanes remain
+   below. Ovis3's14-arm/eleven-case/six-interface diagnostics are complete; its
+   capped original plain-OCR page still blocks model qualification/alias/upload.
 
 No queued workflow or prepared harness counts as qualification. Large archives
 remain hosted; independent review downloads small reports only. Preserve old
 Ovis2 first-F16 receipts, calibrated vision budgets and failed quant recipes.
 No app/runtime release/default change follows from these experiments.
 
+
+### LightOnOCR-3-0.8B carry-forward
+
+The following independent v1 panel describes LightOnOCR, separately from
+OvisOCR2's qualified published F16. Preserve both reference sets and their limits.
 
 Profiling, bounded parallel-F16 conversion and fixed-receipt completion/prompt
 checks are complete; evidence is in [HISTORY](HISTORY.md) and
@@ -83,9 +89,9 @@ candidate is selected for publication or default promotion.
 Original plain OCR11 capture40178328864 is complete and reviewed; eight authored
 cases have zero raw CER/WER, but the two-column page caps1024 without EOS with
 CER0.52365/WER0.83993. Preserve that negative result in HISTORY; no cap/prompt/
-gold/scorer adjustment. Native14 and faithful F16 eleven-case capture are
-independently reviewed; finish interface-only diagnostic40196755934 and retain
-earlier harness failures. Model qualification requires all old screens.
+gold/scorer adjustment. Native14, faithful F16 eleven-case capture and the
+six-interface diagnostic are independently reviewed. Preserve all initial
+harness/dispatch failures and the source-quality block. Model qualification requires all old screens.
 An explicit default-off public diagnostic may verify interfaces only when all11
 native outputs faithfully match the original, including its unchanged capped
 case. It must emit model-qualified=false and a separate diagnostic review key.
@@ -135,8 +141,8 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. PR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all four quant recipes rejected; F16 published/alias consumer40080458492 passes; PR79 integrated; measured profiling and fourth quant rejection archived; bounded reuse/kernel attribution below |
-| 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Pinned LICENSE/checkpoint/base Apache-2.0 audited | Similar small-family estimate; unmeasured | Source/header audit and actual hosted processor metadata pass; original943-stage reference and plain OCR11 reviewed; source two-column output caps1024 and blocks publication; finish native/F16/interface diagnostics before broader support claims |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | Converted-weight reuse; quantized operator attribution;2048 numerical debt and broader licensed-page benchmarks. Preserve qualified F16/alias and all completed evidence in HISTORY. |
+| 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Pinned LICENSE/checkpoint/base Apache-2.0 audited | ~1.12–1.34GB extrapolated from Ovis2 recipes, unmeasured; actual F16 1.717GB | Native14/F16 eleven-case/six-interface diagnostics are complete; [source plain-OCR quality block](docs/ovisocr3.md#original-plain-ocr-quality-decision) remains. Declare a separate original-first task/evaluation protocol before broader tasks, quantization, alias or publication. |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
 | 5 | [TeleOCR](https://huggingface.co/XingChen-AGI/TeleOCR) | Apache-2.0; base terms still to audit | ~1.3–1.8 GB | Queued: reuse Qwen2.5-VL where exact config permits; verify renamed NaviDC artifacts/provenance and structured output; estimated 1–2 weeks |
@@ -371,7 +377,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-25 | `feat/ovis-followups-20261025` | Ordered follow-up loop: Ovis latency/RSS; issue71 license/blueprint feasibility; attention-F16/FFN-Q4; bounded larger-input and next permissive checkpoint qualification | Profile and issue71 feasibility complete; fourth quant recipe rejected with full review. Original Ovis3 CPU/GPU and eleven-case captures reviewed; source plain OCR quality is negative. Final-source native/paired/interface diagnostics and1200/2048 geometry results remain in progress. Preserve original/first-F16/publication receipts; no local builds/inference. Each later runtime change requires original-module/crispembed-diff and decoded-quality evidence before promotion. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;

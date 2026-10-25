@@ -165,9 +165,12 @@ without EOS (CER0.52365/WER0.83993). The earlier native14 retry exposed two
 test-harness defects. [Final-source native1440183489780](tests/results/qwen35-ocr/ovisocr3-native-model.json)
 is independently positive on all14 arms. [Paired F16 diagnostic40187405735](tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
 faithfully matches all11 original cases/1,679 IDs/raw text/stops/caps, including
-the unchanged capped page. Interface-only public diagnostic40196755934 still
-requires terminal review; preserve its initial omitted-artifact-name preflight
-failure separately. No interface result upgrades negative source quality. The
+the unchanged capped page. [Interface-only public diagnostic40196755934](tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
+is independently positive on all29 recorded checks across six clients, ABI,
+cache and negative gate/profile/prompt controls. Its model/publication flags
+remain false; preserve initial omitted-artifact-name preflight failure separately.
+Completed audits are in HISTORY; start scoped reuse/attribution/permissive lanes
+from PLAN. No interface result upgrades negative source quality. The
 source completion failure blocks model qualification, publication and alias;
 do not change its prompt, cap, gold or scorer to pass a gate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
