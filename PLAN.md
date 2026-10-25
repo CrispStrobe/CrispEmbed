@@ -12,36 +12,35 @@ records exact sources, remaining work, acceptance checks and artifact expiry.
 
 ### Active approved Ovis follow-up loop
 
-The current owner is finishing the four approved items before closing this loop:
+The first three approved items have actual reviewed outcomes: profiling passes,
+issue71 feasibility is recorded, and the fourth selective quantization attempt is
+rejected. See HISTORY/PERFORMANCE and the immutable four-attempt selection.
+The current owner must finish the remaining actual outcomes and integration:
 
-1. Profiling and issue71 feasibility are complete; exact evidence is in HISTORY.
-2. The full attention-F16/FFN-Q4 attempt is complete and rejected; move its
-   measured outcome to HISTORY/PERFORMANCE. The immutable four-attempt selection
-   keeps published F16. Future precision work needs a separately declared
-   development/evaluation protocol; do not tune this held-out panel.
-3. Complete [larger-input40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574):
-   old frozen control plus newly authored1024/1200/2048-patch originals, all14
-   F32/F16 arms, dynamic per-score raw manifests, owning OCR IDs/text/EOS, timing
-   and RSS. New2048 bound needs four value-parsed gates; default1024 remains.
-   Actual compiled bound/recovery tests include2176 rejection and legacy controls.
-   After final core edits, rerun old11 F16 quality against frozen originals.
-4. Complete OvisOCR3 original-first qualification:
-   [reference40177416485](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177416485)
-   completes the three anchors and943-stage original capture. Native14
-   [40178327173](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178327173),
-   original11 [40178328864](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178328864)
-   and current old Ovis2 F16 quality
-   [40178330437](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178330437)
-   are dispatched; independently review terminal results before later gates.
-   The original reference replays three reviewed processor anchors before loading weights; capture every
-   layer/cache/logit/generated score and actual greedy output. Independently
-   review the small report and bind immutable service/artifact/source hashes
-   before original11, native14, F16 quality11 and public engine22 audits.
-   Separate plain OCR scoring preserves raw CER/WER/EOS/caps, without the Ovis2
-   HTML presentation scorer. Source-only format3 remains rejected by inference.
-   The controlled original T4 run is reviewed in HISTORY and its GPU receipt;
-   preserve its initial hardware preflight failure. Its measured installed
-   vLLM dual-EOS policy remains distinct from explicit HF runtime qualification.
+1. Finish [larger-input40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574).
+   The old frozen control, 1024-patch square and 1200-patch landscape jobs have
+   completed successfully; independently review their small reports together
+   with the still-running 2048-patch boundary outcome. Require all14 F32/F16
+   arms, dynamic raw manifests, owning IDs/text/EOS and scoped timing/RSS.
+   The default remains1024; the2048 experiment requires four value-parsed gates.
+2. Review final-core [old frozen replay40183491593](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183491593)
+   and [eleven-case F16 replay40183493328](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183493328)
+   at26dcb07f. Preserve both the first F16 baseline and earlier expanded-runtime
+   replay40178330437. Model3 bound isolation must not regress model2 outputs.
+3. Review final-core [OvisOCR3 native1440183489780](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183489780).
+   The original943-stage capture and original11 are already reviewed. Only
+   actual all14 positive permits pinning the native receipt and running all11
+   native F16 cases against the frozen original. Preserve earlier harness
+   failures. Require whole-src/CMake/ggml identity before dependent workers.
+4. If all11 F16 outputs exactly match original IDs/raw text/stops/caps, run the
+   explicitly separate public-interface diagnostic across C/Python/CLI/HTTP/
+   Rust/Dart. The source two-column case caps1024 without EOS; retain
+   model-qualified=false, publication-eligible=false and the distinct diagnostic
+   review key. No prompt/cap/gold/scorer changes or model alias/publication.
+5. Consolidate actual outcomes into HISTORY/PERFORMANCE and model documents;
+   leave only executable pending tasks here. Complete normal PR and merged-source
+   checks, and mirror the vendor handoff into CrispMath without changing the
+   application release pin or unrelated app/SAM owner work.
 
 No queued workflow or prepared harness counts as qualification. Large archives
 remain hosted; independent review downloads small reports only. Preserve old
@@ -94,8 +93,8 @@ candidate is selected for publication or default promotion.
 Original plain OCR11 capture40178328864 is complete and reviewed; eight authored
 cases have zero raw CER/WER, but the two-column page caps1024 without EOS with
 CER0.52365/WER0.83993. Preserve that negative result in HISTORY; no cap/prompt/
-gold/scorer adjustment. Finish native14 retry40179894600 and the paired native
-F16 diagnostic after its proof. Model qualification requires all old screens.
+gold/scorer adjustment. Finish final-source native14 replay40183489780 and the paired native
+F16 diagnostic after its proof; retain both earlier harness failures. Model qualification requires all old screens.
 An explicit default-off public diagnostic may verify interfaces only when all11
 native outputs faithfully match the original, including its unchanged capped
 case. It must emit model-qualified=false and a separate diagnostic review key.
@@ -243,10 +242,17 @@ Require affected exact-source checks again for each new implementation change.
   Cloud deployment and collaboration remain separate optional product decisions.
   Exact scopes and dependencies: [consumer handoff](docs/current-state-and-next-steps.md).
 
-- [ ] **Issue71 inpainting feasibility:** audit exact code/checkpoint licenses for
-  MI-GAN/LaMa; trace image/mask contracts and existing primitive coverage. Keep
-  still-image parity/public interfaces separate from batching/temporal propagation.
-  Do not treat issue descriptions as verified license or quality evidence.
+- [ ] **Issue71 MI-GAN still-image prototype:** use the completed
+  [source/blueprint feasibility audit](docs/inpainting-feasibility.md) and pinned
+  [source receipt](docs/inpainting-source-contract.json). Choose one256/512
+  resolution, verify exact MIT checkpoint payload/config/tensor inventory and
+  preserve copied-helper notices or implement the graph independently. Freeze
+  original RGB/mask/block/final-output references, including white=fill polarity,
+  empty/full/edge/nonbinary masks, before native F32 work. Require stage errors,
+  known-pixel preservation, final image quality, scoped latency/RSS and actual
+  gated APIs before any model registry/publication. Batching, text-derived masks
+  and temporal propagation are separate lanes. LaMa remains held on authoritative
+  checkpoint terms and unimplemented FFT/complex semantics. Issue71 stays open.
 
 ## OCR portfolio and performance carry-forward
 
