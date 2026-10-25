@@ -19,11 +19,14 @@ def load(name, path):
 
 
 class RecipeControls(unittest.TestCase):
-    def test_unreviewed_metadata_fails_before_work(self):
+    def test_reviewed_metadata_pins_and_missing_review_fail_before_work(self):
         runner = load('ovisocr3_gpu_runner', DIR / 'ovisocr3_vllm_reference.py')
+        runner.configured()
+        self.assertEqual(runner.METADATA_RUN, 40172525903)
+        self.assertEqual(runner.PROOF_COMMIT, 'd6f954c58f402c686949a69fdec2f76acdf60079')
+        runner.METADATA_RUN = 0
         with self.assertRaisesRegex(ValueError, 'unresolved'):
             runner.configured()
-        self.assertEqual(runner.METADATA_RUN, 0)
         self.assertEqual(runner.MODEL, 'ATH-MaaS/OvisOCR3')
         self.assertEqual(runner.CHECKPOINT_BYTES, 1706030528)
         self.assertEqual(runner.CHECKPOINT_SHA,

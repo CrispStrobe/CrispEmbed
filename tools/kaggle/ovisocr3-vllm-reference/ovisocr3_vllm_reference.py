@@ -32,15 +32,16 @@ CHECKPOINT_BYTES = 1706030528
 SOURCE_REPORT_SHA = '8ca73ca6a349b67a7533c36de6c14ac066e1152f2c8d517af849b2655087a331'
 SOURCE_EOS = [248044, 248046]
 SOURCE_PROMPT_SHA = 'e037cf0013a757e19eae6d4d701f3b90848449fbebe44d1f8fa7d8ca4a5af9a7'
-METADATA_RUN = 0
-METADATA_HEAD = '0' * 40
-METADATA_ARTIFACT_ID = 0
-METADATA_ARTIFACT_ZIP_SHA = '0' * 64
-METADATA_REPORT_SHA = '0' * 64
-PROOF_COMMIT = '0' * 40
-PRODUCER_SHA = '0' * 64
-WORKER_COMMIT = 'd493bd12ab9745e4bd091abb09fbd90a3bc4038b'
-WORKER_SHA = 'e9e41e1d4c3b613ad56ce58ceba9cd1b0fe39aaba7ee29d08c394a26aad5bdb6'
+METADATA_RUN = 40172525903
+METADATA_HEAD = '72698a7640ad10e3d3fb0b090b2d318af85f6da1'
+METADATA_ARTIFACT_ID = 12590399022
+METADATA_ARTIFACT_ZIP_SHA = '9c512fd56998537c147f8cf2cc72265d5099c7e6a65629cdf23c3142d021b9fa'
+METADATA_ARTIFACT_BYTES = 524809
+METADATA_REPORT_SHA = 'bb7024cda983376b0919ebe57f4661772988ee3f18090adf9dd1d39ba6ef7973'
+PROOF_COMMIT = 'd6f954c58f402c686949a69fdec2f76acdf60079'
+PRODUCER_SHA = '804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2'
+WORKER_COMMIT = 'bd1f1fecc3d17d180286a9fb87393a18b830d9ca'
+WORKER_SHA = 'cc199f9ee10a49594d9c28d1c095992cc9a622e28b1fab73d9e4e3a509e61879'
 WHEEL_URL = ('https://github.com/vllm-project/vllm/releases/download/v0.22.1/'
              'vllm-0.22.1%2Bcu129-cp38-abi3-manylinux_2_28_x86_64.whl')
 WHEEL_NAME = 'vllm-0.22.1+cu129-cp38-abi3-manylinux_2_28_x86_64.whl'
@@ -154,18 +155,27 @@ def metadata_proof(report):
                        + str(METADATA_RUN))
     if (service['id'] != METADATA_RUN or service['head_sha'] != METADATA_HEAD
             or service['status'] != 'completed' or service['conclusion'] != 'success'
-            or service['path'] != '.github/workflows/ovisocr3-metadata.yml'):
+            or service['path'] != '.github/workflows/ovisocr2-metadata.yml'):
         raise ValueError('OvisOCR3 metadata service completion/source differs')
+    artifact_service = get_json('https://api.github.com/repos/CrispStrobe/CrispEmbed/actions/artifacts/'
+                                + str(METADATA_ARTIFACT_ID))
+    if (artifact_service['id'] != METADATA_ARTIFACT_ID
+            or artifact_service['name'] != 'ovisocr3-metadata-' + str(METADATA_RUN)
+            or artifact_service['size_in_bytes'] != METADATA_ARTIFACT_BYTES
+            or artifact_service['expired'] is not False
+            or artifact_service['workflow_run']['id'] != METADATA_RUN
+            or artifact_service['workflow_run']['head_sha'] != METADATA_HEAD):
+        raise ValueError('OvisOCR3 metadata artifact service identity differs')
     url = ('https://raw.githubusercontent.com/CrispStrobe/CrispEmbed/' + PROOF_COMMIT
            + '/tests/results/qwen35-ocr/ovisocr3-metadata.json')
     wrapper = get_json(url)
     producer = wrapper['producer']
     review = wrapper['independent_review']
-    artifact = wrapper['artifact']
     if (wrapper['run'] != METADATA_RUN or wrapper['head_sha'] != METADATA_HEAD
             or wrapper['source_commit'] != METADATA_HEAD
-            or artifact['id'] != METADATA_ARTIFACT_ID
-            or artifact['zip_sha256'] != METADATA_ARTIFACT_ZIP_SHA
+            or wrapper['artifact_id'] != METADATA_ARTIFACT_ID
+            or wrapper['artifact_zip_sha256'] != METADATA_ARTIFACT_ZIP_SHA
+            or wrapper['artifact_bytes'] != METADATA_ARTIFACT_BYTES
             or wrapper['report_sha256'] != METADATA_REPORT_SHA
             or review['metadata_positive'] is not True
             or review['producer_canonical_sha256'] != PRODUCER_SHA
@@ -175,6 +185,8 @@ def metadata_proof(report):
             or producer['source_report_sha256'] != SOURCE_REPORT_SHA
             or producer['source_model'] != MODEL or producer['source_revision'] != REVISION
             or producer['task_prompt_sha256'] != SOURCE_PROMPT_SHA
+            or hashlib.sha256(wrapper['rendered_prompt'].encode()).hexdigest()
+               != producer['rendered_prompt_sha256']
             or producer['tokenizer_eos'] != 248046
             or producer['effective_stops_source_probe']['all_stop_ids'] != SOURCE_EOS
             or producer['schema']['checkpoint_tensors'] != 473
@@ -185,7 +197,9 @@ def metadata_proof(report):
                                   'path': service['path'], 'conclusion': service['conclusion']}
     report['metadata_proof'] = {'url': url, 'producer_sha256': PRODUCER_SHA,
                                 'artifact_id': METADATA_ARTIFACT_ID,
-                                'artifact_zip_sha256': METADATA_ARTIFACT_ZIP_SHA}
+                                'artifact_zip_sha256': METADATA_ARTIFACT_ZIP_SHA,
+                                'artifact_bytes': METADATA_ARTIFACT_BYTES,
+                                'artifact_expired': False}
     save(report)
     return wrapper
 
