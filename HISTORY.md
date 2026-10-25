@@ -1,3 +1,14 @@
+## 25 October 2026 — Ovis reference controls corrected before model access
+
+[Initial preparation journal](tests/results/qwen35-ocr/initial-ovisocr3-reference-controls.json)
+records queued reference40176566774 cancellation to preserve complete small
+blueprint JSON, then40177090767's pure source-guard failure. The intentional
+append-only engine22 public mapping was absent from the expanded source allowlist.
+Correction2ce86168 pins precisely that wrapper SHA and adds a negative mutation
+control; arithmetic guards, numerical budgets and original gold remain unchanged.
+Replacement original reference40177416485 is dispatched. These are preparation
+outcomes, not original-model or native parity measurements.
+
 ## 25 October 2026 — OvisOCR3 original metadata reviewed; control failure retained
 
 [40172525903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172525903)
