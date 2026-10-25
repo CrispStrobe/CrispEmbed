@@ -416,6 +416,12 @@ remain required; neither delivery nor speed permits a default flip.
 
 ## Ovis bounded materialization reuse — after measured attribution
 
+In progress on `feat/ovis-weight-cache-20261025`: default-off decoder-only
+immutable F32 storage reuse,256MiB default/1GiB hard retained-buffer limit,
+stable first-fit admission and original serial/parallel fallback. Component
+controls and hosted paired/frozen/eleven-case qualification are required below;
+implementation alone is not performance, quality or release evidence.
+
 Use [the completed profile](tests/results/qwen35-ocr/ovisocr2-profiling.json),
 `src/qwen35_profile.{h,cpp}` and
 `src/qwen35_linear.cpp::{project_cpu,tensor_floats}`. Attribution is complete;

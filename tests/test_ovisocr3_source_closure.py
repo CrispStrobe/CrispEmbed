@@ -78,10 +78,11 @@ def fake_git(root, *, cmake=None, reviewed=GGML, current=GGML, staged=GGML,
 class SourceClosureControls(unittest.TestCase):
     def test_full_worker_set_and_reviewed_cmake_gitlink(self):
         producer = fixture()
-        self.assertEqual(len(producer["native_source_sha256"]), 29)
+        expected = len(closure.expected_native_sources(ROOT))
+        self.assertEqual(len(producer["native_source_sha256"]), expected)
         result = closure.require_native_source_closure(producer, HEAD, root=ROOT,
                     call=fake_git(ROOT), fetch=lambda *a, **k: self.fail("unexpected fetch"))
-        self.assertEqual(result["file_count"], 29)
+        self.assertEqual(result["file_count"], expected)
         self.assertEqual(result["ggml_gitlink"], GGML)
         self.assertTrue(result["gitlink_index_exact"])
         self.assertTrue(result["ggml_checkout_exact"])

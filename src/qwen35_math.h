@@ -5,6 +5,7 @@
 #include <vector>
 struct ggml_tensor;
 namespace qwen35_ocr {
+class converted_weight_cache;
 // Keep the source's F32 squares and scale. Optional F64 summation isolates
 // reduction error without changing weights, epsilon or normalization order.
 inline float rms_scale_cpu(const float * x, int width, float eps) {
@@ -28,5 +29,5 @@ bool set_projection_observer(projection_observer observer, void * user);
 int f16_conversion_workers(std::size_t elements, int threads);
 bool tensor_floats(ggml_tensor * source, float * target, int threads = 1);
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
-                 std::vector<std::vector<float>> & output);
+                 std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache = nullptr);
 } // namespace qwen35_ocr

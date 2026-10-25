@@ -34,7 +34,7 @@ class ReplayControls(unittest.TestCase):
         # scope. New opt-in image/profile files use a versioned current-runtime
         # audit; they must not silently expand the historical proof.
         paths = [p for p in sorted((ROOT / 'src').glob('qwen35*'))
-                 if p.name != 'qwen35_image_bounds.h']
+                 if p.name not in ('qwen35_image_bounds.h', 'qwen35_weight_cache.h')]
         paths += [ROOT / name for name in (
             'src/crispembed_diff.h', 'tests/qwen35_parity.h',
             'tests/test_qwen35_decoder.cpp', 'tests/test_qwen35_vision.cpp',

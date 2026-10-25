@@ -6,11 +6,25 @@ import sys
 import unittest
 import tempfile
 import platform
+from contextlib import contextmanager
 from unittest import mock
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/ci-heavy'))
 import ovisocr2_large_inputs as driver
 
 class Controls(unittest.TestCase):
+    @contextmanager
+    def historical_source(self):
+        # The old larger-input audit must keep rejecting the new cache runtime.
+        # Exercise its original contract against a synthetic historical tree,
+        # rather than widening its arithmetic allowlist for a new experiment.
+        old=json.loads((driver.ROOT/'tests/results/qwen35-ocr/ovisocr2-f16-quality.json').read_text())['producer']['native_source_sha256']
+        def historical_sha(path):
+            name=str(Path(path).relative_to(driver.ROOT))
+            if name=='src/qwen35_image.cpp':return '1'*64
+            return old.get(name,'2'*64)
+        sources=tuple(name for name in driver.SOURCES if name!='src/qwen35_weight_cache.h')
+        with mock.patch.object(driver.audit,'sha',side_effect=historical_sha),mock.patch.object(driver,'SOURCES',sources):
+            yield
     def test_frozen_panel_precedes_outputs(self):
         p=driver.checked_panel()
         self.assertEqual(p['max_new_tokens'],32)
@@ -22,12 +36,15 @@ class Controls(unittest.TestCase):
             with mock.patch.object(driver,'PANEL',mock.Mock(read_text=mock.Mock(return_value=json.dumps(changed)))):
                 with self.assertRaises(ValueError):driver.checked_panel()
     def test_unrelated_arithmetic_must_remain_frozen(self):
-        closure=driver.source_contract()
-        self.assertIn('src/qwen35_image.cpp',closure['intentional_changed_files'])
-        original=driver.audit.sha
-        def modified(path):return '0'*64 if str(path).endswith('src/qwen35_norm.cpp') else original(path)
-        with mock.patch.object(driver.audit,'sha',side_effect=modified):
-            with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
+        with self.historical_source():
+            closure=driver.source_contract()
+            self.assertIn('src/qwen35_image.cpp',closure['intentional_changed_files'])
+            original=driver.audit.sha.side_effect
+            def modified(path):return '0'*64 if str(path).endswith('src/qwen35_norm.cpp') else original(path)
+            with mock.patch.object(driver.audit,'sha',side_effect=modified):
+                with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
+    def test_historical_driver_rejects_new_cache_runtime(self):
+        with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
     def test_unreviewed_public_wrapper_cannot_pass(self):
         original=driver.audit.sha
         def modified(path):return '0'*64 if str(path).endswith('src/crispembed.cpp') else original(path)
