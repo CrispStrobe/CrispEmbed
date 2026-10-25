@@ -90,9 +90,15 @@ def require_native_source_closure(producer, head, *, root=ROOT,
     reviewed_ggml = gitlink_line(call(["ls-tree", head, "ggml"], root=root))
     current_ggml = gitlink_line(call(["ls-tree", "HEAD", "ggml"], root=root))
     staged_ggml = gitlink_line(call(["ls-files", "--stage", "ggml"], root=root), staged=True)
-    if reviewed_ggml != current_ggml or reviewed_ggml != staged_ggml:
+    ggml_path = root / "ggml"
+    checkout_root = call(["-C", str(ggml_path), "rev-parse", "--show-toplevel"], root=root).decode().strip()
+    checkout_head = call(["-C", str(ggml_path), "rev-parse", "HEAD"], root=root).decode().strip()
+    if (reviewed_ggml != current_ggml or reviewed_ggml != staged_ggml
+            or Path(checkout_root).resolve() != ggml_path.resolve()
+            or checkout_head != reviewed_ggml):
         raise ValueError("ggml gitlink differs from reviewed native head")
     return {"reviewed_head": head, "file_count": len(expected),
             "file_set_sha256": hashlib.sha256("\n".join(sorted(expected)).encode()).hexdigest(),
             "cmake_sha256": hashlib.sha256(current_cmake).hexdigest(),
-            "ggml_gitlink": reviewed_ggml, "gitlink_index_exact": True}
+            "ggml_gitlink": reviewed_ggml, "gitlink_index_exact": True,
+            "ggml_checkout_exact": True}
