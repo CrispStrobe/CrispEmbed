@@ -56,6 +56,8 @@ static int run() {
     auto * other = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, 32, 8);
     auto * invalid = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, 32, 8);
     auto * quant = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_Q8_0, 32, 8);
+    auto * large = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, 1024, 256);
+    auto * oversized = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, 1024, 257);
     using backend_owner = std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)>;
     using buffer_owner = std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)>;
     backend_owner backend(ggml_backend_cpu_init(), ggml_backend_free);
@@ -69,6 +71,9 @@ static int run() {
     }
     static_cast<float *>(invalid->data)[255] = INFINITY;
     for (size_t i = 0; i < 288; ++i) static_cast<float *>(full->data)[i] = float(int(i % 19) - 9) / 8;
+    for (auto * tensor : { large, oversized })
+        for (size_t i = 0; i < size_t(ggml_nelements(tensor)); ++i)
+            static_cast<ggml_fp16_t *>(tensor->data)[i] = ggml_fp32_to_fp16(float(int(i % 31) - 15) / 32);
     std::vector<float> input(32 * 3);
     for (size_t i = 0; i < input.size(); ++i) input[i] = float(int(i % 13) - 6) / 16;
     converted_weight_cache cache(1024), independent(1024), zero(0);
@@ -117,10 +122,29 @@ static int run() {
     if (!project_cpu({ half }, input.data(), 32, 3, 2, cold, &cache) || !exact({ old[0] }, cold) ||
         cache.entries() != 1)
         return 1;
+    // Cross the actual conversion-worker threshold. Clear before each setting
+    // so both serial and parallel arms test cold admission, then warm reuse.
+    std::vector<float> large_input(1024, 0.125f);
+    converted_weight_cache large_cache(1024 * 1024);
+    env("CRISPEMBED_QWEN35_PARALLEL_F16", "0");
+    if (!project_cpu({ large, oversized }, large_input.data(), 1024, 1, 4, old)) return 1;
+    for (const char * parallel : { "0", "1" }) {
+        large_cache.clear();
+        env("CRISPEMBED_QWEN35_PARALLEL_F16", parallel);
+        if (f16_conversion_workers(262144, 4) != (parallel[0] == '1' ? 4 : 1)) return 1;
+        if (!project_cpu({ large, oversized }, large_input.data(), 1024, 1, 4, cold, &large_cache) ||
+            !exact(old, cold) || large_cache.entries() != 1 || large_cache.bytes() != large_cache.budget() ||
+            large_cache.hits() != 0)
+            return 1;
+        if (!project_cpu({ large, oversized }, large_input.data(), 1024, 1, 4, warm, &large_cache) ||
+            !exact(old, warm) || large_cache.hits() != 1)
+            return 1;
+    }
+    large_cache.clear();
     cache.clear();
     independent.clear();
     std::puts("WEIGHT_CACHE_CONTROLS pass=1 literal0=1 budget=1 invalid_budget=1 cold_warm_exact=1 fallback=1 "
-              "nonfinite=1 reset=1 independent=1 survivor=1");
+              "nonfinite=1 reset=1 independent=1 survivor=1 parallel_cold_fallback=1");
     return 0;
 }
 int main() {

@@ -35,7 +35,7 @@ NATIVE_PINS = {
     "tests/qwen35_parity.h": "b003edf078884107df753a95c957e260d3e3a63c0356b5eb57ec2092a4b746bf",
     "tests/test_ovisocr2_cache_bench.cpp": "272fce1185099ab9cc02ca272206c8ec25c905ad712b0672fec1f80a73b35785",
     "tests/test_qwen35_decoder.cpp": "c8755b7ad7bb08cbe83077fe8e43123e8d129b9e10eede0fdac483c46fbca095",
-    "tests/test_qwen35_weight_cache.cpp": "8f2451c89c1e8e42d9e45b0f6316a64aeec4e9edb0a82d54776339ba9ac551a6",
+    "tests/test_qwen35_weight_cache.cpp": "4dc21a7219beddce6691f707d54742a9c3c92ae0e5a1bfb463d75e54989e3417",
     "tools/ci-heavy/ovisocr2_large_inputs.py": "69fbbfd0f2246dd0654ad8c8526c2880ab727aee8046def14dae0b65b5dc6318",
     "tools/ci-heavy/ovisocr2_native_replay.py": "cc515a3fab916692c1139de5db5a7bb46762ae677a72f93af7a691ccd0bd4dae",
     "tools/ci-heavy/ovisocr2_quality_run.py": "110056eb9b727d1fac7ff54d0cba509030a41982eef5adf83040ad23f2fedc5f"
