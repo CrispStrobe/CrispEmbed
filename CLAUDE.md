@@ -134,12 +134,36 @@ preserved separately and the temporary publisher binding removed. The real
 `ovisocr2-f16` alias and CLI/server resolution pass actual published
 consumer40080458492: two fresh-cache hashes, offline reuse and CLI/HTTP text/
 confidence. PR79 and final-source/merged-source checks are integrated; continue
-the bounded latency/RSS profiling lane in PLAN. All25 native source files
-and qualified `src`/ggml/CMake objects stay unchanged. Ten current consumer controls and
+the ordered follow-ups in PLAN. Bounded latency/RSS attribution is complete in
+[the profile](tests/results/qwen35-ocr/ovisocr2-profiling.json). At the published
+consumer run, all25 native source files and qualified `src`/ggml/CMake objects
+matched the original qualification; later runtime edits require a new replay.
+Ten consumer controls and
 three adapter controls pass; the consumer rejects native-source drift before
 build. Retain initial failures and raw strict flags. No runtime release, app
 upgrade or default flip follows from model publication. Development
-CPU-baseline PR76 is merged; successor release assets remain separate.
+CPU-baseline PR76 is merged; successor release assets remain separate. The
+[issue71 feasibility audit](docs/inpainting-feasibility.md) is source-only:
+MI-GAN is the first bounded still-image experiment; LaMa checkpoint rights and
+FFT implementation remain unresolved. The fourth OvisOCR2
+[attention-F16/FFN-Q4 run40172527229](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)
+is rejected despite72 FFN-Q4/401 byte-exact tensors and passing first-linear
+probes: `prefill.decoder.layer.0` fails numerical gates and two realistic OCR
+cases regress. [Selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
+keeps published F16 and the frozen first F16 quality receipt. The expanded
+runtime F16 quality replay40178330437 matches all11 frozen decoded cases,
+but final-source frozen14-arm40183491593 and F16 eleven-case40183493328 need
+terminal independent review; larger-input40177774574 still needs1200/2048
+review. No new large-image default or qualified precision follows yet.
+
+OvisOCR3 metadata and its original943-stage CPU reference are reviewed. Its
+[original plain OCR eleven-case capture40178328864](tests/results/qwen35-ocr/ovisocr3-original-quality.json)
+is source-quality negative: two-column-page hits the frozen1024-token cap
+without EOS (CER0.52365/WER0.83993). The earlier native14 retry exposed two
+test-harness defects; final-source native14 run40183489780, native F16 quality
+and public engine22 diagnostics still require actual reviewed results. The
+source completion failure blocks model qualification, publication and alias;
+do not change its prompt, cap, gold or scorer to pass a gate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with
 its existing owner. The app remains pinned to immutable0.17.12.
