@@ -479,3 +479,31 @@ The active order and acceptance gates remain in [PLAN](../PLAN.md). Preserve
 large model/reference/raw-vector artifacts remotely and inspect only small
 reports here. Do not promote queued work, a component cosine, or a source audit
 to decoded-quality or publication proof.
+
+
+### Completed bounded first-FFN attribution; integration gates pending
+
+`audit/ovis-ffn-20261025` implements the [frozen five-arm protocol](ovisocr2-first-ffn-attribution.md).
+Use metadata workflow `phase=first-ffn` on that branch. The test-only executable
+includes the actual decoder source; production `src` remains byte-identical to
+native tree `e5cbd629818f0424e272bc84469e9375eee804d2`, ggml `890278a8`.
+It consumes rejected run40172527229's exact candidate/raw artifacts and original
+reference40049244654, with service/ZIP/member hashes checked remotely. Original
+SF-derived F16 matrix hashes must reproduce the frozen before-quantization
+records. No original array is regenerated, and no new candidate is quantized.
+
+[Actual40231922668](../tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+passes all five arms at`a5883feb`: all11,010,048 independent dequantized values,
+original reconstructed layer and retained rejected native layer match exactly.
+Same-weight FFN errors stay below1.669e-6; original Python with Q4 reproduces
+layer error0.03288919. No local implementation mismatch is identified. Small
+ZIP/source/log review covers all20 metrics; large raw arrays remain remote and
+were not separately downloaded for review. Raw artifact12613722786 expires
+23 January2027. All document-quality rejections/published F16 remain unchanged.
+Two superseded dispatches were cancelled while queued before model execution.
+PR82 still needs its final-source normal checks and main integration. Production
+source did not change, so this is no runtime release or app upgrade. After
+integration, use the separately scoped2048 attribution lane; any new precision
+selection needs a fresh development/evaluation protocol rather than fitting the
+observed held-out documents. Keep2048 attribution and MI-GAN queued as
+separate lanes, and leave SAM with its existing owner.

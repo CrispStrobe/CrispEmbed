@@ -1,0 +1,57 @@
+name: OvisOCR2 retained Q4 first-FFN attribution
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ovisocr2-first-ffn-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  attribution:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source and retained-input controls before model access
+        run: |
+          python tests/test_ovisocr2_ffn.py -v
+          python tools/ci-heavy/ovisocr2_ffn.py --preflight
+      - name: Build portable validation-only observer
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+          python scripts/check-cpu-baseline.py "$RUNNER_TEMP/build"
+          cmake --build "$RUNNER_TEMP/build" --target test-ovisocr2-ffn -j2
+      - name: Frozen original CPU framework environment
+        run: |
+          python -m pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 gguf==0.19.0 safetensors==0.8.0 huggingface-hub==1.33.0 pillow==12.1.0
+      - name: Audit the retained first-layer failure without recapturing or requantizing
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" AUDIT_BIN_DIR="$RUNNER_TEMP/build" python tools/ci-heavy/ovisocr2_ffn.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-ffn-reports-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-ffn-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ffn/native/
+            ${{ runner.temp }}/scratch/ffn/ffn.gguf
+          retention-days: 90
