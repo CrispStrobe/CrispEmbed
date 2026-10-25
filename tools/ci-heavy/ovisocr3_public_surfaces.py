@@ -28,23 +28,23 @@ LIGHTON_RECEIPT = ROOT / "tests/results/qwen35-ocr/receipt.json"
 GATES = ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR3_FRONTEND",
          "CRISPEMBED_OVISOCR3_INFERENCE")
 # Fill only from reviewed native fourteen-arm and F16 eleven-case receipts.
-NATIVE_RUN = 0
-NATIVE_HEAD = ''
+NATIVE_RUN = 40183489780
+NATIVE_HEAD = '26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51'
 NATIVE_STATUS = 'completed diagnostic OvisOCR3 fourteen-arm native replay'
-NATIVE_WORKFLOW = '.github/workflows/ovisocr3-native14.yml'
-NATIVE_ARTIFACT_NAME = ''
-NATIVE_PRODUCER_SHA = ''
+NATIVE_WORKFLOW = '.github/workflows/ovisocr2-metadata.yml'
+NATIVE_ARTIFACT_NAME = 'ovisocr3-native14-f16-40183489780'
+NATIVE_PRODUCER_SHA = 'b3fb70c121c27653088dda4492628959703ff170b0cc83d4512aba694f4933f3'
 QUALITY_RUN = 0
 QUALITY_HEAD = ''
 QUALITY_PRODUCER_SHA = ''
 QUALITY_REVIEW_KEY = ''
-F16_SHA = ''
+F16_SHA = 'a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0'
 # Separate, default-off interface diagnostic. These pins are set only after
 # independent review of the actual unqualified eleven-case source capture.
-DIAGNOSTIC_ORIGINAL_RUN = 0
-DIAGNOSTIC_ORIGINAL_HEAD = ''
-DIAGNOSTIC_ORIGINAL_PRODUCER_SHA = ''
-DIAGNOSTIC_QUALITY_REVIEW_KEY = ''
+DIAGNOSTIC_ORIGINAL_RUN = 40178328864
+DIAGNOSTIC_ORIGINAL_HEAD = '574df1994c953cb5e16540e3c5f2e30b17ebb112'
+DIAGNOSTIC_ORIGINAL_PRODUCER_SHA = '390611fb104175d6e557e3e03b965fbde0c17aa932f33b1d4c0526a075f6fa67'
+DIAGNOSTIC_QUALITY_REVIEW_KEY = 'f16_eleven_capture_complete'
 
 
 def vision_contract():
