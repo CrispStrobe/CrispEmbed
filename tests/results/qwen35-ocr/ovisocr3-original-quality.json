@@ -3895,7 +3895,7 @@
   "independent_review": {
     "producer_canonical_sha256": "390611fb104175d6e557e3e03b965fbde0c17aa932f33b1d4c0526a075f6fa67",
     "artifact_zip_sha256": "7c0bb2dffada17d86a48e55cf8a730a6a67e999f04082c1b938043f7de75f6bd",
-    "original_eleven_complete": true,
+    "original_eleven_complete": false,
     "all_eleven_reached_eos": false,
     "original_quality_positive": false,
     "qualification_positive": false,
@@ -4032,6 +4032,8 @@
       }
     },
     "scope": "Eleven original HF CPU/F32 outputs and exact frozen input bytes are retained; quality qualification fails at the unchanged two-column-page cap. No native parity or publication claim.",
-    "limits": "Selected-token confidences were checked for finite range, count and reported mean; full-vocabulary logits were not retained for independent softmax recomputation. No model execution occurred in this review."
+    "limits": "Selected-token confidences were checked for finite range, count and reported mean; full-vocabulary logits were not retained for independent softmax recomputation. No model execution occurred in this review.",
+    "original_eleven_capture_complete": true,
+    "source_completion_incomplete": true
   }
 }

@@ -29,9 +29,9 @@ contract = original.contract
 policy = original.policy
 
 # Set only from separately reviewed eleven-case original and 14-arm native runs.
-ORIGINAL_QUALITY_RUN = 0
-ORIGINAL_QUALITY_HEAD = ""
-ORIGINAL_QUALITY_PRODUCER_SHA256 = ""
+ORIGINAL_QUALITY_RUN = 40178328864
+ORIGINAL_QUALITY_HEAD = "574df1994c953cb5e16540e3c5f2e30b17ebb112"
+ORIGINAL_QUALITY_PRODUCER_SHA256 = "390611fb104175d6e557e3e03b965fbde0c17aa932f33b1d4c0526a075f6fa67"
 ORIGINAL_QUALITY_RECEIPT = ROOT / "tests/results/qwen35-ocr/ovisocr3-original-quality.json"
 NATIVE_MODEL_RUN = 0
 NATIVE_MODEL_HEAD = ""
@@ -55,7 +55,7 @@ def require_reviewed_original_quality():
     if (receipt.get("run") != ORIGINAL_QUALITY_RUN or receipt.get("head_sha") != ORIGINAL_QUALITY_HEAD
             or canonical != ORIGINAL_QUALITY_PRODUCER_SHA256
             or review.get("producer_canonical_sha256") != canonical
-            or review.get("original_eleven_complete") is not True
+            or review.get("original_eleven_capture_complete") is not True
             or producer.get("status") != "completed original OvisOCR3 HF CPU/F32 eleven-case plain OCR quality"
             or producer.get("checkpoint_sha256") != policy.CHECKPOINT_SHA256
             or producer.get("panel_canonical_sha256") != contract.PANEL_CANONICAL_SHA256
