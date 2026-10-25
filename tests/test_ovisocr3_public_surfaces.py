@@ -34,6 +34,18 @@ class PublicControls(unittest.TestCase):
                                          'CRISPEMBED_OVISOCR3_INFERENCE'))
         self.assertEqual(len(set(subject.GATES)), 3)
         self.assertNotIn('CRISPEMBED_OVISOCR2_FRONTEND', subject.GATES)
+        base = {'CRISPEMBED_OVISOCR2_FRONTEND': '0',
+                'CRISPEMBED_OVISOCR2_INFERENCE': '0',
+                'CRISPEMBED_OVISOCR3_FRONTEND': '1'}
+        for label in ('cli-stage21-ovis3-profile', 'http-start-ovis3-on-stage21'):
+            probe = subject.profile_probe_env(label, base)
+            self.assertEqual((probe['CRISPEMBED_OVISOCR2_FRONTEND'],
+                              probe['CRISPEMBED_OVISOCR2_INFERENCE']), ('1', '1'))
+            self.assertEqual(probe['CRISPEMBED_OVISOCR3_FRONTEND'], '1')
+            self.assertEqual(base['CRISPEMBED_OVISOCR2_FRONTEND'], '0')
+        for label in ('cli-stage22-lighton-profile', 'http-start-lighton-profile',
+                      'cli-stage22-custom-prompt'):
+            self.assertEqual(subject.profile_probe_env(label, base), base)
 
     def test_format3_truncation_is_header_complete(self):
         class Field:

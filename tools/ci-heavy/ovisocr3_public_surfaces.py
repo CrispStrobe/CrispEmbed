@@ -291,6 +291,15 @@ def env_with_gates(enabled=True, selection=None):
     return vision_contract().apply_selection(env, selection)
 
 
+def profile_probe_env(label, base):
+    """Reach engine 21's profile check only for its Ovis3 wrong-profile arm."""
+    result = dict(base)
+    if label in ('cli-stage21-ovis3-profile', 'http-start-ovis3-on-stage21'):
+        result['CRISPEMBED_OVISOCR2_FRONTEND'] = '1'
+        result['CRISPEMBED_OVISOCR2_INFERENCE'] = '1'
+    return result
+
+
 def image_data(path, pins, scratch):
     import numpy as np
     from PIL import Image
@@ -410,9 +419,10 @@ def cli_http_arm(build, model, lighton, image, expected, out, report, save, enab
         ("cli-stage20-ovis-profile", "qwen35-ocr", [], model),
         ("cli-stage21-ovis3-profile", "ovisocr2", [], model)):
         result = run_cmd(label, [cli, "--ocr-pipeline", image, "--ocr-engine", engine,
-                                 "--ocr-rec", use_model, "--ocr-max-tokens", "12", *extra], out, env=env)
+                                 "--ocr-rec", use_model, "--ocr-max-tokens", "12", *extra],
+                         out, env=profile_probe_env(label, env))
         rejection = (out/result["log"]).read_text(errors="replace").lower()
-        hint = "profile" if "profile" in label else "ovisocr3"
+        hint = "exact model profile" if "profile" in label else "ovisocr3"
         result["passed"] = result["exit_code"] > 0 and hint in rejection
         report["arms"][label] = result
         save()
@@ -436,12 +446,13 @@ def cli_http_arm(build, model, lighton, image, expected, out, report, save, enab
         *(("http-start-gate0-" + gate.lower(), "ovisocr3", model, [], gate) for gate in GATES)):
         startup_env = env_with_gates(selection=selection)
         if disabled_gate: startup_env[disabled_gate] = "0"
+        startup_env = profile_probe_env(label, startup_env)
         result = run_cmd(label, [server, "--offline", "--ocr-pipeline", "--ocr-engine", engine,
                                  "--ocr-rec", use_model, "--ocr-max-tokens", "12", *extra,
                                  "--host", "127.0.0.1", "--port", "0"], out,
                          env=startup_env, timeout=15)
         rejection = (out/result["log"]).read_text(errors="replace").lower()
-        hint = "profile" if ("profile" in label or "stage20" in label or "stage21" in label) else "ovisocr3"
+        hint = "exact model profile" if ("profile" in label or "stage20" in label or "stage21" in label) else "ovisocr3"
         result["passed"] = result["exit_code"] > 0 and hint in rejection
         report["arms"][label] = result
         save()
