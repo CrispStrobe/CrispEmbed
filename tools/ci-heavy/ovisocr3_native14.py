@@ -38,6 +38,13 @@ NATIVE_ENV.update({name: "0" for name in (
     "CRISPEMBED_QWEN35_IMATRIX", "CRISPEMBED_QWEN35_PARALLEL_F16",
     "CRISPEMBED_QWEN35_PROFILE", "CRISPEMBED_QWEN35_QUANT",
     "CRISPEMBED_QWEN35_TOKENIZER_MARKS")})
+SELECTED_VISION_PRESET = {
+    "name": "both",
+    "enabled_gates": ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+                      "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"],
+    "all_other_native_gates_unchanged": True,
+    "no_production_default_promoted": True,
+}
 
 
 def sha(path):
@@ -137,13 +144,32 @@ def checked_reference_archive(archive, receipt, folder):
             if target is not None:
                 output[name] = target
     original = json.loads(output["ovisocr3-original.json"].read_text())
+    controls = original.get("observational_control")
     if (len(original.get("stages", {})) != receipt["producer"]["stage_count"]
             or original.get("checkpoint_sha256") != source.CHECKPOINT_SHA256
+            or original.get("image_sha256") != receipt["producer"]["owned_readable"]["file_sha256"]
             or original.get("missing_stages")
+            or controls != {"prefill_logits_exact": True, "greedy_ids_exact": True}
             or original.get("cached_vs_full_prefix_same_argmax") is not True
             or original.get("generated_ids") != receipt["producer"]["reference_summary"]["generated_ids"]):
         raise ValueError("OvisOCR3 original reference stage/output proof differs")
     return original, output
+
+
+def checked_readable(image, receipt):
+    """Bind the actual decoded RGB bytes to the original owned PNG declaration."""
+    from PIL import Image
+    expected = receipt["producer"]["owned_readable"]
+    with Image.open(image) as encoded:
+        if encoded.format != "PNG" or encoded.mode != "RGB" or encoded.size != (448, 448):
+            raise ValueError("OvisOCR3 reviewed readable image format/size differs")
+        rgb_sha = hashlib.sha256(encoded.tobytes()).hexdigest()
+    png_sha = sha(image)
+    if (png_sha != expected["file_sha256"] or rgb_sha != expected["rgb_sha256"]
+            or expected["size"] != [448, 448] or expected["gold"] != "Hello OCR\n12345"):
+        raise ValueError("OvisOCR3 reviewed readable image RGB/source differs")
+    return {"png_sha256": png_sha, "rgb_sha256": rgb_sha, "size": [448, 448],
+            "gold": expected["gold"], "scope": expected["scope"]}
 
 
 def validate_manifest(manifest, precision, schema):
@@ -379,12 +405,16 @@ def main(preflight=False):
             raise ValueError("Reviewed OvisOCR3 original reference download differs")
         original, files = checked_reference_archive(archive, receipt, scratch / "reference")
         archive.unlink()
+        report["owned_readable"] = checked_readable(files["owned-readable.png"], receipt)
+        report["selected_vision_preset"] = SELECTED_VISION_PRESET
+        (out / "ovisocr3-original.json").write_bytes(files["ovisocr3-original.json"].read_bytes())
         report["reference_artifacts"] = {name: {"sha256": sha(path), "bytes": path.stat().st_size}
                                          for name, path in files.items()}
         report["reference_original_json_sha256"] = sha(files["ovisocr3-original.json"])
         report["original_capture"] = {key: original.get(key) for key in
                                       ("generated_ids", "decoded", "raw_decoded", "generation_result",
-                                       "cached_vs_full_prefix_max_abs", "cached_vs_full_prefix_same_argmax")}
+                                       "cached_vs_full_prefix_max_abs", "cached_vs_full_prefix_same_argmax",
+                                       "observational_control")}
         save()
         report["phase"] = "source-and-checkpoint"; save()
         directory = Path(snapshot_download(source.MODEL, revision=source.REVISION,

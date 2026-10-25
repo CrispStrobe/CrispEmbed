@@ -12,9 +12,27 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("ovisocr3_native14_test", ROOT / "tools/ci-heavy/ovisocr3_native14.py")
 audit = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(audit)
+vision_spec = importlib.util.spec_from_file_location(
+    "ovisocr3_native_vision_env_test", ROOT / "tools/ci-heavy/ovisocr2_vision_env.py")
+vision_env = importlib.util.module_from_spec(vision_spec)
+vision_spec.loader.exec_module(vision_env)
 
 
 class Native14Controls(unittest.TestCase):
+    def test_selected_vision_preset_is_exact_recorded_candidate(self):
+        producer = {"native_environment": audit.NATIVE_ENV,
+                    "selected_vision_preset": audit.SELECTED_VISION_PRESET}
+        chosen = vision_env.reviewed_selection(producer)
+        self.assertEqual(chosen["name"], "both")
+        self.assertEqual(chosen["values"], {
+            "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+            "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+            "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"})
+        changed = copy.deepcopy(producer)
+        changed["native_environment"]["CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"] = "0"
+        with self.assertRaises(ValueError):
+            vision_env.reviewed_selection(changed)
+
     def test_absent_reviewed_original_stops_before_service_and_weights(self):
         with patch.object(audit, "profile") as profile:
             profile._reviewed_receipts.side_effect = ValueError("proof absent")
