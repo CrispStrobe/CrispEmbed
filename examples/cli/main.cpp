@@ -121,11 +121,12 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: "
-                    "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
-                    "tromr(music)/flova(music)/transcoda(music)/"
-                    "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/ovisocr2/ovisocr3/lfm2-vl/"
-                    "unlimited-ocr)\n");
+    fprintf(stderr,
+            "  --ocr FILE       OCR → text (auto-detect: "
+            "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
+            "tromr(music)/flova(music)/transcoda(music)/"
+            "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/ovisocr2/ovisocr3/lfm2-vl/"
+            "unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
     fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --ocr-prompt TEXT   custom instruction for prompt-following VLM OCR engines\n");
@@ -167,11 +168,10 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
-    fprintf(
-        stderr,
-        "       --ocr-engine N  primary engine "
-        "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|ovisocr2|ovisocr3|qwen3vl|"
-        "unlimited_ocr|olmocr|lfm2-vl)\n");
+    fprintf(stderr, "       --ocr-engine N  primary engine "
+                    "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
+                    "ovisocr2|ovisocr3|qwen3vl|"
+                    "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
