@@ -1,3 +1,25 @@
+## 25 October 2026 — Original OvisOCR3 T4 forward reviewed
+
+[Retained original GPU receipt](tests/results/qwen35-ocr/ovisocr3-vllm-reference.json)
+and its independent source-only reviewer preserve the initial hardware guard
+failure and the corrected version2 forward. The first attempt stopped before
+packages/weights and recorded no device identity. The corrected run selects only
+physical GPU0: a genuine Tesla T4, capability7.5, driver580.178.04, CUDA API13000.
+Exact pinned vLLM0.22.1/Torch2.11 FP16 packages and full checkpoint SHA are
+recorded. All three original processor anchors, rendered531-byte plain prompt,
+expanded prompt IDs and complete selected/top20 generated log probabilities pass.
+The actual installed vLLM stop set is248044/248046; both bounded sequences reach
+EOS below256. The owned readable image returns `Hello OCR\n12345` with the
+expected nine IDs. The patterned square produces a pangram; it has no
+transcription gold and is not an accuracy measurement.
+
+Parent review independently rehashes both source revisions and four command
+logs, compares every metadata/source hash and both raw outputs, and validates all
+20 selected score steps. The controlled decoder backend is TRITON_ATTN with
+Triton GDN prefill. Auto-backend equivalence, BF16, native parity, eleven-case
+quality and public benchmark scores remain unqualified. Large replay payloads
+stay remote. Private execution locators are kept outside Git.
+
 ## 25 October 2026 — Ovis reference controls corrected before model access
 
 [Initial preparation journal](tests/results/qwen35-ocr/initial-ovisocr3-reference-controls.json)

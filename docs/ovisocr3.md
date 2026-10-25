@@ -41,8 +41,9 @@ header. Its 473 BF16 tensor entries account contiguously for 852,985,920
 stored parameters; no MTP-named tensor or untied `lm_head.weight` occurs.
 Every name, shape, dtype **and data offset** matches the reviewed
 [OvisOCR2 source header](../tests/results/qwen35-ocr/ovisocr2-source-contract.json).
-The checkpoint LFS hashes differ. The weight payloads were not downloaded or
-compared, and equal headers do not imply equal weights or forward behavior.
+The checkpoint LFS hashes differ. The source-only header audit did not download weight payloads. The later
+reviewed original T4 run verifies the full OvisOCR3 payload SHA and executes it;
+equal headers still do not establish native parity.
 
 The tokenizer JSON, merges, vocabulary, tokenizer config, chat template, video
 preprocessor and preprocessor config share the same Git/LFS identities as
@@ -146,3 +147,18 @@ Native fourteen-arm F32/F16 comparison, original eleven-case capture, native F16
 quality, six public interfaces and fresh immutable download are pending. Other17
 tasks, multi-image inference and the official2880² pixel maximum remain outside
 the initial single-image plain OCR claim.
+
+## Reviewed controlled original GPU execution
+
+The [GPU receipt](../tests/results/qwen35-ocr/ovisocr3-vllm-reference.json) preserves
+actual T4 FP16 execution under vLLM0.22.1, controlled TRITON_ATTN decoder
+attention and Triton GDN prefill. Three processor anchors and the plain prompt
+match reviewed metadata exactly. The installed runtime stop set is
+`[248044,248046]`; square/readable requests finish at EOS with11/9 IDs under the
+bounded256 cap. Readable raw text is `Hello OCR\n12345`. The patterned square
+has no OCR gold. Source/log/score hashes and independent checks are retained.
+
+This establishes the controlled original GPU path and its stop policy.
+Original CPU/F32 module capture and native/quality/public consumer comparisons
+remain separate gates. No automatic-backend, BF16 or public benchmark score is
+claimed by these two requests.

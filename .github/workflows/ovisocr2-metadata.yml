@@ -194,6 +194,7 @@ jobs:
           python tests/test_ovisocr3_quality_f16.py -v
           python tests/test_ovisocr3_public_surfaces.py -v
           python tests/test_ovisocr3_vllm_recipe.py -v
+          python tests/test_ovisocr3_vllm_review.py -v
           python tests/test_ovisocr3_hf_profile.py -v
           python tests/test_ovisocr3_native14.py -v
           python tests/test_ovisocr2_large_inputs.py -v

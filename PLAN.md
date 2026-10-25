@@ -20,7 +20,7 @@ The current owner is finishing the four approved items before closing this loop:
    all11 same-run F16 controls, all11 candidate cases, exact401 retained tensors
    and72 changed FFN tensors, full original numerical/raw diagnostics. Preserve a
    rejection if any unchanged screen fails. Never select by cosine alone.
-3. Complete [larger-input40176568398](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40176568398):
+3. Complete [larger-input40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574):
    old frozen control plus newly authored1024/1200/2048-patch originals, all14
    F32/F16 arms, dynamic per-score raw manifests, owning OCR IDs/text/EOS, timing
    and RSS. New2048 bound needs four value-parsed gates; default1024 remains.
@@ -34,9 +34,9 @@ The current owner is finishing the four approved items before closing this loop:
    before original11, native14, F16 quality11 and public engine22 audits.
    Separate plain OCR scoring preserves raw CER/WER/EOS/caps, without the Ovis2
    HTML presentation scorer. Source-only format3 remains rejected by inference.
-   The private GPU recipe has an initial pre-package hardware-check failure and
-   one corrected bounded retry; installed GPU stop/runtime evidence remains
-   distinct from explicit original HF EOS-list qualification.
+   The controlled original T4 run is reviewed in HISTORY and its GPU receipt;
+   preserve its initial hardware preflight failure. Its measured installed
+   vLLM dual-EOS policy remains distinct from explicit HF runtime qualification.
 
 No queued workflow or prepared harness counts as qualification. Large archives
 remain hosted; independent review downloads small reports only. Preserve old
