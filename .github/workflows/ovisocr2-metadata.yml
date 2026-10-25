@@ -5,11 +5,11 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-native14, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
-        description: 'Public/publication phases: reviewed positive Ovis native replay run ID'
+        description: 'Reviewed native run for public/publish; publication run for OvisOCR3 consumer'
         default: '0'
       native_artifact_name:
         type: string
@@ -122,6 +122,20 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'large-inputs'
     needs: controls
     uses: ./.github/workflows/ovisocr2-large-inputs.yml
+  ovisocr3-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-publish'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-publish.yml
+    with:
+      model_run_id: ${{ inputs.native_run_id }}
+    secrets:
+      HF_OVISOCR3_PUBLISH_TOKEN: ${{ secrets.HF_OVISOCR3_PUBLISH_TOKEN }}
+  ovisocr3-consumer:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-consumer'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-published-consumer.yml
+    with:
+      publication_run_id: ${{ inputs.native_run_id }}
   ovisocr3-native14:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-native14'
     needs: controls
@@ -197,6 +211,8 @@ jobs:
           python tests/test_ovisocr3_vllm_review.py -v
           python tests/test_ovisocr3_hf_profile.py -v
           python tests/test_ovisocr3_native14.py -v
+          python tests/test_ovisocr3_publish.py -v
+          python tests/test_ovisocr3_published_consumer.py -v
           python tests/test_ovisocr2_large_inputs.py -v
   lighton-fixture:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'

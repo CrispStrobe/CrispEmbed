@@ -63,5 +63,6 @@ CRISPEMBED_QWEN35_VISION_CASCADE_NORM=0 \
     --ocr-rec ovisocr3-f16.gguf --ocr-max-tokens 1024 --json
 ```
 
-The command uses the fixed plain OCR prompt. Preserve the reported completion
-state when choosing a token cap; reaching a cap is not EOS completion.
+The command uses the fixed plain OCR prompt. The cap bounds runtime and can
+yield partial text. Public pipeline results expose text/confidence; generated
+IDs and stop IDs are checked by the separate low-level qualification harness.
