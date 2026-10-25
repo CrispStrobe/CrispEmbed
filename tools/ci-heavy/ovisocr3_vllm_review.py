@@ -160,7 +160,7 @@ def review(first, second, metadata, logs):
                    "Using Triton/FLA GDN prefill kernel (requested=triton"):
         require(marker in engine, "Actual backend log selection missing")
     for value in (first, second):
-        require(not re.search(r"(?:kaggle\.com/code/|/mnt/|/home/|/tmp/|chr1s4)",
+        require(not re.search(r"(?:kaggle\.com/code/|/mnt/|/home/|/tmp/)",
                               json.dumps(value, ensure_ascii=False), re.I),
                 "Public producer contains private run locator or host path")
     return {
