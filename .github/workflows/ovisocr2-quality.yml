@@ -16,7 +16,7 @@ on:
       phase:
         type: choice
         description: 'Reviewed native baseline required; Q4 additionally requires reviewed Q8'
-        options: [original, f16, q8, q4, q4-calibrated]
+        options: [original, f16, q8, q4, q4-calibrated, q4-attention-f16]
         default: original
       original_run:
         type: string
@@ -83,20 +83,21 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
       - uses: actions/upload-artifact@v4
-        if: always() && (inputs.phase == 'q8' || inputs.phase == 'q4' || inputs.phase == 'q4-calibrated')
+        if: always() && (inputs.phase == 'q8' || inputs.phase == 'q4' || inputs.phase == 'q4-calibrated' || inputs.phase == 'q4-attention-f16')
         with:
           name: ovisocr2-quality-native-diff-${{ github.run_id }}
           path: ${{ env.HEAVY_SCRATCH }}/ovis-quality/native-diff/
           if-no-files-found: warn
           retention-days: 90
       - uses: actions/upload-artifact@v4
-        if: always() && (inputs.phase == 'q8' || inputs.phase == 'q4' || inputs.phase == 'q4-calibrated')
+        if: always() && (inputs.phase == 'q8' || inputs.phase == 'q4' || inputs.phase == 'q4-calibrated' || inputs.phase == 'q4-attention-f16')
         with:
           name: ovisocr2-quality-candidate-${{ github.run_id }}
           path: |
             ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q8.gguf
             ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q4.gguf
             ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q4-calibrated.gguf
+            ${{ env.HEAVY_SCRATCH }}/ovis-quality/ovisocr2-q4-attention-f16.gguf
             ${{ env.HEAVY_SCRATCH }}/ovis-quality/development-imatrix.gguf
             ${{ env.HEAVY_SCRATCH }}/ovis-quality/development-imatrix-stats.tsv
             ${{ env.HEAVY_SCRATCH }}/ovis-quality/LICENSE
