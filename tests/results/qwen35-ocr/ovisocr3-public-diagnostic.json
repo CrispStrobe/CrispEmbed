@@ -1,0 +1,664 @@
+{
+  "schema": "crispembed-ovisocr3-public-diagnostic-review-v1",
+  "run": 40196755934,
+  "head_sha": "93da2dbdaee8334504df83a7fe0c3e3a9865ff20",
+  "workflow_path": ".github/workflows/ovisocr2-metadata.yml",
+  "service_status": "completed",
+  "service_conclusion": "success",
+  "artifact_id": 12600419630,
+  "artifact_name": "ovisocr3-public-surfaces-40196755934",
+  "artifact_bytes": 27341,
+  "artifact_zip_sha256": "d6584ef0accabd5a439941c84afc9133843e4af205330df0037fbff0e2b7906e",
+  "artifact_expires_at": "2027-01-23T13:15:11Z",
+  "report_sha256": "ca79ba789fb9cb7d77f1fb69fb161effdc4716451955ba7215352be0e3c41a29",
+  "producer_canonical_sha256": "3b92be9041dbb903de69eb208ba8b2e4a896ecacd22f7323e46518cb08238352",
+  "producer": {
+    "status": "completed diagnostic public interface audit; source quality unqualified",
+    "phase": "public-model-backed-arms",
+    "arms": {
+      "cmake-configure": {
+        "exit_code": 0,
+        "log": "cmake-configure.log",
+        "log_sha256": "08a2d7bbf593cc15bdd06480876e087ea7166a4c17596991839c56a5747a1e99",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 1874,
+        "passed": true
+      },
+      "cpu-baseline-check": {
+        "exit_code": 0,
+        "log": "cpu-baseline-check.log",
+        "log_sha256": "3fb64578466a7787b5b16307c5d402864e6381dcaaddf7a3f9f74eda5e42b93e",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 492,
+        "passed": true
+      },
+      "public-target-build": {
+        "exit_code": 0,
+        "log": "public-target-build.log",
+        "log_sha256": "84d9f3a5612b83c09d45c7f8211014778c109fa07b75256b8c13a445fa025425",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 518750,
+        "passed": true
+      },
+      "native-abi-layout": {
+        "exit_code": 2,
+        "log": "native-abi-layout.log",
+        "log_sha256": "7688b50a8932a6d28b76a1ade22b152c5a1f3989257d4a55fd86b202cbbcd3d4",
+        "first_failure": null,
+        "metric_lines": [
+          "ABI stage_size=168 cleanup_size=60 params_size=136 vlm_max_tokens_offset=136 vlm_prompt_offset=144"
+        ],
+        "bytes": 529,
+        "passed": true
+      },
+      "python-stage22-two-model-cache": {
+        "exit_code": 0,
+        "log": "python-stage22-two-model-cache.log",
+        "log_sha256": "889868592fdb97946a0c222be20af532416a43d567c2cccb62119c4b2aee77df",
+        "first_failure": null,
+        "metric_lines": [
+          "RESULT stage-cache {\"stages_tried\": 2, \"metrics\": [{\"index\": 1, \"engine\": \"ovisocr3\", \"accepted\": false, \"text_chars\": 15, \"mean_confidence\": 0.9994447827339172}, {\"index\": 2, \"engine\": \"ovisocr3\", \"accepted\": false, \"text_chars\": 0, \"mean_confidence\": 0.0}], \"fallback_text\": \"Hello OCR\\n12345\", \"fallback_n_regions\": 1}"
+        ],
+        "bytes": 571,
+        "passed": true,
+        "stages_tried": 2,
+        "metrics": [
+          {
+            "index": 1,
+            "engine": "ovisocr3",
+            "accepted": false,
+            "text_chars": 15,
+            "mean_confidence": 0.9994447827339172
+          },
+          {
+            "index": 2,
+            "engine": "ovisocr3",
+            "accepted": false,
+            "text_chars": 0,
+            "mean_confidence": 0.0
+          }
+        ],
+        "fallback_text": "Hello OCR\n12345",
+        "metadata_opened_second": true,
+        "second_weight_load_failed": true
+      },
+      "c-abi": {
+        "passed": true,
+        "text_exact": true,
+        "text_bytes": 15,
+        "confidence_count": 9,
+        "mean_confidence": 0.9994447827339172
+      },
+      "python": {
+        "passed": true,
+        "text_exact": true,
+        "confidence_count": 9,
+        "mean_confidence": 0.9994447827339172,
+        "stage_text_exact": true,
+        "stage_n_regions": 1
+      },
+      "cli-unified": {
+        "exit_code": 0,
+        "log": "cli-unified.log",
+        "log_sha256": "6bdaa1f4449352ef8f27da3ae010f6987a8048b96c68aa36c76d552e9ba31bd6",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 28,
+        "passed": true,
+        "decoded": "Hello OCR\n12345"
+      },
+      "cli-stage22": {
+        "exit_code": 0,
+        "log": "cli-stage22.log",
+        "log_sha256": "aa08e510ce9132522df46aa8240b6a742d9b7b928fa759a804d8d69c523ed8de",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 71,
+        "passed": true,
+        "decoded": "Hello OCR\n12345",
+        "mean_confidence": 0.999,
+        "n_regions": 1
+      },
+      "cli-stage22-custom-prompt": {
+        "exit_code": 1,
+        "log": "cli-stage22-custom-prompt.log",
+        "log_sha256": "3f3363ad574391c2b261bbe93ccb382c7d946407940a6133420dd603a19fa56c",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "cli-stage22-lighton-profile": {
+        "exit_code": 1,
+        "log": "cli-stage22-lighton-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "cli-stage20-ovis-profile": {
+        "exit_code": 1,
+        "log": "cli-stage20-ovis-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "cli-stage21-ovis3-profile": {
+        "exit_code": 1,
+        "log": "cli-stage21-ovis3-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "cli-stage22-gate0-crispembed_qwen35_ocr": {
+        "exit_code": 1,
+        "log": "cli-stage22-gate0-crispembed_qwen35_ocr.log",
+        "log_sha256": "3f3363ad574391c2b261bbe93ccb382c7d946407940a6133420dd603a19fa56c",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "cli-stage22-gate0-crispembed_ovisocr3_frontend": {
+        "exit_code": 1,
+        "log": "cli-stage22-gate0-crispembed_ovisocr3_frontend.log",
+        "log_sha256": "3f3363ad574391c2b261bbe93ccb382c7d946407940a6133420dd603a19fa56c",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "cli-stage22-gate0-crispembed_ovisocr3_inference": {
+        "exit_code": 1,
+        "log": "cli-stage22-gate0-crispembed_ovisocr3_inference.log",
+        "log_sha256": "3f3363ad574391c2b261bbe93ccb382c7d946407940a6133420dd603a19fa56c",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 95,
+        "passed": true
+      },
+      "http-start-custom-prompt": {
+        "exit_code": 1,
+        "log": "http-start-custom-prompt.log",
+        "log_sha256": "fcbd3c7e70acd157e50666399926ee5f6e0a4f02cf3c15310a9535bc478f627e",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-start-lighton-profile": {
+        "exit_code": 1,
+        "log": "http-start-lighton-profile.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "http-start-ovis-on-stage20": {
+        "exit_code": 1,
+        "log": "http-start-ovis-on-stage20.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "http-start-ovis3-on-stage21": {
+        "exit_code": 1,
+        "log": "http-start-ovis3-on-stage21.log",
+        "log_sha256": "909f0543846ed0a2136b72db84a01e70bcd3b9aa3d4766201c97ab8a424b4050",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 61,
+        "passed": true
+      },
+      "http-start-gate0-crispembed_qwen35_ocr": {
+        "exit_code": 1,
+        "log": "http-start-gate0-crispembed_qwen35_ocr.log",
+        "log_sha256": "fcbd3c7e70acd157e50666399926ee5f6e0a4f02cf3c15310a9535bc478f627e",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-start-gate0-crispembed_ovisocr3_frontend": {
+        "exit_code": 1,
+        "log": "http-start-gate0-crispembed_ovisocr3_frontend.log",
+        "log_sha256": "fcbd3c7e70acd157e50666399926ee5f6e0a4f02cf3c15310a9535bc478f627e",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-start-gate0-crispembed_ovisocr3_inference": {
+        "exit_code": 1,
+        "log": "http-start-gate0-crispembed_ovisocr3_inference.log",
+        "log_sha256": "fcbd3c7e70acd157e50666399926ee5f6e0a4f02cf3c15310a9535bc478f627e",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 81,
+        "passed": true
+      },
+      "http-stage22": {
+        "passed": true,
+        "log": "http-stage22.log",
+        "decoded": "Hello OCR\n12345",
+        "n_regions": 1,
+        "mean_confidence": 0.9994,
+        "log_sha256": "2cb3672daf77c5bb5003899296fa3b25a11c82ae4e32fe4dfb30a8b404654e11",
+        "bytes": 993
+      },
+      "rust-build": {
+        "exit_code": 0,
+        "log": "rust-build.log",
+        "log_sha256": "d12ec4f571a1c83441bb86d3344a4c7a80588391a65b94d3f04bd49e1f1f15a1",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 513,
+        "passed": true
+      },
+      "rust-run": {
+        "exit_code": 0,
+        "log": "rust-run.log",
+        "log_sha256": "32714127f2f3a7997ec2fa5208763baf64a67e46fbe95d92fe916808fcc5b180",
+        "first_failure": null,
+        "metric_lines": [
+          "PASS Rust unified RGB cap=12 prompt-rejection text_bytes=15 confidence_count=9 mean=0.999444783",
+          "PASS Rust orchestrator engine=22"
+        ],
+        "bytes": 129,
+        "passed": true
+      },
+      "dart-pub": {
+        "exit_code": 0,
+        "log": "dart-pub.log",
+        "log_sha256": "be199790216bed300ccef3847508510e54033bd81d63f09a7da87c00cafe6520",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 84,
+        "passed": true
+      },
+      "dart-analyze": {
+        "exit_code": 0,
+        "log": "dart-analyze.log",
+        "log_sha256": "0eb51e379b3200dc0289bd8df63fdfeb4bdab2c536357cabd5367b1c929c97c2",
+        "first_failure": null,
+        "metric_lines": [],
+        "bytes": 47,
+        "passed": true
+      },
+      "dart-run": {
+        "exit_code": 0,
+        "log": "dart-run.log",
+        "log_sha256": "d5094c733c568bd4ecefd73574f73ae4f12f50b4785ce2c4172d06a82181b9a6",
+        "first_failure": null,
+        "metric_lines": [
+          "ABI stage_size=168 cleanup_size=60 params_size=136",
+          "PASS Dart unified RGB cap=12 prompt-rejection text_bytes=15 confidence_count=9 mean=0.9994447827339172",
+          "PASS Dart orchestrator engine=22"
+        ],
+        "bytes": 187,
+        "passed": true
+      }
+    },
+    "failures": [],
+    "source_commit": "93da2dbdaee8334504df83a7fe0c3e3a9865ff20",
+    "source_sha256": {
+      "tools/ci-heavy/ovisocr3_public_surfaces.py": "020d625d138641d0d9b9f01fa900326dc1efe87550f05e17fac5953b1ca22485",
+      "tools/ci-heavy/ovisocr2_vision_env.py": "bfa6f9f6b22720d9bae8a8b1f6eb3a32ae2598e1453560edec5b34c2f6b54a06",
+      "tools/ci-heavy/ovisocr3_native14.py": "f6833bff4542b8b17cbc23a747c08a7e3d2fe51c941e51cf883fdbcda640b719",
+      "tools/ci-heavy/ovisocr3_stage_cache_probe.py": "5dff551d5143dd993546493a0ed5bf16652853c23e95b6d3c847880032f90a9c",
+      "tests/ovisocr3_public_bindings.rs": "60e8883a09fcbca94ce9f24b32e3b7573c5103f95e5d6080c99e52a2d4fa54f3",
+      "tests/ovisocr3_public_bindings.dart": "2ba1a4056d5cfaa5fe20d6885a60c1857efc764c37b7b2388683ab215c25dbe3"
+    },
+    "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
+    "generic_prompt_semantics": {
+      "single_model_cli": "Fixed-task Ovis prompt override is ignored with an explicit warning; the default task still runs.",
+      "single_model_http": "A custom fixed-task prompt returns prompt_applied:false; the default task still runs.",
+      "explicit_ovis_stage": "CLI/HTTP startup rejects a nonempty custom prompt; binding setters return false without mutation."
+    },
+    "diagnostic_source_quality": true,
+    "model_qualified": false,
+    "publication_eligible": false,
+    "independent_review_key_required": "public_diagnostic_positive",
+    "qualification_scope": "Interface-only C/Python/CLI/HTTP/Rust/Dart comparison on the nine-EOS owned image; eleven-case source completion debt remains",
+    "source_quality_negative": {
+      "original_receipt_sha256": "10a11d6aa9b8389bcb2c69417290109e2fa3c8f16a236fa7325a076d6da17c7e",
+      "f16_receipt_sha256": "fc110bc5fca6aa6eb324527897a8a2db032cbca9c524e6e8c9b05dd61a87839b",
+      "sole_completion_debt": [
+        "two-column-page"
+      ],
+      "all_eleven_f16_ids_raw_stops_exact": true
+    },
+    "model_prerequisite": {
+      "source_commit": "26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51",
+      "producer_status": "completed diagnostic OvisOCR3 fourteen-arm native replay",
+      "producer_failures": [],
+      "model_sha256": "a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0",
+      "image_sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+      "rgb_sha256": "e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27",
+      "expected_text": "Hello OCR\n12345",
+      "original_generation": {
+        "max_new_tokens": 12,
+        "generated_token_count": 9,
+        "eos_ids": [
+          248044,
+          248046
+        ],
+        "reached_eos": true,
+        "stop_id": 248046,
+        "max_tokens_consumed": false,
+        "length_limited": false,
+        "raw_sequence_shape": [
+          1,
+          311
+        ],
+        "generated_id_shape": [
+          1,
+          9
+        ],
+        "score_count": 9,
+        "raw_decoded_utf8_length": 25,
+        "decoded_utf8_length": 15
+      },
+      "original_generated_ids": [
+        9419,
+        77796,
+        198,
+        16,
+        17,
+        18,
+        19,
+        20,
+        248046
+      ],
+      "original_cache_max_abs": 5.340576171875e-05,
+      "f16_context_log_sha256": "824b2cf68e3cbc936d19cb3334fdea005ea94a377dcd87d43747fe50417043b2",
+      "run": 40183489780,
+      "artifact_id": 12596358955,
+      "artifact_zip_sha256": "768c2bb53a52c50c873a8d0473f5c486b3a74f9917fb5ab46f6d55d5c1705a0c",
+      "artifact_bytes": 1315585365,
+      "report_artifact_id": 12596845085,
+      "report_artifact_zip_sha256": "f7211bbb70feb7c25e02c6154a4b36cf7d5e44e53bada8c9290fb345f4b19bad",
+      "producer_canonical_sha256": "b3fb70c121c27653088dda4492628959703ff170b0cc83d4512aba694f4933f3",
+      "selected_vision_preset": {
+        "name": "both",
+        "enabled_gates": [
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+        ],
+        "values": {
+          "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+          "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+          "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"
+        }
+      },
+      "native_source_closure": {
+        "reviewed_head": "26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51",
+        "file_count": 29,
+        "file_set_sha256": "192ae99db4d9512aaf9087dc9d9a55680725b5c5c1f34a8f1faed8d31159eff0",
+        "src_tree_oid": "9437949d4fd8ed9ebc153297b6f1487e398a8d4d",
+        "src_checkout_clean": true,
+        "cmake_sha256": "58cbfbeb58b814259402e53169f8072bef5475b22c05c9e51344bf24e0284b21",
+        "ggml_gitlink": "890278a8342c620197c90e702e1188bcab94f510",
+        "gitlink_index_exact": true,
+        "ggml_checkout_exact": true,
+        "ggml_checkout_clean": true
+      },
+      "receipt_sha256": "971f9b19d1fc45f318f228d331b993d05fff34662beb958e63f9a3e1eca00fa1",
+      "service_run": {
+        "id": 40183489780,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51",
+        "path": ".github/workflows/ovisocr2-metadata.yml"
+      },
+      "service_artifact": {
+        "id": 12596358955,
+        "name": "ovisocr3-native14-f16-40183489780",
+        "zip_sha256": "768c2bb53a52c50c873a8d0473f5c486b3a74f9917fb5ab46f6d55d5c1705a0c",
+        "bytes": 1315585365,
+        "expired": false
+      },
+      "service_report_artifact": {
+        "id": 12596845085,
+        "name": "ovisocr3-native14-reports-40183489780",
+        "zip_sha256": "f7211bbb70feb7c25e02c6154a4b36cf7d5e44e53bada8c9290fb345f4b19bad",
+        "expired": false
+      }
+    },
+    "quality_prerequisite": {
+      "run": 40187405735,
+      "source_commit": "ee719aef2ac22eee67ab6c483a4d1d6633c901c8",
+      "original_run": 40178328864,
+      "original_source_commit": "574df1994c953cb5e16540e3c5f2e30b17ebb112",
+      "original_artifact_id": 12594331728,
+      "original_artifact_zip_sha256": "7c0bb2dffada17d86a48e55cf8a730a6a67e999f04082c1b938043f7de75f6bd",
+      "quality_artifact_id": 12599179640,
+      "quality_artifact_zip_sha256": "1a15962c9e1d8acfa88b8c0d089b20660dfdb024852b96645d75d25e468b7aea",
+      "source_completion_debt": [
+        "two-column-page"
+      ],
+      "original_producer_canonical_sha256": "390611fb104175d6e557e3e03b965fbde0c17aa932f33b1d4c0526a075f6fa67",
+      "f16_producer_canonical_sha256": "1e4adf2a0cbe40df494a1a67d039024e97e214674c2a7c98b46b8499523aef3a",
+      "model_sha256": "a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0",
+      "capture_case_count": 11,
+      "paired_ids_raw_stops_exact": true,
+      "model_qualified": false,
+      "publication_eligible": false,
+      "receipt_sha256": "fc110bc5fca6aa6eb324527897a8a2db032cbca9c524e6e8c9b05dd61a87839b",
+      "service_run": {
+        "id": 40187405735,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "ee719aef2ac22eee67ab6c483a4d1d6633c901c8",
+        "path": ".github/workflows/ovisocr2-metadata.yml"
+      },
+      "original_service_run": {
+        "id": 40178328864,
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "574df1994c953cb5e16540e3c5f2e30b17ebb112",
+        "path": ".github/workflows/ovisocr2-metadata.yml"
+      },
+      "service_artifacts": {
+        "original": {
+          "id": 12594331728,
+          "name": "ovisocr3-original-quality-40178328864",
+          "zip_sha256": "7c0bb2dffada17d86a48e55cf8a730a6a67e999f04082c1b938043f7de75f6bd"
+        },
+        "f16": {
+          "id": 12599179640,
+          "name": "ovisocr3-f16-quality-40187405735",
+          "zip_sha256": "1a15962c9e1d8acfa88b8c0d089b20660dfdb024852b96645d75d25e468b7aea"
+        }
+      }
+    },
+    "selected_vision_preset": {
+      "name": "both",
+      "enabled_gates": [
+        "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+        "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+      ],
+      "values": {
+        "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+        "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+        "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0"
+      }
+    },
+    "artifacts": {
+      "model": {
+        "sha256": "a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0",
+        "bytes": 1717223072
+      },
+      "image": {
+        "sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+        "bytes": 5247
+      },
+      "lighton": {
+        "sha256": "41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4",
+        "bytes": 1918139328
+      }
+    },
+    "binary_sha256": {
+      "shared": "c8ac59b110c1198a6438385390546e3d281b51a775ff6188701cfabc79ba20dc",
+      "cli": "c0de00857dfe689f89556d65fcaeffb316d203850e9e75ea9c5661baafe96567",
+      "server": "f453f96d754669ea5b5930d612295dede42a6c38ee23e759993833ab5b14b359"
+    },
+    "stage_cache_truncation": {
+      "sha256": "83f2a5b4177ecc0835943c6b46522285a3e7fa398907de52ef53cf57fcc22848",
+      "bytes": 10001888,
+      "metadata_bytes": 10001824,
+      "retained_tensor_bytes": 64,
+      "tensor_count": 473,
+      "source_sha256": "a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0"
+    },
+    "abi_layout": {
+      "passed": true,
+      "native": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "python": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "dart": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136
+      }
+    },
+    "public_confidence_comparison": {
+      "passed": true,
+      "confidence_count": 9,
+      "c_abi_mean": 0.9994447827339172,
+      "max_abs_public_mean_error": 0.0004447827339172372
+    },
+    "interface_diagnostic_complete": true
+  },
+  "independent_review": {
+    "public_diagnostic_positive": true,
+    "model_qualified": false,
+    "publication_eligible": false,
+    "producer_canonical_sha256": "3b92be9041dbb903de69eb208ba8b2e4a896ecacd22f7323e46518cb08238352",
+    "service_run_head_workflow_and_artifact_metadata_verified": true,
+    "small_zip_size_sha256_members_and_all_27_log_sha256_bytes_verified": true,
+    "all_29_recorded_arms_positive": true,
+    "arm_count": 29,
+    "all_14_negative_profile_gate_and_prompt_rejections_have_nonzero_exit_and_expected_reason": true,
+    "six_actual_public_surfaces": {
+      "c_abi": {
+        "text_bytes": 15,
+        "confidence_count": 9,
+        "mean_confidence": 0.9994447827339172,
+        "evidence": "host producer direct ABI call"
+      },
+      "python": {
+        "text_exact": true,
+        "stage_regions": 1,
+        "evidence": "host producer direct binding calls"
+      },
+      "cli": {
+        "unified_and_stage22_text_exact": true,
+        "stage_regions": 1,
+        "evidence": "small ZIP JSON log bytes"
+      },
+      "http": {
+        "text_exact": true,
+        "stage_regions": 1,
+        "evidence": "host producer parsed HTTP response; server request log hashed"
+      },
+      "rust": {
+        "text_exact": true,
+        "confidence_count": 9,
+        "evidence": "small ZIP PASS log bytes"
+      },
+      "dart": {
+        "text_exact": true,
+        "confidence_count": 9,
+        "evidence": "small ZIP PASS log bytes"
+      }
+    },
+    "expected_owned_image_text": "Hello OCR\n12345",
+    "model_owned_image_generated_ids": [
+      9419,
+      77796,
+      198,
+      16,
+      17,
+      18,
+      19,
+      20,
+      248046
+    ],
+    "selected_confidence_mean_max_abs_vs_c_abi": 0.0004447827339172372,
+    "abi_native_python_sizes_offsets_exact_and_dart_sizes_exact": true,
+    "abi_layout": {
+      "passed": true,
+      "native": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "python": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136,
+        "vlm_max_tokens_offset": 136,
+        "vlm_prompt_offset": 144
+      },
+      "dart": {
+        "stage_size": 168,
+        "cleanup_size": 60,
+        "params_size": 136
+      }
+    },
+    "two_stage_model_cache_probe": {
+      "stage_count": 2,
+      "first_text_chars": 15,
+      "first_accepted": false,
+      "second_text_chars": 0,
+      "second_accepted": false,
+      "second_truncated_weight_load_failure_observed": true,
+      "fallback_text": "Hello OCR\n12345"
+    },
+    "six_public_source_git_blob_sha256_verified_against_run_head": true,
+    "native_29_git_blob_sha256_verified_at_reviewed_head_and_byte_equal_at_run_head": true,
+    "native_whole_src_tree_oid_equal_to_reviewed_head": "9437949d4fd8ed9ebc153297b6f1487e398a8d4d",
+    "cmake_sha256_equal_to_reviewed_head": "58cbfbeb58b814259402e53169f8072bef5475b22c05c9e51344bf24e0284b21",
+    "ggml_gitlink_equal_to_reviewed_head": "890278a8342c620197c90e702e1188bcab94f510",
+    "native_original_and_f16_receipt_canonical_sha256_verified": true,
+    "native_original_f16_service_run_artifact_metadata_verified": true,
+    "eleven_original_and_f16_scores_recomputed_with_frozen_policy_and_paired_exact": true,
+    "source_quality_incomplete_case": "two-column-page",
+    "source_quality_incomplete_cap": 1024,
+    "source_quality_incomplete_without_eos": true,
+    "large_model_and_raw_payloads_independently_downloaded": false,
+    "limits": [
+      "This is an explicit interface-only diagnostic on the reviewed owned image; original and F16 eleven-case source quality remain unqualified.",
+      "The two-column case hits the unchanged 1024-token cap without EOS; this receipt cannot satisfy public model or publication-positive gates.",
+      "C/Python direct ABI outputs and HTTP response values are preserved in the hosted producer report; this review verified their source code, service provenance and report consistency without rerunning model inference locally.",
+      "Large GGUF and LightOn weights were verified by the hosted producer against pinned SHA values; this reviewer fetched only the small reports artifact and service metadata.",
+      "Generic single-model CLI/HTTP fixed-task prompt behavior is stated by the producer; the audited negative prompt arms exercise explicit stage startup and C/Python/Rust/Dart setters."
+    ],
+    "native_abi_probe_intentional_exit_code_after_layout_print": 2
+  }
+}
