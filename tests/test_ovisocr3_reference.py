@@ -23,6 +23,7 @@ def load(path, name):
 
 dumper = load(ROOT / "tools/dump_ovisocr3_reference.py", "ovisocr3_reference_dumper_test")
 driver = load(ROOT / "tools/ci-heavy/ovisocr3_reference.py", "ovisocr3_reference_driver_test")
+hf_profile = load(ROOT / "models/qwen35_ovis3_hf_profile.py", "ovisocr3_reference_hf_profile_test")
 
 
 class ReferenceControls(unittest.TestCase):
@@ -38,7 +39,8 @@ class ReferenceControls(unittest.TestCase):
         self.assertEqual(rendered.group(1), receipt["rendered_prompt"])
         self.assertIn('ovis3_metadata_sha256 = "' +
                       receipt["independent_review"]["producer_canonical_sha256"] + '";', source)
-        self.assertIn('const char * ovis3_reference_sha256 = "";', source)
+        reference_sha = (hf_profile.REFERENCE_PRODUCER_SHA256 if hf_profile.REFERENCE_RUN > 0 else "")
+        self.assertIn('const char * ovis3_reference_sha256 = "' + reference_sha + '";', source)
         self.assertIn('core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")', source)
         self.assertIn('!core_gguf::kv_bool(meta, "qwen35_ocr.hf_stop_policy_qualified", false)', source)
         self.assertIn('core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", true)', source)

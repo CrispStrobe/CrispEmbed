@@ -46,10 +46,11 @@ class HFPromotionControls(unittest.TestCase):
             hf._reviewed_artifacts(changed)
 
     def test_absent_real_reference_rejects_before_any_source_reader(self):
-        with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 HF reference proof absent"):
-            hf._reviewed_receipts()
-        with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 HF reference proof absent"):
-            hf.load_profile("/missing", hf.MODEL, hf.REVISION)
+        with patch.object(hf, "REFERENCE_RUN", 0):
+            with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 HF reference proof absent"):
+                hf._reviewed_receipts()
+            with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 HF reference proof absent"):
+                hf.load_profile("/missing", hf.MODEL, hf.REVISION)
         self.assertEqual(hf.source.SOURCE_EOS_IDS, [248044, 248046])
 
     def test_exact_scoped_profile_and_crossover_rejection(self):

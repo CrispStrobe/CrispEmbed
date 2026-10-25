@@ -113,12 +113,12 @@ class PublicControls(unittest.TestCase):
                     subject.artifact_service_gate(pins, lambda _, row=change: json.dumps(row).encode())
 
     def test_future_receipts_are_required_before_weights(self):
-        self.assertEqual(subject.NATIVE_RUN, 0)
-        self.assertEqual(subject.QUALITY_RUN, 0)
-        with self.assertRaisesRegex(ValueError, 'native model pins are unresolved'):
-            subject.require_receipt({})
-        with self.assertRaisesRegex(ValueError, 'F16 quality pins are unresolved'):
-            subject.require_quality_receipt({}, {'model_sha256': 'a' * 64})
+        with mock.patch.object(subject, 'NATIVE_RUN', 0), \
+             mock.patch.object(subject, 'QUALITY_RUN', 0):
+            with self.assertRaisesRegex(ValueError, 'native model pins are unresolved'):
+                subject.require_receipt({})
+            with self.assertRaisesRegex(ValueError, 'F16 quality pins are unresolved'):
+                subject.require_quality_receipt({}, {'model_sha256': 'a' * 64})
         self.assertEqual(subject.RECEIPT.name, 'ovisocr3-native-model.json')
         self.assertEqual(subject.QUALITY_RECEIPT.name, 'ovisocr3-f16-quality.json')
 

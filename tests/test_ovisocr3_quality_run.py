@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 
@@ -18,7 +19,8 @@ spec.loader.exec_module(run)
 
 class QualityRunControls(unittest.TestCase):
     def test_reference_absence_rejects_before_framework(self):
-        with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 F32 module reference is absent"):
+        with patch.object(run, "ORIGINAL_REFERENCE_RUN", 0), \
+             self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 F32 module reference is absent"):
             run.require_original_reference()
         self.assertNotIn("torch", sys.modules)
         self.assertNotIn("transformers", sys.modules)

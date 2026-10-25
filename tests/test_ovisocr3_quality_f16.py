@@ -33,9 +33,11 @@ class NativeF16Controls(unittest.TestCase):
             worker.vision_env.reviewed_selection(changed)
 
     def test_missing_reviewed_original_and_fourteen_arm_receipts(self):
-        with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 eleven-case quality is absent"):
+        with patch.object(worker, "ORIGINAL_QUALITY_RUN", 0), \
+             self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 eleven-case quality is absent"):
             worker.require_reviewed_original_quality()
-        with self.assertRaisesRegex(ValueError, "Reviewed OvisOCR3 native fourteen-arm model proof is absent"):
+        with patch.object(worker, "NATIVE_MODEL_RUN", 0), \
+             self.assertRaisesRegex(ValueError, "Reviewed OvisOCR3 native fourteen-arm model proof is absent"):
             worker.require_reviewed_native()
         self.assertNotIn("torch", sys.modules)
         self.assertNotIn("transformers", sys.modules)
