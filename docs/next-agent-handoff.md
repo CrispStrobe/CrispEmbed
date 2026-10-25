@@ -403,10 +403,10 @@ Older`current-replay`/larger-input helpers intentionally reject the new cache
 runtime source scope. Use their retained exact producer source/arrays for2048
 attribution, or declare a separately versioned source contract; never widen a
 historical allowlist silently. Raw artifact12609314203 remains remote through
-23 January2027; preserve its original bytes before expiry. The next recommended
-lane is the quantized-kernel attribution in PLAN, followed by2048 attribution
-and the independently scoped MI-GAN prototype. Adoption needs representative
-paired resource evidence; app/runtime release and other model qualifications
+23 January2027; preserve its original bytes before expiry. The first-FFN
+quantized-weight attribution below is now complete; the next recommended lane
+is2048 attribution, followed by the independently scoped MI-GAN prototype.
+Adoption needs representative paired resource evidence; app/runtime release and other model qualifications
 remain separate.
 
 The [issue 71 source feasibility audit](inpainting-feasibility.md) is complete.
@@ -481,7 +481,7 @@ reports here. Do not promote queued work, a component cosine, or a source audit
 to decoded-quality or publication proof.
 
 
-### Completed bounded first-FFN attribution; integration gates pending
+### Completed bounded first-FFN attribution — PR82 integrated
 
 `audit/ovis-ffn-20261025` implements the [frozen five-arm protocol](ovisocr2-first-ffn-attribution.md).
 Use metadata workflow `phase=first-ffn` on that branch. The test-only executable
@@ -501,9 +501,13 @@ ZIP/source/log review covers all20 metrics; large raw arrays remain remote and
 were not separately downloaded for review. Raw artifact12613722786 expires
 23 January2027. All document-quality rejections/published F16 remain unchanged.
 Two superseded dispatches were cancelled while queued before model execution.
-PR82 still needs its final-source normal checks and main integration. Production
-source did not change, so this is no runtime release or app upgrade. After
-integration, use the separately scoped2048 attribution lane; any new precision
+PR82 merged at`160520e8086cccb87a4dc577f684a5f5b0aa7c10` after all22 final PR
+checks; all11 fresh-main workflows pass, including
+[Build40234266896](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40234266896)
+and [metadata controls40234266978](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40234266978).
+All five actual audited file hashes and the native source tree match main.
+Production source did not change, so this is no runtime release or app upgrade.
+Use the separately scoped2048 attribution lane; any new precision
 selection needs a fresh development/evaluation protocol rather than fitting the
 observed held-out documents. Keep2048 attribution and MI-GAN queued as
 separate lanes, and leave SAM with its existing owner.

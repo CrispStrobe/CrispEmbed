@@ -15547,3 +15547,21 @@ protocol requires its own scope. Two earlier runs40231696778/40231712890 were
 cancelled while queued before model execution, not numerical failures. Small
 ZIP/member/source/log hashes are reviewed; raw114,403,461-byte artifact12613722786
 stays remote through23 January2027 and was not downloaded for that review.
+
+
+## 25 October 2026 — first-FFN audit integrated and loop closed
+
+[PR82](https://github.com/CrispStrobe/CrispEmbed/pull/82) merged as
+`160520e8086cccb87a4dc577f684a5f5b0aa7c10` after all22 final-source PR checks pass,
+including native desktop/Apple/Android, WASM, Rust, component/style/security
+controls and Flutter bundle aggregation. All11 fresh-main workflows pass,
+including [Build40234266896](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40234266896)
+and [metadata controls40234266978](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40234266978).
+The merged five observer/dumper/driver/CMake/workflow hashes and entire native
+source tree exactly match actual numerical run40231922668; documentation updates
+did not require another model run. Independent source and actual-small-report
+reviews find no concern; the raw-array review limitation remains explicit in
+the receipt. The bounded first-FFN lane is closed, its ownership row removed.
+The next separate lane is2048 numerical attribution, then MI-GAN. Published F16,
+all four rejected candidates, development0.17.13 and immutable app0.17.12 remain
+unchanged; this validation tooling creates no runtime release.

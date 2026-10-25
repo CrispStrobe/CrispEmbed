@@ -378,7 +378,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-25 | `audit/ovis-ffn-20261025` | First-FFN attribution complete in40231922668; PR82 integration | Finish final PR/main checks; no local operator mismatch, no recipe/default or held-out tuning;2048 attribution remains the next separate lane |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -390,7 +389,7 @@ and performance follow-ups remain with their owner.
 
 **Completed:** PR78 frontend, pinned original GPU, native14/14 against943 frozen
 fields,27 actual public-interface arms, all11 first-F16 Python ID/text matches,
-three rejected quantization attempts, qualified immutable F16 publication and
+four rejected quantization attempts, qualified immutable F16 publication and
 actual published CLI/HTTP/offline consumer. [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79)
 is merged after final-source platform/Flutter/WASM/style/security checks;
 merged-source checks also pass. Exact commits/runs, all initial failures and
@@ -403,8 +402,12 @@ development0.17.13, app immutable0.17.12. The optional
 
 Continue the pending bounded lanes below. Profiling and the fourth selective
 precision attempt are complete; their measurements and rejection are in HISTORY.
-Materialization reuse and quantized-kernel attribution require separate evidence. Consumer catalogs/providers require qualified
-immutable successor binaries. Preserve all initial failures, old recipes and
+The bounded default-off weight cache and first-FFN same-weight attribution are
+complete, with limits in their receipts. PR82 and all11 fresh-main workflows
+pass at`160520e8`; continue the separately scoped2048 numerical attribution,
+then MI-GAN. Any later precision selection needs a fresh development/evaluation
+protocol. Consumer catalogs/providers still require qualified immutable successor
+binaries. Preserve all initial failures, old recipes and
 raw strict flags. The explicit three entry gates and reviewed `both` math preset
 remain required; neither delivery nor speed permits a default flip.
 
@@ -455,6 +458,9 @@ than a local implementation mismatch. Original/F16 matrix payloads and first
 F16 outputs are unchanged. The small ZIP/source/log review covers all20 metrics;
 large raw arrays remain remote and were not separately re-downloaded for review.
 Two earlier dispatches were cancelled while queued, before model execution.
+PR82 is merged at`160520e8` after all22 final PR checks; all11 fresh-main
+workflows pass. Tested observer/dumper/driver/build/workflow hashes and native
+source tree remain identical to the actual inference run.
 
 
 - [x] Audit the first prefill FFN with the same candidate weights/activation semantics against
