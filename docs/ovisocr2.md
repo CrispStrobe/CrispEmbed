@@ -269,11 +269,20 @@ until the owning context is freed. Request errors clear output and carried state
 while immutable weight storage may safely survive for recovery. Contexts remain
 synchronous; do not use one context concurrently.
 
-This is an unqualified experiment until the hosted`weight-cache` phase of
-`.github/workflows/ovisocr2-metadata.yml` completes the original943-stage14-arm
-replay with both cache values, exact on/off raw vectors, all11 frozen first-F16
-IDs/text/stops/confidences and unprofiled paired cold/warm timing/RSS. The source
-audit does not authorize model publication, a new runtime release or an app upgrade.
+The bounded experiment is complete: [preserved-vector reanalysis](../tests/results/qwen35-ocr/ovisocr2-weight-cache.json)
+qualifies fourteen arms per cache setting against the original943-stage source,
+with1,662 exact on/off raw-vector pairs. [The eleven-page quality receipt](../tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json)
+matches all1,841 first-F16 IDs/text/stops/confidences. The original workflow's
+manifest adapter error is preserved separately; the corrected analysis reuses
+all3,324 stored vectors without repeating inference or regenerating references.
+
+Three unprofiled pairs show median paired latency reductions of2.734% for first
+recognition and0.797% for repeated recognition; one warm pair regresses.
+Median paired single-context RSS grows256,232KiB, and two-context RSS grows
+531,628KiB. See [PERFORMANCE](../PERFORMANCE.md) for exact boundaries and values.
+The cache remains **default-off**. This is OvisOCR2 CPU evidence on a bounded
+panel, not broad performance or other-model/platform qualification; no new
+model publication, runtime release or app upgrade follows.
 
 ## Separately gated native frontend audit
 
