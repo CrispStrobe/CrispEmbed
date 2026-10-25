@@ -23,6 +23,7 @@ REGISTRY = ROOT / "examples/cli/model_mgr.cpp"
 HASHES = ROOT / "examples/cli/model_hashes.h"
 ALIAS = "ovisocr3-f16"
 FILENAME = "ovisocr3-f16.gguf"
+DISPATCH_WORKFLOW = ".github/workflows/ovisocr2-metadata.yml"
 MAX_TOKENS = 12
 GATES = ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR3_FRONTEND",
          "CRISPEMBED_OVISOCR3_INFERENCE")
@@ -150,7 +151,7 @@ def service_run(publication, call=subprocess.check_output):
     run = publication["publication_run"]
     value = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/runs/{run}"]))
     if (value.get("id") != run or value.get("head_sha") != publication["publication_head"]
-            or value.get("path") != ".github/workflows/ovisocr3-publish.yml"
+            or value.get("path") != DISPATCH_WORKFLOW
             or value.get("status") != "completed" or value.get("conclusion") != "success"):
         raise ValueError("Reviewed OvisOCR3 publication service run differs")
     return {"run": run, "head_sha": value["head_sha"], "path": value["path"]}

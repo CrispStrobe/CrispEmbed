@@ -25,6 +25,7 @@ SOURCE_CONTRACT_SHA256 = "8ca73ca6a349b67a7533c36de6c14ac066e1152f2c8d517af849b2
 LICENSE_SHA256 = "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
 UPSTREAM_README_SHA256 = "71668558db69ac7fcd29a30ccecb4effa9df48efd2757b750742c6e22229bfc6"
 ALLOWED = {FILENAME, "LICENSE", "UPSTREAM_README.md", "README.md", "manifest.json", ".gitattributes"}
+DISPATCH_WORKFLOW = ".github/workflows/ovisocr2-metadata.yml"
 
 
 def module(name, relative):
@@ -202,22 +203,20 @@ def artifact_service(pins, call=subprocess.check_output):
 
 
 def run_service(pins, call=subprocess.check_output):
-    runs = ((pins["native_run"], pins["native_source_commit"],
-             {".github/workflows/ovisocr3-native14.yml", ".github/workflows/ovisocr2-metadata.yml"}),
-            (pins["original_run"], pins["original_source_commit"],
-             {".github/workflows/ovisocr3-quality.yml"}),
-            (pins["quality_run"], pins["quality_source_commit"],
-             {".github/workflows/ovisocr3-quality-f16.yml"}),
-            (pins["public_run"], pins["public_source_commit"],
-             {".github/workflows/ovisocr3-public-surfaces.yml"}))
+    # All OvisOCR3 hosted phases are dispatched through the registered
+    # metadata wrapper. The child workflow file is not the Actions run.path.
+    runs = ((pins["native_run"], pins["native_source_commit"]),
+            (pins["original_run"], pins["original_source_commit"]),
+            (pins["quality_run"], pins["quality_source_commit"]),
+            (pins["public_run"], pins["public_source_commit"]))
     results = []
-    for run, head, paths in runs:
+    for run, head in runs:
         require(type(run) is int and run > 0 and hex_field(head, 40),
                 "Reviewed hosted run/head absent")
         value = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/runs/{run}"]))
         require(value.get("id") == run and value.get("head_sha") == head
                 and value.get("status") == "completed" and value.get("conclusion") == "success"
-                and value.get("path") in paths,
+                and value.get("path") == DISPATCH_WORKFLOW,
                 "Reviewed hosted run source/workflow/status differs")
         results.append({"run": run, "head_sha": head, "path": value["path"]})
     return results
