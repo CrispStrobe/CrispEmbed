@@ -24,9 +24,11 @@ def fixture(root=ROOT):
 
 
 def fake_git(root, *, cmake=None, reviewed=GGML, current=GGML, staged=GGML,
-             commit_present=True, seen=None):
+             checkout=GGML, checkout_root=None, commit_present=True, seen=None):
     if cmake is None:
         cmake = (Path(root) / "CMakeLists.txt").read_bytes()
+    if checkout_root is None:
+        checkout_root = str(Path(root) / "ggml")
     def call(args, *, root):
         if seen is not None:
             seen.append(tuple(args))
@@ -42,6 +44,10 @@ def fake_git(root, *, cmake=None, reviewed=GGML, current=GGML, staged=GGML,
             return f"160000 commit {current}\tggml\n".encode()
         if args == ["ls-files", "--stage", "ggml"]:
             return f"160000 {staged} 0\tggml\n".encode()
+        if args == ["-C", str(Path(root) / "ggml"), "rev-parse", "--show-toplevel"]:
+            return (checkout_root + "\n").encode()
+        if args == ["-C", str(Path(root) / "ggml"), "rev-parse", "HEAD"]:
+            return (checkout + "\n").encode()
         raise AssertionError("Unexpected git command: " + repr(args))
     return call
 
@@ -55,6 +61,7 @@ class SourceClosureControls(unittest.TestCase):
         self.assertEqual(result["file_count"], 29)
         self.assertEqual(result["ggml_gitlink"], GGML)
         self.assertTrue(result["gitlink_index_exact"])
+        self.assertTrue(result["ggml_checkout_exact"])
 
     def test_missing_or_changed_native_source_rejected_before_git(self):
         producer = fixture()
@@ -87,7 +94,9 @@ class SourceClosureControls(unittest.TestCase):
         cases = (({"cmake": b"changed CMake"}, "CMakeLists"),
                  ({"reviewed": "c" * 40}, "ggml gitlink"),
                  ({"current": "c" * 40}, "ggml gitlink"),
-                 ({"staged": "c" * 40}, "ggml gitlink"))
+                 ({"staged": "c" * 40}, "ggml gitlink"),
+                 ({"checkout": "c" * 40}, "ggml gitlink"),
+                 ({"checkout_root": str(ROOT)}, "ggml gitlink"))
         for kwargs, message in cases:
             with self.subTest(kwargs=kwargs), self.assertRaisesRegex(ValueError, message):
                 closure.require_native_source_closure(producer, HEAD, root=ROOT,
