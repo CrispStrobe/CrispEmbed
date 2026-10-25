@@ -1,0 +1,38 @@
+name: OvisOCR2 preserved cache vector reanalysis
+on:
+  workflow_call:
+    inputs:
+      source_run:
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  reanalysis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source and failure-contract controls before preserved payload transfer
+        run: |
+          python tests/test_ovisocr2_weight_cache.py -v
+          python tests/test_ovisocr2_weight_cache_reanalysis.py -v
+          python tools/ci-heavy/ovisocr2_weight_cache_reanalysis.py --source-run "${{ inputs.source_run }}" --preflight
+      - name: Rehash preserved actual vectors and rebuild original comparison manifests
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_weight_cache_reanalysis.py --source-run "${{ inputs.source_run }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-weight-cache-reanalysis-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90

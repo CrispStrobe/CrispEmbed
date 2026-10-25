@@ -1,3 +1,44 @@
+## OvisOCR2 bounded decoder cache — 25 October 2026
+
+[Reviewed actual data and preserved-vector reanalysis](tests/results/qwen35-ocr/ovisocr2-weight-cache.json)
+use published F16`d3a733a5...`, one frozen448×448 owned PNG, nine IDs/EOS and
+three alternating OFF/ON pairs. Each arm starts a fresh process/context, loads
+weights, then recognizes twice with two native threads. AMD EPYC7763, four
+logical/affinity CPUs, GNU13.3.0, portable CPU/BLAS-off build, unchanged ggml.
+Profiling is off. Initialization is separate; cold means the **first recognition
+after loading**, not cold disk/download. OS file-cache state is uncontrolled.
+
+| Measurement | OFF median | ON median | Median paired ON/OFF |
+| --- | ---: | ---: | ---: |
+| Initialization seconds | 0.482765 | 0.482325 | — |
+| First recognition seconds | 53.793086 | 52.248141 | 0.972657 |
+| Repeated recognition seconds | 52.633524 | 52.486827 | 0.992029 |
+| Fresh-process peak RSS KiB | 3,478,364 | 3,734,556 | — |
+
+Ratios are the median of individual pair ratios, not the ratio of the two
+median times. Cold pair ratios are0.970379/0.996396/0.972657; warm ratios are
+0.950154/1.006048/0.992029. The warm median reduction is only0.797%, and one
+pair is slower. Median paired RSS increase is256,232KiB (about250.2MiB).
+A separate OFF/ON process pair initializes two contexts, runs first/repeat/
+independent/survivor calls and reaches5,192,404→5,724,032KiB peak RSS
+(about4.952→5.459GiB; increase531,628KiB). Process RSS includes load and all
+calls, not a per-layer allocation. The256MiB retained-buffer budget excludes
+weights, graph/conversion scratch and small cache metadata.
+
+All20 benchmark outputs/IDs/EOS/confidences/means are exact across arms.
+All14 numerical/API arms per setting and1,662 raw on/off pairs are positive
+under unchanged original calibration; each decoder-ON arm has54 entries and
+540 hits, exactly256MiB retained. The separate [eleven-case quality run](tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json)
+preserves all1,841 first-F16 outputs and scores. The initial workflow fails
+only in its manifest adapter; a separate hosted reanalysis rehashes all3,324
+preserved vectors without repeating inference. Both original failures remain
+archived. Four raw strict vision flags per precision remain visible.
+
+The experiment remains **default-off**. This small warm gain with increased RSS
+is not a broad speedup or adoption result, and is not other-model/platform,
+larger-input, quantized, runtime-release or app qualification. The full970MiB
+head cannot fit the default budget and still follows the original path.
+
 ## OvisOCR3 bounded fidelity and interface diagnostics — 25 October 2026
 
 [Native14](tests/results/qwen35-ocr/ovisocr3-native-model.json) passes F32/F16

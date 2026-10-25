@@ -33,7 +33,7 @@ static void rotate(float * x, const attention_config & c, const float * position
 }
 bool attention_cpu(const attention_weights & w, const attention_config & c, const float * hidden,
                    const float * positions, int batch, int tokens, int threads, const attention_cache * previous,
-                   attention_outputs & output) {
+                   attention_outputs & output, converted_weight_cache * weights_cache) {
     output = {};
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || !positions || !w.q || batch < 1 || batch > 4 ||
         tokens < 1 || tokens > 4096 || threads < 1 || threads > 256 || c.query_heads < 1 || c.query_heads > 128 ||
@@ -61,7 +61,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
     for (int i = 0; i < 3 * count; ++i)
         if (!std::isfinite(positions[i])) return false;
     std::vector<std::vector<float>> projected;
-    if (!project_cpu({ w.q, w.k, w.v }, hidden, width, count, threads, projected)) return false;
+    if (!project_cpu({ w.q, w.k, w.v }, hidden, width, count, threads, projected, weights_cache)) return false;
     output.q = std::move(projected[0]);
     output.k = std::move(projected[1]);
     output.v = std::move(projected[2]);
@@ -132,7 +132,7 @@ bool attention_cpu(const attention_weights & w, const attention_config & c, cons
                 }
             }
     projected.clear();
-    if (!project_cpu({ w.out }, output.pooled.data(), qh * d, count, threads, projected)) return false;
+    if (!project_cpu({ w.out }, output.pooled.data(), qh * d, count, threads, projected, weights_cache)) return false;
     output.attention = std::move(projected[0]);
     return finite(output.attention) && finite(cache.keys) && finite(cache.values);
 }

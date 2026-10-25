@@ -5,6 +5,7 @@
 #include "qwen35_vision.h"
 #include "qwen35_math.h"
 #include "qwen35_profile.h"
+#include "qwen35_weight_cache.h"
 #include "core/env_gate.h"
 #include "ggml-cpu.h"
 #include <algorithm>
@@ -24,12 +25,14 @@ struct qwen35_ocr_context {
     qwen35_ocr::frontend_tokenizer tokenizer;
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::vision_weights vision;
+    qwen35_ocr::converted_weight_cache weights_cache;
     int threads = 1, max_tokens = 2048;
     std::string text, error;
     std::vector<int> ids;
     std::vector<float> confidences;
     qwen35_ocr_stop stop = QWEN35_OCR_NONE;
     ~qwen35_ocr_context() {
+        weights_cache.clear();
         core_gguf::free_weights(loaded);
         if (backend) ggml_backend_free(backend);
     }
@@ -112,6 +115,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     }
     if (length > 65536) return c.fail("prompt exceeds byte limit");
     using namespace qwen35_ocr;
+    auto * weights_cache = core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") ? &c.weights_cache : nullptr;
     profile_timer stage(profile_event::preprocess);
     std::vector<uint8_t> rgb;
     if (channels != 3) {
@@ -150,11 +154,12 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
             ++image_token;
         }
     if (image_token * 1024 != visual.merged.size()) return c.fail("image embedding count mismatch");
-    // No cross-request cache: all carried state is local to this recognition.
+    // Carried activations/KV state remain local to this recognition. Only
+    // immutable converted weights can persist in the opt-in owning cache.
     stage.next(profile_event::prefill, profile_phase::prefill);
     qwen35_ocr::decoder_outputs current;
     if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), pos.axes.data(), 1, int(ids.size()), c.threads, nullptr,
-                                 current))
+                                 current, weights_cache))
         return c.fail("decoder prefill failed");
     for (int step = 0; step < c.max_tokens; ++step) {
         stage.next(profile_event::selection, profile_phase::other);
@@ -186,7 +191,8 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
             !qwen35_ocr::cached_positions(cache.tokens, 1, pos.rope_delta, coords))
             return c.fail("cached input preparation failed");
         stage.next(profile_event::cached_decode, profile_phase::decode);
-        if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), coords.data(), 1, 1, c.threads, &cache, current))
+        if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), coords.data(), 1, 1, c.threads, &cache, current,
+                                     weights_cache))
             return c.fail("cached decoder failed");
     }
     stage.next(profile_event::text_decode, profile_phase::other);

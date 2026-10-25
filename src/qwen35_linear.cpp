@@ -1,6 +1,7 @@
 #include "qwen35_linear.h"
 #include "qwen35_math.h"
 #include "qwen35_profile.h"
+#include "qwen35_weight_cache.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -12,6 +13,7 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <new>
 #include <thread>
 
 namespace qwen35_ocr {
@@ -95,8 +97,62 @@ bool tensor_floats(ggml_tensor * source, float * target, int threads) {
     return std::all_of(target, target + count, [](float x) { return std::isfinite(x); });
 }
 
+struct converted_weight_cache::entry {
+    ggml_backend_buffer_t buffer = nullptr;
+    ~entry() {
+        if (buffer) ggml_backend_buffer_free(buffer);
+    }
+};
+std::size_t converted_weight_cache::environment_budget() {
+    const char * value = std::getenv("CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES");
+    if (!value) return default_budget;
+    if (!*value) return 0;
+    std::size_t result = 0;
+    for (const char * p = value; *p; ++p) {
+        if (*p < '0' || *p > '9' || result > (maximum_budget - std::size_t(*p - '0')) / 10) return 0;
+        result = result * 10 + std::size_t(*p - '0');
+    }
+    return result;
+}
+converted_weight_cache::converted_weight_cache(std::size_t budget) : budget_(budget <= maximum_budget ? budget : 0) {}
+converted_weight_cache::~converted_weight_cache() = default;
+void converted_weight_cache::clear() {
+    entries_.clear();
+    bytes_ = hits_ = 0;
+}
+const float * converted_weight_cache::get(ggml_tensor * source, int threads) {
+    if (!core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") || !budget_ || !source ||
+        (source->type != GGML_TYPE_F32 && source->type != GGML_TYPE_F16) || !matrix_type_supported(source))
+        return nullptr;
+    const auto found = entries_.find(source);
+    if (found != entries_.end()) {
+        ++hits_;
+        return static_cast<const float *>(ggml_backend_buffer_get_base(found->second->buffer));
+    }
+    const auto count = std::size_t(ggml_nelements(source));
+    if (!count || count > (budget_ - bytes_) / sizeof(float)) return nullptr;
+    try {
+        auto value = std::make_unique<entry>();
+        value->buffer = ggml_backend_buft_alloc_buffer(ggml_backend_cpu_buffer_type(), count * sizeof(float));
+        if (!value->buffer || ggml_backend_buffer_get_size(value->buffer) > budget_ - bytes_) return nullptr;
+        auto * data = static_cast<float *>(ggml_backend_buffer_get_base(value->buffer));
+        {
+            profile_matrix_scope materialize(source);
+            if (!tensor_floats(source, data, threads)) return nullptr;
+        }
+        const auto bytes = ggml_backend_buffer_get_size(value->buffer);
+        entries_.emplace(source, std::move(value));
+        bytes_ += bytes;
+        return data;
+    } catch (const std::bad_alloc &) {
+        // No admitted state/counters change on allocation failure. The caller
+        // retains the original serial/parallel materialization fallback.
+        return nullptr;
+    }
+}
+
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
-                 std::vector<std::vector<float>> & output) {
+                 std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache) {
     profile_timer total(profile_event::project_total);
     output.clear();
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
@@ -116,7 +172,17 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
         for (auto * matrix : matrices)
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
     profile_timer stage(profile_event::project_setup);
-    const size_t memory = 1024 * 1024 + elements * sizeof(float);
+    std::array<const float *, 4> cached{};
+    size_t scratch_elements = elements;
+    if (weights_cache) {
+        stage.next(profile_event::project_materialize);
+        for (size_t i = 0; i < matrices.size(); ++i) {
+            cached[i] = weights_cache->get(matrices[i], threads);
+            if (cached[i]) scratch_elements -= size_t(ggml_nelements(matrices[i]));
+        }
+        stage.next(profile_event::project_setup);
+    }
+    const size_t memory = 1024 * 1024 + scratch_elements * sizeof(float);
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ memory, nullptr, false }), ggml_free);
     std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
     if (!ctx || !backend) return false;
@@ -126,10 +192,15 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     std::memcpy(input->data, hidden, size_t(width) * tokens * sizeof(float));
     auto * graph = ggml_new_graph(ctx.get());
     std::vector<ggml_tensor *> results;
-    for (auto * matrix : matrices) {
+    for (size_t i = 0; i < matrices.size(); ++i) {
+        auto * matrix = matrices[i];
         stage.next(profile_event::project_materialize);
+        ggml_set_no_alloc(ctx.get(), cached[i] != nullptr);
         auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
-        {
+        ggml_set_no_alloc(ctx.get(), false);
+        if (cached[i]) {
+            weight->data = const_cast<float *>(cached[i]);
+        } else {
             profile_matrix_scope materialize(matrix);
             if (!tensor_floats(matrix, static_cast<float *>(weight->data), threads)) return false;
         }
@@ -158,7 +229,8 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
 }
 
 bool linear_cpu(const linear_weights & weights, const float * hidden, int batch, int tokens, int threads,
-                const float * conv_history, const float * state, projected_linear_outputs & output) {
+                const float * conv_history, const float * state, projected_linear_outputs & output,
+                converted_weight_cache * weights_cache) {
     output = {};
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 ||
         threads < 1 || threads > 256 || !weights.a_log || !weights.norm || !weights.qkv || !weights.conv)
@@ -177,7 +249,7 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
         return false;
     std::vector<std::vector<float>> projections;
     if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens,
-                     threads, projections))
+                     threads, projections, weights_cache))
         return false;
     output.qkv = std::move(projections[0]);
     output.z = std::move(projections[1]);
@@ -196,7 +268,8 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
     };
     if (!linear_core_cpu(input, output.core)) return false;
     projections.clear();
-    if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections))
+    if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections,
+                     weights_cache))
         return false;
     output.attention = std::move(projections[0]);
     return true;

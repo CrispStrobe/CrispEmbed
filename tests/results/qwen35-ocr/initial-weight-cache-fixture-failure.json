@@ -1,0 +1,15 @@
+{
+  "schema": "crispembed-initial-weight-cache-fixture-failure-v1",
+  "run": 40215318191,
+  "head_sha": "e0a8e53e85aa7f0477ec17f87aaf12c70c0a52af",
+  "workflow": ".github/workflows/qwen35-decoded-audit.yml",
+  "observed": {
+    "python_controls": "success",
+    "native_builds": "success on Linux, macOS and Windows",
+    "profile_and_materialization_controls": "success on all three platforms",
+    "new_cache_control": "GGML assertion in ggml_backend_tensor_get: tensor buffer not set"
+  },
+  "attribution": "The synthetic fixture allocated tensor data in a ggml arena without the backend buffer required by tensor_floats. Its initial cache-off baseline read failed before cache admission or model inference.",
+  "correction": "Use a no-allocation metadata context plus ggml_backend_alloc_ctx_tensors on an owning CPU backend, matching the existing materialization test fixture.",
+  "limits": "Initial structural failure only. No model arrays, tolerances, inference arithmetic, decoded-quality result or speed claim was changed. A corrected actual hosted rerun is required."
+}

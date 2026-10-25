@@ -16,19 +16,20 @@ The25 October bounded audits and their initial failures are archived in HISTORY;
 measurements are in PERFORMANCE. Start one lane at a time, using its exact
 sources and acceptance gates below:
 
-1. **Converted-weight reuse:** use the completed profile to prototype one
-   per-context byte-budgeted default-off cache. Require full numerical/decoded
-   regression, survivor/error handling and paired cold/warm latency/RSS before
-   any default or release decision.
-2. **Numerical attribution:** independently compare quantized weights/activation
+The bounded converted-weight cache experiment is complete in
+[HISTORY](HISTORY.md) and [PERFORMANCE](PERFORMANCE.md). It remains default-off:
+the three-pair warm median gain is only0.797%, with one slower pair and increased
+RSS. Do not repeat its successful model runs for the corrected manifest adapter.
+
+1. **Numerical attribution:** independently compare quantized weights/activation
    semantics before another precision selection; separately trace the2048
    original-embedding versus composed native-vision normalization difference.
    Preserve all failed recipes, raw strict flags and the unqualified2048 path.
-3. **Next permissive implementation:** MI-GAN single-resolution still-image
+2. **Next permissive implementation:** MI-GAN single-resolution still-image
    references and native F32 prototype, or the next declared OCR source audit.
    Code/checkpoint/base licensing and original blueprint come first. LaMa's
    checkpoint terms/FFT and Indra's restricted weight scope remain unresolved.
-4. **Delivery/portfolio:** UltraBERT attribution and representative/pair quality,
+3. **Delivery/portfolio:** UltraBERT attribution and representative/pair quality,
    immutable successor runtime assets/consumers and the other scoped lanes remain
    below. Ovis3's14-arm/eleven-case/six-interface diagnostics are complete; its
    capped original plain-OCR page still blocks model qualification/alias/upload.
@@ -141,7 +142,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | Converted-weight reuse; quantized operator attribution;2048 numerical debt and broader licensed-page benchmarks. Preserve qualified F16/alias and all completed evidence in HISTORY. |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | Conditional cache adoption with representative resource evidence; quantized operator attribution;2048 numerical debt and broader licensed-page benchmarks. Preserve qualified F16/alias and all completed evidence in HISTORY. |
 | 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Pinned LICENSE/checkpoint/base Apache-2.0 audited | ~1.12–1.34GB extrapolated from Ovis2 recipes, unmeasured; actual F16 1.717GB | Native14/F16 eleven-case/six-interface diagnostics are complete; [source plain-OCR quality block](docs/ovisocr3.md#original-plain-ocr-quality-decision) remains. Declare a separate original-first task/evaluation protocol before broader tasks, quantization, alias or publication. |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
@@ -377,7 +378,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-25 | `feat/ovis-weight-cache-20261025` | Bounded default-off per-context decoder F32/F16 weight reuse | Prototype and hosted component/frozen/eleven-case/paired-RSS harness in progress; no default, release or quality promotion |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -415,27 +415,26 @@ remain required; neither delivery nor speed permits a default flip.
   every copied member, retain original producer attribution and expiry. Download
   only the small review; never bring multi-GB archives to the shared host.
 
-## Ovis bounded materialization reuse — after measured attribution
+## Ovis cache adoption — conditional after the completed bounded experiment
 
-Use [the completed profile](tests/results/qwen35-ocr/ovisocr2-profiling.json),
-`src/qwen35_profile.{h,cpp}` and
-`src/qwen35_linear.cpp::{project_cpu,tensor_floats}`. Attribution is complete;
-do not repeat it as a new task. Eight cached steps materialize24,060,624,896 F32
-bytes and spend about11.16 seconds materializing versus0.57 computing projections
-on the recorded host. These nested counters are not additive across levels.
+Completed source, component, frozen-array, eleven-case and paired resource
+evidence is in [HISTORY](HISTORY.md), [PERFORMANCE](PERFORMANCE.md),
+[the raw reanalysis](tests/results/qwen35-ocr/ovisocr2-weight-cache.json) and
+[the quality receipt](tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json).
+The256MiB decoder cache remains default-off; its current small warm gain does
+not justify default adoption. The970MiB full head uses the original fallback.
 
-- [ ] Implement one default-off, value-parsed experiment that reuses immutable
-  converted weights per owning model/context, with a declared byte budget and
-  predictable fallback. Keep serial/parallel paths. Avoid a global tensor-pointer
-  cache; cover reset, failed load, free, independent models and survivor context.
-- [ ] Before changing defaults, require the complete current-source14-arm
-  original/crispembed-diff replay and all eleven frozen first-F16 IDs/raw and
-  processed text/EOS/caps/confidences. Preserve all raw/calibrated flags.
-- [ ] Measure unprofiled paired same-host old/new calls, initialization versus
-  repeated recognition, cold versus warm reuse and fresh-process RSS. Include
-  CPU/compiler/thread details and two-context memory. A speed win requires
-  equal output; the full head alone is1,017,118,720 bytes. Source success does
-  not upgrade the app or select a runtime release.
+- [ ] Before any adoption proposal, freeze a representative same-host document
+  latency/RSS protocol with identical inputs/caps/outputs, cold versus repeated
+  recognition, initialization separate, and one/two contexts. Include a
+  meaningful resource/performance acceptance rule before candidate timings.
+  Other budgets/admission policies and Apple model execution need their own
+  scoped evidence. Keep existing serial/parallel paths and literal0 controls.
+- [ ] Any new runtime variant must retain the complete14-arm original/diff
+  replay, all eleven first-F16 IDs/raw/processed text/EOS/caps/confidences and
+  existing raw/calibrated flags. Do not widen older historical arithmetic
+  allowlists or treat the analysis-only recovery as newly generated references.
+  No runtime/app release or default change follows from this experiment.
 
 ## Ovis quantized-kernel attribution — before another precision selection
 

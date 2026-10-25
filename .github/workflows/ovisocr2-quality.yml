@@ -2,6 +2,9 @@ name: OvisOCR2 bounded original and native OCR quality
 on:
   workflow_call:
     inputs:
+      weight_cache:
+        type: boolean
+        default: false
       phase:
         type: string
         default: original
@@ -43,6 +46,8 @@ jobs:
       OPENBLAS_NUM_THREADS: '2'
       MKL_NUM_THREADS: '2'
       F16_HOST_CONTROL: ${{ inputs.f16_host_control }}
+      CRISPEMBED_QWEN35_WEIGHT_CACHE: ${{ inputs.weight_cache && '1' || '0' }}
+      CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES: '268435456'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +66,9 @@ jobs:
             echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
           } >> "$GITHUB_ENV"
           HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL" --preflight
+      - name: Exact cache prototype source before dependencies or model transfer
+        if: inputs.weight_cache
+        run: python tools/ci-heavy/ovisocr2_weight_cache.py --preflight
       - name: Reuse immutable reviewed document PNGs before model outputs
         env:
           QUALITY_PHASE: ${{ inputs.phase }}
@@ -75,6 +83,9 @@ jobs:
         env:
           QUALITY_PHASE: ${{ inputs.phase }}
         run: python tools/ci-heavy/ovisocr2_quality_run.py --phase "$QUALITY_PHASE" --original-run "${{ inputs.original_run }}" --f16-host-control "$F16_HOST_CONTROL"
+      - name: Compare all eleven cached outputs and confidences to frozen first F16
+        if: inputs.weight_cache
+        run: python tools/ci-heavy/ovisocr2_weight_cache.py --verify-quality "$HEAVY_OUT/ovisocr2-quality.json"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

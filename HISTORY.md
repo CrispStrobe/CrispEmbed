@@ -1,3 +1,56 @@
+## 25 October 2026 — Bounded decoder weight cache audited; default remains off
+
+The per-context F32/F16 decoder weight cache is complete behind
+`CRISPEMBED_QWEN35_WEIGHT_CACHE`, with256MiB default/1GiB maximum retained
+buffers, first-fit admission/no eviction and original serial/parallel fallback.
+The970MiB output head does not fit the default budget; quantized matrices keep
+the existing conversion path. No activations or request-local KV states persist.
+Source review checks ownership, graph lifetimes, allocation failure, malformed
+budgets, literal0, resets and independent/survivor contexts. Actual larger
+serial/parallel cold-admission and oversized-fallback controls pass Linux,
+macOS and Windows in [40216852682](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40216852682)
+at0e7f9233. The initial synthetic backend-buffer assertion and its correction
+are retained in [the fixture journal](tests/results/qwen35-ocr/initial-weight-cache-fixture-failure.json).
+
+[Actual40215901483](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40215901483)
+at`e6ee5afd93b2c49d3107e0b518e0944eaa6ada80` executes all28 native arms and
+all20 benchmark recognitions successfully. Its overall workflow remains
+**failed**: a new adapter incorrectly required`file` in decoder manifest rows,
+which instead contain stage/shape/bytes/SHA. Sixteen parser errors then cause
+eight paired-record failures. [The rejected producer and independent attribution](tests/results/qwen35-ocr/initial-weight-cache-manifest-failure.json)
+remain unchanged, including all37 actual successful command logs/resources.
+
+[Analysis-only40222430001](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40222430001)
+at02cdfa7b succeeds by reusing the retained original943-stage metadata and
+actual raw archive. [Unchanged derived producer and independent review](tests/results/qwen35-ocr/ovisocr2-weight-cache.json)
+verify service lineage, all75 original small members/37 logs and3,324 unique
+shape/byte/path/SHA records across268 observed stage names. Hosted CI rehashes
+the raw payload; independent local review downloads reports only. All14 arms
+per gate are positive and all1,662 cache on/off vector pairs are byte exact.
+Each decoder-ON arm records54 entries/268,435,456 bytes/540 hits; OFF records
+zero. Four strict vision flags per precision remain under the unchanged source
+calibration (maximum ratios0.657341186 F32/0.677061422 F16). No arithmetic,
+reference, weight, prompt, cap, gold or budget is changed to recover the audit.
+
+The separate [eleven-case quality job and independent review](tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json)
+verify34 members,15 logs,37 helper/native source hashes and all11 PNG/RGB inputs.
+All1,841 first-F16 IDs/raw/processed text/stops/caps/confidences/means and
+recomputed quality scores are exact, with11 EOS completions. The C ABI smoke
+also matches its own first-F16 baseline; its pre-existing confidence difference
+from the native runner is1.7891922e-7, not a new cross-path exactness claim.
+The runtime `src` tree`e5cbd629818f0424e272bc84469e9375eee804d2`, CMake and
+numerical checker remain identical to the actual inference source; later changes
+strengthen component coverage and correct postprocessing. No inference or
+conversion was repeated for the manifest correction.
+
+[Paired resource measurements](PERFORMANCE.md) show median paired latency
+reductions of2.734% cold/0.797% warm; one warm pair regresses. Median paired
+single-context RSS grows256,232KiB; two-context RSS grows531,628KiB. Keep the
+default **off**: these three pairs on one image do not justify broad performance
+or default adoption. Raw artifact12609314203 stays remote through23 January2027.
+No model upload/alias, runtime release or app0.17.12 upgrade occurs. Next use the
+separately scoped numerical attribution lane in PLAN.
+
 ## 25 October 2026 — Attention-F16 / FFN-Q4 candidate rejected
 
 [40172527229](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172527229)

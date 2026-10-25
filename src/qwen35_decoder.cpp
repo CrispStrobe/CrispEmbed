@@ -86,7 +86,8 @@ bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vecto
     return std::all_of(hidden.begin(), hidden.end(), [](float x) { return std::isfinite(x); });
 }
 bool decoder_cpu(const decoder_weights & w, const attention_config & c, const float * input, const float * positions,
-                 int batch, int tokens, int threads, const decoder_cache * previous, decoder_outputs & output) {
+                 int batch, int tokens, int threads, const decoder_cache * previous, decoder_outputs & output,
+                 converted_weight_cache * weights_cache) {
     output = {};
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !input || !positions || !w.embedding || w.layers.empty() ||
         w.layers.size() > 64 || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 || threads < 1 || threads > 256 ||
@@ -114,7 +115,7 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
             output.attention_inputs[int(i)] = normalized;
             if (cache && cache->attention.tokens != past) return false;
             if (!attention_cpu(layer.attention, c, normalized.data(), positions, batch, tokens, threads,
-                               cache ? &cache->attention : nullptr, attention))
+                               cache ? &cache->attention : nullptr, attention, weights_cache))
                 return false;
             output.attention_keys[int(i)] = attention.k_norm;
             mixed = std::move(attention.attention);
@@ -129,7 +130,8 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
                      size_t(batch) * layer.linear.a_log->ne[0] * layer.linear.norm->ne[0] * layer.linear.norm->ne[0]))
                 return false;
             if (!linear_cpu(layer.linear, normalized.data(), batch, tokens, threads,
-                            cache ? cache->conv.data() : nullptr, cache ? cache->recurrent.data() : nullptr, linear))
+                            cache ? cache->conv.data() : nullptr, cache ? cache->recurrent.data() : nullptr, linear,
+                            weights_cache))
                 return false;
             mixed = std::move(linear.attention);
             next.conv = std::move(linear.core.conv_history);
@@ -142,7 +144,8 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
             !shape(layer.up, width, int(layer.gate->ne[1])) || !shape(layer.down, int(layer.gate->ne[1]), width))
             return false;
         std::vector<std::vector<float>> projections;
-        if (!project_cpu({ layer.gate, layer.up }, normalized.data(), width, batch * tokens, threads, projections))
+        if (!project_cpu({ layer.gate, layer.up }, normalized.data(), width, batch * tokens, threads, projections,
+                         weights_cache))
             return false;
         for (size_t j = 0; j < projections[0].size(); ++j) {
             const float gate = projections[0][j];
@@ -150,8 +153,8 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
         }
         const auto activated = std::move(projections[0]);
         projections.clear();
-        if (!project_cpu({ layer.down }, activated.data(), int(layer.gate->ne[1]), batch * tokens, threads,
-                         projections))
+        if (!project_cpu({ layer.down }, activated.data(), int(layer.gate->ne[1]), batch * tokens, threads, projections,
+                         weights_cache))
             return false;
         for (size_t j = 0; j < count; ++j) hidden[j] += projections[0][j];
         output.hidden.push_back(hidden);
@@ -163,7 +166,7 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
         std::copy_n(output.norm.data() + size_t((b * tokens) + tokens - 1) * width, width,
                     last.data() + size_t(b) * width);
     std::vector<std::vector<float>> logits;
-    if (!project_cpu({ w.head }, last.data(), width, batch, threads, logits)) return false;
+    if (!project_cpu({ w.head }, last.data(), width, batch, threads, logits, weights_cache)) return false;
     output.logits = std::move(logits[0]);
     return true;
 }

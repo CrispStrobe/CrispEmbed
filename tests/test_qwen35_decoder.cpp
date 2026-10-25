@@ -1,6 +1,7 @@
 #include "core/clean_exit.h"
 #include "core/env_gate.h"
 #include "qwen35_decoder.h"
+#include "qwen35_weight_cache.h"
 #include "qwen35_vision.h"
 #include "qwen35_positions.h"
 #include "qwen35_frontend.h"
@@ -58,6 +59,8 @@ static int crispembed_test_main(int argc, char ** argv) {
         return 2;
     qwen35_ocr::decoder_weights weights;
     if (!qwen35_ocr::map_small_decoder(loaded.tensors, weights)) return 2;
+    qwen35_ocr::converted_weight_cache converted;
+    auto * weights_cache = core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") ? &converted : nullptr;
     qwen35_ocr::vision_outputs vision;
     qwen35_ocr::frontend_tokenizer tokenizer;
     qwen35_ocr::image_inputs image;
@@ -216,7 +219,7 @@ static int crispembed_test_main(int argc, char ** argv) {
         }
         qwen35_ocr::decoder_outputs current;
         if (!qwen35_ocr::decoder_cpu(weights, config, decoder_input, coords.data(), batch, tokens, 4,
-                                     phase == "cached" ? &prefill_cache : nullptr, current)) {
+                                     phase == "cached" ? &prefill_cache : nullptr, current, weights_cache)) {
             ok = false;
             break;
         }
@@ -317,7 +320,8 @@ static int crispembed_test_main(int argc, char ** argv) {
                 coords = std::move(derived);
             }
             qwen35_ocr::decoder_outputs current;
-            if (!qwen35_ocr::decoder_cpu(weights, config, hidden.data(), coords.data(), 1, 1, 4, &cache, current)) {
+            if (!qwen35_ocr::decoder_cpu(weights, config, hidden.data(), coords.data(), 1, 1, 4, &cache, current,
+                                         weights_cache)) {
                 ok = false;
                 break;
             }
@@ -350,6 +354,9 @@ static int crispembed_test_main(int argc, char ** argv) {
         std::printf("%s native decoded text exact bytes=%zu: %s\n", text == oracle ? "PASS" : "FAIL", text.size(),
                     text.c_str());
     }
+    std::printf("WEIGHT_CACHE bytes=%zu budget=%zu entries=%zu hits=%zu\n", converted.bytes(), converted.budget(),
+                converted.entries(), converted.hits());
+    converted.clear();
     core_gguf::free_weights(loaded);
     ggml_backend_free(backend);
     std::printf("%s composed 24-layer native decoder and greedy IDs; %s, production integration pending\n",

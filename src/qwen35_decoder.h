@@ -39,5 +39,5 @@ bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vecto
 // Consumes merged vision/text embeddings. Frontend/tokenizer are separate.
 bool decoder_cpu(const decoder_weights & weights, const attention_config & config, const float * hidden,
                  const float * positions, int batch, int tokens, int threads, const decoder_cache * previous,
-                 decoder_outputs & output);
+                 decoder_outputs & output, converted_weight_cache * weights_cache = nullptr);
 } // namespace qwen35_ocr

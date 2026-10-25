@@ -5,6 +5,7 @@
 struct ggml_tensor;
 
 namespace qwen35_ocr {
+class converted_weight_cache;
 // Actual checkpoint weights for one equal-K/V-head linear-attention block.
 struct linear_weights {
     ggml_tensor * qkv;
@@ -25,5 +26,6 @@ struct projected_linear_outputs {
 // activation-dot rounding. Quantized matrices require the separate quant gate;
 // this establishes storage/quality behavior, not an optimized quantized matmul.
 bool linear_cpu(const linear_weights & weights, const float * hidden, int batch, int tokens, int threads,
-                const float * conv_history, const float * state, projected_linear_outputs & output);
+                const float * conv_history, const float * state, projected_linear_outputs & output,
+                converted_weight_cache * weights_cache = nullptr);
 } // namespace qwen35_ocr

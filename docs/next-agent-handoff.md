@@ -371,6 +371,44 @@ The app remains pinned0.17.12; published F16 and wired source alias do not upgra
 
 ### Next work after the completed bounded Ovis audit loop
 
+The bounded decoder weight-cache follow-up is complete. Actual inference
+[40215901483](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40215901483)
+at`e6ee5afd93b2c49d3107e0b518e0944eaa6ada80` passes all28 native programs and
+the eleven-case F16 quality job, with all1,841 first-F16 outputs/confidences
+exact. Its overall workflow is red because a new manifest adapter incorrectly
+required a`file` field absent from decoder records. Preserve that rejected
+producer and [initial failure](../tests/results/qwen35-ocr/initial-weight-cache-manifest-failure.json).
+[Analysis-only40222430001](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40222430001)
+at`02cdfa7bf7ceb7d0ae46abd6c0a7de59a0cbbf3b` rehashes the actual3,324 retained
+vectors and qualifies all14 arms per gate with1,662 bit-identical pairs.
+It performs no inference/conversion and creates no new original reference.
+[Full reviewed evidence](../tests/results/qwen35-ocr/ovisocr2-weight-cache.json),
+[quality](../tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json).
+
+The cache is per context, decoder-only,256MiB default/1GiB hard retained-buffer
+limit, stable first-fit/no eviction; quantized matrices and the970MiB full head
+retain the original fallback. Serial/parallel cold admission, oversized fallback,
+literal0, reset, independent and survivor controls pass on all three native
+platforms in [40216852682](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40216852682).
+The runtime/CMake/numerical checker remain identical to the actual inference
+source above; subsequent changes strengthen the component fixture and fix
+postprocessing. Three timing pairs give only2.734% cold/0.797% warm median
+reductions, one warm regression and increased RSS; keep the default **off**.
+
+For justified future cache audits use the`weight-cache` phase of
+`.github/workflows/ovisocr2-metadata.yml`, reviewing its exact source pins first.
+The`weight-cache-reanalysis` phase accepts only source run40215901483 and its
+pinned preserved artifacts; do not rerun it without a new analysis concern.
+Older`current-replay`/larger-input helpers intentionally reject the new cache
+runtime source scope. Use their retained exact producer source/arrays for2048
+attribution, or declare a separately versioned source contract; never widen a
+historical allowlist silently. Raw artifact12609314203 remains remote through
+23 January2027; preserve its original bytes before expiry. The next recommended
+lane is the quantized-kernel attribution in PLAN, followed by2048 attribution
+and the independently scoped MI-GAN prototype. Adoption needs representative
+paired resource evidence; app/runtime release and other model qualifications
+remain separate.
+
 The [issue 71 source feasibility audit](inpainting-feasibility.md) is complete.
 MI-GAN has separately licensed MIT code and weights and is the first bounded
 still-image experiment; its model identity, original mask/pixel contract and

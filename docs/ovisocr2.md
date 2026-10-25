@@ -250,6 +250,40 @@ while its weight-backed job remained queued, before execution. The replacement
 uses that strengthened source. Inspect both F32/F16 reports and original-cast
 payload checks before any conversion qualification; no duplicate local work.
 
+## Experimental decoder weight reuse
+
+`CRISPEMBED_QWEN35_WEIGHT_CACHE=1` enables per-context reuse of immutable
+decoder matrices converted from F16/F32 storage. It is default-off. Vision,
+activations and request-local KV/recurrent state keep their existing paths;
+quantized matrices always use the existing conversion fallback.
+
+`CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` is an unsigned decimal retained-buffer
+budget captured when the model context is initialized:256MiB when unset,
+at most1GiB. Zero, empty, malformed and over-limit values disable admission.
+The budget excludes model storage, conversion workspace, graph arenas and small
+cache metadata. Two model contexts each have their own budget. Admission is
+first-fit with no eviction: a matrix that does not fit uses the original
+serial/parallel path. The1,017,118,720-byte full output head cannot fit the
+default budget. Literal gate`=0` bypasses existing entries; storage is retained
+until the owning context is freed. Request errors clear output and carried state,
+while immutable weight storage may safely survive for recovery. Contexts remain
+synchronous; do not use one context concurrently.
+
+The bounded experiment is complete: [preserved-vector reanalysis](../tests/results/qwen35-ocr/ovisocr2-weight-cache.json)
+qualifies fourteen arms per cache setting against the original943-stage source,
+with1,662 exact on/off raw-vector pairs. [The eleven-page quality receipt](../tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json)
+matches all1,841 first-F16 IDs/text/stops/confidences. The original workflow's
+manifest adapter error is preserved separately; the corrected analysis reuses
+all3,324 stored vectors without repeating inference or regenerating references.
+
+Three unprofiled pairs show median paired latency reductions of2.734% for first
+recognition and0.797% for repeated recognition; one warm pair regresses.
+Median paired single-context RSS grows256,232KiB, and two-context RSS grows
+531,628KiB. See [PERFORMANCE](../PERFORMANCE.md) for exact boundaries and values.
+The cache remains **default-off**. This is OvisOCR2 CPU evidence on a bounded
+panel, not broad performance or other-model/platform qualification; no new
+model publication, runtime release or app upgrade follows.
+
 ## Separately gated native frontend audit
 
 `feat/ovisocr2-frontend` adds a frontend-only opt-in

@@ -169,9 +169,18 @@ the unchanged capped page. [Interface-only public diagnostic40196755934](tests/r
 is independently positive on all29 recorded checks across six clients, ABI,
 cache and negative gate/profile/prompt controls. Its model/publication flags
 remain false; preserve initial omitted-artifact-name preflight failure separately.
-Completed audits are in HISTORY; start scoped reuse/attribution/permissive lanes
-from PLAN. No interface result upgrades negative source quality. The
-source completion failure blocks model qualification, publication and alias;
+The bounded per-context decoder weight cache is also audited in
+[the preserved-vector receipt](tests/results/qwen35-ocr/ovisocr2-weight-cache.json)
+and [eleven-case quality](tests/results/qwen35-ocr/ovisocr2-weight-cache-quality.json).
+All14 arms per gate/1,662 vector pairs and1,841 first-F16 outputs/confidences
+match. The initial manifest adapter failure remains red and archived; actual
+hosted reanalysis rehashes3,324 preserved vectors without repeating inference.
+Three pairs show only2.734% cold/0.797% warm reductions and increased RSS;
+keep the256MiB cache default-off. Components pass all three native platforms;
+full model evidence is bounded Linux/OvisOCR2 CPU only. Completed audits are
+in HISTORY; start scoped numerical attribution/permissive lanes from PLAN.
+No interface result upgrades negative source quality. OvisOCR3's
+source completion failure blocks its model qualification, publication and alias;
 do not change its prompt, cap, gold or scorer to pass a gate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with

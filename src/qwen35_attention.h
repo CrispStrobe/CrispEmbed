@@ -2,6 +2,7 @@
 #include <vector>
 struct ggml_tensor;
 namespace qwen35_ocr {
+class converted_weight_cache;
 struct attention_weights {
     ggml_tensor * q;
     ggml_tensor * k;
@@ -28,5 +29,5 @@ struct attention_outputs {
 // coordinates, independent of causal sequence chronology. Cache is immutable.
 bool attention_cpu(const attention_weights & weights, const attention_config & config, const float * hidden,
                    const float * positions, int batch, int tokens, int threads, const attention_cache * previous,
-                   attention_outputs & output);
+                   attention_outputs & output, converted_weight_cache * weights_cache = nullptr);
 } // namespace qwen35_ocr
