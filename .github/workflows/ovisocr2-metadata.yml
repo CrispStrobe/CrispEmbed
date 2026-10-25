@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -140,6 +140,17 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-native14'
     needs: controls
     uses: ./.github/workflows/ovisocr3-native14.yml
+  ovisocr3-public-diagnostic:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public-diagnostic'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-public-surfaces.yml
+    with:
+      model_run_id: ${{ inputs.native_run_id }}
+      model_artifact_name: ${{ inputs.native_artifact_name }}
+      diagnostic_source_quality: true
+      lighton_run_id: '40046789339'
+      lighton_artifact_name: lightonocr3-format1-receipt-40046789339
+      lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
   ovisocr3-public:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public'
     needs: controls
