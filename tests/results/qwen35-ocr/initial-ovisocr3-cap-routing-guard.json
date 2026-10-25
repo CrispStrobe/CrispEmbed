@@ -1,0 +1,18 @@
+{
+  "run": 40199295998,
+  "workflow_path": ".github/workflows/regression.yml",
+  "head_sha": "bd1481da823b30c635c7ba26381a117b2ff15ff2",
+  "conclusion": "failure",
+  "failed_job": "smoke",
+  "failed_step": "VLM max-tokens reaches every surface",
+  "failed_guard": "tests/test_ocr_max_tokens_surfaces.py",
+  "log_sha256": "9453df66a523aaa599d4a6b8d757e0a6de64148bdb299cc1ed477a23c839ea1b",
+  "log_bytes": 1998,
+  "original_failure": "FAIL engine::ovisocr3 is a VLM engine with no entry in this test's ENGINE_TO_OCR_MODEL table \u2014 add it (or mark it None if it has no --ocr route)",
+  "scope": "Static route catalogue omitted engine22. Actual public diagnostic had already exercised max_tokens=12 across clients. Add the QWEN35_OCR shared owning-context tag; retain cap assertions and all inference evidence unchanged.",
+  "correct_mapping": {
+    "ovisocr3": "QWEN35_OCR"
+  },
+  "targeted_guard_result": "15 VLM engines, 11 owning API tags, OK",
+  "runtime_source_tree_unchanged": true
+}

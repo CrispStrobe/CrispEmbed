@@ -15446,3 +15446,10 @@ complete for the declared HF plain-OCR scope, with source-quality debt preserved
 Further work is scoped in PLAN. Development remains0.17.13, the app's immutable
 runtime remains0.17.12, and no runtime release, model3 publication, app upgrade
 or default flip follows from this audit loop.
+
+PR80 regression smoke40199295998 exposed a missing static max-token routing
+catalogue entry for `ovisocr3`. The actual C/Python/CLI/HTTP/Rust/Dart diagnostic
+had exercised its12-token cap; the guard now maps it to the shared `QWEN35_OCR`
+owning API and passes for15 VLM engines/11 owning tags. [Initial CI evidence](tests/results/qwen35-ocr/initial-ovisocr3-cap-routing-guard.json)
+is retained. This is a test-catalogue completion; the audited runtime source,
+model data and numerical/quality verdicts remain unchanged.
