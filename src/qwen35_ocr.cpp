@@ -201,8 +201,9 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
         auto * meta = metadata.get();
         if (!meta) return nullptr;
         const auto format = core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0);
-        const bool allowed_format = format == 1 || (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
-                                                    core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
+        const bool allowed_format = format == 1 ||
+                                    (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
                                     (format == 3 && core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") &&
                                      core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
         const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&

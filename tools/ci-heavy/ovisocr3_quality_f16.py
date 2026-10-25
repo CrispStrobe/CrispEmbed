@@ -23,6 +23,7 @@ def module(name, path):
 
 
 original = module("ovisocr3_quality_original", ROOT / "tools/ci-heavy/ovisocr3_quality_run.py")
+native_audit = module("ovisocr3_quality_native_proof", ROOT / "tools/ci-heavy/ovisocr3_native14.py")
 contract = original.contract
 policy = original.policy
 
@@ -159,6 +160,13 @@ def main(preflight=False):
             report["phase"] = "preflight-complete"; save()
             return report
         from huggingface_hub import snapshot_download, hf_hub_download
+        report["phase"] = "same-installed-HF-dual-EOS-proof"; save()
+        stop_path, stop_proof = native_audit.installed_hf_stop_probe(out)
+        if sha(stop_path) != native.get("hf_stop_runtime", {}).get("proof_sha256"):
+            raise ValueError("OvisOCR3 F16 installed HF stop proof differs from native fourteen-arm export")
+        os.environ["CRISPEMBED_OVISOCR3_HF_STOP_PROOF"] = str(stop_path)
+        report["hf_stop_runtime"] = {"proof_sha256": sha(stop_path), **stop_proof}
+        save()
         report["phase"] = "same-frozen-inputs"; save()
         cases, inputs = original.prepare_inputs(scratch / "inputs")
         old = {row["id"]: row for row in frozen["inputs"]}
@@ -183,7 +191,7 @@ def main(preflight=False):
         model = scratch / "ovisocr3-f16.gguf"
         converted, _ = command("f16-convert", [sys.executable, ROOT / "models/convert-qwen35-ocr-to-gguf.py",
                                                 "--model", policy.MODEL, "--revision", policy.REVISION,
-                                                "--profile", "ovisocr3", "--dtype", "f16", "--output", model],
+                                                "--profile", "ovisocr3-hf-reference", "--dtype", "f16", "--output", model],
                                out, report, save, timeout=3600)
         if not converted or not model.is_file() or sha(model) != native["exports"]["f16"]["model_sha256"]:
             raise ValueError("OvisOCR3 F16 reconstructed model differs from reviewed fourteen-arm export")

@@ -38,8 +38,10 @@ class ReferenceControls(unittest.TestCase):
         self.assertEqual(rendered.group(1), receipt["rendered_prompt"])
         self.assertIn('ovis3_metadata_sha256 = "' +
                       receipt["independent_review"]["producer_canonical_sha256"] + '";', source)
+        self.assertIn('const char * ovis3_reference_sha256 = "";', source)
         self.assertIn('core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")', source)
-        self.assertIn('!core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", false)', source)
+        self.assertIn('!core_gguf::kv_bool(meta, "qwen35_ocr.hf_stop_policy_qualified", false)', source)
+        self.assertIn('core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", true)', source)
         header = (ROOT / "src/qwen35_ocr.h").read_text()
         implementation = (ROOT / "src/qwen35_ocr.cpp").read_text()
         self.assertIn("int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * ctx);", header)

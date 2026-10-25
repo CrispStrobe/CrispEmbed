@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 24 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 25 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -9,6 +9,40 @@ Start with the [executable next-agent handoff](docs/next-agent-handoff.md), whic
 records exact sources, remaining work, acceptance checks and artifact expiry.
 
 ## Execution order
+
+### Active approved Ovis follow-up loop
+
+The current owner is finishing the four approved items before closing this loop:
+
+1. Profiling and issue71 feasibility are complete; exact evidence is in HISTORY.
+2. Review actual attention-F16/FFN-Q4 run
+   [40172527229](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172527229):
+   all11 same-run F16 controls, all11 candidate cases, exact401 retained tensors
+   and72 changed FFN tensors, full original numerical/raw diagnostics. Preserve a
+   rejection if any unchanged screen fails. Never select by cosine alone.
+3. Complete [larger-input40176568398](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40176568398):
+   old frozen control plus newly authored1024/1200/2048-patch originals, all14
+   F32/F16 arms, dynamic per-score raw manifests, owning OCR IDs/text/EOS, timing
+   and RSS. New2048 bound needs four value-parsed gates; default1024 remains.
+   Actual compiled bound/recovery tests include2176 rejection and legacy controls.
+   After final core edits, rerun old11 F16 quality against frozen originals.
+4. Complete OvisOCR3 original-first qualification:
+   [reference40176566774](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40176566774)
+   replays three reviewed processor anchors before loading weights; capture every
+   layer/cache/logit/generated score and actual greedy output. Independently
+   review the small report and bind immutable service/artifact/source hashes
+   before original11, native14, F16 quality11 and public engine22 audits.
+   Separate plain OCR scoring preserves raw CER/WER/EOS/caps, without the Ovis2
+   HTML presentation scorer. Source-only format3 remains rejected by inference.
+   The private GPU recipe has an initial pre-package hardware-check failure and
+   one corrected bounded retry; installed GPU stop/runtime evidence remains
+   distinct from explicit original HF EOS-list qualification.
+
+No queued workflow or prepared harness counts as qualification. Large archives
+remain hosted; independent review downloads small reports only. Preserve old
+Ovis2 first-F16 receipts, calibrated vision budgets and failed quant recipes.
+No app/runtime release/default change follows from these experiments.
+
 
 Profiling, bounded parallel-F16 conversion and fixed-receipt completion/prompt
 checks are complete; evidence is in [HISTORY](HISTORY.md) and
@@ -94,7 +128,7 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
 | 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. PR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all three quant recipes rejected; F16 published/alias consumer40080458492 passes; PR79 integrated; next latency/RSS lane below |
-| 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
+| 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Pinned LICENSE/checkpoint/base Apache-2.0 audited | Similar small-family estimate; unmeasured | Source/header audit and actual hosted processor metadata pass; original per-module reference40176566774 dispatched; plain OCR11 frozen before outputs; native14/F16 quality/public22 remain unqualified |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
 | 5 | [TeleOCR](https://huggingface.co/XingChen-AGI/TeleOCR) | Apache-2.0; base terms still to audit | ~1.3–1.8 GB | Queued: reuse Qwen2.5-VL where exact config permits; verify renamed NaviDC artifacts/provenance and structured output; estimated 1–2 weeks |

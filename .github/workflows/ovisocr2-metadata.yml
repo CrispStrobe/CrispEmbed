@@ -5,12 +5,16 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
         description: 'Public/publication phases: reviewed positive Ovis native replay run ID'
         default: '0'
+      native_artifact_name:
+        type: string
+        description: 'OvisOCR3 public only: exact reviewed native-model artifact name'
+        default: ''
       vision_preset:
         type: choice
         description: 'Frozen replay only: explicit independently reviewed existing math preset'
@@ -118,6 +122,24 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'large-inputs'
     needs: controls
     uses: ./.github/workflows/ovisocr2-large-inputs.yml
+  ovisocr3-public:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-public-surfaces.yml
+    with:
+      model_run_id: ${{ inputs.native_run_id }}
+      model_artifact_name: ${{ inputs.native_artifact_name }}
+      lighton_run_id: '40046789339'
+      lighton_artifact_name: lightonocr3-format1-receipt-40046789339
+      lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
+  ovisocr3-quality:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-quality'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-quality.yml
+  ovisocr3-quality-f16:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-quality-f16'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-quality-f16.yml
   ovisocr3-reference:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-reference'
     needs: controls
@@ -164,6 +186,10 @@ jobs:
           python tests/test_ovisocr3_metadata.py -v
           python tests/test_ovisocr3_reference.py -v
           python tests/test_ovisocr3_quality_contract.py -v
+          python tests/test_ovisocr3_quality_run.py -v
+          python tests/test_ovisocr3_quality_f16.py -v
+          python tests/test_ovisocr3_public_surfaces.py -v
+          python tests/test_ovisocr3_vllm_recipe.py -v
           python tests/test_ovisocr2_large_inputs.py -v
   lighton-fixture:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'

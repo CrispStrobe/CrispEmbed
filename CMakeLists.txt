@@ -1229,6 +1229,9 @@ target_link_libraries(test-ovisocr2-context PRIVATE crispembed-qwen35-delta cris
 
 add_executable(test-ovisocr3-context tests/test_ovisocr3_context.cpp)
 target_link_libraries(test-ovisocr3-context PRIVATE crispembed-qwen35-delta crispembed-core)
+
+add_executable(test-ovisocr3-quality-run tests/ovisocr3_quality_run.cpp)
+target_link_libraries(test-ovisocr3-quality-run PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-ovisocr2-quality-run tests/ovisocr2_quality_run.cpp)
 target_link_libraries(test-ovisocr2-quality-run PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-ovisocr2-image-bounds tests/test_ovisocr2_image_bounds.cpp)

@@ -39,6 +39,8 @@ public:
     bool is_ovisocr2() const { return ovis_; }
     bool is_ovisocr3() const { return ovis3_; }
     bool is_stop(int id) const;
-    image_config image_limits() const { return (ovis_ || ovis3_) ? image_config{ 448 * 448, 2880 * 2880 } : image_config{}; }
+    image_config image_limits() const {
+        return (ovis_ || ovis3_) ? image_config{ 448 * 448, 2880 * 2880 } : image_config{};
+    }
 };
 } // namespace qwen35_ocr

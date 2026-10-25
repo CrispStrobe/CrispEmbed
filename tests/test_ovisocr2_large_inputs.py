@@ -28,6 +28,11 @@ class Controls(unittest.TestCase):
         def modified(path):return '0'*64 if str(path).endswith('src/qwen35_norm.cpp') else original(path)
         with mock.patch.object(driver.audit,'sha',side_effect=modified):
             with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
+    def test_unreviewed_public_wrapper_cannot_pass(self):
+        original=driver.audit.sha
+        def modified(path):return '0'*64 if str(path).endswith('src/crispembed.cpp') else original(path)
+        with mock.patch.object(driver.audit,'sha',side_effect=modified):
+            with self.assertRaisesRegex(ValueError,'public wrapper'):driver.source_contract()
     @unittest.skipUnless(platform.system()=='Linux' and Path('/usr/bin/time').is_file(),'GNU time on hosted Linux')
     def test_actual_resource_json_roundtrip(self):
         with tempfile.TemporaryDirectory() as directory:
