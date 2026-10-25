@@ -44,6 +44,13 @@ def sha(path):
     return policy._file_sha256(path)
 
 
+def native_environment(selection, base=None):
+    """Replay every reviewed native gate, independent of the host environment."""
+    env = dict(os.environ if base is None else base)
+    env.update(native_audit.NATIVE_ENV)
+    return vision_env.apply_selection(env, selection)
+
+
 def require_reviewed_original_quality():
     if (ORIGINAL_QUALITY_RUN <= 0 or len(ORIGINAL_QUALITY_HEAD) != 40
             or len(ORIGINAL_QUALITY_PRODUCER_SHA256) != 64):
@@ -80,6 +87,7 @@ def require_reviewed_native():
             or review.get("producer_canonical_sha256") != canonical
             or review.get("all_fourteen_native_arms_positive") is not True
             or producer.get("checkpoint_sha256") != policy.CHECKPOINT_SHA256
+            or producer.get("native_environment") != native_audit.NATIVE_ENV
             or not re.fullmatch(r"[0-9a-f]{64}", producer.get("exports", {}).get("f16", {}).get("model_sha256", ""))):
         raise ValueError("OvisOCR3 native fourteen-arm source/export proof differs")
     source_closure.require_native_source_closure(producer, NATIVE_MODEL_HEAD, root=ROOT)
@@ -141,6 +149,8 @@ def main(preflight=False):
               "scope": "native OvisOCR3 F16 versus frozen original eleven-case plain OCR; no public alias",
               "source_sha256": {name: sha(ROOT / name) for name in (
                   "tools/ci-heavy/ovisocr3_quality_f16.py", "tools/ci-heavy/ovisocr3_quality_contract.py",
+                  "tools/ci-heavy/ovisocr3_native14.py", "tools/ci-heavy/ovisocr3_source_closure.py",
+                  "tools/ci-heavy/ovisocr2_vision_env.py",
                   "models/convert-qwen35-ocr-to-gguf.py", "tests/ovisocr3_quality_run.cpp")}}
     report_path = out / "ovisocr3-f16-quality.json"
     def save():
@@ -210,11 +220,7 @@ def main(preflight=False):
         binary = build / "test-ovisocr3-quality-run"
         report["native_binary_sha256"] = sha(binary)
         report["phase"] = "native-f16-eleven-case-forward"; save()
-        env = os.environ.copy()
-        env.update({"CRISPEMBED_QWEN35_OCR": "1", "CRISPEMBED_OVISOCR3_FRONTEND": "1",
-                    "CRISPEMBED_OVISOCR3_INFERENCE": "1", "CRISPEMBED_OVISOCR2_FRONTEND": "0",
-                    "CRISPEMBED_OVISOCR2_INFERENCE": "0"})
-        env = vision_env.apply_selection(env, selected_vision)
+        env = native_environment(selected_vision)
         outputs = {}
         for case in cases:
             okay, log = command(case["id"], [binary, model, case["path"], case["cap"], 2],

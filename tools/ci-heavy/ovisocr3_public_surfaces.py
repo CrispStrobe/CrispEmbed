@@ -103,6 +103,7 @@ def require_receipt(data):
             or producer.get('failures') != []
             or producer.get('native14_positive') is not True
             or producer.get('arm_count') != 14
+            or producer.get('native_environment') != reviewed_native_gate_values()
             or not isinstance(producer.get("source_commit"), str)
             or producer["source_commit"] != NATIVE_HEAD):
         raise ValueError("Model producer status/source differs")
@@ -470,12 +471,27 @@ def run_cmd(label, args, out, *, env=None, cwd=ROOT, timeout=1800):
 
 def env_with_gates(enabled=True, selection=None):
     env = dict(os.environ)
+    env.update(reviewed_native_gate_values())
     for gate in GATES:
         env[gate] = "1" if enabled else "0"
     env['CRISPEMBED_OVISOCR2_FRONTEND'] = '0'
     env['CRISPEMBED_OVISOCR2_INFERENCE'] = '0'
     env.update(OMP_NUM_THREADS="2", OPENBLAS_NUM_THREADS="2", MKL_NUM_THREADS="2")
     return vision_contract().apply_selection(env, selection)
+
+
+def reviewed_native_gate_values():
+    """Use the exact gate values from the reviewed fourteen-arm native recipe."""
+    path = ROOT / 'tools/ci-heavy/ovisocr3_native14.py'
+    spec = importlib.util.spec_from_file_location('ovis3_public_native_gate_values', path)
+    audit = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(audit)
+    return dict(audit.NATIVE_ENV)
+
+
+def apply_inprocess_native_gates(env):
+    """ctypes arms use this process; give them the same reviewed gate values."""
+    os.environ.update({name: env[name] for name in reviewed_native_gate_values()})
 
 
 def profile_probe_env(label, base):
@@ -796,6 +812,7 @@ def main():
               "source_sha256": {name: sha(ROOT/name) for name in (
                   "tools/ci-heavy/ovisocr3_public_surfaces.py",
                   "tools/ci-heavy/ovisocr2_vision_env.py",
+                  "tools/ci-heavy/ovisocr3_native14.py",
                   "tools/ci-heavy/ovisocr3_stage_cache_probe.py",
                   "tests/ovisocr3_public_bindings.rs", "tests/ovisocr3_public_bindings.dart")},
               "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
@@ -898,8 +915,7 @@ def main():
         if not abi_probe["passed"]:
             raise ValueError("Existing native public ABI checker did not return a bounded layout record")
         env = env_with_gates(selection=pins['selected_vision_preset'])
-        os.environ.update({gate: "1" for gate in GATES})
-        os.environ.update(pins['selected_vision_preset']['values'])
+        apply_inprocess_native_gates(env)
         truncated = scratch/"ovisocr3-metadata-complete-truncated.gguf"
         stage_cache = None
         try:

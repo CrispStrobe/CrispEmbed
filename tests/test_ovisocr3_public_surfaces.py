@@ -134,9 +134,7 @@ class PublicControls(unittest.TestCase):
                     'reference_original_json_sha256': digest,
                     'original_reference_producer_canonical_sha256': digest,
                     'hf_stop_runtime': {'actual_stops': [True, True, False]},
-                    'native_environment': {'CRISPEMBED_QWEN35_VISION_PRECISE_NORM': '1',
-                                           'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN': '1',
-                                           'CRISPEMBED_QWEN35_VISION_CASCADE_NORM': '0'},
+                    'native_environment': subject.reviewed_native_gate_values(),
                     'selected_vision_preset': {
                         'name': 'both',
                         'enabled_gates': ['CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
@@ -194,6 +192,16 @@ class PublicControls(unittest.TestCase):
             native['producer']['commands']['f16-vision']['comparison_coverage'] = False
             with self.assertRaises(ValueError): subject.require_receipt(native)
             native['producer']['commands']['f16-vision']['comparison_coverage'] = True
+            native['producer']['native_environment'] = {
+                **subject.reviewed_native_gate_values(), 'CRISPEMBED_QWEN35_QUANT': '1'}
+            changed_canonical = hashlib.sha256(json.dumps(native['producer'], sort_keys=True,
+                separators=(',', ':'), ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+            native['independent_review']['producer_canonical_sha256'] = changed_canonical
+            with mock.patch.object(subject, 'NATIVE_PRODUCER_SHA', changed_canonical), \
+                 self.assertRaisesRegex(ValueError, 'Model producer status/source differs'):
+                subject.require_receipt(native)
+            native['producer']['native_environment'] = subject.reviewed_native_gate_values()
+            native['independent_review']['producer_canonical_sha256'] = canonical
             quality['producer']['qualified'] = False
             with self.assertRaises(ValueError): subject.require_quality_receipt(quality, pins)
 
@@ -247,6 +255,35 @@ class PublicControls(unittest.TestCase):
         for label in ('cli-stage22-lighton-profile', 'http-start-lighton-profile',
                       'cli-stage22-custom-prompt'):
             self.assertEqual(subject.profile_probe_env(label, base), base)
+
+    def test_public_child_and_inprocess_env_override_ambient_native_gates(self):
+        reviewed = subject.reviewed_native_gate_values()
+        poisoned = {name: '0' if value == '1' else '1' for name, value in reviewed.items()}
+        poisoned['UNRELATED_TEST_SENTINEL'] = 'preserved'
+        selection = {'name': 'both',
+                     'enabled_gates': ['CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
+                                       'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],
+                     'values': {name: reviewed[name] for name in (
+                         'CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
+                         'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN',
+                         'CRISPEMBED_QWEN35_VISION_CASCADE_NORM')},
+                     'all_other_native_gates_unchanged': True,
+                     'no_production_default_promoted': True}
+        with mock.patch.dict(subject.os.environ, poisoned, clear=True):
+            env = subject.env_with_gates(selection=selection)
+            self.assertEqual({name: env[name] for name in reviewed}, reviewed)
+            self.assertEqual(env['UNRELATED_TEST_SENTINEL'], 'preserved')
+            self.assertEqual(env['CRISPEMBED_OVISOCR2_LARGE_IMAGES'], '0')
+            self.assertEqual(env['CRISPEMBED_QWEN35_QUANT'], '0')
+            subject.apply_inprocess_native_gates(env)
+            self.assertEqual({name: subject.os.environ[name] for name in reviewed}, reviewed)
+            disabled = subject.env_with_gates(enabled=False, selection=selection)
+            self.assertEqual([disabled[name] for name in subject.GATES], ['0', '0', '0'])
+            probe = subject.profile_probe_env('cli-stage21-ovis3-profile', env)
+            self.assertEqual([probe[name] for name in ('CRISPEMBED_OVISOCR2_FRONTEND',
+                                                        'CRISPEMBED_OVISOCR2_INFERENCE')], ['1', '1'])
+            self.assertEqual([env[name] for name in ('CRISPEMBED_OVISOCR2_FRONTEND',
+                                                     'CRISPEMBED_OVISOCR2_INFERENCE')], ['0', '0'])
 
     def test_format3_truncation_is_header_complete(self):
         class Field:
