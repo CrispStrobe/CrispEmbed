@@ -28,6 +28,7 @@ class RecipeControls(unittest.TestCase):
         self.assertEqual(runner.CHECKPOINT_BYTES, 1706030528)
         self.assertEqual(runner.CHECKPOINT_SHA,
                          'aa2311c6b22b07cf3afe9aac6e8bcb02a2b19dd8671b2a91d0b144071577e600')
+        self.assertEqual(runner.WORKER_SHA, runner.digest(DIR / 'worker.py'))
 
     def test_metadata_file_and_kernel_identity(self):
         metadata = json.loads((DIR / 'kernel-metadata.json').read_text())
