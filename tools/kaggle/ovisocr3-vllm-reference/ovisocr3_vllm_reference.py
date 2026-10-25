@@ -208,8 +208,8 @@ def gpu_gate(report):
     rows = subprocess.check_output(
         ['nvidia-smi', '--query-gpu=name,compute_cap,driver_version,memory.total',
          '--format=csv,noheader,nounits'], text=True, timeout=15).strip().splitlines()
-    if len(rows) != 1:
-        raise ValueError('Expected exactly one visible T4; no device redraw')
+    if not rows:
+        raise ValueError('No visible GPU; no device redraw')
     parts = [part.strip() for part in rows[0].split(',')]
     if len(parts) != 4:
         raise ValueError('GPU identity unavailable')
@@ -217,7 +217,8 @@ def gpu_gate(report):
     match = re.fullmatch(r'(\d+)\.(\d+)', capability)
     driver = tuple(int(x) for x in version.split('.')[:3])
     driver += (0,) * (3 - len(driver))
-    report['hardware'] = {'name': name, 'capability': capability,
+    report['hardware'] = {'selected_physical_index': 0, 'visible_gpu_count': len(rows),
+                          'name': name, 'capability': capability,
                           'driver': version, 'memory_mib': int(memory)}
     save(report)
     if not match or 'T4' not in name or tuple(map(int, match.groups())) != (7, 5):
