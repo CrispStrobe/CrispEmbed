@@ -18,6 +18,105 @@ spec.loader.exec_module(subject)
 
 
 class PublicControls(unittest.TestCase):
+    def test_source_quality_diagnostic_is_exact_and_never_qualifies_model(self):
+        contract = subject.vision_contract()  # Shared gate remains source-only.
+        self.assertIn('both', contract.PRESETS)
+        policy_spec = importlib.util.spec_from_file_location('ovis3_diagnostic_test_policy',
+            ROOT / 'tools/ci-heavy/ovisocr3_quality_contract.py')
+        policy = importlib.util.module_from_spec(policy_spec)
+        policy_spec.loader.exec_module(policy)
+        panel = policy.load_panel()
+        digest, head = 'a' * 64, 'b' * 40
+        inputs, original_cases = [], {}
+        for spec in panel['cases']:
+            name, cap = spec['id'], spec['cap']
+            rgb, png = spec.get('rgb_sha256', digest), spec.get('png_sha256', digest)
+            inputs.append({'id': name, 'split': spec['split'], 'cap': cap,
+                           'rgb_sha256': rgb, 'png_sha256': png})
+            gold = spec['gold'] if 'gold' in spec else json.loads((ROOT / spec['gold_file']).read_text())['text']
+            capped = name == 'two-column-page'
+            ids = [42] * cap if capped else [42, 248046]
+            original_cases[name] = {'rgb_sha256': rgb, 'png_sha256': png, 'cap': cap,
+                                    'token_ids': ids, 'raw_text': 'repeat' if capped else gold,
+                                    'stop_id': None if capped else 248046,
+                                    'stop_kind': 'length' if capped else 'eos',
+                                    'confidences': [.75] * len(ids), 'mean_confidence': .75}
+        original_producer = {'source_commit': head,
+            'status': 'completed original OvisOCR3 HF CPU/F32 eleven-case plain OCR quality',
+            'checkpoint_sha256': 'aa2311c6b22b07cf3afe9aac6e8bcb02a2b19dd8671b2a91d0b144071577e600',
+            'panel_canonical_sha256': policy.PANEL_CANONICAL_SHA256,
+            'completed_case_count': 11, 'inputs': inputs, 'original_cases': original_cases,
+            'scores': policy.score_panel(inputs, original_cases)}
+        native_cases = json.loads(json.dumps(original_cases))
+        quality_producer = {'source_commit': head,
+            'status': 'completed diagnostic OvisOCR3 F16 eleven-case quality',
+            'qualified': False, 'failures': [], 'f16_model_sha256': digest,
+            'inputs': inputs, 'native_cases': native_cases,
+            'commands': {name: {'exit_code': 0, 'log_sha256': digest} for name in original_cases},
+            'scores': policy.score_panel(inputs, native_cases),
+            'paired': policy.paired_screen(original_cases, native_cases)}
+        def canonical(value):
+            return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
+                                             ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+        oc = canonical(original_producer)
+        quality_producer['prerequisites'] = {'original_quality_canonical_sha256': oc,
+                                             'native_model_canonical_sha256': digest}
+        qc = canonical(quality_producer)
+        original = {'run': 100, 'head_sha': head, 'artifact_id': 101,
+            'artifact_zip_sha256': digest, 'producer': original_producer,
+            'independent_review': {'producer_canonical_sha256': oc,
+                'artifact_zip_sha256': digest, 'original_eleven_capture_complete': True,
+                'source_completion_incomplete': True, 'original_eleven_complete': False,
+                'all_eleven_reached_eos': False}}
+        quality = {'run': 200, 'head_sha': head, 'artifact_id': 201,
+            'artifact_zip_sha256': digest, 'producer': quality_producer,
+            'independent_review': {'producer_canonical_sha256': qc,
+                'artifact_zip_sha256': digest, 'f16_eleven_capture_complete': True,
+                'paired_exact': True, 'source_completion_incomplete': True,
+                'f16_quality_positive': False}}
+        model = {'model_sha256': digest, 'producer_canonical_sha256': digest}
+        pins = {'DIAGNOSTIC_ORIGINAL_RUN': 100, 'DIAGNOSTIC_ORIGINAL_HEAD': head,
+                'DIAGNOSTIC_ORIGINAL_PRODUCER_SHA': oc, 'QUALITY_RUN': 200,
+                'QUALITY_HEAD': head, 'QUALITY_PRODUCER_SHA': qc,
+                'DIAGNOSTIC_QUALITY_REVIEW_KEY': 'f16_eleven_capture_complete'}
+        with mock.patch.multiple(subject, **pins):
+            result = subject.require_diagnostic_quality_receipts(original, quality, model)
+            self.assertEqual(result['source_completion_debt'], ['two-column-page'])
+            self.assertTrue(result['paired_ids_raw_stops_exact'])
+            self.assertFalse(result['model_qualified'])
+            self.assertFalse(result['publication_eligible'])
+            def artifact_call(args):
+                artifact_id = int(args[-1].split('/')[-1])
+                run = 100 if artifact_id == 101 else 200
+                label = 'original-quality' if artifact_id == 101 else 'f16-quality'
+                return json.dumps({'id': artifact_id, 'name': f'ovisocr3-{label}-{run}',
+                    'digest': 'sha256:' + digest, 'expired': False,
+                    'workflow_run': {'id': run}}).encode()
+            self.assertEqual(set(subject.diagnostic_artifact_service_gate(result, artifact_call)),
+                             {'original', 'f16'})
+            bad_pins = dict(result, quality_artifact_zip_sha256='0' * 64)
+            with self.assertRaisesRegex(ValueError, 'artifact service'):
+                subject.diagnostic_artifact_service_gate(bad_pins, artifact_call)
+            with mock.patch.object(subject, 'QUALITY_REVIEW_KEY', 'f16_quality_positive'):
+                with self.assertRaises(ValueError):
+                    subject.require_quality_receipt(quality, model)
+            changed = json.loads(json.dumps(quality))
+            changed['producer']['native_cases']['dev-hello']['token_ids'] = [99, 248046]
+            with self.assertRaises(ValueError):
+                subject.require_diagnostic_quality_receipts(original, changed, model)
+            changed = json.loads(json.dumps(quality))
+            changed['producer']['native_cases']['two-column-page']['stop_id'] = 248046
+            with self.assertRaises(ValueError):
+                subject.require_diagnostic_quality_receipts(original, changed, model)
+            changed = json.loads(json.dumps(original))
+            changed['independent_review']['original_eleven_complete'] = True
+            with self.assertRaises(ValueError):
+                subject.require_diagnostic_quality_receipts(changed, quality, model)
+            changed = json.loads(json.dumps(quality))
+            changed['independent_review']['f16_quality_positive'] = True
+            with self.assertRaises(ValueError):
+                subject.require_diagnostic_quality_receipts(original, changed, model)
+
     def test_planned_native_and_quality_receipt_contracts(self):
         digest = 'a' * 64
         head = 'b' * 40
