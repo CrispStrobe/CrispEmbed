@@ -1,0 +1,221 @@
+{
+  "run": 40178327173,
+  "head_sha": "574df1994c953cb5e16540e3c5f2e30b17ebb112",
+  "artifact_id": 12594200283,
+  "artifact_zip_sha256": "62b1ab04e92e4046373830bb9c83ed86b1e213116e42316865a3dbc4c9f800c5",
+  "artifact_bytes": 16719,
+  "scope": "Initial native14 preparation failure before compilation/export/native inference. Installed HF EOS criterion and original archive verification completed. No F16 weights produced.",
+  "producer": {
+    "status": "failed OvisOCR3 native14 execution",
+    "phase": "source-and-checkpoint",
+    "source_commit": "574df1994c953cb5e16540e3c5f2e30b17ebb112",
+    "scope": "same OvisOCR3 checkpoint original HF F32 modules versus experimental native F32/F16; no public alias",
+    "failures": [],
+    "commands": {},
+    "exports": {},
+    "native_environment": {
+      "CRISPEMBED_QWEN35_OCR": "1",
+      "CRISPEMBED_OVISOCR3_FRONTEND": "1",
+      "CRISPEMBED_OVISOCR3_INFERENCE": "1",
+      "CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS": "1",
+      "CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",
+      "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN": "1",
+      "CRISPEMBED_OVISOCR2_FRONTEND": "0",
+      "CRISPEMBED_OVISOCR2_INFERENCE": "0",
+      "CRISPEMBED_OVISOCR2_LARGE_IMAGES": "0",
+      "CRISPEMBED_QWEN35_PRECISE_RMS": "0",
+      "CRISPEMBED_QWEN35_VISION_CASCADE_NORM": "0",
+      "CRISPEMBED_QWEN35_IMATRIX": "0",
+      "CRISPEMBED_QWEN35_PARALLEL_F16": "0",
+      "CRISPEMBED_QWEN35_PROFILE": "0",
+      "CRISPEMBED_QWEN35_QUANT": "0",
+      "CRISPEMBED_QWEN35_TOKENIZER_MARKS": "0"
+    },
+    "source_sha256": {
+      "tools/ci-heavy/ovisocr3_native14.py": "9d6413513929edef7e6e820f36840dfd14f984eb3d2352c30fb77c01d1b076ce",
+      "models/convert-qwen35-ocr-to-gguf.py": "8ce16c617c1cc87608711d7b2645180ac725955d68e13825aa8db301f9187a71",
+      "models/qwen35_ovis3_profile.py": "61f4666ba1eb1846b60432d9fb72d167ebca691e3673c7326bcd145adf06c4b6",
+      "models/qwen35_ovis3_hf_profile.py": "4d8c07295bd6a9e53bf221783c8d216174028c413e7b339b18e28f271783dbda",
+      "tools/dump_ovisocr3_reference.py": "c3d62bfa4a2db18a04c9c5afca7c7e95203e2741d9fb377e7f25df0c3357b996"
+    },
+    "native_source_sha256": {
+      "src/qwen35_attention.cpp": "e4d363b42d8aab26d14f9889c6dd9b375e84dc0914fe4706d533744fb7068f78",
+      "src/qwen35_attention.h": "bcbd2fa7af050418712d38af7067d8216f736ea026a4c898edead85c9a43f065",
+      "src/qwen35_decoder.cpp": "1ee46b4b5943ac34932a648aeca3e871f3c9918b0f2fe7e25ef1002896dcc575",
+      "src/qwen35_decoder.h": "144b89571245501f6d973db6d4f3754ea5a39ee420b4d0a95ecbca98f1f20eae",
+      "src/qwen35_delta.cpp": "3bbbe6407528dcc30f8a2c722c94324962073176c9fa24e8f655781db7f5df55",
+      "src/qwen35_delta.h": "f28af077faa1989b8ec522f74ddb0dba3acb0945467e534db089acf37f967774",
+      "src/qwen35_frontend.h": "3405082298d9028b41c966761bdba1d182f48131d84f03aebf885e1a18254bb3",
+      "src/qwen35_image.cpp": "a490e23fb9368186e39f433e451e0d7199e1d504ee20d72c64a782632d42287a",
+      "src/qwen35_image_bounds.h": "c0fc6aa35e0f47168ecb1cc3dcfeda66f62c7c1a2bd5d73cb1a246158c2ea350",
+      "src/qwen35_linear.cpp": "9f4c99784d6bcc59b4800f1ebcc5b649dda16e3c77dbae1da7f947bf06141fb0",
+      "src/qwen35_linear.h": "c0c91f42b9936e2d1fabd8101a56409149f41aaa0ef4beb8bbf65611548a81ed",
+      "src/qwen35_math.h": "ae542fa73d48dc622fe0e5813ca49fc9616a343fc9d3ba2a927e2a82d7908357",
+      "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268",
+      "src/qwen35_norm.h": "5838b4d4fce6293abc4c2e43220014e1fcd93e575d1dd1bcf4817c82b27e842f",
+      "src/qwen35_ocr.cpp": "224c89fbbe1551174b2d450de05def2570487f3480ac8d9c28291e77c8196413",
+      "src/qwen35_ocr.h": "ec21e2a3f865a11277555b4bd8e2cd968cb98ca8a83b4f3b5b33a3a7724aef0c",
+      "src/qwen35_positions.cpp": "a9e296456072d111d2eda1c543c3059270b1492922db79a8df39325d3a6f91a7",
+      "src/qwen35_positions.h": "4fb1ca7e61d7ccb5c4c66cd280770acd69d739b18e2911bfe941896747757b9b",
+      "src/qwen35_profile.cpp": "1078a8e3d2fcf7c6aa8afe0d28d9dee7067e6d296cdfca018f5e267ba15ed636",
+      "src/qwen35_profile.h": "d342082fe8bb0ba8b851771741573c46f2f68b72775c56ccbeba002ebc8dad00",
+      "src/qwen35_tokenizer.cpp": "6c7962d379d805fcc21d423c7b44e395f44016b5f63e87f0edd5490aa41b69ee",
+      "src/qwen35_vision.cpp": "cb6460c795671aa3fd609798cbc506efa41e9e4c40a40b926c31eadf5e342f29",
+      "src/qwen35_vision.h": "da38d714b10e7ff0b5e42ab2ba88eff145b113185d6f2e0db55e1a65de08366a",
+      "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
+      "tests/qwen35_parity.h": "b003edf078884107df753a95c957e260d3e3a63c0356b5eb57ec2092a4b746bf",
+      "tests/test_qwen35_decoder.cpp": "79a69fe8ebf9d8c57727c0b6ef96ae3b4c924cee36bde5801183d5bcc8adde05",
+      "tests/test_qwen35_vision.cpp": "41f74671971086d0fc245c413dd3d0997697b37e59071a0221243d389561b1c5",
+      "tests/test_qwen35_delta.cpp": "d74964fc6b6fe3b35435b2f419cfe34acd8fdb9309b12ec4fc1ea39f2d96340a",
+      "tests/test_ovisocr3_context.cpp": "5387ee15f8be60acb68382666b17d4ace3c2ea5b2a7a92fd69fec5cbad010564"
+    },
+    "reference_service": {
+      "reference_run": 40177416485,
+      "reference_head": "2ce861682089e3390ba17b08ccba1e46a7eb598d",
+      "reference_artifact_id": 12592634300,
+      "reference_artifact_zip_sha256": "aaf199ce613a2bcad0e9c0bc0e987f9c802276646109888e7b1fe431ad28a508",
+      "reference_artifact_bytes": 2493823648,
+      "report_artifact_id": 12592918499,
+      "report_artifact_zip_sha256": "d4efc96a779d3054cc1565bd3cb23c5cb2ecaa08126632b5eff580961787eb33",
+      "metadata_service": {
+        "run": 40172525903,
+        "head": "72698a7640ad10e3d3fb0b090b2d318af85f6da1",
+        "artifact_id": 12590399022,
+        "artifact_zip_sha256": "9c512fd56998537c147f8cf2cc72265d5099c7e6a65629cdf23c3142d021b9fa"
+      }
+    },
+    "metadata_producer_canonical_sha256": "804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2",
+    "original_reference_producer_canonical_sha256": "fbd71d4a40df55db3314ce4221ac036512c7c58711a5afe74f20dd5f7d1fccc3",
+    "hf_stop_runtime": {
+      "proof_sha256": "0a7f4a44ffce132a5b809bb37920b245fbaf2777fb2a7041d5e92255253c89fd",
+      "transformers_version": "5.16.1",
+      "class": "transformers.generation.stopping_criteria.EosTokenCriteria",
+      "source_sha256": "7e4ce5eeee83eab48a63a5419cd68be6f0591201fe7f9248dda77a7c3045bd7e",
+      "eos_ids": [
+        248044,
+        248046
+      ],
+      "input_last_ids": [
+        248044,
+        248046,
+        42
+      ],
+      "expected_stops": [
+        true,
+        true,
+        false
+      ],
+      "actual_shape": [
+        3
+      ],
+      "actual_dtype": "torch.bool",
+      "actual_stops": [
+        true,
+        true,
+        false
+      ],
+      "scope": "installed HF5.16.1 EosTokenCriteria only; vLLM unobserved"
+    },
+    "reference_download": {
+      "exit_code": 0,
+      "bytes": 2493823648,
+      "zip_sha256": "aaf199ce613a2bcad0e9c0bc0e987f9c802276646109888e7b1fe431ad28a508",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "owned_readable": {
+      "png_sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+      "rgb_sha256": "e0a4678c944c538986c7ad68367cacded7abf72c8f4a133ac52e57cd058cdb27",
+      "size": [
+        448,
+        448
+      ],
+      "gold": "Hello OCR\n12345",
+      "scope": "owned smoke input only; no quality benchmark"
+    },
+    "selected_vision_preset": {
+      "name": "both",
+      "enabled_gates": [
+        "CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
+        "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"
+      ],
+      "all_other_native_gates_unchanged": true,
+      "no_production_default_promoted": true
+    },
+    "reference_artifacts": {
+      "owned-readable.png": {
+        "sha256": "fba91697e616a1308653ec37c9e0d56bbec20f0c202a4d6098c31c25c92b9d0a",
+        "bytes": 5247
+      },
+      "ovisocr3-original.json": {
+        "sha256": "dfe12e2559bffeb9164bed604385bc7abb70c82e5b5b4e9a8dbd430410ae7325",
+        "bytes": 89056
+      },
+      "official-delta.gguf": {
+        "sha256": "650347a400b6955c12c53b9e03284d3d440ea98ce7276f30df51f843a1c231fe",
+        "bytes": 1395969824
+      }
+    },
+    "reference_original_json_sha256": "dfe12e2559bffeb9164bed604385bc7abb70c82e5b5b4e9a8dbd430410ae7325",
+    "original_capture": {
+      "generated_ids": [
+        [
+          9419,
+          77796,
+          198,
+          16,
+          17,
+          18,
+          19,
+          20,
+          248046
+        ]
+      ],
+      "decoded": [
+        "Hello OCR\n12345"
+      ],
+      "raw_decoded": [
+        "Hello OCR\n12345<|im_end|>"
+      ],
+      "generation_result": {
+        "max_new_tokens": 12,
+        "generated_token_count": 9,
+        "eos_ids": [
+          248044,
+          248046
+        ],
+        "reached_eos": true,
+        "stop_id": 248046,
+        "max_tokens_consumed": false,
+        "length_limited": false,
+        "raw_sequence_shape": [
+          1,
+          311
+        ],
+        "generated_id_shape": [
+          1,
+          9
+        ],
+        "score_count": 9,
+        "raw_decoded_utf8_length": 25,
+        "decoded_utf8_length": 15
+      },
+      "cached_vs_full_prefix_max_abs": 5.340576171875e-05,
+      "cached_vs_full_prefix_same_argmax": true,
+      "observational_control": {
+        "prefill_logits_exact": true,
+        "greedy_ids_exact": true
+      }
+    },
+    "error_type": "ValueError",
+    "error_message": "OvisOCR3 explicit generation source differs"
+  },
+  "independent_review": {
+    "producer_canonical_sha256": "a690e6498156270998b415438e2e3197cb058ef6957e1aa4b4a84be94a143b4a",
+    "all_fourteen_native_arms_positive": false,
+    "installed_hf_stop_probe_positive": true,
+    "original_artifact_integrity_positive": true,
+    "root_cause": "Raw generation JSON was compared to resolved GenerationConfig values including added transformers_version bookkeeping.",
+    "correction_commit": "6e2d0a62",
+    "generation_values_and_reference_outputs_unchanged": true
+  }
+}

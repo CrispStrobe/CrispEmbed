@@ -225,6 +225,7 @@ def roundtrip(model, manifest, checkpoint, precision, schema):
     fields = reader.fields
     if (fields["qwen35_ocr.format_version"].contents() != 3
             or fields["qwen35_ocr.profile"].contents() != "ovisocr3"
+            or fields["qwen35_ocr.missing_source_files"].contents() != ["processor_config.json"]
             or fields["qwen35_ocr.metadata_qualification"].contents() != profile.METADATA_PRODUCER_SHA256
             or fields["qwen35_ocr.original_reference_qualification"].contents() != profile.REFERENCE_PRODUCER_SHA256
             or fields["qwen35_ocr.source_eos_token_ids"].contents() != [248044, 248046]

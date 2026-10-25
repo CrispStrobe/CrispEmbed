@@ -273,6 +273,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_bool(f"{ARCH}.image_max_qualified",False)
         writer.add_bool(f"{ARCH}.native_alias_qualified",False)
     elif profile in ("ovisocr3","ovisocr3-hf-reference"):
+        writer.add_array(f"{ARCH}.missing_source_files",pinned["missing_source_files"])
         writer.add_string(f"{ARCH}.profile",pinned['name'])
         writer.add_string(f"{ARCH}.profile.task",pinned['task'])
         writer.add_string(f"{ARCH}.profile.task_prompt",pinned['task_prompt'])
