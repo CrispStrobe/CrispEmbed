@@ -40,6 +40,11 @@ class ReferenceControls(unittest.TestCase):
                       receipt["independent_review"]["producer_canonical_sha256"] + '";', source)
         self.assertIn('core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")', source)
         self.assertIn('!core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", false)', source)
+        header = (ROOT / "src/qwen35_ocr.h").read_text()
+        implementation = (ROOT / "src/qwen35_ocr.cpp").read_text()
+        self.assertIn("int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * ctx);", header)
+        self.assertIn('extern "C" int qwen35_ocr_is_ovisocr3(', implementation)
+        self.assertIn('core_env::on("CRISPEMBED_OVISOCR3_INFERENCE")', implementation)
 
     def test_review_and_missing_source_precede_checkpoint_and_framework(self):
         self.assertEqual(dumper.require_reviewed_metadata()["source_model"], "ATH-MaaS/OvisOCR3")
