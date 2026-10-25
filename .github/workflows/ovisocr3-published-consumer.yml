@@ -1,0 +1,68 @@
+name: OvisOCR3 published F16 alias consumer audit
+
+on:
+  workflow_call:
+    inputs:
+      publication_run_id:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      publication_run_id:
+        description: 'Independently reviewed immutable OvisOCR3 publication run'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ovisocr3-published-consumer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  consumer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PUBLICATION_RUN_ID: ${{ inputs.publication_run_id }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Pure fail-closed publication, registry, source and confidence controls
+        run: python tests/test_ovisocr3_published_consumer.py -v
+      - name: Positive publication and exact alias before artifact or build
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" \
+            python tools/ci-heavy/ovisocr3_published_consumer.py --preflight \
+              --publication-run-id "$PUBLICATION_RUN_ID"
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovisocr3-publication-report-${{ inputs.publication_run_id }}
+          run-id: ${{ inputs.publication_run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/publication-report
+      - name: Portable CLI fresh/offline and HTTP fresh-cache alias OCR
+        run: |
+          python tools/ci-heavy/ovisocr3_published_consumer.py \
+            --publication-run-id "$PUBLICATION_RUN_ID" \
+            --publication-report-dir "$RUNNER_TEMP/publication-report"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr3-published-consumer-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
