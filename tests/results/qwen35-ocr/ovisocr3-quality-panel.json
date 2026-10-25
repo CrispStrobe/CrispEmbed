@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "model": "ATH-MaaS/OvisOCR3",
+  "revision": "5f6ce6932efee9ec10c30746db55bd780214b7fd",
+  "task": "plain_ocr",
+  "task_prompt_sha256": "e037cf0013a757e19eae6d4d701f3b90848449fbebe44d1f8fa7d8ca4a5af9a7",
+  "policy": "ovisocr3-plain-raw-v1",
+  "scope": "Four development and four heldout CC0 text-only images plus three separately licensed reviewed documents. Freeze inputs/gold before OvisOCR3 outputs. Plain text raw CER/WER; no HTML/Markdown table scoring. Synthetic smoke and three-document diagnostic, not broad OCR benchmark.",
+  "renderer": {
+    "library": "Pillow",
+    "version": "12.1.0",
+    "mode": "RGB",
+    "size": [
+      448,
+      448
+    ],
+    "background": "white",
+    "fill": "black",
+    "font": "Pillow default via ImageDraw.text(font_size=...)"
+  },
+  "source_synthetic_panel_canonical_sha256": "0bec97a7a04683c7c0aec95063aa01cf9a73bcf78db61f433d7d66d89588f212",
+  "prepared_preservation_sha256": "6cf0c8750202b0c11480ac7a22970ed2e9d1dd40121c7ba185cc46b916aef46f",
+  "prepared_zip_sha256": "a890c3ad8151706948d3d89529e5f5716405e5f790a3749436f36d78f20ca9cc",
+  "prepared_zip_bytes": 724951,
+  "cases": [
+    {
+      "id": "dev-hello",
+      "split": "development",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Hello OCR\n12345",
+      "cap": 256,
+      "renderer": {
+        "x": 30,
+        "y": 80,
+        "font_size": 24
+      }
+    },
+    {
+      "id": "dev-invoice",
+      "split": "development",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Invoice 042\nTotal $12.50",
+      "cap": 256,
+      "renderer": {
+        "x": 22,
+        "y": 64,
+        "font_size": 22
+      }
+    },
+    {
+      "id": "dev-menu",
+      "split": "development",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Menu\nTea $2.40",
+      "cap": 256,
+      "renderer": {
+        "x": 25,
+        "y": 74,
+        "font_size": 24
+      }
+    },
+    {
+      "id": "dev-section",
+      "split": "development",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Section B\nDraft copy",
+      "cap": 256,
+      "renderer": {
+        "x": 28,
+        "y": 68,
+        "font_size": 22
+      }
+    },
+    {
+      "id": "hold-batch",
+      "split": "heldout",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Batch ZX9\nPage 17",
+      "cap": 256,
+      "renderer": {
+        "x": 26,
+        "y": 76,
+        "font_size": 25
+      }
+    },
+    {
+      "id": "hold-paid",
+      "split": "heldout",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "PAID\nOrder 6842",
+      "cap": 256,
+      "renderer": {
+        "x": 32,
+        "y": 70,
+        "font_size": 26
+      }
+    },
+    {
+      "id": "hold-date",
+      "split": "heldout",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Date 2030-04-19\nRoom C7",
+      "cap": 256,
+      "renderer": {
+        "x": 21,
+        "y": 61,
+        "font_size": 21
+      }
+    },
+    {
+      "id": "hold-code",
+      "split": "heldout",
+      "kind": "synthetic-smoke",
+      "license": "CC0-1.0",
+      "gold": "Code Q5K\nAmount 73.08",
+      "cap": 256,
+      "renderer": {
+        "x": 24,
+        "y": 66,
+        "font_size": 23
+      }
+    },
+    {
+      "id": "historical-receipt",
+      "split": "realistic-evaluation",
+      "kind": "reviewed-document",
+      "license": "CC0-1.0",
+      "gold_file": "tests/regression/ocr-quality/historical-receipt.gold.json",
+      "gold_sha256": "125c47bc521ded86512c6ba3bc85feb1a9a19a371a64bf8a9e8ccb3453d7705e",
+      "cap": 1024,
+      "png_sha256": "7aa766b0a5bd886e769cb1559d16a71312e9f9929669ac5d847c241bec10564b",
+      "rgb_sha256": "34260ff707cfb3628e622007464cdeb32a960cd66c03eb34a36044f0e2c2dca4"
+    },
+    {
+      "id": "two-column-page",
+      "split": "realistic-evaluation",
+      "kind": "reviewed-document",
+      "license": "CC0-1.0",
+      "gold_file": "tests/regression/ocr-quality/two-column-page.gold.json",
+      "gold_sha256": "abf6dfbf6d2461f79dd6911b5e7bd259a56fb0fc6534155bc34eb5fce41044b7",
+      "cap": 1024,
+      "png_sha256": "36a6ca6306a9f74ceee06b1a5268c8eae354b53212417d3eac0f2b70b2bada21",
+      "rgb_sha256": "3a462c9b8a913ffd4102fe8fd3b9bc2eac103a0c855c83b68c929a844d900290"
+    },
+    {
+      "id": "inventory-table",
+      "split": "realistic-evaluation",
+      "kind": "reviewed-document",
+      "license": "MIT",
+      "gold_file": "tests/regression/ocr-quality/inventory.gold.json",
+      "gold_sha256": "801171c1459131e5d34479d6820fcc3dd260c9ea7110b0cbb4a6705e0f729e76",
+      "cap": 1024,
+      "png_sha256": "1e7a3073bd158dc87613463e45eafc52cec0c48f3655a6937a583767e26f4b4f",
+      "rgb_sha256": "9ac5313218d0c513e4312cf5669ea6def4c77d32562f317d8b1367b7b2b273a4"
+    }
+  ]
+}
