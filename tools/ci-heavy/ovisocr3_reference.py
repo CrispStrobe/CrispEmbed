@@ -41,7 +41,7 @@ def metadata_service(call=subprocess.check_output):
     artifact = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/artifacts/{dumper.METADATA_ARTIFACT_ID}"]))
     if (run.get("status") != "completed" or run.get("conclusion") != "success"
             or run.get("head_sha") != dumper.METADATA_HEAD
-            or run.get("path") != ".github/workflows/ovisocr3-metadata.yml"
+            or run.get("path") != ".github/workflows/ovisocr2-metadata.yml"
             or artifact.get("workflow_run", {}).get("id") != dumper.METADATA_RUN
             or artifact.get("name") != f"ovisocr3-metadata-{dumper.METADATA_RUN}"
             or artifact.get("digest") != "sha256:" + dumper.METADATA_ARTIFACT_SHA256

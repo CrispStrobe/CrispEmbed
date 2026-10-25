@@ -20,13 +20,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "models"))
 import qwen35_ovis3_profile as ovis_profile
 
 
-# Filled only after the hosted original metadata archive and independent review.
-# These deliberately empty pins make the reference refuse weights until then.
-METADATA_RUN = 0
-METADATA_HEAD = ""
-METADATA_ARTIFACT_ID = 0
-METADATA_ARTIFACT_SHA256 = ""
-METADATA_PRODUCER_SHA256 = ""
+# Independently reviewed weight-free original metadata; distinct from OvisOCR2.
+METADATA_RUN = 40172525903
+METADATA_HEAD = "72698a7640ad10e3d3fb0b090b2d318af85f6da1"
+METADATA_ARTIFACT_ID = 12590399022
+METADATA_ARTIFACT_SHA256 = "9c512fd56998537c147f8cf2cc72265d5099c7e6a65629cdf23c3142d021b9fa"
+METADATA_PRODUCER_SHA256 = "804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2"
 METADATA_RECEIPT = Path(__file__).resolve().parents[1] / "tests/results/qwen35-ocr/ovisocr3-metadata.json"
 
 
@@ -52,7 +51,15 @@ def require_reviewed_metadata():
             or producer.get("source_report_sha256") != ovis_profile.SOURCE_REPORT_SHA256
             or producer.get("schema", {}).get("checkpoint_tensors") != 473
             or producer.get("effective_stops_source_probe", {}).get("all_stop_ids") != [248044, 248046]
-            or len(producer.get("inputs", [])) != 3):
+            or len(producer.get("inputs", [])) != 3
+            or not isinstance(receipt.get("rendered_prompt"), str)
+            or hashlib.sha256(receipt["rendered_prompt"].encode()).hexdigest() != producer.get("rendered_prompt_sha256")
+            or any(review.get(key) is not True for key in (
+                "all_three_authored_RGB_hashes_recomputed",
+                "all_three_processor_archives_and_default_fields_rehashed",
+                "original_meta_schema_all474_shapes_and_tied473_header_match",
+                "original_framework_source_hashes_match_pinned_HF",
+                "real_generation_file_and_source_probe_dual_eos_checked"))):
         raise ValueError("OvisOCR3 reviewed metadata identity/coverage differs")
     return producer
 

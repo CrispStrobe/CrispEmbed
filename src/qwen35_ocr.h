@@ -21,6 +21,7 @@ qwen35_ocr_context * qwen35_ocr_init(const char * model_path, int n_threads);
 void qwen35_ocr_free(qwen35_ocr_context * ctx);
 // Immutable loaded-profile query; null contexts return zero.
 int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * ctx);
+int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * ctx);
 // Invalid settings reject without changing the current setting.
 int qwen35_ocr_set_max_tokens(qwen35_ocr_context * ctx, int max_tokens);
 int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * ctx);

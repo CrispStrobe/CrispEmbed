@@ -233,6 +233,9 @@ extern "C" int qwen35_ocr_set_max_tokens(qwen35_ocr_context * c, int n) {
 extern "C" int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * c) {
     return c && c->tokenizer.is_ovisocr2();
 }
+extern "C" int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * c) {
+    return c && c->tokenizer.is_ovisocr3();
+}
 extern "C" int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * c) {
     return c ? c->max_tokens : 0;
 }

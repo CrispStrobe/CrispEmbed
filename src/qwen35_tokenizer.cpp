@@ -22,10 +22,23 @@ Rules:
 2. Follow the natural human reading order.
 3. Output plain text only. Use spaces and line breaks only to preserve text separation and reading order.
 4. Do not output Markdown, HTML, JSON, bounding boxes, category labels, explanations, or code fences.)OVIS3";
-// These source-only sentinels are filled only after an independently reviewed
-// original OvisOCR3 processor receipt. Until then no format-3 payload loads.
-const char * ovis3_rendered_template = "";
-const char * ovis3_metadata_sha256 = "";
+// Original prompt and metadata producer are independently reviewed. Format 3
+// still requires separate qualified processor and effective-stop GGUF fields.
+const char * ovis3_rendered_template = R"OVIS3(<|im_start|>user
+<|vision_start|><|image_pad|><|vision_end|>Read all the text in the image. Directly output the content.
+
+Rules:
+1. Preserve the original text exactly without translation, paraphrasing, correction, or completion.
+2. Follow the natural human reading order.
+3. Output plain text only. Use spaces and line breaks only to preserve text separation and reading order.
+4. Do not output Markdown, HTML, JSON, bounding boxes, category labels, explanations, or code fences.<|im_end|>
+<|im_start|>assistant
+<think>
+
+</think>
+
+)OVIS3";
+const char * ovis3_metadata_sha256 = "804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2";
 std::string replace_invalid_utf8(const std::string & input) {
     std::string result;
     for (size_t i = 0; i < input.size();) {

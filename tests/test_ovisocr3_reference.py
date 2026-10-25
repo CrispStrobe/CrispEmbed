@@ -26,22 +26,29 @@ driver = load(ROOT / "tools/ci-heavy/ovisocr3_reference.py", "ovisocr3_reference
 
 
 class ReferenceControls(unittest.TestCase):
-    def test_native_plain_ocr_source_prompt_and_unqualified_sentinel(self):
+    def test_native_plain_ocr_source_and_reviewed_rendered_prompt(self):
         source = (ROOT / "src/qwen35_tokenizer.cpp").read_text()
+        receipt = json.loads((ROOT / "tests/results/qwen35-ocr/ovisocr3-metadata.json").read_text())
         prompt = re.search(r'R"OVIS3\((.*?)\)OVIS3"', source, re.S)
         self.assertIsNotNone(prompt)
         self.assertEqual(hashlib.sha256(prompt.group(1).encode()).hexdigest(),
                          "e037cf0013a757e19eae6d4d701f3b90848449fbebe44d1f8fa7d8ca4a5af9a7")
-        self.assertIn('const char * ovis3_rendered_template = "";', source)
-        self.assertIn('const char * ovis3_metadata_sha256 = "";', source)
+        rendered = re.search(r'ovis3_rendered_template = R"OVIS3\((.*?)\)OVIS3";', source, re.S)
+        self.assertIsNotNone(rendered)
+        self.assertEqual(rendered.group(1), receipt["rendered_prompt"])
+        self.assertIn('ovis3_metadata_sha256 = "' +
+                      receipt["independent_review"]["producer_canonical_sha256"] + '";', source)
         self.assertIn('core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")', source)
-        self.assertIn('std::strlen(ovis3_metadata_sha256) != 64', source)
+        self.assertIn('!core_gguf::kv_bool(meta, "qwen35_ocr.effective_stops_qualified", false)', source)
 
-    def test_review_absence_precedes_checkpoint_and_framework(self):
+    def test_review_and_missing_source_precede_checkpoint_and_framework(self):
+        self.assertEqual(dumper.require_reviewed_metadata()["source_model"], "ATH-MaaS/OvisOCR3")
+        with patch.object(dumper, "METADATA_RUN", 0):
+            with self.assertRaisesRegex(ValueError, "reviewed metadata pins absent"):
+                dumper.require_reviewed_metadata()
         with self.assertRaisesRegex(ValueError, "reviewed metadata pins absent"):
-            dumper.require_reviewed_metadata()
-        with self.assertRaisesRegex(ValueError, "reviewed metadata pins absent"):
-            dumper.validate_request("/does-not-exist", "")
+            with patch.object(dumper, "METADATA_RUN", 0):
+                dumper.validate_request("/does-not-exist", "")
         with self.assertRaisesRegex(ValueError, "custom prompt override"):
             dumper.validate_request("/does-not-exist", "different task")
         self.assertNotIn("torch", sys.modules)
@@ -50,7 +57,7 @@ class ReferenceControls(unittest.TestCase):
     def test_metadata_service_exact_workflow_and_artifact(self):
         source = {"source_model": "ATH-MaaS/OvisOCR3"}
         run = {"status": "completed", "conclusion": "success", "head_sha": "a" * 40,
-               "path": ".github/workflows/ovisocr3-metadata.yml"}
+               "path": ".github/workflows/ovisocr2-metadata.yml"}
         artifact = {"workflow_run": {"id": 123}, "name": "ovisocr3-metadata-123", "expired": False,
                     "digest": "sha256:" + "b" * 64}
         def call(args):
@@ -67,7 +74,7 @@ class ReferenceControls(unittest.TestCase):
             with self.assertRaises(ValueError):
                 driver.metadata_service(call)
             artifact["expired"] = False
-            run["path"] = ".github/workflows/ovisocr2-metadata.yml"
+            run["path"] = ".github/workflows/ovisocr3-metadata.yml"
             with self.assertRaises(ValueError):
                 driver.metadata_service(call)
 
