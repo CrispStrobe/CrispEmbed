@@ -15283,3 +15283,47 @@ current F16 selection/publication receipts and model pin immutable. A future
 qualified precision needs versioned decision/publication evidence and a reviewed
 destination/allowlist: the present publisher intentionally permits one GGUF plus
 four provenance files and refuses additional unreviewed model files.
+
+## 25 October 2026 — Final-source Ovis native replay and bound isolation
+
+[OvisOCR2 final frozen replay40183491593](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183491593)
+at26dcb07f passes all14 arms with nine unchanged IDs/text/EOS and unchanged
+comparison metrics relative to the earlier positive replay. The independent
+[final-source receipt](tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
+checks small-artifact identity, logs, source blobs and1,662 raw vector declarations;
+large payloads remain remotely retained and were not independently downloaded.
+The earlier88d743d9 replay is separately retained in
+[its receipt](tests/results/qwen35-ocr/ovisocr2-expanded-runtime-frozen-replay.json).
+Four strict vision absolute exceedances per precision remain visible under the
+unchanged calibrated gates; this is no numerical-debt waiver.
+
+[OvisOCR3 final native1440183489780](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183489780)
+at the same26dcb07f source passes all14 F32/F16 arms against the independently
+frozen943-stage original. [Independent review](tests/results/qwen35-ocr/ovisocr3-native-model.json)
+verifies38 small ZIP members,19 logs, five helper/29 native source blobs,
+12 raw manifests/1,662 vector declarations, both473-tensor manifests and the
+installed HF dual-EOS criterion. All nine IDs, raw `Hello OCR\n12345`, EOS,
+confidence, repeat, gate/recovery, independent-context and survivor checks pass.
+The owning Ovis3 context rejects1200 patches even with all old Ovis2 large-image
+flags enabled, then recovers on the valid image. This corrects cross-profile
+bound leakage without raising Ovis3's1024 bound or changing floating-point math.
+
+The previous native14 failures remain separately recorded: generation-config
+representation and two test-harness defects (fixed-task prompt argument and
+raw-manifest arm classification). No threshold, prompt or reference alteration
+was used to repair them. Four raw strict vision exceedances per precision are
+still present: layer11/down about0.0817 and up/activation about0.0163; original
+backend calibration admits them under the unchanged policy. Native cache and
+full decoder checks pass. The native audit establishes only this bounded port
+path. Original eleven-case source quality remains negative; no model alias,
+publication, default change, runtime release or application upgrade follows from it.
+
+The reviewed F16 model is1,717,223,072 bytes, SHA256
+`a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0`.
+The full model/raw archives stay hosted; small report and large model identities
+are separate fields. New native raw-diff artifact12595929739 expires24 November
+2026 and requires remote preservation before that date; model/report retention
+ends23 January2027. Later diagnostic workers require the complete reviewed
+`src` Git tree, exact CMake/ggml identities and clean checkouts. They explicitly
+apply the reviewed native gate values, including in-process ctypes probes, with
+ambient-variable negative controls; no reference probe enters production weights.

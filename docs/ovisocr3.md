@@ -149,9 +149,10 @@ Source-only `--profile ovisocr3` exports carry false qualification flags and are
 rejected by inference. A separately proof-bound original-HF export may qualify
 that explicit EOS-list policy after actual reference evidence. Such a result
 must retain the distinction from installed vLLM's effective stop/runtime policy.
-Original eleven-case capture is reviewed. Final-source native fourteen-arm
-F32/F16 replay40183489780, paired native F16 quality and six public interfaces
-remain acceptance gates. Fresh immutable download/publication requires a
+Original eleven-case capture is reviewed. [Final-source native14](../tests/results/qwen35-ocr/ovisocr3-native-model.json)
+passes all14 F32/F16 arms with exact nine-ID smoke output, context recovery and
+profile-isolated1024 bounds. Paired native F16 quality40187405735 and six public
+interfaces remain acceptance gates. Fresh immutable download/publication requires a
 qualified source-quality protocol and is blocked by the current result. Other17
 tasks, multi-image inference and the official2880² pixel maximum remain outside
 the initial single-image plain OCR claim.

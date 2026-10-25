@@ -23,15 +23,16 @@ The current owner must finish the remaining actual outcomes and integration:
    with the still-running 2048-patch boundary outcome. Require all14 F32/F16
    arms, dynamic raw manifests, owning IDs/text/EOS and scoped timing/RSS.
    The default remains1024; the2048 experiment requires four value-parsed gates.
-2. Review final-core [old frozen replay40183491593](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183491593)
-   and [eleven-case F16 replay40183493328](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183493328)
-   at26dcb07f. Preserve both the first F16 baseline and earlier expanded-runtime
+2. Review final-core [eleven-case F16 replay40183493328](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183493328)
+   at26dcb07f. Its [final frozen14 replay](tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
+   is already independently positive. Preserve both the first F16 baseline and earlier expanded-runtime
    replay40178330437. Model3 bound isolation must not regress model2 outputs.
-3. Review final-core [OvisOCR3 native1440183489780](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183489780).
-   The original943-stage capture and original11 are already reviewed. Only
-   actual all14 positive permits pinning the native receipt and running all11
-   native F16 cases against the frozen original. Preserve earlier harness
-   failures. Require whole-src/CMake/ggml identity before dependent workers.
+3. Review [OvisOCR3 paired F16 eleven-case40187405735](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40187405735)
+   at ee719aef. The independently positive [native14 receipt](tests/results/qwen35-ocr/ovisocr3-native-model.json)
+   binds final26dcb07f runtime source, both473-tensor exports and1,662 raw
+   declarations against the943-stage original. The F16 driver pins that proof
+   and exact native gates. Preserve earlier harness failures; require
+   whole-src/CMake/ggml identity before dependent workers.
 4. If all11 F16 outputs exactly match original IDs/raw text/stops/caps, run the
    explicitly separate public-interface diagnostic across C/Python/CLI/HTTP/
    Rust/Dart. The source two-column case caps1024 without EOS; retain
@@ -93,8 +94,8 @@ candidate is selected for publication or default promotion.
 Original plain OCR11 capture40178328864 is complete and reviewed; eight authored
 cases have zero raw CER/WER, but the two-column page caps1024 without EOS with
 CER0.52365/WER0.83993. Preserve that negative result in HISTORY; no cap/prompt/
-gold/scorer adjustment. Finish final-source native14 replay40183489780 and the paired native
-F16 diagnostic after its proof; retain both earlier harness failures. Model qualification requires all old screens.
+gold/scorer adjustment. Native14 is independently positive; finish paired native
+F16 diagnostic40187405735 and retain both earlier harness failures. Model qualification requires all old screens.
 An explicit default-off public diagnostic may verify interfaces only when all11
 native outputs faithfully match the original, including its unchanged capped
 case. It must emit model-qualified=false and a separate diagnostic review key.

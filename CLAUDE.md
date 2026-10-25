@@ -152,15 +152,16 @@ probes: `prefill.decoder.layer.0` fails numerical gates and two realistic OCR
 cases regress. [Selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
 keeps published F16 and the frozen first F16 quality receipt. The expanded
 runtime F16 quality replay40178330437 matches all11 frozen decoded cases,
-but final-source frozen14-arm40183491593 and F16 eleven-case40183493328 need
-terminal independent review; larger-input40177774574 still needs1200/2048
-review. No new large-image default or qualified precision follows yet.
+and final-source frozen14-arm40183491593 is independently positive. Final-source
+F16 eleven-case40183493328 and larger-input40177774574's combined2048 outcome
+still need terminal independent review;1024/1200 jobs are positive. No new large-image default or qualified precision follows yet.
 
 OvisOCR3 metadata and its original943-stage CPU reference are reviewed. Its
 [original plain OCR eleven-case capture40178328864](tests/results/qwen35-ocr/ovisocr3-original-quality.json)
 is source-quality negative: two-column-page hits the frozen1024-token cap
 without EOS (CER0.52365/WER0.83993). The earlier native14 retry exposed two
-test-harness defects; final-source native14 run40183489780, native F16 quality
+test-harness defects. [Final-source native1440183489780](tests/results/qwen35-ocr/ovisocr3-native-model.json)
+is independently positive on all14 arms. Paired native F16 diagnostic40187405735
 and public engine22 diagnostics still require actual reviewed results. The
 source completion failure blocks model qualification, publication and alias;
 do not change its prompt, cap, gold or scorer to pass a gate.
