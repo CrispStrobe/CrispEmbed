@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -68,6 +69,20 @@ class RecipeControls(unittest.TestCase):
         result.logprobs[1] = {43: score(float('nan'))}
         with self.assertRaisesRegex(ValueError, 'Nonfinite'):
             worker.logprob_steps(result)
+
+    def test_first_gpu_only_no_redraw_with_multiple_visible(self):
+        runner = load('ovisocr3_gpu_runner_selection', DIR / 'ovisocr3_vllm_reference.py')
+        runner.save = lambda report: None
+        two = 'Tesla T4, 7.5, 580.178.04, 15109\nTesla T4, 7.5, 580.178.04, 15109\n'
+        with mock.patch.object(runner.subprocess, 'check_output', return_value=two):
+            report = {}
+            runner.gpu_gate(report)
+        self.assertEqual(report['hardware']['selected_physical_index'], 0)
+        self.assertEqual(report['hardware']['visible_gpu_count'], 2)
+        wrong_first = 'Tesla P100, 6.0, 580.178.04, 16280\n' + two.splitlines()[0] + '\n'
+        with mock.patch.object(runner.subprocess, 'check_output', return_value=wrong_first):
+            with self.assertRaisesRegex(ValueError, 'not pinned T4'):
+                runner.gpu_gate({})
 
 
 if __name__ == '__main__':
