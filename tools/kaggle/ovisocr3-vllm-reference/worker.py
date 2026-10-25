@@ -235,7 +235,6 @@ def main():
         selected = output.outputs[0]
         expected_ids = rows['square']['ids'][0] if label == 'square' else readable_ids
         actual_ids = list(output.prompt_token_ids) if output.prompt_token_ids is not None else None
-        scores = logprob_steps(selected)
         raw_text = selected.text
         tokens = list(selected.token_ids)
         record = {'case': label, 'readme_max_tokens': 16384, 'bounded_max_tokens': cap,
@@ -243,13 +242,15 @@ def main():
                   'gdn_prefill_backend': 'triton', 'decoder_attention_backend': 'TRITON_ATTN',
                   'prompt_token_ids': actual_ids, 'expected_hf_prompt_token_ids': expected_ids,
                   'prompt_ids_exact': actual_ids == expected_ids,
-                  'token_ids': tokens, 'generated_scores': scores,
+                  'token_ids': tokens, 'generated_scores': None,
                   'finish_reason': selected.finish_reason, 'stop_reason': selected.stop_reason,
                   'raw_text': raw_text, 'raw_text_sha256': sha_bytes(raw_text.encode()),
                   'stripped_text': raw_text.strip(), 'reached_eos': bool(tokens and tokens[-1] in (248044, 248046)),
                   'cap_hit': len(tokens) >= cap,
                   'limits': '256-token cap; synthetic image; no OCR quality or BF16/native parity claim'}
         REPORT['generations'].append(record); save()
+        record['generated_scores'] = logprob_steps(selected)
+        save()
         if not record['prompt_ids_exact']:
             REPORT['first_mismatch'] = {'kind': 'expanded_prompt_ids', 'case': label,
                                         'actual': actual_ids, 'expected': expected_ids}
