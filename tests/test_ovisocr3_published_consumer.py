@@ -87,12 +87,18 @@ class ConsumerControls(unittest.TestCase):
         def run_call(args):
             return json.dumps({"id": 123, "head_sha": HEAD, "status": "completed",
                                "conclusion": "success",
-                               "path": ".github/workflows/ovisocr3-publish.yml"}).encode()
+                               "path": consumer.DISPATCH_WORKFLOW}).encode()
         self.assertEqual(consumer.service_run(value, run_call)["run"], 123)
         bad_run = copy.deepcopy(value)
         bad_run["publication_head"] = "0" * 40
         with self.assertRaisesRegex(ValueError, "service run"):
             consumer.service_run(bad_run, run_call)
+        def child_call(args):
+            row = json.loads(run_call(args))
+            row["path"] = ".github/workflows/ovisocr3-publish.yml"
+            return json.dumps(row).encode()
+        with self.assertRaisesRegex(ValueError, "service run"):
+            consumer.service_run(value, child_call)
         preset = {"name": "both", "enabled_gates": ["CRISPEMBED_QWEN35_VISION_PRECISE_NORM",
                                                   "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN"],
                   "values": {"CRISPEMBED_QWEN35_VISION_PRECISE_NORM": "1",

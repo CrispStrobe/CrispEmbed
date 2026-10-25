@@ -59,16 +59,13 @@ class PublicationControls(unittest.TestCase):
         bad["native_f16_artifact_zip_sha256"] = "0" * 64
         with self.assertRaisesRegex(ValueError, "service proof"):
             publisher.artifact_service(bad, artifact_call)
-        workflows = {11: ".github/workflows/ovisocr3-native14.yml",
-                     12: ".github/workflows/ovisocr3-quality.yml",
-                     13: ".github/workflows/ovisocr3-quality-f16.yml",
-                     14: ".github/workflows/ovisocr3-public-surfaces.yml"}
+        workflows = {run: publisher.DISPATCH_WORKFLOW for run in (11, 12, 13, 14)}
         def run_call(args):
             run = int(args[-1].split("/")[-1])
             return json.dumps({"id": run, "head_sha": HEAD, "status": "completed",
                                "conclusion": "success", "path": workflows[run]}).encode()
         self.assertEqual(len(publisher.run_service(pins, run_call)), 4)
-        workflows[14] = ".github/workflows/other.yml"
+        workflows[14] = ".github/workflows/ovisocr3-public-surfaces.yml"
         with self.assertRaisesRegex(ValueError, "run source/workflow"):
             publisher.run_service(pins, run_call)
 
