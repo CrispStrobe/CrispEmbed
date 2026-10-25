@@ -152,9 +152,11 @@ probes: `prefill.decoder.layer.0` fails numerical gates and two realistic OCR
 cases regress. [Selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
 keeps published F16 and the frozen first F16 quality receipt. The expanded
 runtime F16 quality replay40178330437 matches all11 frozen decoded cases,
-and final-source frozen14-arm40183491593 is independently positive. Final-source
-F16 eleven-case40183493328 and larger-input40177774574's combined2048 outcome
-still need terminal independent review;1024/1200 jobs are positive. No new large-image default or qualified precision follows yet.
+and final-source frozen14-arm40183491593 plus F16 eleven-case40183493328 are
+independently positive, preserving all1,841 first-F16 outputs and confidences.
+[The combined larger-input audit](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
+is complete: frozen/1024/1200 pass14/14;2048 passes8/14, with six composed final-
+norm numerical failures despite exact text/EOS. That boundary remains unqualified. No new large-image default or qualified precision follows yet.
 
 OvisOCR3 metadata and its original943-stage CPU reference are reviewed. Its
 [original plain OCR eleven-case capture40178328864](tests/results/qwen35-ocr/ovisocr3-original-quality.json)

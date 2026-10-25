@@ -463,8 +463,8 @@ The app remains on immutable0.17.12; published F16 and wired source alias do not
 
 ## Ovis follow-up outcomes — 25 October 2026
 
-The approved follow-up loop has three completed outcomes; remaining model audits
-are in progress. Use the [executable vendor handoff](next-agent-handoff.md) and
+Profiling, source feasibility, selective quantization and larger-input audits
+have reviewed outcomes; the OvisOCR3 paired/interface diagnostic remains open. Use the [executable vendor handoff](next-agent-handoff.md) and
 [PLAN](../PLAN.md) for current dependencies. The application remains pinned to
 published0.17.12; development0.17.13 and model experiments do not upgrade it.
 
@@ -488,14 +488,21 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   [Four-attempt selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
   keeps the published F16 candidate. Independent same-quantized-weight operator
   attribution precedes any newly declared precision-selection protocol.
-- Larger-input audit40177774574 has successful frozen/1024-square/1200-landscape
-  jobs;2048 boundary and final-source old2 regressions remain pending review.
-  Larger inputs stay default-off. Preserve all raw strict vision flags, actual
-  original/native IDs/text/EOS, resource scopes and owned input hashes.
+- [Larger-input audit40177774574](../tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
+  is complete: frozen/1024-square/1200-landscape pass14/14;2048 boundary passes8/14.
+  Six composed decoder arms fail prefill/full-prefix norm, F32/F16 max
+  0.003945589/0.004386902, despite exact nine IDs/text/EOS. Original-embedding
+  replay passes; root cause remains open. The2048 experiment stays unqualified,
+  default1024 unchanged. All four full producer reports are retained in Git.
+  [Final-source frozen14](../tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
+  and [eleven-case F16 replay](../tests/results/qwen35-ocr/ovisocr2-final-runtime-f16-quality.json)
+  pass with exact1,841 first-F16 outputs, stops and confidences.
 - OvisOCR3 actual controlled T4 execution, processor anchors and original943-stage
-  CPU/F32 capture are reviewed. Its original plain OCR11 capture is complete,
-  but two-column output caps1024 without EOS (CER0.52365/WER0.83993). Final-source
-  native14, paired native F16 and public-interface diagnostics remain pending.
+  CPU/F32 capture are reviewed. [Final-source native14](../tests/results/qwen35-ocr/ovisocr3-native-model.json)
+  passes14/14 with exact nine-ID smoke output and profile-bound isolation.
+  Its original plain OCR11 capture is complete, but two-column output caps1024
+  without EOS (CER0.52365/WER0.83993). Paired F16 run40187405735 and public-
+  interface diagnostics remain pending.
   A faithful diagnostic cannot override source-quality failure: no qualification,
   model alias or publication. Preserve unchanged prompts/gold/caps/scorers.
   [Original quality evidence](../tests/results/qwen35-ocr/ovisocr3-original-quality.json).

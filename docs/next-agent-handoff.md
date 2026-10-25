@@ -191,7 +191,7 @@ backend controls; any further attribution experiment needs a distinct hypothesis
 | Version/release | Development main0.17.13; published/app0.17.12; actual Linux compatibility measured | PR73 restores the published trained default with legacy0 retained. Actual successor artifact/hash/consumer qualification remains required before any tag |
 | Qwen OCR numerical debt | Use original-embedding/vision isolation and controlled linear-reduction probes in PLAN | Keep924 historical records/56 failures, held-out F16 six/13 failures and all decoded/quality gold/caps; no numerical waiver |
 | OCR quantization/publication | Independent development/quality work after the completed nine-run Q8/mixed/Q4 panel | No tested recipe currently qualifies; Q4 receipt truncates/unclosed HTML. CER/WER, cells, completion, confidence and format matter, not cosine alone |
-| Permissive OCR queue | OvisOCR2 reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 frozen arms; [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 arms; [first F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json), publication40074370335 and actual published consumer40080458492 pass. Profiling, issue71 feasibility and [fourth selective quant review](../tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json) are complete | All four quant attempts are rejected; published F16 remains selected. Expanded-runtime F16 replay40178330437 matches the frozen first run, but final-source14 is positive; final11 and combined larger2048 require review. OvisOCR3 original reference is captured; its original eleven-case plain OCR quality is negative at the fixed1024 cap. Native14 is positive; F16/public diagnostics remain pending; no OvisOCR3 alias or publication. Preserve initial failures and raw strict flags |
+| Permissive OCR queue | OvisOCR2 reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 frozen arms; [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 arms; [first F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json), publication40074370335 and actual published consumer40080458492 pass. Profiling, issue71 feasibility and [fourth selective quant review](../tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json) are complete | All four quant attempts are rejected; published F16 remains selected. Expanded-runtime F16 replay40178330437 matches the frozen first run, but final-source14/11 are positive;2048 is a completed numerical rejection. OvisOCR3 original reference is captured; its original eleven-case plain OCR quality is negative at the fixed1024 cap. Native14 is positive; F16/public diagnostics remain pending; no OvisOCR3 alias or publication. Preserve initial failures and raw strict flags |
 | Existing encoders | LFM2.5 official F16 CPU/CUDA T4 audit passes594 direct checks/both15-case API panels; [report](../tests/results/lfm2-encoder/cuda-f16.json). One-session paired T4 timing passes independent420-sample review | Other GPU/precision/MMQ, throughput, longer contexts and independent quality remain open; typed Gemma GPU/task/performance is separate |
 | OCR portfolio/app | Select one bounded portfolio task from PLAN or app lane in shared handoff | Retain original fixture/metric/decoded acceptance and owner; SAM work belongs to its existing owner; no unrelated dependency upgrade |
 
@@ -396,13 +396,18 @@ independently matches all1,841 frozen first-F16 IDs, raw/processed text,
 stops, caps and input/confidence records on11 pages; both paired quality screens
 pass. This preserves the first baseline and does not qualify subsequent core
 edits. The [final-source frozen14-arm run40183491593](../tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
-is independently positive with unchanged comparison metrics. Review final-source F16 eleven-case run
-[40183493328](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183493328)
-before asserting parity on the final source. The bounded larger-input run
+is independently positive with unchanged comparison metrics. The
+[final-source F16 eleven-case run40183493328](../tests/results/qwen35-ocr/ovisocr2-final-runtime-f16-quality.json)
+is also independently positive, including all1,841 IDs/text/stops/confidences
+and both recomputed quality screens. The bounded larger-input run
 [40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574)
-has successful frozen/1024/1200 jobs; its2048 outcome and combined report still
-need terminal independent review. Default1024 remains; the larger2048 gate needs four explicit values
-and all original14-arm, raw-score, IDs/text/EOS, timing and RSS checks.
+is complete and independently reviewed in [the combined receipt](../tests/results/qwen35-ocr/ovisocr2-larger-inputs.json).
+Frozen/1024/1200 pass14/14;2048 passes8/14 with six composed prefill/full-prefix
+norm failures (F32/F16 max0.003945589/0.004386902). Original prepared embeddings
+pass; all nine IDs/raw text/EOS still match. No numerical waiver follows.
+Default1024 remains;2048 is a four-gate unqualified experiment. Full producer JSON
+is retained in Git, large raw arrays remotely. Follow the scoped2048 attribution
+lane in PLAN before broader-page promotion.
 
 OvisOCR3 [metadata](../tests/results/qwen35-ocr/ovisocr3-metadata.json),
 [original943-stage reference](../tests/results/qwen35-ocr/ovisocr3-original-reference.json)

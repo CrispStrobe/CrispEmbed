@@ -12,35 +12,24 @@ records exact sources, remaining work, acceptance checks and artifact expiry.
 
 ### Active approved Ovis follow-up loop
 
-The first three approved items have actual reviewed outcomes: profiling passes,
-issue71 feasibility is recorded, and the fourth selective quantization attempt is
-rejected. See HISTORY/PERFORMANCE and the immutable four-attempt selection.
-The current owner must finish the remaining actual outcomes and integration:
+Profiling, issue71 source feasibility, the rejected fourth precision attempt,
+final-source Ovis2 frozen14/F16 eleven-case replays and the four-case larger-input
+audit have reviewed outcomes in HISTORY/PERFORMANCE. The2048 boundary is a
+numerical rejection; exact text does not change that result. Remaining work:
 
-1. Finish [larger-input40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574).
-   The old frozen control, 1024-patch square and 1200-patch landscape jobs have
-   completed successfully; independently review their small reports together
-   with the still-running 2048-patch boundary outcome. Require all14 F32/F16
-   arms, dynamic raw manifests, owning IDs/text/EOS and scoped timing/RSS.
-   The default remains1024; the2048 experiment requires four value-parsed gates.
-2. Review final-core [eleven-case F16 replay40183493328](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40183493328)
-   at26dcb07f. Its [final frozen14 replay](tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
-   is already independently positive. Preserve both the first F16 baseline and earlier expanded-runtime
-   replay40178330437. Model3 bound isolation must not regress model2 outputs.
-3. Review [OvisOCR3 paired F16 eleven-case40187405735](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40187405735)
+1. Review [OvisOCR3 paired F16 eleven-case40187405735](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40187405735)
    at ee719aef. The independently positive [native14 receipt](tests/results/qwen35-ocr/ovisocr3-native-model.json)
    binds final26dcb07f runtime source, both473-tensor exports and1,662 raw
-   declarations against the943-stage original. The F16 driver pins that proof
-   and exact native gates. Preserve earlier harness failures; require
-   whole-src/CMake/ggml identity before dependent workers.
-4. If all11 F16 outputs exactly match original IDs/raw text/stops/caps, run the
-   explicitly separate public-interface diagnostic across C/Python/CLI/HTTP/
-   Rust/Dart. The source two-column case caps1024 without EOS; retain
-   model-qualified=false, publication-eligible=false and the distinct diagnostic
-   review key. No prompt/cap/gold/scorer changes or model alias/publication.
-5. Consolidate actual outcomes into HISTORY/PERFORMANCE and model documents;
+   declarations against the943-stage original. The driver pins that proof and
+   every native gate; whole-src/CMake/ggml identity is required before weights.
+2. If all11 F16 outputs exactly match original IDs/raw text/stops/caps, run the
+   separate public-interface diagnostic across C/Python/CLI/HTTP/Rust/Dart.
+   Original two-column output caps1024 without EOS; retain model-qualified=false,
+   publication-eligible=false and the distinct diagnostic review key. No prompt/
+   cap/gold/scorer changes, model alias or publication follow from a diagnostic.
+3. Consolidate final actual outcomes in HISTORY/PERFORMANCE and model documents;
    leave only executable pending tasks here. Complete normal PR and merged-source
-   checks, and mirror the vendor handoff into CrispMath without changing the
+   checks, and mirror the vendor handoff into CrispMath without changing its
    application release pin or unrelated app/SAM owner work.
 
 No queued workflow or prepared harness counts as qualification. Large archives
@@ -464,27 +453,38 @@ Keep the published F16 bytes/pin and all previous wrappers unchanged.
   quantization methodology is a new scoped task, not a rewrite of old gates.
   Publication still requires its own positive quality and integrity receipts.
 
-## Ovis larger-input qualification — after latency/resource attribution
+## Ovis 2048-patch numerical attribution — before broader input claims
 
-The qualified reader caps the original-resized image at1024 visual patches;
-upstream's2880-squared-pixel maximum remains unqualified. Keep that bound in
-`src/qwen35_vision.cpp::geometry` and the owning-context validation until this
-separate lane passes. Source parity on eleven bounded pages is not full upstream
-input-range or OCRBench/OmniDocBench qualification.
+[The four-case audit](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json) is
+complete. Frozen control and authored1024/1200 inputs pass14/14;2048 passes8/14.
+Six composed native-vision/positions/frontend arms first fail prefill.decoder.norm
+(F32/F16 max0.00394558907/0.00438690186; calibrated ratios1.073/1.193), then
+full-prefix norm. Norms round3187.82251 on both sides; cosine rounds1.0. Replay
+with original prepared embeddings passes at0.000289916992/0.000239372253.
+All nine IDs/raw text/EOS match, but the overall larger-range qualification is
+negative. Default1024 and the existing opt-in2048 alternative remain unchanged.
 
-Freeze separately licensed additional pages, original resize/grid/masks/positions,
-expected greedy IDs/EOS/text and quality policy before a larger native candidate.
-Use the original-module dumper and crispembed-diff on a bounded incremental grid
-panel, including non-square images and boundary rejection; preserve the current
-943-field/eleven-case anchors. Record visual attention/prefill/cache/logit errors
-and actual decoded output, wall/RSS and backend/precision. Identify the necessary
-native allocation/attention/reduction changes from the real blueprint before
-raising dimensions; the current scalar attention cost makes a cap-only change
-insufficient. Run heavy captures/model batches only on hosted/authorized resources
-with an explicit RAM/time budget. Keep larger inputs gated until the same
-original numerical and decoded-quality gates pass, with safe failure/recovery.
-Broad benchmark claims require their own fixed revision/split/input/metric and
-license plan; do not infer them from this owned panel or published weight size.
+- [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
+  and retained original/native arrays; boundary raw artifact12598011436 is in
+  the combined receipt. Preserve original source ac1bb9cb, all initial failures,
+  calibrated budgets, pixels, gold, caps and raw strict flags. Download large
+  arrays only inside hosted CI; keep shared-host work to small reports.
+- [ ] Trace the first composed vision/output divergence through prefill layer23
+  and final norm. Compare original-module and native values/magnitudes before
+  normalization, source-fed vision projection/reduction and original-embedding
+  isolation. Use `tools/dump_ovisocr2_reference.py`,
+  `tools/ci-heavy/ovisocr2_large_inputs.py`, `tests/test_qwen35_vision.cpp`,
+  `tests/test_qwen35_decoder.cpp` and crispembed-diff. A prepared replay passing
+  does not identify RMS normalization as the defective operator.
+- [ ] Before any runtime/bound/preset promotion, keep an experimental gate and
+  require all original14 numerical/decoded checks at each grid, owning OCR,
+  rejection/recovery and final-source frozen14/eleven-case first-F16 controls.
+  Measure scoped latency/RSS; original capture uses four threads and native
+  owning two, so current timings establish no paired speedup. Do not raise
+  tolerances or silently downscale to make the2048 case pass.
+- [ ] Upstream2880-squared resolution, dense licensed pages, multi-image/video
+  and OCRBench/OmniDocBench reproduction are separate protocols. Owned single-
+  text geometry samples do not establish representative large-page quality.
 
 ## Pipeline cache identity follow-up
 

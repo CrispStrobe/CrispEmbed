@@ -335,3 +335,30 @@ and conditional publication. Keep every failed precision candidate and the
 unchanged LightOn debt. Only a qualified candidate with complete license/base
 provenance, pinned remote hashes and an actual immutable empty-cache download
 may enter the registry/catalog. No Ovis model alias or weights are published.
+
+## Larger-input experiment and final-source regression — 25 October 2026
+
+The default remains1024 visual patches. [Final-source frozen14](../tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
+and [final-source F16 eleven-case replay](../tests/results/qwen35-ocr/ovisocr2-final-runtime-f16-quality.json)
+are independently positive: all1,841 first-F16 IDs, raw/processed text, EOS/caps,
+confidences and quality scores remain exact. They preserve the original receipts.
+
+The [four-case geometry audit](../tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
+passes14/14 arms on the frozen control, authored512x512/1024 patches and
+640x480/1200 patches. The1024x512/2048 boundary passes8/14: six composed decoder
+arms fail final prefill/full-prefix norm, max0.003945589 F32/0.004386902 F16.
+Replay with original prepared embeddings passes; exact original/native nine-ID
+text/EOS does not waive this numerical rejection. All full producers, original
+self-error, raw/calibrated flags, source hashes and resource limits are retained.
+The2048 path is an unqualified experiment, not a larger-page support claim.
+
+The experiment requires all four value-parsed gates:
+`CRISPEMBED_QWEN35_OCR=1`, `CRISPEMBED_OVISOCR2_FRONTEND=1`,
+`CRISPEMBED_OVISOCR2_INFERENCE=1`, `CRISPEMBED_OVISOCR2_LARGE_IMAGES=1`.
+Keep the separately reviewed `both` vision precision preset. Missing/off gates
+preserve1024; oversized input is rejected, never silently reduced to the bound.
+OvisOCR3 independently retains1024 even when these old2 large-image flags are on.
+The ordinary published alias, application runtime and defaults are unchanged.
+See [numerical attribution in PLAN](../PLAN.md#ovis-2048-patch-numerical-attribution--before-broader-input-claims)
+for the next bounded diagnostic. Upstream2880-squared and broad benchmarks need
+separate licensed original-first protocols and quality evidence.
