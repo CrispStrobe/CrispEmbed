@@ -24,6 +24,7 @@ from ovisocr2_published_consumer import cpu_record
 ROOT=Path(__file__).resolve().parents[2]
 PANEL=ROOT/'tests/results/qwen35-ocr/ovisocr2-large-input-panel.json'
 PANEL_CANONICAL_SHA256='1bc48ad2ee2be1f3c791a79837f7869eb9c5a9a1a89749cc8184a236b81cb4f2'
+PUBLIC_ENGINE22_WRAPPER_SHA256='9ee4e21e007d1ca3375008d3f5c45db283d8aa1ef5434992fdc895115de4b24a'
 SOURCES=tuple(sorted(str(p.relative_to(ROOT)) for p in (ROOT/'src').glob('qwen35*') if p.suffix in ('.cpp','.h')))
 
 
@@ -33,6 +34,12 @@ def source_contract():
              'src/qwen35_tokenizer.cpp','src/qwen35_ocr.cpp','src/qwen35_ocr.h'}
     changed={name:{'old_sha256':value,'current_sha256':audit.sha(ROOT/name)}
              for name,value in old.items() if audit.sha(ROOT/name)!=value}
+    if 'src/crispembed.cpp' in changed:
+        # The bounded append-only engine22 map and fixed-task prompt rejection
+        # are independently pinned, not a general allowance for C API changes.
+        if changed['src/crispembed.cpp']['current_sha256']!=PUBLIC_ENGINE22_WRAPPER_SHA256:
+            raise ValueError('Unreviewed public wrapper source changed')
+        allowed.add('src/crispembed.cpp')
     if set(changed)-allowed:raise ValueError('Unreviewed unrelated arithmetic source changed')
     if set(SOURCES)-set(old)!={'src/qwen35_image_bounds.h'}:
         raise ValueError('Unexpected new native source file')
