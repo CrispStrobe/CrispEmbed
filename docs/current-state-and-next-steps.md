@@ -489,7 +489,13 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   0.0328895 despite global cosine0.999563; receipt and two-column CER/WER regress.
   [Four-attempt selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
   keeps the published F16 candidate. Independent same-quantized-weight operator
-  attribution precedes any newly declared precision-selection protocol.
+  attribution precedes any newly declared precision-selection protocol. The
+  [bounded first-FFN run40231922668](../tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+  now passes: independent dequantization and original/native anchors are bit
+  exact, same-weight operator errors stay below1.669e-6, and original Python
+  with the same Q4 weights reproduces the0.032889 layer error. No local operator
+  mismatch is found at that boundary. Document-quality rejection remains;
+  further precision selection requires a fresh development/evaluation protocol.
 - [Larger-input audit40177774574](../tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
   is complete: frozen/1024-square/1200-landscape pass14/14;2048 boundary passes8/14.
   Six composed decoder arms fail prefill/full-prefix norm, F32/F16 max

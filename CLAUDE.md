@@ -177,8 +177,14 @@ match. The initial manifest adapter failure remains red and archived; actual
 hosted reanalysis rehashes3,324 preserved vectors without repeating inference.
 Three pairs show only2.734% cold/0.797% warm reductions and increased RSS;
 keep the256MiB cache default-off. Components pass all three native platforms;
-full model evidence is bounded Linux/OvisOCR2 CPU only. Completed audits are
-in HISTORY; start scoped numerical attribution/permissive lanes from PLAN.
+full model evidence is bounded Linux/OvisOCR2 CPU only. The bounded
+[first-FFN attribution40231922668](tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+passes unchanged same-weight gates: all independent dequantization values and
+original/native anchors are bit exact; local errors stay below1.669e-6. Original
+Python with Q4 reproduces the0.032889 layer error, supporting precision loss at
+this boundary rather than a local operator mismatch. Keep every quality rejection
+and published F16 unchanged. Completed audits are in HISTORY;2048 numerical
+attribution is next, followed by the scoped permissive lanes in PLAN.
 No interface result upgrades negative source quality. OvisOCR3's
 source completion failure blocks its model qualification, publication and alias;
 do not change its prompt, cap, gold or scorer to pass a gate.
