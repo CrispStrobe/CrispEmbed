@@ -93,7 +93,7 @@ def source_and_exports(out,scratch,report):
 def raw_manifest(folder,reference,log,label):
     if label.endswith('-context'):
         return {'scope':'C API result checks; no Ref.compare dump', 'coverage_complete':True}
-    if label.endswith('-delta') or label.endswith('-vision'):
+    if re.fullmatch(r'f(?:32|16)-(delta|vision)',label):
         result=replay.raw_vector_manifest(folder,reference['stages'],log,label,ab)
         result['coverage_complete']=True
         return result

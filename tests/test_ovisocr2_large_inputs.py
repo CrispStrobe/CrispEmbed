@@ -50,6 +50,18 @@ class Controls(unittest.TestCase):
             self.assertNotIn('CRISPEMBED_DIFF_COS_THRESHOLD',env)
         self.assertEqual(frozen['CRISPEMBED_OVISOCR2_LARGE_IMAGES'],'0')
         self.assertEqual(larger['CRISPEMBED_OVISOCR2_LARGE_IMAGES'],'1')
+    def test_native_vision_decoder_uses_actual_score_count(self):
+        stages={f'{phase}.decoder.layer.{layer}':[1]
+                for phase in ('prefill','cached','full_prefix') for layer in range(24)}
+        stages.update({f'generated.scores.{i}':[1] for i in range(3)})
+        stages.update({f'{phase}.cache.0.conv_states':[1] for phase in ('prefill','cached')})
+        reference={'stages':stages,'generated_ids':[[7,8,248046]]}
+        log='\n'.join(f'PASS {name}: cos_min=1' for name in stages)
+        with tempfile.TemporaryDirectory() as directory:
+            for name in stages:(Path(directory)/(name+'.f32')).write_bytes(bytes(4))
+            result=driver.raw_manifest(Path(directory),reference,log,'f16-decoder-native-vision')
+            self.assertTrue(result['coverage_complete'])
+            self.assertEqual(result['file_count'],len(stages))
     def test_missing_full_layer_raw_cannot_pass(self):
         with self.assertRaises(ValueError):driver.raw_manifest(Path('.'),{'stages':{},'generated_ids':[[1,248046]]},'PASS prefill.decoder.layer.0: cos_min=1','f16-decoder-native-frontend')
 
