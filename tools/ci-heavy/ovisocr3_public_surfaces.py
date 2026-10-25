@@ -64,6 +64,14 @@ def sha(path):
     return h.hexdigest()
 
 
+def native_source_closure(producer, head):
+    spec = importlib.util.spec_from_file_location('ovis3_public_source_closure',
+        ROOT / 'tools/ci-heavy/ovisocr3_source_closure.py')
+    closure = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(closure)
+    return closure.require_native_source_closure(producer, head, root=ROOT)
+
+
 def require_receipt(data):
     """Pure stdlib gate; does not import native or model packages."""
     if (NATIVE_RUN <= 0 or not re.fullmatch('[0-9a-f]{40}', NATIVE_HEAD)
@@ -140,6 +148,7 @@ def require_receipt(data):
     selected_vision = vision_contract().reviewed_selection(producer)
     if selected_vision['name'] != 'both':
         raise ValueError('Reviewed OvisOCR3 native vision precision settings differ')
+    source_proof = native_source_closure(producer, NATIVE_HEAD)
     return {"source_commit": producer["source_commit"], "producer_status": producer["status"],
             "producer_failures": producer.get("failures", []),
             "model_sha256": export["model_sha256"],
@@ -154,7 +163,8 @@ def require_receipt(data):
             'report_artifact_id': data['artifact_id'],
             'report_artifact_zip_sha256': data['artifact_zip_sha256'],
             'producer_canonical_sha256': canonical,
-            "selected_vision_preset": selected_vision}
+            "selected_vision_preset": selected_vision,
+            "native_source_closure": source_proof}
 
 
 def require_quality_receipt(data, model):

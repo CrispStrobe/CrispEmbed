@@ -178,9 +178,17 @@ class PublicControls(unittest.TestCase):
                      'QUALITY_RUN': 234, 'QUALITY_HEAD': head,
                      'QUALITY_PRODUCER_SHA': quality_canonical,
                      'QUALITY_REVIEW_KEY': 'f16_quality_positive'}
-        with mock.patch.multiple(subject, **overrides):
+        with mock.patch.multiple(subject, **overrides), \
+             mock.patch.object(subject, 'native_source_closure',
+                               return_value={'file_count': 29}) as closure:
             pins = subject.require_receipt(native)
             self.assertEqual(pins['model_sha256'], digest)
+            self.assertEqual(pins['native_source_closure']['file_count'], 29)
+            closure.assert_called_once_with(native['producer'], head)
+            with mock.patch.object(subject, 'native_source_closure',
+                                   side_effect=ValueError('changed native norm')):
+                with self.assertRaisesRegex(ValueError, 'changed native norm'):
+                    subject.require_receipt(native)
             self.assertEqual(pins['selected_vision_preset']['name'], 'both')
             self.assertTrue(subject.require_quality_receipt(quality, pins)['eleven_complete'])
             native['producer']['commands']['f16-vision']['comparison_coverage'] = False
