@@ -122,8 +122,8 @@ vision preset, precision selection or production alias for the new weights.
 
 ## Active original-first qualification
 
-[Original reference40176566774](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40176566774)
-is dispatched at immutable sourcef2f0b7d0. Its pinned CPU stack first replays the
+[Original reference40177416485](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177416485)
+is dispatched at immutable source2ce86168. Its pinned CPU stack first replays the
 three metadata anchors, then captures the original full model with every-layer,
 cache, logits, generated scores, IDs, EOS and raw output. An independent review
 must bind its service/head/artifact and report hashes before dependent workers
