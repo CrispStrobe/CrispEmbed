@@ -119,7 +119,7 @@ def main():
     rendered = processor.tokenizer.apply_chat_template(
         messages, tokenize=False, add_generation_prompt=True, enable_thinking=False)
     rendered_sha = sha_bytes(rendered.encode())
-    if rendered_sha != producer['rendered_prompt_sha256']:
+    if rendered_sha != producer['rendered_prompt_sha256'] or rendered != evidence['rendered_prompt']:
         raise ValueError('Original rendered plain OCR prompt differs across CPU/GPU stacks')
     REPORT['prompt'] = {'task': 'plain_ocr', 'task_sha256': PROMPT_SHA,
                         'rendered_sha256': rendered_sha,
