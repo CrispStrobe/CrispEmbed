@@ -224,7 +224,7 @@ def main():
     REPORT['phase'] = 'bounded-greedy'; save()
     cap = 256
     sampling = SamplingParams(max_tokens=cap, temperature=0.0, logprobs=20)
-    items = [{'prompt': generated_prompt, 'multi_modal_data': {'image': image},
+    items = [{'prompt': generated_prompt, 'multi_modal_data': {'image': [image.convert('RGB')]},
               'mm_processor_kwargs': {'images_kwargs': {'min_pixels': 448 * 448,
                                                         'max_pixels': 2880 * 2880}}}
              for image in (first_image, readable)]
