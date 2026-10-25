@@ -29,8 +29,8 @@ GATES = ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR3_FRONTEND",
 # Fill only from reviewed native fourteen-arm and F16 eleven-case receipts.
 NATIVE_RUN = 0
 NATIVE_HEAD = ''
-NATIVE_STATUS = ''
-NATIVE_WORKFLOW = ''
+NATIVE_STATUS = 'completed diagnostic OvisOCR3 fourteen-arm native replay'
+NATIVE_WORKFLOW = '.github/workflows/ovisocr3-native14.yml'
 NATIVE_ARTIFACT_NAME = ''
 NATIVE_PRODUCER_SHA = ''
 QUALITY_RUN = 0
@@ -67,45 +67,56 @@ def require_receipt(data):
     if not isinstance(data, dict) or not isinstance(data.get("independent_review"), dict):
         raise ValueError("Reviewed Ovis model-audit receipt is absent")
     review = data["independent_review"]
-    producer, artifact = data.get('producer'), data.get('artifact')
+    producer, artifact = data.get('producer'), data.get('f16_artifact')
     if not isinstance(producer, dict) or not isinstance(artifact, dict):
-        raise ValueError('Reviewed Ovis model producer/artifact wrapper absent')
+        raise ValueError('Reviewed OvisOCR3 native producer/F16 artifact wrapper absent')
     canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
                                           ensure_ascii=True, allow_nan=False).encode()).hexdigest()
     if (review.get("all_fourteen_native_arms_positive") is not True
             or review.get('producer_canonical_sha256') != canonical
             or canonical != NATIVE_PRODUCER_SHA
             or data.get('run') != NATIVE_RUN or data.get('head_sha') != NATIVE_HEAD
+            or type(data.get('artifact_id')) is not int or data['artifact_id'] < 1
+            or not re.fullmatch('[0-9a-f]{64}', data.get('artifact_zip_sha256', ''))
             or type(artifact.get('id')) is not int or artifact['id'] < 1
+            or artifact.get('name') != NATIVE_ARTIFACT_NAME
+            or type(artifact.get('bytes')) is not int or artifact['bytes'] <= 0
             or not re.fullmatch('[0-9a-f]{64}', artifact.get('zip_sha256', ''))
-            or review.get('artifact_zip_sha256') != artifact['zip_sha256']):
-        raise ValueError("Independent F16-positive model review is required")
+            or review.get('f16_artifact_zip_sha256') != artifact['zip_sha256']):
+        raise ValueError("Independent fourteen-arm native/F16 artifact review is required")
     if (producer.get("status") != NATIVE_STATUS
             or producer.get('failures') != []
+            or producer.get('native14_positive') is not True
+            or producer.get('arm_count') != 14
             or not isinstance(producer.get("source_commit"), str)
-            or not re.fullmatch(r"[0-9a-f]{40}", producer["source_commit"])):
+            or producer["source_commit"] != NATIVE_HEAD):
         raise ValueError("Model producer status/source differs")
     commands = producer.get("commands", {})
     required = ("f16-delta", "f16-vision", "f16-decoder-prepared", "f16-decoder-native-vision",
                 "f16-decoder-native-positions", "f16-decoder-native-frontend", "f16-context")
     if any(commands.get(name, {}).get("exit_code") != 0 or
            commands[name].get("passed") is not True or
-           commands[name].get("comparison_coverage") is not True for name in required):
+           commands[name].get("comparison_coverage") is not True or
+           not re.fullmatch('[0-9a-f]{64}', commands[name].get('log_sha256', ''))
+           for name in required):
         raise ValueError("Reviewed F16 native model-backed comparisons are incomplete")
-    if not re.fullmatch(r"[0-9a-f]{64}", commands["f16-context"].get("sha256", "")):
-        raise ValueError("F16 low-level/context log identity is missing")
     export = producer.get("exports", {}).get("f16", {})
-    readable = producer.get("readable", {})
+    readable = producer.get("owned_readable", {})
+    png = producer.get('reference_artifacts', {}).get('owned-readable.png', {})
     original = producer.get("original_capture", {})
     expected = original.get("decoded")
     generated = original.get("generated_ids")
     generation = original.get("generation_result", {})
     cache_error = original.get("cached_vs_full_prefix_max_abs")
-    control = original.get("observational_control", {})
+    control = original.get('observational_control', {})
     if (export.get('model_sha256') != F16_SHA
             or export.get("tensor_count") != 473
-            or not re.fullmatch(r"[0-9a-f]{64}", readable.get("png_sha256", ""))
-            or not re.fullmatch(r"[0-9a-f]{64}", readable.get("raw_rgb_sha256", ""))
+            or readable.get('png_sha256') != png.get('sha256')
+            or not re.fullmatch(r"[0-9a-f]{64}", png.get("sha256", ""))
+            or not re.fullmatch(r"[0-9a-f]{64}", readable.get("rgb_sha256", ""))
+            or not re.fullmatch(r"[0-9a-f]{64}", producer.get('reference_original_json_sha256', ''))
+            or not re.fullmatch(r"[0-9a-f]{64}", producer.get('original_reference_producer_canonical_sha256', ''))
+            or producer.get('hf_stop_runtime', {}).get('actual_stops') != [True, True, False]
             or not isinstance(expected, list) or len(expected) != 1
             or not isinstance(expected[0], str) or not expected[0]
             or not isinstance(generated, list) or len(generated) != 1
@@ -113,23 +124,28 @@ def require_receipt(data):
             or generation.get("max_new_tokens") != 12
             or generation.get("eos_ids") != [248044, 248046]
             or generation.get("generated_token_count") != len(generated[0])
-            or control.get("prefill_logits_exact") is not True
-            or control.get("greedy_ids_exact") is not True
+            or control.get('prefill_logits_exact') is not True
+            or control.get('greedy_ids_exact') is not True
             or original.get("cached_vs_full_prefix_same_argmax") is not True
             or not isinstance(cache_error, (int, float)) or not math.isfinite(cache_error)
             or cache_error > .002):
         raise ValueError("Reviewed OvisOCR3 F16 model/image or bounded original text is missing")
     selected_vision = vision_contract().reviewed_selection(producer)
+    if selected_vision['name'] != 'both':
+        raise ValueError('Reviewed OvisOCR3 native vision precision settings differ')
     return {"source_commit": producer["source_commit"], "producer_status": producer["status"],
             "producer_failures": producer.get("failures", []),
             "model_sha256": export["model_sha256"],
-            "image_sha256": readable["png_sha256"], "rgb_sha256": readable["raw_rgb_sha256"],
+            "image_sha256": png["sha256"], "rgb_sha256": readable["rgb_sha256"],
             "expected_text": expected[0], "original_generation": generation,
             "original_generated_ids": generated[0],
             "original_cache_max_abs": cache_error,
-            "f16_context_log_sha256": commands["f16-context"].get("sha256"),
+            "f16_context_log_sha256": commands["f16-context"].get("log_sha256"),
             'run': data['run'], 'artifact_id': artifact['id'],
             'artifact_zip_sha256': artifact['zip_sha256'],
+            'artifact_bytes': artifact['bytes'],
+            'report_artifact_id': data['artifact_id'],
+            'report_artifact_zip_sha256': data['artifact_zip_sha256'],
             'producer_canonical_sha256': canonical,
             "selected_vision_preset": selected_vision}
 
@@ -180,12 +196,28 @@ def artifact_service_gate(pins, call=subprocess.check_output):
     if (result.get('id') != pins['artifact_id']
             or result.get('name') != NATIVE_ARTIFACT_NAME
             or result.get('digest') != 'sha256:' + pins['artifact_zip_sha256']
+            or result.get('size_in_bytes') != pins['artifact_bytes']
             or result.get('expired') is not False
             or result.get('workflow_run', {}).get('id') != pins['run']
             or result.get('workflow_run', {}).get('head_sha') != pins['source_commit']):
         raise ValueError('Reviewed OvisOCR3 native artifact service differs')
     return {'id': result['id'], 'name': result['name'],
-            'zip_sha256': pins['artifact_zip_sha256'], 'expired': False}
+            'zip_sha256': pins['artifact_zip_sha256'], 'bytes': pins['artifact_bytes'],
+            'expired': False}
+
+
+def report_artifact_service_gate(pins, call=subprocess.check_output):
+    result = json.loads(call(["gh", "api", "repos/CrispStrobe/CrispEmbed/actions/artifacts/"
+                              + str(pins['report_artifact_id'])]))
+    if (result.get('id') != pins['report_artifact_id']
+            or result.get('name') != 'ovisocr3-native14-reports-' + str(pins['run'])
+            or result.get('digest') != 'sha256:' + pins['report_artifact_zip_sha256']
+            or result.get('expired') is not False
+            or result.get('workflow_run', {}).get('id') != pins['run']
+            or result.get('workflow_run', {}).get('head_sha') != pins['source_commit']):
+        raise ValueError('Reviewed OvisOCR3 native reports service differs')
+    return {'id': result['id'], 'name': result['name'],
+            'zip_sha256': pins['report_artifact_zip_sha256'], 'expired': False}
 
 
 def require_artifacts(folder, pins):
@@ -630,7 +662,8 @@ def main():
         quality = require_quality_receipt(json.loads(QUALITY_RECEIPT.read_text()), pins)
         report["model_prerequisite"] = {**pins, "receipt_sha256": sha(RECEIPT),
             "service_run": service_gate(args.model_run_id, pins["source_commit"]),
-            "service_artifact": artifact_service_gate(pins)}
+            "service_artifact": artifact_service_gate(pins),
+            "service_report_artifact": report_artifact_service_gate(pins)}
         report['quality_prerequisite'] = {**quality, 'receipt_sha256': sha(QUALITY_RECEIPT),
             'service_run': service_gate(quality['run'], quality['source_commit'],
                                         workflow='.github/workflows/ovisocr3-quality-f16.yml')}
