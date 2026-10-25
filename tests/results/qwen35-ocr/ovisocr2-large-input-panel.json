@@ -1,0 +1,79 @@
+{
+  "schema": "crispembed-ovisocr2-large-input-panel-v1",
+  "license": "CC0-1.0",
+  "purpose": "Freeze authored pixels/gold/limits before original/native outputs; bounded input expansion only, not a public OCR benchmark",
+  "renderer": {
+    "pillow": "12.1.0",
+    "background": "white",
+    "fill": "black",
+    "font_size": 32,
+    "position": [
+      24,
+      24
+    ]
+  },
+  "gold": "Hello OCR\n12345",
+  "max_new_tokens": 32,
+  "default_visual_patch_limit": 1024,
+  "optin_visual_patch_limit": 2048,
+  "cases": [
+    {
+      "id": "control-square",
+      "size": [
+        512,
+        512
+      ],
+      "grid": [
+        1,
+        32,
+        32
+      ],
+      "patches": 1024
+    },
+    {
+      "id": "large-landscape",
+      "size": [
+        640,
+        480
+      ],
+      "grid": [
+        1,
+        30,
+        40
+      ],
+      "patches": 1200
+    },
+    {
+      "id": "large-boundary",
+      "size": [
+        1024,
+        512
+      ],
+      "grid": [
+        1,
+        32,
+        64
+      ],
+      "patches": 2048
+    }
+  ],
+  "rejection_case": {
+    "id": "above-optin",
+    "size": [
+      1024,
+      544
+    ],
+    "grid": [
+      1,
+      34,
+      64
+    ],
+    "patches": 2176
+  },
+  "acceptance": {
+    "frontend": "exact RGB/patches/grid/prompt/modalities/positions to original",
+    "numerical": "existing qwen35_parity.h strict/cache/logit and calibrated original-backend vision comparisons, no new thresholds",
+    "decoded": "exact original/native generated IDs/raw UTF8/EOS; authored CER/WER also recorded independently",
+    "limits": "No 2880-squared qualification; off/0 retains1024 and must reject larger without silently resizing; failed comparison remains negative"
+  }
+}

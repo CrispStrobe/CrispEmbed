@@ -14,7 +14,7 @@
   ],
   "conclusion": "both failed pure controls before dependencies, weights or candidate outputs",
   "failed_test": "SelectivePrecisionControls.test_frozen_recipe_file_and_runtime_ast_remain_exact",
-  "cause": "Local Python3.11 versus hosted3.12 FunctionDef AST shape; hardcoded AST hashes were interpreter-specific",
+  "cause": "Python-version-dependent FunctionDef AST serialization (empty type_params fields); hardcoded AST hashes were interpreter-specific",
   "correction": "Frozen byte-hashed original source fragments are parsed using the same interpreter as candidate source; actual runtime AST/source contracts unchanged",
   "model_or_native_results": false
 }

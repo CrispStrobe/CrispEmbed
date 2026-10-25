@@ -1,3 +1,24 @@
+## 25 October 2026 — OvisOCR3 original metadata reviewed; control failure retained
+
+[40172525903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172525903)
+at72698a76 completes the weight-free original OvisOCR3 source/processor probe.
+Independent review rehashes all four NPZ archives/fields, every IDs/mask/grid
+record, three authored RGB inputs, rendered plain prompt and pinned packages.
+The original474-entry meta state has only its tied head missing from473 BF16
+checkpoint entries. Explicit generation EOS and the original vLLM source-method
+stop set agree; this source probe is not installed GPU runtime evidence.
+[Unchanged producer and review](tests/results/qwen35-ocr/ovisocr3-metadata.json).
+No model forward or native qualification follows from metadata alone.
+
+Initial metadata40172054543 and selective40172341973 both stopped in pure controls
+before weights. A hardcoded AST hash depended on the Python interpreter's empty
+FunctionDef fields. [Initial failure journal](tests/results/qwen35-ocr/initial-ovis-followup-python-ast-failure.json)
+and72698a76 preserve the correction: byte-pinned old source fragments are parsed
+with the same interpreter as candidate source. Inference environments, float
+comparators, old recipes and original/first-F16 receipts remain unchanged.
+Actual selective retry40172527229 retains a full eleven-case same-run F16 control,
+then the candidate's eleven cases and complete original numerical/raw diagnostics.
+
 ## 25 October 2026 — Ovis profiling and issue feasibility complete
 
 [Hosted40171223309](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40171223309)
