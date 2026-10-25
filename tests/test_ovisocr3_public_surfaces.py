@@ -18,6 +18,100 @@ spec.loader.exec_module(subject)
 
 
 class PublicControls(unittest.TestCase):
+    def test_planned_native_and_quality_receipt_contracts(self):
+        digest = 'a' * 64
+        head = 'b' * 40
+        names = ('f16-delta', 'f16-vision', 'f16-decoder-prepared',
+                 'f16-decoder-native-vision', 'f16-decoder-native-positions',
+                 'f16-decoder-native-frontend', 'f16-context')
+        producer = {'source_commit': head, 'status': subject.NATIVE_STATUS,
+                    'native14_positive': True, 'arm_count': 14, 'failures': [],
+                    'commands': {name: {'exit_code': 0, 'passed': True,
+                                        'comparison_coverage': True, 'log_sha256': digest}
+                                 for name in names},
+                    'exports': {'f16': {'model_sha256': digest, 'tensor_count': 473}},
+                    'owned_readable': {'png_sha256': digest, 'rgb_sha256': digest},
+                    'reference_artifacts': {'owned-readable.png': {'sha256': digest}},
+                    'reference_original_json_sha256': digest,
+                    'original_reference_producer_canonical_sha256': digest,
+                    'hf_stop_runtime': {'actual_stops': [True, True, False]},
+                    'native_environment': {'CRISPEMBED_QWEN35_VISION_PRECISE_NORM': '1',
+                                           'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN': '1',
+                                           'CRISPEMBED_QWEN35_VISION_CASCADE_NORM': '0'},
+                    'selected_vision_preset': {
+                        'name': 'both',
+                        'enabled_gates': ['CRISPEMBED_QWEN35_VISION_PRECISE_NORM',
+                                          'CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],
+                        'all_other_native_gates_unchanged': True,
+                        'no_production_default_promoted': True},
+                    'original_capture': {'decoded': ['Hello OCR\n12345'],
+                                         'generated_ids': [[10, 248046]],
+                                         'generation_result': {'max_new_tokens': 12,
+                                                               'eos_ids': [248044, 248046],
+                                                               'generated_token_count': 2},
+                                         'observational_control': {'prefill_logits_exact': True,
+                                                                   'greedy_ids_exact': True},
+                                         'cached_vs_full_prefix_same_argmax': True,
+                                         'cached_vs_full_prefix_max_abs': .001}}
+        canonical = hashlib.sha256(json.dumps(producer, sort_keys=True, separators=(',', ':'),
+                                              ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+        native = {'run': 123, 'head_sha': head, 'artifact_id': 456,
+                  'artifact_zip_sha256': digest,
+                  'f16_artifact': {'id': 789, 'name': 'ovisocr3-native14-f16-123', 'bytes': 1000,
+                                   'zip_sha256': digest},
+                  'producer': producer, 'independent_review': {
+                      'all_fourteen_native_arms_positive': True,
+                      'producer_canonical_sha256': canonical,
+                      'f16_artifact_zip_sha256': digest}}
+        quality_producer = {'status': 'completed diagnostic OvisOCR3 F16 eleven-case quality',
+                            'qualified': True, 'f16_model_sha256': digest,
+                            'native_cases': {str(i): {} for i in range(11)},
+                            'scores': {'all_complete': True}, 'paired': {'all_exact': True}}
+        quality_canonical = hashlib.sha256(json.dumps(quality_producer, sort_keys=True,
+                                                      separators=(',', ':'), ensure_ascii=True,
+                                                      allow_nan=False).encode()).hexdigest()
+        quality = {'run': 234, 'head_sha': head, 'producer': quality_producer,
+                   'independent_review': {'producer_canonical_sha256': quality_canonical,
+                                          'f16_quality_positive': True}}
+        overrides = {'NATIVE_RUN': 123, 'NATIVE_HEAD': head,
+                     'NATIVE_ARTIFACT_NAME': 'ovisocr3-native14-f16-123',
+                     'NATIVE_PRODUCER_SHA': canonical, 'F16_SHA': digest,
+                     'QUALITY_RUN': 234, 'QUALITY_HEAD': head,
+                     'QUALITY_PRODUCER_SHA': quality_canonical,
+                     'QUALITY_REVIEW_KEY': 'f16_quality_positive'}
+        with mock.patch.multiple(subject, **overrides):
+            pins = subject.require_receipt(native)
+            self.assertEqual(pins['model_sha256'], digest)
+            self.assertEqual(pins['selected_vision_preset']['name'], 'both')
+            self.assertTrue(subject.require_quality_receipt(quality, pins)['eleven_complete'])
+            native['producer']['commands']['f16-vision']['comparison_coverage'] = False
+            with self.assertRaises(ValueError): subject.require_receipt(native)
+            native['producer']['commands']['f16-vision']['comparison_coverage'] = True
+            quality['producer']['qualified'] = False
+            with self.assertRaises(ValueError): subject.require_quality_receipt(quality, pins)
+
+    def test_separate_large_and_small_artifact_service_identity(self):
+        head = 'b' * 40
+        pins = {'run': 123, 'source_commit': head, 'artifact_id': 789,
+                'artifact_zip_sha256': 'a' * 64, 'artifact_bytes': 1000,
+                'report_artifact_id': 456, 'report_artifact_zip_sha256': 'c' * 64}
+        large = {'id': 789, 'name': 'ovisocr3-native14-f16-123', 'size_in_bytes': 1000,
+                 'digest': 'sha256:' + 'a' * 64, 'expired': False,
+                 'workflow_run': {'id': 123, 'head_sha': head}}
+        small = {'id': 456, 'name': 'ovisocr3-native14-reports-123',
+                 'digest': 'sha256:' + 'c' * 64, 'expired': False,
+                 'workflow_run': {'id': 123, 'head_sha': head}}
+        with mock.patch.object(subject, 'NATIVE_ARTIFACT_NAME', large['name']):
+            self.assertEqual(subject.artifact_service_gate(
+                pins, lambda _: json.dumps(large).encode())['id'], 789)
+            self.assertEqual(subject.report_artifact_service_gate(
+                pins, lambda _: json.dumps(small).encode())['id'], 456)
+            for change in ({**large, 'size_in_bytes': 999},
+                           {**large, 'digest': 'sha256:' + 'd' * 64},
+                           {**large, 'expired': True}):
+                with self.assertRaises(ValueError):
+                    subject.artifact_service_gate(pins, lambda _, row=change: json.dumps(row).encode())
+
     def test_future_receipts_are_required_before_weights(self):
         self.assertEqual(subject.NATIVE_RUN, 0)
         self.assertEqual(subject.QUALITY_RUN, 0)
