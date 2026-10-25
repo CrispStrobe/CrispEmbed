@@ -23,6 +23,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 RECEIPT = ROOT / "tests/results/qwen35-ocr/ovisocr3-native-model.json"
 QUALITY_RECEIPT = ROOT / "tests/results/qwen35-ocr/ovisocr3-f16-quality.json"
+ORIGINAL_QUALITY_RECEIPT = ROOT / "tests/results/qwen35-ocr/ovisocr3-original-quality.json"
 LIGHTON_RECEIPT = ROOT / "tests/results/qwen35-ocr/receipt.json"
 GATES = ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOCR3_FRONTEND",
          "CRISPEMBED_OVISOCR3_INFERENCE")
@@ -38,6 +39,12 @@ QUALITY_HEAD = ''
 QUALITY_PRODUCER_SHA = ''
 QUALITY_REVIEW_KEY = ''
 F16_SHA = ''
+# Separate, default-off interface diagnostic. These pins are set only after
+# independent review of the actual unqualified eleven-case source capture.
+DIAGNOSTIC_ORIGINAL_RUN = 0
+DIAGNOSTIC_ORIGINAL_HEAD = ''
+DIAGNOSTIC_ORIGINAL_PRODUCER_SHA = ''
+DIAGNOSTIC_QUALITY_REVIEW_KEY = ''
 
 
 def vision_contract():
@@ -176,6 +183,144 @@ def require_quality_receipt(data, model):
     return {'run': QUALITY_RUN, 'source_commit': QUALITY_HEAD,
             'producer_canonical_sha256': canonical,
             'model_sha256': producer['f16_model_sha256'], 'eleven_complete': True}
+
+
+def require_diagnostic_quality_receipts(original, quality, model):
+    """Qualify only interface testing when unchanged source OCR hits its cap.
+
+    This cannot return a quality-positive model. Both original and candidate
+    eleven-case score/paired records are recomputed with the frozen policy.
+    """
+    if (DIAGNOSTIC_ORIGINAL_RUN <= 0
+            or not re.fullmatch('[0-9a-f]{40}', DIAGNOSTIC_ORIGINAL_HEAD)
+            or not re.fullmatch('[0-9a-f]{64}', DIAGNOSTIC_ORIGINAL_PRODUCER_SHA)
+            or QUALITY_RUN <= 0 or not re.fullmatch('[0-9a-f]{40}', QUALITY_HEAD)
+            or not re.fullmatch('[0-9a-f]{64}', QUALITY_PRODUCER_SHA)
+            or DIAGNOSTIC_QUALITY_REVIEW_KEY != 'f16_eleven_capture_complete'):
+        raise ValueError('Reviewed diagnostic source/F16 capture pins are unresolved')
+    if any(not isinstance(row, dict) for row in (original, quality)):
+        raise ValueError('Diagnostic source/F16 wrappers absent')
+    op, orv = original.get('producer'), original.get('independent_review')
+    qp, qrv = quality.get('producer'), quality.get('independent_review')
+    if any(not isinstance(row, dict) for row in (op, orv, qp, qrv)):
+        raise ValueError('Diagnostic original/F16 producer or independent review absent')
+    def canonical(value):
+        return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'),
+                                          ensure_ascii=True, allow_nan=False).encode()).hexdigest()
+    oc, qc = canonical(op), canonical(qp)
+    if (original.get('run') != DIAGNOSTIC_ORIGINAL_RUN
+            or original.get('head_sha') != DIAGNOSTIC_ORIGINAL_HEAD
+            or oc != DIAGNOSTIC_ORIGINAL_PRODUCER_SHA
+            or orv.get('producer_canonical_sha256') != oc
+            or orv.get('original_eleven_capture_complete') is not True
+            or orv.get('source_completion_incomplete') is not True
+            or orv.get('original_eleven_complete') is not False
+            or orv.get('all_eleven_reached_eos') is not False
+            or op.get('status') != 'completed original OvisOCR3 HF CPU/F32 eleven-case plain OCR quality'
+            or op.get('source_commit') != DIAGNOSTIC_ORIGINAL_HEAD
+            or op.get('checkpoint_sha256') != 'aa2311c6b22b07cf3afe9aac6e8bcb02a2b19dd8671b2a91d0b144071577e600'
+            or op.get('panel_canonical_sha256') !=
+                'bc1a4bf8754e355c6e93a0a65b0877495e05fd4da9f508a64eff4f4a06668356'
+            or op.get('completed_case_count') != 11
+            or quality.get('run') != QUALITY_RUN or quality.get('head_sha') != QUALITY_HEAD
+            or qc != QUALITY_PRODUCER_SHA or qrv.get('producer_canonical_sha256') != qc
+            or qrv.get(DIAGNOSTIC_QUALITY_REVIEW_KEY) is not True
+            or qrv.get('paired_exact') is not True
+            or qrv.get('source_completion_incomplete') is not True
+            or qrv.get('f16_quality_positive') is not False
+            or qp.get('status') != 'completed diagnostic OvisOCR3 F16 eleven-case quality'
+            or qp.get('source_commit') != QUALITY_HEAD
+            or qp.get('qualified') is not False or qp.get('failures', []) != []
+            or qp.get('f16_model_sha256') != model['model_sha256']
+            or qp.get('prerequisites', {}).get('original_quality_canonical_sha256') != oc
+            or qp.get('prerequisites', {}).get('native_model_canonical_sha256') != model['producer_canonical_sha256']):
+        raise ValueError('Diagnostic original/F16 identity, review or negative qualification differs')
+    # The quality policy is stdlib only; no framework/model import at preflight.
+    spec = importlib.util.spec_from_file_location('ovis3_public_diagnostic_policy',
+        ROOT / 'tools/ci-heavy/ovisocr3_quality_contract.py')
+    contract = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(contract)
+    panel = contract.load_panel()
+    ids = [row['id'] for row in panel['cases']]
+    inputs = op.get('inputs')
+    original_cases = op.get('original_cases')
+    native_cases = qp.get('native_cases')
+    if (not isinstance(inputs, list) or any(not isinstance(row, dict) for row in inputs)
+            or [row.get('id') for row in inputs] != ids
+            or qp.get('inputs') != inputs
+            or not isinstance(original_cases, dict) or set(original_cases) != set(ids)
+            or not isinstance(native_cases, dict) or set(native_cases) != set(ids)):
+        raise ValueError('Diagnostic source/native case inputs or coverage differ')
+    original_scores = contract.score_panel(inputs, original_cases)
+    native_scores = contract.score_panel(inputs, native_cases)
+    paired = contract.paired_screen(original_cases, native_cases)
+    for label, cases in (('original', original_cases), ('f16', native_cases)):
+        for name in ids:
+            row = cases[name]
+            confidence = row.get('confidences')
+            mean = row.get('mean_confidence')
+            if (not isinstance(confidence, list) or len(confidence) != len(row['token_ids'])
+                    or any(type(value) not in (int, float) or not math.isfinite(value)
+                           or not 0 <= value <= 1 for value in confidence)
+                    or type(mean) not in (int, float) or not math.isfinite(mean)
+                    or abs(sum(confidence) / len(confidence) - mean) > 1e-6):
+                raise ValueError('Diagnostic ' + label + ' confidence capture differs: ' + name)
+    commands = qp.get('commands', {})
+    if any(commands.get(name, {}).get('exit_code') != 0
+           or not re.fullmatch('[0-9a-f]{64}', commands.get(name, {}).get('log_sha256', ''))
+           for name in ids):
+        raise ValueError('Diagnostic F16 native eleven-case command/log coverage differs')
+    incomplete = {name for name, row in original_scores['cases'].items() if not row['complete']}
+    if (op.get('scores') != original_scores or qp.get('scores') != native_scores
+            or qp.get('paired') != paired or paired['all_exact'] is not True
+            or original_scores != native_scores
+            or original_scores['all_complete'] is not False
+            or incomplete != {'two-column-page'}
+            or original_scores['cases']['two-column-page']['cap_hit'] is not True
+            or original_cases['two-column-page'].get('stop_id') is not None
+            or native_cases['two-column-page'].get('stop_id') is not None
+            or any(not row['complete'] for name, row in original_scores['cases'].items()
+                   if name != 'two-column-page')):
+        raise ValueError('Diagnostic source completion debt is not the sole qualification failure')
+    for wrapper, review, label in ((original, orv, 'original'), (quality, qrv, 'f16')):
+        if (type(wrapper.get('artifact_id')) is not int or wrapper['artifact_id'] < 1
+                or not re.fullmatch('[0-9a-f]{64}', wrapper.get('artifact_zip_sha256', ''))
+                or review.get('artifact_zip_sha256') != wrapper['artifact_zip_sha256']):
+            raise ValueError('Reviewed diagnostic ' + label + ' report artifact differs')
+    return {'run': QUALITY_RUN, 'source_commit': QUALITY_HEAD,
+            'original_run': DIAGNOSTIC_ORIGINAL_RUN,
+            'original_source_commit': DIAGNOSTIC_ORIGINAL_HEAD,
+            'original_artifact_id': original['artifact_id'],
+            'original_artifact_zip_sha256': original['artifact_zip_sha256'],
+            'quality_artifact_id': quality['artifact_id'],
+            'quality_artifact_zip_sha256': quality['artifact_zip_sha256'],
+            'source_completion_debt': ['two-column-page'],
+            'original_producer_canonical_sha256': oc,
+            'f16_producer_canonical_sha256': qc,
+            'model_sha256': qp['f16_model_sha256'],
+            'capture_case_count': 11, 'paired_ids_raw_stops_exact': True,
+            'model_qualified': False, 'publication_eligible': False}
+
+
+def diagnostic_artifact_service_gate(pins, call=subprocess.check_output):
+    results = {}
+    for label, run, artifact_id, digest in (
+            ('original', pins['original_run'], pins['original_artifact_id'],
+             pins['original_artifact_zip_sha256']),
+            ('f16', pins['run'], pins['quality_artifact_id'],
+             pins['quality_artifact_zip_sha256'])):
+        value = json.loads(call(['gh', 'api',
+            f'repos/CrispStrobe/CrispEmbed/actions/artifacts/{artifact_id}']))
+        expected_name = (f'ovisocr3-original-quality-{run}' if label == 'original'
+                         else f'ovisocr3-f16-quality-{run}')
+        if (value.get('id') != artifact_id or value.get('name') != expected_name
+                or value.get('digest') != 'sha256:' + digest
+                or value.get('expired') is not False
+                or value.get('workflow_run', {}).get('id') != run):
+            raise ValueError('Diagnostic ' + label + ' report artifact service differs')
+        results[label] = {'id': artifact_id, 'name': expected_name,
+                          'zip_sha256': digest}
+    return results
 
 
 def service_gate(run_id, head, call=subprocess.check_output, *, workflow=None):
@@ -630,6 +775,8 @@ def main():
     parser.add_argument("--model-artifact-name")
     parser.add_argument("--artifacts", type=Path)
     parser.add_argument("--lighton-model", type=Path, help="real format-1 GGUF for wrong-profile check")
+    parser.add_argument("--diagnostic-source-quality", action="store_true",
+                        help="interface-only audit after reviewed unchanged-source completion debt")
     args = parser.parse_args()
     out = Path(os.environ["HEAVY_OUT"])
     scratch = Path(os.environ["HEAVY_SCRATCH"])/"ovis-public"
@@ -647,6 +794,13 @@ def main():
                   "single_model_http": "A custom fixed-task prompt returns prompt_applied:false; the default task still runs.",
                   "explicit_ovis_stage": "CLI/HTTP startup rejects a nonempty custom prompt; binding setters return false without mutation."}}
     report_path = out/"ovisocr3-public-surfaces.json"
+    if args.diagnostic_source_quality:
+        report['diagnostic_source_quality'] = True
+        report['model_qualified'] = False
+        report['publication_eligible'] = False
+        report['independent_review_key_required'] = 'public_diagnostic_positive'
+        report['qualification_scope'] = ('Interface-only C/Python/CLI/HTTP/Rust/Dart comparison on the '
+                                         'nine-EOS owned image; eleven-case source completion debt remains')
     def save(): report_path.write_text(json.dumps(report, indent=2, allow_nan=False)+"\n")
     save()
     try:
@@ -659,14 +813,31 @@ def main():
             raise ValueError('Explicit native artifact name differs from reviewed receipt')
         if not QUALITY_RECEIPT.is_file():
             raise ValueError('Reviewed OvisOCR3 F16 eleven-case quality receipt absent')
-        quality = require_quality_receipt(json.loads(QUALITY_RECEIPT.read_text()), pins)
+        quality_receipt = json.loads(QUALITY_RECEIPT.read_text())
+        if args.diagnostic_source_quality:
+            if not ORIGINAL_QUALITY_RECEIPT.is_file():
+                raise ValueError('Reviewed negative original eleven-case capture receipt absent')
+            quality = require_diagnostic_quality_receipts(
+                json.loads(ORIGINAL_QUALITY_RECEIPT.read_text()), quality_receipt, pins)
+            report['source_quality_negative'] = {
+                'original_receipt_sha256': sha(ORIGINAL_QUALITY_RECEIPT),
+                'f16_receipt_sha256': sha(QUALITY_RECEIPT),
+                'sole_completion_debt': quality['source_completion_debt'],
+                'all_eleven_f16_ids_raw_stops_exact': quality['paired_ids_raw_stops_exact']}
+        else:
+            quality = require_quality_receipt(quality_receipt, pins)
         report["model_prerequisite"] = {**pins, "receipt_sha256": sha(RECEIPT),
             "service_run": service_gate(args.model_run_id, pins["source_commit"]),
             "service_artifact": artifact_service_gate(pins),
             "service_report_artifact": report_artifact_service_gate(pins)}
         report['quality_prerequisite'] = {**quality, 'receipt_sha256': sha(QUALITY_RECEIPT),
             'service_run': service_gate(quality['run'], quality['source_commit'],
-                                        workflow='.github/workflows/ovisocr3-quality-f16.yml')}
+                                        workflow=(NATIVE_WORKFLOW if args.diagnostic_source_quality else
+                                                  '.github/workflows/ovisocr3-quality-f16.yml'))}
+        if args.diagnostic_source_quality:
+            report['quality_prerequisite']['original_service_run'] = service_gate(
+                quality['original_run'], quality['original_source_commit'], workflow=NATIVE_WORKFLOW)
+            report['quality_prerequisite']['service_artifacts'] = diagnostic_artifact_service_gate(quality)
         report['selected_vision_preset'] = pins['selected_vision_preset']
         report["phase"] = "preflight-complete"
         save()
@@ -770,11 +941,17 @@ def main():
             report["failures"].append("public-confidence-comparison")
         if not report["abi_layout"]["passed"]:
             report["failures"].append("public-abi-layout")
-        report["status"] = "completed public audit" if not report["failures"] else "completed with failures"
+        if args.diagnostic_source_quality:
+            report['interface_diagnostic_complete'] = not report['failures']
+            report["status"] = ("completed diagnostic public interface audit; source quality unqualified"
+                                if not report["failures"] else "completed diagnostic interfaces with failures")
+        else:
+            report["status"] = "completed public audit" if not report["failures"] else "completed with failures"
         save()
         if report["failures"]: raise ValueError("Public model-backed arms failed")
     except BaseException as exc:
-        report["status"] = "failed hosted public audit"
+        report["status"] = ("failed diagnostic public interface audit" if args.diagnostic_source_quality
+                            else "failed hosted public audit")
         report["error"] = f"{type(exc).__name__}: {exc}"
         if not report["failures"]: report["failures"].append(report["phase"])
         save()

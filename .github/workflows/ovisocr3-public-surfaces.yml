@@ -23,6 +23,11 @@ on:
         description: 'Format-1 LightOn GGUF filename within that artifact'
         required: true
         type: string
+      diagnostic_source_quality:
+        description: 'Interface-only audit after reviewed unchanged-source OCR completion debt'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       model_run_id:
@@ -45,6 +50,11 @@ on:
         description: 'Format-1 LightOn GGUF filename within that artifact'
         required: true
         type: string
+      diagnostic_source_quality:
+        description: 'Interface-only; never qualifies model or publication'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -62,6 +72,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       MODEL_RUN_ID: ${{ inputs.model_run_id }}
       LIGHTON_FILENAME: ${{ inputs.lighton_filename }}
+      DIAGNOSTIC_SOURCE_QUALITY: ${{ inputs.diagnostic_source_quality }}
       OMP_NUM_THREADS: '2'
       OPENBLAS_NUM_THREADS: '2'
       MKL_NUM_THREADS: '2'
@@ -74,12 +85,20 @@ jobs:
           python-version: '3.12'
       - name: Source controls before artifacts or builds
         run: python tests/test_ovisocr3_public_surfaces.py -v
-      - name: Reviewed F16-positive model gate before dependencies and weights
+      - name: Reviewed native and F16 source-quality scope before dependencies and weights
         run: |
           mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
           echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
           echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
-          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr3_public_surfaces.py --preflight --model-run-id "$MODEL_RUN_ID" --model-artifact-name "${{ inputs.model_artifact_name }}"
+          diagnostic_args=()
+          if [ "$DIAGNOSTIC_SOURCE_QUALITY" = true ]; then
+            diagnostic_args+=(--diagnostic-source-quality)
+          fi
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" \
+            python tools/ci-heavy/ovisocr3_public_surfaces.py --preflight \
+              --model-run-id "$MODEL_RUN_ID" \
+              --model-artifact-name "${{ inputs.model_artifact_name }}" \
+              "${diagnostic_args[@]}"
       - uses: actions/download-artifact@v4
         with:
           name: ${{ inputs.model_artifact_name }}
@@ -101,11 +120,16 @@ jobs:
           python -m pip freeze > "$HEAVY_OUT/environment.txt"
       - name: Actual C ABI, Python, CLI, HTTP, Rust and Dart model-backed outputs
         run: |
+          diagnostic_args=()
+          if [ "$DIAGNOSTIC_SOURCE_QUALITY" = true ]; then
+            diagnostic_args+=(--diagnostic-source-quality)
+          fi
           python tools/ci-heavy/ovisocr3_public_surfaces.py \
             --model-run-id "$MODEL_RUN_ID" \
             --model-artifact-name "${{ inputs.model_artifact_name }}" \
             --artifacts "$RUNNER_TEMP/model-reference" \
-            --lighton-model "$RUNNER_TEMP/lighton/$LIGHTON_FILENAME"
+            --lighton-model "$RUNNER_TEMP/lighton/$LIGHTON_FILENAME" \
+            "${diagnostic_args[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
