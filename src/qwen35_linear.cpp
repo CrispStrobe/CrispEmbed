@@ -121,7 +121,9 @@ void converted_weight_cache::clear() {
     bytes_ = hits_ = 0;
 }
 const float * converted_weight_cache::get(ggml_tensor * source, int threads) {
-    if (!core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") || !budget_ || !matrix_type_supported(source)) return nullptr;
+    if (!core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") || !budget_ || !source ||
+        (source->type != GGML_TYPE_F32 && source->type != GGML_TYPE_F16) || !matrix_type_supported(source))
+        return nullptr;
     const auto found = entries_.find(source);
     if (found != entries_.end()) {
         ++hits_;

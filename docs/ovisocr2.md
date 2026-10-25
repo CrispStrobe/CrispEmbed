@@ -250,6 +250,31 @@ while its weight-backed job remained queued, before execution. The replacement
 uses that strengthened source. Inspect both F32/F16 reports and original-cast
 payload checks before any conversion qualification; no duplicate local work.
 
+## Experimental decoder weight reuse
+
+`CRISPEMBED_QWEN35_WEIGHT_CACHE=1` enables per-context reuse of immutable
+decoder matrices converted from F16/F32 storage. It is default-off. Vision,
+activations and request-local KV/recurrent state keep their existing paths;
+quantized matrices always use the existing conversion fallback.
+
+`CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` is an unsigned decimal retained-buffer
+budget captured when the model context is initialized:256MiB when unset,
+at most1GiB. Zero, empty, malformed and over-limit values disable admission.
+The budget excludes model storage, conversion workspace, graph arenas and small
+cache metadata. Two model contexts each have their own budget. Admission is
+first-fit with no eviction: a matrix that does not fit uses the original
+serial/parallel path. The1,017,118,720-byte full output head cannot fit the
+default budget. Literal gate`=0` bypasses existing entries; storage is retained
+until the owning context is freed. Request errors clear output and carried state,
+while immutable weight storage may safely survive for recovery. Contexts remain
+synchronous; do not use one context concurrently.
+
+This is an unqualified experiment until the hosted`weight-cache` phase of
+`.github/workflows/ovisocr2-metadata.yml` completes the original943-stage14-arm
+replay with both cache values, exact on/off raw vectors, all11 frozen first-F16
+IDs/text/stops/confidences and unprofiled paired cold/warm timing/RSS. The source
+audit does not authorize model publication, a new runtime release or an app upgrade.
+
 ## Separately gated native frontend audit
 
 `feat/ovisocr2-frontend` adds a frontend-only opt-in

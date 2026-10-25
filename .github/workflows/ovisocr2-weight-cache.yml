@@ -1,0 +1,90 @@
+name: OvisOCR2 bounded converted-weight cache
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ovisocr2-weight-cache-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact source and negative controls before build
+        run: |
+          python tests/test_ovisocr2_weight_cache.py -v
+          python tools/ci-heavy/ovisocr2_weight_cache.py --preflight
+      - name: Portable CPU binaries and actual component controls
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+          python scripts/check-cpu-baseline.py "$RUNNER_TEMP/build"
+          cmake --build "$RUNNER_TEMP/build" --target test-qwen35-weight-cache test-ovisocr2-cache-bench test-qwen35-decoder test-qwen35-vision test-qwen35-delta test-ovisocr2-context -j2
+          "$RUNNER_TEMP/build/test-qwen35-weight-cache"
+          mkdir -p "$RUNNER_TEMP/bin"
+          python - <<'PY'
+          import hashlib,json,os,shutil,sys
+          from pathlib import Path
+          sys.path.insert(0,'tools/ci-heavy')
+          from ovisocr2_weight_cache import TARGETS
+          root=Path(os.environ['RUNNER_TEMP']);hashes={}
+          for name in TARGETS:
+              shutil.copy2(root/'build'/name,root/'bin'/name)
+              hashes[name]=hashlib.sha256((root/'bin'/name).read_bytes()).hexdigest()
+          (root/'bin/binaries.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'binary_sha256':hashes,'portable_cpu_baseline_checked':True}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ovisocr2-cache-binaries-${{ github.run_id }}
+          path: ${{ runner.temp }}/bin/
+          retention-days: 90
+  frozen-and-paired:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovisocr2-cache-binaries-${{ github.run_id }}
+          path: ${{ runner.temp }}/bin/
+      - name: Frozen fourteen arms per gate and unprofiled cold/warm/RSS pairs
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" AUDIT_BIN_DIR="$RUNNER_TEMP/bin" python tools/ci-heavy/ovisocr2_weight_cache.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-weight-cache-reports-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-weight-cache-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/scratch/cache/native-diff/
+          retention-days: 90
+  eleven-case-quality:
+    needs: build
+    uses: ./.github/workflows/ovisocr2-quality.yml
+    with:
+      phase: f16
+      original_run: '40054043629'
+      weight_cache: true

@@ -3,6 +3,7 @@
 #include "qwen35_weight_cache.h"
 #include "ggml.h"
 #include "ggml-backend.h"
+#include "ggml-alloc.h"
 #include "ggml-cpu.h"
 #include <cmath>
 #include <cstdio>
@@ -48,12 +49,19 @@ static int run() {
     if (converted_weight_cache(converted_weight_cache::maximum_budget + 1).budget()) return 1;
     env("CRISPEMBED_QWEN35_OCR", "1");
     using owner = std::unique_ptr<ggml_context, decltype(&ggml_free)>;
-    owner ctx(ggml_init({ 2 * 1024 * 1024, nullptr, false }), ggml_free);
+    owner ctx(ggml_init({ 16 * 1024, nullptr, true }), ggml_free);
     if (!ctx) return 1;
     auto * half = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, 32, 8);
     auto * full = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, 32, 9);
     auto * other = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F16, 32, 8);
     auto * invalid = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, 32, 8);
+    auto * quant = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_Q8_0, 32, 8);
+    using backend_owner = std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)>;
+    using buffer_owner = std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)>;
+    backend_owner backend(ggml_backend_cpu_init(), ggml_backend_free);
+    if (!backend) return 1;
+    buffer_owner buffer(ggml_backend_alloc_ctx_tensors(ctx.get(), backend.get()), ggml_backend_buffer_free);
+    if (!buffer) return 1;
     for (size_t i = 0; i < 256; ++i) {
         static_cast<ggml_fp16_t *>(half->data)[i] = ggml_fp32_to_fp16(float(int(i % 29) - 14) / 16);
         static_cast<ggml_fp16_t *>(other->data)[i] = ggml_fp32_to_fp16(float(int(i % 17) - 8) / 16);
@@ -68,6 +76,9 @@ static int run() {
     env("CRISPEMBED_QWEN35_WEIGHT_CACHE", "0");
     if (!project_cpu({ half, full }, input.data(), 32, 3, 2, old, &cache) || cache.entries() || cache.bytes()) return 1;
     env("CRISPEMBED_QWEN35_WEIGHT_CACHE", "1");
+    env("CRISPEMBED_QWEN35_QUANT", "1");
+    if (cache.get(quant, 2)) return 1; // This experiment deliberately retains quantized fallback.
+    env("CRISPEMBED_QWEN35_QUANT", "0");
     if (zero.get(half, 2) || cache.get(nullptr, 2) || cache.get(invalid, 2) || cache.entries()) return 1;
     {
         converted_weight_cache both(4096);
