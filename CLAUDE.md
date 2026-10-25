@@ -163,8 +163,11 @@ OvisOCR3 metadata and its original943-stage CPU reference are reviewed. Its
 is source-quality negative: two-column-page hits the frozen1024-token cap
 without EOS (CER0.52365/WER0.83993). The earlier native14 retry exposed two
 test-harness defects. [Final-source native1440183489780](tests/results/qwen35-ocr/ovisocr3-native-model.json)
-is independently positive on all14 arms. Paired native F16 diagnostic40187405735
-and public engine22 diagnostics still require actual reviewed results. The
+is independently positive on all14 arms. [Paired F16 diagnostic40187405735](tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+faithfully matches all11 original cases/1,679 IDs/raw text/stops/caps, including
+the unchanged capped page. Interface-only public diagnostic40196755934 still
+requires terminal review; preserve its initial omitted-artifact-name preflight
+failure separately. No interface result upgrades negative source quality. The
 source completion failure blocks model qualification, publication and alias;
 do not change its prompt, cap, gold or scorer to pass a gate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in

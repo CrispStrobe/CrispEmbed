@@ -501,8 +501,10 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   CPU/F32 capture are reviewed. [Final-source native14](../tests/results/qwen35-ocr/ovisocr3-native-model.json)
   passes14/14 with exact nine-ID smoke output and profile-bound isolation.
   Its original plain OCR11 capture is complete, but two-column output caps1024
-  without EOS (CER0.52365/WER0.83993). Paired F16 run40187405735 and public-
-  interface diagnostics remain pending.
+  without EOS (CER0.52365/WER0.83993). [Paired F16 run40187405735](../tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+  faithfully matches all11 cases/1,679 IDs/raw text/stops/caps. Public-interface
+  diagnostic40196755934 remains pending; the initial missing-artifact-name
+  dispatch failed safe before dependencies/model transfer/build.
   A faithful diagnostic cannot override source-quality failure: no qualification,
   model alias or publication. Preserve unchanged prompts/gold/caps/scorers.
   [Original quality evidence](../tests/results/qwen35-ocr/ovisocr3-original-quality.json).

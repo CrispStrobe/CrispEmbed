@@ -15377,3 +15377,37 @@ nonnegative wall time. An actual failed subprocess and malformed/mismatched/
 nonfinite resource controls pass11 focused tests. Recovered timing does not
 change exit status or numerical rejection; historical producer records remain
 byte exact.
+
+## 25 October 2026 — OvisOCR3 faithful F16 panel, source quality remains negative
+
+[Actual F16 diagnostic40187405735](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40187405735)
+at ee719aef is independently reviewed in [the full receipt](tests/results/qwen35-ocr/ovisocr3-f16-quality.json).
+All11 native cases match the frozen original in1,679 IDs, raw text, stop IDs/
+kinds and caps; source/image records and all raw CER/WER/edit/completion scores
+match. Eight authored cases have zero CER/WER; ten cases reach EOS. The same
+original two-column case reaches1024 without EOS, so `qualified=false` remains.
+No prompt, cap, gold, preprocessing or score change follows from the diagnostic.
+
+Independent checks bind the live parent workflow/head/artifact,18 small ZIP
+members, seven quality-source blobs, reviewed native source closure,15 logs,
+all11 actual result records, reconstructed F16 SHA, original/native prerequisite
+hashes and installed dual-EOS proof. Selected confidences are finite/aligned and
+means recompute. They are not bit-exact to original F32: maximum absolute
+selected-probability difference is0.00024628627044676055 on two-column token494;
+maximum per-case mean difference is0.000030142917281206216. Record these as
+diagnostic values, separately from the native14 readable-image confidence budget.
+The arrays/model remain hosted; only the40,907-byte report ZIP was downloaded.
+
+After both reviews, the actual F16 capture is pinned for the explicitly separate
+six-interface diagnostic40196033239 at93da2dbd. Its real producer/artifact gates
+accept faithful capture with negative source completion; the strict quality gate
+rejects the same record. A later interface result can assert only public API
+behavior, with model-qualified=false/publication-eligible=false and a distinct
+review key. No OvisOCR3 HF write, model alias, release or default promotion follows.
+
+Initial interface dispatch40196033239 omitted the required
+`native_artifact_name`. Exact-identity preflight rejected it before dependencies,
+model transfer or native build; [the original failure](tests/results/qwen35-ocr/initial-ovisocr3-public-artifact-name.json)
+is retained. This was an operator argument error, not an inference or quality
+result. Retry40196755934 uses the unchanged93da2dbd source and explicit
+`ovisocr3-native14-f16-40183489780`; no guard was relaxed.

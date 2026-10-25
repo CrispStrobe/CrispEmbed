@@ -17,20 +17,20 @@ final-source Ovis2 frozen14/F16 eleven-case replays and the four-case larger-inp
 audit have reviewed outcomes in HISTORY/PERFORMANCE. The2048 boundary is a
 numerical rejection; exact text does not change that result. Remaining work:
 
-1. Review [OvisOCR3 paired F16 eleven-case40187405735](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40187405735)
-   at ee719aef. The independently positive [native14 receipt](tests/results/qwen35-ocr/ovisocr3-native-model.json)
-   binds final26dcb07f runtime source, both473-tensor exports and1,662 raw
-   declarations against the943-stage original. The driver pins that proof and
-   every native gate; whole-src/CMake/ggml identity is required before weights.
-2. If all11 F16 outputs exactly match original IDs/raw text/stops/caps, run the
-   separate public-interface diagnostic across C/Python/CLI/HTTP/Rust/Dart.
-   Original two-column output caps1024 without EOS; retain model-qualified=false,
-   publication-eligible=false and the distinct diagnostic review key. No prompt/
-   cap/gold/scorer changes, model alias or publication follow from a diagnostic.
-3. Consolidate final actual outcomes in HISTORY/PERFORMANCE and model documents;
-   leave only executable pending tasks here. Complete normal PR and merged-source
-   checks, and mirror the vendor handoff into CrispMath without changing its
-   application release pin or unrelated app/SAM owner work.
+1. Review [OvisOCR3 six-interface diagnostic40196755934](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40196755934)
+   at93da2dbd. [Native14](tests/results/qwen35-ocr/ovisocr3-native-model.json) and
+   [F16 eleven-case capture](tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+   are independently reviewed: all1,679 source IDs/raw text/stops/caps match,
+   including the unchanged two-column1024 cap/no EOS. The public diagnostic
+   requires current whole-src/CMake/ggml identity, exact native gates and live
+   source/artifact proofs before model transfer. Require actual C/Python/CLI/
+   HTTP/Rust/Dart outputs, ABI/cache/gate/profile controls and confidence budgets.
+   Preserve model-qualified=false/publication-eligible=false and the distinct
+   diagnostic review key. No prompt/cap/gold/scorer change, alias or publication.
+2. Consolidate the final actual interface outcome in HISTORY/PERFORMANCE and
+   model documents; leave only executable pending tasks here. Complete normal
+   PR/merged-source checks, then mirror the vendor handoff into CrispMath while
+   preserving its application release pin and unrelated app/SAM owner work.
 
 No queued workflow or prepared harness counts as qualification. Large archives
 remain hosted; independent review downloads small reports only. Preserve old
@@ -83,8 +83,9 @@ candidate is selected for publication or default promotion.
 Original plain OCR11 capture40178328864 is complete and reviewed; eight authored
 cases have zero raw CER/WER, but the two-column page caps1024 without EOS with
 CER0.52365/WER0.83993. Preserve that negative result in HISTORY; no cap/prompt/
-gold/scorer adjustment. Native14 is independently positive; finish paired native
-F16 diagnostic40187405735 and retain both earlier harness failures. Model qualification requires all old screens.
+gold/scorer adjustment. Native14 and faithful F16 eleven-case capture are
+independently reviewed; finish interface-only diagnostic40196755934 and retain
+earlier harness failures. Model qualification requires all old screens.
 An explicit default-off public diagnostic may verify interfaces only when all11
 native outputs faithfully match the original, including its unchanged capped
 case. It must emit model-qualified=false and a separate diagnostic review key.
@@ -513,8 +514,10 @@ uses Rust/Tauri/Svelte, not the old Dart paths in the contribution guide.
 After native/model qualification and a compatible immutable runtime are ready:
 update `src-tauri/src/extractors/mod.rs::engine_id`, the qualified default-model
 mapping in `src-tauri/src/extractors/ocr_crispembed.rs`, and the actual engine
-configuration/selector. Use orchestrator stage21 for Ovis; the older
-`vlm_engine_id` escalation API uses a different number space. Preserve existing
+configuration/selector. Use orchestrator stage21 for qualified OvisOCR2. Stage22 is OvisOCR3 and stays
+unqualified until its separate source-quality protocol passes; do not register
+it from a positive interface diagnostic. The older `vlm_engine_id` escalation
+API uses a different number space. Preserve existing
 default engines and the three experimental gates. Acceptance requires actual
 selected-library identity, empty-cache model hash resolution, output/confidence,
 cap/custom-prompt rejection and fallback-stage behavior. Record the consumer

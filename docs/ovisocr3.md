@@ -6,8 +6,9 @@ installed-processor evidence and a 943-stage original HF CPU/F32 reference.
 [The eleven-case original capture](../tests/results/qwen35-ocr/ovisocr3-original-quality.json)
 is complete, but its two-column case reaches the unchanged 1024-token cap
 without EOS (CER 0.52365, WER 0.83993). Publication and a model alias are blocked.
-Native F32/F16 and paired-output audits can establish port fidelity separately;
-prepared workflows do not establish a positive result. No runtime release or
+Native14 F32/F16 and paired eleven-case F16 audits now establish bounded port
+fidelity. All1,679 IDs/raw text/stops/caps match the frozen original, including
+its capped case; this is separate from source-quality qualification. No runtime release or
 application upgrade follows from this work.
 
 ## Pinned provenance and license
@@ -151,8 +152,9 @@ that explicit EOS-list policy after actual reference evidence. Such a result
 must retain the distinction from installed vLLM's effective stop/runtime policy.
 Original eleven-case capture is reviewed. [Final-source native14](../tests/results/qwen35-ocr/ovisocr3-native-model.json)
 passes all14 F32/F16 arms with exact nine-ID smoke output, context recovery and
-profile-isolated1024 bounds. Paired native F16 quality40187405735 and six public
-interfaces remain acceptance gates. Fresh immutable download/publication requires a
+profile-isolated1024 bounds. [Paired native F16 capture40187405735](../tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+faithfully matches all11 source cases, while retaining qualified=false. The
+six-interface diagnostic40196755934 remains an acceptance gate for API behavior. Fresh immutable download/publication requires a
 qualified source-quality protocol and is blocked by the current result. Other17
 tasks, multi-image inference and the official2880² pixel maximum remain outside
 the initial single-image plain OCR claim.
