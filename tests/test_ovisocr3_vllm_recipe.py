@@ -38,6 +38,9 @@ class RecipeControls(unittest.TestCase):
         runner = load('ovisocr3_gpu_runner_identity', DIR / 'ovisocr3_vllm_reference.py')
         self.assertEqual(runner.SOURCE_EOS, [248044, 248046])
         self.assertEqual(runner.REVISION, '5f6ce6932efee9ec10c30746db55bd780214b7fd')
+        # The pinned OvisOCR3 README passes a list even for one image.
+        self.assertIn("'multi_modal_data': {'image': [image.convert('RGB')]}",
+                      (DIR / 'worker.py').read_text())
 
     def test_selected_score_required_each_step(self):
         import os
