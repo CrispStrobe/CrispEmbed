@@ -51,8 +51,16 @@ OvisOCR2 at its reviewed revision. Their saved
 names `Qwen3VLProcessor` and `Qwen2VLImageProcessorFast`, with default
 pixel area 65,536–16,777,216. OvisOCR2's installed Transformers 5.16.1
 metadata run resolved a slow `Qwen2VLImageProcessor` despite this saved
-Fast declaration. OvisOCR3's actual installed processor class, arrays and
-grids remain **unobserved**. Neither repository has `processor_config.json`.
+Fast declaration. [Hosted metadata40172525903](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172525903)
+now resolves OvisOCR3 to `Qwen3VLProcessor` / slow `Qwen2VLImageProcessor`
+with torchvision backend. Independent review verifies three authored RGB inputs,
+all five packed-field hashes, IDs/masks/grids, repeat identity and the separately
+rendered531-byte plain OCR template. Small-input default versus explicit448²
+minimum changes packed pixels, so the official override is required.
+[Producer and independent review](../tests/results/qwen35-ocr/ovisocr3-metadata.json)
+retain exact versions/source hashes. This weight-free probe establishes no model
+forward or installed vLLM runtime parity. Neither repository has
+`processor_config.json`.
 
 ## Official inference and changed contracts
 
@@ -111,3 +119,30 @@ effective vLLM stop set before declaring native EOS/completion parity.
 The matching source schema makes OvisOCR3 a practical sibling candidate.
 It does **not** qualify the existing OvisOCR2 GGUF, fixed prompt, cleanup,
 vision preset, precision selection or production alias for the new weights.
+
+## Active original-first qualification
+
+[Original reference40176566774](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40176566774)
+is dispatched at immutable sourcef2f0b7d0. Its pinned CPU stack first replays the
+three metadata anchors, then captures the original full model with every-layer,
+cache, logits, generated scores, IDs, EOS and raw output. An independent review
+must bind its service/head/artifact and report hashes before dependent workers
+can load weights. The separate [eleven-case panel](../tests/results/qwen35-ocr/ovisocr3-quality-panel.json)
+freezes eight authored and three previously reviewed licensed document inputs
+before native results. Scoring uses plain raw-text CER/WER, exact paired IDs/text/
+stops and cap records. Ovis2's HTML presentation scorer does not apply.
+
+The new selector is append-only public engine22 / CLI `ovisocr3`; it requires an
+explicit GGUF and all value-parsed `CRISPEMBED_QWEN35_OCR`,
+`CRISPEMBED_OVISOCR3_FRONTEND`, `CRISPEMBED_OVISOCR3_INFERENCE` gates. Its cache
+is separate from engines20/21, requires exact format3 and rejects custom task
+prompts. This is implementation under audit, with no qualified alias or release.
+
+Source-only `--profile ovisocr3` exports carry false qualification flags and are
+rejected by inference. A separately proof-bound original-HF export may qualify
+that explicit EOS-list policy after actual reference evidence. Such a result
+must retain the distinction from installed vLLM's effective stop/runtime policy.
+Native fourteen-arm F32/F16 comparison, original eleven-case capture, native F16
+quality, six public interfaces and fresh immutable download are pending. Other17
+tasks, multi-image inference and the official2880² pixel maximum remain outside
+the initial single-image plain OCR claim.
