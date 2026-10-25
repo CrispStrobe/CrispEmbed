@@ -1,11 +1,14 @@
 # OvisOCR3 pinned source contract
 
-**Status: source audit only.** OvisOCR3 is eligible for a bounded permissive OCR
-implementation lane. No OvisOCR3 checkpoint payload, processor, model forward,
-native converter, or decoded output has been run or qualified here. The
-[source report](../tests/results/qwen35-ocr/ovisocr3-source-contract.json)
-records exact file hashes, all 18 task-prompt hashes, the public safetensors
-header and comparison limits. It creates no model alias or runtime release.
+**Status: original execution and capture reviewed; source quality unqualified.**
+The pinned Apache-2.0 checkpoint has actual controlled vLLM/T4 execution,
+installed-processor evidence and a 943-stage original HF CPU/F32 reference.
+[The eleven-case original capture](../tests/results/qwen35-ocr/ovisocr3-original-quality.json)
+is complete, but its two-column case reaches the unchanged 1024-token cap
+without EOS (CER 0.52365, WER 0.83993). Publication and a model alias are blocked.
+Native F32/F16 and paired-output audits can establish port fidelity separately;
+prepared workflows do not establish a positive result. No runtime release or
+application upgrade follows from this work.
 
 ## Pinned provenance and license
 
@@ -124,11 +127,14 @@ vision preset, precision selection or production alias for the new weights.
 ## Active original-first qualification
 
 [Original reference40177416485](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177416485)
-is dispatched at immutable source2ce86168. Its pinned CPU stack first replays the
-three metadata anchors, then captures the original full model with every-layer,
-cache, logits, generated scores, IDs, EOS and raw output. An independent review
-must bind its service/head/artifact and report hashes before dependent workers
-can load weights. The separate [eleven-case panel](../tests/results/qwen35-ocr/ovisocr3-quality-panel.json)
+completed at immutable source2ce86168. Its independently reviewed
+[receipt](../tests/results/qwen35-ocr/ovisocr3-original-reference.json) binds the
+service/head/artifact and report hashes, three processor anchors, all 943 stages,
+72 decoder-layer records, 96 cache states and nine generated score steps. The
+owning output is `Hello OCR\n12345`, with nine IDs ending at EOS 248046.
+The original CPU-backend-off vision diagnostic retains a 0.0816956 layer-11
+absolute difference despite identical decoded output; this does not waive any
+native numerical budget. The separate [eleven-case panel](../tests/results/qwen35-ocr/ovisocr3-quality-panel.json)
 freezes eight authored and three previously reviewed licensed document inputs
 before native results. Scoring uses plain raw-text CER/WER, exact paired IDs/text/
 stops and cap records. Ovis2's HTML presentation scorer does not apply.
@@ -143,8 +149,10 @@ Source-only `--profile ovisocr3` exports carry false qualification flags and are
 rejected by inference. A separately proof-bound original-HF export may qualify
 that explicit EOS-list policy after actual reference evidence. Such a result
 must retain the distinction from installed vLLM's effective stop/runtime policy.
-Native fourteen-arm F32/F16 comparison, original eleven-case capture, native F16
-quality, six public interfaces and fresh immutable download are pending. Other17
+Original eleven-case capture is reviewed. Final-source native fourteen-arm
+F32/F16 replay40183489780, paired native F16 quality and six public interfaces
+remain acceptance gates. Fresh immutable download/publication requires a
+qualified source-quality protocol and is blocked by the current result. Other17
 tasks, multi-image inference and the official2880² pixel maximum remain outside
 the initial single-image plain OCR claim.
 

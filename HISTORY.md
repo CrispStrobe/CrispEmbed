@@ -15283,4 +15283,3 @@ current F16 selection/publication receipts and model pin immutable. A future
 qualified precision needs versioned decision/publication evidence and a reviewed
 destination/allowlist: the present publisher intentionally permits one GGUF plus
 four provenance files and refuses additional unreviewed model files.
-
