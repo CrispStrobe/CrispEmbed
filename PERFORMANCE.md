@@ -1,3 +1,24 @@
+## OvisOCR2 attention-F16 / FFN-Q4 — 25 October 2026
+
+The independently reviewed [selective attempt](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)
+keeps401 tensors byte-identical and quantizes72 FFN matrices. It saves22.1% file
+size (1.337GB versus1.717GB), but is rejected under unchanged numerical and
+independent-document screens. All11 reach EOS. First source-fed QKV has cosine1
+and max error0.0000133514404 in both F16 and candidate; the first full decoder
+layer has global cosine0.999563217 but max error0.0328894854 and local minimum
+cosine0.997915924. Component parity does not establish decoded quality.
+
+| Document metric | Frozen F16 | FFN Q4 / attention F16 |
+| --- | ---: | ---: |
+| Receipt content CER / WER | 0.0533854 / 0.222222 | 0.0703125 / 0.319444 |
+| Two-column raw CER / WER | 0.1351895 / 0.1870504 | 0.1395505 / 0.2086331 |
+| Receipt output IDs | 882 | 473 |
+| Two-column output IDs | 697 | 701 |
+
+Receipt/table presentation also changes; do not compare per-call times as an
+equal-output speedup. [Selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
+retains F16. Earlier Q8, plain Q4 and calibrated Q4 failures remain archived.
+
 The separately frozen Ovis presentation view preserves all raw scores and
 strict-v1 failures while parsing integer table borders. Original GPU content
 CER/WER is0.0533854/0.2222222 for the receipt,0.1110366/0.1870504 for two-column,

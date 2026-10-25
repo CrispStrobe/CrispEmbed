@@ -1,3 +1,30 @@
+## 25 October 2026 — Attention-F16 / FFN-Q4 candidate rejected
+
+[40172527229](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172527229)
+at72698a76 completes the full same-run eleven-case F16 control, eleven-case
+candidate, tensor audit and raw numerical diagnostics.
+[Unchanged producer and independent review](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)
+recompute27 log hashes,53 small ZIP members, eleven PNG/RGB hashes,10 helper/
+25 native source hashes, both frozen baselines, all quality screens and473
+before/after tensor records. The261 raw manifests are checked against log stage
+sets/shapes/byte counts; large vector and GGUF payloads stay remote.
+
+Exactly72 FFN matrices become Q4_K;401 other tensors, including78 attention
+matrices, retain exact name/shape/type/payload SHA. The candidate is1,337,376,256
+bytes versus1,717,222,848 F16. Both source-fed first-linear arms pass; QKV maximum
+error is0.0000133514404 and cosine1 in both control and candidate. Full decoder
+layer0 fails with max0.0328894854, minimum cosine0.997915924/global0.999563217.
+All eleven candidate cases reach EOS, with eight authored cases and inventory
+IDs/text/stops exact. Receipt content CER/WER worsens0.0533854→0.0703125 /
+0.222222→0.319444; two-column raw CER/WER0.1351895→0.1395505 /
+0.1870504→0.2086331. `Lorem Ipsum` becomes `Lorem Iptum`, and receipt formatting/
+content changes882→473 IDs. Faster completion from fewer output tokens is not
+an equal-output speedup. No numerical or document threshold is waived.
+
+[Four-attempt selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
+keeps qualified published F16 and links the immutable earlier three-attempt
+selection. All earlier receipts and the published model remain unchanged.
+
 ## 25 October 2026 — Original OvisOCR3 plain OCR quality is negative
 
 [Original40178328864](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178328864)

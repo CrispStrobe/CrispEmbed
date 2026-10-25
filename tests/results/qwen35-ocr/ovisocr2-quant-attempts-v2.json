@@ -1,0 +1,145 @@
+{
+  "schema": "crispembed-ovisocr2-quant-attempt-selection-v2",
+  "selected_precision": "f16",
+  "selected_candidate_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+  "selected_candidate_bytes": 1717222848,
+  "selected_quality_run": 40056641800,
+  "selected_quality_receipt_sha256": "ff68a1cd4c4cc74b5092b748a69bd61c29b80c823b1d4219985ee3595c508bd6",
+  "selection_policy": "Require unchanged numerical and original/first-F16 task gates. All four quantized attempts fail; critical attention F16 fixes the isolated linear probe but FFN Q4 still regresses full decoder and document output. Keep the published qualified F16.",
+  "attempts": {
+    "q8": {
+      "status": "rejected",
+      "reason": "Unchanged numerical gates fail; two-column Ipsum becomes Ispum with worse raw/content CER and WER.",
+      "run": 40061433357,
+      "source_commit": "8b421ba5cf6c25caf71e368e9a26fee9a14d9243",
+      "report_path": "tests/results/qwen35-ocr/ovisocr2-q8-quality.json",
+      "report_sha256": "0d04d4fdae3cd920033663ea9f74c20a5fa273c9642a8d807fab14c45b7bd961",
+      "producer_report_sha256": "babffc936af26676d74a116c6281f704c5c982a8e4f03ed97544568bc5cd1e76",
+      "candidate_sha256": "f0bccbed39f6189a95519997a7c36a1938d7fd5fe81a8b93ac44634d0886d13b",
+      "candidate_bytes": 1251261952,
+      "numerical_positive": false,
+      "quality_positive": false,
+      "eleven_cases_completed": true,
+      "candidate_artifact": {
+        "bytes": 1057884535,
+        "id": 12549570352,
+        "name": "ovisocr2-quality-candidate-40061433357",
+        "service_metadata_only": true,
+        "zip_sha256": "f02a52a9b64f063afdb29553ee4ca16f2a3bd248af14be596e843428f74c07f4"
+      },
+      "raw_supplement_path": "tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json",
+      "raw_supplement_sha256": "82d699e60576e7d6ab1cb254ff3a043e64ab89c15cda6e397e3ea402ffbaadec"
+    },
+    "q4": {
+      "status": "rejected",
+      "reason": "Unchanged numerical gates fail; receipt content CER/WER and two-column WER regress.",
+      "run": 40066573198,
+      "source_commit": "7924d8506d452aceefacca68ca64480881530363",
+      "report_path": "tests/results/qwen35-ocr/ovisocr2-q4-quality.json",
+      "report_sha256": "b7705301a67ab1d93b657dbd920d2bcbd676e5b9c966bc05bc918a1e341f5d2c",
+      "producer_report_sha256": "553026ee6c3b507f01f301cc336620b3f12ca5aa48be01f57bd3c49a5abde69c",
+      "candidate_sha256": "aa6516815bd4d5418e7f4d96b8977019a9b59a64863d52e2cda75b029bfd748e",
+      "candidate_bytes": 1119141376,
+      "numerical_positive": false,
+      "quality_positive": false,
+      "eleven_cases_completed": true,
+      "candidate_artifact": {
+        "id": 12551051507,
+        "name": "ovisocr2-quality-candidate-40066573198",
+        "bytes": 933151485,
+        "zip_sha256": "fd6ecd4654e657615385d8f01279fbe0cb89059df98c90f58156f89fde497270",
+        "expires_at": "2027-01-22T05:31:17Z",
+        "service_metadata_only": true
+      },
+      "raw_diff_artifact": {
+        "id": 12551125991,
+        "name": "ovisocr2-quality-native-diff-40066573198",
+        "bytes": 183568552,
+        "zip_sha256": "f7a039e3e99e1afd80f98dbf6fc9764e38d77d72c4eeed29103c30d332872495",
+        "expires_at": "2027-01-22T05:31:17Z",
+        "service_metadata_only": true
+      }
+    },
+    "q4-calibrated": {
+      "status": "rejected",
+      "reason": "Unchanged numerical gates fail; receipt content CER/WER and inventory raw CER/WER regress despite valid development-only calibration and better two-column output.",
+      "run": 40066574754,
+      "source_commit": "7924d8506d452aceefacca68ca64480881530363",
+      "report_path": "tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json",
+      "report_sha256": "e6f90f88c59453c8a7d250610f2de739b742def87428947df7c5885be078ee9b",
+      "producer_report_sha256": "36859aaae06fe4c15cd030955312941e460fdd4960f91b2438767762585fdebb",
+      "candidate_sha256": "6e5983e0a328c3ae507936990b5d85c75c5e257263625658e6a04b98e9f027cb",
+      "candidate_bytes": 1119141376,
+      "numerical_positive": false,
+      "quality_positive": false,
+      "eleven_cases_completed": true,
+      "candidate_artifact": {
+        "id": 12550513447,
+        "name": "ovisocr2-quality-candidate-40066574754",
+        "bytes": 934639093,
+        "zip_sha256": "3d75f850e85d237dbff896241911917235816c3cea15ade7ac8fbc41152f205f",
+        "expires_at": "2027-01-22T05:31:18Z",
+        "service_metadata_only": true
+      },
+      "raw_diff_artifact": {
+        "id": 12550667524,
+        "name": "ovisocr2-quality-native-diff-40066574754",
+        "bytes": 183583702,
+        "zip_sha256": "aa5fd78aceda0efeeb893486deea13fe5808f7e4108054fa91ebb5cd57f60067",
+        "expires_at": "2027-01-22T05:31:18Z",
+        "service_metadata_only": true
+      }
+    },
+    "q4-attention-f16": {
+      "status": "rejected",
+      "reason": "FFN-only Q4_K preserves 401 tensors and isolated first linear parity but fails first full decoder layer and receipt/two-column content quality.",
+      "run": 40172527229,
+      "source_commit": "72698a7640ad10e3d3fb0b090b2d318af85f6da1",
+      "report_path": "tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json",
+      "report_sha256": "e606a5b49e229df6f811a4ded7bdb71bd8fb4cbce5548ecc31d44e0001dd0fb1",
+      "producer_report_sha256": "bedea94fa85061a0fffca10e9bf8dd030b06cd1d506afe5c5fbd62c5029b637f",
+      "candidate_sha256": "3c5387dc67057749279b1ca1cd3984969e233bac00299d4abe79a48cc7066d24",
+      "candidate_bytes": 1337376256,
+      "numerical_positive": false,
+      "quality_positive": false,
+      "eleven_cases_completed": true,
+      "candidate_artifact": {
+        "id": 12593412802,
+        "name": "ovisocr2-quality-candidate-40172527229",
+        "zip_sha256": "66fd61abe9da4c343f92789d4c6547fa260fa21af58590019e4bba183feaa3c3",
+        "bytes": 1054804432,
+        "expires_at": "2027-01-23T07:22:32Z",
+        "service_metadata_only": true
+      },
+      "raw_diff_artifact": {
+        "id": 12594108371,
+        "name": "ovisocr2-quality-native-diff-40172527229",
+        "zip_sha256": "55ef94e1880148fdbcf6e46d80ac14c4685e4b52789213ef06b095fc0ee6b24d",
+        "bytes": 183578802,
+        "expires_at": "2027-01-23T07:22:33Z",
+        "service_metadata_only": true
+      }
+    }
+  },
+  "calibration_provenance_receipt_sha256": "441f1c532df452d5999720185c181b8702676dfa0366cf29e3987f01a0f827cc",
+  "independent_review": {
+    "selection_positive": true,
+    "all_attempts_completed": true,
+    "all_eleven_case_panels_reviewed": true,
+    "unchanged_float_comparison_gates": true,
+    "first_f16_receipt_unchanged": true,
+    "failed_candidates_not_publishable": true
+  },
+  "limits": [
+    "F16 qualification is scoped to the frozen bounded panel and CPU format2 reader.",
+    "Original recognition errors, substantial CPU latency, four raw vision strict flags and unqualified larger resolution remain.",
+    "Calibration provenance can be positive while its candidate fails numerical and OCR quality.",
+    "Large artifacts remain remote; independent local reviews checked small reports/manifests and service metadata.",
+    "This records selection, not publication, a registry alias, a runtime release or an application upgrade."
+  ],
+  "previous_selection": {
+    "path": "tests/results/qwen35-ocr/ovisocr2-quant-attempts.json",
+    "sha256": "0094da077e91fac6f710270eed32e5b57d9f7aef85d8ffacdcc37235103aeea9",
+    "unchanged": true
+  }
+}

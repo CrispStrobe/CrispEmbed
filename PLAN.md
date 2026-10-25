@@ -15,11 +15,10 @@ records exact sources, remaining work, acceptance checks and artifact expiry.
 The current owner is finishing the four approved items before closing this loop:
 
 1. Profiling and issue71 feasibility are complete; exact evidence is in HISTORY.
-2. Review actual attention-F16/FFN-Q4 run
-   [40172527229](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172527229):
-   all11 same-run F16 controls, all11 candidate cases, exact401 retained tensors
-   and72 changed FFN tensors, full original numerical/raw diagnostics. Preserve a
-   rejection if any unchanged screen fails. Never select by cosine alone.
+2. The full attention-F16/FFN-Q4 attempt is complete and rejected; move its
+   measured outcome to HISTORY/PERFORMANCE. The immutable four-attempt selection
+   keeps published F16. Future precision work needs a separately declared
+   development/evaluation protocol; do not tune this held-out panel.
 3. Complete [larger-input40177774574](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177774574):
    old frozen control plus newly authored1024/1200/2048-patch originals, all14
    F32/F16 arms, dynamic per-score raw manifests, owning OCR IDs/text/EOS, timing
