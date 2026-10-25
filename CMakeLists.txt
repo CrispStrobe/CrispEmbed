@@ -1204,6 +1204,9 @@ target_link_libraries(test-gemma-decision-activation PRIVATE crispembed)
 add_executable(test-qwen35-attention tests/test_qwen35_attention.cpp)
 target_link_libraries(test-qwen35-attention PRIVATE crispembed-qwen35-delta crispembed-core)
 
+add_executable(test-ovisocr2-ffn tests/test_ovisocr2_ffn.cpp)
+target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta crispembed-core)
+
 add_executable(test-qwen35-decoder tests/test_qwen35_decoder.cpp)
 target_link_libraries(test-qwen35-decoder PRIVATE crispembed-qwen35-delta crispembed-core)
 
