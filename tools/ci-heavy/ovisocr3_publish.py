@@ -105,7 +105,9 @@ def require_receipts(destination=DESTINATION):
             and type(original.get("run")) is int and original["run"] > 0
             and hex_field(original.get("head_sha"), 40)
             and type(original.get("artifact_id")) is int and original["artifact_id"] > 0
-            and hex_field(original.get("artifact_zip_sha256"), 64),
+            and hex_field(original.get("artifact_zip_sha256"), 64)
+            and original["independent_review"].get("artifact_zip_sha256") ==
+                original["artifact_zip_sha256"],
             "Reviewed original eleven-case quality differs")
     model, model_sha = receipt("ovisocr3-native-model.json")
     public_driver = module("ovis3_publish_public", "tools/ci-heavy/ovisocr3_public_surfaces.py")
@@ -113,7 +115,9 @@ def require_receipts(destination=DESTINATION):
     quality, quality_sha = receipt("ovisocr3-f16-quality.json")
     quality_pins = public_driver.require_quality_receipt(quality, native)
     require(type(quality.get("artifact_id")) is int and quality["artifact_id"] > 0
-            and hex_field(quality.get("artifact_zip_sha256"), 64),
+            and hex_field(quality.get("artifact_zip_sha256"), 64)
+            and quality.get("independent_review", {}).get("artifact_zip_sha256") ==
+                quality["artifact_zip_sha256"],
             "Reviewed F16 quality report artifact differs")
     public, public_sha = receipt("ovisocr3-public-surfaces.json")
     pp, pr = public.get("producer", {}), public.get("independent_review", {})
@@ -128,7 +132,8 @@ def require_receipts(destination=DESTINATION):
             and type(public.get("run")) is int and public["run"] > 0
             and hex_field(public.get("head_sha"), 40)
             and type(public.get("artifact_id")) is int and public["artifact_id"] > 0
-            and hex_field(public.get("artifact_zip_sha256"), 64),
+            and hex_field(public.get("artifact_zip_sha256"), 64)
+            and pr.get("artifact_zip_sha256") == public["artifact_zip_sha256"],
             "Reviewed model-backed public22 audit differs")
     export = model["producer"]["exports"]["f16"]
     require(type(export.get("bytes")) is int and export["bytes"] > 1_000_000_000

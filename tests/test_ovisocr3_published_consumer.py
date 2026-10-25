@@ -37,7 +37,8 @@ def sample():
     receipt = {"run": 123, "head_sha": HEAD, "artifact_id": 456,
                "artifact_zip_sha256": SHA, "producer": producer,
                "independent_review": {"publication_positive": True,
-                                      "producer_canonical_sha256": canonical}}
+                                      "producer_canonical_sha256": canonical,
+                                      "artifact_zip_sha256": SHA}}
     registry = '{ "ovisocr3-f16", "ovisocr3-f16.gguf", "' + url + '", "description", "1.7 GB", "apache-2.0" },'
     hashes = '{ "' + url + '", "' + SHA + '" },'
     return pins, receipt, registry, hashes

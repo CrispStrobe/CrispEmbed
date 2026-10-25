@@ -77,6 +77,7 @@ def require_publication(receipt, pins, registry, hashes):
             or set(small) != {"LICENSE", "UPSTREAM_README.md", "README.md", "manifest.json"}
             or not all(valid_sha(value, 64) for value in small.values())
             or not valid_sha(receipt.get("artifact_zip_sha256"), 64)
+            or review.get("artifact_zip_sha256") != receipt["artifact_zip_sha256"]
             or type(receipt.get("artifact_id")) is not int or receipt["artifact_id"] < 1
             or type(receipt.get("run")) is not int or receipt["run"] < 1
             or not valid_sha(receipt.get("head_sha"), 40)):
