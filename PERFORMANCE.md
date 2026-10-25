@@ -6608,3 +6608,29 @@ All25 native source hashes match the frozen first-F16 quality source. Two
 independent reviews verify the small report, all six log hashes, source closure,
 binary declarations and unchanged output/confidence gates. Large payload checks
 occurred on hosted CI; only small reports/logs were downloaded for review.
+
+
+## Ovis paired profiling — 25 October 2026
+
+[Actual40171223309](tests/results/qwen35-ocr/ovisocr2-profiling.json), Intel Xeon
+Platinum8573C, four logical/affinity CPUs, two inference threads, portable CPU/no
+BLAS. Three alternating pairs use fresh processes/contexts and the exact frozen
+448×448 image, nine IDs/EOS and selected probabilities. All six outputs/scores
+are exact; profiling remains default-off and inference math is unchanged.
+
+| Measurement | Profile off | Profile on |
+| --- | ---: | ---: |
+| Median recognition | 38.1084s | 38.0580s |
+| Range | 38.0379–38.1433s | 38.0431–38.2676s |
+| Maximum per-process GNU time RSS | 3474956KiB | 3476856KiB |
+
+Median paired on/off ratio1.000528 is diagnostic overhead, not an optimization
+speedup. Model initialization is separate; RSS includes load and recognition.
+Median active phase times: vision20.4462s, prefill5.6662s, decode12.0015s.
+Vision projection is only about1.31s of its phase; do not attribute its remaining
+time to a specific operator without additional counters. Decoder materialization
+is about11.1617s versus0.5691s projection compute; eight cached steps materialize
+24060624896 F32 bytes (about22.41GiB) including repeated vocabulary-head reads.
+Prefill materializes3007578112 bytes and vision394788864. Counters are nested;
+source/projection/phase levels must not be summed as independent totals.
+No document, Apple/GPU, throughput, paired cross-host or maximum-input claim.

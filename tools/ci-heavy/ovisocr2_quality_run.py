@@ -1672,7 +1672,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         f16_results = native_cases(runner, f16, f16_cases, cleaner, filter_fn, out, report, save,
                                    'f16', selection)
         if effective_control == 'full':
-            if phase == 'q4-attention-f16' and 'short_control_ineligible' in report:
+            if phase == 'q4-attention-f16':
                 report['full_f16_frozen_control'] = validate_full_f16_host_control(
                     f16_results, frozen_rows, cases)
             host_scores = score_outputs(contract, rendered, cases, f16_results)

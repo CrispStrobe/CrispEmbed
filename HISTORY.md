@@ -1,3 +1,30 @@
+## 25 October 2026 — Ovis profiling and issue feasibility complete
+
+[Hosted40171223309](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40171223309)
+at23ef7da1 completes three alternating profile-off/on pairs on the immutable
+published F16 and frozen owned image. Independent review reparses all six logs,
+actual nine IDs/text/EOS/selected scores and byte counters, verifies every command
+log and all25 native source hashes, and recomputes paired summaries. All six
+outputs/scores are exact, including the first F16 probabilities on this CPU.
+[Unchanged producer and review](tests/results/qwen35-ocr/ovisocr2-profiling.json).
+No math, weight, default, app pin or runtime release changed. PERFORMANCE records
+the phase/byte/RSS measurements; this is one-image attribution, not broad speed.
+
+[Issue71 source feasibility](docs/inpainting-feasibility.md) and its pinned
+contract distinguish MI-GAN MIT code/weights, original known-mask polarity and
+fixed-resolution generator versus full-image wrapper. Independent graph work can
+proceed after exact payload verification; any copied base/helper source needs its
+own retained provenance/notices. LaMa's FFT and authoritative checkpoint terms
+remain gaps. No inpainting model execution or implementation is claimed.
+Issue59 is closed as previously declined under the license policy; issue57 is
+closed with Jina support and Hunyuan's existing decline recorded in maintainer
+comments. No new issue messages were posted. Issue71 remains open.
+
+OvisOCR3's [source audit](docs/ovisocr3.md) establishes a distinct eligible
+473-tensor checkpoint, MTP0, real generation metadata and18 task prompts.
+The format3 profile and hosted weight-free metadata worker are prepared;
+actual original/native qualification remains pending. Preserve the Ovis2 proofs.
+
 ## 24 October 2026 — Ovis qualification loop integrated and closed
 
 [PR79](https://github.com/CrispStrobe/CrispEmbed/pull/79) merges qualified head
