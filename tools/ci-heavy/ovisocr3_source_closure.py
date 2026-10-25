@@ -61,6 +61,19 @@ def gitlink_line(value, *, staged=False):
     return match.group(1).decode()
 
 
+def tree_oid(value):
+    oid = value.decode().strip()
+    if re.fullmatch(r"[0-9a-f]{40}", oid) is None:
+        raise ValueError("Reviewed src Git tree identity absent")
+    return oid
+
+
+def clean_paths(call, root, commands, label):
+    for args in commands:
+        if call(args, root=root).strip():
+            raise ValueError(label + " has tracked, staged, or untracked source changes")
+
+
 def require_native_source_closure(producer, head, *, root=ROOT,
                                   call=git_output, fetch=fetch_reviewed_commit):
     """Fail before build/model access when any qualified native input drifts."""
@@ -83,6 +96,16 @@ def require_native_source_closure(producer, head, *, root=ROOT,
     except subprocess.CalledProcessError:
         fetch(head, root=root)
         call(["cat-file", "-e", head + "^{commit}"], root=root)
+    reviewed_src = tree_oid(call(["rev-parse", head + ":src"], root=root))
+    current_src = tree_oid(call(["rev-parse", "HEAD:src"], root=root))
+    if reviewed_src != current_src:
+        raise ValueError("src Git tree differs from reviewed native head")
+    clean_paths(call, root, (
+        ["diff", "--name-only", "HEAD", "--", "src"],
+        ["diff", "--cached", "--name-only", "HEAD", "--", "src"],
+        ["diff", "--name-only", "--", "src"],
+        ["ls-files", "--others", "--", "src"],
+    ), "src checkout")
     reviewed_cmake = call(["show", head + ":CMakeLists.txt"], root=root)
     current_cmake = (root / "CMakeLists.txt").read_bytes()
     if current_cmake != reviewed_cmake:
@@ -97,8 +120,15 @@ def require_native_source_closure(producer, head, *, root=ROOT,
             or Path(checkout_root).resolve() != ggml_path.resolve()
             or checkout_head != reviewed_ggml):
         raise ValueError("ggml gitlink differs from reviewed native head")
+    clean_paths(call, root, (
+        ["-C", str(ggml_path), "diff", "--name-only", "HEAD", "--"],
+        ["-C", str(ggml_path), "diff", "--cached", "--name-only", "HEAD", "--"],
+        ["-C", str(ggml_path), "diff", "--name-only", "--"],
+        ["-C", str(ggml_path), "ls-files", "--others", "--exclude-standard"],
+    ), "ggml checkout")
     return {"reviewed_head": head, "file_count": len(expected),
             "file_set_sha256": hashlib.sha256("\n".join(sorted(expected)).encode()).hexdigest(),
+            "src_tree_oid": reviewed_src, "src_checkout_clean": True,
             "cmake_sha256": hashlib.sha256(current_cmake).hexdigest(),
             "ggml_gitlink": reviewed_ggml, "gitlink_index_exact": True,
-            "ggml_checkout_exact": True}
+            "ggml_checkout_exact": True, "ggml_checkout_clean": True}

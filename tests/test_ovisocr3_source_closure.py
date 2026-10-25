@@ -15,6 +15,7 @@ closure = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(closure)
 HEAD = "a" * 40
 GGML = "b" * 40
+SRC_TREE = "c" * 40
 
 
 def fixture(root=ROOT):
@@ -24,7 +25,9 @@ def fixture(root=ROOT):
 
 
 def fake_git(root, *, cmake=None, reviewed=GGML, current=GGML, staged=GGML,
-             checkout=GGML, checkout_root=None, commit_present=True, seen=None):
+             checkout=GGML, checkout_root=None, reviewed_src=SRC_TREE,
+             current_src=SRC_TREE, src_dirty_command=None, ggml_dirty_command=None,
+             commit_present=True, seen=None):
     if cmake is None:
         cmake = (Path(root) / "CMakeLists.txt").read_bytes()
     if checkout_root is None:
@@ -38,6 +41,18 @@ def fake_git(root, *, cmake=None, reviewed=GGML, current=GGML, staged=GGML,
             return b""
         if args == ["show", HEAD + ":CMakeLists.txt"]:
             return cmake
+        if args == ["rev-parse", HEAD + ":src"]:
+            return (reviewed_src + "\n").encode()
+        if args == ["rev-parse", "HEAD:src"]:
+            return (current_src + "\n").encode()
+        src_clean = (
+            ["diff", "--name-only", "HEAD", "--", "src"],
+            ["diff", "--cached", "--name-only", "HEAD", "--", "src"],
+            ["diff", "--name-only", "--", "src"],
+            ["ls-files", "--others", "--", "src"],
+        )
+        if args in src_clean:
+            return b"src/core_gguf.cpp\n" if args == src_dirty_command else b""
         if args == ["ls-tree", HEAD, "ggml"]:
             return f"160000 commit {reviewed}\tggml\n".encode()
         if args == ["ls-tree", "HEAD", "ggml"]:
@@ -48,6 +63,14 @@ def fake_git(root, *, cmake=None, reviewed=GGML, current=GGML, staged=GGML,
             return (checkout_root + "\n").encode()
         if args == ["-C", str(Path(root) / "ggml"), "rev-parse", "HEAD"]:
             return (checkout + "\n").encode()
+        ggml_clean = (
+            ["-C", str(Path(root) / "ggml"), "diff", "--name-only", "HEAD", "--"],
+            ["-C", str(Path(root) / "ggml"), "diff", "--cached", "--name-only", "HEAD", "--"],
+            ["-C", str(Path(root) / "ggml"), "diff", "--name-only", "--"],
+            ["-C", str(Path(root) / "ggml"), "ls-files", "--others", "--exclude-standard"],
+        )
+        if args in ggml_clean:
+            return b"src/changed.cpp\n" if args == ggml_dirty_command else b""
         raise AssertionError("Unexpected git command: " + repr(args))
     return call
 
@@ -62,6 +85,40 @@ class SourceClosureControls(unittest.TestCase):
         self.assertEqual(result["ggml_gitlink"], GGML)
         self.assertTrue(result["gitlink_index_exact"])
         self.assertTrue(result["ggml_checkout_exact"])
+        self.assertEqual(result["src_tree_oid"], SRC_TREE)
+        self.assertTrue(result["src_checkout_clean"])
+        self.assertTrue(result["ggml_checkout_clean"])
+
+    def test_core_src_tree_and_dirty_checkout_gates(self):
+        producer = fixture()
+        # A reviewed qwen35 file set can coexist with a changed GGUF loader.
+        with self.assertRaisesRegex(ValueError, "src Git tree"):
+            closure.require_native_source_closure(producer, HEAD, root=ROOT,
+                call=fake_git(ROOT, current_src="d" * 40))
+        src_commands = (
+            ["diff", "--name-only", "HEAD", "--", "src"],
+            ["diff", "--cached", "--name-only", "HEAD", "--", "src"],
+            ["diff", "--name-only", "--", "src"],
+            ["ls-files", "--others", "--", "src"],
+        )
+        for args in src_commands:
+            with self.subTest(args=args), self.assertRaisesRegex(ValueError, "src checkout"):
+                closure.require_native_source_closure(producer, HEAD, root=ROOT,
+                    call=fake_git(ROOT, src_dirty_command=args))
+
+    def test_dirty_ggml_rejected_even_when_gitlink_and_head_match(self):
+        producer = fixture()
+        ggml = str(ROOT / "ggml")
+        commands = (
+            ["-C", ggml, "diff", "--name-only", "HEAD", "--"],
+            ["-C", ggml, "diff", "--cached", "--name-only", "HEAD", "--"],
+            ["-C", ggml, "diff", "--name-only", "--"],
+            ["-C", ggml, "ls-files", "--others", "--exclude-standard"],
+        )
+        for args in commands:
+            with self.subTest(args=args), self.assertRaisesRegex(ValueError, "ggml checkout"):
+                closure.require_native_source_closure(producer, HEAD, root=ROOT,
+                    call=fake_git(ROOT, ggml_dirty_command=args))
 
     def test_missing_or_changed_native_source_rejected_before_git(self):
         producer = fixture()
