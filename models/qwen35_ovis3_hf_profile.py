@@ -137,6 +137,14 @@ def _expected_profile(base, metadata, reference, stop_proof_sha256):
             "proof_marker": "ovisocr3-hf-reference:" + REFERENCE_PRODUCER_SHA256}
 
 
+def validate_generation_resolution(raw, resolved):
+    # GenerationConfig.to_diff_dict adds only its installed version to the
+    # pinned source JSON. All actual generation values remain exact.
+    source._check_generation(raw)
+    if resolved != {**raw, "transformers_version": "5.16.1"}:
+        raise ValueError("OvisOCR3 explicit generation resolution differs")
+
+
 def load_profile(model_dir, source_model, source_revision):
     metadata, reference = _reviewed_receipts()  # Before source/weight readers.
     stop_proof_sha256 = _checked_stop_proof()
@@ -144,8 +152,8 @@ def load_profile(model_dir, source_model, source_revision):
     if ({name: source._file_sha256(Path(model_dir) / name) for name in source.metadata_files()}
             != metadata["producer"]["source_files_sha256"]):
         raise ValueError("OvisOCR3 original metadata source differs")
-    if (source._canonical_sha256(base["generation"]) != source._canonical_sha256(metadata["producer"]["resolved_generation"])
-            or source._file_sha256(Path(model_dir) / "generation_config.json") != source.GENERATION_SHA256):
+    validate_generation_resolution(base["generation"], metadata["producer"]["resolved_generation"])
+    if source._file_sha256(Path(model_dir) / "generation_config.json") != source.GENERATION_SHA256:
         raise ValueError("OvisOCR3 explicit generation source differs")
     rendered = metadata["rendered_prompt"]
     if (not isinstance(rendered, str) or hashlib.sha256(rendered.encode()).hexdigest() !=

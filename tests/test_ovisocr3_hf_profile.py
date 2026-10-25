@@ -26,6 +26,19 @@ FIXTURE = ROOT / "tests/fixtures/ovisocr3-source"
 
 
 class HFPromotionControls(unittest.TestCase):
+    def test_actual_raw_generation_and_resolved_version_bookkeeping(self):
+        raw=json.loads((FIXTURE / "generation_config.json").read_text())
+        metadata=json.loads(hf.METADATA_RECEIPT.read_text())["producer"]
+        resolved=metadata["resolved_generation"]
+        self.assertNotIn("transformers_version",raw)
+        hf.validate_generation_resolution(raw,resolved)
+        for key,value in (("eos_token_id",[248046]),("do_sample",True),
+                          ("temperature",1.0),("transformers_version","5.16.2"),
+                          ("max_new_tokens",12)):
+            changed=dict(resolved,**{key:value})
+            with self.subTest(field=key),self.assertRaises(ValueError):
+                hf.validate_generation_resolution(raw,changed)
+
     def test_reviewed_small_and_large_reference_artifacts_are_distinct(self):
         receipt = {"run": 123, "artifact_id": 5, "artifact_zip_sha256": "a" * 64,
                    "independent_review": {"artifact_zip_sha256": "a" * 64,
