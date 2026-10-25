@@ -46,3 +46,22 @@ Three runtime gates are required for the experimental OvisOCR3 path:
 enables `CRISPEMBED_QWEN35_VISION_PRECISE_NORM=1` and
 `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=1`. The default CrispEmbed OCR model
 is not changed by this publication.
+
+## Run the qualified path
+
+Build CrispEmbed from the qualified source commit above, download the GGUF from
+this repository, and pass its local path explicitly:
+
+```bash
+CRISPEMBED_QWEN35_OCR=1 \
+CRISPEMBED_OVISOCR3_FRONTEND=1 \
+CRISPEMBED_OVISOCR3_INFERENCE=1 \
+CRISPEMBED_QWEN35_VISION_PRECISE_NORM=1 \
+CRISPEMBED_QWEN35_VISION_PRECISE_ATTN=1 \
+CRISPEMBED_QWEN35_VISION_CASCADE_NORM=0 \
+  crispembed -t 2 --offline --ocr-pipeline page.png --ocr-engine ovisocr3 \
+    --ocr-rec ovisocr3-f16.gguf --ocr-max-tokens 1024 --json
+```
+
+The command uses the fixed plain OCR prompt. Preserve the reported completion
+state when choosing a token cap; reaching a cap is not EOS completion.
