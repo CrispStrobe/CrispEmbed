@@ -1,3 +1,75 @@
+## OvisOCR3 bounded fidelity and interface diagnostics — 25 October 2026
+
+[Native14](tests/results/qwen35-ocr/ovisocr3-native-model.json) passes F32/F16
+against943 original stages; [native F16 eleven-case capture](tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+matches all1,679 source IDs/raw text/stops/caps. Ten cases reach EOS; original
+and native two-column both cap1024 without EOS (raw CER0.52365/WER0.83993).
+Eight authored cases have zero raw CER/WER. Model qualification remains false.
+Selected probabilities are finite/aligned, with max native-versus-original F32
+absolute difference0.00024628627 and max mean difference0.00003014292; they
+are not bit-exact. Driver RSS excludes native child memory, so it is not a
+native inference memory measurement. No paired Ovis3 speedup is established.
+
+[All29 public diagnostic checks](tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
+pass across six interfaces. C/Python mean confidence is0.9994447827339172 with
+nine values; Rust/Dart use the unchanged1e-5 budget. Existing CLI/HTTP rounding
+budgets remain0.0006/0.00006 (max public mean error0.00044478273). These are
+bounded text/confidence/ABI/cache/gate/profile checks on the owned readable
+image, not OCR benchmark or model-quality qualification. F16 GGUF size is
+1,717,223,072 bytes. Publication and a model alias remain blocked by the original
+completion failure; raw vectors/models stay hosted.
+
+## OvisOCR2 bounded larger-input audit — 25 October 2026
+
+[Four-case evidence](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json) preserves
+all raw/calibrated numerical flags. Frozen control and1024/1200 patches pass14/14
+arms. The2048 boundary passes8/14: six composed decoder arms first fail final
+prefill normalization, max0.00394558907 F32/0.00438690186 F16 versus replay with original
+prepared embeddings0.000289916992/0.000239372253. Norms round3187.82251 on both sides and
+cosine rounds1.0; calibrated ratios1.073/1.193 still reject. All nine IDs/raw text/
+EOS match at every size. The source adds a blank line: raw CER1/15, WER0;
+whitespace-normalized CER/WER0. No2048 numerical qualification follows.
+
+The recorded AMD EPYC7763 host exposes four logical CPUs. Native owning calls
+use two threads; initialization and recognition are separate below. Fresh-process
+RSS includes model load and recognition, without large reference arrays.
+
+| Input / patches | Native F16 recognition s | Initialization s | Process peak RSS GiB |
+| --- | ---: | ---: | ---: |
+| 512x512 /1024 | 80.660 | 0.475 | 3.36 |
+| 640x480 /1200 | 104.080 | 0.473 | 3.40 |
+| 1024x512 /2048 | 311.293 | 2.246 | 3.58 |
+
+Original HF capture uses **four** threads, includes framework/array-dump work and
+has different timing boundaries, so its71.23/79.79/121.13 process seconds are
+not a paired speed comparison. Native intermediate-audit processes use much more
+memory than owning calls; the failed F32 native-vision arm reaches9,762,208 KiB.
+Its GNU-time resource file includes a nonzero-exit prefix; the independent review
+retains that fact and recovers the measurements. Large raw arrays remain hosted.
+These are single owned text samples at each geometry, not dense-page throughput,
+full upstream resolution, OCRBench/OmniDocBench or GPU qualification.
+
+## OvisOCR2 attention-F16 / FFN-Q4 — 25 October 2026
+
+The independently reviewed [selective attempt](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)
+keeps401 tensors byte-identical and quantizes72 FFN matrices. It saves22.1% file
+size (1.337GB versus1.717GB), but is rejected under unchanged numerical and
+independent-document screens. All11 reach EOS. First source-fed QKV has cosine1
+and max error0.0000133514404 in both F16 and candidate; the first full decoder
+layer has global cosine0.999563217 but max error0.0328894854 and local minimum
+cosine0.997915924. Component parity does not establish decoded quality.
+
+| Document metric | Frozen F16 | FFN Q4 / attention F16 |
+| --- | ---: | ---: |
+| Receipt content CER / WER | 0.0533854 / 0.222222 | 0.0703125 / 0.319444 |
+| Two-column raw CER / WER | 0.1351895 / 0.1870504 | 0.1395505 / 0.2086331 |
+| Receipt output IDs | 882 | 473 |
+| Two-column output IDs | 697 | 701 |
+
+Receipt/table presentation also changes; do not compare per-call times as an
+equal-output speedup. [Selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
+retains F16. Earlier Q8, plain Q4 and calibrated Q4 failures remain archived.
+
 The separately frozen Ovis presentation view preserves all raw scores and
 strict-v1 failures while parsing integer table borders. Original GPU content
 CER/WER is0.0533854/0.2222222 for the receipt,0.1110366/0.1870504 for two-column,
@@ -6608,3 +6680,29 @@ All25 native source hashes match the frozen first-F16 quality source. Two
 independent reviews verify the small report, all six log hashes, source closure,
 binary declarations and unchanged output/confidence gates. Large payload checks
 occurred on hosted CI; only small reports/logs were downloaded for review.
+
+
+## Ovis paired profiling — 25 October 2026
+
+[Actual40171223309](tests/results/qwen35-ocr/ovisocr2-profiling.json), Intel Xeon
+Platinum8573C, four logical/affinity CPUs, two inference threads, portable CPU/no
+BLAS. Three alternating pairs use fresh processes/contexts and the exact frozen
+448×448 image, nine IDs/EOS and selected probabilities. All six outputs/scores
+are exact; profiling remains default-off and inference math is unchanged.
+
+| Measurement | Profile off | Profile on |
+| --- | ---: | ---: |
+| Median recognition | 38.1084s | 38.0580s |
+| Range | 38.0379–38.1433s | 38.0431–38.2676s |
+| Maximum per-process GNU time RSS | 3474956KiB | 3476856KiB |
+
+Median paired on/off ratio1.000528 is diagnostic overhead, not an optimization
+speedup. Model initialization is separate; RSS includes load and recognition.
+Median active phase times: vision20.4462s, prefill5.6662s, decode12.0015s.
+Vision projection is only about1.31s of its phase; do not attribute its remaining
+time to a specific operator without additional counters. Decoder materialization
+is about11.1617s versus0.5691s projection compute; eight cached steps materialize
+24060624896 F32 bytes (about22.41GiB) including repeated vocabulary-head reads.
+Prefill materializes3007578112 bytes and vision394788864. Counters are nested;
+source/projection/phase levels must not be summed as independent totals.
+No document, Apple/GPU, throughput, paired cross-host or maximum-input claim.

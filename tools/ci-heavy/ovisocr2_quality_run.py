@@ -41,7 +41,9 @@ F16_SHA = 'd3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db'
 F16_BYTES = 1717222848
 MODEL = 'ATH-MaaS/OvisOCR2'
 REVISION = 'cbdede82e048659b83310476ff807da825f8fe78'
-PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated')
+PHASES = ('original', 'f16', 'q8', 'q4', 'q4-calibrated', 'q4-attention-f16')
+QUANT_PHASES = ('q8', 'q4', 'q4-calibrated', 'q4-attention-f16')
+Q4_PHASES = ('q4', 'q4-calibrated', 'q4-attention-f16')
 QUALITY_WORKFLOW_PATHS = ('.github/workflows/ovisocr2-quality.yml',
                           '.github/workflows/ovisocr2-metadata.yml')
 F16_HOST_CONTROLS = ('full', 'dev-hello')
@@ -357,7 +359,7 @@ def require_baseline(phase, original_run=None):
         raise ValueError('Reviewed positive OvisOCR2 native baseline receipt absent')
     receipt = json.loads(BASELINE.read_text())
     pins = checked_model_receipt(receipt)
-    if phase in ('q4', 'q4-calibrated'):
+    if phase in Q4_PHASES:
         if not Q8_REVIEW.is_file():
             raise ValueError('Reviewed Q8 OvisOCR2 result absent; Q4 remains blocked')
         q8 = json.loads(Q8_REVIEW.read_text())
@@ -380,7 +382,7 @@ def require_baseline(phase, original_run=None):
                 or review.get('original_11_complete') is not True):
             raise ValueError('Original quality artifact lacks a positive independent review')
     f16_pins = None
-    if phase in ('q8', 'q4', 'q4-calibrated'):
+    if phase in QUANT_PHASES:
         if not F16_REVIEW.is_file():
             raise ValueError('First reviewed F16 quality receipt required before quantization')
         f16_pins = checked_f16_quality_receipt(json.loads(F16_REVIEW.read_text()), sha(BASELINE),
@@ -389,8 +391,8 @@ def require_baseline(phase, original_run=None):
             'baseline_pins': pins, 'selected_vision_preset': pins['selected_vision_preset'],
             'export_sha256': sha(EXPORT),
             'review': receipt['independent_review'],
-            'q8_review_sha256': sha(Q8_REVIEW) if phase in ('q4', 'q4-calibrated') else None,
-            'q8_diagnostic_gate': q8_gate if phase in ('q4', 'q4-calibrated') else None,
+            'q8_review_sha256': sha(Q8_REVIEW) if phase in Q4_PHASES else None,
+            'q8_diagnostic_gate': q8_gate if phase in Q4_PHASES else None,
             'original_review_sha256': sha(ORIGINAL_REVIEW) if phase != 'original' else None,
             'first_f16_review_sha256': sha(F16_REVIEW) if f16_pins else None,
             'first_f16_pins': f16_pins}
@@ -725,7 +727,7 @@ def quant_probe(binary, candidate, reference, phase, out, scratch, report, save,
                      'first-linear-control': '-f16-first-linear-control'}[probe]
     dump = Path(scratch) / 'native-diff' / phase / probe
     dump.mkdir(parents=True, exist_ok=True)
-    env = numerical_environment(phase, selection)
+    env = numerical_environment('q4' if phase == 'q4-attention-f16' else phase, selection)
     if probe == 'first-linear-control':
         env['CRISPEMBED_QWEN35_QUANT'] = '0'
     env['CRISPEMBED_DIFF_DUMP_DIR'] = str(dump)
@@ -878,6 +880,33 @@ def validate_reused_f16(previous, current, cases, rendered, contract):
     if scores != previous.get('scores', {}).get('f16'):
         raise ValueError('First F16 quality score recomputation differs')
     return outputs, scores
+
+
+def validate_full_f16_host_control(actual, frozen, cases):
+    """A fallback after source drift still needs all eleven exact IDs and text."""
+    if (not isinstance(actual, dict) or not isinstance(frozen, dict)
+            or len(cases) != 11 or set(actual) != set(frozen)
+            or set(actual) != {case['id'] for case in cases}):
+        raise ValueError('Full F16 host control lacks eleven frozen cases')
+    for case in cases:
+        name = case['id']
+        row, old = actual[name], frozen[name]
+        ids = row.get('token_ids')
+        if (not isinstance(ids, list) or not ids
+                or row.get('input_rgb_sha256') != case['rgb_sha256']
+                or row.get('input_png_sha256') != case['png_sha256']
+                or row.get('cap') != case['cap']
+                or any(row.get(key) != old.get(key) for key in
+                       ('token_ids', 'raw_text', 'processed_text', 'stop_id', 'finish_reason'))):
+            raise ValueError('Full F16 host control IDs/text differ: ' + name)
+        mean = validate_selected_confidences(ids, row.get('confidences'), case['cap'])
+        if (type(row.get('mean_confidence')) not in (int, float)
+                or not math.isfinite(row['mean_confidence'])
+                or not math.isclose(row['mean_confidence'], mean, rel_tol=0, abs_tol=1e-6)):
+            raise ValueError('Full F16 host control confidence differs: ' + name)
+    return {'mode': 'full', 'native_case_count': 11,
+            'frozen_ids_text_stop_exact': True,
+            'scope': 'Same-run eleven-case control after source closure was unavailable'}
 
 
 def validate_short_f16_host_control(actual, frozen, case):
@@ -1123,7 +1152,7 @@ def development_imatrix(build, f16, cases, scratch, out, report, selection):
 
 def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm, selection):
     outputs = {}
-    env = native_environment(arm, selection)
+    env = native_environment('q4' if arm == 'q4-attention-f16' else arm, selection)
     for case in cases:
         label = arm + '-' + case['id']
         log = command(label, [binary, model, case['path'], case['cap'], 2],
@@ -1418,7 +1447,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
              f16_host_control='full'):
     if f16_host_control not in F16_HOST_CONTROLS:
         raise ValueError('Unknown F16 host control mode')
-    effective_control = f16_host_control if phase in ('q8', 'q4', 'q4-calibrated') else 'full'
+    effective_control = f16_host_control if phase in QUANT_PHASES else 'full'
     out = Path(os.environ['HEAVY_OUT'])
     scratch = Path(os.environ['HEAVY_SCRATCH']) / 'ovis-quality'
     out.mkdir(parents=True, exist_ok=True)
@@ -1433,6 +1462,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
                   'tools/ci-heavy/ovisocr2_model_audit.py',
                   'tools/ci-heavy/ovisocr2_vision_env.py',
                   'tools/ci-heavy/ovisocr2_quality_contract.py',
+                  'tools/ci-heavy/ovisocr2_selective_precision.py',
                   'tools/ocr_quality.py',
                   'tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json',
                   'models/qwen35_ovis_profile.py',
@@ -1537,7 +1567,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
             return report
 
         first_f16, frozen_rows, frozen_scores = None, None, None
-        if phase in ('q8', 'q4', 'q4-calibrated'):
+        if phase in QUANT_PHASES:
             report['phase'] = 'reviewed-first-f16-artifact-and-source-before-weights'
             save()
             first_f16, first_proof = reviewed_quality_artifact(
@@ -1552,10 +1582,22 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
                 'case_count': len(frozen_rows), 'model_sha256': F16_SHA,
                 'selected_vision_preset': selection}
             if effective_control == 'dev-hello':
-                report['f16_source_closure'] = f16_source_closure(
-                    first_f16, report['prerequisite']['first_f16_pins']['source_commit'],
-                    report['source_commit'])
-                report['f16_runtime_closure'] = f16_runtime_closure(first_f16, report)
+                if phase == 'q4-attention-f16':
+                    try:
+                        report['f16_source_closure'] = f16_source_closure(
+                            first_f16, report['prerequisite']['first_f16_pins']['source_commit'],
+                            report['source_commit'])
+                        report['f16_runtime_closure'] = f16_runtime_closure(first_f16, report)
+                    except (ValueError, subprocess.CalledProcessError) as exc:
+                        effective_control = 'full'
+                        report['effective_f16_host_control'] = 'full'
+                        report['short_control_ineligible'] = str(exc)[:250]
+                        save()
+                else:
+                    report['f16_source_closure'] = f16_source_closure(
+                        first_f16, report['prerequisite']['first_f16_pins']['source_commit'],
+                        report['source_commit'])
+                    report['f16_runtime_closure'] = f16_runtime_closure(first_f16, report)
             report['scores']['f16'] = frozen_scores
             report['f16_paired_synthetic'] = contract.paired_quality_screen(
                 report['scores']['original']['synthetic'], frozen_scores['synthetic'])
@@ -1571,7 +1613,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
             save()
 
         diff_reference = None
-        if phase in ('q8', 'q4', 'q4-calibrated'):
+        if phase in QUANT_PHASES:
             report['phase'] = 'reviewed-original-numerical-reference'
             save()
             baseline_producer = json.loads(BASELINE.read_text())['producer']
@@ -1595,7 +1637,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         command('cpu-baseline-check', [sys.executable, ROOT / 'scripts/check-cpu-baseline.py', build],
                 out, report, timeout=120)
         targets = ['test-ovisocr2-quality-run', 'crispembed-shared', 'crispembed-quantize']
-        if phase in ('q8', 'q4', 'q4-calibrated'):
+        if phase in QUANT_PHASES:
             targets.extend(('test-qwen35-linear', 'test-qwen35-decoder'))
         if phase == 'q4-calibrated':
             targets.append('test-qwen35-imatrix')
@@ -1630,6 +1672,9 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         f16_results = native_cases(runner, f16, f16_cases, cleaner, filter_fn, out, report, save,
                                    'f16', selection)
         if effective_control == 'full':
+            if phase == 'q4-attention-f16':
+                report['full_f16_frozen_control'] = validate_full_f16_host_control(
+                    f16_results, frozen_rows, cases)
             host_scores = score_outputs(contract, rendered, cases, f16_results)
             host_synthetic = contract.paired_quality_screen(
                 report['scores']['original']['synthetic'], host_scores['synthetic'])
@@ -1657,7 +1702,8 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
             save()
             return report
 
-        recipe = 'q8-protected' if phase == 'q8' else 'q4-attention-q8'
+        recipe = ('q4-attention-f16' if phase == 'q4-attention-f16' else
+                  'q8-protected' if phase == 'q8' else 'q4-attention-q8')
         candidate = scratch / ('ovisocr2-' + phase + '.gguf')
         imatrix = None
         if phase == 'q4-calibrated':
@@ -1666,7 +1712,15 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
             imatrix = development_imatrix(build, f16, cases, scratch, out, report, selection)
         report['phase'] = phase + '-quantize'
         save()
-        argv = contract.quant_command(quantizer, f16, candidate, recipe)
+        selective = None
+        before_tensors = None
+        if phase == 'q4-attention-f16':
+            selective = load_module('ovis_selective_precision',
+                                    ROOT / 'tools/ci-heavy/ovisocr2_selective_precision.py')
+            before_tensors = gguf_tensors(f16)
+            argv = selective.quant_command(quantizer, f16, candidate, before_tensors, contract)
+        else:
+            argv = contract.quant_command(quantizer, f16, candidate, recipe)
         if imatrix is not None:
             argv.extend(['--imatrix', str(imatrix)])
         quant_log = command(phase + '-quantize', argv, out, report, timeout=2400)
@@ -1674,9 +1728,12 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
             raise ValueError('Quantizer skipped one or more development FFN importance vectors')
         report['models'][phase] = {'sha256': sha(candidate), 'bytes': candidate.stat().st_size,
                                    'recipe': recipe}
-        before_tensors, after_tensors = gguf_tensors(f16), gguf_tensors(candidate)
-        report['tensor_audit'] = contract.validate_quant_tensors(
-            before_tensors, after_tensors, recipe)
+        before_tensors = before_tensors if before_tensors is not None else gguf_tensors(f16)
+        after_tensors = gguf_tensors(candidate)
+        report['tensor_audit'] = (selective.validate_quant_tensors(before_tensors, after_tensors,
+                                                                 contract) if selective else
+                                  contract.validate_quant_tensors(before_tensors, after_tensors,
+                                                                  recipe))
         report['tensor_records'] = {'before': before_tensors, 'after': after_tensors}
         report['first_linear_weights'] = first_linear_weight_records(report['tensor_records'])
         save()

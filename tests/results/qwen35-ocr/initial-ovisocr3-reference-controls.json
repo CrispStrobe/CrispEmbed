@@ -1,0 +1,23 @@
+{
+  "scope": "Initial hosted preparation/control outcomes; no OvisOCR3 model forward in these runs",
+  "runs": [
+    {
+      "run": 40176566774,
+      "head_sha": "f2f0b7d0",
+      "outcome": "cancelled while model reference job queued",
+      "reason": "Complete small original blueprint JSON was absent from the report artifact; replacement preserves it byte-identically for independent review."
+    },
+    {
+      "run": 40177090767,
+      "head_sha": "df974d85",
+      "outcome": "failed pure controls before reference job/dependencies/weights",
+      "reason": "The expanded runtime source guard rejected the intentional append-only engine22 mapping and fixed-prompt rejection in src/crispembed.cpp.",
+      "correction_commit": "2ce86168",
+      "correction": "Pin exactly the reviewed public-wrapper SHA separately, retain arithmetic-source checks and add negative unreviewed-wrapper mutation control."
+    }
+  ],
+  "replacement_run": 40177416485,
+  "replacement_head": "2ce86168",
+  "inference_thresholds_changed": false,
+  "reference_gold_changed": false
+}

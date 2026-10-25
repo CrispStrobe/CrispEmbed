@@ -1,0 +1,46 @@
+{
+  "run": 40196033239,
+  "head_sha": "93da2dbdaee8334504df83a7fe0c3e3a9865ff20",
+  "artifact_id": 12600171822,
+  "artifact_zip_sha256": "18b7d3f0d1ca87cef8992d1074e6f402d433124a287c43bec8b78b0fc71d180b",
+  "artifact_bytes": 1167,
+  "report_sha256": "7516cbca79ba8ed7cd4902d83dccbde440c03725165f068fea31d2ed9e3e227e",
+  "producer": {
+    "status": "failed diagnostic public interface audit",
+    "phase": "preflight",
+    "arms": {},
+    "failures": [
+      "preflight"
+    ],
+    "source_commit": "93da2dbdaee8334504df83a7fe0c3e3a9865ff20",
+    "source_sha256": {
+      "tools/ci-heavy/ovisocr3_public_surfaces.py": "020d625d138641d0d9b9f01fa900326dc1efe87550f05e17fac5953b1ca22485",
+      "tools/ci-heavy/ovisocr2_vision_env.py": "bfa6f9f6b22720d9bae8a8b1f6eb3a32ae2598e1453560edec5b34c2f6b54a06",
+      "tools/ci-heavy/ovisocr3_native14.py": "f6833bff4542b8b17cbc23a747c08a7e3d2fe51c941e51cf883fdbcda640b719",
+      "tools/ci-heavy/ovisocr3_stage_cache_probe.py": "5dff551d5143dd993546493a0ed5bf16652853c23e95b6d3c847880032f90a9c",
+      "tests/ovisocr3_public_bindings.rs": "60e8883a09fcbca94ce9f24b32e3b7573c5103f95e5d6080c99e52a2d4fa54f3",
+      "tests/ovisocr3_public_bindings.dart": "2ba1a4056d5cfaa5fe20d6885a60c1857efc764c37b7b2388683ab215c25dbe3"
+    },
+    "public_api_limit": "Public OCR surfaces expose text/confidences; generated IDs and stop IDs are qualified in the independent low-level/context model audit.",
+    "generic_prompt_semantics": {
+      "single_model_cli": "Fixed-task Ovis prompt override is ignored with an explicit warning; the default task still runs.",
+      "single_model_http": "A custom fixed-task prompt returns prompt_applied:false; the default task still runs.",
+      "explicit_ovis_stage": "CLI/HTTP startup rejects a nonempty custom prompt; binding setters return false without mutation."
+    },
+    "diagnostic_source_quality": true,
+    "model_qualified": false,
+    "publication_eligible": false,
+    "independent_review_key_required": "public_diagnostic_positive",
+    "qualification_scope": "Interface-only C/Python/CLI/HTTP/Rust/Dart comparison on the nine-EOS owned image; eleven-case source completion debt remains",
+    "error": "ValueError: Explicit native artifact name differs from reviewed receipt"
+  },
+  "independent_review": {
+    "scope": "Initial dispatch omitted required native_artifact_name; exact-identity preflight failed before dependency installation, model download or native build. This is an operator dispatch error, not inference or quality evidence.",
+    "service_conclusion": "failure",
+    "diagnostic_source_quality": true,
+    "model_qualified": false,
+    "publication_eligible": false,
+    "native_source_unchanged": true,
+    "retry_requires_explicit_artifact_name": "ovisocr3-native14-f16-40183489780"
+  }
+}

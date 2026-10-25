@@ -1,0 +1,188 @@
+{
+  "audited_on_utc": "2026-10-25",
+  "base_code": [
+    {
+      "commit": "a9ba83c5ad7dd04ba858d5067db3e6413e726b41",
+      "observed_license_status": "README Apache-2.0 badge; no tracked LICENSE/NOTICE at pinned tree",
+      "repository": "https://github.com/SHI-Labs/SH-GAN",
+      "small_files": {
+        "README.md": {
+          "bytes": 5995,
+          "sha256": "961916a4feef26db94531bc6d943357f6eeff1f80c23e7ea46d06b6a27cc0133"
+        }
+      }
+    },
+    {
+      "commit": "163efdfd341bf3590df3c0c2b582935fbc8e8343",
+      "observed_license_status": "MIT LICENSE for helper attributed by MI-GAN ONNX script",
+      "repository": "https://github.com/yuval-alaluf/Attend-and-Excite",
+      "small_files": {
+        "LICENSE": {
+          "bytes": 1072,
+          "sha256": "766d79aca71ce8187f7cfaeaabcd2c9498942b5caf0b08a1a193f6edacd5ea76"
+        },
+        "utils/gaussian_smoothing.py": {
+          "bytes": 4407,
+          "sha256": "4884e6b33baed03c61be86b7c9278ad7089afc3ac0e8abbec5ebb02ead3d0776"
+        }
+      }
+    },
+    {
+      "commit": "39dcc992c373b0705f64d0204c4c04669381b8ea",
+      "observed_license_status": "Apache-2.0 LICENSE; LaMa Fourier module cites FFC",
+      "repository": "https://github.com/pkumivision/FFC",
+      "small_files": {
+        "LICENSE": {
+          "bytes": 11336,
+          "sha256": "236045f6e0cfd8b222f6bda7314504e490f7188db303a164559a5ed8b3d7146e"
+        }
+      }
+    }
+  ],
+  "eligibility": {
+    "big_lama": "Apache-2.0 source and third-party card metadata observed; author-issued checkpoint rights and archive content unverified; no distribution approval.",
+    "migan": "Official README explicitly links separate MIT LICENSE-WEIGHTS to pretrained models; exact payload and conversion parity pending. MI-GAN source credits SH-GAN, whose pinned tracked tree lacks a LICENSE/NOTICE despite README badge; copied base-code provenance requires review."
+  },
+  "evidence_scope": "Source bytes and hosted artifact metadata only; no model payloads, framework imports, builds, or inference.",
+  "issue": {
+    "body_sha256": "bc3a9db7376e1e28f7648ebf8ff5c785edad1f44d1a5f0cfb1531cec62569070",
+    "number": 71,
+    "url": "https://github.com/CrispStrobe/CrispEmbed/issues/71"
+  },
+  "linked_model_repositories": [
+    {
+      "artifact_metadata_only_unverified_locally": [
+        {
+          "bytes": 28079181,
+          "declared_lfs_sha256": "6f1f3530a1a2324b19752018ce756088b07973cda8d7d890034ace5c8a48c40b",
+          "path": "migan_pipeline_v2.onnx"
+        }
+      ],
+      "commit": "406830d0fa60666da0071c342ad2fbc8f30c5c64",
+      "repository": "https://huggingface.co/andraniksargsyan/migan",
+      "small_files": {
+        "LICENSE": {
+          "bytes": 1082,
+          "sha256": "13348eaaebc0b07b0faf3a92db04e0858737713a917d064b599c87cac05b571f"
+        },
+        "README.md": {
+          "bytes": 62,
+          "sha256": "d80514b4aa4a97a8339ffcd5efd7b24600b73cef43bd461a369f294905dae42a"
+        }
+      }
+    },
+    {
+      "artifact_metadata_only_unverified_locally": [
+        {
+          "bytes": 381428720,
+          "declared_lfs_sha256": "f1b358ca24093b93a106183b98a3dea6e8ed09f3b43ea7251eb2c81e7b4575f6",
+          "path": "big-lama.zip"
+        }
+      ],
+      "commit": "05cb2be7f8dbe6ca7c6e78f4fc827a4b2baaa4a9",
+      "repository": "https://huggingface.co/smartywu/big-lama",
+      "small_files": {
+        "README.md": {
+          "bytes": 667,
+          "sha256": "9f68ff58e785e22ef2e76577a570df1773fe6628b1386dc465048df0a9712008"
+        }
+      }
+    }
+  ],
+  "local_ggml": {
+    "header": "include/ggml.h",
+    "header_sha256": "0e3d9d7c97b78e8287fb3651416f6e9793ca70e95b51602d259075713e6645bb",
+    "submodule_commit": "890278a8342c620197c90e702e1188bcab94f510"
+  },
+  "schema": "crispembed-inpainting-feasibility-source-contract-v1",
+  "upstream_git": [
+    {
+      "commit": "2b793c5ece43f4253e32d4afc257120a5deed6f5",
+      "repository": "https://github.com/Picsart-AI-Research/MI-GAN",
+      "small_files": {
+        "LICENSE": {
+          "bytes": 1083,
+          "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+        },
+        "LICENSE-WEIGHTS": {
+          "bytes": 1083,
+          "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+        },
+        "README.md": {
+          "bytes": 12659,
+          "sha256": "64419d21ad45b70337dc501f2aa1a1c18eb1115be6378bc05fca048937d4498b"
+        },
+        "configs/experiment/migan_places256.yaml": {
+          "bytes": 1435,
+          "sha256": "7a9a77f7ad460eba8b642daed6844f1fd3140a69d4feea641b84d19c4bccc8bc"
+        },
+        "configs/model/migan.yaml": {
+          "bytes": 6027,
+          "sha256": "422f34ca35b348b2cbeb221075af496f94a2abdf282f6e977b13f4738b4885d7"
+        },
+        "lib/model_zoo/migan.py": {
+          "bytes": 25239,
+          "sha256": "cdb269ddcf7275a3ec885a3ccd585f31f7695da0115e6fb962b5f677fd8fb8da"
+        },
+        "lib/model_zoo/migan_inference.py": {
+          "bytes": 10431,
+          "sha256": "1e35a181e516742ae32af935848e6a9a4382f528ea7096db6658f14cd8b9ace0"
+        },
+        "scripts/create_onnx_pipeline.py": {
+          "bytes": 13172,
+          "sha256": "4b909f9e3ad560bcaec72f93e6a8ed68788a11c33b62318cb8cdf38b694cc5d2"
+        },
+        "scripts/demo.py": {
+          "bytes": 5478,
+          "sha256": "08815d6e437c04304e5d77c820eff4e4e01ac82ba8fcb17ac0cdcc90d2766100"
+        }
+      }
+    },
+    {
+      "commit": "786f5936b27fb3dacd2b1ad799e4de968ea697e7",
+      "repository": "https://github.com/advimman/lama",
+      "small_files": {
+        "LICENSE": {
+          "bytes": 11348,
+          "sha256": "4ceeeac5a802e86c413c22b16cce8e9a22027b0250c97e6f8ac97c14cf0542c0"
+        },
+        "README.md": {
+          "bytes": 17454,
+          "sha256": "97ec131e26ab120490c57425abca96fd68b886d20689e88ba3df10956acec705"
+        },
+        "bin/predict.py": {
+          "bytes": 4116,
+          "sha256": "4e40c5eece914d30ea16c3aafc0699f46e07c924c98f3aeecc6dcb8642b53cf8"
+        },
+        "configs/prediction/default.yaml": {
+          "bytes": 783,
+          "sha256": "e7733ceadd0be2210008f97b786772d10e866a6b5f7cd272d3ec5a2160e01e2c"
+        },
+        "configs/training/big-lama.yaml": {
+          "bytes": 1183,
+          "sha256": "2ef2fb8e7cea812070f6c66d9ac162f1a8a6caffdafae213ecd5436ecdcb9947"
+        },
+        "configs/training/generator/ffc_resnet_075.yaml": {
+          "bytes": 464,
+          "sha256": "87ecc2e4ad7e63f8a78e0a2aa38f495c33ea461fb0f0d59ffbe2d76e228d947d"
+        },
+        "saicinpainting/evaluation/data.py": {
+          "bytes": 7117,
+          "sha256": "ae2d1959b40eeb494bead932a891c6aba718297738bd01664e556611b9ac636a"
+        },
+        "saicinpainting/training/modules/ffc.py": {
+          "bytes": 17753,
+          "sha256": "1647ce037032e533c777fd1d486c61d3ecc0eee7603b8cb96b23d0deffcaf308"
+        },
+        "saicinpainting/training/modules/pix2pixhd.py": {
+          "bytes": 27964,
+          "sha256": "c064a8c257a3674786b6e99e202b9cfc68033c840300a7c082502e3d599d8111"
+        },
+        "saicinpainting/training/trainers/default.py": {
+          "bytes": 9406,
+          "sha256": "85e4a9ffaf21d725a48cf6dc066de3224c2168cea51c19696197e2a2f33f24ef"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+name: OvisOCR3 plain OCR original eleven-case quality
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reviewed metadata and original module reference before dependencies or weights
+        run: |
+          mkdir -p "$RUNNER_TEMP/ovisocr3-quality/out" "$RUNNER_TEMP/ovisocr3-quality/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/ovisocr3-quality/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/ovisocr3-quality/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/ovisocr3-quality/scratch/hf"
+          } >> "$GITHUB_ENV"
+          python tests/test_ovisocr3_quality_contract.py -q
+          HEAVY_OUT="$RUNNER_TEMP/ovisocr3-quality/out" HEAVY_SCRATCH="$RUNNER_TEMP/ovisocr3-quality/scratch" \
+            python tools/ci-heavy/ovisocr3_quality_run.py --preflight
+      - name: Pinned original CPU/F32 quality environment
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Frozen 8 CC0 plus 3 licensed images and original eleven-case forward
+        run: python tools/ci-heavy/ovisocr3_quality_run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr3-original-quality-${{ github.run_id }}
+          path: |
+            ${{ env.HEAVY_OUT }}/
+            ${{ env.HEAVY_SCRATCH }}/ovisocr3-quality/inputs/*.png
+          if-no-files-found: warn
+          retention-days: 90

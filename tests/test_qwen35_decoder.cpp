@@ -88,13 +88,23 @@ static int crispembed_test_main(int argc, char ** argv) {
         if (native_frontend) {
             auto * metadata = core_gguf::open_metadata(argv[1]);
             const bool ready = tokenizer.load(metadata);
+            // The original OvisOCR3 reference stores the source task text. The
+            // fixed-task frontend accepts an empty caller prompt and renders
+            // the reviewed template itself; bind the source text before use.
+            const std::string task_prompt =
+                metadata ? core_gguf::kv_str(metadata, "qwen35_ocr.profile.task_prompt", "") : "";
+            const std::string rendered_prompt =
+                metadata ? core_gguf::kv_str(metadata, "qwen35_ocr.profile.rendered_prompt", "") : "";
             if (metadata) core_gguf::free_metadata(metadata);
             const auto rgb = ref.get_f32("input.rgb");
             const auto rgb_shape = ref.shape("input.rgb");
             const auto prompt_bytes = ref.get_f32("input.prompt_utf8");
             const auto prompt_length = ref.get_f32("input.prompt_length");
             if (!ready || !rgb.first || rgb_shape.size() != 3 || rgb_shape[0] != 3 ||
-                rgb.second != size_t(3 * rgb_shape[1] * rgb_shape[2]) || !prompt_bytes.first || !prompt_length.first)
+                rgb.second != size_t(3 * rgb_shape[1] * rgb_shape[2]) || !prompt_bytes.first || !prompt_length.first ||
+                prompt_length.second != 1 || !std::isfinite(prompt_length.first[0]) || prompt_length.first[0] < 0 ||
+                std::floor(prompt_length.first[0]) != prompt_length.first[0] ||
+                prompt_length.first[0] > prompt_bytes.second)
                 return 2;
             std::vector<uint8_t> bytes(rgb.second);
             for (size_t i = 0; i < rgb.second; ++i) {
@@ -102,13 +112,21 @@ static int crispembed_test_main(int argc, char ** argv) {
                 bytes[i] = uint8_t(rgb.first[i]);
             }
             std::string prompt, rendered;
-            for (int i = 0; i < int(prompt_length.first[0]); ++i) prompt.push_back(char(prompt_bytes.first[i]));
+            for (int i = 0; i < int(prompt_length.first[0]); ++i) {
+                if (!std::isfinite(prompt_bytes.first[i]) || prompt_bytes.first[i] < 0 || prompt_bytes.first[i] > 255 ||
+                    std::floor(prompt_bytes.first[i]) != prompt_bytes.first[i])
+                    return 2;
+                prompt.push_back(char(prompt_bytes.first[i]));
+            }
+            const bool fixed_task = tokenizer.is_ovisocr3();
+            if (fixed_task && (prompt != task_prompt || rendered_prompt.empty())) return 1;
             std::vector<int> derived_ids;
             if (!qwen35_ocr::preprocess_rgb(bytes.data(), int(rgb_shape[2]), int(rgb_shape[1]),
                                             tokenizer.image_limits(), image) ||
-                !tokenizer.image_prompt(prompt, int(image.patches.size() / 1536 / 4), derived_ids, native_modalities,
-                                        rendered))
+                !tokenizer.image_prompt(fixed_task ? std::string{} : prompt, int(image.patches.size() / 1536 / 4),
+                                        derived_ids, native_modalities, rendered))
                 return 2;
+            if (fixed_task && rendered != rendered_prompt) return 1;
             if (image.grid != dimensions || derived_ids != input_ids) return 1;
             input_ids = std::move(derived_ids);
             dimensions = image.grid;

@@ -1,3 +1,4 @@
+#include "qwen35_image_bounds.h"
 #include "qwen35_vision.h"
 #include "qwen35_math.h"
 #include "qwen35_norm.h"
@@ -98,7 +99,7 @@ static bool geometry(const vision_config & c, int tokens, const std::vector<int>
     for (size_t i = 0; i < grid.size(); i += 3) {
         const int t = grid[i], h = grid[i + 1], w = grid[i + 2];
         if (t < 1 || t > 16 || h < 1 || h > 1024 || w < 1 || w > 1024 || h % c.merge || w % c.merge ||
-            int64_t(h) * w > 1024)
+            int64_t(h) * w > ovisocr2_patch_limit())
             return false;
         total += int64_t(t) * h * w;
         if (total > tokens) return false;

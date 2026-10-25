@@ -2678,7 +2678,7 @@ impl Default for OcrCleanupSpec {
 #[derive(Clone)]
 pub struct OcrStageSpec {
     pub source_type: i32, // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2 (gated; matches map_engine)
+    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2, 22=ovisocr3 (gated; matches map_engine)
     pub model_a: String,
     pub model_b: String,
     pub cleanup: OcrCleanupSpec,

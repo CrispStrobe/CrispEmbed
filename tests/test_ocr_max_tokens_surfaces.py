@@ -110,6 +110,7 @@ ENGINE_TO_OCR_MODEL = {
     "granite_vision": "GRANITE_VISION", "lightonocr": "LIGHTONOCR",
     "unlimited_ocr": "UNLIMITED_OCR", "lfm2_vl": "LFM2_VL", "qwen35_ocr": "QWEN35_OCR",
     "ovisocr2": "QWEN35_OCR",  # format2 shares the gated native model API
+    "ovisocr3": "QWEN35_OCR",  # format3 shares the same capped owning-context API
     # pix2struct has no --ocr route at all: it is reached by --pix2struct, whose
     # own --pix2struct-max-tokens is passed per call rather than via a setter.
     "pix2struct": None,

@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 24 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 25 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -9,6 +9,40 @@ Start with the [executable next-agent handoff](docs/next-agent-handoff.md), whic
 records exact sources, remaining work, acceptance checks and artifact expiry.
 
 ## Execution order
+
+### Next bounded lanes after the completed Ovis audits
+
+The25 October bounded audits and their initial failures are archived in HISTORY;
+measurements are in PERFORMANCE. Start one lane at a time, using its exact
+sources and acceptance gates below:
+
+1. **Converted-weight reuse:** use the completed profile to prototype one
+   per-context byte-budgeted default-off cache. Require full numerical/decoded
+   regression, survivor/error handling and paired cold/warm latency/RSS before
+   any default or release decision.
+2. **Numerical attribution:** independently compare quantized weights/activation
+   semantics before another precision selection; separately trace the2048
+   original-embedding versus composed native-vision normalization difference.
+   Preserve all failed recipes, raw strict flags and the unqualified2048 path.
+3. **Next permissive implementation:** MI-GAN single-resolution still-image
+   references and native F32 prototype, or the next declared OCR source audit.
+   Code/checkpoint/base licensing and original blueprint come first. LaMa's
+   checkpoint terms/FFT and Indra's restricted weight scope remain unresolved.
+4. **Delivery/portfolio:** UltraBERT attribution and representative/pair quality,
+   immutable successor runtime assets/consumers and the other scoped lanes remain
+   below. Ovis3's14-arm/eleven-case/six-interface diagnostics are complete; its
+   capped original plain-OCR page still blocks model qualification/alias/upload.
+
+No queued workflow or prepared harness counts as qualification. Large archives
+remain hosted; independent review downloads small reports only. Preserve old
+Ovis2 first-F16 receipts, calibrated vision budgets and failed quant recipes.
+No app/runtime release/default change follows from these experiments.
+
+
+### LightOnOCR-3-0.8B carry-forward
+
+The following independent v1 panel describes LightOnOCR, separately from
+OvisOCR2's qualified published F16. Preserve both reference sets and their limits.
 
 Profiling, bounded parallel-F16 conversion and fixed-receipt completion/prompt
 checks are complete; evidence is in [HISTORY](HISTORY.md) and
@@ -49,6 +83,20 @@ candidate is selected for publication or default promotion.
    selected from the completed quantization panel.
 3. [ ] **Continue the permissive OCR queue below**, smallest applicable backend
    first after the preceding work; source/base-license and blueprint audit first.
+
+### OvisOCR3 source-quality decision
+
+Original plain OCR11 capture40178328864 is complete and reviewed; eight authored
+cases have zero raw CER/WER, but the two-column page caps1024 without EOS with
+CER0.52365/WER0.83993. Preserve that negative result in HISTORY; no cap/prompt/
+gold/scorer adjustment. Native14, faithful F16 eleven-case capture and the
+six-interface diagnostic are independently reviewed. Preserve all initial
+harness/dispatch failures and the source-quality block. Model qualification requires all old screens.
+An explicit default-off public diagnostic may verify interfaces only when all11
+native outputs faithfully match the original, including its unchanged capped
+case. It must emit model-qualified=false and a separate diagnostic review key.
+Strict publication and a model alias stay blocked by the original completion
+failure. Other upstream tasks require separate development/evaluation protocols.
 
 ## Quantization and publication follow-up
 
@@ -93,8 +141,8 @@ lane. Existing restricted registry entries are not enabled by this roadmap.
 | Order | Checkpoint | License audit | Approximate Q4 storage | Pending work |
 |---|---|---|---|---|
 | 1 | LightOnOCR-3-0.8B | Apache-2.0 source/base pinned | 0.964GB Q4;1.213GB Q8;1.150GB Q8/Q6;1.918GB F16-text/F32-vision | Numerical drift, latency, independent/large documents, quantized quality and publication; priorities above |
-| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | [Metadata/schema/processor qualification](tests/results/qwen35-ocr/ovisocr2-metadata.json) passes; experimental proof-bound F32/F16 export and all473-tensor roundtrip pass [39992662147](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39992662147); PR77 merged2f8b5354. Frontend PR78 and controlled original T4/TRITON_ATTN GPU execution pass. PR79 initial943-field reference/native12/14 and vision failures are retained. Reviewed preset=both passes the full fourteen-arm frozen replay40049244654; six public interfaces40053283383 and original HF11 reference40054043629 pass. First F16 quality40056641800 matches all eleven Python ID/text outputs; protected Q8 40061433357 is rejected for numerical and two-column regression; all three quant recipes rejected; F16 published/alias consumer40080458492 passes; PR79 integrated; next latency/RSS lane below |
-| 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Card declares Apache-2.0/Qwen3.5-0.8B; LICENSE/base/schema audit pending | Similar small-family estimate; unmeasured | Same small dimensions/MTP0 observed; audit actual terms, schema and original processor/prompt/decoding before selecting a sibling profile |
+| 2 | [OvisOCR2](https://huggingface.co/ATH-MaaS/OvisOCR2) | Pinned checkpoint/base Apache-2.0 audited | Q4/calibrated Q4 1.119GB rejected; Q8 1.251GB rejected; selected F16 1.717GB | Converted-weight reuse; quantized operator attribution;2048 numerical debt and broader licensed-page benchmarks. Preserve qualified F16/alias and all completed evidence in HISTORY. |
+| 2b | [OvisOCR3](https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd) | Pinned LICENSE/checkpoint/base Apache-2.0 audited | ~1.12–1.34GB extrapolated from Ovis2 recipes, unmeasured; actual F16 1.717GB | Native14/F16 eleven-case/six-interface diagnostics are complete; [source plain-OCR quality block](docs/ovisocr3.md#original-plain-ocr-quality-decision) remains. Declare a separate original-first task/evaluation protocol before broader tasks, quantization, alias or publication. |
 | 3 | [Xiaomi-OCR-0](https://huggingface.co/SeerRay-Lab/Xiaomi-OCR-0) | Apache-2.0; Qwen3.5-0.8B-Base | ~0.74 GB | Queued after shared backend; upstream has not validated community GGUF quality |
 | 4 | [LightOnOCR-3-1B](https://huggingface.co/lightonai/LightOnOCR-3-1B) | Apache-2.0; retained LightOnOCR-2 architecture | ~0.85–1.23 GB | Queued: reuse `lightonocr`; validate official preprocessing/tokenizer, transcription and grounding; estimated 3–7 engineering days |
 | 5 | [TeleOCR](https://huggingface.co/XingChen-AGI/TeleOCR) | Apache-2.0; base terms still to audit | ~1.3–1.8 GB | Queued: reuse Qwen2.5-VL where exact config permits; verify renamed NaviDC artifacts/provenance and structured output; estimated 1–2 weeks |
@@ -191,10 +239,17 @@ Require affected exact-source checks again for each new implementation change.
   Cloud deployment and collaboration remain separate optional product decisions.
   Exact scopes and dependencies: [consumer handoff](docs/current-state-and-next-steps.md).
 
-- [ ] **Issue71 inpainting feasibility:** audit exact code/checkpoint licenses for
-  MI-GAN/LaMa; trace image/mask contracts and existing primitive coverage. Keep
-  still-image parity/public interfaces separate from batching/temporal propagation.
-  Do not treat issue descriptions as verified license or quality evidence.
+- [ ] **Issue71 MI-GAN still-image prototype:** use the completed
+  [source/blueprint feasibility audit](docs/inpainting-feasibility.md) and pinned
+  [source receipt](docs/inpainting-source-contract.json). Choose one256/512
+  resolution, verify exact MIT checkpoint payload/config/tensor inventory and
+  preserve copied-helper notices or implement the graph independently. Freeze
+  original RGB/mask/block/final-output references, including white=fill polarity,
+  empty/full/edge/nonbinary masks, before native F32 work. Require stage errors,
+  known-pixel preservation, final image quality, scoped latency/RSS and actual
+  gated APIs before any model registry/publication. Batching, text-derived masks
+  and temporal propagation are separate lanes. LaMa remains held on authoritative
+  checkpoint terms and unimplemented FFT/complex semantics. Issue71 stays open.
 
 ## OCR portfolio and performance carry-forward
 
@@ -322,7 +377,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-25 | `feat/ovis-followups-20261025` | Ordered follow-up loop: Ovis latency/RSS; issue71 license/blueprint feasibility; attention-F16/FFN-Q4; bounded larger-input and next permissive checkpoint qualification | Start with hosted paired profile-off/on on the frozen owned image; preserve original/first-F16/publication receipts. Source-only inpainting and OvisOCR3 audits may run alongside; no local builds/inference. Each later runtime change requires original-module/crispembed-diff and decoded-quality evidence before promotion. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -345,14 +399,14 @@ Do not repeat completed captures/panels. No runtime tag/default/app pin change;
 development0.17.13, app immutable0.17.12. The optional
 [M1 audit](docs/handover-m1-ovisocr2.md) remains complementary Apple coverage.
 
-Continue with one bounded lane below, starting with latency/RSS attribution.
-Selectively quantized attention-F16/FFN-Q4 is separate subsequent work; larger
-inputs follow resource attribution. Consumer catalogs/providers require qualified
+Continue the pending bounded lanes below. Profiling and the fourth selective
+precision attempt are complete; their measurements and rejection are in HISTORY.
+Materialization reuse and quantized-kernel attribution require separate evidence. Consumer catalogs/providers require qualified
 immutable successor binaries. Preserve all initial failures, old recipes and
 raw strict flags. The explicit three entry gates and reviewed `both` math preset
 remain required; neither delivery nor speed permits a default flip.
 
-- [ ] **Remote artifact preservation:** before21 January2027 preserve the
+- [ ] **Remote artifact preservation:** before the November2026 raw-diff expiry preserve new Ovis3 native vectors; before21 January2027 preserve the
   original871-field archive and before the respective22 January expiries preserve
   full943 fields/native vectors/quality and quantization artifacts. Inventory
   run/artifact IDs and ZIP/member hashes in the existing receipts and HISTORY;
@@ -360,88 +414,87 @@ remain required; neither delivery nor speed permits a default flip.
   every copied member, retain original producer attribution and expiry. Download
   only the small review; never bring multi-GB archives to the shared host.
 
-## Ovis latency/RSS follow-up — after the current qualification/publication loop
+## Ovis bounded materialization reuse — after measured attribution
 
-The first qualified [F16 panel](tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
-has exact Python IDs/text on all eleven cases but native recognition walls of
-51.14 seconds for Hello OCR,1375.88 seconds for the receipt and1110.88 seconds
-for the two-column page. Native/HF CPU models and timing boundaries differ;
-recognition parity does not settle latency. This is a later bounded lane, not
-permission to recapture or weaken the original/F16 quality anchors.
+Use [the completed profile](tests/results/qwen35-ocr/ovisocr2-profiling.json),
+`src/qwen35_profile.{h,cpp}` and
+`src/qwen35_linear.cpp::{project_cpu,tensor_floats}`. Attribution is complete;
+do not repeat it as a new task. Eight cached steps materialize24,060,624,896 F32
+bytes and spend about11.16 seconds materializing versus0.57 computing projections
+on the recorded host. These nested counters are not additive across levels.
 
-1. On hosted CPU, adapt `tests/test_qwen35_profile.cpp` to the explicit Ovis
-   format-2 context and reviewed math/gates. Use `src/qwen35_profile.{h,cpp}`
-   counters to separate setup/materialization/read/conversion/validation/matmul,
-   vision/prefill/decode and initialization. Start with the frozen owned image;
-   a capped document prefix is a profile only, not EOS/decoded-quality proof.
-   Check profile on/off neutrality against the frozen first outputs and record
-   actual source, CPU/compiler/library/thread, RSS and timing boundaries.
-2. Only after measured attribution, evaluate one gated optimization at a time
-   in `src/qwen35_linear.cpp::project_cpu`/`tensor_floats`, such as per-context
-   converted-weight reuse or backend/context reuse. Keep the existing path and
-   bound any extra RAM. Cover context separation, reset, failed load, free and
-   survivor behavior; do not introduce a shared stale tensor-pointer cache.
-3. Require the full frozen original-module/crispembed-diff stage/cache/logit
-   gates and all eleven actual first-F16 IDs/text/EOS/caps/quality/confidence
-   comparisons for a changed runtime. Measure paired same-host baseline/new
-   latency and RSS; report any memory tradeoff. Preserve every failure and raw
-   strict flag. No default or app-runtime flip without separate qualification.
+- [ ] Implement one default-off, value-parsed experiment that reuses immutable
+  converted weights per owning model/context, with a declared byte budget and
+  predictable fallback. Keep serial/parallel paths. Avoid a global tensor-pointer
+  cache; cover reset, failed load, free, independent models and survivor context.
+- [ ] Before changing defaults, require the complete current-source14-arm
+  original/crispembed-diff replay and all eleven frozen first-F16 IDs/raw and
+  processed text/EOS/caps/confidences. Preserve all raw/calibrated flags.
+- [ ] Measure unprofiled paired same-host old/new calls, initialization versus
+  repeated recognition, cold versus warm reuse and fresh-process RSS. Include
+  CPU/compiler/thread details and two-context memory. A speed win requires
+  equal output; the full head alone is1,017,118,720 bytes. Source success does
+  not upgrade the app or select a runtime release.
 
-## Ovis selective precision follow-up — separate from the current three attempts
+## Ovis quantized-kernel attribution — before another precision selection
 
-The [Q8 raw replay](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json) locates
-source-fed divergence at `l.layers.0.linear_attn.in_proj_qkv.weight`: input max
-absolute0, QKV max0.0564889908 despite cosine0.999990225. The current two Q4
-recipes retain that projection in Q8; calibrating only FFN inputs cannot change
-its quantized bytes. The [cross-arm record review](tests/results/qwen35-ocr/ovisocr2-quant-cross-arm.json)
-verifies all72 calibrated FFN payloads change while all78 attention/323 protected
-records stay identical, including the exact first-QKV SHA across all three arms.
-Do not infer that this alone explains all decoded errors,
-or that restoring it will qualify a smaller model. The completed three-attempt/
-publication/consumer loop is archived in HISTORY; this is a new bounded lane.
+All four current attempts are rejected in
+[selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json).
+Keep the published F16 bytes/pin and all previous wrappers unchanged.
 
-Use `tools/ci-heavy/ovisocr2_quality_contract.py::RECIPES`, the existing C-side
-quantizer overrides and all473 before/after tensor records. First compare a
-separate attention-F16/FFN-Q4 recipe with the existing attention-Q8 recipe;
-protect vision/embedding/norms/recurrent A/B and retain both old alternatives.
-Freeze the recipe on development evidence before heldout/document output.
-Run the same-source F16 local control, source-fed first-linear projections and
-full original-module/crispembed-diff caches/logits/decoded comparison, retaining
-actual raw vectors and every unchanged numerical verdict. Isolate additional
-sensitive matrices only from the earliest differing operation. Reuse the frozen
-first F16 and original11-case anchors; all eleven candidate IDs/text/EOS/caps,
-confidence, raw/parsed CER/WER and15-cell evidence remain required. Record actual
-file bytes/tensor types, paired host latency/RSS and calibration separation;
-no size estimate or component cosine is a quality result. Use hosted CPU only.
-Failed numerical or document screens still block the candidate; any proposal
-for different quantization acceptance criteria is a separately documented
-methodology task and must not rewrite historical float comparisons. Keep the
-current F16 selection/publication receipts and model pin immutable. A future
-qualified precision needs versioned decision/publication evidence and a reviewed
-destination/allowlist: the present publisher intentionally permits one GGUF plus
-four provenance files and refuses additional unreviewed model files.
+- [ ] First audit the same candidate weights and activation semantics against
+  an independent Python/ONNX blueprint. Start at the first FFN boundary after
+  the passing source-fed linear block for the attention-F16/FFN-Q4 file. Use
+  `tools/dump_ovisocr2_reference.py`, `tools/ci-heavy/ovisocr2_selective_precision.py`,
+  `tests/test_qwen35_decoder.cpp` and pinned ggml quant/dequant/vector-dot code.
+  Verify Q4_K scales/values, input bits and any activation quantization before
+  comparing gate/up/product/down and full layer output. Keep this quantized
+  reference distinct from the immutable original full-precision reference.
+- [ ] Separate implementation mismatch from intended precision loss using
+  earliest-stage absolute errors/norms, caches, full scores and decoded output.
+  Do not infer a broken operator or harmless approximation from cosine alone.
+- [ ] Any later precision/calibration selection needs a separately declared
+  development/evaluation protocol. Do not tune prompts, caps, weights or
+  tolerances against the already-observed held-out documents. A different
+  quantization methodology is a new scoped task, not a rewrite of old gates.
+  Publication still requires its own positive quality and integrity receipts.
 
-## Ovis larger-input qualification — after latency/resource attribution
+## Ovis 2048-patch numerical attribution — before broader input claims
 
-The qualified reader caps the original-resized image at1024 visual patches;
-upstream's2880-squared-pixel maximum remains unqualified. Keep that bound in
-`src/qwen35_vision.cpp::geometry` and the owning-context validation until this
-separate lane passes. Source parity on eleven bounded pages is not full upstream
-input-range or OCRBench/OmniDocBench qualification.
+[The four-case audit](tests/results/qwen35-ocr/ovisocr2-larger-inputs.json) is
+complete. Frozen control and authored1024/1200 inputs pass14/14;2048 passes8/14.
+Six composed native-vision/positions/frontend arms first fail prefill.decoder.norm
+(F32/F16 max0.00394558907/0.00438690186; calibrated ratios1.073/1.193), then
+full-prefix norm. Norms round3187.82251 on both sides; cosine rounds1.0. Replay
+with original prepared embeddings passes at0.000289916992/0.000239372253.
+All nine IDs/raw text/EOS match, but the overall larger-range qualification is
+negative. Default1024 and the existing opt-in2048 alternative remain unchanged.
+The F32 native-vision input-embedding difference is3.92198563e-5 (norms
+59.2414284/59.2414513); layer23 grows to0.000309944153 (norms
+209.240433/209.240448), before the final norm's0.00394558907. Preserve these
+magnitudes rather than inferring a root cause from the first threshold failure.
 
-Freeze separately licensed additional pages, original resize/grid/masks/positions,
-expected greedy IDs/EOS/text and quality policy before a larger native candidate.
-Use the original-module dumper and crispembed-diff on a bounded incremental grid
-panel, including non-square images and boundary rejection; preserve the current
-943-field/eleven-case anchors. Record visual attention/prefill/cache/logit errors
-and actual decoded output, wall/RSS and backend/precision. Identify the necessary
-native allocation/attention/reduction changes from the real blueprint before
-raising dimensions; the current scalar attention cost makes a cap-only change
-insufficient. Run heavy captures/model batches only on hosted/authorized resources
-with an explicit RAM/time budget. Keep larger inputs gated until the same
-original numerical and decoded-quality gates pass, with safe failure/recovery.
-Broad benchmark claims require their own fixed revision/split/input/metric and
-license plan; do not infer them from this owned panel or published weight size.
+- [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
+  and retained original/native arrays; boundary raw artifact12598011436 is in
+  the combined receipt. Preserve original source ac1bb9cb, all initial failures,
+  calibrated budgets, pixels, gold, caps and raw strict flags. Download large
+  arrays only inside hosted CI; keep shared-host work to small reports.
+- [ ] Trace the first composed vision/output divergence through prefill layer23
+  and final norm. Compare original-module and native values/magnitudes before
+  normalization, source-fed vision projection/reduction and original-embedding
+  isolation. Use `tools/dump_ovisocr2_reference.py`,
+  `tools/ci-heavy/ovisocr2_large_inputs.py`, `tests/test_qwen35_vision.cpp`,
+  `tests/test_qwen35_decoder.cpp` and crispembed-diff. A prepared replay passing
+  does not identify RMS normalization as the defective operator.
+- [ ] Before any runtime/bound/preset promotion, keep an experimental gate and
+  require all original14 numerical/decoded checks at each grid, owning OCR,
+  rejection/recovery and final-source frozen14/eleven-case first-F16 controls.
+  Measure scoped latency/RSS; original capture uses four threads and native
+  owning two, so current timings establish no paired speedup. Do not raise
+  tolerances or silently downscale to make the2048 case pass.
+- [ ] Upstream2880-squared resolution, dense licensed pages, multi-image/video
+  and OCRBench/OmniDocBench reproduction are separate protocols. Owned single-
+  text geometry samples do not establish representative large-page quality.
 
 ## Pipeline cache identity follow-up
 
@@ -466,8 +519,10 @@ uses Rust/Tauri/Svelte, not the old Dart paths in the contribution guide.
 After native/model qualification and a compatible immutable runtime are ready:
 update `src-tauri/src/extractors/mod.rs::engine_id`, the qualified default-model
 mapping in `src-tauri/src/extractors/ocr_crispembed.rs`, and the actual engine
-configuration/selector. Use orchestrator stage21 for Ovis; the older
-`vlm_engine_id` escalation API uses a different number space. Preserve existing
+configuration/selector. Use orchestrator stage21 for qualified OvisOCR2. Stage22 is OvisOCR3 and stays
+unqualified until its separate source-quality protocol passes; do not register
+it from a positive interface diagnostic. The older `vlm_engine_id` escalation
+API uses a different number space. Preserve existing
 default engines and the three experimental gates. Acceptance requires actual
 selected-library identity, empty-cache model hash resolution, output/confidence,
 cap/custom-prompt rejection and fallback-stage behavior. Record the consumer

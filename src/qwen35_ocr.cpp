@@ -52,6 +52,9 @@ struct qwen35_ocr_context {
 };
 namespace {
 bool inference_enabled(const qwen35_ocr_context & c) {
+    if (c.tokenizer.is_ovisocr3())
+        return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") &&
+               core_env::on("CRISPEMBED_OVISOCR3_INFERENCE");
     return core_env::on("CRISPEMBED_QWEN35_OCR") &&
            (!c.tokenizer.is_ovisocr2() ||
             (core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE")));
@@ -120,6 +123,9 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     qwen35_ocr::image_inputs image;
     if (!qwen35_ocr::preprocess_rgb(pixels, h, w, c.tokenizer.image_limits(), image))
         return c.fail("image exceeds native patch bound");
+    // Ovis2 large-image gates must not extend the distinct Ovis3 profile.
+    if (c.tokenizer.is_ovisocr3() && image.patches.size() > size_t(1024) * 1536)
+        return c.fail("OvisOCR3 image exceeds the 1024-patch qualification bound");
     stage.next(profile_event::prompt);
     std::vector<int> ids, modalities;
     std::string rendered;
@@ -198,12 +204,16 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
         auto * meta = metadata.get();
         if (!meta) return nullptr;
         const auto format = core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0);
-        const bool allowed_format = format == 1 || (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
-                                                    core_env::on("CRISPEMBED_OVISOCR2_FRONTEND"));
+        const bool allowed_format = format == 1 ||
+                                    (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
+                                    (format == 3 && core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
         const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.tie_word_embeddings", false) &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.zero_centered_text_norm", false) &&
-                           c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2());
+                           c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2()) &&
+                           ((format == 3) == c->tokenizer.is_ovisocr3());
         metadata.reset();
         if (!ready) return nullptr;
         c->backend = ggml_backend_cpu_init();
@@ -226,6 +236,9 @@ extern "C" int qwen35_ocr_set_max_tokens(qwen35_ocr_context * c, int n) {
 }
 extern "C" int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * c) {
     return c && c->tokenizer.is_ovisocr2();
+}
+extern "C" int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * c) {
+    return c && c->tokenizer.is_ovisocr3();
 }
 extern "C" int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * c) {
     return c ? c->max_tokens : 0;

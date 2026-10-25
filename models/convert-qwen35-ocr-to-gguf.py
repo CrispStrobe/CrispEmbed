@@ -29,6 +29,20 @@ def _ovis_profiles():
     return module
 
 
+@lru_cache(maxsize=1)
+def _ovis3_profile():
+    spec=importlib.util.spec_from_file_location('qwen35_ovis3_profile',Path(__file__).with_name('qwen35_ovis3_profile.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+
+@lru_cache(maxsize=1)
+def _ovis3_hf_profile():
+    spec=importlib.util.spec_from_file_location('qwen35_ovis3_hf_profile',Path(__file__).with_name('qwen35_ovis3_hf_profile.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+
 def precision_recipe(name):
     if name == "original-f16":
         return []
@@ -40,7 +54,7 @@ def precision_recipe(name):
     ]
 
 
-def read_tokenizer_metadata(root, vocab_size, generation=None):
+def read_tokenizer_metadata(root, vocab_size, generation=None, allow_generation_eos_list=False):
     tokenizer = json.loads((root / "tokenizer.json").read_text())
     if tokenizer["model"]["type"] != "BPE":
         raise ValueError("Expected an audited BPE tokenizer")
@@ -64,6 +78,11 @@ def read_tokenizer_metadata(root, vocab_size, generation=None):
     if generation is None:
         generation = json.loads((root / "generation_config.json").read_text())
     eos = generation["eos_token_id"]
+    if allow_generation_eos_list:
+        if (not isinstance(eos, list) or eos != [248044, 248046]
+                or any(type(value) is not int or value < 0 or value >= vocab_size for value in eos)):
+            raise ValueError("OvisOCR3 source EOS list differs")
+        eos = eos[0]  # Legacy scalar key; full source list is written under the OvisOCR3 profile.
     if not isinstance(eos, int) or eos < 0 or eos >= vocab_size:
         raise ValueError("Only a valid single generation EOS supported")
     config = json.loads((root / "tokenizer_config.json").read_text())
@@ -101,7 +120,12 @@ def validate_config(config, profile=None):
     }:
         raise ValueError("Invalid or unsupported decoder layer schedule")
     if profile is not None:
-        _ovis_profiles().validate_config(config,profile)
+        if profile.get("qualification_kind") == "hf5.16.1-original-reference":
+            _ovis3_hf_profile().validate_config(config,profile)
+        elif profile.get("name") == "ovisocr3":
+            _ovis3_profile().validate_config(config,profile)
+        else:
+            _ovis_profiles().validate_config(config,profile)
     if text.get("mtp_num_hidden_layers", 0) and profile is None:
         raise ValueError("MTP checkpoints need a separately audited export policy")
     if vision.get("deepstack_visual_indexes", []):
@@ -134,9 +158,11 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     output = Path(output)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("An immutable 40-hex source revision is required")
-    if profile not in (None,"ovisocr2"):
+    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference"):
         raise ValueError("Unknown export profile")
-    pinned=_ovis_profiles().load_profile(root,source_model,source_revision) if profile else None
+    policy=(_ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
+            _ovis3_profile() if profile=="ovisocr3" else _ovis_profiles())
+    pinned=policy.load_profile(root,source_model,source_revision) if profile else None
     config = json.loads((root / "config.json").read_text())
     text, vision = validate_config(config,pinned)
     if dtype not in {"f32", "f16"}:
@@ -144,7 +170,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     if pinned:
         if (root/"model.safetensors.index.json").exists():
             raise ValueError("Pinned Ovis checkpoint is a single file; unexpected shard index")
-        _ovis_profiles().verify_checkpoint(root/"model.safetensors",pinned)
+        policy.verify_checkpoint(root/"model.safetensors",pinned)
 
     import gguf
     import numpy as np
@@ -211,7 +237,8 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                                embed_file.get_tensor("model.language_model.embed_tokens.weight")):
                 raise ValueError("Checkpoint claims tied weights but stores unequal head/embedding")
 
-    tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"],pinned["generation"] if pinned else None)
+    tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"],pinned["generation"] if pinned else None,
+                                            allow_generation_eos_list=profile in ("ovisocr3","ovisocr3-hf-reference"))
 
     output.parent.mkdir(parents=True, exist_ok=True)
     pending = output.with_name(output.name + ".partial")
@@ -231,7 +258,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_string(f"{ARCH}.{filename.removesuffix('.json')}", (root / filename).read_text())
     writer.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
     write_tokenizer_metadata(writer, tokenizer_data)
-    if pinned:
+    if profile=="ovisocr2":
         writer.add_string(f"{ARCH}.profile",pinned['name'])
         writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
         writer.add_key_value(f"{ARCH}.stop_token_ids",pinned['stop_ids'],gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
@@ -244,6 +271,38 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_uint32(f"{ARCH}.image_min_pixels",pinned['image_min_pixels'])
         writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
         writer.add_bool(f"{ARCH}.image_max_qualified",False)
+        writer.add_bool(f"{ARCH}.native_alias_qualified",False)
+    elif profile in ("ovisocr3","ovisocr3-hf-reference"):
+        writer.add_array(f"{ARCH}.missing_source_files",pinned["missing_source_files"])
+        writer.add_string(f"{ARCH}.profile",pinned['name'])
+        writer.add_string(f"{ARCH}.profile.task",pinned['task'])
+        writer.add_string(f"{ARCH}.profile.task_prompt",pinned['task_prompt'])
+        writer.add_key_value(f"{ARCH}.source_eos_token_ids",pinned['source_eos_ids'],
+                             gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
+        writer.add_string(f"{ARCH}.source_generation_config",json.dumps(pinned['generation'],sort_keys=True))
+        writer.add_string(f"{ARCH}.source_qualification",json.dumps(pinned['qualification'],sort_keys=True))
+        writer.add_string(f"{ARCH}.checkpoint_sha256",pinned['checkpoint_sha256'])
+        writer.add_uint32(f"{ARCH}.image_min_pixels",pinned['image_min_pixels'])
+        writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
+        writer.add_bool(f"{ARCH}.image_max_qualified",False)
+        if profile=="ovisocr3-hf-reference":
+            writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
+            writer.add_key_value(f"{ARCH}.stop_token_ids",pinned['stop_ids'],
+                                 gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
+            writer.add_uint32(f"{ARCH}.primary_eos_id",pinned['primary_eos'])
+            writer.add_string(f"{ARCH}.metadata_qualification",pinned['metadata_producer_canonical_sha256'])
+            writer.add_string(f"{ARCH}.original_reference_qualification",pinned['original_reference_producer_canonical_sha256'])
+            writer.add_bool(f"{ARCH}.rendered_prompt_qualified",True)
+            writer.add_bool(f"{ARCH}.processor_qualified",True)
+            writer.add_bool(f"{ARCH}.hf_stop_policy_qualified",True)
+            writer.add_string(f"{ARCH}.hf_stop_runtime_proof_sha256",pinned['hf_stop_runtime_proof_sha256'])
+            writer.add_string(f"{ARCH}.stop_qualification_scope",pinned['stop_qualification_scope'])
+            writer.add_bool(f"{ARCH}.effective_stops_qualified",False)
+        else:
+            writer.add_bool(f"{ARCH}.rendered_prompt_qualified",False)
+            writer.add_bool(f"{ARCH}.processor_qualified",False)
+            writer.add_bool(f"{ARCH}.hf_stop_policy_qualified",False)
+            writer.add_bool(f"{ARCH}.effective_stops_qualified",False)
         writer.add_bool(f"{ARCH}.native_alias_qualified",False)
 
     records = []
@@ -293,7 +352,7 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=LIGHTON_MODEL)
-    parser.add_argument("--profile",choices=["ovisocr2"],
+    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference"],
                         help="Pinned experimental Ovis export-only profile; not a native alias")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
@@ -305,15 +364,18 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
-    if args.profile or args.model=="ATH-MaaS/OvisOCR2":
-        policy=_ovis_profiles()
-        if args.profile!="ovisocr2" or args.model!=policy.MODEL or args.revision!=policy.REVISION:
-            parser.error("Ovis export requires its exact source/revision and --profile ovisocr2")
+    if args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
+        policy=(_ovis3_hf_profile() if args.profile=="ovisocr3-hf-reference" else
+                _ovis3_profile() if args.profile=="ovisocr3" else _ovis_profiles())
+        if args.profile not in ("ovisocr2","ovisocr3","ovisocr3-hf-reference") or args.model!=policy.MODEL or args.revision!=policy.REVISION:
+            parser.error("Ovis export requires its exact source/revision and matching --profile")
         metadata=snapshot_download(args.model,revision=args.revision,
                                   allow_patterns=list(policy.metadata_files()))
         policy.load_profile(metadata,args.model,args.revision)  # Before any weight download.
     directory = snapshot_download(args.model, revision=args.revision,
-                                  allow_patterns=["*.json", "*.jinja", "*.safetensors", "LICENSE*"])
+                                  allow_patterns=(list(_ovis3_profile().metadata_files())+["*.safetensors"]
+                                                  if args.profile in ("ovisocr3","ovisocr3-hf-reference") else
+                                                  ["*.json", "*.jinja", "*.safetensors", "LICENSE*"]))
     retained = sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32))
     manifest = convert(directory, args.output, args.model, args.revision, args.dtype, retained,profile=args.profile)
     print(json.dumps({key: value for key, value in manifest.items() if key != "records"}, indent=2))

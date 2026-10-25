@@ -4161,7 +4161,7 @@ class _CrispOcrPipelineParams(ctypes.Structure):
 
 
 class _CrispOcrStage(ctypes.Structure):
-    """Exact native stage layout; engine20 is Qwen3.5, engine21 is gated OvisOCR2."""
+    """Exact native stage layout; engine20 is Qwen3.5, engine21 is gated OvisOCR2, engine22 gated OvisOCR3."""
     _fields_ = [
         ("source_type", ctypes.c_int),
         ("engine", ctypes.c_int),
