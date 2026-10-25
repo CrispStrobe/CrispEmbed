@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -118,6 +118,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'large-inputs'
     needs: controls
     uses: ./.github/workflows/ovisocr2-large-inputs.yml
+  ovisocr3-quality:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-quality'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-quality.yml
+  ovisocr3-quality-f16:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-quality-f16'
+    needs: controls
+    uses: ./.github/workflows/ovisocr3-quality-f16.yml
   ovisocr3-reference:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-reference'
     needs: controls
@@ -164,6 +172,8 @@ jobs:
           python tests/test_ovisocr3_metadata.py -v
           python tests/test_ovisocr3_reference.py -v
           python tests/test_ovisocr3_quality_contract.py -v
+          python tests/test_ovisocr3_quality_run.py -v
+          python tests/test_ovisocr3_quality_f16.py -v
           python tests/test_ovisocr2_large_inputs.py -v
   lighton-fixture:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'lighton-fixture'
