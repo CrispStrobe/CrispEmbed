@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <thread>
 
@@ -93,17 +94,25 @@ static int controls() {
 }
 static int benchmark(int argc, char ** argv) {
     if (argc == 1) return controls();
-    if (argc != 4) return 2;
+    if (argc != 4 && argc != 5 && argc != 6) return 2;
     char * end = nullptr;
     const long cap = std::strtol(argv[3], &end, 10);
     if (!end || *end || cap < 1 || cap > 512) return 2;
+    int threads = 4;
+    if (argc >= 5) {
+        const long parsed = std::strtol(argv[4], &end, 10);
+        if (!argv[4][0] || !end || *end || parsed < 1 || parsed > 256) return 2;
+        threads = int(parsed);
+    }
+    if (argc == 6 && std::strcmp(argv[5], "ovisocr2") != 0) return 2;
     gate("CRISPEMBED_QWEN35_OCR", "1");
     const auto load_started = std::chrono::steady_clock::now();
     using owner = std::unique_ptr<qwen35_ocr_context, decltype(&qwen35_ocr_free)>;
-    owner context(qwen35_ocr_init(argv[1], 4), qwen35_ocr_free);
+    owner context(qwen35_ocr_init(argv[1], threads), qwen35_ocr_free);
     const double load_ms =
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - load_started).count();
     if (!context || !qwen35_ocr_set_max_tokens(context.get(), int(cap))) return 2;
+    if (argc == 6 && !qwen35_ocr_is_ovisocr2(context.get())) return 2;
     profile_record record;
     bool active = false;
     int length = 0;
