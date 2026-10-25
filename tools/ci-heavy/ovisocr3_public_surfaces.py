@@ -34,10 +34,10 @@ NATIVE_STATUS = 'completed diagnostic OvisOCR3 fourteen-arm native replay'
 NATIVE_WORKFLOW = '.github/workflows/ovisocr2-metadata.yml'
 NATIVE_ARTIFACT_NAME = 'ovisocr3-native14-f16-40183489780'
 NATIVE_PRODUCER_SHA = 'b3fb70c121c27653088dda4492628959703ff170b0cc83d4512aba694f4933f3'
-QUALITY_RUN = 0
-QUALITY_HEAD = ''
-QUALITY_PRODUCER_SHA = ''
-QUALITY_REVIEW_KEY = ''
+QUALITY_RUN = 40187405735
+QUALITY_HEAD = 'ee719aef2ac22eee67ab6c483a4d1d6633c901c8'
+QUALITY_PRODUCER_SHA = '1e4adf2a0cbe40df494a1a67d039024e97e214674c2a7c98b46b8499523aef3a'
+QUALITY_REVIEW_KEY = 'f16_quality_positive'
 F16_SHA = 'a31c18ac0f65cbc73a8d20ba3bd658cd4ce4ae52037a3bf2d3ffbbd56e4383a0'
 # Separate, default-off interface diagnostic. These pins are set only after
 # independent review of the actual unqualified eleven-case source capture.
