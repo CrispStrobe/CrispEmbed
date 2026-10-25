@@ -167,6 +167,19 @@ def checked_reference_archive(archive, receipt, folder):
     return original, output
 
 
+def validate_fixed_task_source(original, metadata):
+    """Bind the observed original task bytes to the reviewed fixed-task policy."""
+    task = original.get("prompt")
+    rendered = original.get("rendered_prompt")
+    producer = metadata.get("producer", {})
+    if (not isinstance(task, str) or not isinstance(rendered, str)
+            or not isinstance(producer, dict)
+            or hashlib.sha256(task.encode()).hexdigest() != producer.get("task_prompt_sha256")
+            or rendered != metadata.get("rendered_prompt")
+            or hashlib.sha256(rendered.encode()).hexdigest() != producer.get("rendered_prompt_sha256")):
+        raise ValueError("OvisOCR3 original fixed-task prompt differs from reviewed metadata")
+
+
 def checked_readable(image, receipt):
     """Bind the actual decoded RGB bytes to the original owned PNG declaration."""
     from PIL import Image
@@ -296,19 +309,24 @@ def command(label, args, out, report, save, *, env=None, timeout=3600):
 
 def raw_diff_manifest(folder, stages, metric_lines, label, generated_count):
     """Require an exact raw vector for every actual comparison, including TRACE."""
+    if not re.fullmatch(r"f(?:32|16)-(?:delta|vision|decoder-prepared|decoder-native-vision|"
+                        r"decoder-native-positions|decoder-native-frontend)", label):
+        raise ValueError("Unknown OvisOCR3 numerical arm")
+    standalone_vision = label in ("f32-vision", "f16-vision")
+    delta = label in ("f32-delta", "f16-delta")
     log = "\n".join(metric_lines)
     compared = re.findall(r"^(?:PASS|FAIL) ([A-Za-z0-9_.]+): cos_min=", log, re.M)
     traced = re.findall(r"^TRACE ([A-Za-z0-9_.]+) max_abs=", log, re.M)
     if not compared or len(traced) != len(set(traced)):
         raise ValueError("OvisOCR3 actual comparison/TRACE names absent or repeated")
-    if len(compared) != len(set(compared)) and not label.endswith("-delta"):
+    if len(compared) != len(set(compared)) and not delta:
         raise ValueError("OvisOCR3 actual comparison stage repeated")
     names = set(compared) | set(traced)
-    if label.endswith("-vision"):
+    if standalone_vision:
         marker = "PASS VISION_RAW_DUMP_INTEGRITY stages=2"
         if len(names) != 37 or metric_lines.count(marker) != 1:
             raise ValueError("OvisOCR3 vision stages/raw-integrity marker differ")
-    elif label.endswith("-delta"):
+    elif delta:
         marker = "PASS DELTA_RAW_DUMP_INTEGRITY stages=4 variants=linear-core,reset"
         if metric_lines.count(marker) != 1 or not {"prefill.delta.output", "cached.delta.output"} <= names:
             raise ValueError("OvisOCR3 delta stages/raw-integrity marker differ")
@@ -326,7 +344,7 @@ def raw_diff_manifest(folder, stages, metric_lines, label, generated_count):
     if set(files) != names:
         raise ValueError("OvisOCR3 raw primary file set differs from actual comparisons")
     variants = {}
-    if label.endswith("-delta"):
+    if delta:
         expected_variants = {"linear-core": {"prefill.delta.final_state", "cached.delta.final_state"},
                              "reset": {"prefill.delta.output", "prefill.delta.final_state"}}
         for variant, expected in expected_variants.items():
@@ -416,6 +434,7 @@ def main(preflight=False):
         if result.returncode or report["reference_download"]["zip_sha256"] != profile.REFERENCE_ARTIFACT_SHA256:
             raise ValueError("Reviewed OvisOCR3 original reference download differs")
         original, files = checked_reference_archive(archive, receipt, scratch / "reference")
+        validate_fixed_task_source(original, metadata)
         archive.unlink()
         report["owned_readable"] = checked_readable(files["owned-readable.png"], receipt)
         report["selected_vision_preset"] = SELECTED_VISION_PRESET

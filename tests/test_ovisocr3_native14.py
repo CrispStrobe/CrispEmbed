@@ -1,6 +1,7 @@
 """Pure source and schema gates for the pending hosted OvisOCR3 native audit."""
 
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -115,6 +116,39 @@ class Native14Controls(unittest.TestCase):
                 audit.raw_diff_manifest(folder, shapes,
                                         [line for line in log if not line.startswith("PASS generated.scores.1:")],
                                         "f16-decoder-native-frontend", 2)
+
+    def test_native_vision_decoder_is_not_standalone_vision_and_requires_all_scores(self):
+        layers = {f"{phase}.decoder.layer.{number}" for phase in ("prefill", "cached", "full_prefix")
+                  for number in range(24)}
+        cache = {"prefill.cache.0.keys", "cached.cache.0.recurrent_states"}
+        scores = {f"generated.scores.{number}" for number in range(9)}
+        names = layers | cache | scores
+        log = [f"PASS {name}: cos_min=1" for name in sorted(names)]
+        shapes = {name: [1] for name in names}
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            for name in names:
+                (folder / (name + ".f32")).write_bytes(b"\0" * 4)
+            result = audit.raw_diff_manifest(folder, shapes, log, "f16-decoder-native-vision", 9)
+            self.assertEqual(result["raw_vector_count"], len(names))
+            self.assertIsNone(result["dump_integrity_marker"])
+            with self.assertRaisesRegex(ValueError, "all-layer/cache/all-token-score"):
+                audit.raw_diff_manifest(folder, shapes, log, "f16-decoder-native-vision", 10)
+            with self.assertRaisesRegex(ValueError, "Unknown OvisOCR3 numerical arm"):
+                audit.raw_diff_manifest(folder, shapes, log, "f16-other-vision", 9)
+
+    def test_original_fixed_task_source_rejects_wrong_task_and_rendering(self):
+        metadata = json.loads((ROOT / "tests/results/qwen35-ocr/ovisocr3-metadata.json").read_text())
+        rendered = metadata["rendered_prompt"]
+        task = rendered.split("<|vision_end|>", 1)[1].split("<|im_end|>", 1)[0]
+        self.assertEqual(hashlib.sha256(task.encode()).hexdigest(),
+                         metadata["producer"]["task_prompt_sha256"])
+        original = {"prompt": task, "rendered_prompt": rendered}
+        audit.validate_fixed_task_source(original, metadata)
+        with self.assertRaisesRegex(ValueError, "fixed-task prompt"):
+            audit.validate_fixed_task_source({**original, "prompt": task + " "}, metadata)
+        with self.assertRaisesRegex(ValueError, "fixed-task prompt"):
+            audit.validate_fixed_task_source({**original, "rendered_prompt": rendered + " "}, metadata)
 
 
 if __name__ == "__main__":
