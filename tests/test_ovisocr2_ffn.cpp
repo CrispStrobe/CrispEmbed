@@ -4,6 +4,7 @@
 #include "qwen35_math.h"
 #include "qwen35_parity.h"
 #include "ggml-cpu.h"
+#include "ggml-alloc.h"
 #include <cstring>
 #include <filesystem>
 #include <stdexcept>

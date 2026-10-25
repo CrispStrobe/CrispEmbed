@@ -40,8 +40,10 @@ row cosine, with all values finite and shapes/counts exact. The arms are:
 - **Source input:** original embeddings for the real first layer, and bit-exact
   original Python normalized FFN input supplied at the real gate/up projections.
   Compare gate/up/product/down and the residual layer output with the independent
-  quantized-weight reference. This deliberately isolates the FFN; it is not an
-  unmodified composed forward.
+  quantized-weight reference. The final residual check also includes native
+  linear-attention residual drift and is a composed control, not a pure FFN
+  metric. This deliberately isolates FFN inputs; it is not an unmodified
+  composed forward.
 - **Source gate/up:** inject independent gate/up results into the actual decoder
   activation/product expression, then compare product and ordinary down output.
 - **Source SiLU:** inject original gate and an all-ones up result; observe the
