@@ -39,7 +39,7 @@ Rules:
 
 )OVIS3";
 const char * ovis3_metadata_sha256 = "804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2";
-const char * ovis3_reference_sha256 = "";
+const char * ovis3_reference_sha256 = "fbd71d4a40df55db3314ce4221ac036512c7c58711a5afe74f20dd5f7d1fccc3";
 std::string replace_invalid_utf8(const std::string & input) {
     std::string result;
     for (size_t i = 0; i < input.size();) {

@@ -19,12 +19,12 @@ METADATA_RECEIPT_SHA256 = "84611a0184bd3d0bc49c628524e5fdf906b1f1adb68c2cfdc3030
 METADATA_RECEIPT = Path(__file__).resolve().parents[1] / "tests/results/qwen35-ocr/ovisocr3-metadata.json"
 
 # Deliberately absent until the actual original full-reference run is reviewed.
-REFERENCE_RUN = 0
-REFERENCE_HEAD = ""
-REFERENCE_ARTIFACT_ID = 0
-REFERENCE_ARTIFACT_SHA256 = ""
-REFERENCE_ARTIFACT_BYTES = 0
-REFERENCE_PRODUCER_SHA256 = ""
+REFERENCE_RUN = 40177416485
+REFERENCE_HEAD = "2ce861682089e3390ba17b08ccba1e46a7eb598d"
+REFERENCE_ARTIFACT_ID = 12592634300
+REFERENCE_ARTIFACT_SHA256 = "aaf199ce613a2bcad0e9c0bc0e987f9c802276646109888e7b1fe431ad28a508"
+REFERENCE_ARTIFACT_BYTES = 2493823648
+REFERENCE_PRODUCER_SHA256 = "fbd71d4a40df55db3314ce4221ac036512c7c58711a5afe74f20dd5f7d1fccc3"
 REFERENCE_RECEIPT = Path(__file__).resolve().parents[1] / "tests/results/qwen35-ocr/ovisocr3-original-reference.json"
 STOP_SCOPE = "hf5.16.1-explicit-eos-list-forward; vllm-runtime-unobserved"
 STOPPING_CRITERIA_SOURCE_SHA256 = "7e4ce5eeee83eab48a63a5419cd68be6f0591201fe7f9248dda77a7c3045bd7e"
