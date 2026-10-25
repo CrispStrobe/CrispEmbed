@@ -313,7 +313,8 @@ def raw_diff_manifest(folder, stages, metric_lines, label, generated_count):
             if path.stat().st_size != expected_bytes:
                 raise ValueError("OvisOCR3 raw F32 byte count differs: " + stage)
             records.append({"stage": stage, "variant": variant, "original_stage": stage,
-                            "file": label + "/" + (variant + "/" if variant != "primary" else "") + path.name,
+                            "file": "native-diff/" + label + "/" +
+                                    (variant + "/" if variant != "primary" else "") + path.name,
                             "bytes": expected_bytes, "sha256": sha(path), "source_shape": shape})
     return {"arm": label, "metric_stage_count": len(names), "trace_stage_count": len(traced),
             "raw_vector_count": len(records), "variant_stage_count": len(records) - len(names),
@@ -493,6 +494,8 @@ def main(preflight=False):
         report["status"] = "completed diagnostic OvisOCR3 fourteen-arm native replay"
         report["native14_positive"] = report["arm_count"] == 14 and not report["failures"] and set(report["exports"]) == {"f32", "f16"}
         save()
+        if not report["native14_positive"]:
+            raise ValueError("OvisOCR3 fourteen-arm native parity incomplete; diagnostic artifacts retained")
         return report
     except BaseException as error:
         report["status"] = "failed OvisOCR3 native14 execution"
