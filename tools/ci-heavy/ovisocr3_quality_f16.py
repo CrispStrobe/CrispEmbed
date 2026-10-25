@@ -115,7 +115,8 @@ def parse_native_result(text, case):
            "stop_id": stop, "stop_kind": "eos" if stop is not None else "length",
            "confidences": confidence, "mean_confidence": result["mean_confidence"],
            "wall_seconds": result.get("wall_seconds"), "init_seconds": result.get("init_seconds"),
-           "peak_process_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
+           "driver_peak_process_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+           "rss_scope": "Python audit driver only; excludes native subprocess"}
     contract.score_case("positive gold", row, case["cap"])
     return row
 

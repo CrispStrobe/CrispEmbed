@@ -15215,3 +15215,72 @@ Linux numbers are unchanged. A two-platform unit regression and all ten consumer
 controls pass. Native sources/math/build configuration are unchanged; the queued
 Linux consumer at5296 continues. This handoff and pure test are not an M1 runtime
 result, full Apple numerical qualification or a runtime release.
+
+
+## Archived Ovis follow-up instructions — superseded 25 October 2026
+
+The following briefs preceded the completed profiling and fourth precision
+attempt. They are preserved historical instructions, not current work. Use
+PLAN's new bounded implementation/methodology lanes and the measured receipts.
+
+## Ovis latency/RSS follow-up — after the current qualification/publication loop
+
+The first qualified [F16 panel](tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+has exact Python IDs/text on all eleven cases but native recognition walls of
+51.14 seconds for Hello OCR,1375.88 seconds for the receipt and1110.88 seconds
+for the two-column page. Native/HF CPU models and timing boundaries differ;
+recognition parity does not settle latency. This is a later bounded lane, not
+permission to recapture or weaken the original/F16 quality anchors.
+
+1. On hosted CPU, adapt `tests/test_qwen35_profile.cpp` to the explicit Ovis
+   format-2 context and reviewed math/gates. Use `src/qwen35_profile.{h,cpp}`
+   counters to separate setup/materialization/read/conversion/validation/matmul,
+   vision/prefill/decode and initialization. Start with the frozen owned image;
+   a capped document prefix is a profile only, not EOS/decoded-quality proof.
+   Check profile on/off neutrality against the frozen first outputs and record
+   actual source, CPU/compiler/library/thread, RSS and timing boundaries.
+2. Only after measured attribution, evaluate one gated optimization at a time
+   in `src/qwen35_linear.cpp::project_cpu`/`tensor_floats`, such as per-context
+   converted-weight reuse or backend/context reuse. Keep the existing path and
+   bound any extra RAM. Cover context separation, reset, failed load, free and
+   survivor behavior; do not introduce a shared stale tensor-pointer cache.
+3. Require the full frozen original-module/crispembed-diff stage/cache/logit
+   gates and all eleven actual first-F16 IDs/text/EOS/caps/quality/confidence
+   comparisons for a changed runtime. Measure paired same-host baseline/new
+   latency and RSS; report any memory tradeoff. Preserve every failure and raw
+   strict flag. No default or app-runtime flip without separate qualification.
+
+## Ovis selective precision follow-up — separate from the current three attempts
+
+The [Q8 raw replay](tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json) locates
+source-fed divergence at `l.layers.0.linear_attn.in_proj_qkv.weight`: input max
+absolute0, QKV max0.0564889908 despite cosine0.999990225. The current two Q4
+recipes retain that projection in Q8; calibrating only FFN inputs cannot change
+its quantized bytes. The [cross-arm record review](tests/results/qwen35-ocr/ovisocr2-quant-cross-arm.json)
+verifies all72 calibrated FFN payloads change while all78 attention/323 protected
+records stay identical, including the exact first-QKV SHA across all three arms.
+Do not infer that this alone explains all decoded errors,
+or that restoring it will qualify a smaller model. The completed three-attempt/
+publication/consumer loop is archived in HISTORY; this is a new bounded lane.
+
+Use `tools/ci-heavy/ovisocr2_quality_contract.py::RECIPES`, the existing C-side
+quantizer overrides and all473 before/after tensor records. First compare a
+separate attention-F16/FFN-Q4 recipe with the existing attention-Q8 recipe;
+protect vision/embedding/norms/recurrent A/B and retain both old alternatives.
+Freeze the recipe on development evidence before heldout/document output.
+Run the same-source F16 local control, source-fed first-linear projections and
+full original-module/crispembed-diff caches/logits/decoded comparison, retaining
+actual raw vectors and every unchanged numerical verdict. Isolate additional
+sensitive matrices only from the earliest differing operation. Reuse the frozen
+first F16 and original11-case anchors; all eleven candidate IDs/text/EOS/caps,
+confidence, raw/parsed CER/WER and15-cell evidence remain required. Record actual
+file bytes/tensor types, paired host latency/RSS and calibration separation;
+no size estimate or component cosine is a quality result. Use hosted CPU only.
+Failed numerical or document screens still block the candidate; any proposal
+for different quantization acceptance criteria is a separately documented
+methodology task and must not rewrite historical float comparisons. Keep the
+current F16 selection/publication receipts and model pin immutable. A future
+qualified precision needs versioned decision/publication evidence and a reviewed
+destination/allowlist: the present publisher intentionally permits one GGUF plus
+four provenance files and refuses additional unreviewed model files.
+

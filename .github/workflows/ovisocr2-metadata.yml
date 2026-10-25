@@ -223,6 +223,7 @@ jobs:
           python tests/test_ovisocr3_quality_contract.py -v
           python tests/test_ovisocr3_quality_run.py -v
           python tests/test_ovisocr3_quality_f16.py -v
+          python tests/test_ovisocr3_source_closure.py -v
           python tests/test_ovisocr3_public_surfaces.py -v
           python tests/test_ovisocr3_vllm_recipe.py -v
           python tests/test_ovisocr3_vllm_review.py -v
