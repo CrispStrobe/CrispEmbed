@@ -1,3 +1,28 @@
+## 25 October 2026 — Original OvisOCR3 plain OCR quality is negative
+
+[Original40178328864](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178328864)
+at574df199 completes all eleven frozen observations.
+[Unchanged producer and independent review](tests/results/qwen35-ocr/ovisocr3-original-quality.json)
+verify thirteen archive members, all eleven PNG/RGB hashes using independent
+stdlib PNG decoding/CRC/filter checks, source/service/artifact pins, IDs,
+confidence counts/ranges/means, stops/caps and independently recomputed raw
+Levenshtein CER/WER. Selected confidences cannot be re-softmaxed independently
+because this quality archive does not retain full per-step logits.
+
+All eight authored cases have zero raw CER/WER and EOS. The receipt and inventory
+reach EOS at457/110 IDs. The two-column page consumes the unchanged1024-token cap
+without EOS and retains repeated/incorrect text: raw CER0.52365, WER0.83993.
+The workflow completed its capture; original quality/qualification are negative.
+`original_eleven_capture_complete` records observation coverage, while
+`original_eleven_complete` and `all_eleven_reached_eos` remain false.
+
+Keep pixels, gold, prompt, caps and scorer unchanged. Native F16 comparison may
+characterize fidelity to these outputs, including the capped case; its model
+qualification still requires all completion and paired screens. A separately
+explicit public diagnostic can check interfaces after native fidelity proof,
+without a `public_positive` or model-qualified claim. Strict publication and
+alias-consumer qualification remain blocked by this original source failure.
+
 ## 25 October 2026 — Original OvisOCR3 CPU module reference qualified
 
 [40177416485](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177416485)

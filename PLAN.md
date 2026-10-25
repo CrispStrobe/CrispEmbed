@@ -90,6 +90,19 @@ candidate is selected for publication or default promotion.
 3. [ ] **Continue the permissive OCR queue below**, smallest applicable backend
    first after the preceding work; source/base-license and blueprint audit first.
 
+### OvisOCR3 source-quality decision
+
+Original plain OCR11 capture40178328864 is complete and reviewed; eight authored
+cases have zero raw CER/WER, but the two-column page caps1024 without EOS with
+CER0.52365/WER0.83993. Preserve that negative result in HISTORY; no cap/prompt/
+gold/scorer adjustment. Finish native14 retry40179894600 and the paired native
+F16 diagnostic after its proof. Model qualification requires all old screens.
+An explicit default-off public diagnostic may verify interfaces only when all11
+native outputs faithfully match the original, including its unchanged capped
+case. It must emit model-qualified=false and a separate diagnostic review key.
+Strict publication and a model alias stay blocked by the original completion
+failure. Other upstream tasks require separate development/evaluation protocols.
+
 ## Quantization and publication follow-up
 
 Preserve the completed panel's fixed pixels/gold/caps, original/F16 replay,

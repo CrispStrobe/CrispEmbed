@@ -162,3 +162,19 @@ This establishes the controlled original GPU path and its stop policy.
 Original CPU/F32 module capture and native/quality/public consumer comparisons
 remain separate gates. No automatic-backend, BF16 or public benchmark score is
 claimed by these two requests.
+
+## Original plain OCR quality decision
+
+[Original eleven-case40178328864](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178328864)
+is fully captured and independently reviewed. Eight authored cases have zero
+raw CER/WER; the receipt and inventory reach EOS. The frozen two-column page
+hits1024 tokens without EOS, with repeated/incorrect raw text (CER0.52365,
+WER0.83993). [The complete receipt](../tests/results/qwen35-ocr/ovisocr3-original-quality.json)
+preserves this source-model failure. No cap, prompt, gold or scoring change follows.
+
+Publication remains blocked by the unchanged completion screen. Native stage
+parity and a complete paired F16 capture can establish port fidelity separately.
+Any diagnostic public-interface result must explicitly retain the negative
+source quality and cannot admit a model alias or distribution. Other17 upstream
+task modes need their own declared original-first protocols and untouched
+evaluation sets.
