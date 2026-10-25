@@ -481,7 +481,7 @@ reports here. Do not promote queued work, a component cosine, or a source audit
 to decoded-quality or publication proof.
 
 
-### Active bounded first-FFN attribution
+### Completed bounded first-FFN attribution; integration gates pending
 
 `audit/ovis-ffn-20261025` implements the [frozen five-arm protocol](ovisocr2-first-ffn-attribution.md).
 Use metadata workflow `phase=first-ffn` on that branch. The test-only executable
@@ -492,18 +492,18 @@ reference40049244654, with service/ZIP/member hashes checked remotely. Original
 SF-derived F16 matrix hashes must reproduce the frozen before-quantization
 records. No original array is regenerated, and no new candidate is quantized.
 
-Execution and review remain pending until an actual successful hosted receipt.
-The initial source-only review fixed a receipt-key assumption, test-head backend
-allocation, allocator include and required clean exit before model execution.
-Cancelled superseded queued dispatches are not numerical failures or results.
-Retrieve only `ovisocr2-ffn-reports-RUN`; large weight/reference/activation arrays
-stay in `ovisocr2-ffn-raw-RUN`. Preserve any actual failed producer before fixing
-its cause. Review input/dequant/observer bit equality and unchanged0.002/0.99999
-local stage gates, then absolute errors/norms and intended Q4-versus-F16 loss.
-The final layer comparison includes the native attention residual and is a
-composed control; source-fed local operators establish FFN attribution. A local
-pass cannot override the immutable eleven-case quality rejection. If positive,
-scope a new development/evaluation precision protocol separately; otherwise fix
-the earliest real same-weight mismatch behind a gate and run full qualification
-before claiming decoded correctness. Keep2048 attribution and MI-GAN queued as
+[Actual40231922668](../tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+passes all five arms at`a5883feb`: all11,010,048 independent dequantized values,
+original reconstructed layer and retained rejected native layer match exactly.
+Same-weight FFN errors stay below1.669e-6; original Python with Q4 reproduces
+layer error0.03288919. No local implementation mismatch is identified. Small
+ZIP/source/log review covers all20 metrics; large raw arrays remain remote and
+were not separately downloaded for review. Raw artifact12613722786 expires
+23 January2027. All document-quality rejections/published F16 remain unchanged.
+Two superseded dispatches were cancelled while queued before model execution.
+PR82 still needs its final-source normal checks and main integration. Production
+source did not change, so this is no runtime release or app upgrade. After
+integration, use the separately scoped2048 attribution lane; any new precision
+selection needs a fresh development/evaluation protocol rather than fitting the
+observed held-out documents. Keep2048 attribution and MI-GAN queued as
 separate lanes, and leave SAM with its existing owner.

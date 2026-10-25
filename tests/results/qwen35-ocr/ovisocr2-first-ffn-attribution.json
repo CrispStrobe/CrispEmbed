@@ -1,0 +1,911 @@
+{
+  "schema": "crispembed-ovisocr2-ffn-attribution-review-v1",
+  "run": 40231922668,
+  "source_commit": "a5883febac631dfdcf55ce38179fb1b589a3cbad",
+  "head_sha": "a5883febac631dfdcf55ce38179fb1b589a3cbad",
+  "artifact_id": 12613498137,
+  "artifact_name": "ovisocr2-ffn-reports-40231922668",
+  "artifact_bytes": 11845,
+  "artifact_zip_sha256": "ffef4f3b8d83a1967f0876cf5cde38681edcd3e671a5337da811e8b7fed002fe",
+  "report_sha256": "a30d9da26185fc01927b35ebb4cba733f14323a99a378de3beb218fc44f09516",
+  "raw_artifact": {
+    "id": 12613722786,
+    "name": "ovisocr2-ffn-raw-40231922668",
+    "bytes": 114403461,
+    "zip_sha256": "48bb9f8a9144a4cafcb75c4a0ea3277c287e58944c17d8800bfd50290cf10d5d",
+    "expires_at": "2027-01-23T20:41:09Z"
+  },
+  "review": {
+    "producer_canonical_sha256": "a0e58e5036c7e313796cd48df878a72784e73084a2b8cfc76e8b82ff1fa212f5",
+    "service_run_source_success_and_artifact_digests_checked": true,
+    "all_four_small_report_members_rehashed": true,
+    "all_five_source_file_hashes_checked_against_actual_commit": true,
+    "python_reference_matches_producer": true,
+    "all_twenty_metrics_match_actual_log": true,
+    "all_three_3670016_value_dequantization_bit_controls_pass": true,
+    "observer_and_source_input_bit_controls_pass": true,
+    "original_layer0_anchor_bit_exact": true,
+    "retained_rejected_native_layer0_reproduced_bit_exact": true,
+    "scope": "Source-only independent agent review plus separate small-report ZIP/source/log/hash checks; hosted producer recomputed raw-vector metrics.",
+    "limits": [
+      "Large raw arrays were retained remotely; this review did not separately download/recompute those arrays.",
+      "Only prefill first FFN is attributed; other layers, cache phases, logits and complete quality remain separate.",
+      "The final source-input layer check includes the native attention residual; it is a composed control.",
+      "No implementation mismatch found at this boundary; all four candidate quality rejections remain immutable."
+    ]
+  },
+  "producer": {
+    "schema": "crispembed-ovisocr2-ffn-attribution-v1",
+    "status": "completed same-weight first-FFN attribution",
+    "source": {
+      "head": "a5883febac631dfdcf55ce38179fb1b589a3cbad",
+      "native_tree": "e5cbd629818f0424e272bc84469e9375eee804d2",
+      "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+      "files": {
+        "tests/test_ovisocr2_ffn.cpp": "b3aa6f6610ed6d8cca505ce3bd72009e45fb68f7caf26c3610e53c824ae8379e",
+        "tools/dump_ovisocr2_ffn_reference.py": "a0a97cb805f5bd9d3f5307a8873e12114bd081d8788d0c067f2c864b39af3f26",
+        "tools/ci-heavy/ovisocr2_ffn.py": "a428b78d5015fbbb29d2c96f0fd9ed5fbc124d7b4283d6dc9f8bb089c1034c2b",
+        "CMakeLists.txt": "08cc292c36ddf4ef7517b5f9b313de35be9e3499eaa87ba65ea762608c46fe63",
+        ".github/workflows/ovisocr2-ffn.yml": "c496049c2d2cd84581596dbcd93ed80142d5a185b1a8f9ba70ac511cbf24c906"
+      }
+    },
+    "source_run": 40172527229,
+    "source_head": "72698a7640ad10e3d3fb0b090b2d318af85f6da1",
+    "acceptance": {
+      "same_weight_max_abs": 0.002,
+      "same_weight_cos_min": 0.99999,
+      "dequantization": "bit-exact all values",
+      "observer_neutrality": "bit-exact"
+    },
+    "limits": [
+      "Prefill first-layer original input only, no full model recapture or new quantization.",
+      "All four candidate quality rejections and published F16 remain unchanged.",
+      "No decoded-quality qualification, publication, release or default flip.",
+      "Production dequantizes weight storage to F32; activations/matmul use F32, not quantized vector dots."
+    ],
+    "environment": {
+      "packages": {
+        "transformers": "5.16.1",
+        "tokenizers": "0.23.3",
+        "numpy": "2.2.6",
+        "gguf": "0.19.0",
+        "safetensors": "0.8.0",
+        "huggingface-hub": "1.33.0",
+        "pillow": "12.1.0"
+      },
+      "torch": "2.11.0+cpu",
+      "blueprint_sha256": "788d4bad50a8d39be2fe79125f0f40134773cd23b1791606fb6b3ab0bc6d2263"
+    },
+    "artifacts": {
+      "reports": {
+        "run": 40172527229,
+        "head": "72698a7640ad10e3d3fb0b090b2d318af85f6da1",
+        "conclusion": "failure",
+        "artifact_id": 12594427875,
+        "artifact_name": "ovisocr2-quality-reports-40172527229",
+        "artifact_bytes": 3548917,
+        "artifact_zip_sha256": "b93a15d31b8909ff285d2c584746fbd4c0f9b3f95033e54136a98d81fd16ee31"
+      },
+      "candidate": {
+        "run": 40172527229,
+        "head": "72698a7640ad10e3d3fb0b090b2d318af85f6da1",
+        "conclusion": "failure",
+        "artifact_id": 12593412802,
+        "artifact_name": "ovisocr2-quality-candidate-40172527229",
+        "artifact_bytes": 1054804432,
+        "artifact_zip_sha256": "66fd61abe9da4c343f92789d4c6547fa260fa21af58590019e4bba183feaa3c3"
+      },
+      "raw": {
+        "run": 40172527229,
+        "head": "72698a7640ad10e3d3fb0b090b2d318af85f6da1",
+        "conclusion": "failure",
+        "artifact_id": 12594108371,
+        "artifact_name": "ovisocr2-quality-native-diff-40172527229",
+        "artifact_bytes": 183578802,
+        "artifact_zip_sha256": "55ef94e1880148fdbcf6e46d80ac14c4685e4b52789213ef06b095fc0ee6b24d"
+      },
+      "reference": {
+        "run": 40049244654,
+        "head": "a2a17735d05f172c3ec7ce9675ad51a6adc313f6",
+        "conclusion": "success",
+        "artifact_id": 12544166139,
+        "artifact_name": "ovisocr2-model-diff-reference-40049244654",
+        "artifact_bytes": 1303553123,
+        "artifact_zip_sha256": "615c0255b6cc9afc757e607e1e154ba2fda7b5d432dd129d4e69032111987fb2"
+      }
+    },
+    "native_payloads": {
+      "prefill.decoder.inputs_embeds": {
+        "bytes": 1323008,
+        "sha256": "f6acfa492d897cbabebcad8f6851d1275be82777497adc18bf6aadcceb4fdd1f",
+        "member": "q4-attention-f16/decoder/prefill.decoder.inputs_embeds.f32"
+      },
+      "prefill.decoder.layer.0": {
+        "bytes": 1323008,
+        "sha256": "ffc114c62273c72d179872530841ecfa394c7b8cc29b40fd5398963cb651f873",
+        "member": "q4-attention-f16/decoder/prefill.decoder.layer.0.f32"
+      }
+    },
+    "candidate": {
+      "bytes": 1337376256,
+      "sha256": "3c5387dc67057749279b1ca1cd3984969e233bac00299d4abe79a48cc7066d24",
+      "member": "ovisocr2-q4-attention-f16.gguf"
+    },
+    "original": {
+      "bytes": 1454224192,
+      "sha256": "e8e20c654645092ef11e8632db6d84393761df3f8b1d34bc48ae1ddac668e588",
+      "member": "official-delta.gguf"
+    },
+    "original_checkpoint_sha256": "9270560288656ece5cb3a6989001afcf5af8d223bceed4a423c33a008861d009",
+    "python": {
+      "scope": "additional same-original-input first MLP only; not a replacement full-model reference",
+      "blueprint_sha256": "788d4bad50a8d39be2fe79125f0f40134773cd23b1791606fb6b3ab0bc6d2263",
+      "dequantizer_sha256": "db403c3b2292d3f2c5cfef4109d4b5745f437b5599c7afc94d4b97feca7e9247",
+      "observer_neutrality_bit_exact": true,
+      "original_layer0_anchor": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "actual_norm": 38.61109071556863,
+        "reference_norm": 38.61109071556863,
+        "actual_max_abs": 2.810229539871216,
+        "reference_max_abs": 2.810229539871216,
+        "cos_min": 0.9999999999999998,
+        "cos_global": 1.0,
+        "bit_exact": true,
+        "passed": true
+      },
+      "intended_precision_loss": {
+        "input": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms_error": 0.0,
+          "actual_norm": 504.4214734953513,
+          "reference_norm": 504.4214734953513,
+          "actual_max_abs": 16.822586059570312,
+          "reference_max_abs": 16.822586059570312,
+          "cos_min": 0.9999999999999998,
+          "cos_global": 1.0,
+          "bit_exact": true,
+          "passed": true
+        },
+        "gate": {
+          "max_abs": 0.23374295234680176,
+          "mean_abs": 0.019031254655291794,
+          "rms_error": 0.02419035252617066,
+          "actual_norm": 360.0243989079768,
+          "reference_norm": 359.9849091972985,
+          "actual_max_abs": 4.868536949157715,
+          "reference_max_abs": 4.988556861877441,
+          "cos_min": 0.994630695345857,
+          "cos_global": 0.997386589128087,
+          "bit_exact": false,
+          "passed": false
+        },
+        "silu": {
+          "max_abs": 0.17357927560806274,
+          "mean_abs": 0.008296848360110328,
+          "rms_error": 0.011050436289539558,
+          "actual_norm": 148.59963625662982,
+          "reference_norm": 148.47617026174112,
+          "actual_max_abs": 4.720771789550781,
+          "reference_max_abs": 4.743276596069336,
+          "cos_min": 0.9942779877121042,
+          "cos_global": 0.9967968443768108,
+          "bit_exact": false,
+          "passed": false
+        },
+        "up": {
+          "max_abs": 0.10121572017669678,
+          "mean_abs": 0.012985634720657318,
+          "rms_error": 0.01636034884543691,
+          "actual_norm": 214.49804111278132,
+          "reference_norm": 214.31486851567664,
+          "actual_max_abs": 2.2188873291015625,
+          "reference_max_abs": 2.1703641414642334,
+          "cos_min": 0.9940847365994029,
+          "cos_global": 0.9966302088544086,
+          "bit_exact": false,
+          "passed": false
+        },
+        "product": {
+          "max_abs": 0.23950791358947754,
+          "mean_abs": 0.002180710298720279,
+          "rms_error": 0.003225717083732329,
+          "actual_norm": 34.60921059191888,
+          "reference_norm": 34.52811664507028,
+          "actual_max_abs": 5.162901878356934,
+          "reference_max_abs": 5.290185928344727,
+          "cos_min": 0.9912444747859362,
+          "cos_global": 0.9949627753002452,
+          "bit_exact": false,
+          "passed": false
+        },
+        "down": {
+          "max_abs": 0.032889172434806824,
+          "mean_abs": 0.001528941542413675,
+          "rms_error": 0.001985751630662729,
+          "actual_norm": 10.690753038082528,
+          "reference_norm": 10.695011824066485,
+          "actual_max_abs": 0.6592921614646912,
+          "reference_max_abs": 0.6528459191322327,
+          "cos_min": 0.9904992842187099,
+          "cos_global": 0.9942966932159529,
+          "bit_exact": false,
+          "passed": false
+        }
+      },
+      "quant_layer_vs_original": {
+        "max_abs": 0.03288918733596802,
+        "mean_abs": 0.0015289415383089103,
+        "rms_error": 0.0019857516340264663,
+        "actual_norm": 38.64144242182992,
+        "reference_norm": 38.61109071556863,
+        "actual_max_abs": 2.8079566955566406,
+        "reference_max_abs": 2.810229539871216,
+        "cos_min": 0.9979159404784365,
+        "cos_global": 0.9995632327434455,
+        "bit_exact": false,
+        "passed": false
+      },
+      "retained_native_layer_vs_original": {
+        "max_abs": 0.032889485359191895,
+        "mean_abs": 0.0015289412381443333,
+        "rms_error": 0.001985751133612299,
+        "actual_norm": 38.641435615403516,
+        "reference_norm": 38.61109071556863,
+        "actual_max_abs": 2.807955265045166,
+        "reference_max_abs": 2.810229539871216,
+        "cos_min": 0.9979159356834612,
+        "cos_global": 0.9995632327483512,
+        "bit_exact": false,
+        "passed": false
+      },
+      "weights": {
+        "gate": {
+          "shape": [
+            3584,
+            1024
+          ],
+          "packed_sha256": "5a83eab97f6ca0585155a8eaf806662162b7edae427e7e3057c72b8c6be74334",
+          "dequantized_sha256": "da130d082c5746f08ad82461195fd6bb0ec1b3386e363a6a0ff7421636f10e79",
+          "blocks": 14336,
+          "type": "Q4_K"
+        },
+        "up": {
+          "shape": [
+            3584,
+            1024
+          ],
+          "packed_sha256": "3e0ceb6cc76d04466f2ec2773db81108ad980474c4218bbc56ba89dc2add2a26",
+          "dequantized_sha256": "ce3e12be4dec449fdfad1ae8084d7cb77e4ba7d2c4b1c7059fdadc374768edb1",
+          "blocks": 14336,
+          "type": "Q4_K"
+        },
+        "down": {
+          "shape": [
+            1024,
+            3584
+          ],
+          "packed_sha256": "6ca42b60fdf17e6db76b1c47d5067536ff626faee48c3bf4bdaa525fe14381e1",
+          "dequantized_sha256": "cfa9deec282c84a81ef1fd9b63cd9568d6e6c4bf05664da5c87ba9b71eb70061",
+          "blocks": 14336,
+          "type": "Q4_K"
+        }
+      },
+      "frozen_f16_payloads": {
+        "gate_proj.weight": "72be5129003267a898acd3fdd02ac15a1404c35b12de88bbe0819fbf937ee42d",
+        "up_proj.weight": "f441fe3d1e39c894db6ec854caa28441d2efd579194089efc23358c44f6cb0ce",
+        "down_proj.weight": "3a34fe565da5a664925517c808181416d91077ce43e959473ecdfb2d7697f264"
+      },
+      "f16_vs_original": {
+        "input": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms_error": 0.0,
+          "actual_norm": 504.4214734953513,
+          "reference_norm": 504.4214734953513,
+          "actual_max_abs": 16.822586059570312,
+          "reference_max_abs": 16.822586059570312,
+          "cos_min": 0.9999999999999998,
+          "cos_global": 1.0,
+          "bit_exact": true,
+          "passed": true
+        },
+        "gate": {
+          "max_abs": 3.5762786865234375e-07,
+          "mean_abs": 4.19370651802917e-09,
+          "rms_error": 1.3751538878695976e-08,
+          "actual_norm": 359.98490922553395,
+          "reference_norm": 359.9849091972985,
+          "actual_max_abs": 4.988556861877441,
+          "reference_max_abs": 4.988556861877441,
+          "cos_min": 0.9999999999999986,
+          "cos_global": 0.9999999999999987,
+          "bit_exact": false,
+          "passed": true
+        },
+        "silu": {
+          "max_abs": 2.384185791015625e-07,
+          "mean_abs": 1.870742554330337e-09,
+          "rms_error": 6.489537678948035e-09,
+          "actual_norm": 148.47617028996993,
+          "reference_norm": 148.47617026174112,
+          "actual_max_abs": 4.743276596069336,
+          "reference_max_abs": 4.743276596069336,
+          "cos_min": 0.9999999999999982,
+          "cos_global": 0.999999999999999,
+          "bit_exact": false,
+          "passed": true
+        },
+        "up": {
+          "max_abs": 5.066394805908203e-07,
+          "mean_abs": 6.2053523218188265e-09,
+          "rms_error": 1.826746893175894e-08,
+          "actual_norm": 214.31486850649478,
+          "reference_norm": 214.31486851567664,
+          "actual_max_abs": 2.1703641414642334,
+          "reference_max_abs": 2.1703641414642334,
+          "cos_min": 0.9999999999999898,
+          "cos_global": 0.9999999999999952,
+          "bit_exact": false,
+          "passed": true
+        },
+        "product": {
+          "max_abs": 3.5762786865234375e-07,
+          "mean_abs": 9.545949965231755e-10,
+          "rms_error": 2.8646742145002026e-09,
+          "actual_norm": 34.5281167025505,
+          "reference_norm": 34.52811664507028,
+          "actual_max_abs": 5.290185928344727,
+          "reference_max_abs": 5.290185928344727,
+          "cos_min": 0.9999999999999887,
+          "cos_global": 0.9999999999999958,
+          "bit_exact": false,
+          "passed": true
+        },
+        "down": {
+          "max_abs": 5.960464477539063e-08,
+          "mean_abs": 2.292552047065497e-09,
+          "rms_error": 3.16040239288031e-09,
+          "actual_norm": 10.695011831325834,
+          "reference_norm": 10.695011824066485,
+          "actual_max_abs": 0.6528458595275879,
+          "reference_max_abs": 0.6528459191322327,
+          "cos_min": 0.9999999999999782,
+          "cos_global": 0.9999999999999857,
+          "bit_exact": false,
+          "passed": true
+        }
+      },
+      "q4_vs_f16": {
+        "input": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "rms_error": 0.0,
+          "actual_norm": 504.4214734953513,
+          "reference_norm": 504.4214734953513,
+          "actual_max_abs": 16.822586059570312,
+          "reference_max_abs": 16.822586059570312,
+          "cos_min": 0.9999999999999998,
+          "cos_global": 1.0,
+          "bit_exact": true,
+          "passed": true
+        },
+        "gate": {
+          "max_abs": 0.23374295234680176,
+          "mean_abs": 0.01903125459819586,
+          "rms_error": 0.024190352459938485,
+          "actual_norm": 360.0243989079768,
+          "reference_norm": 359.98490922553395,
+          "actual_max_abs": 4.868536949157715,
+          "reference_max_abs": 4.988556861877441,
+          "cos_min": 0.9946306955106671,
+          "cos_global": 0.9973865891425946,
+          "bit_exact": false,
+          "passed": false
+        },
+        "silu": {
+          "max_abs": 0.17357927560806274,
+          "mean_abs": 0.008296848332497561,
+          "rms_error": 0.01105043624814058,
+          "actual_norm": 148.59963625662982,
+          "reference_norm": 148.47617028996993,
+          "actual_max_abs": 4.720771789550781,
+          "reference_max_abs": 4.743276596069336,
+          "cos_min": 0.994277987865238,
+          "cos_global": 0.9967968444012644,
+          "bit_exact": false,
+          "passed": false
+        },
+        "up": {
+          "max_abs": 0.10121572017669678,
+          "mean_abs": 0.012985634657200151,
+          "rms_error": 0.016360348890242835,
+          "actual_norm": 214.49804111278132,
+          "reference_norm": 214.31486850649478,
+          "actual_max_abs": 2.2188873291015625,
+          "reference_max_abs": 2.1703641414642334,
+          "cos_min": 0.9940847366937454,
+          "cos_global": 0.9966302088358414,
+          "bit_exact": false,
+          "passed": false
+        },
+        "product": {
+          "max_abs": 0.23950791358947754,
+          "mean_abs": 0.0021807102908641576,
+          "rms_error": 0.0032257170694718652,
+          "actual_norm": 34.60921059191888,
+          "reference_norm": 34.5281167025505,
+          "actual_max_abs": 5.162901878356934,
+          "reference_max_abs": 5.290185928344727,
+          "cos_min": 0.9912444744837499,
+          "cos_global": 0.9949627753492927,
+          "bit_exact": false,
+          "passed": false
+        },
+        "down": {
+          "max_abs": 0.03288915753364563,
+          "mean_abs": 0.0015289415495193443,
+          "rms_error": 0.0019857516365702384,
+          "actual_norm": 10.690753038082528,
+          "reference_norm": 10.695011831325834,
+          "actual_max_abs": 0.6592921614646912,
+          "reference_max_abs": 0.6528458595275879,
+          "cos_min": 0.9904992865826624,
+          "cos_global": 0.9942966931861601,
+          "bit_exact": false,
+          "passed": false
+        }
+      },
+      "reference_sha256": "281e2623a8a177d5061eba7a9db0a338b023250082ba54de8b8d4cc2e3610163",
+      "frozen_original_sha256": "e8e20c654645092ef11e8632db6d84393761df3f8b1d34bc48ae1ddac668e588",
+      "versions": {
+        "torch": "2.11.0+cpu",
+        "transformers": "5.16.1",
+        "numpy": "2.2.6"
+      },
+      "arrays": {
+        "quant.input": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "ad8343090edb28dc4e88cd2e8d61358a71085cca1392004bdb8a710dfbe23507"
+        },
+        "quant.gate": {
+          "shape": [
+            1,
+            323,
+            3584
+          ],
+          "sha256": "a81497cfcbfca987a597288804d98a9875a1ba7312bfd0dbace17a4325ed7b53"
+        },
+        "quant.silu": {
+          "shape": [
+            1,
+            323,
+            3584
+          ],
+          "sha256": "e41a39eb2dafd0d0b44a16dbbc872ff6e912721e38e5c5ab639fb123f03f9b19"
+        },
+        "quant.up": {
+          "shape": [
+            1,
+            323,
+            3584
+          ],
+          "sha256": "73cb0c73e516d63ead7d82726d214dfe1b57df6f7a06c0db781021d76a862961"
+        },
+        "quant.product": {
+          "shape": [
+            1,
+            323,
+            3584
+          ],
+          "sha256": "2c839f7ff25dfde57e907fae9242f99e8dceda7acfa6445d14906b22fcd1cb7a"
+        },
+        "quant.down": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "77ca7262f6598969667e10cc00a6b9e9fada75122be52d10bd71b8f0dae58e23"
+        },
+        "weight.gate": {
+          "shape": [
+            3584,
+            1024
+          ],
+          "sha256": "da130d082c5746f08ad82461195fd6bb0ec1b3386e363a6a0ff7421636f10e79"
+        },
+        "weight.up": {
+          "shape": [
+            3584,
+            1024
+          ],
+          "sha256": "ce3e12be4dec449fdfad1ae8084d7cb77e4ba7d2c4b1c7059fdadc374768edb1"
+        },
+        "weight.down": {
+          "shape": [
+            1024,
+            3584
+          ],
+          "sha256": "cfa9deec282c84a81ef1fd9b63cd9568d6e6c4bf05664da5c87ba9b71eb70061"
+        },
+        "native.embeddings": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "f6acfa492d897cbabebcad8f6851d1275be82777497adc18bf6aadcceb4fdd1f"
+        },
+        "native.layer0": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "ffc114c62273c72d179872530841ecfa394c7b8cc29b40fd5398963cb651f873"
+        },
+        "original.positions": {
+          "shape": [
+            3,
+            1,
+            323
+          ],
+          "sha256": "9a1dcd6d618e9c80a94894cf957af1b188aadaf03832ca58d683db82beed0474"
+        },
+        "original.embeddings": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "efdabeaa88fe6240bd2e45a90a1564dd467f5b9fcc8f41e43d398a683d76c6c1"
+        },
+        "original.layer0": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "f67d1ec9ae062f7898978d868a70235685d5c9faeefa1e3bda8d03eefeb2a417"
+        },
+        "quant.layer0": {
+          "shape": [
+            1,
+            323,
+            1024
+          ],
+          "sha256": "27ae1f112434433dbe165fb9297426cfc5033abe145c59e9d4f027947009abc5"
+        }
+      }
+    },
+    "native_gates": {
+      "CRISPEMBED_QWEN35_OCR": "1",
+      "CRISPEMBED_QWEN35_QUANT": "1",
+      "CRISPEMBED_QWEN35_WEIGHT_CACHE": "0",
+      "CRISPEMBED_QWEN35_PRECISE_RMS": "0",
+      "CRISPEMBED_QWEN35_PARALLEL_F16": "0"
+    },
+    "native_exit_code": 0,
+    "native_log_sha256": "23ad9d8f5bc72330213a766bc83ccc95aeb30dcf7dce244a68a1b91a0b72436a",
+    "native_metrics": {
+      "natural/native.layer0.f32": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "actual_norm": 38.641435615403516,
+        "reference_norm": 38.641435615403516,
+        "actual_max_abs": 2.807955265045166,
+        "reference_max_abs": 2.807955265045166,
+        "cos_min": 0.9999999999999998,
+        "cos_global": 1.0,
+        "bit_exact": true,
+        "passed": true,
+        "sha256": "ffc114c62273c72d179872530841ecfa394c7b8cc29b40fd5398963cb651f873",
+        "bytes": 1323008
+      },
+      "natural/original.layer0.f32": {
+        "max_abs": 0.032889485359191895,
+        "mean_abs": 0.0015289412381443333,
+        "rms_error": 0.001985751133612299,
+        "actual_norm": 38.641435615403516,
+        "reference_norm": 38.61109071556863,
+        "actual_max_abs": 2.807955265045166,
+        "reference_max_abs": 2.810229539871216,
+        "cos_min": 0.9979159356834612,
+        "cos_global": 0.9995632327483512,
+        "bit_exact": false,
+        "passed": false,
+        "sha256": "ffc114c62273c72d179872530841ecfa394c7b8cc29b40fd5398963cb651f873",
+        "bytes": 1323008
+      },
+      "natural/quant.down.f32": {
+        "max_abs": 3.725290298461914e-06,
+        "mean_abs": 4.741395408799327e-08,
+        "rms_error": 9.964078479391573e-08,
+        "actual_norm": 10.690754331202665,
+        "reference_norm": 10.690753038082528,
+        "actual_max_abs": 0.6592927575111389,
+        "reference_max_abs": 0.6592921614646912,
+        "cos_min": 0.9999999994236104,
+        "cos_global": 0.9999999999856415,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "138a9203c6e30f0eb8d5c17c54d2ddc3911a0f3ec9cab75aa6f1d86784e3e5fa",
+        "bytes": 1323008
+      },
+      "natural/quant.gate.f32": {
+        "max_abs": 3.9517879486083984e-05,
+        "mean_abs": 6.690398154973772e-07,
+        "rms_error": 1.4312548451839041e-06,
+        "actual_norm": 360.0243741498615,
+        "reference_norm": 360.0243989079768,
+        "actual_max_abs": 4.868536949157715,
+        "reference_max_abs": 4.868536949157715,
+        "cos_min": 0.9999999996506309,
+        "cos_global": 0.9999999999908551,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "4349650e9de3bad938188be7882c5c616371e30d5e2db4ce492e21adeb643651",
+        "bytes": 4630528
+      },
+      "natural/quant.input.f32": {
+        "max_abs": 0.00010013580322265625,
+        "mean_abs": 1.5538939952665593e-06,
+        "rms_error": 3.3701560806822887e-06,
+        "actual_norm": 504.4215015800296,
+        "reference_norm": 504.4214734953513,
+        "actual_max_abs": 16.822595596313477,
+        "reference_max_abs": 16.822586059570312,
+        "cos_min": 0.9999999997468475,
+        "cos_global": 0.9999999999926193,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "465e33bd6979cbb88b100204b837b3612ac203376f8b156eab1e05ff3a6c451a",
+        "bytes": 1323008
+      },
+      "natural/quant.product.f32": {
+        "max_abs": 1.5109777450561523e-05,
+        "mean_abs": 7.409618914408348e-08,
+        "rms_error": 1.8134652834749656e-07,
+        "actual_norm": 34.60921582175387,
+        "reference_norm": 34.60921059191888,
+        "actual_max_abs": 5.162905216217041,
+        "reference_max_abs": 5.162901878356934,
+        "cos_min": 0.9999999993731579,
+        "cos_global": 0.9999999999841197,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "9292968949a014b59245bb292816ce640ea8024c88563966bce2d2d096bcef3c",
+        "bytes": 4630528
+      },
+      "natural/quant.up.f32": {
+        "max_abs": 2.430099993944168e-05,
+        "mean_abs": 4.336096020535508e-07,
+        "rms_error": 9.268641176345254e-07,
+        "actual_norm": 214.49805878436695,
+        "reference_norm": 214.49804111278132,
+        "actual_max_abs": 2.218888282775879,
+        "reference_max_abs": 2.2188873291015625,
+        "cos_min": 0.9999999996213335,
+        "cos_global": 0.9999999999891962,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "aefcaf54d18fa4d37f5a8f47adbab476ba0bd2bc440ac37299bfb86d3bec869f",
+        "bytes": 4630528
+      },
+      "source_gate_up/quant.down.f32": {
+        "max_abs": 2.980232238769531e-07,
+        "mean_abs": 5.628917615472639e-09,
+        "rms_error": 7.760455385102925e-09,
+        "actual_norm": 10.690753056242052,
+        "reference_norm": 10.690753038082528,
+        "actual_max_abs": 0.659292459487915,
+        "reference_max_abs": 0.6592921614646912,
+        "cos_min": 0.9999999999998447,
+        "cos_global": 0.9999999999999128,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "9e03ec0713dbec7257a82ffa65ede2f63a22d570a52adbaeea2d48baeba2c221",
+        "bytes": 1323008
+      },
+      "source_gate_up/quant.product.f32": {
+        "max_abs": 1.1920928955078125e-07,
+        "mean_abs": 8.517174743752112e-11,
+        "rms_error": 7.016116071767068e-10,
+        "actual_norm": 34.60921058102439,
+        "reference_norm": 34.60921059191888,
+        "actual_max_abs": 5.162901878356934,
+        "reference_max_abs": 5.162901878356934,
+        "cos_min": 0.9999999999999979,
+        "cos_global": 1.0000000000000002,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "1c8d08d60ec190cdb22f6d57fee752d7b25163fa33b8bc2acf251fbdc673f002",
+        "bytes": 4630528
+      },
+      "source_input/quant.down.f32": {
+        "max_abs": 2.384185791015625e-07,
+        "mean_abs": 7.87852719836807e-09,
+        "rms_error": 1.0551059104807867e-08,
+        "actual_norm": 10.690752998221242,
+        "reference_norm": 10.690753038082528,
+        "actual_max_abs": 0.6592923998832703,
+        "reference_max_abs": 0.6592921614646912,
+        "cos_min": 0.9999999999997174,
+        "cos_global": 0.9999999999998389,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "2e2a59fa2a136e33160318cd50b09530b9dc9181316c8fcb36cebbc971ab6978",
+        "bytes": 1323008
+      },
+      "source_input/quant.gate.f32": {
+        "max_abs": 1.6689300537109375e-06,
+        "mean_abs": 8.458607160534879e-08,
+        "rms_error": 1.1465436421767945e-07,
+        "actual_norm": 360.02439907273373,
+        "reference_norm": 360.0243989079768,
+        "actual_max_abs": 4.86853551864624,
+        "reference_max_abs": 4.868536949157715,
+        "cos_min": 0.9999999999999004,
+        "cos_global": 0.9999999999999414,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "b058babd8f98f09aa4109f9a3def574a5b788b43fff491f489a30f702dac4dd2",
+        "bytes": 4630528
+      },
+      "source_input/quant.input.f32": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "actual_norm": 504.4214734953513,
+        "reference_norm": 504.4214734953513,
+        "actual_max_abs": 16.822586059570312,
+        "reference_max_abs": 16.822586059570312,
+        "cos_min": 0.9999999999999998,
+        "cos_global": 1.0,
+        "bit_exact": true,
+        "passed": true,
+        "sha256": "ad8343090edb28dc4e88cd2e8d61358a71085cca1392004bdb8a710dfbe23507",
+        "bytes": 1323008
+      },
+      "source_input/quant.layer0.f32": {
+        "max_abs": 1.430511474609375e-06,
+        "mean_abs": 2.1144958648143783e-08,
+        "rms_error": 3.455753042910068e-08,
+        "actual_norm": 38.64144662154866,
+        "reference_norm": 38.64144242182992,
+        "actual_max_abs": 2.8079564571380615,
+        "reference_max_abs": 2.8079566955566406,
+        "cos_min": 0.9999999999984084,
+        "cos_global": 0.9999999999998739,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "3b5612cbf8a62ec9e61d7e401a1143452efcd8ec3c5def2e75239989e9c8a531",
+        "bytes": 1323008
+      },
+      "source_input/quant.product.f32": {
+        "max_abs": 1.1920928955078125e-06,
+        "mean_abs": 8.863940676529179e-09,
+        "rms_error": 1.4165203791645721e-08,
+        "actual_norm": 34.60921043180059,
+        "reference_norm": 34.60921059191888,
+        "actual_max_abs": 5.162901878356934,
+        "reference_max_abs": 5.162901878356934,
+        "cos_min": 0.9999999999998398,
+        "cos_global": 0.9999999999999035,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "1af02295fa49e015a7c7b8c03dc960b364beeb923b398ce1ba6d455f2da56506",
+        "bytes": 4630528
+      },
+      "source_input/quant.up.f32": {
+        "max_abs": 1.3113021850585938e-06,
+        "mean_abs": 5.020914777480444e-08,
+        "rms_error": 6.578026150311612e-08,
+        "actual_norm": 214.49804113697832,
+        "reference_norm": 214.49804111278132,
+        "actual_max_abs": 2.2188868522644043,
+        "reference_max_abs": 2.2188873291015625,
+        "cos_min": 0.9999999999999228,
+        "cos_global": 0.9999999999999464,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "5a73cd18ba386912fd2fe7f88905eda45479ec58fd6d345b88c450bdaaf3001f",
+        "bytes": 4630528
+      },
+      "source_product/quant.down.f32": {
+        "max_abs": 2.384185791015625e-07,
+        "mean_abs": 5.6188370598873245e-09,
+        "rms_error": 7.744361376351054e-09,
+        "actual_norm": 10.690753059113758,
+        "reference_norm": 10.690753038082528,
+        "actual_max_abs": 0.6592923998832703,
+        "reference_max_abs": 0.6592921614646912,
+        "cos_min": 0.9999999999998298,
+        "cos_global": 0.9999999999999126,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "3b6ec6d1b4d3fd383950e3848df60b09d5f410baa14a7c86ab941afa419c47bd",
+        "bytes": 1323008
+      },
+      "source_silu/quant.silu.f32": {
+        "max_abs": 1.1920928955078125e-07,
+        "mean_abs": 5.34827660462469e-10,
+        "rms_error": 2.9792588852097376e-09,
+        "actual_norm": 148.59963620225028,
+        "reference_norm": 148.59963625662982,
+        "actual_max_abs": 4.720771789550781,
+        "reference_max_abs": 4.720771789550781,
+        "cos_min": 0.9999999999999993,
+        "cos_global": 0.999999999999999,
+        "bit_exact": false,
+        "passed": true,
+        "sha256": "2eee2f111e609631420f70edb58cbf8ed8fc4d9d90ad338cc123bad832a61618",
+        "bytes": 4630528
+      },
+      "weight.down.f32": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "actual_norm": 16.024120731197623,
+        "reference_norm": 16.024120731197623,
+        "actual_max_abs": 0.26483917236328125,
+        "reference_max_abs": 0.26483917236328125,
+        "cos_min": 0.9999999999999998,
+        "cos_global": 1.0,
+        "bit_exact": true,
+        "passed": true,
+        "sha256": "cfa9deec282c84a81ef1fd9b63cd9568d6e6c4bf05664da5c87ba9b71eb70061",
+        "bytes": 14680064
+      },
+      "weight.gate.f32": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "actual_norm": 22.63399725442592,
+        "reference_norm": 22.63399725442592,
+        "actual_max_abs": 0.17663955688476562,
+        "reference_max_abs": 0.17663955688476562,
+        "cos_min": 0.9999999999999998,
+        "cos_global": 1.0,
+        "bit_exact": true,
+        "passed": true,
+        "sha256": "da130d082c5746f08ad82461195fd6bb0ec1b3386e363a6a0ff7421636f10e79",
+        "bytes": 14680064
+      },
+      "weight.up.f32": {
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "rms_error": 0.0,
+        "actual_norm": 16.12795669750963,
+        "reference_norm": 16.12795669750963,
+        "actual_max_abs": 0.08632957935333252,
+        "reference_max_abs": 0.08632957935333252,
+        "cos_min": 0.9999999999999998,
+        "cos_global": 1.0,
+        "bit_exact": true,
+        "passed": true,
+        "sha256": "ce3e12be4dec449fdfad1ae8084d7cb77e4ba7d2c4b1c7059fdadc374768edb1",
+        "bytes": 14680064
+      }
+    },
+    "same_weight_passed": true,
+    "old_decoded_quality": {
+      "retained_receipt": "tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json",
+      "receipt_sha256": "e606a5b49e229df6f811a4ded7bdb71bd8fb4cbce5548ecc31d44e0001dd0fb1",
+      "candidate_qualified": false,
+      "all_eleven_eos": true,
+      "regressions": [
+        "historical-receipt content CER/WER",
+        "two-column raw/content CER/WER"
+      ]
+    }
+  }
+}

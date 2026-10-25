@@ -15518,3 +15518,32 @@ model execution. Four weight-free contract checks pass locally; no shared-host
 build or inference ran. Actual hosted numerical execution and independent raw
 report review are still pending in PLAN. This tooling milestone does not qualify
 the rejected Q4 candidate, change published F16, or create a runtime release.
+
+
+## 25 October 2026 — rejected Q4 first-FFN error attributed
+
+Hosted [40231922668](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40231922668)
+at`a5883febac631dfdcf55ce38179fb1b589a3cbad` passes the bounded five-arm audit.
+[Full producer and scoped review](tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+retain all20 raw comparisons. All11,010,048 dequantized weight values are
+bit-identical to independent Python; observer/cache/input controls pass, the
+original reconstructed layer0 is bit exact, and the natural native layer0
+exactly reproduces the retained rejected candidate. Same-weight gate/up/product/
+down maxima are1.66893e-6/1.31130e-6/1.19209e-6/2.38419e-7; all unchanged gates
+pass. Source-gate/up product and source-SiLU probes reach1.19209e-7; independent
+source-product down reaches2.38419e-7. The final source-input layer control is
+1.43051e-6 and includes native attention residual drift.
+
+The independent original module with Q4 weights reproduces full-layer error
+0.032889187 versus retained native0.032889485 (global cosine0.99956323, row
+minimum0.99791594). Q4-versus-F16 gate/up/product/down errors are0.23374295/
+0.10121572/0.23950791/0.03288916. This supports intended weight precision loss
+at the first FFN, with no local kernel/arithmetic fix identified. Source-derived
+F16 matrix payloads hash-match the immutable before-quantization records.
+Neither cosine nor this operator result redeems the eleven-case receipt and
+two-column regressions; all four candidates remain rejected, published F16 and
+app/runtime versions unchanged. Later-layer attribution or a new precision
+protocol requires its own scope. Two earlier runs40231696778/40231712890 were
+cancelled while queued before model execution, not numerical failures. Small
+ZIP/member/source/log hashes are reviewed; raw114,403,461-byte artifact12613722786
+stays remote through23 January2027 and was not downloaded for that review.

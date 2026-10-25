@@ -67,3 +67,14 @@ raw coverage and initial failures. If a same-weight mismatch exists, identify
 the earliest failing operator before proposing any gated runtime correction.
 A positive result instead scopes a separately declared development/evaluation
 precision protocol; it never authorizes fitting observed held-out documents.
+
+
+Actual [40231922668](../tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+passes all unchanged same-weight gates and bit controls. The original and
+retained rejected layer anchors reproduce exactly. Same-weight gate/up/product/
+down errors are1.669e-6/1.311e-6/1.192e-6/2.384e-7, while the independent Q4
+MLP reproduces the0.032889 layer error. No local implementation correction is
+identified at this first FFN; intended precision loss explains this boundary.
+All other layers/full decoded qualification remain outside this audit. The
+small ZIP/source/log review is complete; large vectors remain remote, with the
+separate-review recomputation limitation recorded in the receipt.

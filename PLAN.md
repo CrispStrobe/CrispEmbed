@@ -378,7 +378,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-25 | `audit/ovis-ffn-20261025` | Same-quantized-weight first FFN attribution for rejected attention-F16/FFN-Q4 OvisOCR2 | Freeze independent dequantization, original module inputs and gate/up/SiLU/product/down comparisons; hosted execution only, no new recipe/default or held-out tuning |
+| 2026-10-25 | `audit/ovis-ffn-20261025` | First-FFN attribution complete in40231922668; PR82 integration | Finish final PR/main checks; no local operator mismatch, no recipe/default or held-out tuning;2048 attribution remains the next separate lane |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -443,15 +443,21 @@ All four current attempts are rejected in
 [selection v2](tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json).
 Keep the published F16 bytes/pin and all previous wrappers unchanged.
 
-The bounded prefill layer0 implementation is on `audit/ovis-ffn-20261025`;
-[its frozen protocol](docs/ovisocr2-first-ffn-attribution.md) defines all five
-source-fed/natural arms, independent Python dequantization, immutable F16
-payload checks and unchanged acceptance gates. Actual hosted execution is
-pending; no numerical or quality result is claimed by the implementation.
-The first dispatch was superseded before execution to add an explicit allocator
-header found in source review; retain its cancellation separately from results.
+[Actual first-FFN40231922668](tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+completes the [frozen five-arm protocol](docs/ovisocr2-first-ffn-attribution.md).
+All11,010,048 independent Q4 dequantized values, source input bits, original
+reconstructed layer0 and retained rejected native layer0 match exactly. Native
+same-weight gate/up/product/down maxima are1.669e-6/1.311e-6/1.192e-6/2.384e-7;
+the composed source-input layer control is1.431e-6. The independent original
+MLP with those Q4 weights reproduces layer error0.03288919 versus retained
+native0.03288949, isolating intended precision loss at this first FFN rather
+than a local implementation mismatch. Original/F16 matrix payloads and first
+F16 outputs are unchanged. The small ZIP/source/log review covers all20 metrics;
+large raw arrays remain remote and were not separately re-downloaded for review.
+Two earlier dispatches were cancelled while queued, before model execution.
 
-- [ ] First audit the same candidate weights and activation semantics against
+
+- [x] Audit the first prefill FFN with the same candidate weights/activation semantics against
   an independent Python/ONNX blueprint. Start at the first FFN boundary after
   the passing source-fed linear block for the attention-F16/FFN-Q4 file. Use
   `tools/dump_ovisocr2_reference.py`, `tools/ci-heavy/ovisocr2_selective_precision.py`,
@@ -459,9 +465,11 @@ header found in source review; retain its cancellation separately from results.
   Verify Q4_K scales/values, input bits and any activation quantization before
   comparing gate/up/product/down and full layer output. Keep this quantized
   reference distinct from the immutable original full-precision reference.
-- [ ] Separate implementation mismatch from intended precision loss using
-  earliest-stage absolute errors/norms, caches, full scores and decoded output.
-  Do not infer a broken operator or harmless approximation from cosine alone.
+- [x] Separate implementation mismatch from intended precision loss at this
+  first FFN using original-module gate/up/product/down, absolute errors/norms,
+  exact observer/cache controls and the unchanged decoded-quality rejection.
+  No correction is justified at the audited boundary. This does not attribute
+  later layers/cache phases/full scores or waive document-quality failures.
 - [ ] Any later precision/calibration selection needs a separately declared
   development/evaluation protocol. Do not tune prompts, caps, weights or
   tolerances against the already-observed held-out documents. A different
