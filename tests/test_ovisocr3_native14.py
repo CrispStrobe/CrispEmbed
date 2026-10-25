@@ -72,6 +72,32 @@ class Native14Controls(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "archive SHA differs"):
                 audit.checked_reference_archive(archive, fake, Path(directory) / "out")
 
+    def test_raw_decoder_manifest_requires_all_scores_cache_and_trace(self):
+        layers = {f"{phase}.decoder.layer.{number}" for phase in ("prefill", "cached", "full_prefix")
+                  for number in range(24)}
+        cache = {"prefill.cache.0.conv_states", "cached.cache.0.conv_states"}
+        scores = {"generated.scores.0", "generated.scores.1"}
+        trace = {"prefill.attention.0.input"}
+        names = layers | cache | scores | trace
+        log = [f"PASS {name}: cos_min=1" for name in sorted(names - trace)]
+        log += ["TRACE prefill.attention.0.input max_abs=0 cos=1 norms=1/1"]
+        shapes = {name: [1] for name in names}
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            for name in names:
+                (folder / (name + ".f32")).write_bytes(b"\0" * 4)
+            result = audit.raw_diff_manifest(folder, shapes, log, "f16-decoder-native-frontend", 2)
+            self.assertEqual(result["raw_vector_count"], len(names))
+            self.assertEqual(result["trace_stage_count"], 1)
+            (folder / "generated.scores.1.f32").unlink()
+            with self.assertRaises(ValueError):
+                audit.raw_diff_manifest(folder, shapes, log, "f16-decoder-native-frontend", 2)
+            (folder / "generated.scores.1.f32").write_bytes(b"\0" * 4)
+            with self.assertRaises(ValueError):
+                audit.raw_diff_manifest(folder, shapes,
+                                        [line for line in log if not line.startswith("PASS generated.scores.1:")],
+                                        "f16-decoder-native-frontend", 2)
+
 
 if __name__ == "__main__":
     unittest.main()

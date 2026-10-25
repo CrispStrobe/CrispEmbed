@@ -33,6 +33,7 @@ NATIVE_ENV = {name: "1" for name in ("CRISPEMBED_QWEN35_OCR", "CRISPEMBED_OVISOC
                                       "CRISPEMBED_QWEN35_VISION_PRECISE_ATTN")}
 NATIVE_ENV.update({name: "0" for name in (
     "CRISPEMBED_OVISOCR2_FRONTEND", "CRISPEMBED_OVISOCR2_INFERENCE",
+    "CRISPEMBED_OVISOCR2_LARGE_IMAGES",
     "CRISPEMBED_QWEN35_PRECISE_RMS", "CRISPEMBED_QWEN35_VISION_CASCADE_NORM",
     "CRISPEMBED_QWEN35_IMATRIX", "CRISPEMBED_QWEN35_PARALLEL_F16",
     "CRISPEMBED_QWEN35_PROFILE", "CRISPEMBED_QWEN35_QUANT",
@@ -243,7 +244,9 @@ def command(label, args, out, report, save, *, env=None, timeout=3600):
             stream.write("Driver command error: " + type(error).__name__ + "\n")
             code = -1
     lines = path.read_text(errors="replace").splitlines()
-    metrics = [line for line in lines if re.search(r"\b(?:PASS|FAIL|BUDGET|DECODED|IDS|UTF8_HEX|cos_min|cache|argmax)\b", line)]
+    metrics = [line for line in lines if re.search(
+        r"\b(?:PASS|FAIL|TRACE|BUDGET|DECODED|IDS|UTF8_HEX|cos_min|cache|argmax)\b"
+        r"|^Native generated IDs:|^Native decoded UTF8 hex:|^Native/reference mean token confidence", line)]
     failures = [line for line in lines if re.search(r"\b(?:FAIL|ERROR|Traceback|Error:)\b", line)]
     entry = {"exit_code": code, "log_sha256": sha(path), "log_bytes": path.stat().st_size,
              "metric_lines": metrics, "first_failure": failures[0] if failures else None,
@@ -253,27 +256,68 @@ def command(label, args, out, report, save, *, env=None, timeout=3600):
     return entry
 
 
-def raw_diff_manifest(folder, stages, metric_lines, label):
-    names = set(re.findall(r"^(?:PASS|FAIL) ([A-Za-z0-9_.]+): cos_min=", "\n".join(metric_lines), re.M))
-    required = {f"{phase}.decoder.layer.{layer}" for phase in ("prefill", "cached", "full_prefix")
-                for layer in range(24)} | {"generated.scores.0"} | names
-    records, invalid = [], []
-    for path in sorted(folder.glob("*.f32")):
-        stage = path.name.removesuffix(".f32")
-        shape = stages.get(stage)
-        if not isinstance(shape, list) or not shape or any(type(dimension) is not int or dimension < 1 for dimension in shape):
-            invalid.append(stage + ": original source shape absent")
-            continue
-        expected_bytes = math.prod(shape) * 4
-        if path.stat().st_size != expected_bytes:
-            invalid.append(stage + ": raw F32 byte count differs")
-        records.append({"stage": stage, "file": label + "/" + path.name,
-                        "bytes": path.stat().st_size, "sha256": sha(path),
-                        "original_source_shape": shape, "expected_bytes": expected_bytes})
-    missing = sorted(required - {row["stage"] for row in records})
-    return {"arm": label, "required_stage_count": len(required), "file_count": len(records),
-            "missing_stages": missing, "invalid_files": invalid,
-            "coverage_complete": bool(names) and not missing and not invalid, "files": records}
+def raw_diff_manifest(folder, stages, metric_lines, label, generated_count):
+    """Require an exact raw vector for every actual comparison, including TRACE."""
+    log = "\n".join(metric_lines)
+    compared = re.findall(r"^(?:PASS|FAIL) ([A-Za-z0-9_.]+): cos_min=", log, re.M)
+    traced = re.findall(r"^TRACE ([A-Za-z0-9_.]+) max_abs=", log, re.M)
+    if not compared or len(traced) != len(set(traced)):
+        raise ValueError("OvisOCR3 actual comparison/TRACE names absent or repeated")
+    if len(compared) != len(set(compared)) and not label.endswith("-delta"):
+        raise ValueError("OvisOCR3 actual comparison stage repeated")
+    names = set(compared) | set(traced)
+    if label.endswith("-vision"):
+        marker = "PASS VISION_RAW_DUMP_INTEGRITY stages=2"
+        if len(names) != 37 or metric_lines.count(marker) != 1:
+            raise ValueError("OvisOCR3 vision stages/raw-integrity marker differ")
+    elif label.endswith("-delta"):
+        marker = "PASS DELTA_RAW_DUMP_INTEGRITY stages=4 variants=linear-core,reset"
+        if metric_lines.count(marker) != 1 or not {"prefill.delta.output", "cached.delta.output"} <= names:
+            raise ValueError("OvisOCR3 delta stages/raw-integrity marker differ")
+    else:
+        marker = None
+        required_layers = {f"{phase}.decoder.layer.{layer}" for phase in ("prefill", "cached", "full_prefix")
+                           for layer in range(24)}
+        required_cache = {name for name in stages
+                          if re.fullmatch(r"(prefill|cached)\.cache\.\d+\.(keys|values|conv_states|recurrent_states)", name)}
+        required_scores = {f"generated.scores.{step}" for step in range(generated_count)}
+        if (not required_layers <= names or not required_cache <= names or not required_scores <= names
+                or (label.endswith("-decoder-native-frontend") and not traced)):
+            raise ValueError("OvisOCR3 all-layer/cache/all-token-score/TRACE coverage differs")
+    files = {path.name.removesuffix(".f32"): path for path in folder.glob("*.f32")}
+    if set(files) != names:
+        raise ValueError("OvisOCR3 raw primary file set differs from actual comparisons")
+    variants = {}
+    if label.endswith("-delta"):
+        expected_variants = {"linear-core": {"prefill.delta.final_state", "cached.delta.final_state"},
+                             "reset": {"prefill.delta.output", "prefill.delta.final_state"}}
+        for variant, expected in expected_variants.items():
+            found = {path.name.removesuffix(".f32"): path for path in (folder / variant).glob("*.f32")}
+            if set(found) != expected:
+                raise ValueError("OvisOCR3 delta raw positive-variant file set differs")
+            variants[variant] = found
+        exact = {path.name for path in files.values()} | {
+            variant + "/" + stage + ".f32" for variant, expected in expected_variants.items() for stage in expected}
+    else:
+        exact = {path.name for path in files.values()}
+    if {path.relative_to(folder).as_posix() for path in folder.rglob("*.f32")} != exact:
+        raise ValueError("OvisOCR3 raw nested file set differs")
+    records = []
+    for variant, stage_files in [("primary", files), *sorted(variants.items())]:
+        for stage, path in sorted(stage_files.items()):
+            shape = stages.get(stage)
+            if (not isinstance(shape, list) or not shape
+                    or any(type(value) is not int or value < 1 for value in shape)):
+                raise ValueError("OvisOCR3 original source shape absent: " + stage)
+            expected_bytes = math.prod(shape) * 4
+            if path.stat().st_size != expected_bytes:
+                raise ValueError("OvisOCR3 raw F32 byte count differs: " + stage)
+            records.append({"stage": stage, "variant": variant, "original_stage": stage,
+                            "file": label + "/" + (variant + "/" if variant != "primary" else "") + path.name,
+                            "bytes": expected_bytes, "sha256": sha(path), "source_shape": shape})
+    return {"arm": label, "metric_stage_count": len(names), "trace_stage_count": len(traced),
+            "raw_vector_count": len(records), "variant_stage_count": len(records) - len(names),
+            "dump_integrity_marker": marker, "coverage_complete": True, "files": records}
 
 
 def main(preflight=False):
@@ -388,8 +432,9 @@ def main(preflight=False):
                 continue
             for label, args in arms(precision, build, model, image, reference_gguf).items():
                 env = dict(os.environ, **NATIVE_ENV)
+                env.pop("CRISPEMBED_DIFF_COS_THRESHOLD", None)
                 dump = None
-                if label.endswith("-decoder-native-frontend"):
+                if not label.endswith("-context"):
                     dump = scratch / "native-diff" / label
                     dump.mkdir(parents=True, exist_ok=True)
                     env["CRISPEMBED_DIFF_DUMP_DIR"] = str(dump)
@@ -397,22 +442,42 @@ def main(preflight=False):
                     env.pop("CRISPEMBED_DIFF_DUMP_DIR", None)
                 result = command(label, args, out, report, save, env=env, timeout=2400)
                 metrics = "\n".join(result["metric_lines"])
-                if label.endswith("-decoder-native-frontend"):
-                    manifest = raw_diff_manifest(dump, original["stages"], result["metric_lines"], label)
-                    path = out / (label + "-raw-manifest.json")
-                    path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
-                    result["raw_diff_manifest_sha256"] = sha(path)
-                    result["raw_diff_coverage_complete"] = manifest["coverage_complete"]
-                    result["passed"] &= manifest["coverage_complete"]
+                if dump is not None:
+                    try:
+                        manifest = raw_diff_manifest(dump, original["stages"], result["metric_lines"], label,
+                                                     len(original["generated_ids"][0]))
+                        path = out / (label + "-raw-manifest.json")
+                        path.write_text(json.dumps(manifest, indent=2, allow_nan=False) + "\n")
+                        result["raw_diff_manifest_sha256"] = sha(path)
+                        result["raw_diff_coverage_complete"] = True
+                    except (OSError, ValueError, KeyError) as error:
+                        result["raw_diff_coverage_complete"] = False
+                        result["integrity_error"] = type(error).__name__ + ": " + str(error)
+                        result["passed"] = False
                 if "-decoder-" in label:
                     layers = re.findall(r"^(?:PASS|FAIL) (?:prefill|cached|full_prefix)\.decoder\.layer\.\d+:", metrics, re.M)
-                    result["comparison_coverage"] = len(layers) == 72 and "generated.scores.0" in metrics
+                    result["comparison_coverage"] = len(layers) == 72 and result.get("raw_diff_coverage_complete") is True
+                    match = re.search(r"^Native generated IDs:((?: \d+)+)$", metrics, re.M)
+                    result["generated_ids"] = [int(value) for value in match[1].split()] if match else None
+                    if result["generated_ids"] != original["generated_ids"][0]:
+                        result["comparison_coverage"] = False
+                    if label.endswith("-decoder-native-frontend"):
+                        decoded = re.search(r"^Native decoded UTF8 hex:([0-9a-f]*)$", metrics, re.M)
+                        result["decoded_utf8_hex"] = decoded[1] if decoded else None
+                        expected_decoded = original["decoded"][0].encode().hex()
+                        if result["decoded_utf8_hex"] != expected_decoded:
+                            result["comparison_coverage"] = False
                 elif label.endswith("-context"):
-                    result["comparison_coverage"] = "OVIS3_CONTEXT raw" in metrics and "OVIS3_CONTEXT repeat" in metrics
+                    required = {"raw", "repeat", "gate-recovery"}
+                    if precision == "f16":
+                        required |= {"independent-context", "survivor-after-free"}
+                    result["comparison_coverage"] = all(
+                        re.search(r"^PASS OVIS3_CONTEXT " + re.escape(part) + r"\b", metrics, re.M)
+                        for part in required)
                 elif label.endswith("-delta"):
-                    result["comparison_coverage"] = "prefill.delta.output" in metrics and "cached.delta.output" in metrics
+                    result["comparison_coverage"] = result.get("raw_diff_coverage_complete") is True
                 else:
-                    result["comparison_coverage"] = bool(result["metric_lines"])
+                    result["comparison_coverage"] = result.get("raw_diff_coverage_complete") is True
                 result["passed"] &= result["comparison_coverage"]
                 if not result["passed"]:
                     report["failures"].append(label)
