@@ -185,7 +185,10 @@ def main(preflight_only=False):
         save()
         if finished.returncode != 0 or set(report["reference_artifacts"]) != {"npz", "json", "gguf"}:
             raise ValueError("OvisOCR3 original HF capture failed; retained partial reports")
-        actual = json.loads(reference.with_suffix(".json").read_text())
+        original_json = reference.with_suffix(".json").read_bytes()
+        # Preserve the complete small blueprint report independently of large arrays.
+        (out / "ovisocr3-original.json").write_bytes(original_json)
+        actual = json.loads(original_json)
         if (actual.get("missing_stages") or actual.get("cached_vs_full_prefix_same_argmax") is not True
                 or not all(actual.get("observational_control", {}).values())
                 or actual.get("checkpoint_sha256") != policy.CHECKPOINT_SHA256):
