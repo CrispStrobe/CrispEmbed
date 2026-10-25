@@ -112,6 +112,25 @@ def raw_manifest(folder,reference,log,label):
     return {'coverage_complete':True,'metric_stage_count':len(names),'file_count':len(rows),'files':rows}
 
 
+def parse_gnu_time_resources(contents,exit_code):
+    prefix=f'Command exited with non-zero status {exit_code}\n'
+    recovered=False
+    if contents.startswith('Command exited with non-zero status '):
+        if type(exit_code) is not int or exit_code<=0 or not contents.startswith(prefix):
+            raise ValueError('GNU time failure status differs from command exit')
+        contents=contents[len(prefix):]
+        recovered=True
+    measured=json.loads(contents)
+    if type(measured) is not dict or set(measured)!={'max_rss_kib','wall_seconds'}:
+        raise ValueError('GNU time resource fields differ')
+    rss=measured['max_rss_kib']
+    wall=measured['wall_seconds']
+    if (type(rss) is not int or rss<=0 or type(wall) not in (int,float)
+            or (type(wall) is float and not math.isfinite(wall)) or wall<0):
+        raise ValueError('GNU time resource values differ')
+    return measured,recovered
+
+
 def timed_command(label,args,out,report,env=None,timeout=3600):
     resources=out/(label+'-resources.json');started=time.monotonic()
     wrapped=['/usr/bin/time','-f','{"max_rss_kib":%M,"wall_seconds":%e}',
@@ -120,10 +139,10 @@ def timed_command(label,args,out,report,env=None,timeout=3600):
     report['commands'][label]['seconds']=time.monotonic()-started
     if resources.is_file():
         try:
-            measured=json.loads(resources.read_text())
-            if measured['max_rss_kib']<=0 or measured['wall_seconds']<0:return False
+            measured,recovered=parse_gnu_time_resources(resources.read_text(),report['commands'][label]['exit_code'])
             report['commands'][label]['resources']=measured
-        except (ValueError,KeyError):return False
+            report['commands'][label]['resources_recovered_from_gnu_failure_prefix']=recovered
+        except (ValueError,KeyError,TypeError):return False
     else:return False
     return result
 
