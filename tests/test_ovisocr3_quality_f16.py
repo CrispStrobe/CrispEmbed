@@ -17,6 +17,35 @@ spec.loader.exec_module(worker)
 
 
 class NativeF16Controls(unittest.TestCase):
+    def test_reviewed_native_requires_shared_cmake_and_gitlink_closure(self):
+        head = 'a' * 40
+        producer = {'source_commit': head,
+                    'checkpoint_sha256': worker.policy.CHECKPOINT_SHA256,
+                    'exports': {'f16': {'model_sha256': 'b' * 64}}}
+        canonical = worker.policy._canonical_sha256(producer)
+        receipt = {'run': 123, 'head_sha': head, 'producer': producer,
+                   'independent_review': {'producer_canonical_sha256': canonical,
+                                          'all_fourteen_native_arms_positive': True}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'native.json'
+            path.write_text(json.dumps(receipt))
+            with patch.object(worker, 'NATIVE_MODEL_RECEIPT', path), \
+                 patch.object(worker, 'NATIVE_MODEL_RUN', 123), \
+                 patch.object(worker, 'NATIVE_MODEL_HEAD', head), \
+                 patch.object(worker, 'NATIVE_MODEL_PRODUCER_SHA256', canonical), \
+                 patch.object(worker.source_closure, 'require_native_source_closure',
+                              return_value={'file_count': 29}) as closure:
+                self.assertEqual(worker.require_reviewed_native(), producer)
+                closure.assert_called_once_with(producer, head, root=ROOT)
+            with patch.object(worker, 'NATIVE_MODEL_RECEIPT', path), \
+                 patch.object(worker, 'NATIVE_MODEL_RUN', 123), \
+                 patch.object(worker, 'NATIVE_MODEL_HEAD', head), \
+                 patch.object(worker, 'NATIVE_MODEL_PRODUCER_SHA256', canonical), \
+                 patch.object(worker.source_closure, 'require_native_source_closure',
+                              side_effect=ValueError('ggml gitlink differs')):
+                with self.assertRaisesRegex(ValueError, 'ggml gitlink'):
+                    worker.require_reviewed_native()
+
     def test_preflight_binds_reviewed_native_vision_preset(self):
         native = {"native_environment": worker.native_audit.NATIVE_ENV,
                   "selected_vision_preset": worker.native_audit.SELECTED_VISION_PRESET}

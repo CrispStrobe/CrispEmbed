@@ -24,6 +24,7 @@ def module(name, path):
 
 original = module("ovisocr3_quality_original", ROOT / "tools/ci-heavy/ovisocr3_quality_run.py")
 native_audit = module("ovisocr3_quality_native_proof", ROOT / "tools/ci-heavy/ovisocr3_native14.py")
+source_closure = module("ovisocr3_quality_source_closure", ROOT / "tools/ci-heavy/ovisocr3_source_closure.py")
 vision_env = module("ovisocr3_quality_vision_env", ROOT / "tools/ci-heavy/ovisocr2_vision_env.py")
 contract = original.contract
 policy = original.policy
@@ -81,11 +82,7 @@ def require_reviewed_native():
             or producer.get("checkpoint_sha256") != policy.CHECKPOINT_SHA256
             or not re.fullmatch(r"[0-9a-f]{64}", producer.get("exports", {}).get("f16", {}).get("model_sha256", ""))):
         raise ValueError("OvisOCR3 native fourteen-arm source/export proof differs")
-    source = producer.get("native_source_sha256")
-    if not isinstance(source, dict) or not source:
-        raise ValueError("OvisOCR3 native source closure absent")
-    if any(sha(ROOT / name) != expected for name, expected in source.items()):
-        raise ValueError("OvisOCR3 native source closure changed after fourteen-arm proof")
+    source_closure.require_native_source_closure(producer, NATIVE_MODEL_HEAD, root=ROOT)
     return producer
 
 
