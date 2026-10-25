@@ -346,6 +346,10 @@ def service_gate(run_id, head, call=subprocess.check_output, *, workflow=None):
     return {key: result[key] for key in ("id", "status", "conclusion", "head_sha", "path")}
 
 
+def quality_service_gate(run_id, head, call=subprocess.check_output):
+    return service_gate(run_id, head, call, workflow=NATIVE_WORKFLOW)
+
+
 def artifact_service_gate(pins, call=subprocess.check_output):
     result = json.loads(call(["gh", "api", "repos/CrispStrobe/CrispEmbed/actions/artifacts/"
                               + str(pins['artifact_id'])]))
@@ -858,9 +862,7 @@ def main():
             "service_artifact": artifact_service_gate(pins),
             "service_report_artifact": report_artifact_service_gate(pins)}
         report['quality_prerequisite'] = {**quality, 'receipt_sha256': sha(QUALITY_RECEIPT),
-            'service_run': service_gate(quality['run'], quality['source_commit'],
-                                        workflow=(NATIVE_WORKFLOW if args.diagnostic_source_quality else
-                                                  '.github/workflows/ovisocr3-quality-f16.yml'))}
+            'service_run': quality_service_gate(quality['run'], quality['source_commit'])}
         if args.diagnostic_source_quality:
             report['quality_prerequisite']['original_service_run'] = service_gate(
                 quality['original_run'], quality['original_source_commit'], workflow=NATIVE_WORKFLOW)

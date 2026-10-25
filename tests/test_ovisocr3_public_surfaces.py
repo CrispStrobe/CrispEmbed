@@ -18,6 +18,25 @@ spec.loader.exec_module(subject)
 
 
 class PublicControls(unittest.TestCase):
+    def test_f16_quality_service_requires_parent_metadata_dispatch(self):
+        run = 40187405735
+        head = 'ee719aef2ac22eee67ab6c483a4d1d6633c901c8'
+        result = {'id': run, 'status': 'completed', 'conclusion': 'success',
+                  'head_sha': head, 'path': '.github/workflows/ovisocr2-metadata.yml'}
+        def call(_, row=result):
+            return json.dumps(row).encode()
+        self.assertEqual(subject.quality_service_gate(run, head, call), result)
+        for changed in (
+            {'path': '.github/workflows/ovisocr3-quality-f16.yml'},
+            {'status': 'in_progress'},
+            {'conclusion': 'failure'},
+            {'head_sha': '0' * 40},
+            {'id': run + 1},
+        ):
+            with self.subTest(changed=changed), self.assertRaisesRegex(ValueError, 'service run'):
+                subject.quality_service_gate(run, head, lambda _, row={**result, **changed}:
+                                             json.dumps(row).encode())
+
     def test_source_quality_diagnostic_is_exact_and_never_qualifies_model(self):
         contract = subject.vision_contract()  # Shared gate remains source-only.
         self.assertIn('both', contract.PRESETS)
