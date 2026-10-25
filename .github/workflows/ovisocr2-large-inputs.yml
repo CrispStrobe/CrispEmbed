@@ -1,6 +1,10 @@
 name: OvisOCR2 bounded larger-input qualification
 on:
   workflow_call:
+    inputs:
+      only_frozen_control:
+        type: boolean
+        default: false
 permissions:
   contents: read
   actions: read
@@ -47,7 +51,7 @@ jobs:
       fail-fast: false
       max-parallel: 2
       matrix:
-        case: [frozen-control, control-square, large-landscape, large-boundary]
+        case: ${{ fromJSON(inputs.only_frozen_control && '["frozen-control"]' || '["frozen-control","control-square","large-landscape","large-boundary"]') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 240
     env:
