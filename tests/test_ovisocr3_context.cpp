@@ -126,6 +126,19 @@ static int crispembed_test_main(int argc, char ** argv) {
     };
     ok &= run(a.get(), "raw");
     ok &= run(a.get(), "repeat");
+    // Both model families may coexist in one process. Ovis2's opt-in bound
+    // must not admit unqualified Ovis3 geometry, and failure must clear state.
+    const char * ovis2_gates[] = { "CRISPEMBED_OVISOCR2_FRONTEND", "CRISPEMBED_OVISOCR2_INFERENCE",
+                                   "CRISPEMBED_OVISOCR2_LARGE_IMAGES" };
+    for (const char * name : ovis2_gates) gate(name, "1");
+    std::vector<uint8_t> oversized(size_t(640) * 480 * 3, 255);
+    length = -1;
+    const char * unexpected = qwen35_ocr_recognize_raw(a.get(), oversized.data(), 640, 480, 3, nullptr, &length);
+    ok &= !unexpected && length == 0 && cleared(a.get()) &&
+          std::string(qwen35_ocr_last_error(a.get())).find("1024-patch qualification bound") != std::string::npos;
+    std::printf("%s OVIS3_PROFILE_BOUND_ISOLATION old2_large_enabled=1 reject1200=1\n", ok ? "PASS" : "FAIL");
+    for (const char * name : ovis2_gates) gate(name, "0");
+    ok &= run(a.get(), "profile-bound-recovery");
     if (b) {
         ok &= qwen35_ocr_set_max_tokens(b.get(), int(expected.second)) && run(b.get(), "independent-context");
     }

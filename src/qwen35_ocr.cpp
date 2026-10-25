@@ -123,6 +123,9 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     qwen35_ocr::image_inputs image;
     if (!qwen35_ocr::preprocess_rgb(pixels, h, w, c.tokenizer.image_limits(), image))
         return c.fail("image exceeds native patch bound");
+    // Ovis2 large-image gates must not extend the distinct Ovis3 profile.
+    if (c.tokenizer.is_ovisocr3() && image.patches.size() > size_t(1024) * 1536)
+        return c.fail("OvisOCR3 image exceeds the 1024-patch qualification bound");
     stage.next(profile_event::prompt);
     std::vector<int> ids, modalities;
     std::string rendered;
