@@ -128,14 +128,12 @@ class SelectivePrecisionControls(unittest.TestCase):
                          'c1e77fd2a20bb2aeae3e09f030df13389891d188957cb7db78488c9d4460b8b3')
         hashes = driver.f16_runtime_ast_contracts(
             (ROOT / 'tools/ci-heavy/ovisocr2_quality_run.py').read_text())
-        self.assertEqual(hashes, {
-            'DIFF_FLOAT_ZERO': 'a2c1f24c858a3ddc4e5a77fa61b9755a7a50fa35b8e6ffa8c11db0a41921934a',
-            'ENV_GATES': '0b8415fd77c2022b3d99fc65481db354adedd32714b53bd45430c0b2e96c1832',
-            'cmake-configure': '6a2e50167228f0ec9617c0037f0410c162e38e1de595dc0b5125d04a974fb452',
-            'native_environment': '3f6da0564c3c5053dbb4a8ca5c09424c43875cdde548a3abb63de919e8ad6342',
-            'numerical_environment': 'ebaab4bd474e40ed7a27b87b4bbb5c629dc8a23c88d19e92a0059afaf491b917',
-            'vision_contract': '6d318a1668db09cc8d0d102e7736093b2dd874c5520dbd19cf08b549f8e5e7c5',
-        })
+        fixture = ROOT / 'tests/fixtures/ovisocr2-first-f16-runtime-source.txt'
+        self.assertEqual(hashlib.sha256(fixture.read_bytes()).hexdigest(),
+                         '569326be81053d19be32d2b0b6256baa8175f11e9f763b9842c3cf603b6f6199')
+        # FunctionDef AST adds type_params in Python3.12. Parse both sources
+        # using the same interpreter instead of freezing version-specific dumps.
+        self.assertEqual(hashes, driver.f16_runtime_ast_contracts(fixture.read_text()))
         self.assertIn(selective.PHASE, driver.QUANT_PHASES)
         self.assertIn(selective.PHASE, driver.Q4_PHASES)
         workflow = (ROOT / '.github/workflows/ovisocr2-quality.yml').read_text()

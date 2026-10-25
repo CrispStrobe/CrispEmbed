@@ -1,0 +1,32 @@
+# Frozen F16 inference environment/CMake ASTs from source16c389d3; parsed only, never executed.
+
+ENV_GATES = {'CRISPEMBED_QWEN35_OCR': '1', 'CRISPEMBED_OVISOCR2_FRONTEND': '1',
+             'CRISPEMBED_OVISOCR2_INFERENCE': '1'}
+
+DIFF_FLOAT_ZERO = ('CRISPEMBED_QWEN35_PRECISE_RMS',
+                   'CRISPEMBED_QWEN35_IMATRIX', 'CRISPEMBED_QWEN35_PARALLEL_F16',
+                   'CRISPEMBED_QWEN35_PROFILE', 'CRISPEMBED_QWEN35_TOKENIZER_MARKS')
+
+def vision_contract():
+    return load_module('ovis_vision_env_quality', ROOT / 'tools/ci-heavy/ovisocr2_vision_env.py')
+
+def native_environment(arm, selection):
+    if arm not in ('f16', 'q8', 'q4', 'q4-calibrated'):
+        raise ValueError('Unknown native OvisOCR2 quality arm')
+    env = dict(os.environ, **ENV_GATES)
+    env['CRISPEMBED_QWEN35_QUANT'] = '0' if arm == 'f16' else '1'
+    return vision_contract().apply_selection(env, selection)
+
+def numerical_environment(arm, selection):
+    if arm not in ('q8', 'q4', 'q4-calibrated'):
+        raise ValueError('Numerical OvisOCR2 diff is for a quantized candidate only')
+    env = native_environment(arm, selection)
+    env.update({name: '0' for name in DIFF_FLOAT_ZERO})
+    env['CRISPEMBED_QWEN35_AUDIT_ALL_LAYERS'] = '1'
+    return env
+
+command('cmake-configure', ['cmake', '-S', ROOT, '-B', build,
+                                   '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF',
+                                   '-DCRISPEMBED_NATIVE=OFF', '-DGGML_BLAS=OFF',
+                                   '-DGGML_METAL=OFF', '-DCRISPEMBED_BUILD_SHARED=ON'],
+                out, report, timeout=600)

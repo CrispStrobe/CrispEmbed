@@ -1,0 +1,20 @@
+{
+  "schema": "crispembed-ovis-followup-initial-control-failure-v1",
+  "attempts": [
+    {
+      "run": 40172054543,
+      "source_commit": "0d2b4488ce2b4a64ac2fab1091be5d28d694fe56",
+      "phase": "ovisocr3-metadata"
+    },
+    {
+      "run": 40172341973,
+      "source_commit": "eb359609d9a9dab827ef18750742af5710edfd40",
+      "phase": "q4-attention-f16"
+    }
+  ],
+  "conclusion": "both failed pure controls before dependencies, weights or candidate outputs",
+  "failed_test": "SelectivePrecisionControls.test_frozen_recipe_file_and_runtime_ast_remain_exact",
+  "cause": "Local Python3.11 versus hosted3.12 FunctionDef AST shape; hardcoded AST hashes were interpreter-specific",
+  "correction": "Frozen byte-hashed original source fragments are parsed using the same interpreter as candidate source; actual runtime AST/source contracts unchanged",
+  "model_or_native_results": false
+}
