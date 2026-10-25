@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 
 
 spec = importlib.util.spec_from_file_location("qwen35_ovis3_source_profile", Path(__file__).with_name("qwen35_ovis3_profile.py"))
@@ -22,6 +23,7 @@ REFERENCE_RUN = 0
 REFERENCE_HEAD = ""
 REFERENCE_ARTIFACT_ID = 0
 REFERENCE_ARTIFACT_SHA256 = ""
+REFERENCE_ARTIFACT_BYTES = 0
 REFERENCE_PRODUCER_SHA256 = ""
 REFERENCE_RECEIPT = Path(__file__).resolve().parents[1] / "tests/results/qwen35-ocr/ovisocr3-original-reference.json"
 STOP_SCOPE = "hf5.16.1-explicit-eos-list-forward; vllm-runtime-unobserved"
@@ -51,8 +53,26 @@ def metadata_files():
     return source.metadata_files()
 
 
+def _reviewed_artifacts(reference):
+    review = reference.get("independent_review", {})
+    large = reference.get("reference_artifact", {})
+    small_id, small_sha = reference.get("artifact_id"), reference.get("artifact_zip_sha256")
+    if (type(small_id) is not int or small_id < 1
+            or not isinstance(small_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", small_sha)
+            or review.get("artifact_zip_sha256") != small_sha
+            or not isinstance(large, dict) or type(large.get("id")) is not int or large["id"] < 1
+            or large["id"] == small_id
+            or large.get("name") != f"ovisocr3-reference-{reference.get('run')}"
+            or type(large.get("bytes")) is not int or large["bytes"] < 1
+            or not isinstance(large.get("zip_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", large["zip_sha256"])
+            or review.get("reference_artifact_zip_sha256") != large["zip_sha256"]):
+        raise ValueError("OvisOCR3 small/large original reference artifact review differs")
+    return {"id": small_id, "zip_sha256": small_sha}, large
+
+
 def _reviewed_receipts():
-    if (REFERENCE_RUN <= 0 or REFERENCE_ARTIFACT_ID <= 0 or len(REFERENCE_HEAD) != 40
+    if (REFERENCE_RUN <= 0 or REFERENCE_ARTIFACT_ID <= 0 or REFERENCE_ARTIFACT_BYTES <= 0 or len(REFERENCE_HEAD) != 40
             or len(REFERENCE_ARTIFACT_SHA256) != 64 or len(REFERENCE_PRODUCER_SHA256) != 64):
         raise ValueError("Reviewed original OvisOCR3 HF reference proof absent")
     if source._file_sha256(METADATA_RECEIPT) != METADATA_RECEIPT_SHA256:
@@ -71,13 +91,15 @@ def _reviewed_receipts():
     producer, review = reference.get("producer"), reference.get("independent_review")
     if not isinstance(producer, dict) or not isinstance(review, dict):
         raise ValueError("OvisOCR3 original HF producer/review absent")
+    _, large_artifact = _reviewed_artifacts(reference)
     canonical = source._canonical_sha256(producer)
     summary = producer.get("reference_summary", {})
     generated = summary.get("generated_ids", [])
     result = summary.get("generation_result", {})
     if (reference.get("run") != REFERENCE_RUN or reference.get("head_sha") != REFERENCE_HEAD
-            or reference.get("artifact_id") != REFERENCE_ARTIFACT_ID
-            or reference.get("artifact_zip_sha256") != REFERENCE_ARTIFACT_SHA256
+            or large_artifact["id"] != REFERENCE_ARTIFACT_ID
+            or large_artifact["zip_sha256"] != REFERENCE_ARTIFACT_SHA256
+            or large_artifact["bytes"] != REFERENCE_ARTIFACT_BYTES
             or canonical != REFERENCE_PRODUCER_SHA256
             or review.get("producer_canonical_sha256") != canonical
             or review.get("original_reference_positive") is not True

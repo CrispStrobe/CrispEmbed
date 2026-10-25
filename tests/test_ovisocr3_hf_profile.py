@@ -26,6 +26,25 @@ FIXTURE = ROOT / "tests/fixtures/ovisocr3-source"
 
 
 class HFPromotionControls(unittest.TestCase):
+    def test_reviewed_small_and_large_reference_artifacts_are_distinct(self):
+        receipt = {"run": 123, "artifact_id": 5, "artifact_zip_sha256": "a" * 64,
+                   "independent_review": {"artifact_zip_sha256": "a" * 64,
+                                          "reference_artifact_zip_sha256": "b" * 64},
+                   "reference_artifact": {"id": 6, "name": "ovisocr3-reference-123",
+                                          "zip_sha256": "b" * 64, "bytes": 100}}
+        small, large = hf._reviewed_artifacts(receipt)
+        self.assertEqual((small["id"], large["id"]), (5, 6))
+        for path, bad in (("id", 5), ("name", "ovisocr3-reference-reports-123"),
+                          ("zip_sha256", "a" * 64), ("bytes", 0)):
+            changed = copy.deepcopy(receipt)
+            changed["reference_artifact"][path] = bad
+            with self.subTest(field=path), self.assertRaises(ValueError):
+                hf._reviewed_artifacts(changed)
+        changed = copy.deepcopy(receipt)
+        changed["independent_review"]["artifact_zip_sha256"] = "b" * 64
+        with self.assertRaises(ValueError):
+            hf._reviewed_artifacts(changed)
+
     def test_absent_real_reference_rejects_before_any_source_reader(self):
         with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 HF reference proof absent"):
             hf._reviewed_receipts()

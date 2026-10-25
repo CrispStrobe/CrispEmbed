@@ -91,6 +91,7 @@ def service_and_review(call=subprocess.check_output):
     source_run = profile.REFERENCE_RUN
     result = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/runs/{source_run}"]))
     artifact = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/artifacts/{profile.REFERENCE_ARTIFACT_ID}"]))
+    small = json.loads(call(["gh", "api", f"repos/CrispStrobe/CrispEmbed/actions/artifacts/{receipt['artifact_id']}"]))
     if (result.get("status") != "completed" or result.get("conclusion") != "success"
             or result.get("head_sha") != profile.REFERENCE_HEAD
             or result.get("path") not in (".github/workflows/ovisocr3-reference.yml",
@@ -98,7 +99,14 @@ def service_and_review(call=subprocess.check_output):
             or artifact.get("workflow_run", {}).get("id") != source_run
             or artifact.get("name") != f"ovisocr3-reference-{source_run}"
             or artifact.get("digest") != "sha256:" + profile.REFERENCE_ARTIFACT_SHA256
-            or artifact.get("expired") is not False):
+            or artifact.get("size_in_bytes") != profile.REFERENCE_ARTIFACT_BYTES
+            or artifact.get("expired") is not False
+            or small.get("workflow_run", {}).get("id") != source_run
+            or small.get("id") != receipt["artifact_id"]
+            or small.get("name") != f"ovisocr3-reference-reports-{source_run}"
+            or small.get("digest") != "sha256:" + receipt["artifact_zip_sha256"]
+            or small.get("size_in_bytes") != receipt["artifact_bytes"]
+            or small.get("expired") is not False):
         raise ValueError("Reviewed OvisOCR3 original reference service run/artifact differs")
     meta_producer, meta_service = reference.metadata_service(call)
     if source._canonical_sha256(meta_producer) != profile.METADATA_PRODUCER_SHA256:
@@ -106,6 +114,9 @@ def service_and_review(call=subprocess.check_output):
     return metadata, receipt, {"reference_run": source_run, "reference_head": profile.REFERENCE_HEAD,
                                "reference_artifact_id": profile.REFERENCE_ARTIFACT_ID,
                                "reference_artifact_zip_sha256": profile.REFERENCE_ARTIFACT_SHA256,
+                               "reference_artifact_bytes": profile.REFERENCE_ARTIFACT_BYTES,
+                               "report_artifact_id": receipt["artifact_id"],
+                               "report_artifact_zip_sha256": receipt["artifact_zip_sha256"],
                                "metadata_service": meta_service}
 
 

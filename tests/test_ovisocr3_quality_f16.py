@@ -2,9 +2,12 @@
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -14,6 +17,21 @@ spec.loader.exec_module(worker)
 
 
 class NativeF16Controls(unittest.TestCase):
+    def test_preflight_binds_reviewed_native_vision_preset(self):
+        native = {"native_environment": worker.native_audit.NATIVE_ENV,
+                  "selected_vision_preset": worker.native_audit.SELECTED_VISION_PRESET}
+        with tempfile.TemporaryDirectory() as directory, \
+             patch.dict(os.environ, {"HEAVY_OUT": directory, "HEAVY_SCRATCH": directory}), \
+             patch.object(worker, "require_reviewed_original_quality", return_value={"status": "reviewed"}), \
+             patch.object(worker, "require_reviewed_native", return_value=native), \
+             patch.object(worker.original.reference, "metadata_service", return_value=({}, {})):
+            report = worker.main(preflight=True)
+        self.assertEqual(report["selected_vision_preset"]["name"], "both")
+        self.assertEqual(report["status"], "preflight passed; no model/framework loaded")
+        changed = dict(native, selected_vision_preset={"name": "baseline", "enabled_gates": []})
+        with self.assertRaises(ValueError):
+            worker.vision_env.reviewed_selection(changed)
+
     def test_missing_reviewed_original_and_fourteen_arm_receipts(self):
         with self.assertRaisesRegex(ValueError, "Reviewed original OvisOCR3 eleven-case quality is absent"):
             worker.require_reviewed_original_quality()

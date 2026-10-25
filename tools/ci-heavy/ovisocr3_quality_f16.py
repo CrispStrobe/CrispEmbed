@@ -24,6 +24,7 @@ def module(name, path):
 
 original = module("ovisocr3_quality_original", ROOT / "tools/ci-heavy/ovisocr3_quality_run.py")
 native_audit = module("ovisocr3_quality_native_proof", ROOT / "tools/ci-heavy/ovisocr3_native14.py")
+vision_env = module("ovisocr3_quality_vision_env", ROOT / "tools/ci-heavy/ovisocr2_vision_env.py")
 contract = original.contract
 policy = original.policy
 
@@ -150,10 +151,12 @@ def main(preflight=False):
     try:
         frozen = require_reviewed_original_quality()
         native = require_reviewed_native()
+        selected_vision = vision_env.reviewed_selection(native)
         metadata, service = original.reference.metadata_service()
         report["prerequisites"] = {"original_quality_canonical_sha256": policy._canonical_sha256(frozen),
                                    "native_model_canonical_sha256": policy._canonical_sha256(native),
                                    "metadata_service": service}
+        report["selected_vision_preset"] = selected_vision
         save()
         if preflight:
             report["status"] = "preflight passed; no model/framework loaded"
@@ -213,6 +216,7 @@ def main(preflight=False):
         env.update({"CRISPEMBED_QWEN35_OCR": "1", "CRISPEMBED_OVISOCR3_FRONTEND": "1",
                     "CRISPEMBED_OVISOCR3_INFERENCE": "1", "CRISPEMBED_OVISOCR2_FRONTEND": "0",
                     "CRISPEMBED_OVISOCR2_INFERENCE": "0"})
+        env = vision_env.apply_selection(env, selected_vision)
         outputs = {}
         for case in cases:
             okay, log = command(case["id"], [binary, model, case["path"], case["cap"], 2],
