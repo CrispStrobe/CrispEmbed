@@ -39,6 +39,17 @@ class Controls(unittest.TestCase):
             report={'commands':{}}
             self.assertTrue(driver.timed_command('probe',[sys.executable,'-c','print(42)'],Path(directory),report))
             self.assertGreater(report['commands']['probe']['resources']['max_rss_kib'],0)
+    def test_actual_environment_override_with_existing_baseline_keys(self):
+        with mock.patch.dict(driver.os.environ,{'CRISPEMBED_DIFF_COS_THRESHOLD':'0.5'}):
+            frozen=driver.native_environment('frozen-control')
+            larger=driver.native_environment('large-boundary')
+        for env in (frozen,larger):
+            self.assertEqual(env['CRISPEMBED_QWEN35_VISION_PRECISE_NORM'],'1')
+            self.assertEqual(env['CRISPEMBED_QWEN35_VISION_PRECISE_ATTN'],'1')
+            self.assertEqual(env['CRISPEMBED_QWEN35_VISION_CASCADE_NORM'],'0')
+            self.assertNotIn('CRISPEMBED_DIFF_COS_THRESHOLD',env)
+        self.assertEqual(frozen['CRISPEMBED_OVISOCR2_LARGE_IMAGES'],'0')
+        self.assertEqual(larger['CRISPEMBED_OVISOCR2_LARGE_IMAGES'],'1')
     def test_missing_full_layer_raw_cannot_pass(self):
         with self.assertRaises(ValueError):driver.raw_manifest(Path('.'),{'stages':{},'generated_ids':[[1,248046]]},'PASS prefill.decoder.layer.0: cos_min=1','f16-decoder-native-frontend')
 

@@ -1,0 +1,158 @@
+{
+  "run": 40176568398,
+  "head_sha": "f2f0b7d0cba2ed4c2a0c4996a466bc3b117d8e64",
+  "artifact": {
+    "id": 12593047355,
+    "name": "ovisocr2-larger-reports-frozen-control-40176568398",
+    "zip_sha256": "345650942b2fabcb2be80951c5bfb1387edd8abbb54a367907857a7cf1525f9a",
+    "bytes": 4272
+  },
+  "scope": "Initial preparation failure before any native model inference; successful hosted portable build and compiled bounds controls retained",
+  "producer": {
+    "schema": "crispembed-ovisocr2-large-inputs-v1",
+    "status": "failed before complete observations",
+    "case": "frozen-control",
+    "source_commit": "f2f0b7d0cba2ed4c2a0c4996a466bc3b117d8e64",
+    "source_contract": {
+      "source_sha256": {
+        "src/qwen35_attention.cpp": "e4d363b42d8aab26d14f9889c6dd9b375e84dc0914fe4706d533744fb7068f78",
+        "src/qwen35_attention.h": "bcbd2fa7af050418712d38af7067d8216f736ea026a4c898edead85c9a43f065",
+        "src/qwen35_decoder.cpp": "1ee46b4b5943ac34932a648aeca3e871f3c9918b0f2fe7e25ef1002896dcc575",
+        "src/qwen35_decoder.h": "144b89571245501f6d973db6d4f3754ea5a39ee420b4d0a95ecbca98f1f20eae",
+        "src/qwen35_delta.cpp": "3bbbe6407528dcc30f8a2c722c94324962073176c9fa24e8f655781db7f5df55",
+        "src/qwen35_delta.h": "f28af077faa1989b8ec522f74ddb0dba3acb0945467e534db089acf37f967774",
+        "src/qwen35_frontend.h": "08678aca0ad4c601a328856eba79edfecbc39016943910ccb1b10a768f7822cd",
+        "src/qwen35_image.cpp": "a490e23fb9368186e39f433e451e0d7199e1d504ee20d72c64a782632d42287a",
+        "src/qwen35_image_bounds.h": "c0fc6aa35e0f47168ecb1cc3dcfeda66f62c7c1a2bd5d73cb1a246158c2ea350",
+        "src/qwen35_linear.cpp": "9f4c99784d6bcc59b4800f1ebcc5b649dda16e3c77dbae1da7f947bf06141fb0",
+        "src/qwen35_linear.h": "c0c91f42b9936e2d1fabd8101a56409149f41aaa0ef4beb8bbf65611548a81ed",
+        "src/qwen35_math.h": "ae542fa73d48dc622fe0e5813ca49fc9616a343fc9d3ba2a927e2a82d7908357",
+        "src/qwen35_norm.cpp": "753ed80708e60f855c0756d75506cde62d285ffdb9d2663083cdeb308573b268",
+        "src/qwen35_norm.h": "5838b4d4fce6293abc4c2e43220014e1fcd93e575d1dd1bcf4817c82b27e842f",
+        "src/qwen35_ocr.cpp": "1b746f76f342a0159063dd59b6acf2661861cfec5253dd66ec185ebb20c30eba",
+        "src/qwen35_ocr.h": "ec21e2a3f865a11277555b4bd8e2cd968cb98ca8a83b4f3b5b33a3a7724aef0c",
+        "src/qwen35_positions.cpp": "a9e296456072d111d2eda1c543c3059270b1492922db79a8df39325d3a6f91a7",
+        "src/qwen35_positions.h": "4fb1ca7e61d7ccb5c4c66cd280770acd69d739b18e2911bfe941896747757b9b",
+        "src/qwen35_profile.cpp": "1078a8e3d2fcf7c6aa8afe0d28d9dee7067e6d296cdfca018f5e267ba15ed636",
+        "src/qwen35_profile.h": "d342082fe8bb0ba8b851771741573c46f2f68b72775c56ccbeba002ebc8dad00",
+        "src/qwen35_tokenizer.cpp": "3e3ca5dc0a1786fa739d319704d3c3f4334287ffbe0f35295c30bdf113998425",
+        "src/qwen35_vision.cpp": "cb6460c795671aa3fd609798cbc506efa41e9e4c40a40b926c31eadf5e342f29",
+        "src/qwen35_vision.h": "da38d714b10e7ff0b5e42ab2ba88eff145b113185d6f2e0db55e1a65de08366a"
+      },
+      "intentional_changed_files": {
+        "src/qwen35_frontend.h": {
+          "old_sha256": "b5cb3cfd327edfa1d7a0db7706d0b47637e38f1bbedc0d48f25b383dc8772760",
+          "current_sha256": "08678aca0ad4c601a328856eba79edfecbc39016943910ccb1b10a768f7822cd"
+        },
+        "src/qwen35_image.cpp": {
+          "old_sha256": "a4226eb99065de643a746759e82ace89f2a40dbd8b68a0fcb5557deb2f814c08",
+          "current_sha256": "a490e23fb9368186e39f433e451e0d7199e1d504ee20d72c64a782632d42287a"
+        },
+        "src/qwen35_ocr.cpp": {
+          "old_sha256": "669b37276281b6a60de63cc5ec92d550949c76e77f836c60e8dd5d7c43786f4f",
+          "current_sha256": "1b746f76f342a0159063dd59b6acf2661861cfec5253dd66ec185ebb20c30eba"
+        },
+        "src/qwen35_ocr.h": {
+          "old_sha256": "701e16cf00a377dc48003ed2d163808bbfd310d429d7fa93d6294c57b6d5a5ca",
+          "current_sha256": "ec21e2a3f865a11277555b4bd8e2cd968cb98ca8a83b4f3b5b33a3a7724aef0c"
+        },
+        "src/qwen35_tokenizer.cpp": {
+          "old_sha256": "8a2f98441e64abb7aaf4865e4170dc05347535f1f301bd018f92c65de1e490a7",
+          "current_sha256": "3e3ca5dc0a1786fa739d319704d3c3f4334287ffbe0f35295c30bdf113998425"
+        },
+        "src/qwen35_vision.cpp": {
+          "old_sha256": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+          "current_sha256": "cb6460c795671aa3fd609798cbc506efa41e9e4c40a40b926c31eadf5e342f29"
+        }
+      },
+      "allowed_new_files": [
+        "src/qwen35_image_bounds.h"
+      ],
+      "scope": "Intentional profile/bounds source changes; not an unchanged-source replay"
+    },
+    "cpu": {
+      "machine": "x86_64",
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "logical_count": 4,
+      "affinity_count": 4,
+      "threads": {
+        "OMP_NUM_THREADS": "2",
+        "MKL_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "2"
+      }
+    },
+    "panel_sha256": "7c8132770d28b245579f878d620be0c1bc6a54bb5f0b38f4c2e615b46a13deb8",
+    "commands": {
+      "bounds-controls": {
+        "argv": [
+          "/usr/bin/time",
+          "-f",
+          "{\"max_rss_kib\":%M,\"wall_seconds\":%e}",
+          "-o",
+          "<out>/bounds-controls-resources.json",
+          "/home/runner/work/_temp/bin/test-ovisocr2-image-bounds"
+        ],
+        "log": "bounds-controls.log",
+        "exit_code": 0,
+        "bytes": 100,
+        "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e",
+        "first_failure": null,
+        "metric_lines": [
+          "PASS OVISOCR2_IMAGE_BOUNDS default1024=1 optin2048=1 literal0=1 no_resize=1 reject2176=1 recovery=1"
+        ],
+        "passed": true,
+        "seconds": 0.04757175399998914,
+        "resources": {
+          "max_rss_kib": 18672,
+          "wall_seconds": 0.01
+        }
+      }
+    },
+    "limits": [
+      "Bounded experimental input extension; default remains1024 and opt-in max2048.",
+      "No 2880-squared maximum, multi-image, video, GPU, public benchmark or release claim.",
+      "New source must pass frozen-control14 and larger original-module/decoded checks; raw strict flags retained."
+    ],
+    "build": {
+      "source_commit": "f2f0b7d0cba2ed4c2a0c4996a466bc3b117d8e64",
+      "binary_sha256": {
+        "test-qwen35-decoder": "b37260138580c8155189e705e7a8ab22bfe53f30b0b54e4581952f2621dd5e4c",
+        "test-qwen35-vision": "ba6c9a438d2c006f954c681b1cafe2b5100059b56a1561e648d46d08d5f9393a",
+        "test-qwen35-delta": "905826f13dcffd53e114feae015232a50ce6dc03f3138bfd0b886dc5d5869c78",
+        "test-ovisocr2-context": "2b3f10303f327e2be82cc12a50ff2e5f4940e3311e0bce9d18e809a7ba08720c",
+        "test-ovisocr2-quality-run": "28df366160b29fa3c04f5dda7a548bc4ea51818c45ff254e370dcc5380910c8e",
+        "test-ovisocr2-image-bounds": "6be13d2bc76a52a86335e3ec927d4db7cd3a2f6e99123c006ed0fc41d1881ffb"
+      },
+      "portable_cpu_baseline_checked": true
+    },
+    "export_source": {
+      "run": 39992662147,
+      "head": "5e197baee331d9b5745c6d906c21893e8211a3fd",
+      "artifact_id": 12519953155,
+      "artifact_zip_sha256": "1bc1b6556e65fc40a497110e5229ad79402d9358aa9640aaf7fda863bc8a5c3f",
+      "models": {
+        "f32": {
+          "model_sha256": "7f04dbc597e122fc3f1db2d96a64e8d7759be9f62dca4bc4a472fe5f0db9bfd9",
+          "bytes": 3421945280,
+          "manifest_sha256": "1e17ec9cd881abc368f70f88ea06720b8fde9f85222ef13cef4e9451adaeefac",
+          "tensor_count": 473
+        },
+        "f16": {
+          "model_sha256": "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db",
+          "bytes": 1717222848,
+          "manifest_sha256": "e46d5db6940dcdc18516a84629164c6c3157eb7b6f65c8e9181c3b491c72ad48",
+          "tensor_count": 473
+        }
+      },
+      "verified_zip_removed": true
+    },
+    "error": "dict() got multiple values for keyword argument 'CRISPEMBED_QWEN35_VISION_PRECISE_NORM'"
+  },
+  "independent_review": {
+    "producer_canonical_sha256": "d36c5c6fcef0572cdef4d8517986dd974d455f695561b86ad0107ca915961d0d",
+    "native_model_qualification": false,
+    "bounds_controls_positive": true,
+    "preparation_error": "Duplicate precision keyword while composing environment; overlaps with frozen NATIVE_ENV.",
+    "fix": "Build an environment copy and update explicit selections sequentially; verify actual inherited keys and clear ambient comparator threshold."
+  }
+}

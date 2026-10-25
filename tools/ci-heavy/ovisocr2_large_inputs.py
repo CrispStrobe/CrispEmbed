@@ -128,6 +128,17 @@ def timed_command(label,args,out,report,env=None,timeout=3600):
     return result
 
 
+def native_environment(case):
+    env=dict(os.environ)
+    env.update(audit.NATIVE_ENV)
+    env.update(CRISPEMBED_QWEN35_VISION_PRECISE_NORM='1',
+               CRISPEMBED_QWEN35_VISION_PRECISE_ATTN='1',
+               CRISPEMBED_QWEN35_VISION_CASCADE_NORM='0',
+               CRISPEMBED_OVISOCR2_LARGE_IMAGES='0' if case=='frozen-control' else '1')
+    env.pop('CRISPEMBED_DIFF_COS_THRESHOLD',None)
+    return env
+
+
 def run(case):
     panel,closure=preflight()
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH'])/case
@@ -153,10 +164,7 @@ def run(case):
         if not command('bounds-controls',[build/'test-ovisocr2-image-bounds']):raise ValueError('Downloaded binary controls failed before model transfer')
         if shutil.disk_usage(scratch).free<18*1024**3:raise ValueError('At least18GiB free scratch required before model transfer')
         source=source_and_exports(out,scratch,report);save()
-        env=dict(os.environ,**audit.NATIVE_ENV,CRISPEMBED_QWEN35_VISION_PRECISE_NORM='1',
-                 CRISPEMBED_QWEN35_VISION_PRECISE_ATTN='1',CRISPEMBED_QWEN35_VISION_CASCADE_NORM='0',
-                 CRISPEMBED_OVISOCR2_LARGE_IMAGES='0' if case=='frozen-control' else '1')
-        env.pop('CRISPEMBED_DIFF_COS_THRESHOLD',None)
+        env=native_environment(case)
         if case=='frozen-control':
             reference=replay.source_reference(ab,scratch,out,report,source)
             image=scratch/'owned-readable.png';ref=scratch/'official-delta.gguf'
