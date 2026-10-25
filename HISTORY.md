@@ -15361,3 +15361,19 @@ case. All four full producer JSON files are preserved byte-exact in Git. Large
 reference/model/vector bytes remain remote and were not independently downloaded.
 Six failed-arm GNU-time files prepend an exit-status line; review recovers their
 resource JSON explicitly without rewriting producer records.
+
+The boundary trace also preserves earlier magnitudes: F32 native-vision input
+embeddings differ by3.92198563e-5, norms59.2414284/59.2414513; last block23
+reaches0.000309944153, norms209.240433/209.240448, before final normalization
+reaches0.00394558907 at norms3187.82251/3187.82251. F16 block23 reaches
+0.00034442544 before final0.00438690186. These are observed composed differences,
+not proof of an RMS defect; original-embedding replay and source-fed projection/
+reduction attribution remain the bounded follow-up.
+
+The observed GNU-time failure-prefix reporting bug is corrected for future
+runs in `parse_gnu_time_resources`: clean JSON or the exact observed nonzero-
+exit prefix must match the command status, with positive integer RSS and finite
+nonnegative wall time. An actual failed subprocess and malformed/mismatched/
+nonfinite resource controls pass11 focused tests. Recovered timing does not
+change exit status or numerical rejection; historical producer records remain
+byte exact.

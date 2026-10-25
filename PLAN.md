@@ -463,6 +463,10 @@ full-prefix norm. Norms round3187.82251 on both sides; cosine rounds1.0. Replay
 with original prepared embeddings passes at0.000289916992/0.000239372253.
 All nine IDs/raw text/EOS match, but the overall larger-range qualification is
 negative. Default1024 and the existing opt-in2048 alternative remain unchanged.
+The F32 native-vision input-embedding difference is3.92198563e-5 (norms
+59.2414284/59.2414513); layer23 grows to0.000309944153 (norms
+209.240433/209.240448), before the final norm's0.00394558907. Preserve these
+magnitudes rather than inferring a root cause from the first threshold failure.
 
 - [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
   and retained original/native arrays; boundary raw artifact12598011436 is in
