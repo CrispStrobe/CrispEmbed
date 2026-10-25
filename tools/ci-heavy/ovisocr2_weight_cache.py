@@ -125,6 +125,20 @@ def require_exact(rows):
         raise ValueError('Cache changes actual IDs/text/EOS/selected confidences')
 
 
+def normalize_manifest(raw, label):
+    """Both proven raw schemas: decoder rows lack paths, delta adds variants."""
+    if not re.fullmatch(r'cache-[01]-f(?:16|32)-[a-z-]+', label):
+        raise ValueError('Invalid raw cache arm label')
+    rows=[]
+    for value in raw.get('files', []):
+        stage=value.get('stage');variant=value.get('variant','primary')
+        if not isinstance(stage,str) or not re.fullmatch(r'[A-Za-z0-9_.]+',stage) or variant not in ('primary','linear-core','reset'):
+            raise ValueError('Unexpected raw stage/variant')
+        suffix=('' if variant=='primary' else variant+'/')+stage+'.f32'
+        rows.append(dict(value,file='native-diff/'+label+'/'+suffix))
+    return dict(raw,files=rows) if 'files' in raw else dict(raw)
+
+
 def verify_quality(path):
     current = json.loads(Path(path).read_text())
     frozen = json.loads((ROOT/'tests/results/qwen35-ocr/ovisocr2-f16-quality.json').read_text())['producer']
@@ -194,9 +208,7 @@ def run():
                     passed=command(label,args,dict(environment(on),CRISPEMBED_DIFF_DUMP_DIR=str(folder)))
                     log=(out/(label+'.log')).read_text()
                     try:
-                        raw=large.raw_manifest(folder,reference,log,name)
-                        for row in raw.get('files',[]):
-                            row['file']=row['file'].replace('native-diff/'+name+'/', 'native-diff/'+label+'/', 1)
+                        raw=normalize_manifest(large.raw_manifest(folder,reference,log,name),label)
                         proof=replay.verify_arm_log(name,log,reference['stages'],ab)
                         if '-decoder-' in name:
                             match=re.search(r'^WEIGHT_CACHE bytes=(\d+) budget=(\d+) entries=(\d+) hits=(\d+)$',log,re.M)

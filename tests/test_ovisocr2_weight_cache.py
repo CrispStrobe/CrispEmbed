@@ -33,6 +33,21 @@ class CacheControls(unittest.TestCase):
     def test_probability_drift_rejected(self):
         rows=self.fixture();rows[1]['confidences']=list(rows[1]['confidences']);rows[1]['confidences'][0]-=1e-6
         with self.assertRaises(ValueError):driver.require_exact(rows)
+    def test_actual_decoder_schema_without_file_and_delta_variants(self):
+        # Regression for the actual e6 postprocessing KeyError. Both schemas
+        # retain their payload metadata; path reconstruction cannot drop a row.
+        decoder={'coverage_complete':True,'files':[{'stage':'prefill.decoder.layer.0','shape':[1,2],
+                 'bytes':8,'sha256':'a'*64}]}
+        normalized=driver.normalize_manifest(decoder,'cache-1-f16-decoder-prepared')
+        self.assertEqual(normalized['files'][0]['file'],'native-diff/cache-1-f16-decoder-prepared/prefill.decoder.layer.0.f32')
+        self.assertEqual({k:v for k,v in normalized['files'][0].items() if k!='file'},decoder['files'][0])
+        self.assertNotIn('file',decoder['files'][0])
+        delta={'coverage_complete':True,'files':[{'stage':'prefill.delta.output','variant':'reset',
+               'file':'native-diff/f16-delta/reset/prefill.delta.output.f32','bytes':8,'sha256':'b'*64}]}
+        self.assertEqual(driver.normalize_manifest(delta,'cache-0-f16-delta')['files'][0]['file'],
+                         'native-diff/cache-0-f16-delta/reset/prefill.delta.output.f32')
+        bad=deepcopy(delta);bad['files'][0]['variant']='../escape'
+        with self.assertRaises(ValueError):driver.normalize_manifest(bad,'cache-0-f16-delta')
     def test_ambient_experiments_cannot_reach_either_arm(self):
         with patch.dict(os.environ,{'CRISPEMBED_QWEN35_PRECISE_RMS':'1','CRISPEMBED_DIFF_COS_THRESHOLD':'0.1',
                                     'CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES':'9999999999',
