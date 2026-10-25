@@ -1,8 +1,10 @@
 """No framework/model imports: original OvisOCR3 reference stays closed without review."""
 
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 import types
 import unittest
@@ -24,6 +26,17 @@ driver = load(ROOT / "tools/ci-heavy/ovisocr3_reference.py", "ovisocr3_reference
 
 
 class ReferenceControls(unittest.TestCase):
+    def test_native_plain_ocr_source_prompt_and_unqualified_sentinel(self):
+        source = (ROOT / "src/qwen35_tokenizer.cpp").read_text()
+        prompt = re.search(r'R"OVIS3\((.*?)\)OVIS3"', source, re.S)
+        self.assertIsNotNone(prompt)
+        self.assertEqual(hashlib.sha256(prompt.group(1).encode()).hexdigest(),
+                         "e037cf0013a757e19eae6d4d701f3b90848449fbebe44d1f8fa7d8ca4a5af9a7")
+        self.assertIn('const char * ovis3_rendered_template = "";', source)
+        self.assertIn('const char * ovis3_metadata_sha256 = "";', source)
+        self.assertIn('core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")', source)
+        self.assertIn('std::strlen(ovis3_metadata_sha256) != 64', source)
+
     def test_review_absence_precedes_checkpoint_and_framework(self):
         with self.assertRaisesRegex(ValueError, "reviewed metadata pins absent"):
             dumper.require_reviewed_metadata()

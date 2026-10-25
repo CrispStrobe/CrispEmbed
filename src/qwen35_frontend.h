@@ -23,6 +23,7 @@ class frontend_tokenizer {
     std::vector<int> added_, special_;
     int eos_ = -1;
     bool ovis_ = false;
+    bool ovis3_ = false;
     std::string image_template_;
     std::vector<int> stops_;
     bool enabled() const;
@@ -36,7 +37,8 @@ public:
                       std::vector<int> & modalities, std::string & rendered) const;
     int eos() const { return eos_; }
     bool is_ovisocr2() const { return ovis_; }
+    bool is_ovisocr3() const { return ovis3_; }
     bool is_stop(int id) const;
-    image_config image_limits() const { return ovis_ ? image_config{ 448 * 448, 2880 * 2880 } : image_config{}; }
+    image_config image_limits() const { return (ovis_ || ovis3_) ? image_config{ 448 * 448, 2880 * 2880 } : image_config{}; }
 };
 } // namespace qwen35_ocr

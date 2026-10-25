@@ -52,6 +52,9 @@ struct qwen35_ocr_context {
 };
 namespace {
 bool inference_enabled(const qwen35_ocr_context & c) {
+    if (c.tokenizer.is_ovisocr3())
+        return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") &&
+               core_env::on("CRISPEMBED_OVISOCR3_INFERENCE");
     return core_env::on("CRISPEMBED_QWEN35_OCR") &&
            (!c.tokenizer.is_ovisocr2() ||
             (core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE")));
@@ -199,11 +202,14 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
         if (!meta) return nullptr;
         const auto format = core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0);
         const bool allowed_format = format == 1 || (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
-                                                    core_env::on("CRISPEMBED_OVISOCR2_FRONTEND"));
+                                                    core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
+                                    (format == 3 && core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
         const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.tie_word_embeddings", false) &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.zero_centered_text_norm", false) &&
-                           c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2());
+                           c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2()) &&
+                           ((format == 3) == c->tokenizer.is_ovisocr3());
         metadata.reset();
         if (!ready) return nullptr;
         c->backend = ggml_backend_cpu_init();
