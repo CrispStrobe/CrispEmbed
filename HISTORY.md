@@ -1,3 +1,28 @@
+## 25 October 2026 — Original OvisOCR3 CPU module reference qualified
+
+[40177416485](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177416485)
+at2ce86168 completes the original HF5.16.1/Torch2.11 CPU/F32 module capture.
+[Unchanged producer, full original JSON and independent review](tests/results/qwen35-ocr/ovisocr3-original-reference.json)
+preserve all943 stage names/shapes and three exact processor-anchor replays.
+Independent review rehashes the small ZIP, all anchor NPY payloads, sources,
+command log, package versions and original JSON, checks observer neutrality,
+explicit generation-file resolution and full-layer/cache/score coverage. Large
+NPZ/GGUF payloads remain hosted and are hash-checked by dependent remote workers.
+
+Observed and unobserved runs have identical logits and nine generated IDs.
+Cached/full-prefix logits differ by at most0.00005340576171875, with the same
+argmax. CPU output `Hello OCR\n12345` and IDs match the controlled T4 readable
+case. Source backend-off vision block11 differs by0.081695556640625 while its
+raw output/IDs remain equal; retain this original-backend diagnostic when
+reviewing native absolute errors. No native numerical budget was changed.
+The explicit HF dual-EOS export additionally requires a hosted installed
+criterion probe accepting both EOS IDs and rejecting a non-EOS token.
+
+Native14 workflow40178327173, original plain OCR11 workflow40178328864 and
+current-runtime old Ovis2 F16 eleven-case workflow40178330437 are dispatched at
+574df199. Prepared jobs and this one-image original reference do not establish
+native or independent-document quality.
+
 ## 25 October 2026 — Original OvisOCR3 T4 forward reviewed
 
 [Retained original GPU receipt](tests/results/qwen35-ocr/ovisocr3-vllm-reference.json)

@@ -28,7 +28,13 @@ The current owner is finishing the four approved items before closing this loop:
    After final core edits, rerun old11 F16 quality against frozen originals.
 4. Complete OvisOCR3 original-first qualification:
    [reference40177416485](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40177416485)
-   replays three reviewed processor anchors before loading weights; capture every
+   completes the three anchors and943-stage original capture. Native14
+   [40178327173](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178327173),
+   original11 [40178328864](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178328864)
+   and current old Ovis2 F16 quality
+   [40178330437](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40178330437)
+   are dispatched; independently review terminal results before later gates.
+   The original reference replays three reviewed processor anchors before loading weights; capture every
    layer/cache/logit/generated score and actual greedy output. Independently
    review the small report and bind immutable service/artifact/source hashes
    before original11, native14, F16 quality11 and public engine22 audits.
