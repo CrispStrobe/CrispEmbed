@@ -46,6 +46,7 @@ def require_reviewed_metadata():
             or review.get("producer_canonical_sha256") != canonical
             or review.get("metadata_positive") is not True
             or producer.get("status") != "completed weight-free OvisOCR3 HF metadata/source probe; no model forward or native qualification"
+            or producer.get("source_commit") != METADATA_HEAD
             or producer.get("source_model") != ovis_profile.MODEL
             or producer.get("source_revision") != ovis_profile.REVISION
             or producer.get("source_report_sha256") != ovis_profile.SOURCE_REPORT_SHA256

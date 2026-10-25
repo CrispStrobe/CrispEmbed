@@ -44,6 +44,7 @@ def metadata_service(call=subprocess.check_output):
             or run.get("path") != ".github/workflows/ovisocr3-metadata.yml"
             or artifact.get("workflow_run", {}).get("id") != dumper.METADATA_RUN
             or artifact.get("name") != f"ovisocr3-metadata-{dumper.METADATA_RUN}"
+            or artifact.get("digest") != "sha256:" + dumper.METADATA_ARTIFACT_SHA256
             or artifact.get("expired") is not False):
         raise ValueError("OvisOCR3 metadata service run/head/artifact differs")
     return producer, {"run": dumper.METADATA_RUN, "head": dumper.METADATA_HEAD,

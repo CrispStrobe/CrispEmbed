@@ -38,7 +38,8 @@ class ReferenceControls(unittest.TestCase):
         source = {"source_model": "ATH-MaaS/OvisOCR3"}
         run = {"status": "completed", "conclusion": "success", "head_sha": "a" * 40,
                "path": ".github/workflows/ovisocr3-metadata.yml"}
-        artifact = {"workflow_run": {"id": 123}, "name": "ovisocr3-metadata-123", "expired": False}
+        artifact = {"workflow_run": {"id": 123}, "name": "ovisocr3-metadata-123", "expired": False,
+                    "digest": "sha256:" + "b" * 64}
         def call(args):
             return json.dumps(artifact if args[-1].endswith("/456") else run).encode()
         with (patch.object(driver.dumper, "require_reviewed_metadata", return_value=source),
