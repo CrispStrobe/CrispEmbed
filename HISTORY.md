@@ -15619,3 +15619,22 @@ dependencies. Eight small archive/layout controls pass; actual compiled consumer
 are pending. Candidate development manifests advance to0.17.14; no tag exists,
 main and the app retain their previous versions until separate integration.
 All source preparation and queued workflows remain explicitly unqualified.
+
+
+## 26 October 2026 — initial SciFact preparation stopped in generic controls
+
+[Preparation40340827694](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40340827694)
+at`ff030c0ae46a5147232ae3f561b308abdae6b509` failed the parent metadata
+workflow's weight-free controls before SciFact dataset access, framework setup
+or model output. The positive fixture in `tests/test_ovisocr2_ffn.py` called the
+manual historical first-FFN preflight against the current whole `src` tree; the
+unrelated, default-off UltraBERT truncation addition correctly differed from
+that old arithmetic pin. This is an initial controls-fixture failure, with no
+SciFact quality or throughput result.
+
+The generic test now uses the frozen mocked Git contract from1fb17248 and keeps
+negative changed-tree, wrong-ggml and dirty-source controls. The manual
+`tools/ci-heavy/ovisocr2_ffn.py` historical whole-source guard is unchanged.
+The SciFact protocol, input policy, sources and acceptance budgets are unchanged;
+actual preparation and independent data/length/timing review remain pending
+before the full original-first panel. The failed run stays preserved.
