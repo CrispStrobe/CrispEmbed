@@ -15605,3 +15605,11 @@ source, checkpoint, artifact, conversion and fixture identities. Six final-only
 cases do not claim hook neutrality. Synthetic images do not establish real
 subtitle/video quality, public API qualification or model publication. Native
 execution is a separate default-off prototype consuming these frozen bytes.
+
+The initial native dispatch40335853768 was cancelled while queued, before any
+job ran: source review found that its F16 negative fixture could fail at generic
+GGUF offset validation. The corrected fixture converts a one-element noise
+strength to genuine F16 while preserving every padded offset; all malformed
+models must now report their intended loader guard. Source review also matches
+all238 native observation names/order/shapes to each of the two frozen full
+captures. This is a source check; actual compiled/native evidence remains separate.
