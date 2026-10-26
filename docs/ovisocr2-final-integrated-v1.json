@@ -1,0 +1,102 @@
+{
+  "schema": "crispembed-ovisocr2-final-integrated-v1",
+  "qualification": false,
+  "runtime_base": "f3f1b9e7d5385d900b68bdf4bd14677425a15eee",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "protected_git_objects": {
+    "src": "f36ad3059fd061515718f6ca92390d8ad4bb19e8",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+    "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+    "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+    "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+    "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+    "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+    "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+    "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+    "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+    "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+    "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+    "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+    "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+    "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5",
+    "tools/successor_asset_manifest.py": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+    ".gitattributes": "a3e1e2ef055065cbef4644c050bb2e56f364a847",
+    ".github/workflows/release.yml": "dc5a19d5fac3944cb7ce644f9115ac39ee49a07c",
+    ".github/workflows/release-wasm.yml": "308671d0aec850755b7d8cd32d90ff4d7975aee9",
+    "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+    "tests/regression": "e416f4408c8d6ab90e844fa91dc6ac0c7a9094f4",
+    "tests/qwen35_parity.h": "412d2b19938d02115ceb9ec0ec8f2c66ec838b30",
+    "tests/test_qwen35_decoder.cpp": "59a7f7412cc8a7925da9f36005206529dfed7d3f",
+    "tests/test_qwen35_delta.cpp": "e044c3e466f48d2904aa2c6f5832d7c993dea736",
+    "tests/test_qwen35_vision.cpp": "92ef45d2c84d758713623b3f7ea593ca8ac89313",
+    "tests/test_ovisocr2_context.cpp": "32d746c32ea0a882086a836fdeee8c93f882169a",
+    "tests/ovisocr2_quality_run.cpp": "ebbf943084d8fe352bf51aaf12c6de3c5347002a",
+    "tools/ci-heavy/ovisocr2_position_replay.py": "0714844ede6d6d37dfbbe7c369ae38f65051a3df",
+    "tools/ci-heavy/ovisocr2_large_inputs.py": "9f00b27ef87e80257feb24aa4a6db4dc7b50f765",
+    "tools/ci-heavy/ovisocr2_2048_attribution.py": "4444ad991e02b83b5921dde5134a5c9371c78f7a",
+    "tools/ci-heavy/ovisocr2_native_replay.py": "d058b6e7b7e8fbf22b08f8aea1deb6b8a448cafe",
+    "tools/ci-heavy/ovisocr2_model_audit.py": "1a575ac79d9eee524360631d051b9e94ceb720a1",
+    "tools/ci-heavy/ovisocr2_vision_audit.py": "4c1495b84295971a1e3a1c8cadf27e2c3eb74699",
+    "tools/ci-heavy/ovisocr2_vision_env.py": "571de46737c811d6826d7577158a67f9d606fd30",
+    "tools/ci-heavy/ovisocr2_quality_run.py": "196715496879377c8a66ee08a0f7d8c99950c79e",
+    "tools/ci-heavy/ovisocr2_quality_contract.py": "1c3e7c49df11b50833a92bd15dc96fb2d6cbca93",
+    "tools/ocr_quality.py": "dbfda5d22cffa6afe80fc699751d6aed18aa11c7",
+    "models/convert-qwen35-ocr-to-gguf.py": "1b4865edee887e1d3e5fea83a8ce5e5ae8b4c66c",
+    "models/qwen35_ovis_profile.py": "36274a9e3464930be6f00290750a68d4da5b7ed3",
+    "tests/results/qwen35-ocr/ovisocr2-model-audit.json": "1c1f1441f06145692fa912ca5432e4d36ffb6e0f",
+    "tests/results/qwen35-ocr/ovisocr2-larger-inputs.json": "fb14653c609038369ea0b116893eb06cb0521c7b",
+    "tests/results/qwen35-ocr/ovisocr2-large-input-panel.json": "1469146db917f5b3e9dc03a1e6d9cf5be95390ab",
+    "tests/results/qwen35-ocr/ovisocr2-f16-quality.json": "cee75fa3033bce808fd5b24a90a291ead86cd8ce",
+    "tests/results/qwen35-ocr/ovisocr2-original-quality.json": "e4e40161bf061a6907503e92bf7c3e7d4de40994",
+    "tests/results/qwen35-ocr/ovisocr2-export.json": "2ac1a80c7463f5427ed6c529c1692df6535631bc",
+    "tests/results/qwen35-ocr/ovisocr2-quality-panel.json": "09eb7b7fdaef951fbd390e0f9c2ca39747cf09f5",
+    "tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json": "2237725bb9e2a803d361849e7a3ef16b76925bd2",
+    "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36"
+  },
+  "declared_source_sha256": {
+    "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+    "src/crispembed.cpp": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+    "src/ultrabert_profile.h": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31"
+  },
+  "declared_defaults": {
+    "source_interpolation": "off",
+    "wasm_q8_rounding": "off"
+  },
+  "dependencies": {
+    "ovis_composed": {
+      "reviewed": false,
+      "reviewed_outcome": null,
+      "final_default": "off",
+      "run": null,
+      "source": null,
+      "workflow": ".github/workflows/ovisocr2-metadata.yml",
+      "conclusion": null,
+      "artifacts": [],
+      "panel_completed": false
+    },
+    "wasm_rounding_ab": {
+      "reviewed": false,
+      "reviewed_outcome": null,
+      "final_default": "off",
+      "run": null,
+      "source": null,
+      "workflow": ".github/workflows/ovisocr2-metadata.yml",
+      "conclusion": null,
+      "artifacts": [],
+      "panel_completed": false
+    }
+  },
+  "gates": [
+    0,
+    1
+  ],
+  "numerical_scope": "Frozen943 original fields, all14 F32/F16 programs per gate; unchanged calibrated checker and raw strict flags. No larger-grid qualification claim.",
+  "quality_scope": "Full eleven first-F16 cases/1841 IDs/text/stops/inputs/caps and scores; gate0 confidences/means exact, gate1 finite and drift measured without a new tolerance.",
+  "limits": [
+    "Pending reviewed-completion dependencies deliberately block dispatch/model access. A negative experimental candidate may only be recorded with its unchanged defaultOFF; it is not accepted as qualified.",
+    "Source/runtime closure must be explicitly updated for any later default or source change. No dynamic latest-source allowance.",
+    "No historical helper, reference, scorer, budget, publication or app pin changes."
+  ]
+}
