@@ -10,6 +10,8 @@ const report=phase==='capture'?{state:'running',captures:{},page_errors:[]}:JSON
 const weights=JSON.parse(fs.readFileSync(path.join(root,'weights.json')));
 const save=()=>fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');
 const server=http.createServer((req,res)=>{
+ res.setHeader('Cross-Origin-Opener-Policy','same-origin');
+ res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
  const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname),target=path.resolve(root,'.'+name);
  if(target!==root&&!target.startsWith(root+path.sep)){res.writeHead(403).end();return;}
  if(name==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Layer3 diagnostic</title>');return;}
@@ -25,6 +27,7 @@ const server=http.createServer((req,res)=>{
    try{
     await page.goto(base);await page.addScriptTag({url:'/diagnostic/crispembed_embed.js'});
     return await page.evaluate(async({gate,capture,replay,weights})=>{
+     if(globalThis.crossOriginIsolated!==true||typeof SharedArrayBuffer!=='function')throw new Error('Cross-origin-isolated SharedArrayBuffer required before module init');
      const logs=[],m=await window.CrispEmbedText({locateFile:n=>'/diagnostic/'+n,printErr:s=>logs.push(s)});
      const set=(k,v)=>{if(m.ccall('wasm_trace_setenv','number',['string','string'],[k,v])!==0)throw new Error('setenv');};
      set('CRISPEMBED_WASM_Q8_0_ROUND',gate);set('CRISPEMBED_DEBUG_TOKENS','1');set('CRISPEMBED_EMBED_RAW_NORM','1');

@@ -4,6 +4,7 @@ import json
 import math
 from pathlib import Path
 import re
+import shlex
 import struct
 from successor_wasm_trace_contract import (MODEL_SHA, STAGES, TEXT, digest, f32_bytes,
     floats, metrics, tokens, gguf, replace_one)
@@ -92,6 +93,33 @@ def conversion_blocks(data,kind,width,rows=12):
                 'sum_bytes_sha256':digest(piece[offset+block:]) if kind==15 else None})
         result.append(blocks)
     return result
+
+
+def check_wasm_commands(rows):
+    required=('src/crispembed.cpp','ggml/src/ggml-cpu/ggml-cpu.c',
+              'ggml/src/ggml-cpu/arch/wasm/quants.c','wasm/embed_wrapper.c')
+    observations={name:[] for name in required}
+    for row in rows:
+        matches=[name for name in required if row.get('file','').replace('\\','/').endswith('/'+name)]
+        if not matches:continue
+        args=row.get('arguments') or shlex.split(row['command'])
+        simd_required=matches[0].startswith('ggml/')
+        if ('-pthread' not in args or ('-msimd128' in args)!=simd_required or
+                any(flag in args for flag in ('-mno-simd128','-mno-atomics','-sUSE_PTHREADS=0','-sPTHREADS=0')) or
+                not any(Path(arg).name in ('emcc','em++','emcc.py','em++.py') for arg in args)):
+            raise ValueError('Actual Emscripten SIMD/pthread compile flags differ: '+matches[0])
+        for name in matches:observations[name].append(args)
+    if any(not commands for commands in observations.values()):
+        raise ValueError('Actual WASM compile-command coverage differs')
+    return {'translation_units':{name:{'commands':len(commands),'pthread':True,
+                'simd128':name.startswith('ggml/')} for name,commands in observations.items()},'passed':True}
+
+
+def check_native_export(symbols):
+    rows=[line.split() for line in symbols.splitlines() if line.split() and line.split()[-1]=='crispembed_layer3_replay']
+    if len(rows)!=1 or len(rows[0])<3 or rows[0][-2]!='T':
+        raise ValueError('Diagnostic native C replay export missing/ambiguous')
+    return {'symbol':'crispembed_layer3_replay','dynamic_type':'T','passed':True}
 
 
 def overlay_encoder(text):

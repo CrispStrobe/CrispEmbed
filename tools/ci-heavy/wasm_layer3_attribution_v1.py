@@ -139,10 +139,16 @@ def build(out):
              '-DCRISPEMBED_BUILD_SHARED=ON','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'],out,'native-configure')
     command(['cmake','--build',out/'native-build','-j2','--target','crispembed-shared'],out,'native-build')
     command(['bash','build-embed-wasm.sh','--clean','--no-simd','--','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'],out,'wasm-build',source)
-    destination=out/'browser/diagnostic';destination.mkdir()
-    for suffix in ('js','wasm'):shutil.copy2(source/('build-embed-wasm/crispembed_embed.'+suffix),destination)
     for name,path in [('native',out/'native-build/compile_commands.json'),('wasm',source/'build-embed-wasm/compile_commands.json')]:
         shutil.copy2(path,out/'review'/('compile-'+name+'.json'))
+    compile_guard=check_wasm_commands(json.loads((out/'review/compile-wasm.json').read_text()))
+    native_libraries=list((out/'native-build').rglob('libcrispembed.so'))
+    if len(native_libraries)!=1:raise ValueError('Expected one diagnostic native shared library')
+    symbols=subprocess.check_output(['nm','-D','--defined-only',str(native_libraries[0])],text=True,encoding='utf-8',timeout=60)
+    (out/'review/native-symbols.txt').write_text(symbols)
+    save(out/'review/build-controls.json',{'wasm_compile_commands':compile_guard,'native_export':check_native_export(symbols)})
+    destination=out/'browser/diagnostic';destination.mkdir()
+    for suffix in ('js','wasm'):shutil.copy2(source/('build-embed-wasm/crispembed_embed.'+suffix),destination)
     binaries=list((out/'native-build').rglob('libcrispembed.so'))+[destination/'crispembed_embed.js',destination/'crispembed_embed.wasm']
     save(out/'review/build-artifacts.json',{str(p.relative_to(out)):{'bytes':p.stat().st_size,'sha256':sha(p)} for p in binaries})
     command(['c++','-std=c++17','-O2','-I'+str(ROOT/'src'),ROOT/'tests/test_wasm_layer3_diff.cpp','-o',out/'stage-diff'],out,'diff-build',timeout=120)
