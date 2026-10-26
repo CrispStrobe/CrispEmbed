@@ -143,6 +143,8 @@ bool image_metrics(const std::vector<uint8_t> & actual, const std::vector<uint8_
 
 static int crispembed_test_main(int argc, char ** argv) {
     if (argc == 2 && std::strcmp(argv[1], "--contracts") == 0) return contract_controls() ? 0 : 1;
+    if (argc == 2 && std::strcmp(argv[1], "--gate-controls") == 0)
+        return gate_controls("nonexistent-model.gguf", nullptr) ? 0 : 1;
     if (argc == 4 && std::strcmp(argv[1], "--reject") == 0) {
         set_gate("1");
         std::string error;
@@ -231,6 +233,8 @@ static int crispembed_test_main(int argc, char ** argv) {
         return 2;
     }
     const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    std::filesystem::create_directories(directory / "controls");
+    if (!dump(directory / "controls" / "ordinary-output.f32", raw.data(), raw.size() * sizeof(float))) return 2;
     size_t buffer_bytes = 0;
     bool neutrality = true;
     const bool full = reference.has("encoder.b256.fromrgb.output");

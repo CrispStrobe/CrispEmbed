@@ -86,7 +86,8 @@ Machine-readable stdout records use `MIGAN_CONTRACT`, `MIGAN_GATES`,
 `MIGAN_DIFF`, `MIGAN_IMAGE` and `MIGAN_SUMMARY` prefixes. Exit0 requires complete
 coverage, every float/image gate and observer neutrality; exit1 retains numerical
 or decoded-image failures, and exit2 indicates setup/contract/coverage failure.
-`--contracts` exercises pure RGB/mask helpers; `--reject MODEL SHA` checks a
+`--contracts` exercises pure RGB/mask helpers, and `--gate-controls` exercises
+unset/empty/literal0 without a model; `--reject MODEL SHA` checks a
 hosted malformed-model control with the gate enabled. These are validation
 interfaces, not product CLI options.
 
@@ -95,6 +96,66 @@ preparation. Formatting and existing dependency-free contracts can be checked
 locally; actual compilation, eight-case comparison, resource measurements and
 negative model variants require hosted execution after the original freeze.
 Any failed alternative, strict flag or initial run must remain retained.
+
+## Reusable workflow and frozen replay inputs
+
+[`migan-native.yml`](../.github/workflows/migan-native.yml) supports direct
+dispatch and reusable calls. A build-only caller needs no checkpoint identities:
+
+```yaml
+jobs:
+  migan-native-build:
+    uses: ./.github/workflows/migan-native.yml
+    with:
+      phase: build-only
+```
+
+Build-only compiles the explicit targets, executes pure RGB/mask/gate controls
+and checks actual archive symbols. It retains the executable, ordinary archive
+and observer archive; no model download, framework import or inference occurs.
+The original frozen reference may still be pending during this build check.
+
+Replay requires all of these explicit, independently reviewed inputs:
+
+| Input | Required identity |
+| --- | --- |
+| `phase` | `replay` |
+| `reference_run` | Successful original producer run ID |
+| `reference_head` | Its exact40-hex Git commit |
+| `reference_workflow` | Its exact workflow path; the original workflow or existing metadata dispatcher |
+| `reference_artifact_id` | Its `migan-original-raw-RUN` artifact ID |
+| `reference_archive_sha256` | Artifact ZIP SHA matching service metadata and hosted download |
+| `reference_report_sha256` | Original `original/report.json` byte SHA |
+| `conversion_report_sha256` | Original F32 conversion receipt byte SHA |
+| `checkpoint_sha256` | Reviewed first-observed actual official checkpoint SHA |
+| `model_gguf_sha256` | Original lossless F32 GGUF SHA |
+
+The hosted driver refuses replay when any identity is absent. It checks the
+successful producer, source, artifact manifest and every member, checkpoint,
+notices, original/converted tensor mapping, fixture pixel hashes, original
+NPY/GGUF arrays and original RGB decoding/composition. All eight original cases
+must verify before native model loading. It reuses frozen arrays and weights;
+there is no original recapture or reconversion. Eight malformed-model controls
+cover metadata, checkpoint, missing noise, extra probe, wrong shape, nonfinite
+state and F16 rejection.
+
+Native stdout is parsed strictly, including duplicate/missing records, original
+stage execution order, per-stage verdicts, totals and every image gate. An
+independent NumPy reader recomputes raw float errors, row/global cosines,
+magnitudes and decoded RGB8 metrics. Log-rounding checks do not widen acceptance
+thresholds. It verifies uint8 decoding/composition directly from native raw floats
+and checks the retained ordinary output bytes against observed final bytes.
+Numerical failures are retained across all eight cases; setup failures retain
+partial reports/logs. The producer reports bounded candidate success separately
+from independent review/qualification; representative quality remains false.
+
+`migan-native-raw-RUN` retains native arrays, build archives, logs and PNGs;
+`migan-native-review-RUN` retains small JSON/log/symbol/image evidence and copies
+of original/conversion receipts plus notices. Both expire after90 days. The
+workflow records exact source/build flags, binary/archive hashes, CPU fingerprint,
+GNU-time peak RSS and wall time. Large raw arrays remain remote. Small stdlib
+tests exercise parser contradictions, required identities, strict JSON and safe
+ZIP extraction without NumPy, Torch or model access.
 
 The graph decomposition also studies/adapts
 [vision.cpp at26a752912d49f6c4ff4545b35a1bdf7400d349ed](https://github.com/Acly/vision.cpp/tree/26a752912d49f6c4ff4545b35a1bdf7400d349ed).
