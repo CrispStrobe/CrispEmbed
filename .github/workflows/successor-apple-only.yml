@@ -1,0 +1,100 @@
+name: Initial immutable successor Mac-only diagnostic retry
+on:
+  workflow_call:
+    inputs:
+      native_run:
+        type: string
+        required: true
+      corpus_run:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      native_run:
+        type: string
+        required: true
+        description: 'Exact initial native producer40339796226'
+      corpus_run:
+        type: string
+        required: true
+        description: 'Exact successful frozen50 image proof40386968045'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  apple-only:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          repository: CrispStrobe/CrispMath
+          ref: 23f1470df0a0853234880ac7e0c6135fd4c02f59
+          path: .ci/CrispMath
+          sparse-checkout: tool
+          filter: blob:none
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Lightweight Mac-only scope controls
+        run: python -B tests/test_successor_apple_only.py -v
+      - name: Require exact initial diagnostic retry inputs
+        env:
+          NATIVE_RUN: ${{ inputs.native_run }}
+          CORPUS_RUN: ${{ inputs.corpus_run }}
+        run: |
+          python - <<'PYCODE'
+          import json,os
+          from pathlib import Path
+          receipt={'schema':'crispembed-successor-apple-only-scope-v1','source_commit':os.environ['GITHUB_SHA'],
+                   'native_run':os.environ['NATIVE_RUN'],'corpus_run':os.environ['CORPUS_RUN'],
+                   'diagnostic_mac_only':True,'aggregate_performed':False,'release_qualified':False,
+                   'final_integrated_source_validated':False,'status':'pending source-only input guard',
+                   'limits':['Initial immutable producer40 Mac retry only; final integrated native/WASM producers and all consumers remain required.']}
+          try:
+              if receipt['native_run']!='40339796226' or receipt['corpus_run']!='40386968045':
+                  raise ValueError('Exact initial native producer and successful frozen50 corpus proof required')
+              receipt['status']='input guard passed; actual archive/corpus/model results remain separate'
+          except Exception as error:
+              receipt.update(status='rejected',error=str(error))
+              raise
+          finally:
+              (Path(os.environ['RUNNER_TEMP'])/'apple-only-scope.json').write_text(json.dumps(receipt,indent=2)+chr(10))
+          PYCODE
+      - name: Actual candidate archive and complete member checks
+        env:
+          PRODUCER_RUN: ${{ inputs.native_run }}
+        run: python tools/ci-heavy/successor_assets.py --run "$PRODUCER_RUN" --kind native --artifact macos-arm64 --output "$RUNNER_TEMP/apple-candidate"
+      - name: Pinned image decoder
+        run: python -m pip install Pillow==12.3.0
+      - name: Retained exact original image bytes from successful Linux proof
+        env:
+          CORPUS_RUN: ${{ inputs.corpus_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci-heavy/successor_posformer_corpus.py consume --run "$CORPUS_RUN" --corpus "$GITHUB_WORKSPACE/.ci/CrispMath/.dart_tool/inference/handwriting-corpus" --report "$RUNNER_TEMP/apple-corpus-receipt.json"
+      - name: Published model
+        working-directory: .ci/CrispMath
+        run: |
+          curl --fail --location --retry 3 https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/230657859144cc43a88605a4e737b47929181d4c/posformer-crohme-q8_0.gguf --output posformer-q8.gguf
+          echo '450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4  posformer-q8.gguf' | shasum -a 256 --check
+      - name: Actual released Apple library versus candidate unset, literal1 and legacy0
+        run: python tools/ci-heavy/successor_posformer.py --candidate "$RUNNER_TEMP/apple-candidate/crispembed-macos-arm64" --app "$GITHUB_WORKSPACE/.ci/CrispMath" --output "$RUNNER_TEMP/apple-released"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-apple-only-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/apple-only-scope.json
+            ${{ runner.temp }}/apple-candidate/consumer.json
+            ${{ runner.temp }}/apple-corpus-receipt.json
+            ${{ runner.temp }}/apple-released/*.json
+            ${{ runner.temp }}/apple-released/*-logs/
+          retention-days: 90
