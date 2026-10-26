@@ -1,0 +1,54 @@
+# Full SciFact original-first audit contract
+
+The separately versioned [protocol](../tests/regression/ultrabert/scifact-protocol-v1.json)
+freezes5,183 corpus documents and all300 BEIR test queries, prompt/CLS/L2/512-token
+semantics, exact IDs, eight shards, and acceptance before outputs. The owned
+32-row retrieval smoke remains unchanged. This is a bounded representative
+SciFact task audit; publication, release, pairs and historical full-stage
+numerical qualification remain separate.
+
+Run the default `prepare` phase of
+[the hosted workflow](../.github/workflows/ultrabert-scifact.yml) first. It checks
+all author corpus IDs/title/abstract joins and all1,109 BEIR query IDs/texts,
+compares both author evidence IDs and cited document IDs to canonical test
+qrels, and retains any initial mapping difference. Canonical pinned BEIR qrels
+remain the frozen evaluation target even when author-derived relevance differs.
+Text/ID mismatch fails before model output. The author immutable S3 object,
+actual SHA256s, every raw dataset/notice member, all prepared inputs, gold,
+lengths and exact clipped IDs are frozen before loading weights or vectors.
+[Applicable attribution/terms](ultrabert-scifact-notices.md) are retained with
+remote copies, including the BEIR CC BY-SA declaration and upstream terms.
+
+The original-only preflight uses the actual pinned SentenceTransformer6.0.1
+wrapper, custom model source, CPU/F32/eager and raw CLS plus actual wrapper L2.
+It tokenizes all rows and times a deterministic length panel, checks observer
+neutrality, and estimates the worst original shard with a declared safety
+factor. This phase does not authorize the full panel. Review its actual source,
+dataset freeze, mapping differences, length distribution, timings and receipt
+SHA256 first. The full `panel` phase requires that explicit preparation run and
+reviewed receipt hash, rejects changed source/protocol/input bytes, and executes
+all eight original shards before freezing their exact vector artifacts. Only
+then may the eight native shards start. Jobs are hosted, CPU-thread-bounded,
+limited to two concurrent shards and240 minutes each; no speed claim is made.
+
+Native text execution keeps the existing experimental architecture gate and adds
+`CRISPEMBED_ULTRABERT_TRUNCATE=1` for single-text right truncation at512 tokens,
+including attended BOS0 and any explicit query prefix. Unset/literal0 retain
+overflow rejection. Byte/reserved-surface exclusions and failure recovery stay
+in force. The hosted metadata-only tokenizer control checks unset/0, recovery,
+BOS/prefix/exact511 text-token retention, repetition and exclusions. All5,483
+actual task rows must match original IDs/masks; none may be dropped. Public pair
+inputs remain excluded.
+
+The scorer preserves raw/normalized vector max0.002 and cosine0.99999, requires
+NDCG@10, MRR@10 and Recall@100 degradation no greater than0.001, and at least99%
+top1 agreement. It retains all misses, relevant ranks, top100 scores/margins,
+all vector errors and full float64 cosine score matrices remotely. Every
+numerical/quality failure returns nonzero and stays in its actual report;
+positive CLS quality cannot waive183 F32/1,294 F16 stage failures or strict
+reference-replay failures. No default change or model publication follows.
+
+Only source and lightweight stdlib controls have run when this contract is
+introduced. Actual dataset/preflight, all16 shards and independent artifact
+review remain pending. Retain report and raw artifacts for90 days, then preserve
+verified ZIP/member bytes remotely before the returned service expiry.

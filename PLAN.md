@@ -162,6 +162,11 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
 
 ## Text encoders and typed decisions
 
+- [ ] **Full SciFact original-first task audit:** execute the hosted `prepare` phase of
+  [the versioned contract](docs/ultrabert-scifact.md); independently review exact
+  author/BEIR mapping, data/input/gold freeze, all lengths and original-only timing
+  before the8-original→freeze→8-native panel. The explicit right-truncation gate
+  stays default-off; fixed vector/ranking budgets, all rows and old failures remain.
 - [ ] **UltraBERT native port:** follow [U1–U4](docs/next-agent-handoff.md) and
   [the architecture contract](docs/ultrabert.md). Original reference/conversions
   and8-row native tokenizer/template parity pass; the test-only native graph

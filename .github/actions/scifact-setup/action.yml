@@ -1,0 +1,39 @@
+name: Pinned hosted SciFact environment
+description: Source controls and pinned CPU dependencies for the bounded hosted audit
+inputs:
+  model:
+    description: Install original wrapper dependencies
+    default: 'true'
+  build:
+    description: Compile native library and tokenizer control on hosted runner
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Source and model-free controls before data/model access
+      shell: bash
+      run: |
+        mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/hf"
+        echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+        echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch" >> "$GITHUB_ENV"
+        echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
+        echo "AUDIT_BIN_DIR=$RUNNER_TEMP/build" >> "$GITHUB_ENV"
+        python tests/test_ultrabert_scifact.py -v
+        python tools/ci-heavy/ultrabert_scifact.py --phase preflight
+    - name: Pinned original and dataset environment
+      if: inputs.model == 'true'
+      shell: bash
+      run: |
+        python -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
+        python -m pip install transformers==5.16.1 sentence-transformers==6.0.1 numpy==2.2.6 gguf==0.19.0 huggingface-hub==1.33.0 pillow==12.1.0 pyarrow==21.0.0
+        python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
+    - name: Portable hosted native build
+      if: inputs.build == 'true'
+      shell: bash
+      run: |
+        cmake -S . -B "$RUNNER_TEMP/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DCRISPEMBED_BUILD_SHARED=ON
+        python scripts/check-cpu-baseline.py "$RUNNER_TEMP/build"
+        cmake --build "$RUNNER_TEMP/build" --target crispembed-shared test-ultrabert-truncation -j2

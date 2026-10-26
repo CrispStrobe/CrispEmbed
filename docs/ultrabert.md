@@ -279,8 +279,10 @@ Flutter39943915528 jobs. It adds a default-off CPU/F32 backend to normal
 alias, artifact publication, release or default-model change is included.
 The backend validates the pinned architecture/source, full218-weight F32 schema,
 per-layer schedules and tokenizer contract before allocating the weight backend.
-Native context is512 tokens including attended BOS; overflow is rejected rather
-than truncated. F16/quantized, GPU, Matryoshka, inputs containing the literal `<|` prefix
+Native context is512 tokens including attended BOS; overflow is rejected by default.
+The separate [full SciFact experiment](ultrabert-scifact.md) introduces explicit
+`CRISPEMBED_ULTRABERT_TRUNCATE=1` single-text right truncation; unset/literal0
+retain rejection. Its hosted task qualification remains pending. F16/quantized, GPU, Matryoshka, inputs containing the literal `<|` prefix
 and public pair embedding remain outside this bounded profile.
 
 Ordinary public dense encoding is L2-normalized, as required by the shared ABI.
