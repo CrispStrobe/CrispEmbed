@@ -7,6 +7,7 @@ import importlib.util
 import json
 from pathlib import Path
 import stat
+import struct
 import sys
 import tempfile
 import unittest
@@ -134,6 +135,26 @@ class NativeDriverTest(unittest.TestCase):
     def test_no_framework_or_model_dependency(self):
         self.assertNotIn("torch", sys.modules)
         self.assertNotIn("numpy", sys.modules)
+
+    def test_f16_negative_has_valid_scalar_payload_and_following_offset(self):
+        tensors = {"before": ((2,), struct.pack("<2f", 1, 2)),
+                   "noise_strength": ((1,), struct.pack("<f", 0.125)),
+                   "after": ((2,), struct.pack("<2f", 3, 4))}
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "f16.gguf"
+            native.write_f32_gguf(path, [(key, shape, data) for key, (shape, data) in tensors.items()], {})
+            original = path.read_bytes()
+            native.retag_scalar_f16(path, tensors, "noise_strength")
+            actual = path.read_bytes()
+            self.assertEqual(len(actual), len(original))
+            needle = struct.pack("<Q", len("noise_strength")) + b"noise_strength" + struct.pack("<IQ", 1, 1)
+            start = actual.index(needle) + len(needle)
+            self.assertEqual(struct.unpack_from("<IQ", actual, start), (1, 32))
+            after = struct.pack("<Q", len("after")) + b"after" + struct.pack("<IQ", 1, 2)
+            self.assertEqual(struct.unpack_from("<IQ", actual, actual.index(after) + len(after)), (0, 64))
+            data_start = len(actual) - 96
+            self.assertEqual(struct.unpack_from("<e", actual, data_start + 32)[0], 0.125)
+            self.assertEqual(actual[data_start + 64:], original[data_start + 64:])
 
 
 if __name__ == "__main__":

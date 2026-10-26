@@ -15,6 +15,7 @@ import platform
 import re
 import shutil
 import stat
+import struct
 import subprocess
 import sys
 import time
@@ -492,6 +493,31 @@ def build(scratch, output, report):
     return binary
 
 
+def retag_scalar_f16(path, tensors, name):
+    """Produce valid F16 scalar data; its 32-byte slot/next offsets stay exact."""
+    shape, original = tensors[name]
+    if shape != (1,) or len(original) != 4:
+        raise ValueError("negative F16 control requires a one-element tensor")
+    payload = bytearray(Path(path).read_bytes())
+    needle = struct.pack("<Q", len(name)) + name.encode() + struct.pack("<IQ", 1, 1)
+    if payload.count(needle) != 1:
+        raise ValueError("cannot uniquely locate negative dtype scalar info")
+    offset = payload.index(needle) + len(needle)
+    if payload[offset:offset + 4] != b"\0" * 4:
+        raise ValueError("negative dtype source is not F32")
+    payload[offset:offset + 4] = struct.pack("<I", 1)
+    data_start = len(payload) - sum((len(data) + 31) & ~31 for _, data in tensors.values())
+    tensor_offset = 0
+    for key, (_, data) in tensors.items():
+        if key == name:
+            break
+        tensor_offset += (len(data) + 31) & ~31
+    start = data_start + tensor_offset
+    value = struct.unpack("<f", original)[0]
+    payload[start:start + 32] = struct.pack("<e", value) + b"\0" * 30
+    Path(path).write_bytes(payload)
+
+
 def negative_models(binary, metadata, tensors, args, scratch, output, report):
     models = scratch / "negative-models"
     models.mkdir()
@@ -510,17 +536,7 @@ def negative_models(binary, metadata, tensors, args, scratch, output, report):
         path = models / (label + ".gguf")
         write_f32_gguf(path, [(name, shape, payload) for name, (shape, payload) in data.items()], meta)
         if label == "f16_state":
-            import struct
-            payload = bytearray(path.read_bytes())
-            shape = data[name][0]
-            needle = struct.pack("<Q", len(name)) + name.encode() + struct.pack("<I", len(shape)) + struct.pack("<4Q", *reversed(shape))
-            if payload.count(needle) != 1:
-                raise ValueError("cannot uniquely locate negative dtype tensor info")
-            offset = payload.index(needle) + len(needle)
-            if payload[offset:offset + 4] != b"\0" * 4:
-                raise ValueError("negative dtype source is not F32")
-            payload[offset:offset + 4] = struct.pack("<I", 1)
-            path.write_bytes(payload)
+            retag_scalar_f16(path, data, "synthesis.b8.conv1.noise_strength")
         control = {"id": label, "sha256": sha256(path), "rejected": None}
         controls.append(control)
         try:
@@ -530,7 +546,19 @@ def negative_models(binary, metadata, tensors, args, scratch, output, report):
             raise
         if "MIGAN_REJECT {\"rejected\":true}" not in log:
             raise ValueError("malformed model accepted: " + label)
+        reason = {"wrong_architecture": "MI-GAN GGUF source/checkpoint/F32/fixed-256 metadata differs",
+                  "wrong_resolution": "MI-GAN GGUF source/checkpoint/F32/fixed-256 metadata differs",
+                  "wrong_checkpoint": "MI-GAN GGUF source/checkpoint/F32/fixed-256 metadata differs",
+                  "missing_noise": "MI-GAN requires exactly 154 original state tensors",
+                  "extra_probe": "MI-GAN requires exactly 154 original state tensors",
+                  "wrong_shape": "MI-GAN state shape differs: encoder.b256.fromrgb.weight",
+                  "nonfinite": "MI-GAN nonfinite checkpoint state: encoder.b256.fromrgb.weight",
+                  "f16_state": "MI-GAN missing or non-F32 state: synthesis.b8.conv1.noise_strength"}[label]
+        if reason not in log:
+            shutil.copy2(path, output / ("failed-negative-" + label + ".gguf"))
+            raise ValueError("negative model rejected at an unexpected guard: " + label)
         control["rejected"] = True
+        control["guard_message"] = reason
         path.unlink()  # Reproducible task-owned negative copy; original is intact.
 
 
