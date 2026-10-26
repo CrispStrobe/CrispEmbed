@@ -561,3 +561,26 @@ default engines and the three experimental gates. Acceptance requires actual
 selected-library identity, empty-cache model hash resolution, output/confidence,
 cap/custom-prompt rejection and fallback-stage behavior. Record the consumer
 source/artifact proof separately; do not claim it from vendor component parity.
+
+### Immutable archive blockers after the first actual consumer batch
+
+- [ ] Independently review exact-byte Linux image proof40376735641 atb7983104.
+  Require all50 original PNG/manifest identities before preserved images can feed
+  the unchanged Mac released/candidate50 probe. Do not replace frozen PNG hashes;
+  source terms, renderer identity and decoded RGB proof remain explicit.
+- [ ] Review source-frozen WASM trace40379523009 atf8bac049. It must reproduce
+  initial40354251257 native/browser outputs and observer neutrality before eight
+  full encoder stages, actual tensor types and same-input quantization blocks
+  support attribution. Keep the initial0.00837269/0.99864984 failure, fixed gates
+  and both pre-execution cancellations. A source rounding difference is not yet
+  an established full-network cause; do not infer a production fix from it.
+- [ ] Integrate only an evidenced correction behind the shared value-parsed
+  experimental gate, keep the working legacy alternative and unchanged outputs/
+  references, then execute paired actual native/browser checks before promotion.
+  Windows UTF-8 audit repair still needs actual hosted execution.
+- [ ] After reviewed runtime/build changes are integrated, build fresh seven CPU/
+  mobile archives and both WASM bundles at one final immutable source; complete
+  all desktop/C/Python/CLI/Rust/Dart/browser/Apple/mobile-cross-link consumers and
+  independent aggregation. Pass the reviewed corpus proof run via metadata
+  candidate_run_id. Keep device execution, broad model quality, tag publication
+  and application upgrade as separate gates; the app remains on0.17.12.

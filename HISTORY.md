@@ -15687,3 +15687,9 @@ matches the original blueprint without changing production logging or inputs.
 Seven small controls and source/JS/workflow checks pass. No executed numerical
 failure is claimed from either queued cancellation; the unchanged initial
 browser parity failure remains the model-backed negative evidence.
+
+The corrected source-reviewed trace is
+[40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
+at `f8bac049a7c143773b330cfc4c217b1f0a47ef56`, retained on
+`audit/successor-wasm-trace-dispatch-v2-20261026`. Hosted results are pending;
+source controls alone establish no output parity or production correction.
