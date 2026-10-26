@@ -24,12 +24,20 @@ class AppleOnlyControls(unittest.TestCase):
   actual=job(WORKFLOW.read_text(),'apple-only')
   self.assertEqual(re.findall(r'^  ([\w-]+):$',WORKFLOW.read_text().split('jobs:\n',1)[1],re.M),['apple-only'])
   actual=actual.replace('  apple-only:\n','  apple-released:\n',1)
+  checkout='      - uses: actions/checkout@v4\n        with:\n          fetch-depth: 0\n'
+  self.assertEqual(actual.count(checkout),1)
+  actual=actual.replace(checkout,'      - uses: actions/checkout@v4\n',1)
   actual=actual.replace('    runs-on: macos-15\n','    needs: producer-identity\n    runs-on: macos-15\n',1)
   start=actual.index('      - name: Lightweight Mac-only scope controls\n');end=actual.index('      - name: Actual candidate archive and complete member checks\n',start)
   actual=actual[:start]+actual[end:]
   actual=actual.replace('name: successor-apple-only-${{ github.run_id }}','name: successor-apple-released-${{ github.run_id }}',1)
   actual=actual.replace('            ${{ runner.temp }}/apple-only-scope.json\n','',1)
   self.assertEqual(actual,original)
+ def test_full_history_precedes_baseline_dependent_source_controls(self):
+  text=job(WORKFLOW.read_text(),'apple-only')
+  steps=text.split('    steps:\n',1)[1]
+  self.assertTrue(steps.startswith('      - uses: actions/checkout@v4\n        with:\n          fetch-depth: 0\n'))
+  self.assertLess(steps.index('fetch-depth: 0'),steps.index('python -B tests/test_successor_apple_only.py -v'))
  def test_metadata_only_adds_choice_and_scoped_forwarder_with_ten_inputs(self):
   path='.github/workflows/ovisocr2-metadata.yml'
   before=subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT,text=True)
