@@ -106,7 +106,9 @@ It runs two-thread CPU F32 on hosted CI only, with a 60-minute bound. The origin
 remote Python code is executed only after every pinned source and payload hash
 has passed, and the four relevant Sentence Transformers source hashes are
 checked against the pinned upstream commit. Torch/Transformers/NumPy versions
-and full installed package inventory are retained. Start with 1.5M; review the
+and full installed package inventory are retained. The existing metadata dispatcher registers phase `moedern-original-1p5m`,
+which calls this workflow with the smallest variant and conversion enabled.
+Start with 1.5M; review the
 actual original before scheduling larger configurations.
 
 The [owned panel](../tests/fixtures/moedern-colbert/panel-v1.json) freezes ten
