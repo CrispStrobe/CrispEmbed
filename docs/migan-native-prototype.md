@@ -186,3 +186,19 @@ remain with original artifacts. No SH-GAN or ONNX smoothing source is copied.
 This prototype changes no runtime release, application pin, model alias or
 default. F16/quantization, other backends, real subtitle/scene quality and video
 remain separate protocols.
+
+
+## Reviewed fixed256 result
+
+[Actual40344396533](../tests/results/migan/native-parity.json) at2526fcac passes
+all494 unchanged float comparisons, eight image gates and all eight malformed
+model controls. The tiny allocator regression passes, both full observers are
+bit-neutral, and all eight ordinary final SHAs equal the retained first run.
+Worst intermediate max absolute error is1.77096e-5; minimum row cosine is
+0.99999998399. Worst final raw error remains1.40667e-5; known RGB errors are0,
+fill differences at most1 and worst MAE7.12077e-5. Root review verifies the
+actual46-member small ZIP,17 source hashes, command logs and decoded PNG metrics.
+Raw arrays/models remain remotely retained until24 January2027; their actual
+transport and member identities are in the receipt. This bounded CPU/F32
+prototype is positive; representative quality and production qualification
+flags remain false. No old rejection, default or numerical budget changes.

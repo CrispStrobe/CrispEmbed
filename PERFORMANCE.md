@@ -6747,3 +6747,16 @@ is about11.1617s versus0.5691s projection compute; eight cached steps materializ
 Prefill materializes3007578112 bytes and vision394788864. Counters are nested;
 source/projection/phase levels must not be summed as independent totals.
 No document, Apple/GPU, throughput, paired cross-host or maximum-input claim.
+
+## MI-GAN fixed256 CPU/F32 prototype —26 October2026
+
+[Corrected40344396533](tests/results/migan/native-parity.json), portable CPU,
+AMD EPYC9V74 hosted four logical CPUs/two inference threads, passes494 original
+float comparisons/eight authored image fixtures. Intermediate max1.77096e-5,
+minimum row cosine0.99999998399; worst final max1.40667e-5. Known pixels exact;
+filled RGB max1, worst MAE7.12077e-5 and minimum nonexact PSNR89.6055dB.
+Recorded ordinary generator time ranges1.03036–1.04097s across these fixtures.
+Observed full-case processes take3.93–4.25s with peak RSS2,264,284KiB; this
+includes ordinary plus retained-observer graphs/reference comparison. These are
+diagnostic measurements, not a paired speedup or a production memory budget.
+The original uses four threads; no cross-backend/representative/video claim.

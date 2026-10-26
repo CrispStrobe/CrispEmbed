@@ -15683,3 +15683,26 @@ bundle/browser/native consumers remain separate pending checks. Producer pairing
 and exact production/build/binding objects protect audit-only helper updates;
 actual producer and consumer sources are recorded separately. No release tag,
 model qualification or application0.17.12 pin changes.
+
+## 26 October 2026 — MI-GAN fixed256 original/native prototype passes
+
+[Corrected native40344396533](tests/results/migan/native-parity.json) at2526fcac
+passes all494 comparisons (two238-stage captures plus six3-stage final captures)
+and all8 image gates against unchanged original40330674649. The tiny old-versus-
+fixed allocator test passes; both full observers preserve ordinary final bits,
+and all8 ordinary final SHAs match the initial rejected run. The256 stale fields
+from40336246545 remain retained; the repair changes test-only owner retention,
+without changing inference arithmetic, weights, original arrays or budgets.
+
+Worst intermediate max1.77096e-5 occurs at edge-touch synthesis.b256.conv1.conv1,
+reference max11.7464/RMS0.732548. Minimum row cosine0.99999998399 occurs at the
+small-magnitude subtitle32×32 toRGB output. Worst final raw max1.40667e-5;
+known RGB errors0, fill max1/worst MAE7.12077e-5/minimum nonexact PSNR89.6055dB.
+All8 malformed models reject. Ordinary/test archive symbol separation passes.
+Independent review verifies17 source hashes, actual1,038,072-byte ZIP and all46
+members/log hashes; eight decoded image metrics are remeasured from original
+and native PNGs. Hosted NumPy independently recomputes all494 raw comparisons;
+large raw/model payloads remain remote. Both new artifacts expire24 January2027.
+The bounded original/reference/CPU prototype lane is positive. Public APIs,
+registry/model publication, real subtitle/perceptual quality and video remain
+separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.
