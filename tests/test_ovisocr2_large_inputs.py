@@ -44,7 +44,19 @@ class Controls(unittest.TestCase):
             with mock.patch.object(driver.audit,'sha',side_effect=modified):
                 with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
     def test_historical_driver_rejects_new_cache_runtime(self):
-        with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
+        # Reach the decoder-arithmetic guard using the historical wrapper;
+        # unrelated current wrapper changes must not mask this specific check.
+        with self.historical_source():
+            original=driver.audit.sha.side_effect
+            def cached_decoder(path):
+                return '0'*64 if str(path).endswith('src/qwen35_decoder.cpp') else original(path)
+            with mock.patch.object(driver.audit,'sha',side_effect=cached_decoder):
+                with self.assertRaisesRegex(ValueError,'arithmetic'):driver.source_contract()
+    def test_historical_driver_rejects_new_cache_header(self):
+        with self.historical_source():
+            sources=driver.SOURCES+('src/qwen35_weight_cache.h',)
+            with mock.patch.object(driver,'SOURCES',sources):
+                with self.assertRaisesRegex(ValueError,'new native source'):driver.source_contract()
     def test_unreviewed_public_wrapper_cannot_pass(self):
         original=driver.audit.sha
         def modified(path):return '0'*64 if str(path).endswith('src/crispembed.cpp') else original(path)
