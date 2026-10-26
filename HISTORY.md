@@ -15590,3 +15590,32 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 `9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
+
+
+## 26 October 2026 — completed operator/reference evidence before remaining panels
+
+[Norm isolation40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at91292cb0 reproduces all12 original anchors exactly. Actual original RMSNorm
+on the same native input differs by at most3.05176e-5; applying it to native
+hidden states reproduces the composed failure. This supports upstream error
+amplification, not a local normalization fix or relaxed budget. The separate
+[position operator40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf matches all five tested grids' coordinates/indices/weights/position
+vectors exactly. Unset/literal0 retain ordinary position/patch bytes; native
+patch error remains3.81470e-6. Composed and first-F16 replays remain pending.
+
+[MI-GAN original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 completes eight deterministic256fixtures, two neutral238-stage
+captures and lossless154-F32-tensor conversion. First observed checkpoint SHA
+is8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f;
+converted25,185,504-byte GGUF isb8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b.
+The reviewed receipt is retained on candidate2849cb78. No native, perceptual,
+video, API or publication qualification follows from that reference result.
+
+The successor candidate40a82158 prepares immutable archive/member manifests
+and compiled/package consumers. Independent source review fixes doubled WASM
+extraction, Android's omitted shared ggml dependencies and iOS's unmerged static
+dependencies. Eight small archive/layout controls pass; actual compiled consumers
+are pending. Candidate development manifests advance to0.17.14; no tag exists,
+main and the app retain their previous versions until separate integration.
+All source preparation and queued workflows remain explicitly unqualified.
