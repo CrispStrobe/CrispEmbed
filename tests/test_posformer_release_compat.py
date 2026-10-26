@@ -5,9 +5,19 @@ import json
 import sys
 import unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
-from probe_posformer_release import compare_release_records
+from probe_posformer_release import compare_release_records, peak_rss_record
 
 class ReleasedControls(unittest.TestCase):
+    def test_native_getrusage_units_on_mac_and_linux(self):
+        # The same128MiB process has different native getrusage counters.
+        mac=peak_rss_record(128*1024*1024,'darwin')
+        linux=peak_rss_record(128*1024,'linux')
+        self.assertEqual(mac['peak_rss_mib'],128)
+        self.assertEqual(linux['peak_rss_mib'],128)
+        self.assertEqual(mac['peak_rss_raw_unit'],'bytes')
+        self.assertEqual(linux['peak_rss_raw_unit'],'KiB')
+        self.assertEqual(mac['peak_rss_raw'],linux['peak_rss_raw']*1024)
+
     def records(self):
         p=Path(__file__).parent/'results/posformer/released-compatibility.json'
         d=json.loads(p.read_text())

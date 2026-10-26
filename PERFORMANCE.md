@@ -6784,3 +6784,39 @@ Both use the same pinned model/text; no inference or timing run was repeated.
 The repaired aggregator now applies the unchanged0.002/0.99999 gate across all
 four desktops. This two-platform comparison does not close the original negative
 batch, qualify a model portfolio or establish final successor release compatibility.
+
+## Actual conditional WASM rounding A/B —26 October2026
+
+[40391544739](tests/results/packaging/wasm-rounding-ab-v1.json) completes all ten
+owned cases and unchanged0.002/0.99999 comparisons against frozen native1/2.
+The experimental gate remains off. Eight of ten literal1 finals are rejected;
+legacy, observer and context controls remain exact. These are numerical controls,
+not representative retrieval quality or speed qualification.
+
+| First-sentence stage | Candidate max absolute error |
+| --- | ---: |
+| Embedding norm | 0 |
+| Attention0 | 1.1920929e-7 |
+| Layer0 | 9.5367432e-7 |
+| Layer1/2 | 5.9604645e-7 |
+| Layer3 | 0.00291892886 |
+| Layer4 | 0.01997250877 |
+| Encoder output | 0.02850568295 |
+
+First-sentence final max0.00156465832/cos0.9999548495 still fails cosine.
+Worst final is mixed scripts max0.003993667895/cos0.9997236224. Native recomputed
+versus actual captured WASM pre-L2 mean max0.00808028661, norms5.16390589456 versus
+5.16081933513. Record this provenance distinction; no captured native mean claim.
+Layer3's first differing operator needs same-input attribution before a new fix.
+
+## Initial immutable Mac compatibility —26 October2026
+
+[Mac-only40399358753](tests/results/packaging/successor-mac-only.json), initial40
+archive versus released17.12: all50 default/1 IDs/text/EOS/confidences are exact;
+legacy0 is retained. The unchanged recognition score is7/50, not a quality gain.
+An audit-tool unit bug labeled Darwin ru_maxrss/1024 as MiB; those historical
+producer fields are preserved. Correctly normalizing the underlying byte counter
+gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
+119.078125MiB literal1 and117.296875MiB legacy0. These include each full50-case
+process. No paired timing/memory improvement, portfolio, mobile-device, final
+integrated-source or successor-release qualification follows from this diagnostic.

@@ -231,8 +231,11 @@ failed member coverage before PNG comparison; its original NOTICE is now retaine
 Corrected [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
 at`f284b1f6` now passes all50 encoded PNG hashes/manifest/dimensions/notice;
 [the reviewed input proof](tests/results/packaging/posformer-corpus-proof.json)
-is positive. Actual Mac artifact/RGB verification and model compatibility remain
-pending; this input proof is not an inference result.
+is positive. [Mac-only40399358753](tests/results/packaging/successor-mac-only.json)
+now verifies actual artifacts/RGB and all50 released17.12/default/1 IDs, text,
+EOS and confidences exactly. Legacy0 and historical7/50 quality remain unchanged;
+this closes initial40 Mac compatibility, while final-source archives still need
+fresh full consumer qualification.
 The [actual WASM trace](tests/results/packaging/successor-wasm-source-trace.json)
 is independently reviewed: embedding norm exact, first captured attention0
 difference, same-input activation-rounding discrepancy and unchanged final failure.

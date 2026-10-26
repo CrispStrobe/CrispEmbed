@@ -1,0 +1,36 @@
+{
+  "schema": "crispembed-josev-original-initial-preflight-v1",
+  "outcome": "rejected-before-package-install-and-payload",
+  "qualification": false,
+  "bootstrap_source": "b6e74739",
+  "bootstrap_sha256": "9f3d77cfb41eda1a68ab287e0c01fb3e837d719a8a539e86e4377c92a4858ff3",
+  "worker_source": "89264a279cd589d622b60f5ca7d1605693cf52d8",
+  "producer_report_sha256": "e64d89b16cddb94df6a5a3b952731a2f60186d0881b7647151b48a2bb9a6124f",
+  "producer_preflight": {
+    "schema": "crispembed-josev2b-bootstrap-v1",
+    "conclusive": false,
+    "status": "rejected",
+    "retry_permitted": false,
+    "worker_source": "89264a279cd589d622b60f5ca7d1605693cf52d8",
+    "contract_sha256": "7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a",
+    "commands": [],
+    "model_payload_accessed": false,
+    "limits": "Original-only four owned text cases; no native or quality qualification.",
+    "bootstrap_sha256": "9f3d77cfb41eda1a68ab287e0c01fb3e837d719a8a539e86e4377c92a4858ff3",
+    "error": "ValueError: reviewed wheel/runtime profile requires Python3.11",
+    "files": {}
+  },
+  "review": {
+    "actual_original_inference": false,
+    "model_tokenizer_payload_access": false,
+    "framework_installation_started": false,
+    "GPU_hardware_checked": false,
+    "observed_python_minor": "3.13, identified by terminal runtime traceback path; full version not captured",
+    "cause": "Prepared profile requires Python3.11; actual service runtime is Python3.13",
+    "next": "Freeze explicitly corrected runtime/source before original capture; retain this rejection; unsupported GPU must still stop without retry",
+    "reference_outputs_exist": false,
+    "runtime_arithmetic_changed": false,
+    "remote_full_logs_retained": true,
+    "private_service_access_details_committed": false
+  }
+}

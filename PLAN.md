@@ -597,7 +597,6 @@ source/artifact proof separately; do not claim it from vendor component parity.
 
 ## Active four-lane closure — actual results and remaining gates
 
-<<<<<<< HEAD
 MI-GAN256 CPU/F32 prototype and the OvisOCR3 preservation copy are complete and
 merged through PR85/PR83. UltraBERT RoPE attribution is complete through PR84.
 Their original failures, qualified scopes and later product/quality tasks stay in
@@ -640,21 +639,18 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
   selected before model outputs. No gold/text normalization, row drops, public
   pair API or model publication follows. Keep strict183/1,294 numerical debts.
-- [ ] **Finish actual Mac compatibility after the completed input proof.**
-  [Corrected40386968045](tests/results/packaging/posformer-corpus-proof.json)
-  at`f284b1f67c1ae34082afb81a54301c6ab392c02a` passes all50 original
-  encoded PNG hashes, ordered IDs/dimensions, manifest and216-byte notice.
-  Both independent reviews verify the small receipt and six consumer-source
-  objects. Corpus artifact12686713308 stays remote through24 January2027.
-  [Mac-only40399358753](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40399358753)
-  at immutable`7d5611490fd6dfc3fb3349b361d52c3188ec8ed7` retries the existing
-  initial producer40 without repeating other platforms. It must verify all53
-  artifact files and decoded RGB before the unchanged released/candidate50 probe.
-  Use its retained branch for that diagnostic; final integrated-source Mac
-  compatibility still requires fresh archives and the full final consumers. Initial
-  40376735641 and40354251257 stay negative; no image hash, gold, score or
-  seven-of-fifty quality result changed. Historical renderer ABI alignment
-  does not attribute the earlier Mac mismatch to a particular environment cause.
+- [ ] **Repeat verified Mac compatibility on final integrated archives.**
+  [Mac-only40399358753](tests/results/packaging/successor-mac-only.json)
+  at immutable7d561149 is complete and positive for initial40 archives:
+  all50 released17.12/default/1 IDs, text, EOS and confidences are exact;
+  all200 logs verify and legacy0 retains50 original-zero outputs. Corpus
+  artifact/RGB checks and23 runtime-source objects pass. The historical7/50
+  recognition quality is unchanged. This diagnostic completion belongs in
+  HISTORY; no repeat is needed against the same40 archive. The final changed
+  runtime still needs fresh seven-native/two-WASM producers and all consumers,
+  including the same Mac50 panel. Initial failures40376735641/40354251257 stay
+  retained. Audit-only RSS unit normalization is repaired separately without
+  changing original producer JSON, image/gold/score or comparison budgets.
 - [ ] **Attribute remaining WASM layer3 divergence and correct it behind a gate.**
   [Actual40391544739](tests/results/packaging/wasm-rounding-ab-v1.json)
   at580e3ae3 passes all five operator controls and completes every ten-case
@@ -693,37 +689,6 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
 Queued jobs and successful diagnostic execution are not model qualification.
 Retain every failed numerical/quality screen; never replace gold, widen budgets
 or regenerate original anchors to turn a panel green.
-=======
-- [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
-  gated source/tooling and run final/merged-source checks. Preserve initial
-  queued cancellations and all historical numerical/quantization rejections.
-- [ ] Integrate the reviewed MI-GAN bounded prototype above after platform checks.
-  Its original/native panel and observer attribution are complete in HISTORY;
-  full issue71 product surfaces and representative/video quality remain separate.
-- [ ] Preserve later January archives before expiry; the urgent November Ovis3
-  copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
-  recorded source identities and renewal dates when reviewed.
-- [ ] Review the SciFact original-only preparation on
-  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
-  explicitly dispatch its
-  eight-original→freeze→eight-native panel with the reviewed preparation run and
-  receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
-  gates and predeclared ranking tolerances stay unchanged. Preserve author gold
-  mapping differences and all applicable dataset notices. Public pairs and
-  model publication remain separate from this representative retrieval audit.
-- [ ] Finish successor actual archive consumers from
-  `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
-  unpublished WASM40339800364, then packaged consumers. WASM build completion
-  is recorded in HISTORY; executable browser consumers still require the native
-  producer. Audit helpers may advance only with exact production/build/binding
-  Git objects, producer pairing and generator provenance retained.
-  This candidate advances development manifests to0.17.14 for mobile dependency
-  packaging corrections; main remains0.17.13 until reviewed integration. Require
-  actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
-  cross-link evidence. Device execution and optional GPU assets remain explicit
-  limits. Repeat qualification on the final integrated source when runtime
-  paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
-
 
 ## Newly requested model families — original-first support
 
@@ -733,23 +698,38 @@ and [Josev-2B](https://huggingface.co/mayflowergmbh/Josev-2B).
 These extend the roadmap while the active Ovis/SciFact/immutable-consumer audits
 continue on their frozen branches. Do not alter those producer sources.
 
-- [ ] SauerkrautLM-MoEdernColBERT: audit all three base/GGUF revisions and
-  Apache-2.0 license files; trace the published custom Python model and author C
-  engine. Start1.5M, then27M/115M. Freeze exact input IDs, hash/expert routing,
-  every earliest differing stage, per-token vectors and real MaxSim/rank outputs.
-  Original Python and author-GGUF fidelity are distinct from quantization loss.
-  Reuse existing ModernBERT/ColBERT components only after matching the blueprint;
-  preserve special-token masks, padding/normalization and existing models.
-  Add pinned aliases/all bindings only after actual model/API/negative checks.
-- [ ] Josev-2B: inspect checkpoint6f0a31c8ed683aba79097eb3f48df2c9ab560afd,
-  its Qwen3.5-2B base provenance and custom joint-schema/head/calibration code.
-  Establish the real typed-decision outputs and input/format limits before
-  implementation. Original-first hosted/GPU probes precede native comparisons;
-  no multi-GB weights, framework installs, compilation or inference on the shared
-  host. Public API/model publication remain conditional on actual parity and
-  decision-quality evidence.
+- [ ] SauerkrautLM-MoEdernColBERT: review actual smallest original
+  [40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
+  at790f7b1d0372c12d1807dfb2fc7fc3af20a3c445. All six original/GGUF source,
+  weight and Apache2 license identities are frozen in
+  [the contract](docs/moedern-colbert-source-contract.json); no model result
+  exists yet. Initial40411490747 was cancelled while queued after review found
+  ST directly calls backbone.forward; the corrected neutral observer has nine
+  source controls. Review actual tokenizer descriptor/IDs, three separate masks,
+  all modules/SDPA, routing,128-vectors and MaxSim before native outputs. Strict
+  F32 conversion32/32/94 tensors follows completed original only. Then add gated
+  1.5M token-ID/role graph and same-input crispembed-diff, author-GGUF graph/payload
+  audit, exact native tokenizer sidecar support, C/Python/CLI/Rust/Dart/HTTP and
+  negative-input controls. Repeat27M then115M, including six dilated convolution
+  blocks for115M; quantify retrieval quality and quantization before aliases.
+  Author GGUF lacks tokenizer metadata; a pinned sidecar or byte-preserving
+  metadata repack is required. No generic ModernBERT alias or Q4_K promise.
+- [ ] Josev-2B: original sources/license/base/Clef head and the distinct official
+  PyTorch versus calibrated author-GGUF routes are documented in
+  [the model audit](docs/josev2b.md). First GPU bootstrap atb6e74739 rejected
+  Python3.11 on actual Python3.13 before model/tokenizer access; preserve that
+  inconclusive preflight and declare corrected runtime/source before another
+  capture. GPU capability/driver/memory/scratch checks remain mandatory; no
+  unsupported-hardware retry loop. Review the four original text cases≤512,
+  actual IDs/spans/masks, all24 layers and512-wide joint-head intermediates,
+  logits/probabilities/typed answers before native outputs. Port an explicit
+  Qwen3.5-2B2048/6144 hidden-only prefill profile, preserve the Ovis1024/3584
+  guard, then joint head with exact original serialization/order/calibration.
+  Add public surfaces/hash-pinned aliases only after strict stage/logit/answer
+  and negative-input checks. Representative licensed decision quality, media,
+  long context, batching, BF16 and quantization remain separate original-first
+  gates. No large weight/framework/build/inference work on the shared host.
 
-Model-card license tags are preliminary provenance, not a completed code/base
-license audit or model qualification. Keep new runtime paths value-parsed and
+Actual permissive source/license bytes are inspected and pinned; this source
+audit is distinct from model execution and qualification. Keep new runtime paths value-parsed and
 experimental until their own original/intermediate/final-output gates pass.
->>>>>>> origin/main

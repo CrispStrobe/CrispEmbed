@@ -16220,3 +16220,36 @@ native versus captured WASM provenance retained. This is a completed numerical
 rejection, not a preflight failure. Source/fork/weights/panel/gold stay frozen;
 raw arrays remain remote. Default stays off. Next is same-input attribution of
 layer3's first differing operator, not a tolerance change or final-asset promotion.
+
+## 26 October 2026 — initial immutable Mac compatibility complete
+
+[Mac-only40399358753](tests/results/packaging/successor-mac-only.json) at7d561149
+passes actual initial40 archive/member/source verification, retained Linux-proof
+corpus hashes and decoded RGB, then released17.12 versus candidate unset/1/0.
+All200 log hashes and logged token IDs verify. Released/default/1 each retain866
+IDs,50 EOS and exactly matching text/confidences/means. Legacy0 retains911 IDs,
+50 EOS and all50 historical original-zero outputs;38 cases differ from trained
+output. The existing7/50 recognition score does not improve. This closes the
+initial Mac diagnostic only; final changed-runtime archives/all consumers remain
+pending. Original Mac/input failures stay retained. Review also identifies an
+audit-only Darwin RSS labeling bug: ru_maxrss bytes were divided by1024 but labeled
+MiB. Corrected code preserves raw/unit and divides Darwin by1024²; five model-free
+controls pass. Historical producer fields remain unchanged with explicit derived
+normalization, and no memory/speed improvement claim follows.
+
+## 26 October 2026 — requested model original-reference preparations
+
+[MoEdernColBERT](docs/moedern-colbert.md) freezes all three original/author-GGUF
+revisions, Apache licenses, weight identities, distinct masks/tokenization/routing,
+128-vector and MaxSim blueprint. Hosted original/strict F32 converter are prepared;
+source790f7b1d corrects direct backbone.forward observation after queued40411490747
+was cancelled before any step. Nine source controls pass. Corrected40412164041
+is pending; no native/model qualification is claimed.
+
+[Josev](docs/josev2b.md) freezes checkpoint6f0a31c8, permissive base/Clef source
+provenance,24-layer Qwen3.5-2B and distinct512-wide joint head, official serialization
+and no-extra-temperature semantics. Ten source controls pass. First bounded GPU
+bootstrap atb6e74739/worker89264a27 stops on Python3.11 profile versus actual
+Python3.13 before any checkpoint/tokenizer access; there are no original outputs.
+Preserve this failed preflight and declare the corrected runtime before capture.
+Official PyTorch and calibrated author-GGUF references must stay separate.

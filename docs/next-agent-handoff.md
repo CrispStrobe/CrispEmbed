@@ -603,12 +603,13 @@ completed evidence. The remaining loop requires actual review of these lanes:
   at`f284b1f67c1ae34082afb81a54301c6ab392c02a` preserves that notice and
   Python3.11.17 renderer ABI. The [reviewed input proof](../tests/results/packaging/posformer-corpus-proof.json)
   now passes all50 original encoded PNG hashes/manifest/dimensions/notice.
-  Actual Mac artifact coverage and decoded RGB verification must precede the
-  unchanged released/candidate50 probe; input reproduction is not model parity.
-  The bounded [Mac-only retry40399358753](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40399358753)
-  uses retained source`7d5611490fd6dfc3fb3349b361d52c3188ec8ed7` and the
-  original40 archive. It repeats no other platform and cannot qualify the later
-  integrated runtime; use its exact branch, not changed main, for that diagnostic.
+  [Mac-only40399358753](../tests/results/packaging/successor-mac-only.json)
+  at7d561149 is complete: actual artifact/RGB checks and released17.12/default/1
+  all50 IDs/text/EOS/confidences exact. All200 logs and legacy0 outputs verify;
+  the7/50 recognition score is unchanged. Do not repeat this old40 diagnostic.
+  Final integrated runtime still requires fresh archives and full Mac consumers.
+  A Darwin RSS reporting-unit bug is repaired in the probe with raw units retained;
+  old producer JSON is preserved and no speed/memory improvement is claimed.
 - Conditional WASM rounding
   [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
   at`580e3ae3be3671ddce5e945b0725d0583ec34110` passes actual operators but its
@@ -655,3 +656,14 @@ Queued jobs are not evidence. Builds/inference/corpus/framework work stay hosted
 only small reports are needed for independent review. GitHub push/dispatch
 HTTP500 errors were observed during SciFact registration; retry exact commits,
 check remote refs and actual service run identities, and avoid duplicate panels.
+
+## Newly requested permissive models
+
+See [MoEdernColBERT](moedern-colbert.md) and [Josev](josev2b.md), their pinned
+contracts and PLAN for exact staged acceptance. Smallest MoEdern original
+40412164041 uses source790f7b1d; no native result yet. The corrected neutral
+observer handles ST's direct backbone.forward. Josev first GPU preflight atb6e74739
+rejected Python3.11 versus actual3.13 before payload access; preserve that attempt
+and freeze a corrected runtime before original capture. Keep public Python versus
+calibrated author-GGUF profiles distinct. Native/API/alias/retrieval/decision
+quality and quantization remain explicit follow-ups, with no local heavy work.
