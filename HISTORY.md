@@ -15620,3 +15620,10 @@ position and patch anchors reproduce exactly. Native patch error remains
 new source-order interpolation stays default-off, with composed frozen-reference
 A/B still required. The operator receipt preserves27 comparisons and exact
 source/artifact identities; it makes no decoded-quality or2048 promotion claim.
+
+Initial composed dispatch40334434703 was cancelled before its queued build
+started. Review strengthened the replay before any native execution: literal0
+now checks every retained ordinary vector SHA, context markers are required,
+and the baseline control succeeds only when its old numerical failure set is
+reproduced exactly. The six old failures stay explicit numerical failures;
+a positive baseline byte-control is separate from candidate qualification.

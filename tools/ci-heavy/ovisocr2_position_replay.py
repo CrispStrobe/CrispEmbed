@@ -97,8 +97,20 @@ def run(case,gate):
                 log=(out/(label+'.log')).read_text()
                 try:raw=old.raw_manifest(folder,reference,log,label)
                 except (ValueError,KeyError) as e:raw={'coverage_complete':False,'error':str(e)}
-                r['arms'][label]={'passed':passed and raw['coverage_complete'],'raw':raw}
-                if not r['arms'][label]['passed']:failures.append(label)
+                if label.endswith('-context') and 'OVIS_CONTEXT' not in log:passed=False
+                record={'passed':passed and raw['coverage_complete'],'raw':raw}
+                if gate==0 and not label.endswith('-context') and raw['coverage_complete']:
+                    def hashes(value):
+                        return {(row['stage'],row.get('variant','primary')):row['sha256'] for row in value['files']}
+                    before=hashes(p['arms'][label]['raw']);after=hashes(raw)
+                    record['retained_ordinary_vectors_bit_exact']=before==after
+                    record['retained_ordinary_vector_count']=len(before)
+                    record['retained_ordinary_mismatches']=[{'stage':key[0],'variant':key[1],
+                        'old_sha256':before.get(key),'new_sha256':after.get(key)}
+                        for key in sorted(set(before)|set(after)) if before.get(key)!=after.get(key)]
+                    if before!=after:record['passed']=False
+                r['arms'][label]=record
+                if not record['passed']:failures.append(label)
                 save()
             label=precision+'-owning-ocr'
             passed=command(label,[build/'test-ovisocr2-quality-run',scratch/filename,image,'32','2'],env)
@@ -111,9 +123,21 @@ def run(case,gate):
             if not passed or not exact:failures.append(label)
             save()
         if len(r['arms'])!=14:raise ValueError('Incomplete14-arm coverage')
-        r['failures']=failures;r['status']='completed composed replay' if not failures else 'rejected composed numerical/decoded replay'
-        save()
-        if failures:raise ValueError('Composed gates failed; negative evidence retained')
+        r['failures']=failures
+        if gate==0:
+            controls=(sorted(failures)==sorted(p['failures']) and len(r.get('owning_cases',{}))==2
+                and all(row['raw']['coverage_complete'] and (row.get('retained_ordinary_vectors_bit_exact') is True
+                    if not label.endswith('-context') else row['passed']) for label,row in r['arms'].items()))
+            r['baseline_control_passed']=controls
+            r['candidate_numerically_qualified']=False
+            r['status']='completed baseline byte control; historical numerical verdicts retained' if controls else 'rejected baseline control'
+            save()
+            if not controls:raise ValueError('Baseline control differs; all strict failures retained')
+        else:
+            r['candidate_numerically_qualified']=not failures
+            r['status']='completed composed candidate replay' if not failures else 'rejected composed numerical/decoded replay'
+            save()
+            if failures:raise ValueError('Composed candidate gates failed; negative evidence retained')
     except Exception as e:
         r['error']=str(e);save();raise
 
