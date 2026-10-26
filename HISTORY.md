@@ -15619,3 +15619,25 @@ dependencies. Eight small archive/layout controls pass; actual compiled consumer
 are pending. Candidate development manifests advance to0.17.14; no tag exists,
 main and the app retain their previous versions until separate integration.
 All source preparation and queued workflows remain explicitly unqualified.
+
+
+## 26 October 2026 — first MI-GAN native result and unpublished WASM bytes
+
+Native40336246545/2849cb78 compiles and completes all8 cases after exact original
+transport/member checks. Final raw max1.40667e-5, known-pixel errors0 and all8
+image gates pass. Both full captures preserve ordinary/observed final bits, but
+128 intermediate observations each are stale, retaining256 failures among494
+comparisons. The first stale input SHA equals a later valid convolution output;
+pinned gallocr frees its unretained view owner. Test-only correction2526fcac
+retains owner chains, adds a tiny old-versus-fixed allocation regression and
+requires all8 original ordinary-final SHAs. Full retry40344396533 remains pending;
+no operator, original target or numerical budget changes.
+
+Unpublished WASM40339800364/40a82158 completes at candidate development0.17.14.
+Its actual manifests bind both bundles and all9 file members: embed archive
+523,299B/SHA3f65d7cb and OCR archive1,280,866B/SHAe1571ac9. OCR module3,676,523B
+passes its existing4MiB cap. The small manifest is independently inspected;
+bundle/browser/native consumers remain separate pending checks. Producer pairing
+and exact production/build/binding objects protect audit-only helper updates;
+actual producer and consumer sources are recorded separately. No release tag,
+model qualification or application0.17.12 pin changes.
