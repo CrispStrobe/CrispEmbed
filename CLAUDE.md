@@ -143,9 +143,15 @@ three adapter controls pass; the consumer rejects native-source drift before
 build. Retain initial failures and raw strict flags. No runtime release, app
 upgrade or default flip follows from model publication. Development
 CPU-baseline PR76 is merged; successor release assets remain separate. The
-[issue71 feasibility audit](docs/inpainting-feasibility.md) is source-only:
-MI-GAN is the first bounded still-image experiment; LaMa checkpoint rights and
-FFT implementation remain unresolved. The fourth OvisOCR2
+[issue71 feasibility audit](docs/inpainting-feasibility.md) is complete.
+MI-GAN's bounded fixed256 CPU/F32 prototype is integrated throughPR85/`1b74b12a`:
+[corrected40344396533](tests/results/migan/native-parity.json) at`2526fcac`
+passes494 unchanged comparisons and all8 image gates against original40330674649.
+The initial256 stale observer fields remain preserved; the test-only owner
+retention repair leaves all8 ordinary final hashes unchanged. Public API/registry,
+representative subtitle/perceptual/video quality and publication remain separate;
+issue71's product scope stays open. LaMa checkpoint rights and FFT implementation
+remain unresolved. The fourth OvisOCR2
 [attention-F16/FFN-Q4 run40172527229](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)
 is rejected despite72 FFN-Q4/401 byte-exact tensors and passing first-linear
 probes: `prefill.decoder.layer.0` fails numerical gates and two realistic OCR
@@ -183,14 +189,57 @@ passes unchanged same-weight gates: all independent dequantization values and
 original/native anchors are bit exact; local errors stay below1.669e-6. Original
 Python with Q4 reproduces the0.032889 layer error, supporting precision loss at
 this boundary rather than a local operator mismatch. Keep every quality rejection
-and published F16 unchanged. Completed audits are in HISTORY;2048 numerical
-attribution is next, followed by the scoped permissive lanes in PLAN.
+and published F16 unchanged. Completed norm/position operators are in HISTORY;
+corrected composed [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)
+at`8bb9f074d1ca6fa2cb2be6a892fc2fd116202912` still needs full numerical review.
+Both eleven-case quality jobs pass all1,841 IDs/text/stops; gate1's maximum
+confidence difference is2.4796e-5. Initial40356657327's raw/public report path
+redaction failure remains retained; its comparison-only correction changes no
+arrays, model, gold or budget. The interpolation gate stays default-off.
 No interface result upgrades negative source quality. OvisOCR3's
 source completion failure blocks its model qualification, publication and alias;
 do not change its prompt, cap, gold or scorer to pass a gate.
 The permissive queue, encoder follow-ups and portfolio tasks remain scoped in
 PLAN and model documents. SAM work stays with
 its existing owner. The app remains pinned to immutable0.17.12.
+
+The bounded [UltraBERT RoPE audit40336758177](tests/results/ultrabert/rope-attribution.json)
+at`b689f871fffe33b741061269561fc2ebb276ff97` is complete:1,344 comparisons/
+336 bit controls pass, and source-table-fed native Q/K rotations are exact.
+Empty position0 cannot explain earliest pre-RoPE Q or strict replay drift;
+no production RoPE gate is justified. Historical183 F32/1,294 F16 failures,
+strict replay failures and original0.002/0.99999 budgets remain unchanged.
+
+Full canonical SciFact [40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
+at`e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902` is pending after independently
+reviewed [prepare40372423343](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40372423343).
+All5,483 actual wrapper ID/mask rows match before forward;460 documents truncate
+at512 tokens, none of300 queries truncate and no rows drop. Thirteen original
+preflight rows are hook-neutral;2,840.06 seconds is a conservative original
+shard projection, not measured full-panel runtime. Strict author-column v1 stays
+rejected; canonical v2 is a distinct protocol chosen before model outputs after
+exact legacy/Parquet equality and an author-difference journal. Keep all vector
+and ranking gates, original-first8→freeze→native8 barrier and public-pair exclusions.
+
+Initial asset consumer [40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
+at`49161f60`, producer`40a82158`, is negative: Windows header decoding failed
+after fresh CLI/model checks and before ABI calls (explicit UTF8/MSVC repair
+prepared); Apple PNG identity failed
+before library/model initialization; browser execution failed unchanged parity
+at0.00837269/cosine0.99864984. Linux image-only proof
+[40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
+at`b7983104c61eccb9514174aeac41691f1f5cb1ff` is pending; all50 original PNG
+hashes must match before retained inputs feed Mac. WASM stage attribution is
+being implemented; no numerical/default patch or budget waiver is justified.
+Final integrated source requires fresh seven native/two WASM archive producers
+and all consumers. No tag, model publication, app-pin update or overall loop
+closure follows from these preparations.
+
+[Ovis3 preservation40287253703](tests/results/qwen35-ocr/ovisocr3-vector-preservation.json)
+is complete and integrated: copy12635202371 retains all1,662 original payloads
+and expires24 January2027. The corrected MI-GAN artifacts and RoPE raw artifact
+also expire24 January2027; renew exact bytes remotely before expiry. Ovis3's
+negative source quality/publication flags and all other archive deadlines remain.
 
 This file is tracked public documentation even though an ignore pattern matches
 its name. Never append private environment/access details here. Optional private

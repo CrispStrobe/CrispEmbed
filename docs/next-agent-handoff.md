@@ -1,4 +1,4 @@
-# Executable handoff — updated 25 October 2026
+# Executable handoff — updated 26 October 2026
 
 Read this file, [PLAN](../PLAN.md), [the model contract](ultrabert.md),
 [contributing](contributing.md) and [the shared consumer handoff](current-state-and-next-steps.md).
@@ -34,9 +34,27 @@ remains conditional. The app still consumes immutable CrispEmbed0.17.12.
   tasks and permissive OCR queue remain in PLAN. PR67 platform/Flutter/WASM/
   contract/secret checks pass at `bc1d990504a7816bfec93277ba0096fc4efa7cd4`.
 
-## UltraBERT attribution — M1 evidence complete; F32 output qualification next
+- MI-GAN's bounded fixed256 CPU/F32 prototype is integrated through
+  [PR85](https://github.com/CrispStrobe/CrispEmbed/pull/85) at`1b74b12a`.
+  [Corrected40344396533](../tests/results/migan/native-parity.json) at
+  `2526fcac5ee76e8a476157291d8277781e6348e4` passes494 comparisons and all8
+  image gates against original40330674649/`9bd33154`. The initial256 stale
+  observer fields remain in [the rejected receipt](../tests/results/migan/initial-native-parity.json);
+  the repair retains test-only allocation owners and preserves all8 ordinary
+  final hashes. This completes the prototype, not issue71's product/API,
+  representative subtitle/perceptual/video or model-publication work.
+- [RoPE40336758177](../tests/results/ultrabert/rope-attribution.json) at
+  `b689f871fffe33b741061269561fc2ebb276ff97` completes the bounded operator
+  lane:1,344 comparisons/336 bit controls pass. No production RoPE gate follows.
+- [OvisOCR3 preservation40287253703](../tests/results/qwen35-ocr/ovisocr3-vector-preservation.json)
+  is integrated throughPR83: all1,662 original payloads survive verified remote
+  copy/readback. Copy12635202371 expires24 January2027; source-quality and
+  publication failures remain unchanged. MI-GAN's corrected artifacts and the
+  RoPE raw artifact also expire24 January2027; renew exact bytes before expiry.
 
-### U1 — Completed local audit; preservation and attribution next
+## UltraBERT attribution — completed operator evidence; F32 quality pending
+
+### U1 — Completed local and RoPE audits; remaining numerical debt
 
 Corrected [39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362)
 completed all14 native arms at `f6f84aba6ba22b27b9f15cfc08f1d182524062d2`.
@@ -55,12 +73,15 @@ Do not repeat it without a justified new experiment.
 
 The bounded M1 audit atf0dbe58d is complete and independently reviewed; see the
 [returned report](../tests/results/ultrabert/m1-validation.json). Do not repeat its
-threads/MKLDNN arms. Next isolate original projection/reduction reproducibility using fixed input
-arrays, checked loaded weights and backend/CPU/thread fingerprints. Compare
-original module outputs, F64 diagnostics and frozen anchors separately; backend
-alternatives must not silently become new full-model references. All strict
-replay modes and original0.99999/0.002 gates remain unchanged. Use existing
-`tools/` original-module capture and `crispembed-diff` stage definitions.
+threads/MKLDNN arms. The distinct [RoPE audit40336758177](../tests/results/ultrabert/rope-attribution.json)
+also completes: all336 current original table fields match the frozen tables,
+and all336 source-table-fed native Q/K rotations are bit-exact. Ordinary Q/K
+error stays below0.000161648. Empty position0 rotation is exact and cannot
+explain earliest empty pre-RoPE Q or strict empty-replay drift; composed
+nonempty causality is unmeasured. No production RoPE gate is justified.
+Further attribution needs a distinct hypothesis using preserved inputs/weights
+and actual backend fingerprints. Keep all strict replay modes and original
+0.99999/0.002 gates; never replace frozen full-model anchors with local targets.
 
 ### U2 — Attribute remaining numerical differences
 
@@ -132,14 +153,28 @@ raw vectors/logs remain remote in ultrabert-retrieval-39950831201 through
 21 January2027. Preserve the same bytes before expiry; use verified original_run
 reuse for justified native retries, never regenerate these original anchors.
 
-Next choose a separately licensed representative retrieval dataset and freeze
-revision, split, queries/corpus/gold, prompt/normalization and quality/ranking
-acceptance before new candidate outputs. Execute original SentenceTransformer
-first, then the gated native API on hosted resources, reporting misses, score
-matrices and numerical magnitudes separately. The owned smoke is not MTEB/BEIR
-reproduction. Longer contexts and GPU/latency/RSS need distinct resource/parity
-plans;512 remains the public bound. Further attribution requires a distinct
-hypothesis and existing original probes; do not repeat the four backend arms.
+The full canonical SciFact panel is executing as
+[40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
+at`e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`, after independently reviewed
+original-only [prepare40372423343](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40372423343).
+[The preparation receipt](https://github.com/CrispStrobe/CrispEmbed/blob/025b3424002bad099e9827e7b5b52c3f033d461e/tests/results/ultrabert/scifact-canonical-preparation.json)
+freezes all5,483 actual wrapper ID/mask rows before forward:300 queries/5,183
+documents,460 documents right-truncated to512 tokens, no truncated queries or
+dropped rows. Thirteen original preflight rows are hook-neutral; conservative
+worst-original-shard projection is2,840.06 seconds against13,200 seconds.
+The eight original shards and frozen original receipt must precede all eight
+native shards. Numerical gates remain0.002/0.99999; NDCG@10/MRR@10/Recall@100
+degradation must stay within0.001 and top1 agreement at least99%. Full vector,
+ranking and all-miss/margin review remain pending; preflight is no quality proof.
+
+Strict author-column v1 rejections remain preserved. Distinct canonical v2 was
+chosen before model outputs after exact legacy-JSONL/Parquet equality and a
+complete author-difference journal; literal stored columns/query prefix are
+retained without normalization. Its data/model notices remain distinct, including
+CC BY-SA4.0 benchmark terms and upstream claim/abstract attribution. Public
+pairs remain excluded. The candidate's UltraBERT-specific right-truncation gate
+is default-off; unset/literal0 retain overflow rejection. Longer contexts and
+GPU/latency/RSS need separate plans. Do not repeat the four old backend arms.
 
 Quantization needs declared development/calibration inputs plus independent
 quality evaluation; keep norms and other critical precision choices measured.
@@ -404,17 +439,17 @@ runtime source scope. Use their retained exact producer source/arrays for2048
 attribution, or declare a separately versioned source contract; never widen a
 historical allowlist silently. Raw artifact12609314203 remains remote through
 23 January2027; preserve its original bytes before expiry. The first-FFN
-quantized-weight attribution below is now complete; the next recommended lane
-is2048 attribution, followed by the independently scoped MI-GAN prototype.
+quantized-weight attribution below is complete. The subsequent norm/position
+operator work is complete; its corrected composed panel remains pending below.
 Adoption needs representative paired resource evidence; app/runtime release and other model qualifications
 remain separate.
 
 The [issue 71 source feasibility audit](inpainting-feasibility.md) is complete.
-MI-GAN has separately licensed MIT code and weights and is the first bounded
-still-image experiment; its model identity, original mask/pixel contract and
-native parity remain untested. LaMa still needs authoritative checkpoint terms
-and an FFT-capable implementation. Neither source audit qualifies an inpainting
-model, public API or video behavior.
+MI-GAN has separately licensed MIT code and weights. Its integrated fixed256
+original/native prototype now passes the bounded unchanged panel above. Public
+API/registry, representative still-image/subtitle/perceptual/video quality and
+publication remain pending under [issue71](https://github.com/CrispStrobe/CrispEmbed/issues/71).
+LaMa still needs authoritative checkpoint terms and an FFT-capable implementation.
 
 The fourth OvisOCR2 precision attempt,
 [attention-F16/FFN-Q4 40172527229](../tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json),
@@ -509,8 +544,8 @@ All five actual audited file hashes and the native source tree match main.
 Production source did not change, so this is no runtime release or app upgrade.
 Use the separately scoped2048 attribution lane; any new precision
 selection needs a fresh development/evaluation protocol rather than fitting the
-observed held-out documents. Keep2048 attribution and MI-GAN queued as
-separate lanes, and leave SAM with its existing owner.
+observed held-out documents. Review the separately executing corrected2048
+composed panel; MI-GAN product work remains distinct. Leave SAM with its owner.
 
 
 ### November Ovis3 vector expiry — preserved copy available
@@ -531,13 +566,47 @@ other January archives before their recorded deadlines; future renewal must
 verify these original ZIP/member bytes rather than regenerate model outputs.
 
 
-### Current executing closure,26 October
+### Current executing loop,26 October — completion remains pending
 
-Use PLAN's active four-lane closure for current immutable branch/run identifiers.
-Completed norm/position operator and MI-GAN original results are in HISTORY;
-composed/native/representative/packaged-consumer results remain pending. Feature
-branches contain the executable protocols and actual source guards; fetch their
-exact recorded commits rather than reconstructing commands from old handoffs.
+The integrated MI-GAN prototype, RoPE audit and Ovis3 preservation above are
+completed evidence. The remaining loop requires actual review of these lanes:
+
+- Ovis corrected composed [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)
+  at`8bb9f074d1ca6fa2cb2be6a892fc2fd116202912`: both eleven-case quality jobs
+  pass all1,841 IDs/text/stops against the first F16 baseline; gate1's measured
+  maximum confidence difference is2.4796e-5. Full frozen/grid numerical review
+  remains pending. Initial40356657327 stopped on raw/public report path
+  redaction before the affected fourteen-arm audits; its
+  [negative receipt](https://github.com/CrispStrobe/CrispEmbed/blob/8bb9f074d1ca6fa2cb2be6a892fc2fd116202912/tests/results/qwen35-ocr/ovisocr2-position-report-redaction-failure.json)
+  remains immutable. The correction verifies raw JSON identity and permits only
+  the declared comparison-copy path redaction. No budget/default change follows.
+- SciFact full40375626336 at`e35cd1a0` remains pending after the reviewed
+  preparation above. Preserve source/freeze/receipt identities through the
+  original-first barrier, native shards and aggregate; v1 remains rejected.
+- Initial packaged consumer [40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
+  at`49161f608af811154bfeb816ac38caea34224cae`, producer
+  `40a82158146faf0cd44de2a4ee7056e7b0c6a58c`, is **negative**.
+  [Windows](https://github.com/CrispStrobe/CrispEmbed/blob/0b0fded32b1dcbd75abd1451d63b08123520be9b/tests/results/packaging/successor-windows-reader-initial.json)
+  stopped on a UTF8 header decoded with the Windows locale; the source-only
+  repair reads UTF8 explicitly and uses MSVC`/utf-8`.
+  [Apple](https://github.com/CrispStrobe/CrispEmbed/blob/0b0fded32b1dcbd75abd1451d63b08123520be9b/tests/results/packaging/successor-apple-initial.json)
+  stopped on PNG identity before library/model initialization or inference.
+  [Browser](https://github.com/CrispStrobe/CrispEmbed/blob/0b0fded32b1dcbd75abd1451d63b08123520be9b/tests/results/packaging/successor-wasm-initial.json)
+  executed but fails unchanged parity: max0.00837269/cosine0.99864984.
+  A test-only WASM earliest-stage attribution is being implemented; no backend
+  diagnosis, numerical patch or tolerance widening is established.
+- Linux PNG proof [40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
+  at`b7983104c61eccb9514174aeac41691f1f5cb1ff` is pending. It must reproduce
+  all50 frozen PNG hashes before publishing`posformer-frozen-corpus`; Mac then
+  consumes those verified bytes and checks RGB/dimensions. Failure stays negative,
+  with no gold recapture. Final integrated source still needs **fresh seven native
+  and two WASM archive producers plus all actual consumers**, including Apple50
+  and Rust/Dart. Current producer success does not qualify that future source.
+
+Fetch exact feature commits and source guards rather than reconstructing old
+commands. This handoff is preparatory; it does not close the loop, qualify a
+release/model portfolio or authorize a tag, model publication or app-pin update.
+The app remains immutable0.17.12, and issue71's product scope remains pending.
 
 For SciFact, the registered metadata phase`ultrabert-scifact-prepare` runs only
 preparation. After independent review,`ultrabert-scifact-panel` forwards
@@ -545,7 +614,9 @@ preparation. After independent review,`ultrabert-scifact-panel` forwards
 Do not dispatch the full panel without the actual dataset/length/timing receipt.
 For assets, use both completed producer IDs on the same candidate source;
 `successor-consumer` forwards`native_run_id` and`original_run` to native/WASM
-producer inputs. No latest-run lookup, source substitution, tag or app-pin change.
+producer inputs, plus`candidate_run_id` as the reviewed PNG proof's`corpus_run`.
+Registered`successor-corpus` calls the Linux image-only proof workflow. No
+latest-run lookup, source substitution, tag or app-pin change.
 
 Preserve every initial cancellation, HTTP service error and negative receipt.
 Queued jobs are not evidence. Builds/inference/corpus/framework work stay hosted;
