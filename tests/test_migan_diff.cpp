@@ -4,6 +4,7 @@
 #include "migan.h"
 #include "migan_test_observer.h"
 #include "crispembed_diff.h"
+#include "core/clean_exit.h"
 
 #include <algorithm>
 #include <array>
@@ -140,7 +141,7 @@ bool image_metrics(const std::vector<uint8_t> & actual, const std::vector<uint8_
 
 } // namespace
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc == 2 && std::strcmp(argv[1], "--contracts") == 0) return contract_controls() ? 0 : 1;
     if (argc == 4 && std::strcmp(argv[1], "--reject") == 0) {
         set_gate("1");
@@ -265,4 +266,8 @@ int main(int argc, char ** argv) {
                 neutrality ? "true" : "false", buffer_bytes, seconds, images ? "true" : "false",
                 failures == 0 && neutrality && images ? "true" : "false");
     return failures == 0 && neutrality && images ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
