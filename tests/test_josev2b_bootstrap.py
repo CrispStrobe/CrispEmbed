@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import types
+import shutil
 import unittest
 from unittest.mock import patch
 
@@ -79,12 +80,39 @@ class BootstrapTests(unittest.TestCase):
             self.assertEqual(module.PIP_BOOTSTRAP['url'].split('#sha256=')[1],module.PIP_BOOTSTRAP['sha256'])
             self.assertFalse(module.REPORT['model_payload_accessed'])
 
+    def test_complete_lock_is_verified_and_original_framework_pins_stay_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            module=self.load(directory);module.OUT.mkdir();repo=Path(directory)/'repo'
+            cfg=json.loads((ROOT/'docs/josev2b-source-contract.json').read_text())
+            for name in (cfg['environment_lock']['path'],cfg['environment_lock']['requirements_path']):
+                target=repo/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(ROOT/name,target)
+            path=module.locked_requirements(repo,cfg)
+            self.assertEqual(path,repo/cfg['environment_lock']['requirements_path'])
+            self.assertEqual(module.digest(path),cfg['environment_lock']['requirements_sha256'])
+            self.assertEqual(module.REPORT['environment_lock']['packages'],57)
+            path.write_bytes(path.read_bytes()+b'\n')
+            with self.assertRaisesRegex(ValueError,'SHA'):module.locked_requirements(repo,cfg)
+            self.assertFalse(module.REPORT['model_payload_accessed'])
+
+    def test_installer_uses_full_direct_url_hash_lock_without_resolution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            module=self.load(directory);requirements=Path(directory)/'requirements.lock'
+            with patch.object(module,'run') as execute:
+                module.install_locked('/venv/bin/python',requirements,{'PIP_USER':'0'})
+            args=execute.call_args.args[1]
+            for required in ('--no-deps','--require-hashes','--only-binary=:all:'):
+                self.assertIn(required,args)
+            self.assertEqual(args[-2:],['-r',requirements])
+            self.assertFalse(any('tokenizers==' in str(a) for a in args))
+
     def test_worker_commit_and_contract_are_exact(self):
         with tempfile.TemporaryDirectory() as directory:
             module = self.load(directory)
             contract = subprocess.check_output(['git', 'show', module.WORKER_SOURCE + ':docs/josev2b-source-contract.json'], cwd=ROOT)
             self.assertEqual(hashlib.sha256(contract).hexdigest(), module.CONTRACT_SHA)
             self.assertEqual(json.loads(contract)['runtime']['python_minor'], '3.13')
+            self.assertEqual(json.loads(contract)['runtime']['tokenizers'], '0.22.2')
+            self.assertEqual(json.loads(contract)['environment_lock']['packages'],57)
             for wheel in module.WHEELS.values():
                 self.assertIn('-cp313-cp313-manylinux_2_28_x86_64.whl', wheel['filename'])
                 self.assertEqual(wheel['url'].split('#sha256=')[1], wheel['sha256'])

@@ -322,3 +322,13 @@ promoted to F32. Exact keys, shapes and finite F32 values are required.
 intentional loader transform fails with partial evidence rather than being
 accepted silently. BF16 checkpoint tensors and F32 scalars remain distinguishable.
 This read-only proof does not copy or rehash the full backbone a second time.
+
+The locked bootstrap targets worker
+[`2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`](https://github.com/CrispStrobe/CrispEmbed/commit/2133cfa12dbdd25653fd68b1a6054f69f80f7e9c)
+and contract SHA256
+`6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da`.
+The bootstrap's own uploaded bytes remain a separately recorded identity.
+It validates and preserves the complete lock before installation, checks isolated
+prefixes, then verifies exact installed metadata and actual loaded module versions
+before the unchanged CUDA/source barriers and original worker. This is prepared
+source only; no fourth GPU attempt is submitted by this change.
