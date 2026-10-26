@@ -15677,3 +15677,13 @@ access, to incorporate independent verification of reference quantization bytes
 and avoid the corpus workflow's per-branch scheduling lock. The replacement uses
 the same bounded sixty-minute/two-build-worker protocol. Initial production
 browser parity remains failed at0.00837269/0.99864984; no budget is widened.
+
+A second source review caught a parser-only blocker before hosted model work:
+the pinned public single-encode path logs token IDs twice, at the API and graph
+upload boundaries. Trace40378744841 was cancelled with every job showing zero
+completed steps. The corrected parser requires exactly two valid, identical
+observations and rejects missing, extra, malformed or differing lines. This
+matches the original blueprint without changing production logging or inputs.
+Seven small controls and source/JS/workflow checks pass. No executed numerical
+failure is claimed from either queued cancellation; the unchanged initial
+browser parity failure remains the model-backed negative evidence.

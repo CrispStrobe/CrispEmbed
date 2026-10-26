@@ -45,6 +45,8 @@ The following controls must hold before stage comparisons are trusted:
 - Packaged browser ordinary, diagnostic browser ordinary and diagnostic browser
   dump outputs are bit-exact to the initial browser F32 vector.
 - Actual final token IDs agree across native and diagnostic browser modes.
+  Both public-entry and graph-upload token observations must occur exactly once
+  and agree; missing, extra or differing log lines reject.
   The unpadded WordPiece path has the expected CLS/SEP boundary and an all-one
   attention mask. The mask is source-derived, not claimed as a runtime capture.
 - All eight complete F32 stages exist with shape`[384,T]`: `emb_ln_out`,
