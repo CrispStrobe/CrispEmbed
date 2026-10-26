@@ -29,8 +29,9 @@ def protocol() -> dict:
 
 
 def require_cuda_capability(capability) -> None:
-    if tuple(capability) < (7, 0):
-        raise ValueError("unsupported GPU compute capability; require >=7.0, no retry")
+    minimum = tuple(protocol()["scope"]["min_compute_capability"])
+    if tuple(capability) < minimum:
+        raise ValueError("unsupported GPU compute capability; require >=" + ".".join(map(str, minimum)) + ", no retry")
 
 
 def environment_versions() -> dict:
@@ -44,6 +45,13 @@ def environment_versions() -> dict:
         "transformers/models/qwen3_5/modeling_qwen3_5.py"))
     if sha256(original) != cfg["transformers_source"]["sha256"]:
         raise ValueError("installed original Qwen source differs")
+    # Full locked distribution and metadata/origin audit precedes model payloads.
+    from josev2b_environment import verify_installed
+    import os
+    prefix = os.environ.get("CRISPEMBED_JOSEV_EXPECTED_VENV")
+    if not prefix:
+        raise ValueError("reviewed isolated venv prefix required")
+    verify_installed(cfg, Path(prefix))
     return versions
 
 

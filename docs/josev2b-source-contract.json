@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-josev2b-text-reference-v1",
-  "status": "Python3.11 bootstrap rejected before hardware/payload; Python3.13 original reference profile prepared but unexecuted",
+  "status": "Original Python3.13 reference still unexecuted; all prior attempts rejected before checkpoint/tokenizer; complete metadata-only57-wheel profile frozen",
   "qualification": {
     "reference_captured": false,
     "native_supported": false,
@@ -118,7 +118,7 @@
     "python_minor": "3.13",
     "torch": "2.13.0",
     "transformers": "5.5.0",
-    "tokenizers": "0.23.0",
+    "tokenizers": "0.22.2",
     "safetensors": "0.8.0",
     "huggingface-hub": "1.33.0",
     "numpy": "2.2.6",
@@ -152,7 +152,7 @@
     "max_request_utf8_bytes": 65536,
     "min_compute_capability": [
       7,
-      0
+      5
     ],
     "unsupported_gpu": {
       "conclusive": false,
@@ -292,7 +292,7 @@
     "padding": "original collator right padding; batch1 only here",
     "max_length_policy": "clip only state after fixed prefix/schema/suffix; fixed schema overflow rejects"
   },
-  "runtime_profile": "cuda-f32-python313-v2",
+  "runtime_profile": "cuda-f32-python313-v3-locked",
   "pre_reference_failures": [
     {
       "profile": "cuda-f32-python311-v1",
@@ -307,6 +307,43 @@
       "model_payload_accessed": false,
       "reference_outputs_created": false,
       "limits": "No GPU compatibility, memory, speed, original inference or native conclusion follows from this preflight failure."
+    },
+    {
+      "profile": "cuda-f32-python313-v2",
+      "worker_source": "1e723a96f8fed0ea34b0e071e88f29561a315aaa",
+      "contract_sha256": "39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460",
+      "bootstrap_source": "f5a0ac06795764eec063a198697fbd4c0a9edc34",
+      "bootstrap_sha256": "e908d4930b164ad841ab49f43ecf2e4f999e1ba25827f1b2341163581149eeca",
+      "earliest_terminal_failure": "tokenizers==0.23.0 has no published release; pip install-original exit1",
+      "isolated_pip_bootstrap_passed": true,
+      "startup_warning": "sitecustomize wrapt ModuleNotFoundError is nonterminal; no wrapt added to hide it",
+      "hardware_observed": true,
+      "python": "3.13.15",
+      "compute_capabilities": [
+        [
+          7,
+          5
+        ],
+        [
+          7,
+          5
+        ]
+      ],
+      "driver": "580.178.04",
+      "framework_wheel_payloads_downloaded": true,
+      "framework_installation_completed": false,
+      "model_payload_accessed": false,
+      "reference_outputs_created": false,
+      "conclusive": false
     }
-  ]
+  ],
+  "environment_lock": {
+    "path": "docs/josev2b-environment-lock.json",
+    "sha256": "7d16c6560da3a9bf24f1c19f3581f1a5911b87360c0cef6484b92f8810aa8be8",
+    "requirements_path": "tools/kaggle/josev2b-original/requirements.lock",
+    "requirements_sha256": "89fa4670a29ccfe3df867660715884c0b76e45103c44bcbb54ba825a2eccc489",
+    "packages": 57,
+    "policy": "All57 exact wheel URLs/SHA256, full activeLinuxCPython3.13 Requires-Dist/extras closure; --no-deps --require-hashes install; exact installed metadata and isolated origins before model access",
+    "native_or_reference_result": false
+  }
 }
