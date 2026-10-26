@@ -387,7 +387,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 |-------|-------------------|------|--------|
 | 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
-| 2026-10-26 | `audit/ultrabert-rope-20261026` | Frozen-input UltraBERT RoPE operator attribution | Test actual original rotation and ggml coefficients using preserved arrays; retain strict failures and budgets, no full-model gold recapture or default change. Hosted builds/operators only. |
 | 2026-10-26 | `feat/migan-reference-20261026` | MI-GAN256 Places2 original reference, F32 conversion and bounded native prototype | Freeze hosted original evidence before native results; separate native prototype branch uses exact154-tensor contract and default-off CPU/F32 path. No local inference, API/registry/video qualification or model publication. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
@@ -580,9 +579,6 @@ source/artifact proof separately; do not claim it from vendor component parity.
 - [ ] Preserve later January archives before expiry; the urgent November Ovis3
   copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
   recorded source identities and renewal dates when reviewed.
-- [ ] Execute UltraBERT frozen-input RoPE40336758177 fromb689f871 and review
-  magnitudes/table drift/source-fed controls. Keep183 F32/1294 F16 historical
-  stage failures and strict replay failures; never regenerate their gold.
 - [ ] Review the SciFact original-only preparation on
   `audit/ultrabert-scifact-20261026` atff030c0a, then explicitly dispatch its
   eight-original→freeze→eight-native panel with the reviewed preparation run and

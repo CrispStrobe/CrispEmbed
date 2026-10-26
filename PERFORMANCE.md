@@ -6747,3 +6747,16 @@ is about11.1617s versus0.5691s projection compute; eight cached steps materializ
 Prefill materializes3007578112 bytes and vision394788864. Counters are nested;
 source/projection/phase levels must not be summed as independent totals.
 No document, Apple/GPU, throughput, paired cross-host or maximum-input claim.
+
+## UltraBERT local RoPE attribution,26 October2026
+
+Actual40336758177/b689f871 uses seven frozen inputs and original functions,
+with no checkpoint/full-model forward. All1,344 comparisons/336 bit controls
+pass. Worst ordinary coefficient absolute error3.05157e-5; Q1.37925e-4;
+K1.61648e-4 (RMS8.86829e-6, original max21.2058); minimum Q/K row cosine
+0.999999999867789. All336 frozen/current table fields and source-fed native
+Q/K fields are exact. These are local numerical measurements, not a speed,
+full-stage parity or task-quality result. Empty rotation is exact, excluding it
+as the cause of the earliest empty pre-RoPE Q drift. Preserve historical gates
+and prioritize the separately declared complete SciFact audit. See the
+[receipt](tests/results/ultrabert/rope-attribution.json).

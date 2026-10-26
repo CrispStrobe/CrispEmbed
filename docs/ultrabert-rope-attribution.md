@@ -42,3 +42,15 @@ or invoke it as a reusable workflow. Only the small reports should be downloaded
 for review; additional operator targets/raw arrays remain in the separately
 retained hosted artifact. Any subsequent correction needs its own default-off
 path, unchanged complete replay and representative task-quality evidence.
+
+## Completed bounded result
+
+[40336758177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336758177)
+atb689f871 passes every declared comparison/control. Frozen/current tables and
+source-fed native Q/K are bit-exact; ordinary worst coefficient/Q/K errors are
+3.05157e-5/1.37925e-4/1.61648e-4. Empty rotation is exact and cannot explain its
+earliest pre-RoPE drift. No new production gate or composed causal claim is
+justified by these within-budget local differences. Historical full-stage and
+strict replay failures remain. The independently reviewed
+[receipt](../tests/results/ultrabert/rope-attribution.json) retains exact provenance,
+magnitudes and limits; representative quality continues in the SciFact lane.
