@@ -724,6 +724,18 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
         fprintf(stderr, "crispembed: using CPU backend (%d threads)\n", ctx->n_threads);
     }
 
+#if defined(__EMSCRIPTEN__)
+    // Conditional encoder candidate: leave legacy rounding active unless the
+    // value-parsed opt-in is enabled. Settings belong to this backend/context;
+    // changing another context's environment cannot rewrite an existing plan.
+    const bool wasm_q8_0_round = core_env::on("CRISPEMBED_WASM_Q8_0_ROUND");
+    for (ggml_backend_t backend : ctx->backends) {
+        if (ggml_backend_is_cpu(backend)) {
+            ggml_backend_cpu_set_wasm_q8_0_rounding(backend, wasm_q8_0_round);
+        }
+    }
+#endif
+
     // Create scheduler for graph dispatch (handles GPU/CPU allocation)
     int graph_nodes = 16384;
     ctx->sched =
