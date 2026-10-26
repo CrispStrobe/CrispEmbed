@@ -25,6 +25,12 @@ from ultrabert_scifact import PROTOCOL_SHA, protocol, digest, equivalence, canon
 ST_SOURCE = 'b0acd1a4d22ba2bc10072868ddea7612561c9424'
 ST_WRAPPER_SHA = '3d677757bf3e684c45d3634ae67918cd9a67cee6aac6760e5fa1c72dfe820650'
 ST_POOL_SHA = 'b6e96e0eac50ebc33d6310ef3b8d35b7cd2b7e0e521809552bba34c05c13d43d'
+MODULE_CONFIG_SHA = '3084164002c0bca01b0259c5327123803fce32e660a57feb93184ffead186fc8'
+ST_PREPROCESS_LF = {
+    'sentence_transformers.base.model': '46016f24f1bf6923ef32d704ba6bea7e1b06d1687b82372a3b34a6a94f040899',
+    'sentence_transformers.base.modules.transformer': 'c382da40c06d37fc9ec38bf685a6f80e4b1d0b25bf9601af8c79b41005259f9e',
+    'sentence_transformers.base.modality': '777461f474f000de6acc0befc8787be939ff142318df4bdf087502c851119073',
+}
 
 REPO = 'CrispStrobe/CrispEmbed'
 WORKFLOW = '.github/workflows/ultrabert-scifact.yml'
@@ -46,7 +52,8 @@ PINS = {
     "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532"
 }
 FILES = ('tools/ci-heavy/ultrabert_scifact.py', 'tools/ultrabert_scifact.py',
-         'tests/test_ultrabert_scifact.py', 'tests/regression/ultrabert/scifact-protocol-v1.json',
+         'tests/test_ultrabert_scifact.py', 'tests/test_ultrabert_scifact_wrapper.py',
+         'tests/regression/ultrabert/scifact-protocol-v1.json',
          '.github/workflows/ultrabert-scifact.yml', 'src/ultrabert_profile.h', 'src/ultrabert_embed.cpp',
          'python/crispembed/_binding.py', 'models/convert-ultrabert-to-gguf.py', 'CMakeLists.txt',
          'tests/test_ultrabert_truncation.cpp', 'docs/ultrabert-scifact-notices.md',
@@ -170,12 +177,20 @@ def reuse(run_id, name, destination, *, report_sha=None):
 
 def original_snapshot(weights):
     from huggingface_hub import snapshot_download
-    patterns = list(profile()['inspected_file_sha256']) + (['model.safetensors'] if weights else [])
+    patterns = list(profile()['inspected_file_sha256']) + ['sentence_bert_config.json'] + (['model.safetensors'] if weights else [])
     directory = Path(snapshot_download(MODEL, revision=REVISION, allow_patterns=patterns))
     validate_sources(directory)
+    module_config(directory)
     if weights:
         validate_weight_file(directory / 'model.safetensors')
     return directory
+
+
+def module_config(directory):
+    path = Path(directory) / 'sentence_bert_config.json'
+    if not path.is_file() or path.stat().st_size != 241 or sha256(path) != MODULE_CONFIG_SHA:
+        raise ValueError('Actual published SentenceTransformer module config differs')
+    return load(path)
 
 
 def tokenizer(directory):
@@ -213,6 +228,15 @@ def original_model(directory):
     import transformers
     import sentence_transformers
     from sentence_transformers import SentenceTransformer
+    published_module_config = module_config(directory)
+    preprocessing_sources = {}
+    for name, expected in ST_PREPROCESS_LF.items():
+        module = importlib.import_module(name)
+        raw = Path(inspect.getfile(module)).read_bytes()
+        canonical = hashlib.sha256(raw.replace(b'\r\n', b'\n')).hexdigest()
+        if canonical != expected:
+            raise ValueError('Actual original preprocessing module source differs: ' + name)
+        preprocessing_sources[name] = dict(sha256=hashlib.sha256(raw).hexdigest(), lf_sha256=canonical)
     if any(importlib.metadata.version(name) != version for name, version in
            {'numpy':'2.2.6', 'gguf':'0.19.0', 'huggingface-hub':'1.33.0', 'pyarrow':'21.0.0'}.items()):
         raise ValueError('Pinned original environment dependency differs')
@@ -230,11 +254,40 @@ def original_model(directory):
             or any(p.dtype != torch.float32 or p.device.type != 'cpu' for p in model.parameters())):
         raise ValueError('Original source/module/CLS/CPU/F32 contract differs')
     model.max_seq_length = 512
+    if model.max_seq_length != 512 or model[0].tokenizer.model_max_length != 512:
+        raise ValueError('Original max_seq_length setter did not set actual tokenizer512')
     return model, dict(torch=torch.__version__, transformers=transformers.__version__, wrapper=sentence_transformers.__version__,
         wrapper_source=ST_SOURCE, wrapper_sha256=ST_WRAPPER_SHA, pooling_sha256=ST_POOL_SHA,
+        preprocessing_sources=preprocessing_sources, published_module_config=published_module_config,
+        published_module_config_sha256=MODULE_CONFIG_SHA,
         custom_source_sha256=profile()['inspected_file_sha256']['modeling_ultrabert.py'],
         weight_sha256=sha256(directory / 'model.safetensors'), cpu_capability=torch.backends.cpu.get_cpu_capability(),
         torch_config=torch.__config__.show(), threads=2, max_seq_length=512, batch_size=1)
+
+
+class WrapperTokenMismatch(ValueError):
+    def __init__(self, row, method, expected, ids, mask):
+        super().__init__('Actual original wrapper token preflight differs: ' + row + '/' + method)
+        self.details = dict(id=row, method=method, original_ids=expected['ids'], actual_ids=ids,
+                            original_mask=expected['attention_mask'], actual_mask=mask)
+
+
+def wrapper_token_preflight(model, data, token_rows):
+    """No forward calls: check both actual wrapper prompt paths for every row."""
+    rows = data['queries'] + data['documents']
+    if len(rows) != 5483 or [row['id'] for row in rows] != [row['id'] for row in token_rows]:
+        raise ValueError('Complete ordered5483 wrapper input inventory differs')
+    for row, expected in zip(rows, token_rows):
+        prompt = QUERY if row['id'].startswith('q:') else ''
+        paths = [('resolved_prompt', model.preprocess([row['text']], prompt=prompt)),
+                 ('literal_prefix', model.tokenize([input_text(row)]))]
+        for method, features in paths:
+            ids = features['input_ids'].tolist()
+            mask = features['attention_mask'].tolist()
+            if ids != [expected['ids']] or mask != [expected['attention_mask']]:
+                raise WrapperTokenMismatch(row['id'], method, expected, ids, mask)
+    return dict(rows=5483, all_ids_and_masks_exact=True, both_prompt_paths_checked=True,
+                before_first_forward=True, ordered_ids_sha256=digest([row['id'] for row in rows]))
 
 
 def save_vectors(directory, raw, normalized, ids, timing):
@@ -395,6 +448,7 @@ def prepare(args, out, scratch, closure):
     write(payload / 'lengths.json', rows)
     freeze = dict(schema='crispembed-scifact-data-freeze-v1', source=closure, protocol_sha256=PROTOCOL_SHA,
         sources=sources, mapping=mapping, dataset_sha256=sha256(payload / 'dataset.json'),
+        original_model_files_sha256={**profile()['inspected_file_sha256'], 'sentence_bert_config.json':MODULE_CONFIG_SHA},
         lengths_sha256=sha256(payload / 'lengths.json'), rows=len(rows), queries=300, corpus=5183,
         truncated_rows=sum(r['truncated'] for r in rows), max_untruncated_tokens=max(r['untruncated_tokens'] for r in rows),
         created_before_first_model_output=True, applicable_terms=p['licenses'], acceptance=p['acceptance'])
@@ -410,6 +464,15 @@ def prepare(args, out, scratch, closure):
     # Every dataset/input/gold/protocol bit is frozen before loading weights or any vector output.
     directory = original_snapshot(True)
     model, env = original_model(directory)
+    try:
+        actual_wrapper_inputs = wrapper_token_preflight(model, data, rows)
+    except Exception as error:
+        write(out / 'initial-wrapper-token-failure.json', dict(status='rejected before first model forward',
+            source=closure, protocol_sha256=PROTOCOL_SHA, data_freeze_sha256=sha256(payload / 'data-freeze.json'),
+            error=str(error), details=getattr(error, 'details', None)))
+        raise
+    write(payload / 'wrapper-token-preflight.json', actual_wrapper_inputs)
+    write(out / 'wrapper-token-preflight.json', actual_wrapper_inputs)
     lookup = {r['id']: r for r in data['queries'] + data['documents']}
     query = sorted(data['queries'], key=lambda r: (next(x for x in rows if x['id'] == r['id'])['untruncated_tokens'], r['id']))
     documents = sorted([r for r in rows if r['id'].startswith('d:')], key=lambda r: (len(r['ids']), r['id']))
@@ -420,7 +483,8 @@ def prepare(args, out, scratch, closure):
     projection = max(len(shard_rows(data, i)) for i in range(8)) * worst * p['execution']['projection_safety_factor']
     receipt = dict(schema='crispembed-scifact-preparation-v1', source=closure, status='prepared original-only preflight',
         protocol_sha256=PROTOCOL_SHA, data_freeze_sha256=sha256(payload / 'data-freeze.json'), mapping=mapping,
-        original_environment=env, original_preflight=timings, original_hook_neutral=True,
+        original_environment=env, actual_wrapper_input_preflight=actual_wrapper_inputs,
+        original_preflight=timings, original_hook_neutral=True,
         projected_worst_original_shard_seconds=projection, projected_native_runtime='unmeasured; bounded by240min job timeout',
         projected_original_within_bound=projection <= p['execution']['max_projected_shard_seconds'],
         full_panel_authorized=False, review_required='Root independently reviews dataset/freeze/lengths/timing and actual source before full panel',

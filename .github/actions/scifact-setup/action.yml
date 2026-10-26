@@ -22,6 +22,7 @@ runs:
         echo "HF_HOME=$RUNNER_TEMP/hf" >> "$GITHUB_ENV"
         echo "AUDIT_BIN_DIR=$RUNNER_TEMP/build" >> "$GITHUB_ENV"
         python tests/test_ultrabert_scifact.py -v
+        python tests/test_ultrabert_scifact_wrapper.py -v
         python tools/ci-heavy/ultrabert_scifact.py --phase preflight
     - name: Pinned original and dataset environment
       if: inputs.model == 'true'
