@@ -730,8 +730,13 @@ continue on their frozen branches. Do not alter those producer sources.
   Its corrected supported-T4 preflight then rejects ensurepip before packages
   or payload; [both initial receipts](tests/results/josev2b/initial-venv-preflight.json)
   remain. Reviewed bootstrapf5a0ac06 reuses the established empty-venv/base-pip
-  route without changing worker/arithmetic. Actual capture is pending; review its outcome before native
-  comparisons or another profile change. GPU capability/driver/memory/scratch checks remain mandatory; no
+  route. It passed isolated-pip setup, then failed on the unpublished tokenizers0.23.0
+  pin before framework installation or model/tokenizer access; preserve
+  [the rejection](tests/results/josev2b/initial-install-preflight.json). Corrected
+  worker2133cfa1/bootstrapc9aa40b7 use tokenizers0.22.2 and a complete57-wheel
+  URL/SHA lock, metadata/ABI-origin controls and loaded-head identity proof. The
+  corrected GPU capture is submitted; its actual outcome remains pending. Review
+  completion before conversion/native comparisons or another profile change. GPU capability/driver/memory/scratch checks remain mandatory; no
   unsupported-hardware retry loop. Review the four original text cases≤512,
   actual IDs/spans/masks, all24 layers and512-wide joint-head intermediates,
   logits/probabilities/typed answers before native outputs. Port an explicit

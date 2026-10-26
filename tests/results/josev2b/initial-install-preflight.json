@@ -1,0 +1,127 @@
+{
+  "schema": "crispembed-josev-original-install-rejection-v1",
+  "qualification": false,
+  "source": "f5a0ac06795764eec063a198697fbd4c0a9edc34",
+  "worker": "1e723a96f8fed0ea34b0e071e88f29561a315aaa",
+  "bootstrap_sha256": "e908d4930b164ad841ab49f43ecf2e4f999e1ba25827f1b2341163581149eeca",
+  "contract_sha256": "39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460",
+  "raw_bootstrap": {
+    "bytes": 3631,
+    "sha256": "9ea552efe2dd09286e3732bec9d1260df63d4beb952b6f0883de3d6f6e0523c9"
+  },
+  "hardware": [
+    [
+      "Tesla T4",
+      "7.5",
+      "15360",
+      "14912",
+      "580.178.04"
+    ],
+    [
+      "Tesla T4",
+      "7.5",
+      "15360",
+      "14912",
+      "580.178.04"
+    ]
+  ],
+  "python": "3.13.15 (main, Aug  6 2026, 11:06:22) [GCC 13.3.0]",
+  "status": "rejected",
+  "commands": [
+    {
+      "name": "git-init",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.06503166700002794,
+      "log": "git-init.log",
+      "sha256": "94e2a81b9e3b78b6c23dd22672c828282b336e6ed936955f39fa8aa1b4c27a31"
+    },
+    {
+      "name": "git-remote",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.007826745999977902,
+      "log": "git-remote.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "git-fetch",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 4.5279205360000105,
+      "log": "git-fetch.log",
+      "sha256": "467ac9bf24ea9141d64a12361cbe26f25ae75c166990599efcd26e1cd59e3cc1"
+    },
+    {
+      "name": "git-checkout",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6155176359999928,
+      "log": "git-checkout.log",
+      "sha256": "ee3452a6326cb4ede2f51ecdd43e12d34b30479a1fd3e6de8b540e0811071e0f"
+    },
+    {
+      "name": "bootstrap-isolated-pip",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 2.4704278020000174,
+      "log": "bootstrap-isolated-pip.log",
+      "sha256": "3b4de26fdc789a0d90911a130bd2fbe25e105f5bd3986538b255eab930296e5b"
+    },
+    {
+      "name": "install-original",
+      "exit_code": 1,
+      "timed_out": false,
+      "seconds": 5.979904186999988,
+      "log": "install-original.log",
+      "sha256": "b48e8c5cd47c0546dc5bf17aa448a9f4f2ef89a20ba2ed51de305016574bc037"
+    }
+  ],
+  "files": {
+    "git-checkout.log": {
+      "bytes": 89,
+      "sha256": "ee3452a6326cb4ede2f51ecdd43e12d34b30479a1fd3e6de8b540e0811071e0f"
+    },
+    "bootstrap-isolated-pip.log": {
+      "bytes": 401,
+      "sha256": "3b4de26fdc789a0d90911a130bd2fbe25e105f5bd3986538b255eab930296e5b"
+    },
+    "install-original.log": {
+      "bytes": 1768,
+      "sha256": "b48e8c5cd47c0546dc5bf17aa448a9f4f2ef89a20ba2ed51de305016574bc037"
+    },
+    "git-fetch.log": {
+      "bytes": 123,
+      "sha256": "467ac9bf24ea9141d64a12361cbe26f25ae75c166990599efcd26e1cd59e3cc1"
+    },
+    "git-init.log": {
+      "bytes": 568,
+      "sha256": "94e2a81b9e3b78b6c23dd22672c828282b336e6ed936955f39fa8aa1b4c27a31"
+    },
+    "git-remote.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "model_payload_accessed": false,
+  "terminal_cause": "Unpublished tokenizers==0.23.0 root pin rejected by pip before framework installation or checkpoint/tokenizer access.",
+  "isolated_pip_bootstrap_passed": true,
+  "framework_wheels_downloaded_remotely": [
+    "torch-2.13.0",
+    "torchvision-0.28.0"
+  ],
+  "sitecustomize_warning": "Missing wrapt warning occurs in both successful isolated-pip setup and failed install; it is retained and not classified as the terminal failure.",
+  "correction": {
+    "worker": "2133cfa12dbdd25653fd68b1a6054f69f80f7e9c",
+    "bootstrap": "c9aa40b761846aa1a4a24d67d32f1c107a22ecd2",
+    "tokenizers": "0.22.2",
+    "complete_wheel_lock_packages": 57,
+    "environment_audit": "docs/josev2b-environment-audit.json",
+    "actual_capture": "submitted; pending",
+    "automatic_retry": false
+  },
+  "limits": [
+    "No original model or native inference outcome.",
+    "No model/tokenizer/framework payload was downloaded to the shared host."
+  ]
+}

@@ -16289,3 +16289,23 @@ Browser isolation headers, exact actual SIMD/pthread flags and native export
 checks are required. Ten source controls pass; no actual model result exists yet.
 The integrated comparator receives18.1.8 formatting only with its explicit
 protected SHA refreshed; the dispatched producer branch stays unchanged.
+
+## 26 October 2026 — Josev dependency rejection and complete lock preparation
+
+[The retained install rejection](tests/results/josev2b/initial-install-preflight.json)
+at f5a0ac06 proves isolated-pip setup succeeds on the supported T4 environment,
+then pip rejects the unpublished tokenizers0.23.0 pin before framework
+installation or model/tokenizer access. All six command logs and the raw
+bootstrap receipt are rehashed. The separate missing-wrapt startup warning is
+retained; it is not the terminal failure. Framework wheels were downloaded only
+on the remote GPU worker.
+
+Worker2133cfa1 and bootstrapc9aa40b7 replace that pin with tokenizers0.22.2 and
+freeze the complete57-wheel active Linux/CPython3.13 dependency closure, URLs,
+SHA256s and wheel metadata. Metadata-only resolution downloads no wheel/model
+payload to the shared host. Thirty environment/identity/contract/bootstrap
+controls pass, including the real pinned serializer with a small byte tokenizer.
+The separate [head conversion preparation](docs/josev2b-head-conversion.md)
+adds eight standard-library controls and exact122-tensor schema/dimension/byte
+guards. Corrected original capture is submitted; conversion, native inference,
+calibration parity and model qualification remain pending.
