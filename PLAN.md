@@ -252,7 +252,9 @@ Require affected exact-source checks again for each new implementation change.
   stage comparisons across eight fixtures, actual original/raw byte rechecks,
   ordinary/observer neutrality, eight malformed-model rejections, known-pixel
   preservation, final fill-pixel metrics and scoped latency/RSS. Keep the path
-  default-off and excluded from ordinary runtime artifacts. Do not call source
+  default-off and excluded from ordinary runtime artifacts. An optional
+  [M1 build-only handoff](docs/handover-m1-migan-build.md) needs no model/framework
+  downloads and does not replace the owning Linux numerical panel. Do not call source
   preparation or a queued build qualification. Public APIs/registry/model
   publication, real subtitle/perceptual quality,512resolution, batching,
   text-derived masks and temporal propagation are separate follow-ups.
