@@ -226,11 +226,17 @@ at`49161f60`, producer`40a82158`, is negative: Windows header decoding failed
 after fresh CLI/model checks and before the standalone ABI panel (explicit UTF8/MSVC repair
 prepared); Apple PNG identity failed
 before library/model initialization; browser execution failed unchanged parity
-at0.00837269/cosine0.99864984. Linux image-only proof
-[40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
-at`b7983104c61eccb9514174aeac41691f1f5cb1ff` is pending; all50 original PNG
-hashes must match before retained inputs feed Mac. WASM stage attribution is
-being implemented; no numerical/default patch or budget waiver is justified.
+at0.00837269/cosine0.99864984. Initial Linux image-only proof40376735641
+failed member coverage before PNG comparison; its original NOTICE is now retained.
+Corrected [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
+at`f284b1f6` must reproduce all50 encoded PNG hashes before Mac consumption.
+The [actual WASM trace](tests/results/packaging/successor-wasm-source-trace.json)
+is independently reviewed: embedding norm exact, first captured attention0
+difference, same-input activation-rounding discrepancy and unchanged final failure.
+The default-off per-backend candidate is under actual
+[40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
+at`580e3ae3`: actual weight-free operator controls precede model access and
+the frozen ten-case native/browser A/B. Source review alone permits no promotion.
 Final integrated source requires fresh seven native/two WASM archive producers
 and all consumers. No tag, model publication, app-pin update or overall loop
 closure follows from these preparations.

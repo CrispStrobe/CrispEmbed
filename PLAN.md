@@ -25,8 +25,9 @@ RSS. Do not repeat its successful model runs for the corrected manifest adapter.
    eleven-case first-F16 quality replay. Any later precision selection needs new
    development/evaluation inputs after the completed same-weight FFN isolation.
    Preserve all failed recipes, raw strict flags and the unqualified2048 path.
-2. **Next permissive implementation:** MI-GAN single-resolution still-image
-   references and native F32 prototype, or the next declared OCR source audit.
+2. **Next permissive implementation:** the MI-GAN fixed256 original/native
+   prototype is complete through PR85. Choose its separately scoped product
+   integration or the next declared OCR source audit after this closure.
    Code/checkpoint/base licensing and original blueprint come first. LaMa's
    checkpoint terms/FFT and Indra's restricted weight scope remain unresolved.
 3. **Delivery/portfolio:** UltraBERT attribution and representative/pair quality,
@@ -185,10 +186,11 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
-  The claimed [frozen-input RoPE experiment](docs/ultrabert-rope-attribution.md)
-  now has a test-only target/driver and reusable`ultrabert-rope.yml` workflow.
-  Hosted compilation, all seven operator cases and independent report review
-  remain pending; no new original full-model reference or production change.
+  [Frozen-input RoPE attribution](tests/results/ultrabert/rope-attribution.json)
+  is complete and merged through PR84:1,344 comparisons/336 bit controls pass.
+  Empty position0 cannot explain the earlier pre-RoPE Q difference; no
+  production RoPE change is justified. Further attribution needs a distinct
+  hypothesis using preserved inputs and actual backend fingerprints.
 - [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit and one-session paired
   CPU/CUDA performance review are complete (HISTORY): all15 cases run faster
   on CUDA, with9/20/649-token pooled medians27.93x/27.64x/120.11x. Next
@@ -249,9 +251,10 @@ Require affected exact-source checks again for each new implementation change.
   Cloud deployment and collaboration remain separate optional product decisions.
   Exact scopes and dependencies: [consumer handoff](docs/current-state-and-next-steps.md).
 
-- [ ] **Issue71 MI-GAN integration and product follow-up:** integrate the reviewed
-  [bounded CPU/F32 prototype](tests/results/migan/native-parity.json) after platform
-  checks. Original40330674649 and corrected native40344396533 complete the frozen
+- [ ] **Issue71 MI-GAN product integration:** the reviewed default-off
+  [bounded CPU/F32 prototype](tests/results/migan/native-parity.json) is merged
+  through PR85 after platform checks. Original40330674649 and corrected
+  native40344396533 complete the frozen
   eight-fixture/494-comparison panel; evidence and the initial stale-observer
   rejection belong in HISTORY. Keep the prototype default-off and excluded from
   ordinary runtime artifacts. Public C ABI/orchestrator/CLI/server/bindings and
@@ -423,8 +426,8 @@ Continue the pending bounded lanes below. Profiling and the fourth selective
 precision attempt are complete; their measurements and rejection are in HISTORY.
 The bounded default-off weight cache and first-FFN same-weight attribution are
 complete, with limits in their receipts. PR82 and all11 fresh-main workflows
-pass at`160520e8`; continue the separately scoped2048 numerical attribution,
-then MI-GAN. Any later precision selection needs a fresh development/evaluation
+pass at`160520e8`; norm/position attribution and the MI-GAN prototype are now
+complete. Finish the corrected composed interpolation panel and delivery gates. Any later precision selection needs a fresh development/evaluation
 protocol. Consumer catalogs/providers still require qualified immutable successor
 binaries. Preserve all initial failures, old recipes and
 raw strict flags. The explicit three entry gates and reviewed `both` math preset

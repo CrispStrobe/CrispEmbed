@@ -593,15 +593,32 @@ completed evidence. The remaining loop requires actual review of these lanes:
   stopped on PNG identity before library/model initialization or inference.
   [Browser](https://github.com/CrispStrobe/CrispEmbed/blob/0b0fded32b1dcbd75abd1451d63b08123520be9b/tests/results/packaging/successor-wasm-initial.json)
   executed but fails unchanged parity: max0.00837269/cosine0.99864984.
-  A test-only WASM earliest-stage attribution is being implemented; no backend
-  diagnosis, numerical patch or tolerance widening is established.
-- Linux PNG proof [40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
-  at`b7983104c61eccb9514174aeac41691f1f5cb1ff` is pending. It must reproduce
-  all50 frozen PNG hashes before publishing`posformer-frozen-corpus`; Mac then
-  consumes those verified bytes and checks RGB/dimensions. Failure stays negative,
-  with no gold recapture. Final integrated source still needs **fresh seven native
-  and two WASM archive producers plus all actual consumers**, including Apple50
-  and Rust/Dart. Current producer success does not qualify that future source.
+  The [completed source trace](../tests/results/packaging/successor-wasm-source-trace.json)
+  preserves all eight original output anchors, exact embedding norm and first
+  captured attention0 divergence. Same-input Q8 rounding differs; full-network
+  causality and correction remain under actual A/B, without budget widening.
+- Initial Linux image proof40376735641 failed member coverage before comparing
+  PNGs: the pinned renderer also emits a216-byte NOTICE. Corrected
+  [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
+  at`f284b1f67c1ae34082afb81a54301c6ab392c02a` preserves that notice and
+  Python3.11.17 renderer ABI. Require all50 original encoded PNG hashes and
+  decoded RGB identities before the unchanged Mac50 probe; never replace hashes.
+- Conditional WASM rounding
+  [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
+  at`580e3ae3be3671ddce5e945b0725d0583ec34110` verifies actual same-run
+  weight-free operator results before model access. It then freezes the ten-case
+  old native/browser panel before candidate execution, with unset/empty/0/1,
+  observers, full original stages and context isolation. The per-backend gate
+  stays default-off; original converter/old outputs and0.002/0.99999 remain.
+  Initial common-control failure40385214740 and all queued cancellations stay
+  retained. Review the complete actual results before any default decision.
+- Review-only integration branch`integration/bounded-closure-20261026` combines
+  the frozen lane sources. Producer branches stay unchanged, and historical
+  whole-source guards intentionally reject changed runtime trees. Final integrated
+  source still needs a declared validation contract, fresh seven native/two WASM
+  producers and all actual consumers. Initial producer success is not that proof.
+  The aggregation repair must independently compare desktop vectors across
+  platforms, in addition to each platform's C/CLI/Python self-checks.
 
 Fetch exact feature commits and source guards rather than reconstructing old
 commands. This handoff is preparatory; it does not close the loop, qualify a
