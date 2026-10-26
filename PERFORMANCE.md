@@ -6773,3 +6773,14 @@ full-stage parity or task-quality result. Empty rotation is exact, excluding it
 as the cause of the earliest empty pre-RoPE Q drift. Preserve historical gates
 and prioritize the separately declared complete SciFact audit. See the
 [receipt](tests/results/ultrabert/rope-attribution.json).
+
+###26 October — retained successor Linux desktop cross-check
+
+Independent reanalysis of the original40354251257 packaged MiniLM vectors gives
+Linux ARM versus x86 max absolute0.00011958926916122437, RMS0.0000396754409811665,
+cosine0.9999996977649903 and norms1.00000004334/0.99999986954.
+Both use the same pinned model/text; no inference or timing run was repeated.
+[ZIP/member identities and limits](tests/results/packaging/successor-desktop-vector-review-repair.json).
+The repaired aggregator now applies the unchanged0.002/0.99999 gate across all
+four desktops. This two-platform comparison does not close the original negative
+batch, qualify a model portfolio or establish final successor release compatibility.

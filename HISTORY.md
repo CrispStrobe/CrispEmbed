@@ -16105,3 +16105,22 @@ separate: ordinary integration CI does not replace original/native model parity.
 The default-off fixed256 prototype and test-only RoPE attribution are integrated;
 no tag, model publication, application upgrade or broad inpainting product claim
 follows. Issue71 and the remaining numerical/task/release gates stay open.
+
+###26 October — independent desktop-vector aggregation repair
+
+The original successor aggregator checked C/CLI/Python agreement within each
+desktop but did not compare desktops. A synthetic orthogonal ARM vector could
+therefore pass while its local self-comparisons remained positive. Source repair
+5480be5c validates the shared pinned MiniLM model/text and finite nonzero384-vector
+on all four desktops, then independently recomputes Linuxx86-to-each-platform
+absolute error, RMS, cosine and norms with unchanged0.002/0.99999 gates.
+All14 small stdlib controls pass, including the previous false positive,
+independent absolute/cosine failures and the exact absolute boundary.
+
+[Retained-report reanalysis](tests/results/packaging/successor-desktop-vector-review-repair.json)
+verifies both original small artifact ZIPs and compares actual Linux ARM/x86
+vectors without inference: max0.000119589269, cosine0.999999697765.
+This is partial compatibility evidence, not a new successful consumer batch.
+Initial40354251257 remains rejected for Windows/Apple/browser failures; all
+four final-source desktop reports and the complete consumer aggregate remain
+required. No production default, archive, publication or app pin changes.

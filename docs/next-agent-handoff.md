@@ -617,8 +617,10 @@ completed evidence. The remaining loop requires actual review of these lanes:
   whole-source guards intentionally reject changed runtime trees. Final integrated
   source still needs a declared validation contract, fresh seven native/two WASM
   producers and all actual consumers. Initial producer success is not that proof.
-  The aggregation repair must independently compare desktop vectors across
-  platforms, in addition to each platform's C/CLI/Python self-checks.
+  The [aggregation repair](../tests/results/packaging/successor-desktop-vector-review-repair.json)
+  now independently compares all four desktop vectors with unchanged gates.
+  Its14 controls and retained Linux ARM/x86 cross-check pass; actual final
+  four-platform aggregation remains required.
 
 Fetch exact feature commits and source guards rather than reconstructing old
 commands. This handoff is preparatory; it does not close the loop, qualify a
