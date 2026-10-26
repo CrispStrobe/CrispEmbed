@@ -15584,3 +15584,9 @@ occurs. The first dispatch definition at7a9b15e4 was rejected before execution
 because runner paths used a job-level environment;17e2e9d4 sets them in a step.
 Source/raw quality-negative Ovis3 receipts remain immutable. January archives
 and future renewal remain in PLAN; this bounded November-expiry copy is done.
+
+
+[Preservation PR83](https://github.com/CrispStrobe/CrispEmbed/pull/83) merged as
+`9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
+Its preservation ownership row is closed. Fresh-main integration checks are
+tracked separately; no model or runtime source changed in this lane.
