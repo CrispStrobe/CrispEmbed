@@ -102,6 +102,17 @@ class FinalContract(unittest.TestCase):
             else: value['protected_git_objects']['src'] = 'a'*40
             with self.assertRaises(ValueError): c.source_guard(ROOT, value, require_submodule=False)
 
+    def test_f16_helper_preparation_and_sixth_binary_source_are_closed(self):
+        required = {'tools/ci-heavy/qwen35_quality.py', 'tools/ci-heavy/ocr_quality_prepare.py',
+                    'tests/results/ocr-quality-prepared.json', 'tests/test_ovisocr2_image_bounds.cpp'}
+        self.assertTrue(required.issubset(self.protocol['protected_git_objects']))
+        first = json.loads((ROOT / 'tests/results/qwen35-ocr/ovisocr2-f16-quality.json').read_text())['producer']
+        self.assertTrue(set(first['source_sha256']).issubset(c.PROTECTED_PATHS))
+        for name in required:
+            value = copy.deepcopy(self.protocol);value['protected_git_objects'].pop(name)
+            with self.assertRaisesRegex(ValueError, 'Incomplete'):
+                c.source_guard(ROOT, value, require_submodule=False)
+
     def test_extra_production_source_is_rejected(self):
         path = ROOT / 'src/.final-integrated-owned-negative'
         self.assertFalse(path.exists())

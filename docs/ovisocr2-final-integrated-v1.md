@@ -80,7 +80,7 @@ original source contracts. The new guard explicitly accepts only the declared
 assembled source rather than pretending it is unchanged from an older model
 qualification.
 
-Twelve lightweight stdlib controls exercise pending dependencies without network
+Thirteen lightweight stdlib controls exercise pending dependencies without network
 access, exact source closure, new/dirty source rejection, reviewed-negative
 default handling, full case coverage, confidence policy and numerical/score
 negative cases. No local compiler, image rendering, model/framework or raw-array

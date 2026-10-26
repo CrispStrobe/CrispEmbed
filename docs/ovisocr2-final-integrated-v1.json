@@ -53,7 +53,18 @@
     "tests/results/qwen35-ocr/ovisocr2-export.json": "2ac1a80c7463f5427ed6c529c1692df6535631bc",
     "tests/results/qwen35-ocr/ovisocr2-quality-panel.json": "09eb7b7fdaef951fbd390e0f9c2ca39747cf09f5",
     "tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json": "2237725bb9e2a803d361849e7a3ef16b76925bd2",
-    "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36"
+    "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+    "tools/ci-heavy/ocr_quality_prepare.py": "18994226360f546ffa31306637dbe16ab0cd709a",
+    "tools/ci-heavy/qwen35_decoded_panel.py": "7490f9986a745ea9e61611e17a4967bdaf376152",
+    "tools/ci-heavy/qwen35_page_parity.py": "5c989c4779e3fa988df2285dce17635cf610dccc",
+    "tools/ci-heavy/qwen35_quality.py": "56cec913128b03bcc8304f3affa1ac2219d99a24",
+    "tools/ci-heavy/qwen35_quant_calibration.py": "14ac7b2bc9175a4b77ee9b35167f6dde0aee9aa6",
+    "tools/ci-heavy/qwen35_receipt.py": "92be5f650121257219b9138e9ebd718eba6e3c9b",
+    "tools/ci-heavy/qwen35_vision_operators.py": "dc3da9ecfee626100db40c92374a00b9d379d7c7",
+    "tools/dump_ovisocr2_reference.py": "cc49a44f361c46f1d9064f1675e725cc2c93f777",
+    "tools/ci-heavy/ovisocr2_selective_precision.py": "49c5fa28fe34228ca85b5b46707d0c5593e2a343",
+    "tests/results/ocr-quality-prepared.json": "e3fe1ca8fc7bb1f3d2cca7ea2b0a119ecbdc3cfb",
+    "tests/test_ovisocr2_image_bounds.cpp": "4e2978687f8549c785f7c37e057e7a37964caeee"
   },
   "declared_source_sha256": {
     "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",

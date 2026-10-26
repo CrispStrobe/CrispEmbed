@@ -66,7 +66,18 @@ PROTECTED_PATHS = ('src',
  'tests/results/qwen35-ocr/ovisocr2-export.json',
  'tests/results/qwen35-ocr/ovisocr2-quality-panel.json',
  'tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json',
- 'README.md')
+ 'README.md',
+ 'tools/ci-heavy/ocr_quality_prepare.py',
+ 'tools/ci-heavy/qwen35_decoded_panel.py',
+ 'tools/ci-heavy/qwen35_page_parity.py',
+ 'tools/ci-heavy/qwen35_quality.py',
+ 'tools/ci-heavy/qwen35_quant_calibration.py',
+ 'tools/ci-heavy/qwen35_receipt.py',
+ 'tools/ci-heavy/qwen35_vision_operators.py',
+ 'tools/dump_ovisocr2_reference.py',
+ 'tools/ci-heavy/ovisocr2_selective_precision.py',
+ 'tests/results/ocr-quality-prepared.json',
+ 'tests/test_ovisocr2_image_bounds.cpp')
 
 
 def sha(path):
