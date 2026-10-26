@@ -30,8 +30,13 @@ quality. Final integration still requires fresh native/WASM producers at one
 reviewed final source and every required fresh consumer, including Apple.
 The initial pre-inference failure remains preserved.
 
-Six small stdlib source controls verify the copied probe body, immutable run
+Seven small stdlib source controls verify the copied probe body, immutable run
 selection and retained negatives, metadata forwarding/input count, failure
 artifact coverage, and unchanged production/helpers/full-consumer workflow.
 Workflow lint passes. No local build, model, corpus or inference ran, and this
-prepared retry has not been dispatched.
+actual retry is [40399358753](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40399358753),
+dispatched at immutable source
+`7d5611490fd6dfc3fb3349b361d52c3188ec8ed7` on
+`test/successor-apple-only-20261026`. Keep that source stable and dispatch only
+that retained ref for this initial-producer diagnostic; changed integrated
+runtime objects deliberately fail its source controls. Results remain pending.

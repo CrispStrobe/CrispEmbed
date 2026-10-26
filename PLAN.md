@@ -641,8 +641,12 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   encoded PNG hashes, ordered IDs/dimensions, manifest and216-byte notice.
   Both independent reviews verify the small receipt and six consumer-source
   objects. Corpus artifact12686713308 stays remote through24 January2027.
-  The actual Mac consumer must verify all53 artifact files and decoded RGB
-  identities before the unchanged released/candidate50 probe. Initial
+  [Mac-only40399358753](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40399358753)
+  at immutable`7d5611490fd6dfc3fb3349b361d52c3188ec8ed7` retries the existing
+  initial producer40 without repeating other platforms. It must verify all53
+  artifact files and decoded RGB before the unchanged released/candidate50 probe.
+  Use its retained branch for that diagnostic; final integrated-source Mac
+  compatibility still requires fresh archives and the full final consumers. Initial
   40376735641 and40354251257 stay negative; no image hash, gold, score or
   seven-of-fifty quality result changed. Historical renderer ABI alignment
   does not attribute the earlier Mac mismatch to a particular environment cause.

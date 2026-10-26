@@ -16166,3 +16166,21 @@ the earlier Mac mismatch to zlib/Python. Actual Mac consumption must verify the
 complete53-file artifact and decoded RGB before the unchanged old-release/
 candidate50 probe. No recognition, score, library, model or release qualification
 follows from input reproduction; the original seven-of-fifty quality remains.
+
+###26 October — initial Mac-only retry dispatched after input review
+
+[40399358753](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40399358753)
+runs source7d561149 on the retained branch
+`test/successor-apple-only-20261026`. Both source reviews verify all23
+production/build/binding objects equal initial producer40 and all six corpus
+guard objects equal successful input prooff284. The four-arm/fifty-case Apple
+probe is unchanged; exact native40339796226/corpus40386968045 inputs reject
+other IDs before archive/model access. A source-review shallow-checkout blocker
+was corrected before dispatch: full history now precedes baseline-dependent
+source controls. All seven small controls and workflow lint pass.
+
+The separate single-Mac workflow repeats no Windows/Linux/WASM/mobile/binding
+jobs and always preserves diagnostic/corpus/arm reports and logs. It has no
+aggregate, release qualification or final-integrated-source claim. Its actual
+RGB/model outcomes remain pending; later final-source fresh archive and Apple
+consumer gates still apply. Initial pre-inference failures remain preserved.
