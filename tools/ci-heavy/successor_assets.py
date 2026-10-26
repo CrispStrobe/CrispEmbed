@@ -21,7 +21,7 @@ MODEL_ALIAS='all-MiniLM-L6-v2'
 MODEL_SHA='77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2'
 TEXT='A small reproducible embedding consumer.'
 
-def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+REPO+'/'+path],text=True,timeout=90))
+def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+REPO+'/'+path],text=True,encoding='utf-8',timeout=90))
 def artifact(run,name,destination,max_bytes):
  listing=api('actions/runs/'+str(run)+'/artifacts?per_page=100')
  found=[a for a in listing['artifacts'] if a['name']==name and not a['expired']]
@@ -42,7 +42,7 @@ RUNTIME_PATHS=('src','ggml','cmake','CMakeLists.txt','VERSION','Cargo.lock','exa
  '.github/workflows/release-wasm.yml','README.md','LICENSE')
 
 def runtime_closure(producer_source):
- def git(*args):return subprocess.check_output(['git',*args],cwd=ROOT,text=True,timeout=180).strip()
+ def git(*args):return subprocess.check_output(['git',*args],cwd=ROOT,text=True,encoding='utf-8',timeout=180).strip()
  check=subprocess.run(['git','cat-file','-e',producer_source+'^{commit}'],cwd=ROOT,stderr=subprocess.DEVNULL)
  if check.returncode:subprocess.run(['git','fetch','--depth=1','origin',producer_source],cwd=ROOT,check=True,timeout=180)
  before=git('ls-tree',producer_source,'--',*RUNTIME_PATHS).splitlines()
@@ -68,10 +68,10 @@ def prepare(run,kind,artifact_name,out):
   manifest=json.loads(z.read(z.namelist()[0]))
  generator_blob=subprocess.check_output(['git','show',source+':tools/successor_asset_manifest.py'],cwd=ROOT)
  generator_source_sha=hashlib.sha256(generator_blob).hexdigest()
- expected_ggml=subprocess.check_output(['git','rev-parse','HEAD:ggml'],cwd=ROOT,text=True).strip()
+ expected_ggml=subprocess.check_output(['git','rev-parse','HEAD:ggml'],cwd=ROOT,text=True,encoding='utf-8').strip()
  if (manifest.get('schema')!='crispembed-successor-archive-manifest-v1' or manifest['source_commit']!=source
      or manifest['ggml_gitlink']!=expected_ggml or manifest['generator_sha256']!=generator_source_sha
-     or manifest['kind']!=kind or manifest['version']!=(ROOT/'VERSION').read_text().strip()):
+     or manifest['kind']!=kind or manifest['version']!=(ROOT/'VERSION').read_text(encoding='utf-8').strip()):
   raise ValueError('Manifest/source closure differs')
  archive_identity=artifact(run,artifact_name,out/'payload.zip',2*1024**3)
  selected=[]
@@ -99,7 +99,7 @@ def prepare(run,kind,artifact_name,out):
           'generator_git_blob_sha256':generator_source_sha,'consumer_generator_file_sha256':sha(ROOT/'tools/successor_asset_manifest.py'),
           'producer_run':run,'manifest_artifact':identity,'payload_artifact':archive_identity,'archives':selected,
           'qualification':False,'limits':['Archive validation alone is not runtime/model quality qualification.']}
- (out/'consumer.json').write_text(json.dumps(receipt,indent=2)+'\n')
+ (out/'consumer.json').write_text(json.dumps(receipt,indent=2)+'\n',encoding='utf-8')
  return receipt
 
 def compare(a,b):
@@ -111,8 +111,19 @@ def compare(a,b):
  if not result['passed']:raise ValueError('Packaged consumer vector parity failed: '+repr(result))
  return result
 
+def header_exports(header):
+ # The shipped C header is UTF-8 source, independent of the consumer locale.
+ names=re.findall(r'CRISPEMBED_API\s+[^;]*?\b(crispembed_\w+)\s*\(',Path(header).read_text(encoding='utf-8'))
+ if not names:raise ValueError('No ABI exports inspected')
+ return names
+
+def c_consumer_command(package,source,executable,windows):
+ if windows:
+  return ['cl','/nologo','/utf-8','/DCRISPEMBED_SHARED','/I'+str(package/'include'),str(source),'/Fe:'+str(executable),'/link',str(package/'crispembed.lib')]
+ return ['cc',str(source),'-I'+str(package/'include'),'-L'+str(package),'-lcrispembed','-Wl,-rpath,'+str(package.resolve()),'-o',str(executable)]
+
 def desktop(out):
- receipt=json.loads((out/'consumer.json').read_text())
+ receipt=json.loads((out/'consumer.json').read_text(encoding='utf-8'))
  binary=list(out.glob('crispembed-*/crispembed.exe' if platform.system()=='Windows' else 'crispembed-*/crispembed'))
  if len(binary)!=1:raise ValueError('Expected one desktop package')
  binary=binary[0];package=binary.parent
@@ -130,15 +141,15 @@ def desktop(out):
   cmd=[str(binary.resolve()),'-m',MODEL_ALIAS,'-t','2','--json']
   if offline:cmd.append('--offline')
   cmd.append(TEXT)
-  result=subprocess.run(cmd,text=True,capture_output=True,timeout=600)
-  (out/('cli-offline.log' if offline else 'cli-fresh.log')).write_text(result.stderr)
+  result=subprocess.run(cmd,text=True,encoding='utf-8',capture_output=True,timeout=600)
+  (out/('cli-offline.log' if offline else 'cli-fresh.log')).write_text(result.stderr,encoding='utf-8')
   if result.returncode:raise ValueError('Packaged CLI failed: '+str(result.returncode))
   rows=json.loads(result.stdout)
   if len(rows)!=1 or rows[0]['text']!=TEXT:raise ValueError('CLI response invalid')
   return rows[0]['embedding']
  missing_env=dict(os.environ,CRISPEMBED_CACHE_DIR=str((out/'offline-empty-cache').resolve()))
- missing=subprocess.run([str(binary.resolve()),'-m',MODEL_ALIAS,'--offline','--json',TEXT],env=missing_env,text=True,capture_output=True,timeout=60)
- (out/'cli-empty-offline.log').write_text(missing.stderr)
+ missing=subprocess.run([str(binary.resolve()),'-m',MODEL_ALIAS,'--offline','--json',TEXT],env=missing_env,text=True,encoding='utf-8',capture_output=True,timeout=60)
+ (out/'cli-empty-offline.log').write_text(missing.stderr,encoding='utf-8')
  if missing.returncode==0 or 'is not cached and offline mode is on' not in missing.stderr or list((out/'offline-empty-cache').rglob('*.gguf')):
   raise ValueError('Empty-cache offline request did not reject')
  first=cli(False);models=list(cache.rglob('all-MiniLM-L6-v2-iq4_xs.gguf'))
@@ -147,10 +158,8 @@ def desktop(out):
  header=package/'include/crispembed.h'
  if not header.is_file() or sha(header)!=sha(ROOT/'src/crispembed.h'):
   raise ValueError('Packaged public header missing or stale')
- lib=C.CDLL(str(library.resolve()));exports=[]
- for name in re.findall(r'CRISPEMBED_API\s+[^;]*?\b(crispembed_\w+)\s*\(', header.read_text()):
-  getattr(lib,name);exports.append(name)
- if not exports:raise ValueError('No ABI exports inspected')
+ exports=header_exports(header);lib=C.CDLL(str(library.resolve()))
+ for name in exports:getattr(lib,name)
  lib.crispembed_init.argtypes=[C.c_char_p,C.c_int];lib.crispembed_init.restype=C.c_void_p
  lib.crispembed_free.argtypes=[C.c_void_p];lib.crispembed_free.restype=None
  lib.crispembed_encode.argtypes=[C.c_void_p,C.c_char_p,C.POINTER(C.c_int)];lib.crispembed_encode.restype=C.POINTER(C.c_float)
@@ -166,13 +175,10 @@ def desktop(out):
  from crispembed import CrispEmbed
  from crispembed._binding import _CrispEmbedHparams
  executable=out/('capi-consumer.exe' if os.name=='nt' else 'capi-consumer')
- if os.name=='nt':
-  compile_command=['cl','/nologo','/DCRISPEMBED_SHARED','/I'+str(package/'include'),str(ROOT/'tests/successor_capi_consumer.c'),'/Fe:'+str(executable),'/link',str(package/'crispembed.lib')]
- else:
-  compile_command=['cc',str(ROOT/'tests/successor_capi_consumer.c'),'-I'+str(package/'include'),'-L'+str(package),'-lcrispembed','-Wl,-rpath,'+str(package.resolve()),'-o',str(executable)]
+ compile_command=c_consumer_command(package,ROOT/'tests/successor_capi_consumer.c',executable,os.name=='nt')
  subprocess.run(compile_command,check=True,timeout=120)
  actual_env=dict(os.environ,PATH=str(package.resolve())+os.pathsep+os.environ.get('PATH',''))
- compiled=json.loads(subprocess.check_output([str(executable),str(models[0])],env=actual_env,text=True,timeout=600))
+ compiled=json.loads(subprocess.check_output([str(executable),str(models[0])],env=actual_env,text=True,encoding='utf-8',timeout=600))
  expected_offsets=[getattr(_CrispEmbedHparams,name).offset for name,_ in _CrispEmbedHparams._fields_]
  if compiled['prefix_offsets']!=expected_offsets or compiled['hparams_size']<C.sizeof(_CrispEmbedHparams):
   raise ValueError('Compiled public header/binding prefix ABI layout differs')
@@ -186,7 +192,7 @@ def desktop(out):
   library_sha256=sha(library),cli_binary_sha256=sha(binary),compiled_c_consumer_sha256=sha(executable),
   public_header_sha256=sha(header),compiled_hparams_size=compiled['hparams_size'],python_prefix_offsets=expected_offsets,
   limits=['One qualified published MiniLM model; no broad task-quality, GPU or experimental-model qualification.'])
- (out/'consumer.json').write_text(json.dumps(receipt,indent=2,allow_nan=False)+'\n')
+ (out/'consumer.json').write_text(json.dumps(receipt,indent=2,allow_nan=False)+'\n',encoding='utf-8')
 
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--run',type=int);p.add_argument('--kind',choices=('native','wasm'))

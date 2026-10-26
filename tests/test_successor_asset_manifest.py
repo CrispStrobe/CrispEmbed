@@ -69,6 +69,38 @@ class ConsumerLayoutTests(unittest.TestCase):
  def test_windows_drive_path_rejected(self):
   with self.assertRaises(ValueError):m.safe_name('C:escape.dll')
 
+class HeaderEncodingTests(unittest.TestCase):
+ def test_utf8_public_header_exports_with_windows_default(self):
+  # Actual shipped-header comment character: U+2581 encodes as E2 96 81;
+  # byte81 is undefined in cp1252, the locale from the failed Windows run.
+  payload=('// 2 = SentencePiece (U+2581 ▁ prefix starts a new word)\n'
+   'CRISPEMBED_API void * crispembed_init(const char * path, int threads);\n'
+   'CRISPEMBED_API void crispembed_free(void * context);\n').encode('utf-8')
+  with self.assertRaises(UnicodeDecodeError):payload.decode('cp1252')
+  original=Path.read_text
+  def windows_read(path,*args,**kwargs):
+   kwargs.setdefault('encoding','cp1252')
+   return original(path,*args,**kwargs)
+  with tempfile.TemporaryDirectory() as d:
+   header=Path(d)/'crispembed.h';header.write_bytes(payload)
+   with mock.patch.object(Path,'read_text',autospec=True,side_effect=windows_read):
+    self.assertEqual(consumer.header_exports(header),['crispembed_init','crispembed_free'])
+ def test_header_decode_and_export_failures_are_not_ignored(self):
+  with tempfile.TemporaryDirectory() as d:
+   header=Path(d)/'crispembed.h';header.write_bytes(b'\xff invalid UTF-8')
+   with self.assertRaises(UnicodeDecodeError):consumer.header_exports(header)
+   header.write_bytes('// ▁ no exported declarations\n'.encode('utf-8'))
+   with self.assertRaises(ValueError):consumer.header_exports(header)
+ def test_compiled_msvc_consumer_uses_utf8_and_shipped_import_library(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);package=root/'package';source=root/'consumer.c';binary=root/'consumer.exe'
+   command=consumer.c_consumer_command(package,source,binary,True)
+   self.assertEqual(command[0],'cl');self.assertIn('/utf-8',command)
+   self.assertLess(command.index('/utf-8'),command.index('/link'))
+   self.assertEqual(command[-1],str(package/'crispembed.lib'))
+   unix=consumer.c_consumer_command(package,source,binary,False)
+   self.assertEqual(unix[0],'cc');self.assertNotIn('/utf-8',unix)
+
 class RuntimeClosureTests(unittest.TestCase):
  def fixture(self,root):
   def git(*args):
