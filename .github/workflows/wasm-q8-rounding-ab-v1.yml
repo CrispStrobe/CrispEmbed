@@ -1,0 +1,77 @@
+name: Conditional WASM Q8 rounding model A/B v1
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  operator-controls:
+    uses: ./.github/workflows/successor-wasm-rounding-controls.yml
+  ab:
+    needs: operator-controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Small protocol controls
+        run: python tests/test_wasm_q8_rounding_ab_v1.py -v
+      - name: Fail closed until actual first trace is independently reviewed and pinned
+        run: python tools/ci-heavy/wasm_q8_rounding_ab_v1.py preflight --output "$RUNNER_TEMP/rounding-ab"
+      - name: Reviewed first trace, exact immutable producer members and initial model fixture
+        run: python tools/ci-heavy/wasm_q8_rounding_ab_v1.py prepare --output "$RUNNER_TEMP/rounding-ab"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned browser engine
+        run: |
+          npm install --prefix "$RUNNER_TEMP/rounding-ab-browser-tools" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/rounding-ab-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Actual old native1/2 outputs and token IDs for all predeclared texts
+        run: python tools/ci-heavy/wasm_q8_rounding_ab_v1.py native-reference --output "$RUNNER_TEMP/rounding-ab"
+      - name: Actual old packaged-browser outputs and neutral retained diagnostic token IDs
+        run: NODE_PATH="$RUNNER_TEMP/rounding-ab-browser-tools/node_modules" node tests/test_wasm_q8_rounding_ab_v1.cjs "$RUNNER_TEMP/rounding-ab/browser" reference
+      - name: Freeze supplementary old panel before any candidate inference
+        run: python tools/ci-heavy/wasm_q8_rounding_ab_v1.py freeze-old --output "$RUNNER_TEMP/rounding-ab"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Candidate test-only diagnostic overlay, two build workers
+        run: python tools/ci-heavy/wasm_q8_rounding_ab_v1.py build --output "$RUNNER_TEMP/rounding-ab"
+      - name: Fresh unset, empty, literal0 and literal1 ordinary/dump modules plus context isolation
+        run: NODE_PATH="$RUNNER_TEMP/rounding-ab-browser-tools/node_modules" node tests/test_wasm_q8_rounding_ab_v1.cjs "$RUNNER_TEMP/rounding-ab/browser" candidate
+      - name: Preserve every result and apply unchanged output and original full-stage gates
+        run: python tools/ci-heavy/wasm_q8_rounding_ab_v1.py compare --output "$RUNNER_TEMP/rounding-ab"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-q8-rounding-ab-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rounding-ab/*.json
+            ${{ runner.temp }}/rounding-ab/*.log
+            ${{ runner.temp }}/rounding-ab/browser/panel.json
+            ${{ runner.temp }}/rounding-ab/browser/*-browser.json
+            ${{ runner.temp }}/rounding-ab/native-vectors/*.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-q8-rounding-ab-v1-arrays-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rounding-ab/trusted-trace/
+            ${{ runner.temp }}/rounding-ab/browser/arrays/
+            ${{ runner.temp }}/rounding-ab/browser/candidate/crispembed_embed.*
+            ${{ runner.temp }}/rounding-ab/native-vectors/*.f32
+          retention-days: 90

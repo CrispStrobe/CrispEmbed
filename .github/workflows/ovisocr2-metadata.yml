@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1]
         default: metadata
       native_run_id:
         type: string
@@ -231,6 +231,14 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ultrabert-rope'
     needs: controls
     uses: ./.github/workflows/ultrabert-rope.yml
+  wasm-q8-rounding-ab-v1:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'wasm-q8-rounding-ab-v1'
+    needs: controls
+    uses: ./.github/workflows/wasm-q8-rounding-ab-v1.yml
+  successor-wasm-rounding-controls:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-rounding-controls'
+    needs: controls
+    uses: ./.github/workflows/successor-wasm-rounding-controls.yml
   successor-wasm-trace:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-trace'
     needs: controls

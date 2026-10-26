@@ -16070,3 +16070,24 @@ The conditional backend-local candidate remains default-off and unmerged until
 actual operator and full-model A/B gates complete. No reference, weight, input,
 tolerance, production archive, application pin or default is replaced. Stage
 arrays and diagnostic modules remain remote through24 January2027.
+## 26 October 2026 — conditional rounding operator precompile fixture corrected
+
+[Initial operator40385214740](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40385214740)
+at24cab931 stops in a historical larger-input unit test, before operator compilation
+or any model access. The unchanged runtime guard correctly rejects the new public
+wrapper earlier than the unit's expected decoder-arithmetic rejection. The
+[retained rejection](tests/results/packaging/wasm-rounding-initial-controls-rejection.json)
+records source, job, exact errors and log identity. The unit now uses its existing
+historical source fixture to exercise decoder rejection and separately rejects
+an added cache header. The actual historical guard and all numerical limits
+remain unchanged. Thirteen larger-input controls, five FFN controls and four
+candidate source-preservation controls pass; actual WASM operator execution
+remains pending.
+
+The corrected standalone operator dispatch40390724614 was cancelled while its
+controls were queued, before operator compilation. The same operator workflow is
+now a required predecessor of the source-bound model A/B workflow, avoiding a
+second independent queue round trip and duplicate compilation. The model job
+also verifies the completed same-source job and its actual five-record numeric
+receipt before downloading model data. This scheduling change widens no source,
+output or numerical gate. The original40385214740 fixture rejection stays retained.

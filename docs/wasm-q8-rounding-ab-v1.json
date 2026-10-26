@@ -1,0 +1,83 @@
+{
+  "schema": "crispembed-wasm-q8-rounding-ab-v1",
+  "qualification": false,
+  "candidate_base": "24cab931fd6870ea5173453b426e8e1294895cbd",
+  "candidate_declaration_sha256": "00b84bbc1bf0cf824e19672b25fcac049ee233941560473348554bedf1a00997",
+  "trace": {
+    "reviewed": true,
+    "run": 40379523009,
+    "source": "f8bac049a7c143773b330cfc4c217b1f0a47ef56",
+    "review_artifact": {
+      "id": 12681776616,
+      "bytes": 47552,
+      "sha256": "7e934a9f486c9d259b17783c9091e8f322f32a2e97e1d15bb1f98ee3379ca4a4",
+      "report_sha256": "381f2ad5687f76830b64c431a39b003c574ecdfd4ca25996dff102f973b0fb8b"
+    },
+    "raw_artifact": {
+      "id": 12681437524,
+      "bytes": 962060,
+      "sha256": "70f4eb725d6d3083b23ad93ffc8821f69bee8ac0257f3aa403946cc1145cd5cb"
+    }
+  },
+  "gates": {
+    "max_abs": 0.002,
+    "cosine": 0.99999
+  },
+  "panel": [
+    {
+      "id": "original",
+      "literal": "A small reproducible embedding consumer."
+    },
+    {
+      "id": "empty",
+      "literal": ""
+    },
+    {
+      "id": "punctuation-currency",
+      "literal": "Price: $12.50 / €9.99 — (test)!? #42"
+    },
+    {
+      "id": "diacritics-emoji",
+      "literal": "Café naïve résumé — 😀🧮"
+    },
+    {
+      "id": "mixed-scripts",
+      "literal": "Hello Ελληνικά 中文 العربية हिन्दी"
+    },
+    {
+      "id": "whitespace",
+      "literal": " \tHello \n world\r\n "
+    },
+    {
+      "id": "numbers",
+      "literal": "0 1 -1 3.14159 1e-6 2026-10-26 000123"
+    },
+    {
+      "id": "one-character",
+      "literal": "x"
+    },
+    {
+      "id": "near-limit",
+      "repeat": {
+        "literal": "hello",
+        "count": 420,
+        "separator": " "
+      },
+      "expected_token_count": 422
+    },
+    {
+      "id": "truncating",
+      "repeat": {
+        "literal": "hello",
+        "count": 800,
+        "separator": " "
+      },
+      "expected_token_count": 512
+    }
+  ],
+  "limits": [
+    "Actual first trace reviewed and pinned. All service/report/ZIP/member identities must still verify hosted before any model load; no latest lookup or reference recapture.",
+    "Supplementary owned text controls only; no task accuracy, default promotion, source-cause or release qualification."
+  ],
+  "panel_sha256": "d01c0fcc3046bf1c3a1024f890e1c721852052b2cfc84f37e7b7c4e4f2b03406"
+}

@@ -1,0 +1,54 @@
+{
+  "schema": "crispembed-conditional-wasm-q8-rounding-source-v1",
+  "status": "source-only-unmerged-default-off",
+  "qualification": false,
+  "crispembed_base": "973b200edd5d1d7429edecff1bd3ff42f0d80ca7",
+  "ggml_base": "890278a8342c620197c90e702e1188bcab94f510",
+  "ggml_candidate": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "ggml_feature_branch": "feat/wasm-q8-rounding-candidate-20261026",
+  "ggml_fork": "https://github.com/CrispStrobe/ggml",
+  "inspected_fork_tip": "5049ebb8472fdc965eb3fb72c1cb111260726186",
+  "gate": "CRISPEMBED_WASM_Q8_0_ROUND",
+  "default": false,
+  "files": {
+    "include/ggml-cpu.h": {
+      "base_sha256": "316279e004cdeb8e6ef78599acb602bf79a8abdf897fed9fd1914808c1518c6e",
+      "candidate_sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae"
+    },
+    "src/ggml-cpu/arch/wasm/quants.c": {
+      "base_sha256": "defc3f28aa882d52a390d4573f5308ddc3aa95c5f487bbdaf311e7b0874493b3",
+      "candidate_sha256": "0f842b90c7fd3f83c7591454d85ac21985b3e572c21bc0f781f5159f751e0a42"
+    },
+    "src/ggml-cpu/ggml-cpu-impl.h": {
+      "base_sha256": "e7008069e3e46f1db5e3d2eaafb4ddec3c7d0ece5c0454f99c5a8e33a50f20ba",
+      "candidate_sha256": "0a2fc96b34833c1a952d17b8232f3f714f8391e7b78f0be507c92e257fd525d0"
+    },
+    "src/ggml-cpu/ggml-cpu.c": {
+      "base_sha256": "7cf141bad746526b0bd87b08d2a7557759035a4b9ab2755f4ecccf99b3f9cb17",
+      "candidate_sha256": "b8c04a65c4ee295428501c0951c52b334920fef9101cb100061731b1b9fbee94"
+    },
+    "src/ggml-cpu/ggml-cpu.cpp": {
+      "base_sha256": "c35e6337ddadb2fcc86c888528ba1f3991b6761947c3ec81debcfbf6b56d7f9e",
+      "candidate_sha256": "898063fa671f65e5cee7b9a6520e7fedf2125765015f5c16eb3675be2c79af7e"
+    },
+    "src/ggml-cpu/quants.h": {
+      "base_sha256": "918d6755b3e601ec7bb83c7dbf1d73304490651ccbb4072b0d31a2b45df751da",
+      "candidate_sha256": "02457a2e34ffb102ad046868f2087d1f07e744b36cbb6ffee9ad5295e78a6781"
+    },
+    "tests/test-wasm-q8-rounding.cpp": {
+      "base_sha256": null,
+      "candidate_sha256": "bc930d5da844df31e5868e1ad28bc8389952809d5f6b218a043421b9e276f960"
+    },
+    "tests/wasm-q8-rounding/CMakeLists.txt": {
+      "base_sha256": null,
+      "candidate_sha256": "e3cd46be12d5607b1e0aee31a6e118e06de64f6b4597fb4b97442670008353e6"
+    }
+  },
+  "crispembed_encoder_candidate_sha256": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+  "runtime_tests_executed": false,
+  "limits": [
+    "No actual network cause, full-stage parity, default promotion or new asset qualification established.",
+    "Q8_1 and unrelated fork changes excluded.",
+    "The old890 trace guard is unchanged; a new versioned exact-delta A/B guard is required."
+  ]
+}
