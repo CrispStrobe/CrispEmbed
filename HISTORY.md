@@ -15720,7 +15720,7 @@ on both producer and consumer; unexpected auxiliary files still reject.
 
 [Source trace40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
 completes atf8bac049. The independently reviewed [full receipt](tests/results/packaging/successor-wasm-source-trace.json)
-verifies the actual small ZIP/all14 members, five source hashes, eight exact
+verifies the actual small ZIP/all13 members, five source hashes, eight exact
 output anchors, both native thread counts' full-stage identities and independent
 Q8 reference-byte controls. Every original final vector remains bit exact; the
 unchanged final comparison still fails maximum0.00837269/cosine0.99864984.
