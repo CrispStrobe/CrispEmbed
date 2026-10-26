@@ -18,6 +18,7 @@ jobs:
           python-version: '3.12'
       - name: Source/panel controls before native build
         run: |
+          python tests/test_ovisocr2_position_report.py -v
           python tools/ci-heavy/ovisocr2_position_replay.py --preflight
       - name: Portable CPU test binaries and actual bound controls
         run: |

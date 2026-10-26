@@ -1,8 +1,10 @@
 """Hosted composed A/B using immutable original references; never recapture gold."""
 import argparse
+import copy
+import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import sys
@@ -14,6 +16,40 @@ ROOT=old.ROOT
 BASE='9d107710b0fc59f1e0d3fd3ac491db28fe74e2a3'
 VISION='bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3'
 CASES=('frozen-control','control-square','large-landscape','large-boundary')
+
+def checked_retained_reference(path,producer):
+    """Keep raw bytes frozen; normalize only the documented public path copy.
+
+    The original large-input writer hashes original.json before save_report()
+    redacts the enclosing producer JSON. Its source-config model path is the
+    single runner-local field in this comparison; numerical/output fields must
+    still agree exactly after that one strict prefix mapping.
+    """
+    raw=Path(path).read_bytes();identity=producer['original_files']['original.json']
+    digest=hashlib.sha256(raw).hexdigest()
+    if len(raw)!=identity['bytes'] or digest!=identity['sha256']:
+        raise ValueError('Frozen original JSON bytes/SHA differ before redaction normalization')
+    reference=json.loads(raw);expected=producer['original_capture']
+    actual_path=reference['source_config']['_name_or_path']
+    expected_path=expected['source_config']['_name_or_path']
+    model=expected['source_model'];revision=expected['source_revision']
+    if not isinstance(model,str) or not isinstance(revision,str) or not isinstance(actual_path,str):
+        raise ValueError('Unsupported frozen source-config model path')
+    suffix='/hf/hub/models--'+model.replace('/','--')+'/snapshots/'+revision
+    if expected_path!='<scratch>'+suffix or not actual_path.endswith(suffix):
+        raise ValueError('Frozen source-config model/revision suffix differs')
+    prefix=actual_path[:-len(suffix)]
+    if not prefix or not PurePosixPath(prefix).is_absolute() or '..' in PurePosixPath(prefix).parts or '\\' in prefix:
+        raise ValueError('Frozen source-config runner prefix is not an absolute normalized POSIX path')
+    comparison=copy.deepcopy(reference)
+    comparison['source_config']['_name_or_path']='<scratch>'+actual_path[len(prefix):]
+    if comparison!=expected:
+        raise ValueError('Frozen original JSON/producer disagree beyond model-path redaction')
+    proof={'raw_json_sha256':digest,'raw_json_bytes':len(raw),
+           'normalized_field':'source_config._name_or_path','normalized_prefix':'<scratch>',
+           'source_model':model,'source_revision':revision,'all_other_fields_exact':True,
+           'raw_file_unchanged':True}
+    return reference,proof
 
 def preflight():
     if os.environ.get('GITHUB_ACTIONS')!='true':
@@ -77,8 +113,8 @@ def run(case,gate):
                 image=scratch/'input.png'
                 frozen.extract(z,prefix+'input.png',image,{'bytes':z.getinfo(prefix+'input.png').file_size,'sha256':p['input']['png_sha256']})
             archive.unlink()
-            reference=json.loads((scratch/'original.json').read_text())
-            if reference!=p['original_capture']:raise ValueError('Frozen original JSON/producer disagree')
+            reference,r['retained_original_json']=checked_retained_reference(scratch/'original.json',p)
+            save()
         ref=scratch/'official-delta.gguf';r['reference_sha256']=old.audit.sha(ref)
         env={k:v for k,v in os.environ.items() if not k.startswith('CRISPEMBED_')}
         known=set(old.audit.NATIVE_ENV)|{'CRISPEMBED_QWEN35_VISION_PRECISE_NORM','CRISPEMBED_QWEN35_VISION_PRECISE_ATTN',

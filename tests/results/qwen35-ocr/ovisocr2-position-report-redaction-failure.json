@@ -1,0 +1,266 @@
+{
+  "schema": "crispembed-ovisocr2-position-replay-redaction-failure-v1",
+  "reviewed_on_utc": "2026-10-26",
+  "run": 40356657327,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327",
+  "source_commit": "ad09168e40041ef945d16fdb2e554c8433c7cffc",
+  "conclusion": "cancelled",
+  "scope": "Four executed retained-reference report comparison failures before model audit; two unexecuted boundary jobs cancelled; two frozen controls completed successfully.",
+  "failed_jobs": [
+    {
+      "case": "control-square",
+      "gate": 0,
+      "job_id": 121720738192,
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327/job/121720738192",
+      "conclusion": "failure",
+      "earliest_failure": "tools/ci-heavy/ovisocr2_position_replay.py:81: Frozen original JSON/producer disagree",
+      "bounds_controls_passed": true,
+      "fourteen_arm_record_count": 0,
+      "native_candidate_inference_performed": false,
+      "small_artifact": {
+        "id": 12672774030,
+        "name": "ovisocr2-position-replay-reports-control-square-gate0-40356657327",
+        "bytes": 2621,
+        "sha256": "3bd92acf169db668269c24f4e21f44fa432d9f197b05da28bb63124809d7e947",
+        "expires_at": "2027-01-24T16:11:16Z",
+        "members": [
+          {
+            "path": "bounds-controls-resources.json",
+            "bytes": 42,
+            "sha256": "50491b5be81942ca41d0762b78d254c4dc16befc050b4ff26114f4f39f7511ba"
+          },
+          {
+            "path": "bounds-controls.log",
+            "bytes": 100,
+            "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+          },
+          {
+            "path": "environment.txt",
+            "bytes": 157,
+            "sha256": "2782310935c475a22c8e7a5d5e46ecc2c759cd4e0050dc218d11c38b46597546"
+          },
+          {
+            "path": "ovisocr2-large-inputs.json",
+            "bytes": 3625,
+            "sha256": "c0447146a31ea202d3efd3a509ba37148d07e4fe04add7af0969b882816867b7"
+          }
+        ]
+      },
+      "producer_report_sha256": "c0447146a31ea202d3efd3a509ba37148d07e4fe04add7af0969b882816867b7",
+      "downloaded_job_log_bytes": 59213,
+      "downloaded_job_log_sha256": "23ddc921ad207a3117d78f85c91e334903f9ce52a21f6400503319b63d5eab93"
+    },
+    {
+      "case": "control-square",
+      "gate": 1,
+      "job_id": 121720738426,
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327/job/121720738426",
+      "conclusion": "failure",
+      "earliest_failure": "tools/ci-heavy/ovisocr2_position_replay.py:81: Frozen original JSON/producer disagree",
+      "bounds_controls_passed": true,
+      "fourteen_arm_record_count": 0,
+      "native_candidate_inference_performed": false,
+      "small_artifact": {
+        "id": 12673966977,
+        "name": "ovisocr2-position-replay-reports-control-square-gate1-40356657327",
+        "bytes": 2622,
+        "sha256": "caa4bf0064898050cdda8b8109ca4ad39324b7394b9e3c5bfbafba657f225cc3",
+        "expires_at": "2027-01-24T16:11:16Z",
+        "members": [
+          {
+            "path": "bounds-controls-resources.json",
+            "bytes": 42,
+            "sha256": "50491b5be81942ca41d0762b78d254c4dc16befc050b4ff26114f4f39f7511ba"
+          },
+          {
+            "path": "bounds-controls.log",
+            "bytes": 100,
+            "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+          },
+          {
+            "path": "environment.txt",
+            "bytes": 157,
+            "sha256": "2782310935c475a22c8e7a5d5e46ecc2c759cd4e0050dc218d11c38b46597546"
+          },
+          {
+            "path": "ovisocr2-large-inputs.json",
+            "bytes": 3625,
+            "sha256": "a5c77606194b3a8b04031942d4f69c77c1611599a60823623023808a1ce1417c"
+          }
+        ]
+      },
+      "producer_report_sha256": "a5c77606194b3a8b04031942d4f69c77c1611599a60823623023808a1ce1417c",
+      "downloaded_job_log_bytes": 59570,
+      "downloaded_job_log_sha256": "0f7cec3d1c0c82861b15f74d200d0a8c7ccc0a955b6284537ba4ed79fd66e54d"
+    },
+    {
+      "case": "large-landscape",
+      "gate": 0,
+      "job_id": 121720738032,
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327/job/121720738032",
+      "conclusion": "failure",
+      "earliest_failure": "tools/ci-heavy/ovisocr2_position_replay.py:81: Frozen original JSON/producer disagree",
+      "bounds_controls_passed": true,
+      "fourteen_arm_record_count": 0,
+      "native_candidate_inference_performed": false,
+      "small_artifact": {
+        "id": 12674493320,
+        "name": "ovisocr2-position-replay-reports-large-landscape-gate0-40356657327",
+        "bytes": 2623,
+        "sha256": "a03a077a75fc599b726db65e2588f54ac4098aae1cdc731ae441d45d2b67fdb0",
+        "expires_at": "2027-01-24T16:11:16Z",
+        "members": [
+          {
+            "path": "bounds-controls-resources.json",
+            "bytes": 42,
+            "sha256": "5d3c94f2571dce0fb7768fd45918f09c987f774dea7e060fa27be413ba3cc061"
+          },
+          {
+            "path": "bounds-controls.log",
+            "bytes": 100,
+            "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+          },
+          {
+            "path": "environment.txt",
+            "bytes": 157,
+            "sha256": "2782310935c475a22c8e7a5d5e46ecc2c759cd4e0050dc218d11c38b46597546"
+          },
+          {
+            "path": "ovisocr2-large-inputs.json",
+            "bytes": 3627,
+            "sha256": "35a25de7a416d85af2edad132219ddb8d9c6e18529118f8d96cb3fc3ba30c277"
+          }
+        ]
+      },
+      "producer_report_sha256": "35a25de7a416d85af2edad132219ddb8d9c6e18529118f8d96cb3fc3ba30c277",
+      "downloaded_job_log_bytes": 60000,
+      "downloaded_job_log_sha256": "118c9962a2a4ff3b752a8ae8a967ae7a84577a6ccc2c56a500aeb1fc835c0c22"
+    },
+    {
+      "case": "large-landscape",
+      "gate": 1,
+      "job_id": 121720738165,
+      "job_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327/job/121720738165",
+      "conclusion": "failure",
+      "earliest_failure": "tools/ci-heavy/ovisocr2_position_replay.py:81: Frozen original JSON/producer disagree",
+      "bounds_controls_passed": true,
+      "fourteen_arm_record_count": 0,
+      "native_candidate_inference_performed": false,
+      "small_artifact": {
+        "id": 12673429048,
+        "name": "ovisocr2-position-replay-reports-large-landscape-gate1-40356657327",
+        "bytes": 2623,
+        "sha256": "0b4f9cf0ee8e6170a433cb42e2b3aaab6417b0b4252dff54ebf845675d6e3c97",
+        "expires_at": "2027-01-24T16:11:16Z",
+        "members": [
+          {
+            "path": "bounds-controls-resources.json",
+            "bytes": 42,
+            "sha256": "89d28835e0482404d28e03a412ffb88a42fa1492e753741433265747686e8aae"
+          },
+          {
+            "path": "bounds-controls.log",
+            "bytes": 100,
+            "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+          },
+          {
+            "path": "environment.txt",
+            "bytes": 157,
+            "sha256": "2782310935c475a22c8e7a5d5e46ecc2c759cd4e0050dc218d11c38b46597546"
+          },
+          {
+            "path": "ovisocr2-large-inputs.json",
+            "bytes": 3627,
+            "sha256": "edf06a0c8de726b307ed38179833b638d2ff96399f41958da48de10f4aff4718"
+          }
+        ]
+      },
+      "producer_report_sha256": "edf06a0c8de726b307ed38179833b638d2ff96399f41958da48de10f4aff4718",
+      "downloaded_job_log_bytes": 59717,
+      "downloaded_job_log_sha256": "994ef7e6a7b540476bf5fc378dc35d8bdb4ea80abbadd43c81bee8bddeabc63f"
+    }
+  ],
+  "cancelled_jobs": [
+    {
+      "case": "large-boundary",
+      "gate": 0,
+      "job_id": 121720738360,
+      "conclusion": "cancelled",
+      "job_step_count": 0,
+      "inference_performed": false,
+      "scope": "Cancelled while queued before job steps after same-case frozen JSON identity demonstrated the same pending harness mismatch; not an executed numerical failure."
+    },
+    {
+      "case": "large-boundary",
+      "gate": 1,
+      "job_id": 121720738227,
+      "conclusion": "cancelled",
+      "job_step_count": 0,
+      "inference_performed": false,
+      "scope": "Cancelled while queued before job steps after same-case frozen JSON identity demonstrated the same pending harness mismatch; not an executed numerical failure."
+    }
+  ],
+  "successful_frozen_jobs": [
+    {
+      "case": "frozen-control",
+      "gate": 0,
+      "job_id": 121720738126,
+      "conclusion": "success"
+    },
+    {
+      "case": "frozen-control",
+      "gate": 1,
+      "job_id": 121720738204,
+      "conclusion": "success"
+    }
+  ],
+  "root_cause": {
+    "field": "source_config._name_or_path",
+    "reason": "The raw original.json is byte-pinned before the public producer writer redacts its enclosing original_capture copy. Direct dictionary equality compares an absolute runner prefix to the public <scratch> marker.",
+    "frozen_identity_reconstructions": [
+      {
+        "case": "control-square",
+        "raw_original_json": {
+          "sha256": "77686836ab9cdeaf1cb5c4d8803604613c39b60ebda6bc4642b5c138f5b3adc7",
+          "bytes": 87089
+        },
+        "only_changed_comparison_field": "source_config._name_or_path",
+        "public_model_path": "<scratch>/hf/hub/models--ATH-MaaS--OvisOCR2/snapshots/cbdede82e048659b83310476ff807da825f8fe78",
+        "private_review_only_unredaction_reconstructs_exact_frozen_bytes": true
+      },
+      {
+        "case": "large-landscape",
+        "raw_original_json": {
+          "sha256": "e6ba7b0904c5959b5309477fdcf39c6eb6ac7a6ecc98ec1d716e934f512103d4",
+          "bytes": 87078
+        },
+        "only_changed_comparison_field": "source_config._name_or_path",
+        "public_model_path": "<scratch>/hf/hub/models--ATH-MaaS--OvisOCR2/snapshots/cbdede82e048659b83310476ff807da825f8fe78",
+        "private_review_only_unredaction_reconstructs_exact_frozen_bytes": true
+      },
+      {
+        "case": "large-boundary",
+        "raw_original_json": {
+          "sha256": "3a762bc52d3c474a139b3e385a225bd0479e2712463fd3fed6e45d7d6553193b",
+          "bytes": 87095
+        },
+        "only_changed_comparison_field": "source_config._name_or_path",
+        "public_model_path": "<scratch>/hf/hub/models--ATH-MaaS--OvisOCR2/snapshots/cbdede82e048659b83310476ff807da825f8fe78",
+        "private_review_only_unredaction_reconstructs_exact_frozen_bytes": true
+      }
+    ]
+  },
+  "correction_contract": {
+    "raw_json_bytes_sha_checked_before_parse_and_normalization": true,
+    "only_model_path_prefix_normalized_on_comparison_copy": true,
+    "known_model_revision_suffix_required": true,
+    "all_other_fields_exact": true,
+    "raw_file_rewritten": false,
+    "reference_arrays_weights_gold_caps_budgets_runtime_changed": false
+  },
+  "limits": [
+    "No original model recapture or conversion. No local arrays/models/framework/build/inference.",
+    "The failed jobs do not establish a numerical or decoded-output regression. The corrected composed panel remains required.",
+    "Existing larger-boundary numerical rejection and both original alternative paths remain unchanged."
+  ]
+}
