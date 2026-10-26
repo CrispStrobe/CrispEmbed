@@ -1,3 +1,34 @@
+## 26 October 2026 — Position replay stopped on raw/public report path redaction
+
+Composed replay [40356657327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327)
+at`ad09168e40041ef945d16fdb2e554c8433c7cffc` retains four actual structural
+failures: control-square and large-landscape, each with the interpolation gate0
+and1. Each passes bounds/recovery controls and immutable extraction, then stops
+before the fourteen-arm audit at the raw/public original-JSON comparison. The
+two frozen-control jobs complete successfully. Both queued boundary jobs are
+cancelled before any job steps after the same frozen metadata discrepancy is
+demonstrated; they are not executed numerical failures.
+
+[The negative receipt](tests/results/qwen35-ocr/ovisocr2-position-report-redaction-failure.json)
+records exact jobs, four small artifact ZIP/member hashes, complete job-log hashes,
+original JSON identities and cancellation state. Only small reports/logs are
+downloaded for this review. The retained raw `original.json` was hashed before
+the public producer writer redacted the runner prefix in its enclosing
+`original_capture.source_config._name_or_path`. A private comparison-only
+unredaction reconstructs the exact frozen original-JSON byte count/SHA for all
+three authored input sizes; no scientific field differs.
+
+The bounded harness correction rechecks the raw file's frozen byte count/SHA
+before parsing, requires the declared model/revision suffix, maps only that
+single absolute prefix to the existing public`<scratch>` marker on a comparison
+copy, and still rejects every other field difference. The raw file, original
+arrays, models, prompts, caps, gold, numerical budgets, runtime and both gated
+alternatives remain unchanged. Five dependency-free controls cover exact raw
+identity, the one permitted redaction, other config/numerical/output differences,
+wrong snapshots and invalid prefixes. Corrected hosted composed execution and
+independent numerical/decoded review remain pending; no gate is waived by this
+report comparison repair.
+
 ## 25 October 2026 — Bounded decoder weight cache audited; default remains off
 
 The per-context F32/F16 decoder weight cache is complete behind
@@ -15567,6 +15598,25 @@ all four rejected candidates, development0.17.13 and immutable app0.17.12 remain
 unchanged; this validation tooling creates no runtime release.
 
 
+## 26 October 2026 — retained 2048 final-norm isolation
+
+[Actual40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at`91292cb00b54d9e62e675d8acc6c13b0c73e37ca` consumes the byte-pinned rejected
+2048 source archive without a full model/native forward or conversion. All12
+original norm anchors reproduce bit-for-bit; original RMSNorm on identical
+native inputs differs from native by at most3.05176e-5 under unchanged local
+gates. Original RMSNorm instead reproduces upstream-amplified composed failures
+0.00394583/0.00438643, so no norm correction or budget waiver is justified.
+All37 vision boundaries and prefill decoder layers are retained in
+[the complete producer/review](tests/results/qwen35-ocr/ovisocr2-2048-norm-attribution.json).
+Patch/position/rotary first differ by3.81470e-6/4.52995e-6/5.96046e-8. The
+coordinates/weights and reduction of the original position utility are the next
+source-input probe. The initial40285243787 was cancelled during framework setup
+to inspect patch/position branches before their sum, rather than treating the
+old dictionary insertion order as computation order. Five small source/archive
+controls pass. Large vectors remain remote, the original8/14 result and all
+six failed arms unchanged;2048 remains unqualified/default1024. This is the
+completed norm-isolation stage, not completion of vision attribution.
 ## 26 October 2026 — expiring Ovis3 native vectors preserved without inference
 
 [Actual40287253703](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40287253703)
@@ -15590,6 +15640,24 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 `9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
+
+## 26 October 2026 — source-order interpolation matches original operators
+
+[Original-input40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf passes all five tested grids. Coordinates, indices, weights and final
+position vectors are bit-exact to the actual original module; original frozen
+position and patch anchors reproduce exactly. Native patch error remains
+3.814697265625e-6. Unset/literal0 preserve the old ordinary native bytes. The
+new source-order interpolation stays default-off, with composed frozen-reference
+A/B still required. The operator receipt preserves27 comparisons and exact
+source/artifact identities; it makes no decoded-quality or2048 promotion claim.
+
+Initial composed dispatch40334434703 was cancelled before its queued build
+started. Review strengthened the replay before any native execution: literal0
+now checks every retained ordinary vector SHA, context markers are required,
+and the baseline control succeeds only when its old numerical failure set is
+reproduced exactly. The six old failures stay explicit numerical failures;
+a positive baseline byte-control is separate from candidate qualification.
 
 ## 26 October 2026 — original MI-GAN256 capture and lossless conversion
 
@@ -15702,6 +15770,39 @@ bundle/browser/native consumers remain separate pending checks. Producer pairing
 and exact production/build/binding objects protect audit-only helper updates;
 actual producer and consumer sources are recorded separately. No release tag,
 model qualification or application0.17.12 pin changes.
+
+## 26 October 2026 — unchanged Ovis quality control and independent replay scheduling
+
+The gate0 job of40334662677/95a9ba48 completes the full first-F16 eleven-case
+control: all1,841 IDs, raw/processed text, EOS/caps, input hashes and selected
+confidences match the immutable first F16 receipt exactly. Independent review
+checks the actual1,680,184-byte ZIP,34 members,37 source hashes and15 command
+logs. Its gate1 arm is still pending; no interpolation/2048 promotion follows.
+
+Composed attempt40338087357 was cancelled while pending with no jobs, solely
+to remove an orchestration dependency on the full eleven-case workflow. Exact
+sourcead09168e is retained on`audit/ovis-position-composed-20261026` and dispatched
+as40356657327. The separate ref permits independent scheduling; all source
+bytes, frozen references,14-arm/four-grid gates and maximum two parallel jobs
+are unchanged. The earlier queued cancellation40334434703 remains retained.
+
+## 26 October 2026 — source-order interpolation first-F16 quality reviewed
+
+[Both gate arms40334662677](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40334662677)
+complete successfully at `95a9ba4841e876e5c7473bc83ab128fad87fdfb4`. Independent
+review rehashes both actual report ZIPs, every member,37 source files and15
+command logs per arm. All11 cases retain1841 IDs, raw/processed text, EOS,
+unchanged caps and input identities against the frozen first-F16 baseline.
+Gate0 confidences remain bit exact. Gate1 changes confidences in six cases,
+maximum absolute drift0.000024796 on the two-column page; no new tolerance or
+confidence-exactness claim follows. Public C ABI text/confidence and test-only
+ID/stop evidence remain separate. The source-order gate reaches actual child
+processes through the inherited environment.
+
+[Full paired receipt](tests/results/qwen35-ocr/ovisocr2-source-interpolation-quality.json)
+preserves both complete producer reports and immutable member identities. Larger-
+input composed numerical qualification remains separate and pending; default
+interpolation and1024 resolution remain unchanged.
 
 ## 26 October 2026 — MI-GAN fixed256 original/native prototype passes
 

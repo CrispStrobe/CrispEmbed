@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference]
         default: metadata
       native_run_id:
         type: string
@@ -183,6 +183,23 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-metadata'
     needs: controls
     uses: ./.github/workflows/ovisocr3-metadata.yml
+  position-quality:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'position-quality'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-position-quality.yml
+  position-replay:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'position-replay'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-position-replay.yml
+  position-probe:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'position-probe'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-position-probe.yml
+  attribution-2048:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'attribution-2048'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-2048-attribution.yml
+
   migan-native:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-native'
     needs: controls

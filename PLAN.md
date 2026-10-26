@@ -513,6 +513,17 @@ The F32 native-vision input-embedding difference is3.92198563e-5 (norms
 209.240433/209.240448), before the final norm's0.00394558907. Preserve these
 magnitudes rather than inferring a root cause from the first threshold failure.
 
+
+[Retained norm isolation40286291355](tests/results/qwen35-ocr/ovisocr2-2048-norm-attribution.json)
+now passes all12 original anchor/identical-input controls: original anchors are
+bit exact; same-input native/original norm max3.05176e-5. Original RMSNorm on
+native hidden states reproduces composed max0.00394583/0.00438643, retaining
+calibrated ratios1.07324/1.19308. Final norm is propagating upstream error.
+The trace begins at patch3.81470e-6, position4.52995e-6 and rotary5.96046e-8;
+position helper source uses multiply-then-divide while native retains legacy
+linspace. Next isolate actual original position coordinates/weights/reduction
+before any gated correction; this result does not qualify2048 or waive budgets.
+
 - [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
   and retained original/native arrays; boundary raw artifact12598011436 is in
   the combined receipt. Preserve original source ac1bb9cb, all initial failures,
@@ -520,7 +531,8 @@ magnitudes rather than inferring a root cause from the first threshold failure.
   arrays only inside hosted CI; keep shared-host work to small reports.
 - [ ] Finish the source-order interpolation alternative's actual composed A/B
   and first-F16 replay from `audit/ovis-2048-attribution-20261026`.
-  Current composed40338087357 and quality40334662677 are pending. Literal0
+  Current composed40356657327 remains pending; both quality40334662677 arms
+  are reviewed in HISTORY. Literal0
   must reproduce every retained ordinary vector and the historical failure set;
   literal1 must pass all unchanged gates, with raw strict flags retained.
   Local norm and position operator results are archived in HISTORY. They do not
@@ -569,6 +581,15 @@ source/artifact proof separately; do not claim it from vendor component parity.
 
 
 ## Active four-lane closure — remaining execution gates
+
+Current Ovis composed replay is40356657327 on exactad09168e via the
+`audit/ovis-position-composed-20261026` dispatch ref. The separate ref removes
+the per-branch workflow lock; it changes no source or two-job bound. Earlier
+40338087357 was cancelled pending with no jobs. Quality40334662677 at95a9ba48
+has independently verified both arms:1841 decoded IDs/text/EOS exact, gate0
+confidences exact and gate1 maximum confidence drift0.000024796 without a new
+tolerance. Composed square-grid pre-inference JSON identity failures require a
+narrow hash-preserving redaction adapter; retain the initial failed run.
 
 - [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
   gated source/tooling and run final/merged-source checks. Preserve initial
