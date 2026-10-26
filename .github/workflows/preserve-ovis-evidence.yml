@@ -1,0 +1,55 @@
+name: Preserve immutable Ovis native vectors
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: preserve-ovis-evidence
+  cancel-in-progress: false
+jobs:
+  preserve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Isolate preservation and report destinations
+        run: |
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/preservation" >> "$GITHUB_ENV"
+      - name: Source and corruption controls
+        run: python tests/test_preserve_ovis_evidence.py -v
+      - name: Verify original ZIP and every frozen member without inference
+        run: python tools/ci-heavy/preserve_ovis_evidence.py
+      - uses: actions/upload-artifact@v4
+        id: preserved
+        with:
+          name: ovisocr3-native14-raw-40183489780-preserved-${{ github.run_id }}
+          path: ${{ runner.temp }}/preservation/payload/
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: error
+      - name: Require an empty readback destination
+        run: test ! -e "$RUNNER_TEMP/readback"
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ steps.preserved.outputs.artifact-id }}
+          path: ${{ runner.temp }}/readback/
+          merge-multiple: true
+      - name: Rehash copied ZIP and all1662 vectors after actual remote readback
+        env:
+          PRESERVED_ARTIFACT_ID: ${{ steps.preserved.outputs.artifact-id }}
+          PRESERVED_ARTIFACT_DIGEST: ${{ steps.preserved.outputs.artifact-digest }}
+        run: python tools/ci-heavy/preserve_ovis_evidence.py --verify "$RUNNER_TEMP/readback"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovis-evidence-preservation-reports-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+          if-no-files-found: warn
