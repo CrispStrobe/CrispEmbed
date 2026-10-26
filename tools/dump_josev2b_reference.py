@@ -12,6 +12,7 @@ import dataclasses
 import importlib.metadata
 import importlib.util
 import inspect
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -27,6 +28,44 @@ from josev2b_contract import (CONTRACT, ROOT, environment_versions, panel, proto
 
 def write_json(path: Path, value) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+
+
+def verify_loaded_head(head, checkpoint: Path, weights: dict) -> None:
+    """Read-only official-loader identity proof, before the first forward.
+
+    Checkpoint BF16/F16/F32 values are promoted by torch to F32; no calibration,
+    parameter mutation, silent key filtering or intentional transform is accepted.
+    """
+    import torch
+    from safetensors import safe_open
+    state=head.state_dict()
+    weights.update(head_checkpoint_sha256=sha256(checkpoint),head_identity_exact=False,head_tensors={})
+    with safe_open(str(checkpoint),framework="pt",device="cpu") as source:
+        keys=set(source.keys())
+        if keys!=set(state):
+            weights["head_key_difference"]={"checkpoint_only":sorted(keys-set(state)),"loaded_only":sorted(set(state)-keys)}
+            raise ValueError("official loaded head key set differs from published checkpoint")
+        for name in sorted(keys):
+            original=source.get_tensor(name)
+            actual=state[name].detach()
+            entry={"shape":list(original.shape),"loaded_shape":list(actual.shape),
+                "checkpoint_dtype":str(original.dtype).removeprefix("torch."),
+                "loaded_dtype":str(actual.dtype).removeprefix("torch.")}
+            weights["head_tensors"][name]=entry
+            if tuple(original.shape)!=tuple(actual.shape) or not original.is_floating_point() or actual.dtype!=torch.float32:
+                raise ValueError("official loaded head shape/F32 dtype differs: "+name)
+            promoted=original.to(dtype=torch.float32).contiguous()
+            loaded=actual.to(device="cpu").contiguous()
+            if not bool(torch.isfinite(original).all()) or not bool(torch.isfinite(promoted).all()) or not bool(torch.isfinite(loaded).all()):
+                raise ValueError("nonfinite published/promoted/loaded head tensor: "+name)
+            expected_bytes=promoted.numpy().astype("<f4",copy=False).tobytes()
+            actual_bytes=loaded.numpy().astype("<f4",copy=False).tobytes()
+            entry.update(checkpoint_promoted_f32_sha256=hashlib.sha256(expected_bytes).hexdigest(),
+                         loaded_f32_sha256=hashlib.sha256(actual_bytes).hexdigest())
+            if expected_bytes!=actual_bytes:
+                raise ValueError("official loaded head differs from published F32 promotion: "+name)
+    weights.update(head_identity_exact=True,head_tensor_count=len(state),
+                   head_state_elements=sum(value.numel() for value in state.values()))
 
 
 def main() -> None:
@@ -89,7 +128,9 @@ def main() -> None:
                      "unsloth_decision_config.json", "tokenizer_config.json", "processor_config.json"):
             shutil.copyfile(args.snapshot / name, notices / name)
         report["source"] = {str(path.relative_to(ROOT)): sha256(path) for path in (
-            CONTRACT, ROOT / cfg["panel"]["path"], Path(__file__), ROOT / "tools/josev2b_contract.py")}
+            CONTRACT, ROOT / cfg["panel"]["path"], Path(__file__), ROOT / "tools/josev2b_contract.py",
+            ROOT / "tools/josev2b_environment.py", ROOT / cfg["environment_lock"]["path"],
+            ROOT / cfg["environment_lock"]["requirements_path"])}
         report["git_commit"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
         spec = importlib.util.spec_from_file_location("josev_original_pinned", args.snapshot / "joint_schema_model.py")
         source = importlib.util.module_from_spec(spec)
@@ -121,14 +162,16 @@ def main() -> None:
         # Real publisher loader: no hand-rebuilt head and no extra calibration.
         model, loaded_processor = source.load_release_model(args.snapshot, device="cuda", dtype=torch.float32,
             local_files_only=True, attn_implementation="eager")
+        report["weights"]={}
+        verify_loaded_head(model.head,args.snapshot/"joint_head.safetensors",report["weights"])
         if loaded_processor.tokenizer.get_vocab() != processor.tokenizer.get_vocab():
             raise ValueError("loader tokenizer changed")
         language = model.language_model.model.language_model
         embedding = model.language_model.get_output_embeddings().weight
-        report["weights"] = {"embedding_tied": embedding.data_ptr() == language.embed_tokens.weight.data_ptr(),
+        report["weights"].update({"embedding_tied": embedding.data_ptr() == language.embed_tokens.weight.data_ptr(),
             "head_parameters": sum(p.numel() for p in model.head.parameters()),
             "head_scalars": {name: float(getattr(model.head, name).detach().cpu()) for name in (
-                "prior_logit_scale", "joint_logit_scale", "residual_gate")}}
+                "prior_logit_scale", "joint_logit_scale", "residual_gate")}})
         directory = args.out / "arrays"
         directory.mkdir()
         array_bytes, sequence = 0, 0

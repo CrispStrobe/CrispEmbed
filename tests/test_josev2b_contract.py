@@ -78,7 +78,8 @@ class ContractTests(unittest.TestCase):
     def test_unsupported_gpu_cannot_reach_payload(self):
         with self.assertRaisesRegex(ValueError, "no retry"):
             contract.require_cuda_capability((6, 0))
-        contract.require_cuda_capability((7, 0))
+        with self.assertRaisesRegex(ValueError, "no retry"):
+            contract.require_cuda_capability((7, 0))
         contract.require_cuda_capability((7, 5))
 
     def test_question_option_bounds_and_literal_state(self):
