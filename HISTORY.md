@@ -15897,3 +15897,23 @@ config and actual pinned preprocessing sources are explicit; both wrapper token
 paths must match all5,483 frozen IDs/masks before any forward. The original
 strict model failures and v1 source rejection remain separate. Preparation/full
 panel are still unqualified until their actual hosted receipts pass review.
+
+## 26 October 2026 — canonical SciFact preparation reviewed
+
+[Original-only preparation40372423343](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40372423343)
+completed at `e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`. Independent review
+checks the actual small-report ZIP,276 exact source hashes, frozen input mapping,
+notices, original environment and preflight. Both actual published wrapper input
+paths match all5483 token/mask rows before any forward pass. The panel retains
+300 queries and5183 documents, including460 documents right-truncated at512 tokens;
+no query is truncated and no row is dropped. Thirteen original preflight rows
+pass hook neutrality; the conservative worst-shard projection is2840.06 seconds
+against the unchanged13200-second bound.
+
+[Preparation receipt](tests/results/ultrabert/scifact-canonical-preparation.json)
+preserves source, protocol, freeze, payload and report identities without corpus
+text. Strict-v1 failures remain separate; canonical-v2 inputs were selected before
+model outputs. [Full panel40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
+was dispatched only after this review, using the exact preparation receipt SHA.
+Its source remains frozen through all original shards, original freeze, native
+shards and aggregation. Preparation does not establish retrieval/native parity.
