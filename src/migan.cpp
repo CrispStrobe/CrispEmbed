@@ -153,7 +153,10 @@ struct graph_builder {
         if (!tensor) return;
 #ifdef CRISPEMBED_MIGAN_TESTING
         if (retain) {
-            ggml_set_output(tensor);
+            // Clamp/reshape stages are views. OUTPUT on the view alone does
+            // not protect its allocation owner when gallocr expires the last
+            // view. Retain every owner before allocation, not just the alias.
+            for (ggml_tensor * storage = tensor; storage; storage = storage->view_src) ggml_set_output(storage);
             stages.emplace_back(name, tensor);
         }
 #else
@@ -407,6 +410,60 @@ bool composite_rgb8(const float * raw_nchw, size_t raw_count, const uint8_t * rg
 
 #ifdef CRISPEMBED_MIGAN_TESTING
 namespace test {
+bool observer_retention_regression(std::string & error) {
+    error.clear();
+    try {
+        auto execute = [&](bool use_actual_mark) {
+            context model;
+            model.backend = core_cpu_backend::init();
+            if (!model.backend || !core_cpu_backend::is_cpu(model.backend))
+                throw std::runtime_error("MI-GAN retention regression CPU unavailable");
+            core_cpu_backend::set_n_threads(model.backend, 1);
+            graph_builder graph(model);
+            graph.retain = true;
+            ggml_tensor * input = ggml_new_tensor_1d(graph.ctx, GGML_TYPE_F32, 4);
+            ggml_set_input(input);
+            ggml_set_output(input);
+            ggml_tensor * owner = ggml_scale(graph.ctx, input, 2.0f);
+            ggml_tensor * anchor = ggml_clamp(graph.ctx, ggml_reshape_2d(graph.ctx, owner, 2, 2), -256, 256);
+            if (use_actual_mark)
+                graph.mark("allocation-regression.anchor", anchor);
+            else
+                ggml_set_output(anchor); // Retained negative: the original view-only defect.
+            ggml_tensor * consumer = ggml_scale(graph.ctx, anchor, 3.0f);
+            // CONT cannot reuse its parent in-place. The old view owner is
+            // expired here, making its same-sized allocation a competing slot.
+            ggml_tensor * competing = ggml_cont(graph.ctx, consumer);
+            ggml_tensor * output = ggml_scale(graph.ctx, competing, 5.0f);
+            ggml_set_output(output);
+            graph.graph = ggml_new_graph_custom(graph.ctx, graph_capacity, false);
+            ggml_build_forward_expand(graph.graph, output);
+            graph.allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(model.backend));
+            if (!graph.allocator || !ggml_gallocr_alloc_graph(graph.allocator, graph.graph))
+                throw std::runtime_error("MI-GAN retention regression allocation failed");
+            const std::array<float, 4> values = { 1, -2, 3, -4 };
+            const std::array<float, 4> expected_anchor = { 2, -4, 6, -8 };
+            const std::array<float, 4> expected_output = { 30, -60, 90, -120 };
+            std::array<float, 4> observed_anchor, observed_output;
+            ggml_backend_tensor_set(input, values.data(), 0, sizeof(values));
+            if (ggml_backend_graph_compute(model.backend, graph.graph) != GGML_STATUS_SUCCESS)
+                throw std::runtime_error("MI-GAN retention regression execution failed");
+            ggml_backend_tensor_get(anchor, observed_anchor.data(), 0, sizeof(observed_anchor));
+            ggml_backend_tensor_get(output, observed_output.data(), 0, sizeof(observed_output));
+            if (observed_output != expected_output)
+                throw std::runtime_error("MI-GAN retention regression arithmetic control failed");
+            return std::make_pair(observed_anchor == expected_anchor, observed_anchor == expected_output);
+        };
+        const auto old_view_only = execute(false);
+        const auto actual_mark = execute(true);
+        if (old_view_only.first || !old_view_only.second || !actual_mark.first || actual_mark.second)
+            return fail(error, "MI-GAN retention regression did not reproduce/correct view-owner reuse");
+        return true;
+    } catch (const std::exception & exception) {
+        return fail(error, exception.what());
+    }
+}
+
 bool run_observed(context * ctx, const float * input_nchw, size_t input_count, float * raw_nchw, size_t output_count,
                   const observer & observe, size_t & graph_buffer_bytes, std::string & error) {
     error.clear();
