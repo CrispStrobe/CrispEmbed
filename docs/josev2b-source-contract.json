@@ -1,0 +1,295 @@
+{
+  "schema": "crispembed-josev2b-text-reference-v1",
+  "status": "source-prepared; original GPU capture not executed; native support absent",
+  "qualification": {
+    "reference_captured": false,
+    "native_supported": false,
+    "quality_qualified": false,
+    "release_qualified": false,
+    "multimodal_qualified": false
+  },
+  "repository": "mayflowergmbh/Josev-2B",
+  "revision": "6f0a31c8ed683aba79097eb3f48df2c9ab560afd",
+  "files": {
+    "LICENSE": {
+      "bytes": 11544,
+      "git_blob": "f938136e3adacfd92be087f6e113b5d6d97f678f",
+      "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a",
+      "verification": "source bytes independently inspected"
+    },
+    "README.md": {
+      "bytes": 13055,
+      "git_blob": "fef83743f7076dd1862aa4a362fcbe0b42876486",
+      "sha256": "a73261b2cb0a219b6d95b7b3fd281e2ebd47dcfadc3bfe674f8cb2719a2a4d33",
+      "verification": "source bytes independently inspected"
+    },
+    "chat_template.jinja": {
+      "bytes": 7991,
+      "git_blob": "c7c8f996ef89234e681044289ef389a6694fc635",
+      "sha256": "ea210e5b4997b7b1d3af5ee3ad34e7677ffe38df7469e8d88089789b5a27fae5",
+      "verification": "source bytes independently inspected"
+    },
+    "config.json": {
+      "bytes": 2633,
+      "git_blob": "82c2ada73866cb2cc33e0a3d6be75d3ac5ea38d8",
+      "sha256": "d839cc74703ac0a81b31e343eed5cb20e7e0de087f66ac2b6be3d4b92496b76a",
+      "verification": "source bytes independently inspected"
+    },
+    "generation_config.json": {
+      "bytes": 141,
+      "git_blob": "6820a8e59a84381710ecf8324d85b5e178264f05",
+      "sha256": "5f2e1f64d9104ac2ff6110ab5d7bde736ed507024a668a5fb2022e009a2a6bc5",
+      "verification": "source bytes independently inspected"
+    },
+    "joint_head.safetensors": {
+      "bytes": 60957454,
+      "git_blob": "f14402ca01a4ea0777f45663abdd2d9f6c4bb3b3",
+      "sha256": "8816d51356876ef9b055e51291a00dfc4a8c741189ca088b59604d039d7852c5",
+      "verification": "published-LFS-metadata; hosted payload verification required"
+    },
+    "joint_head_config.json": {
+      "bytes": 116,
+      "git_blob": "f3c2cb6bd617f9f5fff5ad27df2668423aedf312",
+      "sha256": "9ec32207deca79a5ec809cb8306c8222d435163da3800e6fdb42e8789a69b8f8",
+      "verification": "source bytes independently inspected"
+    },
+    "joint_schema_model.py": {
+      "bytes": 23263,
+      "git_blob": "6a3ac5fc030a3f33f7fa860a1271886b64a6606d",
+      "sha256": "0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3",
+      "verification": "source bytes independently inspected"
+    },
+    "model.safetensors-00001-of-00001.safetensors": {
+      "bytes": 4548221488,
+      "git_blob": "12dd3f72dd98aab328baca796e997539069d20a4",
+      "sha256": "0e5f4f29187c8bc8025e70d7521b8aa410bdcaf1d93c67baad345063d2e66644",
+      "verification": "published-LFS-metadata; hosted payload verification required"
+    },
+    "model.safetensors.index.json": {
+      "bytes": 64460,
+      "git_blob": "69a41758e1138259916d08b99b56fada441fd502",
+      "sha256": "aca8afed9da75b0f050b408d270766fd77627f1af401e240f61c3b47d0db02f9",
+      "verification": "source bytes independently inspected"
+    },
+    "processor_config.json": {
+      "bytes": 1300,
+      "git_blob": "7ad6acdf4203f22b7b990e36ccc3a1fe38563d5e",
+      "sha256": "14932921ca485d458a04dafd8069fbb0a4505622a48208d19ed247115801385b",
+      "verification": "source bytes independently inspected"
+    },
+    "tokenizer.json": {
+      "bytes": 19989343,
+      "git_blob": "67741b04f23bfdb46501f748ce27865ec82eccfb",
+      "sha256": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+      "verification": "published-LFS-metadata; hosted payload verification required"
+    },
+    "tokenizer_config.json": {
+      "bytes": 15713,
+      "git_blob": "ee9080f952fa2b02b5100cc50ba09ed1b69f4f80",
+      "sha256": "50470511708577d43f7c18c2d8e2ab02fb8abf3add1c40f60b74579d6d16e27e",
+      "verification": "source bytes independently inspected"
+    },
+    "unsloth_decision_config.json": {
+      "bytes": 772,
+      "git_blob": "8cb494911b65117d921708835808ee55fbec730a",
+      "sha256": "efa0bd264d7b010287a37cb87cbc6f4763ffbc9350724232180761b24ce335f1",
+      "verification": "source bytes independently inspected"
+    }
+  },
+  "panel": {
+    "path": "tests/regression/josev2b/text-v1.json",
+    "sha256": "162f811fdc8a057e886915fde4f9a2bb69d8a4713c13ac98f9420772c5ec9c04",
+    "cases": 4
+  },
+  "license": {
+    "checkpoint": "Apache-2.0",
+    "custom_code": "Apache-2.0; byte-identical to Cloudflare/clef-flash inspected source",
+    "training_data": "Separate upstream dataset terms; not relicensed by the checkpoint license",
+    "base_training_commit": "Not recorded in publisher metadata; inspected upstream revisions are provenance anchors, not claimed training commits"
+  },
+  "upstream_inspection": {
+    "Qwen/Qwen3.5-2B": "15852e8c16360a2fea060d615a32b45270f8a8fc",
+    "unsloth/Qwen3.5-2B": "fffbc0d8711cf87df6d1f97938c5e50ef94aadc7",
+    "Cloudflare/clef-flash": "f0b7d3cd65296abfe459e6c228b618f5d8b26d2f",
+    "cloudflare_code_sha256": "0e304cf7c6500e8bb59bef7e2afd2c6373f82596dfb3b57d1aa93c175e2dc3a3",
+    "upstream_license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+  },
+  "runtime": {
+    "python_minor": "3.11",
+    "torch": "2.13.0",
+    "transformers": "5.5.0",
+    "tokenizers": "0.23.0",
+    "safetensors": "0.8.0",
+    "huggingface-hub": "1.33.0",
+    "numpy": "2.2.6",
+    "accelerate": "1.13.0",
+    "torchvision": "0.28.0",
+    "pillow": "12.3.0"
+  },
+  "transformers_source": {
+    "path": "src/transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "url": "https://raw.githubusercontent.com/huggingface/transformers/v5.5.0/src/transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "bytes": 96220,
+    "sha256": "aee59d55ee4e8ce0e50bf0e279796b85c2c66a28dfae55c3fcbb62fa9bcba048"
+  },
+  "scope": {
+    "dtype": "float32",
+    "device": "CUDA only; no CPU fallback",
+    "attention": "eager backbone; head math SDPA; TF32 and MHA fast path disabled",
+    "optional_kernels": "fla and causal_conv1d must be absent",
+    "max_length": 512,
+    "batch": 1,
+    "max_questions": 8,
+    "max_total_options": 24,
+    "max_array_bytes": 2147483648,
+    "min_total_cuda_gib": 14,
+    "min_free_cuda_gib": 11,
+    "max_wall_seconds": 1800,
+    "media": false,
+    "user_special_token_surfaces": false,
+    "finite_JSON_only": true,
+    "state_truncation": "Only state tokens clipped by unchanged original encode_record; schema is never clipped",
+    "max_request_utf8_bytes": 65536,
+    "min_compute_capability": [
+      7,
+      0
+    ],
+    "unsupported_gpu": {
+      "conclusive": false,
+      "retry_permitted": false,
+      "before_payload_access": true
+    }
+  },
+  "calibration": {
+    "policy": "Published load_release_model + systemone, unchanged; no extra temperature division",
+    "folded_temperature": 1.5578663349151611,
+    "unused_unsloth_temperature_order": [
+      "choice",
+      "score",
+      "noul"
+    ],
+    "unused_unsloth_temperature": [
+      1.1334842443466187,
+      0.8809957504272461,
+      0.6729159355163574
+    ]
+  },
+  "future_native_acceptance": {
+    "token_ids_masks_positions_spans": "exact",
+    "original_observer_repeat": "bit-exact",
+    "finite_activations_logits_probabilities": true,
+    "f32_stage_max_abs": 0.002,
+    "f32_stage_cosine_min": 0.99999,
+    "logits_max_abs": 0.002,
+    "probabilities_max_abs": 0.0001,
+    "ordinal_score_max_abs": 0.001,
+    "exact": [
+      "field IDs/types",
+      "option IDs/order",
+      "choice winner",
+      "output_tokens=0"
+    ],
+    "rounding": "Record every 4-decimal JSON difference; no blanket exact-rounded claim",
+    "quality": "Owned smoke is numerical/serialization evidence only; representative licensed task-quality benchmark remains required"
+  },
+  "author_gguf_inspection": {
+    "repository": "mayflowergmbh/Josev-2B-GGUF",
+    "revision": "8e5c69202ccd920c4f17c14087c0b4e01f1270a1",
+    "README.md": {
+      "bytes": 9299,
+      "sha256": "027731e9ba4556ff96ae70771097675470ee34d6a277442a8fc0dd6784ef77d5"
+    },
+    "payloads_downloaded": false,
+    "license_scope": "Card Apache-2.0 tag; no separate LICENSE file in this GGUF repository. Original checkpoint/base LICENSE audited separately.",
+    "runtime_repository": "ggml-org/llama.cpp",
+    "runtime_revision": "f2918cabbffe8abf8e2a90c1c089085fa116c2cf",
+    "runtime_tag": "b11541",
+    "runtime_license": {
+      "name": "MIT",
+      "bytes": 1078,
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d"
+    },
+    "inspected_sources": {
+      "src/models/clef.cpp": {
+        "bytes": 30248,
+        "sha256": "baa0d978e16e5b6992c9a6e6b1f85635c6907b948b28a1b6545e7559fb5eff7e"
+      },
+      "conversion/clef.py": {
+        "bytes": 6639,
+        "sha256": "b8d3729aa734c9a91e1fcb31487677dc8a3dfd37e6d109045e548cc067032543"
+      },
+      "tools/server/server-decision.cpp": {
+        "bytes": 46651,
+        "sha256": "0f20d23c4769f049b7559c501beccfe01282e5d827040b56664cd1b873dfa89d"
+      },
+      "tools/server/server-decision.h": {
+        "bytes": 6348,
+        "sha256": "4e3dd248f6c093c50cb46d83443ae5694e42b5e73dd706dd5553e89eb698ff9a"
+      }
+    },
+    "limits": "Author route includes per-type temperature metadata; not the initial official-PyTorch reference profile. No quantized payload or server output verified."
+  },
+  "backbone": {
+    "architecture": "Qwen3_5ForConditionalGeneration; text submodule only for this profile",
+    "hidden_size": 2048,
+    "intermediate_size": 6144,
+    "layers": 24,
+    "full_attention_layers": [
+      3,
+      7,
+      11,
+      15,
+      19,
+      23
+    ],
+    "query_heads": 8,
+    "kv_heads": 2,
+    "head_dim": 256,
+    "rotary_dim": 64,
+    "mrope_sections": [
+      11,
+      11,
+      10
+    ],
+    "rope_theta": 10000000,
+    "rms_norm_eps": 1e-06,
+    "linear_conv_kernel": 4,
+    "linear_key_heads": 16,
+    "linear_value_heads": 16,
+    "linear_key_dim": 128,
+    "linear_value_dim": 128,
+    "use_cache": false,
+    "config_max_positions": 262144,
+    "validated_max_positions": null
+  },
+  "joint_head": {
+    "hidden_size": 2048,
+    "width": 512,
+    "routing_layers": 2,
+    "field_decoder_layers": 4,
+    "heads": 8,
+    "feedforward": 2048,
+    "dropout": 0,
+    "head_layer_norm_eps": 1e-05,
+    "normalize_eps": 1e-12,
+    "cosine_eps": 1e-08,
+    "gelu": "exact erf",
+    "field_attention": "unmasked bidirectional; fields jointly affect answers",
+    "lexical_vectors": "mean output-embedding rows of complete option semantic spans",
+    "output": "one logit per option; no language generation"
+  },
+  "serialization": {
+    "renderer": "String literal; other JSON compact ensure_ascii=False sort_keys=True",
+    "field_order": "request insertion",
+    "choice_head_order": "lexically sorted string keys",
+    "choice_output_order_and_ties": "original criteria insertion order",
+    "noul_order": [
+      "true",
+      "false"
+    ],
+    "score": "ordinal positions of criteria list; expected index",
+    "chat_template_used": false,
+    "padding": "original collator right padding; batch1 only here",
+    "max_length_policy": "clip only state after fixed prefix/schema/suffix; fixed schema overflow rejects"
+  }
+}
