@@ -90,6 +90,52 @@ static float linspace(int i, int count, int end) {
     const float step = float(end) / float(count - 1);
     return i < count / 2 ? step * i : float(end) - step * (count - i - 1);
 }
+// The pinned Transformers helper forms F32 index*(side-1)/(size-1).
+// Keep the existing linspace path unchanged behind the default-off alternative.
+static float position_coordinate(int index, int size, int side, bool source_math) {
+    if (!source_math) return linspace(index, size, side - 1);
+    return (float(index) * float(side - 1)) / float(std::max(size - 1, 1));
+}
+struct position_taps {
+    int index[4];
+    float weight[4];
+};
+static position_taps interpolation_taps(int row, int column, int height, int width, int side, bool source_math) {
+    const float r = position_coordinate(row, height, side, source_math),
+                col = position_coordinate(column, width, side, source_math);
+    const int r0 = int(r), c0 = int(col), r1 = std::min(r0 + 1, side - 1), c1 = std::min(c0 + 1, side - 1);
+    const float dr = r - r0, dc = col - c0;
+    position_taps taps = { { r0 * side + c0, r0 * side + c1, r1 * side + c0, r1 * side + c1 },
+                           { (1 - dr) * (1 - dc), (1 - dr) * dc, dr * (1 - dc), dr * dc } };
+    if (source_math) {
+        // Original linear hat kernel, including the F32 operation order.
+        const float rw[2] = { std::max(1.0f - std::abs(dr), 0.0f), std::max(1.0f - std::abs(dr - 1.0f), 0.0f) };
+        const float cw[2] = { std::max(1.0f - std::abs(dc), 0.0f), std::max(1.0f - std::abs(dc - 1.0f), 0.0f) };
+        for (int i = 0; i < 4; ++i) taps.weight[i] = rw[i / 2] * cw[i % 2];
+    }
+    return taps;
+}
+static bool interpolate_position(const std::vector<float> & table, const vision_config & c,
+                                 const std::vector<int> & rows, const std::vector<int> & columns,
+                                 const std::vector<int> & heights, const std::vector<int> & widths,
+                                 std::vector<float> & output) {
+    if (rows.empty() || rows.size() != columns.size() || rows.size() != heights.size() ||
+        rows.size() != widths.size() || table.size() != size_t(c.position_side) * c.position_side * c.width)
+        return false;
+    const bool source_math = core_env::on("CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION");
+    output.resize(rows.size() * c.width);
+    for (size_t t = 0; t < rows.size(); ++t) {
+        const auto taps = interpolation_taps(rows[t], columns[t], heights[t], widths[t], c.position_side, source_math);
+        for (int i = 0; i < c.width; ++i) {
+            const float a = table[size_t(taps.index[0]) * c.width + i] * taps.weight[0],
+                        b = table[size_t(taps.index[1]) * c.width + i] * taps.weight[1];
+            const float e = table[size_t(taps.index[2]) * c.width + i] * taps.weight[2],
+                        f = table[size_t(taps.index[3]) * c.width + i] * taps.weight[3];
+            output[t * c.width + i] = ((a + b) + e) + f;
+        }
+    }
+    return finite(output);
+}
 static bool geometry(const vision_config & c, int tokens, const std::vector<int> & grid, std::vector<int> & rows,
                      std::vector<int> & columns, std::vector<int> & offsets, std::vector<int> & heights,
                      std::vector<int> & widths) {
@@ -207,25 +253,10 @@ bool vision_cpu(const vision_weights & w, const vision_config & c, const float *
     if (!linear(w.patch, w.patch_bias, input, c.patch_width, tokens, threads, output.patch)) return false;
     std::vector<float> table(size_t(c.position_side) * c.position_side * width);
     if (!tensor_floats(w.position, table.data())) return false;
-    output.position.resize(size_t(tokens) * width);
+    if (!interpolate_position(table, c, rows, columns, heights, widths, output.position)) return false;
     output.rotary_cos.resize(size_t(tokens) * d);
     output.rotary_sin.resize(output.rotary_cos.size());
     for (int t = 0; t < tokens; ++t) {
-        const float r = linspace(rows[t], heights[t], c.position_side - 1),
-                    col = linspace(columns[t], widths[t], c.position_side - 1);
-        const int r0 = int(r), c0 = int(col), r1 = std::min(r0 + 1, c.position_side - 1),
-                  c1 = std::min(c0 + 1, c.position_side - 1);
-        const float dr = r - r0, dc = col - c0;
-        const int indices[4] = { r0 * c.position_side + c0, r0 * c.position_side + c1, r1 * c.position_side + c0,
-                                 r1 * c.position_side + c1 };
-        const float weights[4] = { (1 - dr) * (1 - dc), (1 - dr) * dc, dr * (1 - dc), dr * dc };
-        for (int i = 0; i < width; ++i) {
-            const float a = table[size_t(indices[0]) * width + i] * weights[0],
-                        b = table[size_t(indices[1]) * width + i] * weights[1];
-            const float e = table[size_t(indices[2]) * width + i] * weights[2],
-                        f = table[size_t(indices[3]) * width + i] * weights[3];
-            output.position[size_t(t) * width + i] = ((a + b) + e) + f;
-        }
         for (int i = 0; i < d / 2; ++i) {
             const int axis = i / (d / 4), frequency = i % (d / 4);
             const float inv = 1.0f / std::pow(c.theta, float(2 * frequency) / float(d / 2));
