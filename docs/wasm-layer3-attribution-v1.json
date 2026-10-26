@@ -78,11 +78,11 @@
     ]
   },
   "protected_sources": {
-    "tools/wasm_layer3_attribution_v1.py": "f4411dfd39d5b60d24c2f3f9b251c133d6059744cefcbc8fdbd006866e02db29",
-    "tools/ci-heavy/wasm_layer3_attribution_v1.py": "084521a10e10cc3a26b9043291643b3fdca9a0dd891f1a90bb1bc437aece7289",
+    "tools/wasm_layer3_attribution_v1.py": "4cce096f58cc853058a8fe9176c56657b698dd18ddd107cf5efebbede52bbe0c",
+    "tools/ci-heavy/wasm_layer3_attribution_v1.py": "31c865e59da362f2a115a0c53e62224901e043451ea93d8bbe27a6ffd3c3e792",
     "tests/wasm-layer3/kernel_capture.inc": "9f23f14feabefb2683db8d0930cff771d8085caa18fabd5d290db5b3a4349480",
-    "tests/wasm-layer3/replay.inc": "5cce8fd1751905c25a6584e668ab616922e75507548dd5465c9f136541ab9fe9",
-    "tests/test_wasm_layer3_attribution_v1.cjs": "929dc0dc023137f443196593fcc9c56d08ee74a3e41f30a259edfc8c769019ac",
+    "tests/wasm-layer3/replay.inc": "79d47717c2ae08a5a8e66cdbb007ae101ef0bf9180ea1d2e480f0c757f9c7337",
+    "tests/test_wasm_layer3_attribution_v1.cjs": "d8b11979fee4ab5b268ffbffb8a46f5aa49c7b6594e75634aaf686cc102917bd",
     "tests/test_wasm_layer3_diff.cpp": "31019589f2343cf0a5794c69f07cbdf265219c78f75e5287d099383db64c419a",
     "tools/successor_wasm_trace_contract.py": "19467192afd73f900185e5ed4783f95449876932603d4786ebb140333d2b246a",
     "tools/ci-heavy/successor_assets.py": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",

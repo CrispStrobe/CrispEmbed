@@ -14,7 +14,13 @@ uses the frozen `580e3ae3be3671ddce5e945b0725d0583ec34110` runtime with ggml
 new claimed diagnostic branch, whose main merge also preserves unrelated work.
 Actual builds use a separate disposable checkout of frozen580; later production
 source/build changes are not silently accepted. Exact source and overlay hashes,
-diffs, compile commands and service identities are retained.
+diffs, compile commands and service identities are retained. Exact prior compiler
+flags are preserved: encoder/wrapper use pthreads without SIMD, while the pinned ggml CPU kernel and WASM quantizer use SIMD128 and pthreads.
+Generated Emscripten commands must match that matrix before execution. The browser
+server sends COOP `same-origin` and COEP `require-corp`; the page requires
+`crossOriginIsolated` and SharedArrayBuffer before module initialization. The native
+diagnostic replay export must appear unmangled in `nm -D --defined-only`;
+`<cmath>` is present in the frozen encoder source.
 
 Before model access, require the completed negative source580 service run, exact
 small review ZIP and report SHA, raw ZIP ID/size/SHA and every declared raw member.

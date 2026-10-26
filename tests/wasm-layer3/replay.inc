@@ -1,5 +1,5 @@
 // TEST OVERLAY ONLY. No production export or new model/API path.
-extern "C" int crispembed_layer3_replay(crispembed_context * ctx, const char * name,
+extern "C" CRISPEMBED_API int crispembed_layer3_replay(crispembed_context * ctx, const char * name,
         const float * values, int count, float * output, int capacity) {
     if (!ctx || !name || !values || !output || ctx->model.hparams.n_layer != 6) return -1;
     const auto & layer = ctx->model.layers[3];

@@ -26,6 +26,7 @@ def negative():
 class Layer3Tests(unittest.TestCase):
     def test_actual_frozen_encoder_overlay_and_owner_retention(self):
         text=subprocess.check_output(['git','show',BASE+':src/crispembed.cpp'],cwd=ROOT,text=True)
+        self.assertIn('#include <cmath>',text)
         result=overlay_encoder(text)
         self.assertEqual(len(NAMES),23)
         for name in NAMES:self.assertIn('names.push_back("'+name+'")',result)
@@ -68,6 +69,34 @@ class Layer3Tests(unittest.TestCase):
         self.assertFalse(row_metrics([1.,0.,0.,1.],[1.,0.,1.,0.],2)['gate_pass'])
         with self.assertRaises(ValueError):row_metrics([1.],[1.],2)
 
+    def test_actual_wasm_compile_flags_and_coverage(self):
+        names=['src/crispembed.cpp','ggml/src/ggml-cpu/ggml-cpu.c',
+               'ggml/src/ggml-cpu/arch/wasm/quants.c','wasm/embed_wrapper.c']
+        rows=[{'file':'/source/'+name,'arguments':['/emsdk/em++' if name.endswith('.cpp') else '/emsdk/emcc','-pthread','-c','/source/'+name]+(['-msimd128'] if name.startswith('ggml/') else [])} for name in names]
+        self.assertTrue(check_wasm_commands(rows)['passed'])
+        for flag in ('-msimd128','-pthread'):
+            bad=copy.deepcopy(rows);bad[2]['arguments'].remove(flag)
+            with self.assertRaisesRegex(ValueError,'compile flags'):check_wasm_commands(bad)
+        bad=copy.deepcopy(rows);bad[1]['arguments'].append('-mno-simd128')
+        with self.assertRaisesRegex(ValueError,'compile flags'):check_wasm_commands(bad)
+        with self.assertRaisesRegex(ValueError,'coverage'):check_wasm_commands(rows[:-1])
+        bad=copy.deepcopy(rows);bad[0]['arguments'].append('-msimd128')
+        with self.assertRaisesRegex(ValueError,'compile flags'):check_wasm_commands(bad)
+
+    def test_browser_threaded_module_requires_isolated_origin(self):
+        browser=(ROOT/'tests/test_wasm_layer3_attribution_v1.cjs').read_text()
+        self.assertIn("res.setHeader('Cross-Origin-Opener-Policy','same-origin')",browser)
+        self.assertIn("res.setHeader('Cross-Origin-Embedder-Policy','require-corp')",browser)
+        self.assertLess(browser.index("globalThis.crossOriginIsolated!==true"),browser.index('await window.CrispEmbedText'))
+        self.assertIn("typeof SharedArrayBuffer!=='function'",browser)
+
+    def test_native_replay_export_requires_unmangled_dynamic_symbol(self):
+        self.assertTrue(check_native_export('00001234 T crispembed_layer3_replay\n')['passed'])
+        for symbols in ('00001234 T _Z_crispembed_layer3_replay\n','00001234 t crispembed_layer3_replay\n',''):
+            with self.assertRaisesRegex(ValueError,'export'):check_native_export(symbols)
+        replay=(ROOT/'tests/wasm-layer3/replay.inc').read_text()
+        self.assertIn('extern "C" CRISPEMBED_API int crispembed_layer3_replay',replay)
+
     def test_source_probes_are_overlay_only(self):
         kernel=(ROOT/'tests/wasm-layer3/kernel_capture.inc').read_text()
         self.assertIn('const void * converted = params->wdata;',kernel)
@@ -95,6 +124,8 @@ class Layer3Tests(unittest.TestCase):
         self.assertIn('fetch-depth: 0',workflow)
         self.assertIn('timeout-minutes: 60',workflow)
         self.assertIn('if: always()',workflow)
+        driver=(ROOT/'tools/ci-heavy/wasm_layer3_attribution_v1.py').read_text()
+        self.assertIn("'--clean','--no-simd'",driver)
 
 
 if __name__=='__main__':unittest.main()
