@@ -414,7 +414,12 @@ binaries. Preserve all initial failures, old recipes and
 raw strict flags. The explicit three entry gates and reviewed `both` math preset
 remain required; neither delivery nor speed permits a default flip.
 
-- [ ] **Remote artifact preservation:** before the November2026 raw-diff expiry preserve new Ovis3 native vectors; before21 January2027 preserve the
+- [ ] **Remote artifact preservation:** the November Ovis3 raw vectors are
+  [preserved by actual40287253703](tests/results/qwen35-ocr/ovisocr3-vector-preservation.json):
+  original ZIP unchanged, all1,662 source-manifest payloads verified before copy
+  and after empty-destination remote readback. Copy12635202371 expires24 January2027;
+  original source identity remains40183489780. Other January retention work
+  remains: before21 January2027 preserve the
   original871-field archive and before the respective22 January expiries preserve
   full943 fields/native vectors/quality and quantization artifacts. Inventory
   run/artifact IDs and ZIP/member hashes in the existing receipts and HISTORY;

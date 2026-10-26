@@ -511,3 +511,21 @@ Use the separately scoped2048 attribution lane; any new precision
 selection needs a fresh development/evaluation protocol rather than fitting the
 observed held-out documents. Keep2048 attribution and MI-GAN queued as
 separate lanes, and leave SAM with its existing owner.
+
+
+### November Ovis3 vector expiry — preserved copy available
+
+[Preservation40287253703](../tests/results/qwen35-ocr/ovisocr3-vector-preservation.json)
+copies source40183489780/26dcb07f without inference. Source artifact12595929739
+expires24 November2026; copy12635202371
+`ovisocr3-native14-raw-40183489780-preserved-40287253703` expires24 January2027.
+It contains `original-native-vectors.zip` and `member-manifest.json`. The inner
+ZIP retains source SHA006d73e811f18bad66dabf9c1cf7f8476b0c845957d733e4a2fcd3a599a5cd3b;
+the wrapper ZIP is SHA cb82d736244ed1af5ac912e7f32f06a85b9f0198f543f212e0be7dc9ca836695.
+All1,662 manifest payloads are rehashed twice on hosted CI, including actual
+remote readback; the small manifest reconstruction/review is recorded separately.
+Use this as a preserved source archive, never a new reference producer. Retrieve
+and inspect large archives only on hosted resources. Original numerical flags,
+source-quality failure and publication-disabled status stay unchanged. Preserve
+other January archives before their recorded deadlines; future renewal must
+verify these original ZIP/member bytes rather than regenerate model outputs.
