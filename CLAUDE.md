@@ -223,7 +223,7 @@ and ranking gates, original-first8→freeze→native8 barrier and public-pair ex
 
 Initial asset consumer [40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
 at`49161f60`, producer`40a82158`, is negative: Windows header decoding failed
-after fresh CLI/model checks and before ABI calls (explicit UTF8/MSVC repair
+after fresh CLI/model checks and before the standalone ABI panel (explicit UTF8/MSVC repair
 prepared); Apple PNG identity failed
 before library/model initialization; browser execution failed unchanged parity
 at0.00837269/cosine0.99864984. Linux image-only proof
