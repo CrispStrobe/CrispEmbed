@@ -19,6 +19,7 @@ import zipfile
 WORKER_SOURCE = '1e723a96f8fed0ea34b0e071e88f29561a315aaa'
 CONTRACT_SHA = '39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460'
 WHEELS = {'torch': {'url': 'https://files.pythonhosted.org/packages/d4/5a/7c50ba1b7b713d71d34669c6d13dab0a11531a3eceb0307a5162dbfec0f7/torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'filename': 'torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'bytes': 526602329}, 'torchvision': {'url': 'https://files.pythonhosted.org/packages/32/db/062cdb5a84380a60439775311fff34d89229760d2a50680393dc18699956/torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'filename': 'torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'bytes': 7674669}}
+PIP_BOOTSTRAP = {'url': 'https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70', 'sha256': 'fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70', 'bytes': 1819850, 'filename': 'pip-26.2.2-py3-none-any.whl'}
 OUT = Path('/kaggle/working/josev2b-original')
 SCRATCH = Path('/tmp/crispembed-josev2b-original-v1')
 REPORT = {'schema': 'crispembed-josev2b-bootstrap-v1', 'conclusive': False,
@@ -68,6 +69,18 @@ def run(name, args, *, timeout=600, cwd=None, env=None):
     return path
 
 
+def isolated_environment(env):
+    # Reuse the established Ovis bootstrap: Debian ensurepip may be unavailable.
+    # Base pip --python installs only pinned pip into this fresh task-owned venv.
+    venv.EnvBuilder(with_pip=False, system_site_packages=False).create(SCRATCH/'venv')
+    python = SCRATCH/'venv/bin/python'
+    run('bootstrap-isolated-pip', [sys.executable,'-m','pip','--python',python,
+        'install','--index-url','https://pypi.org/simple',PIP_BOOTSTRAP['url']], env=env, timeout=300)
+    REPORT['isolated_pip'] = PIP_BOOTSTRAP
+    save()
+    return python
+
+
 def main():
     if OUT.exists() or SCRATCH.exists():
         raise ValueError('fresh task-owned paths required; earlier attempts must be preserved')
@@ -107,14 +120,14 @@ def main():
         if digest(repo/'docs/josev2b-source-contract.json') != CONTRACT_SHA:
             raise ValueError('worker contract SHA differs')
         # Always a new isolated environment; no base FLA/causal-conv import leakage.
-        venv.EnvBuilder(with_pip=True, system_site_packages=False).create(SCRATCH/'venv')
-        python = SCRATCH/'venv/bin/python'
         env = os.environ.copy()
         for key in ('PIP_INDEX_URL','PIP_EXTRA_INDEX_URL','PYTHONPATH','PYTHONHOME'):
             env.pop(key, None)
         env.update(PIP_NO_CACHE_DIR='1', PYTHONNOUSERSITE='1', CUBLAS_WORKSPACE_CONFIG=':4096:8',
                    HF_HOME=str(SCRATCH/'hf'), OMP_NUM_THREADS='2', MKL_NUM_THREADS='2',
                    OPENBLAS_NUM_THREADS='2', HF_HUB_DISABLE_TELEMETRY='1', TOKENIZERS_PARALLELISM='false')
+        env.update(PIP_CONFIG_FILE=os.devnull, PIP_USER='0')
+        python = isolated_environment(env)
         requirements = [wheel['url'] for wheel in WHEELS.values()]
         cfg = json.loads((repo/'docs/josev2b-source-contract.json').read_text())
         requirements += [name+'=='+version for name,version in cfg['runtime'].items()
