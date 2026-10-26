@@ -15671,3 +15671,43 @@ hosted diagnostics preserve all mismatch IDs/counts and eight bounded exact
 codepoint examples, plus pinned legacy-BEIR-JSONL versus Parquet comparison.
 Strict v1 equality, full row inventories, gold and numerical/ranking budgets
 remain unchanged; fifteen source controls pass. No full panel is dispatched.
+
+## 26 October 2026 — bounded UltraBERT RoPE attribution closed
+
+[Actual40336758177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336758177)
+atb689f871 passes1,344 local operator comparisons and336 bit controls over all
+seven frozen cases. All336 original table fields replay exactly; all336
+source-table-fed native Q/K comparisons are bit-exact. Ordinary ggml coefficient
+error peaks3.05157e-5, Q/K error1.61648e-4, with worst K RMS8.86829e-6 against
+reference max21.2058. All unchanged0.002/0.99999 gates pass. Independent review
+verifies source/historical hashes, all seven logs, actual330KB report ZIP and
+all16 members; the703MB raw artifact stays remote.
+
+Empty position0 rotation is exact, so this cannot explain earliest empty
+pre-RoPE Q or strict empty-replay drift. Nonempty coefficient differences could
+propagate, but composed causality is unmeasured. No production RoPE gate or
+budget waiver follows; historical183 F32/1294 F16 and strict replay failures
+remain. The [full receipt](tests/results/ultrabert/rope-attribution.json) closes
+this bounded operator lane; full SciFact quality and other numerical attribution
+limits remain separately scoped in PLAN. No runtime release change occurs here.
+
+## 26 October 2026 — first MI-GAN native result and unpublished WASM bytes
+
+Native40336246545/2849cb78 compiles and completes all8 cases after exact original
+transport/member checks. Final raw max1.40667e-5, known-pixel errors0 and all8
+image gates pass. Both full captures preserve ordinary/observed final bits, but
+128 intermediate observations each are stale, retaining256 failures among494
+comparisons. The first stale input SHA equals a later valid convolution output;
+pinned gallocr frees its unretained view owner. Test-only correction2526fcac
+retains owner chains, adds a tiny old-versus-fixed allocation regression and
+requires all8 original ordinary-final SHAs. Full retry40344396533 remains pending;
+no operator, original target or numerical budget changes.
+
+Unpublished WASM40339800364/40a82158 completes at candidate development0.17.14.
+Its actual manifests bind both bundles and all9 file members: embed archive
+523,299B/SHA3f65d7cb and OCR archive1,280,866B/SHAe1571ac9. OCR module3,676,523B
+passes its existing4MiB cap. The small manifest is independently inspected;
+bundle/browser/native consumers remain separate pending checks. Producer pairing
+and exact production/build/binding objects protect audit-only helper updates;
+actual producer and consumer sources are recorded separately. No release tag,
+model qualification or application0.17.12 pin changes.

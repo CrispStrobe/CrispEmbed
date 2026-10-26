@@ -5,7 +5,7 @@ queued. It does not replace the Linux original/native numerical panel. Do not
 run these commands on the shared development host.
 
 Use the MIT fixed256 prototype at immutable source
-`2849cb784f4de22fbcb3763d66d6be09cfa7dc56` from branch
+`2526fcac5ee76e8a476157291d8277781e6348e4` from branch
 `test/migan-reference-dispatch-20261026`. Read AGENTS/CLAUDE/contributing first.
 Check load, memory pressure, swap change and free storage before starting:
 
@@ -16,7 +16,7 @@ memory_pressure
 sysctl vm.swapusage
 df -h .
 git fetch origin test/migan-reference-dispatch-20261026
-git worktree add --detach ../CrispEmbed-m1-migan-build 2849cb784f4de22fbcb3763d66d6be09cfa7dc56
+git worktree add --detach ../CrispEmbed-m1-migan-build 2526fcac5ee76e8a476157291d8277781e6348e4
 cd ../CrispEmbed-m1-migan-build
 git submodule update --init --recursive
 ```
@@ -36,6 +36,7 @@ python3 scripts/check-cpu-baseline.py build-m1-audit
   --target crispembed-migan test-migan-diff -j2
 build-m1-audit/test-migan-diff --contracts
 build-m1-audit/test-migan-diff --gate-controls
+build-m1-audit/test-migan-diff --observer-retention
 shasum -a 256 build-m1-audit/test-migan-diff \
   build-m1-audit/libcrispembed-migan.a build-m1-audit/libcrispembed-migan-test.a
 nm -gU build-m1-audit/libcrispembed-migan.a | c++filt
@@ -43,7 +44,8 @@ nm -gU build-m1-audit/libcrispembed-migan-test.a | c++filt
 ```
 
 Require successful configure/build/baseline check, `MIGAN_CONTRACT` passed,
-and all unset/empty/literal-zero gate rejections. The ordinary archive must
+all unset/empty/literal-zero gate rejections, and the model-free
+view-owner retention regression. The ordinary archive must
 exclude `migan::test::run_observed`; the test archive must include it. Record
 compiler/CMake versions, source/ggml commits, flags, output hashes, exit codes,
 peak RSS and before/after memory/swap measurements. A compile/helper pass is
@@ -53,6 +55,6 @@ Keep raw machine reports and paths in ignored local notes/build outputs.
 A public handback may contain normalized source/toolchain/hash/results only;
 exclude operator identities and host locations. Preserve any failure log before
 fixing it. Do not fake `GITHUB_ACTIONS=true` to run hosted-only drivers locally.
-The separately reviewed Linux original40330674649 and native40336246545 remain
-the owning numerical panel, with all eight fixtures/494 declared comparisons,
+The separately reviewed Linux original40330674649 and initial rejected native40336246545 and corrected retry40344396533 remain
+the owning numerical records, with all eight fixtures/494 declared comparisons,
 original transport and tensor checks, unchanged image gates and retained limits.

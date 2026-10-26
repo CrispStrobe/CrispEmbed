@@ -185,6 +185,10 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
+  The claimed [frozen-input RoPE experiment](docs/ultrabert-rope-attribution.md)
+  now has a test-only target/driver and reusable`ultrabert-rope.yml` workflow.
+  Hosted compilation, all seven operator cases and independent report review
+  remain pending; no new original full-model reference or production change.
 - [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit and one-session paired
   CPU/CUDA performance review are complete (HISTORY): all15 cases run faster
   on CUDA, with9/20/649-token pooled medians27.93x/27.64x/120.11x. Next
@@ -247,8 +251,9 @@ Require affected exact-source checks again for each new implementation change.
 
 - [ ] **Issue71 MI-GAN still-image prototype:** finish actual hosted replay of
   the fixed256 Places2 original reference. Candidate branch
-  `test/migan-reference-dispatch-20261026` at2849cb78 consumes reviewed
-  original40330674649; native40336246545 is pending. Require all494 declared
+  `test/migan-reference-dispatch-20261026` at2526fcac consumes reviewed
+  original40330674649; corrected native40344396533 is pending. Preserve the
+  initial40336246545 stale-view observer rejection and all256 failed captures. Require all494 declared
   stage comparisons across eight fixtures, actual original/raw byte rechecks,
   ordinary/observer neutrality, eight malformed-model rejections, known-pixel
   preservation, final fill-pixel metrics and scoped latency/RSS. Keep the path
@@ -388,7 +393,6 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 |-------|-------------------|------|--------|
 | 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
-| 2026-10-26 | `audit/ultrabert-rope-20261026` | Frozen-input UltraBERT RoPE operator attribution | Test actual original rotation and ggml coefficients using preserved arrays; retain strict failures and budgets, no full-model gold recapture or default change. Hosted builds/operators only. |
 | 2026-10-26 | `feat/migan-reference-20261026` | MI-GAN256 Places2 original reference, F32 conversion and bounded native prototype | Freeze hosted original evidence before native results; separate native prototype branch uses exact154-tensor contract and default-off CPU/F32 path. No local inference, API/registry/video qualification or model publication. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
@@ -581,11 +585,9 @@ source/artifact proof separately; do not claim it from vendor component parity.
 - [ ] Preserve later January archives before expiry; the urgent November Ovis3
   copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
   recorded source identities and renewal dates when reviewed.
-- [ ] Execute UltraBERT frozen-input RoPE40336758177 fromb689f871 and review
-  magnitudes/table drift/source-fed controls. Keep183 F32/1294 F16 historical
-  stage failures and strict replay failures; never regenerate their gold.
 - [ ] Review the SciFact original-only preparation on
-  `audit/ultrabert-scifact-20261026` atff030c0a, then explicitly dispatch its
+  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
+  explicitly dispatch its
   eight-original→freeze→eight-native panel with the reviewed preparation run and
   receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
   gates and predeclared ranking tolerances stay unchanged. Preserve author gold
@@ -593,7 +595,10 @@ source/artifact proof separately; do not claim it from vendor component parity.
   model publication remain separate from this representative retrieval audit.
 - [ ] Finish successor actual archive consumers from
   `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
-  unpublished WASM40339800364, then exact-source packaged consumers.
+  unpublished WASM40339800364, then packaged consumers. WASM build completion
+  is recorded in HISTORY; executable browser consumers still require the native
+  producer. Audit helpers may advance only with exact production/build/binding
+  Git objects, producer pairing and generator provenance retained.
   This candidate advances development manifests to0.17.14 for mobile dependency
   packaging corrections; main remains0.17.13 until reviewed integration. Require
   actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
