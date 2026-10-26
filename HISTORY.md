@@ -16146,3 +16146,23 @@ qualification. No hosted build/model job has been dispatched for this prepared
 lane. After actual prerequisites, two frozen14 jobs precede two full eleven-case
 quality jobs, capped at two concurrent model jobs. Final assets and consumers
 remain separate gates.
+
+###26 October — exact frozen PosFormer input proof completed
+
+[Corrected40386968045](tests/results/packaging/posformer-corpus-proof.json)
+atf284b1f6 completes the Linux image-only proof. All50 original encoded PNG
+hashes, manifest, ordered IDs/dimensions and original216-byte benchmark notice
+match before preserved RGB identities are recorded. Root and independent peer
+verify the small ZIP/member/source hashes, reconstruct the frozen manifest and
+notice, check the original encoded-byte hash writer and confirm all six
+consumer-guarded objects still match integration84fe938b. The106,214-byte corpus
+artifact12686713308 remains remote through24 January2027; no images/models or
+frameworks are downloaded for this review.
+
+Initial40376735641 remains a member-coverage rejection before PNG comparison;
+its fix retains the original notice and historical Python3.11.17/Pillow12.3.0
+renderer ABI without replacing any frozen hash. This success does not assign
+the earlier Mac mismatch to zlib/Python. Actual Mac consumption must verify the
+complete53-file artifact and decoded RGB before the unchanged old-release/
+candidate50 probe. No recognition, score, library, model or release qualification
+follows from input reproduction; the original seven-of-fifty quality remains.

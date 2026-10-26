@@ -601,8 +601,10 @@ completed evidence. The remaining loop requires actual review of these lanes:
   PNGs: the pinned renderer also emits a216-byte NOTICE. Corrected
   [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
   at`f284b1f67c1ae34082afb81a54301c6ab392c02a` preserves that notice and
-  Python3.11.17 renderer ABI. Require all50 original encoded PNG hashes and
-  decoded RGB identities before the unchanged Mac50 probe; never replace hashes.
+  Python3.11.17 renderer ABI. The [reviewed input proof](../tests/results/packaging/posformer-corpus-proof.json)
+  now passes all50 original encoded PNG hashes/manifest/dimensions/notice.
+  Actual Mac artifact coverage and decoded RGB verification must precede the
+  unchanged released/candidate50 probe; input reproduction is not model parity.
 - Conditional WASM rounding
   [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
   at`580e3ae3be3671ddce5e945b0725d0583ec34110` verifies actual same-run

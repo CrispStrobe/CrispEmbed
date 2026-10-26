@@ -229,7 +229,10 @@ before library/model initialization; browser execution failed unchanged parity
 at0.00837269/cosine0.99864984. Initial Linux image-only proof40376735641
 failed member coverage before PNG comparison; its original NOTICE is now retained.
 Corrected [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
-at`f284b1f6` must reproduce all50 encoded PNG hashes before Mac consumption.
+at`f284b1f6` now passes all50 encoded PNG hashes/manifest/dimensions/notice;
+[the reviewed input proof](tests/results/packaging/posformer-corpus-proof.json)
+is positive. Actual Mac artifact/RGB verification and model compatibility remain
+pending; this input proof is not an inference result.
 The [actual WASM trace](tests/results/packaging/successor-wasm-source-trace.json)
 is independently reviewed: embedding norm exact, first captured attention0
 difference, same-input activation-rounding discrepancy and unchanged final failure.

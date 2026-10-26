@@ -635,15 +635,17 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
   selected before model outputs. No gold/text normalization, row drops, public
   pair API or model publication follows. Keep strict183/1,294 numerical debts.
-- [ ] **Verify corrected Apple corpus.** Review image-only
-  [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
-  at`f284b1f67c1ae34082afb81a54301c6ab392c02a`. Require all50 original
-  encoded PNG hashes, manifest, decoded RGB identities and pinned216-byte
-  NOTICE before the unchanged Mac released/candidate50 probe. Initial
-  40376735641 failed member coverage before PNG comparison; preserve that
-  rejection. The fix includes the original benchmark notice and historical
-  Python3.11.17 renderer ABI; it changes no frozen PNG hash or seven-of-fifty
-  quality result. Benchmark-only source terms remain explicit.
+- [ ] **Finish actual Mac compatibility after the completed input proof.**
+  [Corrected40386968045](tests/results/packaging/posformer-corpus-proof.json)
+  at`f284b1f67c1ae34082afb81a54301c6ab392c02a` passes all50 original
+  encoded PNG hashes, ordered IDs/dimensions, manifest and216-byte notice.
+  Both independent reviews verify the small receipt and six consumer-source
+  objects. Corpus artifact12686713308 stays remote through24 January2027.
+  The actual Mac consumer must verify all53 artifact files and decoded RGB
+  identities before the unchanged released/candidate50 probe. Initial
+  40376735641 and40354251257 stay negative; no image hash, gold, score or
+  seven-of-fifty quality result changed. Historical renderer ABI alignment
+  does not attribute the earlier Mac mismatch to a particular environment cause.
 - [ ] **Finish actual WASM rounding A/B.** The independently reviewed
   [first trace](tests/results/packaging/successor-wasm-source-trace.json)
   reproduces all eight native/browser neutrality anchors, exact embedding norm,
