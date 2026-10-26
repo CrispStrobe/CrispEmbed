@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Small dependency-free controls; no tokenizer/model/framework loading."""
 import hashlib
+import copy
+from collections import UserDict
 import importlib.util
 import json
 from pathlib import Path
@@ -15,6 +17,73 @@ from contract import PANEL, read_contract, safetensors_inventory, tensor_schema,
 
 
 class ContractTests(unittest.TestCase):
+    def test_mapping_pipeline_capture_keeps_actual_tensors_and_dimensions(self):
+        from observer_continuity import capture_leaves
+        class Tensor:
+            shape = (1, 32, 128)
+        value = Tensor()
+        # BatchEncoding and BatchFeature inherit UserDict, so the former dict
+        # recursion silently skipped these real wrapper outputs.
+        tree = UserDict(token_embeddings=value, nested=[UserDict(mask=value)], modality='text')
+        captured = list(capture_leaves('pipeline.1.output#0', tree, lambda item: isinstance(item, Tensor)))
+        self.assertEqual([name for name, _ in captured],
+            ['pipeline.1.output#0.token_embeddings', 'pipeline.1.output#0.nested.0.mask'])
+        self.assertTrue(all(item is value for _, item in captured))
+        self.assertEqual(captured[0][1].shape, (1,32,128))
+
+    def test_direct_forward_mapping_observer_restores_and_is_neutral(self):
+        from observer_continuity import capture_leaves
+        from reference import observe_forward
+        class Tensor:
+            pass
+        class Dense:
+            def forward(self, features):
+                features['token_embeddings'] = projected
+                return features
+        projected, model, events = Tensor(), Dense(), []
+        features = UserDict(token_embeddings=Tensor())
+        with observe_forward(model, lambda args, kwargs: None,
+                lambda result: events.extend(capture_leaves('pipeline.1.output#0', result,
+                                                            lambda item: isinstance(item, Tensor)))):
+            result = model.forward(features)
+        self.assertIs(result, features)
+        self.assertIs(result['token_embeddings'], projected)
+        self.assertEqual(events, [('pipeline.1.output#0.token_embeddings', projected)])
+        self.assertNotIn('forward', vars(model))
+
+    def test_pipeline_coverage_rejects_the_former_missing_capture_and_wrong_axis(self):
+        from observer_continuity import pipeline_coverage
+        report={'cases':[{'id':'q','token_ids':[2]*32}], 'stage_arrays':[
+            {'case':'q','stage':f'pipeline.{i}.output#0.token_embeddings','shape':[1,32,128],'dtype':'f32'}
+            for i in (1,2,3)]}
+        panel={'full_capture':['q']}
+        pipeline_coverage(report,panel)
+        for mutation in ('missing','unbatched','repeat','wrong_dtype'):
+            bad=copy.deepcopy(report)
+            if mutation=='missing':bad['stage_arrays'].pop()
+            if mutation=='unbatched':bad['stage_arrays'][0]['shape']=[32,128]
+            if mutation=='wrong_dtype':bad['stage_arrays'][0]['dtype']='i64'
+            if mutation=='repeat':bad['stage_arrays'].append(dict(bad['stage_arrays'][0],stage='pipeline.1.output#1.token_embeddings'))
+            with self.assertRaises(ValueError):pipeline_coverage(bad,panel)
+
+    def test_continuity_rejects_changed_gold_masks_bytes_or_shape(self):
+        from observer_continuity import continuity
+        prior={'schema':'original','cases':[{'id':'q','token_ids':[2,3], 'scoring_mask':[True,False],
+               'seconds_including_observer':1.}], 'scores':[{'original_maxsim':3.}], 'stage_arrays':[
+               {'case':'q','stage':'ordinary.features.token_embeddings','shape':[2,128],
+                'dtype':'f32','bytes':1024,'path':'all.f32','sha256':'a'*64}]}
+        current=copy.deepcopy(prior);current['cases'][0]['seconds_including_observer']=2.
+        current['stage_arrays'].append({'case':'q','stage':'pipeline.1.output#0.token_embeddings'})
+        self.assertTrue(continuity(current,prior)['all_prior_outputs_bit_exact'])
+        for mutation in ('score','mask','bytes','shape','drop'):
+            bad=copy.deepcopy(current)
+            if mutation=='score':bad['scores'][0]['original_maxsim']=3.000001
+            if mutation=='mask':bad['cases'][0]['scoring_mask'][0]=False
+            if mutation=='bytes':bad['stage_arrays'][0]['sha256']='b'*64
+            if mutation=='shape':bad['stage_arrays'][0]['shape']=[1,2,128]
+            if mutation=='drop':bad['stage_arrays'].pop(0)
+            with self.assertRaises(ValueError):continuity(bad,prior)
+
     def test_direct_forward_capture_is_neutral_and_restores_class_lookup(self):
         from reference import observe_forward
         class Direct:

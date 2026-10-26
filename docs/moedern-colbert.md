@@ -116,7 +116,8 @@ cases before candidate inference: German query/document, empty query, punctuatio
 and currency, literal markers, mixed scripts/diacritics/emoji, query/document
 truncation, one character and whitespace. Two short cases capture every actual
 backbone module input/output plus actual SDPA Q/K/V/mask/output through neutral
-test-only hooks. Pipeline hooks preserve pre-normalized and normalized vectors. Router logits
+test-only hooks. The correction below requires actual pipeline-vector coverage
+before accepting a complete replay. Router logits
 are captured; softmax/top-2/renormalized weights and selection margins derived
 from them are explicitly labeled `derived`, not observed internal arrays.
 Other cases preserve final arrays and role/mask contracts. All snapshots clone
@@ -134,6 +135,50 @@ include row-major shape/type, byte count and SHA256. Full originals/checkpoints
 and arrays stay in remote artifacts for 90 days; the small report contains
 identities, stages, masks, scores, timings and peak RSS. Rejection reports and
 partial stage arrays are retained even on failure.
+
+### Original observer correction, prepared separately
+
+The actual original [40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
+at [790f7b1d](https://github.com/CrispStrobe/CrispEmbed/commit/790f7b1d0372c12d1807dfb2fc7fc3af20a3c445)
+completed all ten cases, retained 250 arrays and three exact original/explicit
+MaxSim scores, and established ordinary/observer and public scoring-slice
+neutrality. Its intermediate coverage is incomplete: it retained no `pipeline.*`
+arrays. The original recursive writer recognized built-in dictionaries, while
+the actual wrapper carries features in a `Mapping` such as `BatchEncoding`.
+The layer hooks can run while the former writer silently skips that container.
+Keep the initial receipt and arrays unchanged; they do not establish Dense or
+Normalize intermediate parity or native readiness.
+
+The separately pinned [observer-correction protocol](moedern-colbert-observer-correction-v1.json)
+prepares a hosted original-only replay of the same 1.5M panel. Before installing
+frameworks it authenticates the original service run, small/raw ZIPs, source,
+receipt, conversion, GGUF and every retained array. The replay reuses that
+authenticated checkpoint. Mapping-aware capture snapshots actual tensor leaves
+without changing their shape, and all three pipeline-module outputs must exist
+with batch-first `[1,T,128]` dimensions for both full-capture cases. The pinned
+[ST encode implementation](https://github.com/huggingface/sentence-transformers/blob/b0bf39968ba461c34b29372144794eff1be06f6d/sentence_transformers/multi_vector_encoder/model.py#L880)
+then splits batch-first tensors for `output_value=None`: ordinary per-input
+vectors retain `[T,128]`; the scoring slice retains `[selected,128]`. Do not add
+a batch axis to these ordinary outputs to match pipeline hooks.
+
+Completion requires all original 250 array descriptors and payload hashes, all
+ten request/ID/mask contracts, all loaded parameters and all three scores to
+remain exactly equal to the initial run. The unchanged converter must reproduce
+the same GGUF bytes and tensor records; only its receipt's original-report hash
+changes. Missing pipeline coverage or any old-output drift rejects, preserving
+partial/new reports, arrays and logs. Thirteen dependency-free controls cover
+mapping recursion, direct-call observation and restoration, missing/repeated or
+wrong-shape pipeline outputs, and exact continuity rejection. These are source
+controls, with no local framework, tokenizer, model or build execution.
+
+The corrected hosted replay remains undispatched. Native dependencies remain
+unqualified and must be explicitly versioned only after the corrected actual
+source and receipt are independently reviewed. No inputs, golds, arithmetic,
+precision, budgets, larger model scopes, representative quality or release
+qualification change. Preserve the initial raw/review artifacts remotely before
+their current January 24, 2027 expiry; do not commit model or array payloads.
+
+### Conversion and later native validation
 
 The [F32 converter](../tools/moedern-colbert/convert_f32.py) requires a completed
 original receipt and its exact SHA256, rehashes the original checkpoint and
