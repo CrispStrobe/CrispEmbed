@@ -88,15 +88,25 @@
       "panel_completed": false
     },
     "wasm_rounding_ab": {
-      "reviewed": false,
-      "reviewed_outcome": null,
+      "reviewed": true,
+      "reviewed_outcome": "candidate-rejected-default-off",
       "final_default": "off",
-      "run": null,
-      "source": null,
+      "run": 40391544739,
+      "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
       "workflow": ".github/workflows/ovisocr2-metadata.yml",
-      "conclusion": null,
-      "artifacts": [],
-      "panel_completed": false
+      "conclusion": "failure",
+      "artifacts": [
+        {
+          "id": 12692262412,
+          "bytes": 503633,
+          "sha256": "6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047",
+          "name": "wasm-q8-rounding-ab-v1-review-40391544739",
+          "reports": {
+            "ab.json": "85102ccff26f3579f050a62a2747ef3f423b2546fc4dd9454e5b12663be76526"
+          }
+        }
+      ],
+      "panel_completed": true
     }
   },
   "gates": [

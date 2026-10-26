@@ -88,3 +88,10 @@ download is needed. Large model/reference/diff artifacts remain hosted; reports
 and manifests are sufficient for independent review. Published F16, historical
 precision/quality failures, UltraBERT numerical debt and the app's immutable
 0.17.12 pin remain unchanged.
+
+The WASM dependency now records the completed, independently reviewed numerical
+rejection at580e3ae3/run40391544739 with its exact small artifact/report hashes.
+It retains the rounding default off and grants no experimental qualification.
+The Ovis composed dependency is still pending, so preflight remains closed.
+Layer3 attribution may justify a later source change; any such change requires
+a new explicit runtime closure instead of silently reusing this protocol.
