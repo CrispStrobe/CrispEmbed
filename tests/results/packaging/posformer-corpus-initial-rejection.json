@@ -1,0 +1,37 @@
+{
+  "schema": "crispembed-posformer-corpus-initial-rejection-v1",
+  "run": 40376735641,
+  "job": 121776966329,
+  "service_conclusion": "failure",
+  "source_commit": "b7983104c61eccb9514174aeac41691f1f5cb1ff",
+  "artifact": {
+    "id": 12680048816,
+    "bytes": 379,
+    "sha256": "eceb05177e8b6a46ed13dbb670a038319dacf169c03b46e1225e50634583ce27"
+  },
+  "job_log": {
+    "bytes": 28534,
+    "sha256": "025dffa1a54e14740f208f2ccab9755868c80a8f9f17e294d4209c31eeee4f88"
+  },
+  "report": {
+    "schema": "crispembed-posformer-frozen-corpus-rejection-v1",
+    "completed": false,
+    "source_commit": "b7983104c61eccb9514174aeac41691f1f5cb1ff",
+    "mode": "prepare",
+    "error": "Corpus member coverage differs",
+    "limits": [
+      "Original PNG identity remains required; no gold or image replacement accepted."
+    ]
+  },
+  "report_sha256": "571ef8ad228698b031fabf9df821c342ee0ce6ee93c2dca76d19d78c1b19965d",
+  "earliest_stage": "Corpus member inventory before checking any original PNG hash or decoding RGB",
+  "scope": "The pinned renderer additionally emits NOTICE.txt; the initial helper incorrectly expected only manifest.json plus50PNG files. No PNG mismatch or inference result is established by this rejection. No corpus payload artifact was published.",
+  "original_hash_blueprint": {
+    "source": "https://github.com/CrispStrobe/CrispMath/blob/23f1470df0a0853234880ac7e0c6135fd4c02f59/native_test/handwriting_quality_test.dart",
+    "bytes": 4932,
+    "sha256": "39c36a74dedce65dd101aeb313b672b7a7e0ce00e49a637361c40bbce8f0b67c",
+    "semantics": "Hash encoded file bytes before img.decodePng(bytes); not an RGB or resized-tensor hash."
+  },
+  "correction_required": "Preserve and pin the exact216-byte NOTICE.txt, require all52inputmembers and unchanged50PNG hashes, then record RGB only after all encoded identities pass. Restore original renderer Python3.11.17 ABI as source-backed environment alignment, not an attributed PNG cause.",
+  "qualification": false
+}

@@ -15917,3 +15917,156 @@ model outputs. [Full panel40375626336](https://github.com/CrispStrobe/CrispEmbed
 was dispatched only after this review, using the exact preparation receipt SHA.
 Its source remains frozen through all original shards, original freeze, native
 shards and aggregation. Preparation does not establish retrieval/native parity.
+## 26 October 2026 — successor archive protocol and source packaging corrections
+
+The source preparation adds exact archive/member manifests and fresh desktop,
+compiled C/Python, browser, Apple released-versus-candidate and mobile cross-link
+consumers. Eight archive/layout controls pass without local compilation or
+models. Independent source review found a doubled WASM extraction directory,
+Android's omitted shared ggml dependencies and iOS's unmerged static dependency
+closure. The candidate fixes these before execution and advances development
+manifests to0.17.14; actual artifact links/runtime checks remain required.
+Initial preliminary producers40338612955/40338616900 were cancelled with every
+build still queued. No executed mobile failure or positive runtime qualification
+is claimed, and no tag or application0.17.12 pin changes.
+
+## 26 October 2026 — packaged-consumer report layout corrected before execution
+
+Native/mobile producer40339796226 and WASM producer40339800364 both complete
+successfully at40a82158146faf0cd44de2a4ee7056e7b0c6a58c. They bind seven
+CPU/mobile archives and two WASM bundles; compiled consumer qualification remains
+separate. Consumer40352845316/cab577ab was cancelled with its controls still
+queued, before archive consumers ran. Independent source review found that the
+Apple multi-path upload preserves`apple-candidate/` and`apple-released/`, whereas
+the final reviewer expected flat JSON. The corrected reviewer consumes the real
+nested layout and additionally requires the candidate's archive/source closure.
+Four small positive/missing-platform/mixed-source/layout controls pass. No
+producer bytes, runtime path, model targets or numerical budgets change.
+
+## 26 October2026 — Windows packaged audit locale failure retained
+
+Consumer40354251257/49161f60 downloads and validates the40a82158 Windows archive
+and reaches header export inspection, then Python's default cp1252 decoding
+rejects UTF8 U+2581 in a header comment. The actual job121718563370 failure is
+an auditor decode error; no archive/runtime defect is inferred. The incomplete
+Windows panel remains negative in
+[its retained receipt](tests/results/packaging/successor-windows-reader-initial.json).
+The2,420-byte actual small ZIP/members and completed job log are independently
+reviewed. Other immutable491 consumers continue separately.
+
+Audit-only5702b1ae reads UTF8 source/metadata/logs explicitly and requests MSVC
+UTF8 for the compiled C consumer. Thirteen small controls pass, including the
+actual non-cp1252 header character under forced default cp1252, invalid UTF8,
+missing exports and unchanged Unix compile arguments. Production/build/binding
+objects and all247 parsed exports remain unchanged. The corrected Windows
+execution is still pending; qualify it with fresh final integrated-source
+producers/consumers rather than repeating every unchanged40-source panel now.
+
+## 26 October 2026 — initial packaged Apple/browser negatives preserved
+
+[Initial consumers40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
+complete with three failed jobs. The independently reviewed [Apple receipt](tests/results/packaging/successor-apple-initial.json)
+records frozen image-byte rejection before library/model initialization; no
+released/candidate OCR output exists. Reproduce all frozen PNG identities on
+hosted Linux and preserve that verified corpus before retrying Apple. No gold
+image/hash adjustment is authorized.
+
+The [browser receipt](tests/results/packaging/successor-wasm-initial.json) retains
+the actual384-vector result, identical published model identity, archive/member
+proof and successful authored classical cleanup. Browser/native comparison fails
+maximum absolute0.00837269053 and cosine0.99864983887 against unchanged0.002/0.99999.
+There are no page errors. Trace tokenizer/intermediates and the earliest operator
+before proposing a correction; final cosine is not root-cause attribution.
+Windows' separate locale-reader negative and source-only repair remain archived.
+Linux x86/ARM, macOS desktop, Android/iOS cross-links and Rust/Dart consumers pass
+in this initial batch; the final review is skipped and overall qualification
+remains false. All small negative ZIP members and job logs were independently
+hashed; model/native/WASM payloads remain remote.
+
+## 26 October 2026 — frozen packaged WASM attribution dispatched
+
+[Source trace40378744841](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40378744841)
+uses exact `92c108ddabc1da5e0a2c85db0599094e5f1f44f9` on the separate
+`audit/successor-wasm-trace-dispatch-20261026` ref. It preserves the immutable
+40a82158 native/WASM packages, initial browser/native vectors and published
+model identity. Ordinary and observed native/browser outputs must reproduce
+those anchors exactly before all eight encoder stages are compared with
+crispembed-diff and independent magnitude/error calculations. Actual tensor
+formats, test-only Q8 conversion blocks and a same-input weight dot remain
+attribution evidence, without a production correction or qualification claim.
+Seven small parser, identity, overlay and independent reference-byte controls
+pass; the hosted result remains pending. Diagnostic source overlays and modules
+are excluded from production archives.
+
+Earlier40378614197 was cancelled pending with no jobs before any build/model
+access, to incorporate independent verification of reference quantization bytes
+and avoid the corpus workflow's per-branch scheduling lock. The replacement uses
+the same bounded sixty-minute/two-build-worker protocol. Initial production
+browser parity remains failed at0.00837269/0.99864984; no budget is widened.
+
+A second source review caught a parser-only blocker before hosted model work:
+the pinned public single-encode path logs token IDs twice, at the API and graph
+upload boundaries. Trace40378744841 was cancelled with every job showing zero
+completed steps. The corrected parser requires exactly two valid, identical
+observations and rejects missing, extra, malformed or differing lines. This
+matches the original blueprint without changing production logging or inputs.
+Seven small controls and source/JS/workflow checks pass. No executed numerical
+failure is claimed from either queued cancellation; the unchanged initial
+browser parity failure remains the model-backed negative evidence.
+
+The corrected source-reviewed trace is
+[40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
+at `f8bac049a7c143773b330cfc4c217b1f0a47ef56`, retained on
+`audit/successor-wasm-trace-dispatch-v2-20261026`. Hosted results are pending;
+source controls alone establish no output parity or production correction.
+
+## 26 October 2026 — image preservation inventory rejection retained
+
+[Linux proof40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
+atb7983104 fails before any original PNG hash or RGB check. Its helper incorrectly
+expected only a manifest and50 images; the pinned renderer also emitsNOTICE.txt.
+[Exact rejection receipt](tests/results/packaging/posformer-corpus-initial-rejection.json)
+retains the actual small ZIP, report and log identities. No corpus payload was
+published and no Linux PNG mismatch or model result follows from this failure.
+The original pinned writer hashes encoded file bytes before decoding, independently
+verified from its4932-byte source/SHA39c36a74; the existing image hashes remain
+unchanged. A corrected preservation lane must retain the exact attribution notice
+and all52 files before checking all50 frozen PNGs. Historical renderer Python
+3.11.17 ABI alignment is a reproducibility precaution, not an established cause
+of a PNG difference. No image, gold, score or inference tolerance is replaced.
+
+The notice-preserving correction passes eleven small controls. It restores the
+original Python3.11.17 renderer ABI and preserves all fifty encoded PNG hashes.
+[Corrected Linux proof40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
+is dispatched at `f284b1f67c1ae34082afb81a54301c6ab392c02a`; its actual image-byte
+result remains pending. Exact216-byte attribution notice verification applies
+on both producer and consumer; unexpected auxiliary files still reject.
+
+## 26 October 2026 — actual WASM/native error localized before candidate A/B
+
+[Source trace40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
+completes atf8bac049. The independently reviewed [full receipt](tests/results/packaging/successor-wasm-source-trace.json)
+verifies the actual small ZIP/all13 members, five source hashes, eight exact
+output anchors, both native thread counts' full-stage identities and independent
+Q8 reference-byte controls. Every original final vector remains bit exact; the
+unchanged final comparison still fails maximum0.00837269/cosine0.99864984.
+
+All12 input IDs and the complete embedding-normalization tensor are exact. The
+first captured differing stage is first attention output: max0.0833039284,
+RMS0.00581555824, reference max4.23782301 and L2 magnitudes13.05802/12.83489.
+Final encoder max reaches0.105108261. Actual first-query weights are IQ4_NL,
+with Q8_0 activations. On the identical first-token input,187 quantized bytes
+differ from the pinned independent rounding reference while all twelve FP16
+scales match. A real first-query output-channel dot shifts by0.0260053873.
+The model includes30 IQ4_NL and6 IQ4_XS matrices; its filename alone is not a
+tensor-format contract.
+
+Actual WASM mean-pool reconstruction and both native recomputed means reproduce
+their respective final L2 vectors exactly. Native pre-L2 is explicitly derived
+from the complete encoder tensor, while WASM pooling is captured by test overlay.
+The error is already upstream of pooling. These results justify a separately
+source-bound rounding experiment; one dot does not prove full-network causality.
+The conditional backend-local candidate remains default-off and unmerged until
+actual operator and full-model A/B gates complete. No reference, weight, input,
+tolerance, production archive, application pin or default is replaced. Stage
+arrays and diagnostic modules remain remote through24 January2027.

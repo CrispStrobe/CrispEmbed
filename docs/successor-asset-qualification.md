@@ -1,0 +1,108 @@
+# Immutable successor asset qualification
+
+This protocol qualifies actual unpublished archives at one exact Git commit.
+It does not create a tag, publish a release, upgrade the application from0.17.12,
+qualify experimental models or infer task quality from an archive hash.
+
+Dispatch `.github/workflows/release.yml` with`cpu_only=true` on the final candidate
+source. This builds the actual seven CPU/mobile archives, retaining the normal
+portable baseline and packaging/dependency checks; optional CUDA/Vulkan variants
+are explicitly outside this bounded candidate. Only artifact-producing desktop
+targets are built in this dry run. Ordinary tag builds keep their existing path.
+Dispatch `.github/workflows/release-wasm.yml` on the same source with an empty tag.
+Publication steps remain guarded. Both runs must complete successfully.
+
+`tools/successor_asset_manifest.py` binds exact source, ggml gitlink, version,
+archive SHA256/size and every member hash/link. Duplicate normalized paths,
+traversal, special files, dangling links and cycles reject. Native coverage
+requires all seven CPU/mobile archives; WASM coverage requires both bundles.
+Hashing alone leaves qualification false. Ten small archive/layout/source controls exercise
+these rejection cases without builds or models.
+
+The reusable `.github/workflows/successor-assets.yml` then downloads actual
+producer artifacts into fresh hosted consumers. Both producers must use the same immutable commit. Consumer audit code may
+advance while every production/build/binding Git object stays identical; v2
+receipts record producer and audit commits separately, and reject runtime edits
+or dirty production files. The registered metadata phase`successor-consumer` forwards
+`native_run_id` as the native producer and`original_run` as the WASM producer.
+No latest-run lookup or source-tree substitution is accepted.
+
+- Four desktop consumers verify complete archive/member bytes and Linux glibc2.28
+  dependencies. They test empty-cache offline rejection, actual CLI alias download
+  of the pinned published MiniLM IQ4_XS model, its weight hash, cached offline
+  reuse, every packaged-header function export, compiled C linkage/layout, and
+  actual C/Python/CLI vectors. The shipped header must match the exact source.
+  Vector gates are maximum absolute0.002/minimum cosine0.99999; CLI formatting
+  loss is measured rather than called bit-exact. The Python structure is a
+  supported prefix of the appended C structure, not an equal-size claim.
+- Linux also compiles the unchanged safe Rust and Dart wrappers against the
+  verified prebuilt library and retained model. Native source fallback is denied;
+  actual mapped-library paths, dependency locks and source hashes are retained.
+  Three scalar texts, exact repeat and a mixed four-row batch are compared to
+  actual C ABI vectors with the same gates. These binding checks use Linux;
+  other-platform ABI/link consumers remain separately recorded.
+- The browser consumes both unchanged WASM bundles. It loads the exact same
+  published model bytes as the native consumer, checks actual embedding output
+  against the native vector, exported wrapper functions, and the default classical blackfilter clearing an authored solid RGB
+  blob through the OCR module. This is not an OCR model-quality audit.
+- Apple additionally downloads the actual released0.17.12 archive, verifies its
+  frozen hash, and runs the existing fifty-case PosFormer public-ABI probe on
+  released and candidate unset/literal1/legacy0 paths. Released versus unset/1
+  requires exact IDs/text/EOS; confidence drift is measured without a new
+  tolerance. Candidate unset/1 outputs and confidences must agree exactly.
+  The prior recognition score remains7/50; no recognition improvement is claimed.
+- Android and iOS consumers inspect and cross-link the actual packaged C ABI
+  with their platform SDKs. Unresolved archive dependencies reject. These jobs
+  do not execute on devices; device inference remains an explicit platform gap.
+
+Keep initial failures, artifact service identities, raw output comparisons and
+logs in their remote artifacts. Download small reports only for independent
+review. A candidate may be rejected despite successful builds. Any packaging
+fix requires a new producer and all affected fresh consumers; never replace a
+failed receipt or silently waive a missing archive/device check. A later tag or
+application-pin decision is separate from this qualification.
+
+
+Source review before the first build found incomplete mobile dependency closure:
+Android's default shared ggml dependencies were omitted from its single-library
+archive, and iOS packaged a non-amalgamated static archive. The corrected
+candidate links ggml and the Android C++ runtime statically, and amalgamates the
+iOS CrispEmbed/core/ggml archives. The cross-link consumers must verify these
+changes on actual artifacts; source review is not an executed failure receipt.
+The packaging change advances development manifests to0.17.14. No tag is created
+and the application remains on0.17.12. Initial preliminary producers40338612955
+and40338616900 were cancelled while every build was queued, before compilation;
+WASM extraction was also corrected to preserve the archive's existing directory
+root, with a dependency-free round-trip regression.
+
+
+The consumer's source guard permits audit-only repairs without rebuilding
+unchanged binaries. It compares complete source/build/binding Git objects,
+including both producer workflows and the manifest generator hash, before
+loading an archive. Actual producer identity remains the library/model source;
+consumer identity records the independent audit code. Runtime changes require
+new producers. Small Git-repository controls prove documentation-only updates
+pass while committed or dirty production edits reject. The browser fixture
+expects the existing default blackfilter to remove its authored solid blob;
+setting only the four simple cleanup flags to0 does not disable despeckling
+and blackfilter, so treating that call as a no-op would be an incorrect oracle.
+
+
+The final hosted review requires every desktop/browser/Apple/mobile/binding
+receipt and hashes each small report. Missing platforms, mixed producer sources
+or failed comparisons reject. It keeps device execution, model portfolio,
+publication and application-pin flags separate from the bounded positive checks.
+
+
+The initial Apple run rejected rendered PNG byte identity before library/model
+initialization. Dispatch the registered metadata phase `successor-corpus` first.
+This hosted Linux-only lane uses the pinned app renderer/Pillow and must reproduce
+all50 frozen PNG hashes and the original manifest before preserving any corpus.
+Its successful `posformer-frozen-corpus` artifact binds original PNG identities
+and subsequently measured RGB hashes; failure publishes only a rejection report.
+Apple consumes these retained bytes and independently verifies service/source,
+ZIP/member identities, dimensions and decoded RGB before the unchanged probe.
+For metadata phase `successor-consumer`, `candidate_run_id` supplies this reviewed
+corpus run as `corpus_run`; `native_run_id` and `original_run` retain their native
+and WASM producer meanings. No gold/hash replacement or qualification follows
+from corpus preparation. Large corpus images remain remote.

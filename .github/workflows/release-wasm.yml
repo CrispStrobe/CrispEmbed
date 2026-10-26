@@ -83,6 +83,19 @@ jobs:
           cp build-embed-wasm/crispembed_embed.wasm crispembed-embed-wasm/
           tar czf crispembed-embed-wasm.tar.gz crispembed-embed-wasm/
 
+      - name: Bind unpublished WASM candidates to source and member hashes
+        if: github.event_name == 'workflow_dispatch' && inputs.tag == ''
+        run: |
+          mkdir -p candidate-archives
+          cp crispembed-ocr-wasm.tar.gz crispembed-embed-wasm.tar.gz candidate-archives/
+          python3 tools/successor_asset_manifest.py --root candidate-archives --kind wasm --output successor-wasm-manifest.json
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.tag == ''
+        with:
+          name: successor-wasm-manifest
+          path: successor-wasm-manifest.json
+          retention-days: 90
+
       # ---- Upload to Release ----
       - name: Determine release tag
         id: tag

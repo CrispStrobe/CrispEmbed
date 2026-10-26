@@ -393,6 +393,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 |-------|-------------------|------|--------|
 | 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
+| 2026-10-26 | `test/successor-wasm-trace-20261026` | Frozen packaged MiniLM WASM attribution | [Hosted source trace](docs/successor-wasm-trace.md): retain initial native/browser anchors, require ordinary/dump neutrality, compare full named stages and actual GGUF types; test-only quantization controls. No production/archive change or qualification. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
@@ -639,3 +640,26 @@ rejected. Execute the distinct literal-canonical v2 preparation on
 reviewed provenance pins, published module config and all5483 actual wrapper
 input checks. Review its real dataset/token/timing receipt before the full panel.
 Do not interpret source protocol selection as numerical/model qualification.
+### Immutable archive blockers after the first actual consumer batch
+
+- [ ] Independently review corrected exact-byte Linux image proof40386968045
+  atf284b1f6. Initial40376735641 is retained as a pre-image inventory rejection.
+  Require all50 original PNG/manifest identities before preserved images can feed
+  the unchanged Mac released/candidate50 probe. Do not replace frozen PNG hashes;
+  source terms, renderer identity and decoded RGB proof remain explicit.
+- [ ] Review source-frozen WASM trace40379523009 atf8bac049. It must reproduce
+  initial40354251257 native/browser outputs and observer neutrality before eight
+  full encoder stages, actual tensor types and same-input quantization blocks
+  support attribution. Keep the initial0.00837269/0.99864984 failure, fixed gates
+  and both pre-execution cancellations. A source rounding difference is not yet
+  an established full-network cause; do not infer a production fix from it.
+- [ ] Integrate only an evidenced correction behind the shared value-parsed
+  experimental gate, keep the working legacy alternative and unchanged outputs/
+  references, then execute paired actual native/browser checks before promotion.
+  Windows UTF-8 audit repair still needs actual hosted execution.
+- [ ] After reviewed runtime/build changes are integrated, build fresh seven CPU/
+  mobile archives and both WASM bundles at one final immutable source; complete
+  all desktop/C/Python/CLI/Rust/Dart/browser/Apple/mobile-cross-link consumers and
+  independent aggregation. Pass the reviewed corpus proof run via metadata
+  candidate_run_id. Keep device execution, broad model quality, tag publication
+  and application upgrade as separate gates; the app remains on0.17.12.

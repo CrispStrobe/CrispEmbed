@@ -11,6 +11,11 @@ on:
   # made every Linux tarball exit 127) was only observable in the packaged
   # artifact, and the only way to produce one was to publish a release.
   workflow_dispatch:
+    inputs:
+      cpu_only:
+        type: boolean
+        default: false
+        description: 'Bounded unpublished CPU/mobile candidate; skip optional CUDA/Vulkan variants'
 
 permissions:
   contents: write
@@ -209,7 +214,13 @@ jobs:
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check-cpu-baseline.py build
 
       - name: Build
-        run: cmake --build build --config Release -j4
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == workflow_dispatch && "${{ inputs.cpu_only }}" == true ]]; then
+            cmake --build build --config Release --target crispembed-cli crispembed-server crispembed-quantize crispembed-shared -j2
+          else
+            cmake --build build --config Release -j4
+          fi
 
       - name: Package (Unix)
         if: runner.os != 'Windows'
@@ -387,6 +398,7 @@ jobs:
   # boxes that consume a -cuda tarball normally have CUDA installed
   # system-wide.
   build-linux-x86_64-cuda:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cpu_only
     name: Build linux-x86_64-cuda
     runs-on: ubuntu-latest
     env:
@@ -627,6 +639,7 @@ jobs:
   # DLLs, so the zip is plug-and-play even if the user doesn't have CUDA
   # installed system-wide (common on Windows dev boxes).
   build-windows-x86_64-cuda:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cpu_only
     name: Build windows-x86_64-cuda
     # Pin to windows-2022 (VS 2022 / MSVC 14.4x). `windows-latest` now ships
     # Visual Studio 18 (MSVC 14.51), which CUDA 12.8's nvcc rejects:
@@ -764,6 +777,7 @@ jobs:
   # Lighter-weight than CUDA — uses the system Vulkan loader, no CUDA
   # toolchain required. Mirrors CrispASR's libcrispasr-*-vulkan layout.
   build-windows-x86_64-vulkan:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cpu_only
     name: Build windows-x86_64-vulkan
     runs-on: windows-latest
     steps:
@@ -856,7 +870,7 @@ jobs:
           cmake -S . -B build \
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=${{ matrix.abi }} -DANDROID_NATIVE_API_LEVEL=24 \
-            -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_LLAMAFILE=OFF
+            -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_LLAMAFILE=OFF -DBUILD_SHARED_LIBS=OFF -DANDROID_STL=c++_static
           # Cross-compiling already forces both NATIVE options off, but assert
           # it rather than assume it (#41).
           python scripts/check-cpu-baseline.py build
@@ -896,7 +910,7 @@ jobs:
             -DCMAKE_C_COMPILER=$(xcrun --sdk iphoneos -f clang) \
             -DCMAKE_CXX_COMPILER=$(xcrun --sdk iphoneos -f clang++) \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCRISPEMBED_BUILD_SHARED=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON
+            -DCRISPEMBED_BUILD_SHARED=OFF -DBUILD_SHARED_LIBS=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON
           # Cross-compiling already forces both NATIVE options off, but assert
           # it rather than assume it (#41).
           python scripts/check-cpu-baseline.py build
@@ -904,8 +918,19 @@ jobs:
           # iOS targets fails ("Bundle identifier is missing") under -G Xcode and
           # just wastes time under Make.
           cmake --build build --target crispembed -j4
-      - name: Package
-        run: tar -czf crispembed-ios-arm64.tar.gz -C build libcrispembed-static.a
+      - name: Package complete static iOS dependency closure
+        run: |
+          mkdir -p ios-package
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import subprocess
+          archives=[Path('build/libcrispembed-static.a'),Path('build/libcrispembed-core.a')]
+          archives+=sorted(Path('build/ggml').rglob('libggml*.a'))
+          assert all(p.is_file() for p in archives) and len(archives)>=5
+          assert len(archives)==len(set(archives))
+          subprocess.run(['xcrun','libtool','-static','-o','ios-package/libcrispembed-static.a',*map(str,archives)],check=True)
+          PYCODE
+          tar -czf crispembed-ios-arm64.tar.gz -C ios-package libcrispembed-static.a
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
@@ -946,6 +971,17 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: dist/
+
+      - name: Hash complete dry-run candidate archives and members
+        if: github.event_name == 'workflow_dispatch'
+        run: python3 tools/successor_asset_manifest.py --root dist --kind native --output successor-native-manifest.json
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: successor-native-manifest
+          path: successor-native-manifest.json
+          retention-days: 90
 
       - name: Create release
         # Tag pushes only. A workflow_dispatch dry run must never publish —
