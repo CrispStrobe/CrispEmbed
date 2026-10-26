@@ -117,8 +117,35 @@ def run(case,gate):
     except Exception as e:
         r['error']=str(e);save();raise
 
+def verify_quality(path):
+    current=json.loads(Path(path).read_text())
+    first=json.loads((ROOT/'tests/results/qwen35-ocr/ovisocr2-f16-quality.json').read_text())['producer']
+    actual=current.get('native_cases',{}).get('f16',{});old_rows=first['native_cases']['f16']
+    if len(actual)!=11 or set(actual)!=set(old_rows):raise ValueError('Full eleven-case coverage absent')
+    keys=('input_rgb_sha256','input_png_sha256','raw_text','processed_text','token_ids','stop_id','finish_reason','stop_kind','cap')
+    report={'schema':'crispembed-ovisocr2-position-quality-comparison-v1','cases':{},'source_head':os.environ.get('GITHUB_SHA'),
+        'interpolation_gate':os.environ.get('CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION'),
+        'confidence_policy':'Measure drift; no new confidence tolerance or exactness claim.'}
+    failures=[]
+    for name,reference in old_rows.items():
+        row=actual[name];exact=all(row.get(k)==reference.get(k) for k in keys)
+        values=row.get('confidences',[]);expected=reference['confidences']
+        if len(values)!=len(expected):exact=False
+        import math
+        if not all(isinstance(v,(int,float)) and math.isfinite(v) and 0<=v<=1 for v in values):exact=False
+        drift=max((abs(a-b) for a,b in zip(values,expected)),default=0)
+        report['cases'][name]={'decoded_ids_text_eos_inputs_exact':exact,'token_count':len(row['token_ids']),
+            'selected_confidences_exact':values==expected,'max_confidence_abs_drift':drift}
+        if not exact:failures.append(name)
+    report['failures']=failures;report['passed']=not failures
+    destination=Path(path).parent/'position-quality-comparison.json'
+    destination.write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
+    if failures:raise ValueError('First-F16 decoded/input regression: '+repr(failures))
+    return report
+
 if __name__=='__main__':
-    parser=argparse.ArgumentParser();parser.add_argument('--preflight',action='store_true')
+    parser=argparse.ArgumentParser();parser.add_argument('--preflight',action='store_true');parser.add_argument('--verify-quality',type=Path)
     parser.add_argument('--case',choices=CASES);parser.add_argument('--gate',type=int,choices=(0,1));args=parser.parse_args()
-    if args.preflight:print(json.dumps(preflight(),indent=2))
+    if args.verify_quality:print(json.dumps(verify_quality(args.verify_quality),indent=2))
+    elif args.preflight:print(json.dumps(preflight(),indent=2))
     else:run(args.case,args.gate)
