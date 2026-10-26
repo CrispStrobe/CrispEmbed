@@ -15635,3 +15635,24 @@ missing exports and unchanged Unix compile arguments. Production/build/binding
 objects and all247 parsed exports remain unchanged. The corrected Windows
 execution is still pending; qualify it with fresh final integrated-source
 producers/consumers rather than repeating every unchanged40-source panel now.
+
+## 26 October 2026 — initial packaged Apple/browser negatives preserved
+
+[Initial consumers40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
+complete with three failed jobs. The independently reviewed [Apple receipt](tests/results/packaging/successor-apple-initial.json)
+records frozen image-byte rejection before library/model initialization; no
+released/candidate OCR output exists. Reproduce all frozen PNG identities on
+hosted Linux and preserve that verified corpus before retrying Apple. No gold
+image/hash adjustment is authorized.
+
+The [browser receipt](tests/results/packaging/successor-wasm-initial.json) retains
+the actual384-vector result, identical published model identity, archive/member
+proof and successful authored classical cleanup. Browser/native comparison fails
+maximum absolute0.00837269053 and cosine0.99864983887 against unchanged0.002/0.99999.
+There are no page errors. Trace tokenizer/intermediates and the earliest operator
+before proposing a correction; final cosine is not root-cause attribution.
+Windows' separate locale-reader negative and source-only repair remain archived.
+Linux x86/ARM, macOS desktop, Android/iOS cross-links and Rust/Dart consumers pass
+in this initial batch; the final review is skipped and overall qualification
+remains false. All small negative ZIP members and job logs were independently
+hashed; model/native/WASM payloads remain remote.
