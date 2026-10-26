@@ -26,6 +26,7 @@ class CorpusIdentity(unittest.TestCase):
         manifest = json.dumps({'cases': [{'id': c['id']} for c in self.cases]}).encode()
         (self.corpus / 'manifest.json').write_bytes(manifest)
         self.manifest_sha = hashlib.sha256(manifest).hexdigest()
+        (self.corpus / 'NOTICE.txt').write_bytes(audit.NOTICE)
 
     def verify(self):
         return audit.verify(self.corpus, self.cases, self.manifest_sha)
@@ -47,6 +48,27 @@ class CorpusIdentity(unittest.TestCase):
 
     def test_extra_input_rejected(self):
         (self.corpus / 'unexpected.png').write_bytes(b'extra')
+        with self.assertRaisesRegex(ValueError, 'member coverage'):
+            self.verify()
+
+    def test_pinned_notice_preserved_beside_all_fifty_inputs(self):
+        self.assertEqual(len(audit.NOTICE), 216)
+        self.assertEqual(hashlib.sha256(audit.NOTICE).hexdigest(), audit.NOTICE_SHA)
+        self.assertEqual(len(list(self.corpus.iterdir())), 52)
+        self.assertEqual(len(self.verify()), 50)
+
+    def test_missing_notice_rejected(self):
+        (self.corpus / 'NOTICE.txt').unlink()
+        with self.assertRaisesRegex(ValueError, 'member coverage'):
+            self.verify()
+
+    def test_mutated_notice_rejected(self):
+        (self.corpus / 'NOTICE.txt').write_bytes(audit.NOTICE.replace(b'CC BY-NC-SA 4.0', b'CC0'))
+        with self.assertRaisesRegex(ValueError, 'NOTICE bytes changed'):
+            self.verify()
+
+    def test_unexpected_notice_rejected(self):
+        (self.corpus / 'notice.txt').write_bytes(audit.NOTICE)
         with self.assertRaisesRegex(ValueError, 'member coverage'):
             self.verify()
 

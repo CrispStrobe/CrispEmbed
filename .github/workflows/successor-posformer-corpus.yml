@@ -19,7 +19,7 @@ jobs:
           filter: blob:none
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.11.17'
       - run: python -B -m unittest discover -s tests -p test_successor_posformer_corpus.py
       - run: python -m pip install Pillow==12.3.0
       - name: Reproduce every original PNG hash before preservation
