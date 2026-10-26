@@ -35,6 +35,12 @@ No latest-run lookup or source-tree substitution is accepted.
   Vector gates are maximum absolute0.002/minimum cosine0.99999; CLI formatting
   loss is measured rather than called bit-exact. The Python structure is a
   supported prefix of the appended C structure, not an equal-size claim.
+- Linux also compiles the unchanged safe Rust and Dart wrappers against the
+  verified prebuilt library and retained model. Native source fallback is denied;
+  actual mapped-library paths, dependency locks and source hashes are retained.
+  Three scalar texts, exact repeat and a mixed four-row batch are compared to
+  actual C ABI vectors with the same gates. These binding checks use Linux;
+  other-platform ABI/link consumers remain separately recorded.
 - The browser consumes both unchanged WASM bundles. It loads the exact same
   published model bytes as the native consumer, checks actual embedding output
   against the native vector, exported wrapper functions, and the default classical blackfilter clearing an authored solid RGB
@@ -80,3 +86,9 @@ pass while committed or dirty production edits reject. The browser fixture
 expects the existing default blackfilter to remove its authored solid blob;
 setting only the four simple cleanup flags to0 does not disable despeckling
 and blackfilter, so treating that call as a no-op would be an incorrect oracle.
+
+
+The final hosted review requires every desktop/browser/Apple/mobile/binding
+receipt and hashes each small report. Missing platforms, mixed producer sources
+or failed comparisons reject. It keeps device execution, model portfolio,
+publication and application-pin flags separate from the bounded positive checks.

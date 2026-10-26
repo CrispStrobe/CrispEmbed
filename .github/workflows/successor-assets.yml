@@ -104,6 +104,13 @@ jobs:
             ${{ runner.temp }}/consumer/consumer.json
             ${{ runner.temp }}/consumer/model-cache/**/all-MiniLM-L6-v2-iq4_xs.gguf
           retention-days: 90
+  bindings:
+    needs: [producer-identity, desktop]
+    if: always() && !cancelled() && needs.producer-identity.result == 'success'
+    uses: ./.github/workflows/successor-bindings.yml
+    with:
+      native_run: ${{ inputs.native_run }}
+      consumer_run: ${{ github.run_id }}
   wasm:
     needs: [producer-identity, desktop]
     if: always() && !cancelled() && needs.producer-identity.result == 'success'
@@ -231,4 +238,42 @@ jobs:
             ${{ runner.temp }}/mobile/consumer.json
             ${{ runner.temp }}/mobile/mobile-link.log
             ${{ runner.temp }}/mobile/mobile-symbols.txt
+          retention-days: 90
+  review:
+    needs: [desktop, wasm, apple-released, mobile-link, bindings]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: successor-consumer-*
+          path: ${{ runner.temp }}/reports
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: successor-wasm-consumer-*
+          path: ${{ runner.temp }}/reports
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: successor-apple-released-*
+          path: ${{ runner.temp }}/reports
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: successor-mobile-*
+          path: ${{ runner.temp }}/reports
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: successor-prebuilt-bindings-*
+          path: ${{ runner.temp }}/reports
+      - name: Require every actual platform, binding and frozen compatibility receipt
+        run: |
+          python tests/test_successor_review.py -v
+          python tools/ci-heavy/successor_review.py --root "$RUNNER_TEMP/reports" --output "$RUNNER_TEMP/successor-review.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: successor-bounded-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/successor-review.json
           retention-days: 90

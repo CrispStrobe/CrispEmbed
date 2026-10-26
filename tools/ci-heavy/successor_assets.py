@@ -183,6 +183,7 @@ def desktop(out):
  receipt.update(abi_exports=sorted(set(exports)),model_sha256=MODEL_SHA,text=TEXT,vector=native,
   comparisons={'cli_to_cabi':compare(first,native),'offline_cli':compare(first,offline),'python_to_cabi':compare(python_vector,native),'compiled_C_to_cabi':compare(compiled['vector'],native)},
   empty_cache_download=True,empty_cache_offline_rejected=True,offline_reuse=True,desktop_bounded_consumer_positive=True,
+  library_sha256=sha(library),cli_binary_sha256=sha(binary),compiled_c_consumer_sha256=sha(executable),
   public_header_sha256=sha(header),compiled_hparams_size=compiled['hparams_size'],python_prefix_offsets=expected_offsets,
   limits=['One qualified published MiniLM model; no broad task-quality, GPU or experimental-model qualification.'])
  (out/'consumer.json').write_text(json.dumps(receipt,indent=2,allow_nan=False)+'\n')
