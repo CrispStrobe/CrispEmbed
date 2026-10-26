@@ -15656,3 +15656,24 @@ Linux x86/ARM, macOS desktop, Android/iOS cross-links and Rust/Dart consumers pa
 in this initial batch; the final review is skipped and overall qualification
 remains false. All small negative ZIP members and job logs were independently
 hashed; model/native/WASM payloads remain remote.
+
+## 26 October 2026 — frozen packaged WASM attribution dispatched
+
+[Source trace40378744841](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40378744841)
+uses exact `92c108ddabc1da5e0a2c85db0599094e5f1f44f9` on the separate
+`audit/successor-wasm-trace-dispatch-20261026` ref. It preserves the immutable
+40a82158 native/WASM packages, initial browser/native vectors and published
+model identity. Ordinary and observed native/browser outputs must reproduce
+those anchors exactly before all eight encoder stages are compared with
+crispembed-diff and independent magnitude/error calculations. Actual tensor
+formats, test-only Q8 conversion blocks and a same-input weight dot remain
+attribution evidence, without a production correction or qualification claim.
+Seven small parser, identity, overlay and independent reference-byte controls
+pass; the hosted result remains pending. Diagnostic source overlays and modules
+are excluded from production archives.
+
+Earlier40378614197 was cancelled pending with no jobs before any build/model
+access, to incorporate independent verification of reference quantization bytes
+and avoid the corpus workflow's per-branch scheduling lock. The replacement uses
+the same bounded sixty-minute/two-build-worker protocol. Initial production
+browser parity remains failed at0.00837269/0.99864984; no budget is widened.
