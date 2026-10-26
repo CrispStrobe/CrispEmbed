@@ -633,8 +633,8 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   [the receipt](tests/results/ultrabert/scifact-canonical-preparation.json).
   All5,483 wrapper inputs/masks are frozen, including460 right-truncated
   documents. All eight original shards completed and their exact disjoint5,483-ID union
-  was independently checked. Freeze all originals, then finish eight native
-  shards and aggregate. Require all rows/IDs,0.002/0.99999 vector gates,
+  was independently checked. The [actual original barrier](tests/results/ultrabert/scifact-original-freeze.json)
+  completes22:37:43UTC; finish eight native shards and aggregate. Require all rows/IDs,0.002/0.99999 vector gates,
   NDCG@10/MRR@10/Recall@100 degradation≤0.001 and top1 agreement≥99%.
   V1 author-column rejection and1,055 author-abstract differences remain
   preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
@@ -663,7 +663,11 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   Use retained raw artifact12692387342 and the exact old model on hosted CI to
   locate the first differing layer3 operation, replay both actual retained inputs
   through the same operator and record Q8 byte/scale and dot/output differences.
-  Test reciprocal/scaling/reduction hypotheses rather than attributing causality
+  [Actual test-only replay40415950220](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40415950220)
+  atbbc80ae2 now waits on hosted execution. Its23 subnodes and six real-projection
+  replays bind actual types, Q8_0/Q8_K workspaces and both input axes, requiring
+  frozen anchors before interpretation. Test reciprocal/scaling/reduction
+  hypotheses rather than attributing causality
   to an approximate F32 match. Preserve all original golds, failures and source
   guards; any new alternative needs an explicit versioned source/experiment.
   Gate`CRISPEMBED_WASM_Q8_0_ROUND` remains default-off, legacy remains intact.
@@ -719,8 +723,13 @@ continue on their frozen branches. Do not alter those producer sources.
   PyTorch versus calibrated author-GGUF routes are documented in
   [the model audit](docs/josev2b.md). First GPU bootstrap atb6e74739 rejected
   Python3.11 on actual Python3.13 before model/tokenizer access; preserve that
-  inconclusive preflight and declare corrected runtime/source before another
-  capture. GPU capability/driver/memory/scratch checks remain mandatory; no
+  inconclusive preflight. Corrected Python3.13 worker1e723a96 and bootstrap142cc75c
+  freeze contract39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460;
+  Its corrected supported-T4 preflight then rejects ensurepip before packages
+  or payload; [both initial receipts](tests/results/josev2b/initial-venv-preflight.json)
+  remain. Reviewed bootstrapf5a0ac06 reuses the established empty-venv/base-pip
+  route without changing worker/arithmetic. Actual capture is pending; review its outcome before native
+  comparisons or another profile change. GPU capability/driver/memory/scratch checks remain mandatory; no
   unsupported-hardware retry loop. Review the four original text cases≤512,
   actual IDs/spans/masks, all24 layers and512-wide joint-head intermediates,
   logits/probabilities/typed answers before native outputs. Port an explicit

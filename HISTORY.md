@@ -16253,3 +16253,39 @@ bootstrap atb6e74739/worker89264a27 stops on Python3.11 profile versus actual
 Python3.13 before any checkpoint/tokenizer access; there are no original outputs.
 Preserve this failed preflight and declare the corrected runtime before capture.
 Official PyTorch and calibrated author-GGUF references must stay separate.
+
+## 26 October 2026 — all SciFact originals frozen before native
+
+[Original barrier40375626336](tests/results/ultrabert/scifact-original-freeze.json)
+at immutablee35cd1a0 completes22:37:43UTC after all eight original shards.
+Independent reviews rehash all276 source files/14 protected objects, eight exact
+embedded receipts and byte hashes, eight raw service lineages and24 small-report
+members. The disjoint ordered5,483-row union is exact:300 queries/5,183 documents;
+all ordinary/observed originals are neutral. The protocol/data freeze and source
+remain unchanged. Native eight-shard comparisons and full ranking aggregation
+are still pending, so this original-only barrier establishes no retrieval/model
+or release qualification. Actual original AVX512/AVX2 fingerprints are retained;
+old strict replay drift and v1 author-column rejection remain unchanged.
+
+## 26 October 2026 — supported Josev GPU setup rejection retained
+
+[Corrected-profile preflight](tests/results/josev2b/initial-venv-preflight.json)
+at142cc75c records Python3.13.15, two Tesla T4 GPUs/capability7.5,
+15360MiB each and driver580.178.04. Source fetch/checkout and all four command
+logs verify, then venv ensurepip fails before framework installation or any
+checkpoint/tokenizer access. The exact child-level cause was not captured; do not
+infer an inference or GPU failure. Setup repairf5a0ac06 reuses the previously
+established Ovis empty-venv/base-pip `--python` route with SHA-pinned pip26.2.2.
+Six source controls pass and an independent review finds no remaining concrete
+setup blocker. Worker1e723a96, contract39129e43, model/arithmetic/panel/gates are
+unchanged. Actual corrected capture remains pending; unsupported hardware still
+exits without an automatic retry.
+
+Test-only [layer3 attribution40415950220](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40415950220)
+atbbc80ae2 is dispatched after source review. It uses a disposable exact580/a06
+checkout,23 retained subnodes, actual conversion workspaces and six projection
+replays on both original and candidate inputs, with strict old anchors first.
+Browser isolation headers, exact actual SIMD/pthread flags and native export
+checks are required. Ten source controls pass; no actual model result exists yet.
+The integrated comparator receives18.1.8 formatting only with its explicit
+protected SHA refreshed; the dispatched producer branch stays unchanged.

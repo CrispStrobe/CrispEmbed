@@ -83,7 +83,7 @@
     "tests/wasm-layer3/kernel_capture.inc": "9f23f14feabefb2683db8d0930cff771d8085caa18fabd5d290db5b3a4349480",
     "tests/wasm-layer3/replay.inc": "79d47717c2ae08a5a8e66cdbb007ae101ef0bf9180ea1d2e480f0c757f9c7337",
     "tests/test_wasm_layer3_attribution_v1.cjs": "d8b11979fee4ab5b268ffbffb8a46f5aa49c7b6594e75634aaf686cc102917bd",
-    "tests/test_wasm_layer3_diff.cpp": "31019589f2343cf0a5794c69f07cbdf265219c78f75e5287d099383db64c419a",
+    "tests/test_wasm_layer3_diff.cpp": "94f5a2deeaeb8842361c46a26eb8adc2bc79a9ca452466f5cdc8ded423ac6c25",
     "tools/successor_wasm_trace_contract.py": "19467192afd73f900185e5ed4783f95449876932603d4786ebb140333d2b246a",
     "tools/ci-heavy/successor_assets.py": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
     "tools/successor_asset_manifest.py": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041"

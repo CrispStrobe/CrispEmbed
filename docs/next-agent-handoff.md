@@ -664,6 +664,7 @@ contracts and PLAN for exact staged acceptance. Smallest MoEdern original
 40412164041 uses source790f7b1d; no native result yet. The corrected neutral
 observer handles ST's direct backbone.forward. Josev first GPU preflight atb6e74739
 rejected Python3.11 versus actual3.13 before payload access; preserve that attempt
-and freeze a corrected runtime before original capture. Keep public Python versus
+and now has explicit Python3.13 worker1e723a96/bootstrap142cc75c; review its
+actual outcome before original/native qualification. Keep public Python versus
 calibrated author-GGUF profiles distinct. Native/API/alias/retrieval/decision
 quality and quantization remain explicit follow-ups, with no local heavy work.

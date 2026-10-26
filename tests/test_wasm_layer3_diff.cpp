@@ -16,4 +16,6 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     return 0;
 }
-int main(int argc, char ** argv) { core_util::clean_exit(crispembed_test_main(argc, argv)); }
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
+}
