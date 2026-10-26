@@ -16309,3 +16309,16 @@ The separate [head conversion preparation](docs/josev2b-head-conversion.md)
 adds eight standard-library controls and exact122-tensor schema/dimension/byte
 guards. Corrected original capture is submitted; conversion, native inference,
 calibration parity and model qualification remain pending.
+
+## 26 October 2026 — SciFact native token mismatch preserved
+
+[Two actual native rejections](tests/results/ultrabert/scifact-initial-native-tokenizer-rejection.json)
+at immutable e35cd1a0 stop on document input-ID parity, after successful build,
+conversion and truncation controls. Document21676556 has236 native versus235
+original tokens, first differing at234; document104143831 has192 versus190,
+first differing at93. Both are below512. These establish an input mismatch, not
+its codepoint cause or any vector/retrieval conclusion. Both small artifact
+ZIP/member hashes and job-log hashes are retained. The remaining six native
+shards are cancelled while queued with zero steps; all eight completed original
+shards and the original freeze remain unchanged. A distinct hosted tokenizer
+diagnostic and all5,483 input checks precede any corrected native embedding run.

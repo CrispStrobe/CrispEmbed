@@ -636,7 +636,14 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   All5,483 wrapper inputs/masks are frozen, including460 right-truncated
   documents. All eight original shards completed and their exact disjoint5,483-ID union
   was independently checked. The [actual original barrier](tests/results/ultrabert/scifact-original-freeze.json)
-  completes22:37:43UTC; finish eight native shards and aggregate. Require all rows/IDs,0.002/0.99999 vector gates,
+  completes22:37:43UTC. Native shards0/1 reject two under-512 document ID
+  streams before vector acceptance; [the negative receipt](tests/results/ultrabert/scifact-initial-native-tokenizer-rejection.json)
+  retains both exact streams. Six remaining shards are cancelled while queued
+  with zero steps. First run the bounded hosted tokenizer diagnostic, establish
+  the earliest token-piece/codepoint difference and any gated correction, then
+  all5,483 token-only ID/mask checks before new embeddings. Reuse all frozen
+  original vectors unchanged. Finish corrected native shards and aggregate only
+  after input parity. Require all rows/IDs,0.002/0.99999 vector gates,
   NDCG@10/MRR@10/Recall@100 degradation≤0.001 and top1 agreement≥99%.
   V1 author-column rejection and1,055 author-abstract differences remain
   preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
