@@ -65,7 +65,8 @@ def prepare(run,kind,artifact_name,out):
     import shutil;shutil.copyfileobj(src,dst)
    row=rows[0]
    if sha(target)!=row['sha256'] or archive_members(target)!=row['members']:raise ValueError('Archive/member hashes differ')
-   destination=out/name.removesuffix('.tar.gz').removesuffix('.zip');destination.mkdir()
+   destination=out if kind=='wasm' else out/name.removesuffix('.tar.gz').removesuffix('.zip')
+   if kind!='wasm':destination.mkdir()
    if name.endswith('.zip'):
     with zipfile.ZipFile(target) as package:package.extractall(destination)
    else:

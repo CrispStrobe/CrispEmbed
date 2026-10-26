@@ -5,6 +5,13 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
+import json
+import os
+import subprocess
+import zipfile
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/ci-heavy'))
+import successor_assets as consumer
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
 import successor_asset_manifest as m
 
@@ -38,4 +45,28 @@ class ArchiveTests(unittest.TestCase):
  def test_incomplete_asset_set(self):
   with tempfile.TemporaryDirectory() as d:
    with self.assertRaises(ValueError):m.build(Path(d),'native',Path(__file__).resolve().parents[1])
+class ConsumerLayoutTests(unittest.TestCase):
+ def test_wasm_named_roots_roundtrip(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);payload=root/'payload';payload.mkdir()
+   for kind in ('ocr','embed'):
+    name='crispembed-'+kind+'-wasm'
+    with tarfile.open(payload/(name+'.tar.gz'),'w:gz') as archive:
+     item=tarfile.TarInfo(name+'/crispembed_'+kind+'.js');data=b'fixture module';item.size=len(data)
+     archive.addfile(item,io.BytesIO(data))
+   manifest=m.build(payload,'wasm',consumer.ROOT)
+   def artifact(run,name,destination,limit):
+    with zipfile.ZipFile(destination,'w') as archive:
+     if name=='successor-wasm-manifest':archive.writestr('successor-wasm-manifest.json',json.dumps(manifest))
+     else:
+      for file in payload.iterdir():archive.write(file,file.name)
+    return {'id':1,'name':name,'digest':'sha256:'+m.sha(destination),'size_in_bytes':destination.stat().st_size}
+   service={'head_sha':manifest['source_commit'],'path':'.github/workflows/release-wasm.yml','status':'completed','conclusion':'success','event':'workflow_dispatch'}
+   with mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_SHA':manifest['source_commit']}),mock.patch.object(consumer,'api',return_value=service),mock.patch.object(consumer,'artifact',side_effect=artifact):
+    consumer.prepare(1,'wasm','crispembed-wasm-release',root/'out')
+   for kind in ('ocr','embed'):
+    self.assertTrue((root/'out'/('crispembed-'+kind+'-wasm')/('crispembed_'+kind+'.js')).is_file())
+ def test_windows_drive_path_rejected(self):
+  with self.assertRaises(ValueError):m.safe_name('C:escape.dll')
+
 if __name__=='__main__':unittest.main()

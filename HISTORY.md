@@ -15590,3 +15590,16 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 `9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
+
+## 26 October 2026 — successor archive protocol and source packaging corrections
+
+The source preparation adds exact archive/member manifests and fresh desktop,
+compiled C/Python, browser, Apple released-versus-candidate and mobile cross-link
+consumers. Eight archive/layout controls pass without local compilation or
+models. Independent source review found a doubled WASM extraction directory,
+Android's omitted shared ggml dependencies and iOS's unmerged static dependency
+closure. The candidate fixes these before execution and advances development
+manifests to0.17.14; actual artifact links/runtime checks remain required.
+Initial preliminary producers40338612955/40338616900 were cancelled with every
+build still queued. No executed mobile failure or positive runtime qualification
+is claimed, and no tag or application0.17.12 pin changes.

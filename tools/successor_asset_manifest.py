@@ -25,7 +25,7 @@ def sha(path):
  with Path(path).open('rb') as stream:return digest(stream)
 
 def safe_name(name):
- if '\\' in name or PurePosixPath(name).is_absolute() or '..' in PurePosixPath(name).parts:
+ if ':' in name or '\\' in name or PurePosixPath(name).is_absolute() or '..' in PurePosixPath(name).parts:
   raise ValueError('Unsafe archive member')
  value=posixpath.normpath(name)
  if value in ('','.'):return None

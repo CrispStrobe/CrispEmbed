@@ -16,7 +16,7 @@ Publication steps remain guarded. Both runs must complete successfully.
 archive SHA256/size and every member hash/link. Duplicate normalized paths,
 traversal, special files, dangling links and cycles reject. Native coverage
 requires all seven CPU/mobile archives; WASM coverage requires both bundles.
-Hashing alone leaves qualification false. Six small archive controls exercise
+Hashing alone leaves qualification false. Eight small archive/layout controls exercise
 these rejection cases without builds or models.
 
 The reusable `.github/workflows/successor-assets.yml` then downloads actual
@@ -53,3 +53,16 @@ review. A candidate may be rejected despite successful builds. Any packaging
 fix requires a new producer and all affected fresh consumers; never replace a
 failed receipt or silently waive a missing archive/device check. A later tag or
 application-pin decision is separate from this qualification.
+
+
+Source review before the first build found incomplete mobile dependency closure:
+Android's default shared ggml dependencies were omitted from its single-library
+archive, and iOS packaged a non-amalgamated static archive. The corrected
+candidate links ggml and the Android C++ runtime statically, and amalgamates the
+iOS CrispEmbed/core/ggml archives. The cross-link consumers must verify these
+changes on actual artifacts; source review is not an executed failure receipt.
+The packaging change advances development manifests to0.17.14. No tag is created
+and the application remains on0.17.12. Initial preliminary producers40338612955
+and40338616900 were cancelled while every build was queued, before compilation;
+WASM extraction was also corrected to preserve the archive's existing directory
+root, with a dependency-free round-trip regression.
