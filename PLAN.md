@@ -634,3 +634,22 @@ continue on their frozen branches. Do not alter those producer sources.
 Model-card license tags are preliminary provenance, not a completed code/base
 license audit or model qualification. Keep new runtime paths value-parsed and
 experimental until their own original/intermediate/final-output gates pass.
+
+### Josev joint-head artifact preparation (26 October 2026)
+
+- [x] Derive the exact 122-tensor / 30,472,708-parameter head schema from the
+  pinned publisher class; prepare an original-first F32 component converter and
+  eight standard-library controls. See [conversion protocol](docs/josev2b-head-conversion.md).
+  No checkpoint conversion or native inference has executed.
+- [ ] Review the completed original capture at worker
+  `2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`, including all seven source hashes,
+  actual tokenizer/span freeze, four observer/repeat-neutral cases and every
+  checkpoint-promoted/loaded-head F32 hash. Corrected GPU bootstrap is
+  `c9aa40b761846aa1a4a24d67d32f1c107a22ecd2`; actual outcome remains pending.
+- [ ] Convert the separate head on hosted resources using that reviewed receipt;
+  preserve license/notices and verify exact GGUF dimensions and payload hashes.
+  Then implement the gated native head and compare actual hidden-row/lexical/span
+  inputs through projections, routing, field decoder, logits and probabilities
+  with the dumper and crispembed-diff. Compose only after parity with an explicit
+  Qwen3.5-2B hidden-only prefill profile. Keep the official no-extra-temperature
+  route distinct from author-GGUF calibration. No public alias or release yet.
