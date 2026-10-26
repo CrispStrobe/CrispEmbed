@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -36,7 +36,7 @@ on:
         default: dev-hello
       candidate_run_id:
         type: string
-        description: 'Quant-raw candidate run; successor-consumer frozen corpus proof run'
+        description: 'Quant-raw only: independently reviewed complete quantized candidate run'
         default: '0'
       publish_precision:
         type: choice
@@ -183,30 +183,29 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-metadata'
     needs: controls
     uses: ./.github/workflows/ovisocr3-metadata.yml
-  wasm-q8-rounding-ab-v1:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'wasm-q8-rounding-ab-v1'
+  migan-native:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-native'
     needs: controls
-    uses: ./.github/workflows/wasm-q8-rounding-ab-v1.yml
-  successor-wasm-rounding-controls:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-rounding-controls'
-    needs: controls
-    uses: ./.github/workflows/successor-wasm-rounding-controls.yml
-  successor-wasm-trace:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-trace'
-    needs: controls
-    uses: ./.github/workflows/successor-wasm-trace.yml
-  successor-corpus:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-corpus'
-    needs: controls
-    uses: ./.github/workflows/successor-posformer-corpus.yml
-  successor-consumer:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-consumer'
-    needs: controls
-    uses: ./.github/workflows/successor-assets.yml
+    uses: ./.github/workflows/migan-native.yml
     with:
-      native_run: ${{ inputs.native_run_id }}
-      wasm_run: ${{ inputs.original_run }}
-      corpus_run: ${{ inputs.candidate_run_id }}
+      phase: replay
+      reference_run: '40330674649'
+      reference_head: '9bd331545abf88ab5bb54289026df7d399dce410'
+      reference_workflow: '.github/workflows/ovisocr2-metadata.yml'
+      reference_artifact_id: '12657201225'
+      reference_archive_sha256: '14c7a49016fa3d68cc4392ce301705ff163d3701855cafc7a555811e44f25b48'
+      reference_report_sha256: '6f463545ad3acef9525594230e74b9f29641db0526a4e6414e9bfd2fa5054588'
+      conversion_report_sha256: '48c99d3eeca06a7c1646d707142ca8d8c90f378cd5ef62bfa43629e3627ec4b2'
+      checkpoint_sha256: '8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f'
+      model_gguf_sha256: 'b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b'
+  migan-reference:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-reference'
+    needs: controls
+    uses: ./.github/workflows/migan-reference.yml
+  ultrabert-rope:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ultrabert-rope'
+    needs: controls
+    uses: ./.github/workflows/ultrabert-rope.yml
   preserve-evidence:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'preserve-evidence'
     needs: controls

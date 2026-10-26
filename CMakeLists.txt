@@ -937,6 +937,22 @@ endif()
 add_executable(test-sam2-diff tests/test_sam2_diff.cpp)
 target_link_libraries(test-sam2-diff PRIVATE crispembed-sam2)
 
+# Fixed-256 MI-GAN CPU/F32 prototype. Explicit targets only: no production
+# shared-library, registry, install or public C ABI integration.
+add_library(crispembed-migan STATIC EXCLUDE_FROM_ALL src/migan.cpp)
+target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-migan)
+target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+
+# Observer code is compiled solely into this separate validation archive.
+add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)
+target_include_directories(crispembed-migan-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(crispembed-migan-test PRIVATE CRISPEMBED_MIGAN_TESTING)
+crispembed_apply_arch_flags(crispembed-migan-test)
+target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
+target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
+
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)
 
@@ -1254,6 +1270,9 @@ target_link_libraries(test-ultrabert-profile PRIVATE crispembed-core)
 
 add_executable(test-ultrabert-diff tests/test_ultrabert_diff.cpp)
 target_link_libraries(test-ultrabert-diff PRIVATE crispembed-core ggml-cpu)
+
+add_executable(test-ultrabert-rope tests/test_ultrabert_rope.cpp)
+target_link_libraries(test-ultrabert-rope PRIVATE crispembed-core ggml-cpu)
 
 # Test-only UltraBERT tokenizer profile; does not add production dispatch.
 add_executable(test-ultrabert-tokenizer tests/test_ultrabert_tokenizer.cpp src/tokenizer_bpe.cpp)

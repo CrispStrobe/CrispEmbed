@@ -15591,127 +15591,137 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
 
-## 26 October 2026 — successor archive protocol and source packaging corrections
+## 26 October 2026 — original MI-GAN256 capture and lossless conversion
 
-The source preparation adds exact archive/member manifests and fresh desktop,
-compiled C/Python, browser, Apple released-versus-candidate and mobile cross-link
-consumers. Eight archive/layout controls pass without local compilation or
-models. Independent source review found a doubled WASM extraction directory,
-Android's omitted shared ggml dependencies and iOS's unmerged static dependency
-closure. The candidate fixes these before execution and advances development
-manifests to0.17.14; actual artifact links/runtime checks remain required.
-Initial preliminary producers40338612955/40338616900 were cancelled with every
-build still queued. No executed mobile failure or positive runtime qualification
-is claimed, and no tag or application0.17.12 pin changes.
+[Original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 succeeds before native inference. The actual author-linked MIT
+checkpoint is25,231,129 bytes/SHA8b82b2e8; this is a first observed transport
+hash, not an author-declared digest. All eight deterministic fixtures complete;
+two full captures each retain238 stages with bit-exact hook neutrality. Known
+pixels are exact on all eight, and four invalid-input controls reject. Conversion
+preserves all154 F32 tensor payloads exactly in25,185,504-byte GGUFb8fcefc3.
+The [independent receipt](tests/results/migan/original-reference.json) retains
+source, checkpoint, artifact, conversion and fixture identities. Six final-only
+cases do not claim hook neutrality. Synthetic images do not establish real
+subtitle/video quality, public API qualification or model publication. Native
+execution is a separate default-off prototype consuming these frozen bytes.
 
-## 26 October 2026 — packaged-consumer report layout corrected before execution
+The initial native dispatch40335853768 was cancelled while queued, before any
+job ran: source review found that its F16 negative fixture could fail at generic
+GGUF offset validation. The corrected fixture converts a one-element noise
+strength to genuine F16 while preserving every padded offset; all malformed
+models must now report their intended loader guard. Source review also matches
+all238 native observation names/order/shapes to each of the two frozen full
+captures. This is a source check; actual compiled/native evidence remains separate.
 
-Native/mobile producer40339796226 and WASM producer40339800364 both complete
-successfully at40a82158146faf0cd44de2a4ee7056e7b0c6a58c. They bind seven
-CPU/mobile archives and two WASM bundles; compiled consumer qualification remains
-separate. Consumer40352845316/cab577ab was cancelled with its controls still
-queued, before archive consumers ran. Independent source review found that the
-Apple multi-path upload preserves`apple-candidate/` and`apple-released/`, whereas
-the final reviewer expected flat JSON. The corrected reviewer consumes the real
-nested layout and additionally requires the candidate's archive/source closure.
-Four small positive/missing-platform/mixed-source/layout controls pass. No
-producer bytes, runtime path, model targets or numerical budgets change.
+## 26 October 2026 — completed operator/reference evidence before remaining panels
 
-## 26 October2026 — Windows packaged audit locale failure retained
+[Norm isolation40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at91292cb0 reproduces all12 original anchors exactly. Actual original RMSNorm
+on the same native input differs by at most3.05176e-5; applying it to native
+hidden states reproduces the composed failure. This supports upstream error
+amplification, not a local normalization fix or relaxed budget. The separate
+[position operator40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf matches all five tested grids' coordinates/indices/weights/position
+vectors exactly. Unset/literal0 retain ordinary position/patch bytes; native
+patch error remains3.81470e-6. Composed and first-F16 replays remain pending.
 
-Consumer40354251257/49161f60 downloads and validates the40a82158 Windows archive
-and reaches header export inspection, then Python's default cp1252 decoding
-rejects UTF8 U+2581 in a header comment. The actual job121718563370 failure is
-an auditor decode error; no archive/runtime defect is inferred. The incomplete
-Windows panel remains negative in
-[its retained receipt](tests/results/packaging/successor-windows-reader-initial.json).
-The2,420-byte actual small ZIP/members and completed job log are independently
-reviewed. Other immutable491 consumers continue separately.
+[MI-GAN original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 completes eight deterministic256fixtures, two neutral238-stage
+captures and lossless154-F32-tensor conversion. First observed checkpoint SHA
+is8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f;
+converted25,185,504-byte GGUF isb8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b.
+The reviewed receipt is retained on candidate2849cb78. No native, perceptual,
+video, API or publication qualification follows from that reference result.
 
-Audit-only5702b1ae reads UTF8 source/metadata/logs explicitly and requests MSVC
-UTF8 for the compiled C consumer. Thirteen small controls pass, including the
-actual non-cp1252 header character under forced default cp1252, invalid UTF8,
-missing exports and unchanged Unix compile arguments. Production/build/binding
-objects and all247 parsed exports remain unchanged. The corrected Windows
-execution is still pending; qualify it with fresh final integrated-source
-producers/consumers rather than repeating every unchanged40-source panel now.
+The successor candidate40a82158 prepares immutable archive/member manifests
+and compiled/package consumers. Independent source review fixes doubled WASM
+extraction, Android's omitted shared ggml dependencies and iOS's unmerged static
+dependencies. Eight small archive/layout controls pass; actual compiled consumers
+are pending. Candidate development manifests advance to0.17.14; no tag exists,
+main and the app retain their previous versions until separate integration.
+All source preparation and queued workflows remain explicitly unqualified.
 
-## 26 October 2026 — initial packaged Apple/browser negatives preserved
+## 26 October 2026 — first MI-GAN native panel isolates stale observer views
 
-[Initial consumers40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
-complete with three failed jobs. The independently reviewed [Apple receipt](tests/results/packaging/successor-apple-initial.json)
-records frozen image-byte rejection before library/model initialization; no
-released/candidate OCR output exists. Reproduce all frozen PNG identities on
-hosted Linux and preserve that verified corpus before retrying Apple. No gold
-image/hash adjustment is authorized.
+[Actual40336246545](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336246545)
+at2849cb78 compiles and completes all eight cases, rechecking595 original
+artifact members first. All final raw/image gates pass, worst raw max1.40667e-5,
+known-pixel errors0 and worst filled MAE7.12077e-5/max1. Both full cases preserve
+ordinary/observed final bits. The full panel remains rejected:128 stale captures
+per full case produce256 intermediate failures among494 comparisons.
 
-The [browser receipt](tests/results/packaging/successor-wasm-initial.json) retains
-the actual384-vector result, identical published model identity, archive/member
-proof and successful authored classical cleanup. Browser/native comparison fails
-maximum absolute0.00837269053 and cosine0.99864983887 against unchanged0.002/0.99999.
-There are no page errors. Trace tokenizer/intermediates and the earliest operator
-before proposing a correction; final cosine is not root-cause attribution.
-Windows' separate locale-reader negative and source-only repair remain archived.
-Linux x86/ARM, macOS desktop, Android/iOS cross-links and Rust/Dart consumers pass
-in this initial batch; the final review is skipped and overall qualification
-remains false. All small negative ZIP members and job logs were independently
-hashed; model/native/WASM payloads remain remote.
+The first stale `encoder.b256.conv1.input.0` has subtitle max14.8653 and native
+L2 norm2149.386 versus original1805.116. Its SHA is exactly the later valid
+`encoder.b256.conv2.conv1.output` SHA, whose comparison passes3.81470e-6.
+Pinned gallocr source frees an expired view's allocation owner; marking only
+the observed clamp/reshape view does not retain that owner. The test-only repair
+marks the complete owner chain before allocation. A tiny hosted old-versus-fixed
+allocation regression and all eight unchanged ordinary-final SHA controls precede
+the next full replay. No arithmetic, original tensors or thresholds change.
+The [initial receipt](tests/results/migan/initial-native-parity.json) retains
+all failed comparisons and actual artifact/source identities; qualification is
+still false until the complete corrected panel is reviewed.
 
-## 26 October 2026 — frozen packaged WASM attribution dispatched
+## 26 October 2026 — bounded UltraBERT RoPE attribution closed
 
-[Source trace40378744841](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40378744841)
-uses exact `92c108ddabc1da5e0a2c85db0599094e5f1f44f9` on the separate
-`audit/successor-wasm-trace-dispatch-20261026` ref. It preserves the immutable
-40a82158 native/WASM packages, initial browser/native vectors and published
-model identity. Ordinary and observed native/browser outputs must reproduce
-those anchors exactly before all eight encoder stages are compared with
-crispembed-diff and independent magnitude/error calculations. Actual tensor
-formats, test-only Q8 conversion blocks and a same-input weight dot remain
-attribution evidence, without a production correction or qualification claim.
-Seven small parser, identity, overlay and independent reference-byte controls
-pass; the hosted result remains pending. Diagnostic source overlays and modules
-are excluded from production archives.
+[Actual40336758177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336758177)
+atb689f871 passes1,344 local operator comparisons and336 bit controls over all
+seven frozen cases. All336 original table fields replay exactly; all336
+source-table-fed native Q/K comparisons are bit-exact. Ordinary ggml coefficient
+error peaks3.05157e-5, Q/K error1.61648e-4, with worst K RMS8.86829e-6 against
+reference max21.2058. All unchanged0.002/0.99999 gates pass. Independent review
+verifies source/historical hashes, all seven logs, actual330KB report ZIP and
+all16 members; the703MB raw artifact stays remote.
 
-Earlier40378614197 was cancelled pending with no jobs before any build/model
-access, to incorporate independent verification of reference quantization bytes
-and avoid the corpus workflow's per-branch scheduling lock. The replacement uses
-the same bounded sixty-minute/two-build-worker protocol. Initial production
-browser parity remains failed at0.00837269/0.99864984; no budget is widened.
+Empty position0 rotation is exact, so this cannot explain earliest empty
+pre-RoPE Q or strict empty-replay drift. Nonempty coefficient differences could
+propagate, but composed causality is unmeasured. No production RoPE gate or
+budget waiver follows; historical183 F32/1294 F16 and strict replay failures
+remain. The [full receipt](tests/results/ultrabert/rope-attribution.json) closes
+this bounded operator lane; full SciFact quality and other numerical attribution
+limits remain separately scoped in PLAN. No runtime release change occurs here.
 
-A second source review caught a parser-only blocker before hosted model work:
-the pinned public single-encode path logs token IDs twice, at the API and graph
-upload boundaries. Trace40378744841 was cancelled with every job showing zero
-completed steps. The corrected parser requires exactly two valid, identical
-observations and rejects missing, extra, malformed or differing lines. This
-matches the original blueprint without changing production logging or inputs.
-Seven small controls and source/JS/workflow checks pass. No executed numerical
-failure is claimed from either queued cancellation; the unchanged initial
-browser parity failure remains the model-backed negative evidence.
+## 26 October 2026 — first MI-GAN native result and unpublished WASM bytes
 
-The corrected source-reviewed trace is
-[40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
-at `f8bac049a7c143773b330cfc4c217b1f0a47ef56`, retained on
-`audit/successor-wasm-trace-dispatch-v2-20261026`. Hosted results are pending;
-source controls alone establish no output parity or production correction.
+Native40336246545/2849cb78 compiles and completes all8 cases after exact original
+transport/member checks. Final raw max1.40667e-5, known-pixel errors0 and all8
+image gates pass. Both full captures preserve ordinary/observed final bits, but
+128 intermediate observations each are stale, retaining256 failures among494
+comparisons. The first stale input SHA equals a later valid convolution output;
+pinned gallocr frees its unretained view owner. Test-only correction2526fcac
+retains owner chains, adds a tiny old-versus-fixed allocation regression and
+requires all8 original ordinary-final SHAs. Full retry40344396533 remains pending;
+no operator, original target or numerical budget changes.
 
-## 26 October 2026 — conditional rounding operator precompile fixture corrected
+Unpublished WASM40339800364/40a82158 completes at candidate development0.17.14.
+Its actual manifests bind both bundles and all9 file members: embed archive
+523,299B/SHA3f65d7cb and OCR archive1,280,866B/SHAe1571ac9. OCR module3,676,523B
+passes its existing4MiB cap. The small manifest is independently inspected;
+bundle/browser/native consumers remain separate pending checks. Producer pairing
+and exact production/build/binding objects protect audit-only helper updates;
+actual producer and consumer sources are recorded separately. No release tag,
+model qualification or application0.17.12 pin changes.
 
-[Initial operator40385214740](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40385214740)
-at24cab931 stops in a historical larger-input unit test, before operator compilation
-or any model access. The unchanged runtime guard correctly rejects the new public
-wrapper earlier than the unit's expected decoder-arithmetic rejection. The
-[retained rejection](tests/results/packaging/wasm-rounding-initial-controls-rejection.json)
-records source, job, exact errors and log identity. The unit now uses its existing
-historical source fixture to exercise decoder rejection and separately rejects
-an added cache header. The actual historical guard and all numerical limits
-remain unchanged. Thirteen larger-input controls, five FFN controls and four
-candidate source-preservation controls pass; actual WASM operator execution
-remains pending.
+## 26 October 2026 — MI-GAN fixed256 original/native prototype passes
 
-The corrected standalone operator dispatch40390724614 was cancelled while its
-controls were queued, before operator compilation. The same operator workflow is
-now a required predecessor of the source-bound model A/B workflow, avoiding a
-second independent queue round trip and duplicate compilation. The model job
-also verifies the completed same-source job and its actual five-record numeric
-receipt before downloading model data. This scheduling change widens no source,
-output or numerical gate. The original40385214740 fixture rejection stays retained.
+[Corrected native40344396533](tests/results/migan/native-parity.json) at2526fcac
+passes all494 comparisons (two238-stage captures plus six3-stage final captures)
+and all8 image gates against unchanged original40330674649. The tiny old-versus-
+fixed allocator test passes; both full observers preserve ordinary final bits,
+and all8 ordinary final SHAs match the initial rejected run. The256 stale fields
+from40336246545 remain retained; the repair changes test-only owner retention,
+without changing inference arithmetic, weights, original arrays or budgets.
+
+Worst intermediate max1.77096e-5 occurs at edge-touch synthesis.b256.conv1.conv1,
+reference max11.7464/RMS0.732548. Minimum row cosine0.99999998399 occurs at the
+small-magnitude subtitle32×32 toRGB output. Worst final raw max1.40667e-5;
+known RGB errors0, fill max1/worst MAE7.12077e-5/minimum nonexact PSNR89.6055dB.
+All8 malformed models reject. Ordinary/test archive symbol separation passes.
+Independent review verifies17 source hashes, actual1,038,072-byte ZIP and all46
+members/log hashes; eight decoded image metrics are remeasured from original
+and native PNGs. Hosted NumPy independently recomputes all494 raw comparisons;
+large raw/model payloads remain remote. Both new artifacts expire24 January2027.
+The bounded original/reference/CPU prototype lane is positive. Public APIs,
+registry/model publication, real subtitle/perceptual quality and video remain
+separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.
