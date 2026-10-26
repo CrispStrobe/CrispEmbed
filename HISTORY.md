@@ -15620,6 +15620,24 @@ are pending. Candidate development manifests advance to0.17.14; no tag exists,
 main and the app retain their previous versions until separate integration.
 All source preparation and queued workflows remain explicitly unqualified.
 
+## 26 October 2026 — bounded UltraBERT RoPE attribution closed
+
+[Actual40336758177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336758177)
+atb689f871 passes1,344 local operator comparisons and336 bit controls over all
+seven frozen cases. All336 original table fields replay exactly; all336
+source-table-fed native Q/K comparisons are bit-exact. Ordinary ggml coefficient
+error peaks3.05157e-5, Q/K error1.61648e-4, with worst K RMS8.86829e-6 against
+reference max21.2058. All unchanged0.002/0.99999 gates pass. Independent review
+verifies source/historical hashes, all seven logs, actual330KB report ZIP and
+all16 members; the703MB raw artifact stays remote.
+
+Empty position0 rotation is exact, so this cannot explain earliest empty
+pre-RoPE Q or strict empty-replay drift. Nonempty coefficient differences could
+propagate, but composed causality is unmeasured. No production RoPE gate or
+budget waiver follows; historical183 F32/1294 F16 and strict replay failures
+remain. The [full receipt](tests/results/ultrabert/rope-attribution.json) closes
+this bounded operator lane; full SciFact quality and other numerical attribution
+limits remain separately scoped in PLAN. No runtime release change occurs here.
 
 ## 26 October 2026 — first MI-GAN native result and unpublished WASM bytes
 
