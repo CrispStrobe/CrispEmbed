@@ -8,6 +8,7 @@ panel rejects eight mode1 final vectors. Keep the default-off rounding candidate
 legacy alternatives, original artifacts and all sixteen negative labels intact.
 No model or compiler execution was performed while preparing this lane.
 
+The metadata dispatcher registers phase `wasm-layer3-attribution-v1`.
 The zero-input reusable [workflow](../.github/workflows/wasm-layer3-attribution-v1.yml)
 uses the frozen `580e3ae3be3671ddce5e945b0725d0583ec34110` runtime with ggml
 `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. Its executable helpers come from the
