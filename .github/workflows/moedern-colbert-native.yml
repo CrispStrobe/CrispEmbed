@@ -36,7 +36,12 @@ jobs:
           path: |
             ${{ runner.temp }}/native-preflight/native.json
             ${{ runner.temp }}/native-output/native.json
+            ${{ runner.temp }}/native-output/compile_commands.json
             ${{ runner.temp }}/native-output/*.log
+            ${{ runner.temp }}/native-output/**/diff.json
+            ${{ runner.temp }}/native-output/**/diff.log
+            ${{ runner.temp }}/native-output/**/diff-adapters.json
+            ${{ runner.temp }}/native-output/comparator-controls/controls.json
           retention-days: 90
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4

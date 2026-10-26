@@ -10,6 +10,8 @@ PATH = ROOT / 'docs/moedern-colbert-native-contract-v1.json'
 LANE = ('src/moedern_colbert.cpp', 'src/moedern_colbert.h',
         'tests/moedern-native/CMakeLists.txt', 'tests/moedern-native/probe.cpp',
         'tests/moedern-native/controls.cpp', 'tools/moedern-colbert/native_contract.py',
+        'tests/moedern-native/diff.cpp', 'tools/moedern-colbert/native_diff_adapter.py',
+        'tests/test_moedern_native_diff_adapter.py',
         'tools/moedern-colbert/native.py', 'tests/test_moedern_native_contract.py',
         'docs/moedern-colbert-native-contract-v1.json', 'docs/moedern-colbert-native.md',
         '.github/workflows/moedern-colbert-native.yml')

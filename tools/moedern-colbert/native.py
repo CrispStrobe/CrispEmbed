@@ -7,11 +7,13 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import subprocess
+import shutil
 import sys
 import zipfile
 
 from contract import read_contract, tensor_schema, validate_checkpoint
 from native_contract import ROOT, PATH, check_original, dependencies, digest, protocol, skiplist_ids, source
+from native_diff_adapter import collect as collect_ref, write_pair
 
 
 def write(path, value):
@@ -93,7 +95,7 @@ def typed_fixtures(binary, directory, logs):
 
 def stages(path):
     import numpy as np
-    result = {}
+    result, records = {}, {}
     with (path / 'stages.tsv').open() as stream:
         for row in csv.DictReader(stream, delimiter='\t'):
             name = row['file']
@@ -105,7 +107,10 @@ def stages(path):
             if data.nbytes != int(row['bytes']) or data.size != __import__('math').prod(shape):
                 raise ValueError('Native shape/bytes differ')
             result[row['stage']] = data.reshape(shape)
-    return result
+            if row['type'] == 'f32':
+                records[row['stage']] = {'path':path/name,'shape':shape,'sha256':digest(path/name),
+                                          'label':path.name+'/'+name}
+    return result, records
 
 
 def compare(a, b, *, integer=False):
@@ -115,14 +120,57 @@ def compare(a, b, *, integer=False):
     if integer:
         exact=bool(np.array_equal(a,b))
         return {'exact':exact,'passed':exact}
-    delta = float(np.max(np.abs(a.astype(np.float64)-b.astype(np.float64)),initial=0))
+    difference=b.astype(np.float64)-a.astype(np.float64)
+    delta = float(np.max(np.abs(difference),initial=0))
     left, right = a.astype(np.float64).reshape(-1,a.shape[-1]), b.astype(np.float64).reshape(-1,b.shape[-1])
     n1,n2=np.linalg.norm(left,axis=1),np.linalg.norm(right,axis=1)
     cos=np.divide((left*right).sum(axis=1),n1*n2,out=np.zeros_like(n1),where=(n1*n2)!=0)
     cos[(n1==0)&(n2==0)]=1
     worst=float(cos.min(initial=1))
-    return {'max_absolute':delta,'min_row_cosine':worst,
+    result={'shape':list(a.shape),'elements':int(a.size),'max_absolute':delta,'min_row_cosine':worst,'mean_absolute':float(np.abs(difference).mean()),
+            'mean_error':float(difference.mean()),'rms':float(np.sqrt((difference*difference).mean())),
+            'original_l2':float(np.linalg.norm(a.astype(np.float64).ravel())),
+            'native_l2':float(np.linalg.norm(b.astype(np.float64).ravel())),
             'passed':delta<=protocol()['gates']['max_absolute'] and worst>=protocol()['gates']['min_row_cosine']}
+    for name,value in [('original',a),('native',b)]:
+        result.update({name+'_min':float(value.min()),name+'_max':float(value.max()),
+                       name+'_abs_min':float(np.abs(value).min()),name+'_abs_max':float(np.abs(value).max())})
+    return result
+
+
+def actual_ref(binary, original, native, report, log, independent):
+    """Numeric rc=1 is collected; only structural/process errors interrupt."""
+    env={k:v for k,v in os.environ.items() if k not in ('CRISPEMBED_DIFF_COS_THRESHOLD','CRISPEMBED_DIFF_DUMP_DIR')}
+    with log.open('w') as stream:
+        completed=subprocess.run([str(binary),str(original),str(native),str(report)],stdout=stream,
+            stderr=subprocess.STDOUT,env=env,timeout=1200,check=False)
+    return collect_ref(completed.returncode,report,independent)
+
+
+def comparator_controls(binary, directory):
+    """Hosted tiny actual-Ref positive/numeric-negative controls, not model gold."""
+    import numpy as np
+    records=[]
+    original=np.asarray([[1.,0.],[0.,1.],[1.,0.]],dtype='<f4')
+    for name,expected_exit in [('same',0),('changed_row',1)]:
+        output=directory/name;output.mkdir(parents=True)
+        native=original.copy()
+        if name=='changed_row':native[-1]=[0.,1.]
+        specs=[]
+        for label,value in [('original',original),('native',native)]:
+            path=output/(label+'.f32');path.write_bytes(value.tobytes())
+            specs.append({'path':path,'shape':list(value.shape),'sha256':digest(path),'label':label+'.f32'})
+        adapters=write_pair(output/'original.gguf',output/'native.gguf',
+                            [{'name':'control','original':specs[0],'native':specs[1]}])
+        measured={'control':compare(original,native)}
+        result=actual_ref(binary,output/'original.gguf',output/'native.gguf',output/'diff.json',output/'diff.log',measured)
+        if (result['exit_code']!=expected_exit or not result['all_metrics_agree'] or
+                measured['control']['passed']!=(expected_exit==0)):
+            raise ValueError('Actual Ref positive/numeric-negative control failed')
+        records.append({'control':name,'expected_exit':expected_exit,'actual':result,
+                        'metrics':measured,'adapters':adapters})
+    write(directory/'controls.json',records)
+    return records
 
 
 def stage_map():
@@ -212,9 +260,13 @@ def main():
                 raise ValueError('Actual original array bytes changed')
         # All original outputs are now authenticated, before native build/forward.
         build=scratch/'build'
-        run(['cmake','-S',ROOT/'tests/moedern-native','-B',build,'-DCMAKE_BUILD_TYPE=Release'],args.output/'configure.log')
+        run(['cmake','-S',ROOT/'tests/moedern-native','-B',build,'-DCMAKE_BUILD_TYPE=Release',
+             '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'],args.output/'configure.log')
         run(['cmake','--build',build,'--parallel','2'],args.output/'build.log')
-        controls=build/'moedern-native-controls';probe=build/'moedern-native-probe'
+        controls=build/'moedern-native-controls';probe=build/'moedern-native-probe';diff=build/'moedern-native-diff'
+        report['binaries']={p.name:digest(p) for p in (controls,probe,diff)}
+        shutil.copyfile(build/'compile_commands.json',args.output/'compile_commands.json')
+        report['comparator_controls']=comparator_controls(diff,args.output/'comparator-controls')
         run([controls],args.output/'controls.log')
         fixture=scratch/'typed-fixtures';fixture.mkdir();typed_fixtures(controls,fixture,args.output)
         import numpy as np
@@ -227,24 +279,30 @@ def main():
         def old(cid,name):
             row=records[cid,name];dtype={'f32':'<f4','i64':'<i8','u8':'u1'}[row['dtype']]
             return np.fromfile(raw/row['path'],dtype=dtype).reshape(row['shape'])
+        def original_file(cid,name):
+            row=records[cid,name]
+            if row['dtype']!='f32':
+                raise ValueError('F32 adapters cannot cast original integer/boolean data')
+            return {'path':raw/row['path'],'shape':row['shape'],'sha256':row['sha256'],'label':row['path']}
         for case in original['cases']:
             cid=case['id'];inputs=scratch/(cid+'.tokens');tokens=case['token_ids'];mask=case['supplied_attention_mask']
             inputs.write_text('MOEDERN_TOKENS_V1 '+case['role']+' '+str(len(tokens))+'\nids '+ ' '.join(map(str,tokens))+
                 '\nmask '+' '.join(map(str,map(int,mask)))+'\nskip '+str(len(skip))+' '+' '.join(map(str,skip))+'\n')
             output=args.output/cid;run([probe,model,inputs,output],args.output/(cid+'.log'))
-            observed=stages(output);checks={}
-            row={'id':cid,'role':case['role'],'tokens':len(tokens),'checks':checks,'first_captured_divergence':None}
+            observed,native_files=stages(output);checks={};pairs=[]
+            row={'id':cid,'role':case['role'],'tokens':len(tokens),'checks':checks,'first_captured_divergence':None,
+                 'first_divergence_record':None}
             report['cases'].append(row)
-            def check(label,a,b,integer=False):
+            def check(label,a,b,integer=False,original_source=None,native_source=None):
                 try:
                     measured=compare(a,b,integer=integer)
                 except Exception as exc:
                     raise ValueError(cid+' stage '+label+': '+str(exc)) from exc
                 checks[label]=measured
-                if not measured['passed']:
-                    failures.append({'case':cid,'stage':label,**measured})
-                    if row['first_captured_divergence'] is None:
-                        row['first_captured_divergence']=label
+                if not integer:
+                    if original_source is None or native_source is None:
+                        raise ValueError('Every mapped F32 stage requires actual lossless Ref inputs: '+label)
+                    pairs.append({'name':label,'original':original_source,'native':native_source})
                 return measured
             check('input_ids',np.asarray(tokens,dtype=np.int64)[None,:],observed['input_ids'],True)
             check('supplied_mask',np.asarray(mask,dtype=np.int64)[None,:],observed['supplied_mask'],True)
@@ -253,14 +311,32 @@ def main():
             check('scoring_mask',np.asarray(case['scoring_mask']),computed_mask,True)
             if cid in panel['full_capture']:
                 for native,name in stage_map().items():
-                    check(native,old(cid,name),observed[native],native.endswith('topk_indices'))
+                    integer=native.endswith('topk_indices')
+                    check(native,old(cid,name),observed[native],integer,
+                          original_file(cid,name) if not integer else None,native_files.get(native))
                 derived_mask=np.broadcast_to(observed['effective_mask'].astype(bool)[:,None,None,:],(1,1,len(tokens),len(tokens)))
                 for layer in range(2):
                     check(f'layer.{layer}.derived_attention_mask',old(cid,f'actual.sdpa.{layer}.input.kwargs.attn_mask'),derived_mask,True)
             all_vectors=np.fromfile(output/'all.f32',dtype='<f4').reshape(len(tokens),128)
-            check('all_vectors',old(cid,'ordinary.features.token_embeddings'),all_vectors)
+            check('all_vectors',old(cid,'ordinary.features.token_embeddings'),all_vectors,
+                  original_source=original_file(cid,'ordinary.features.token_embeddings'),
+                  native_source={'path':output/'all.f32','shape':list(all_vectors.shape),
+                                 'sha256':digest(output/'all.f32'),'label':cid+'/all.f32'})
             selected[cid]=np.fromfile(output/'selected.f32',dtype='<f4').reshape(-1,128)
-            check('selected',old(cid,'ordinary.selected'),selected[cid])
+            check('selected',old(cid,'ordinary.selected'),selected[cid],
+                  original_source=original_file(cid,'ordinary.selected'),
+                  native_source={'path':output/'selected.f32','shape':list(selected[cid].shape),
+                                 'sha256':digest(output/'selected.f32'),'label':cid+'/selected.f32'})
+            original_adapter,native_adapter=output/'original-reference.gguf',output/'native-reference.gguf'
+            row['lossless_adapters']=write_pair(original_adapter,native_adapter,pairs)
+            write(output/'diff-adapters.json',row['lossless_adapters'])
+            row['actual_crispembed_diff']=actual_ref(diff,original_adapter,native_adapter,output/'diff.json',
+                output/'diff.log',{p['name']:checks[p['name']] for p in pairs})
+            for name,measured in checks.items():
+                if not measured['passed']:
+                    failure={'case':cid,'stage':name,**measured};failures.append(failure)
+                    if row['first_captured_divergence'] is None:
+                        row['first_captured_divergence']=name;row['first_divergence_record']=failure
             report['failures']=failures
             write(args.output/'native.json',report)
         scores=[]

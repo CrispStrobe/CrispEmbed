@@ -100,16 +100,44 @@ weights. It preserves the frozen producer's ten inputs and three score pairs.
 Both short full-capture cases compare matching stages in dependency order;
 all ten compare actual IDs, all three masks, every final row and scoring slice.
 Native MaxSim runs on the actual selected vectors and is checked independently.
+Every mapped F32 stage, plus the all-position and scoring-slice outputs for all
+cases, is also compared by actual `crispembed_diff::Ref` through the standalone
+[`moedern-native-diff`](../tests/moedern-native/diff.cpp) executable. Two test-only
+GGUF adapters preserve every authenticated original/native float bit, original
+shape and contiguous row axis; the adapter records and independently reads back
+payload SHA256s. They are reference data, not model conversions. IDs, masks and
+router indices retain their separate exact checks and are never cast to F32.
+
 Maximum absolute error`0.002`, minimum row cosine`0.99999` and MaxSim error`0.002`
-remain unchanged. Numerical failures retain the complete completed case/stage
-panel and first captured divergence with magnitudes; they do not become a pass.
+remain unchanged. The C++ comparator checks explicit fixed thresholds instead
+of the generic environment override, validates exact shape/element coverage,
+compares contiguous GGUF axis0, exits1 on numerical failure and uses
+`core_util::clean_exit`. The collecting driver retains that numeric rejection
+and runs the remaining cases and all three actual score comparisons. Structural
+comparator failures exit2 and remain rejected.
+The hosted lane first exercises the actual compiled comparator on tiny equal
+and changed-row adapters, requiring exits0 and1 respectively and independent
+metric agreement. This also checks the contiguous row axis. These synthetic
+controls remain unexecuted in source preparation.
+
+NumPy independently recomputes maximum/mean absolute and signed mean error, RMS,
+original/native L2, and original/native value and absolute-magnitude min/max.
+The report keeps actual Ref metrics beside them and checks reporting consistency
+at a relative scale of`2e-7` (with unit scale near zero), accounting for Ref's
+float32 metric storage. That check cannot waive either model gate: both NumPy
+and actual C++ thresholds must pass. Ref's existing near-zero cosine policy is
+retained, and the independent NumPy gate remains required as well. Numerical
+failures retain the complete completed case/stage panel and first captured
+divergence record with both metric sets and magnitudes; they do not become a pass.
 Structural/nonfinite failures remain rejected and preserve partial outputs/logs.
 
 The [reusable workflow](../.github/workflows/moedern-colbert-native.yml) is not
 registered in the shared dispatcher and has no automatic push trigger. It remains
 blocked by the pending original dependency contract. All builds, synthetic
 execution and actual model replay belong on hosted CI. Source preparation ran
-only Python standard-library controls, parsing and formatting locally. Fetch
+only Python standard-library controls, parsing and formatting locally, including
+lossless adapter bit/axis readback, tampered/nonfinite/mismatched-shape rejection
+and synthetic comparator numeric-failure/metric-disagreement collection. Fetch
 only the small review artifact later; preserve array ZIP/member hashes and expiry
 remotely. No app pin, generic default or release qualification follows from this
 bounded token-ID experiment.
