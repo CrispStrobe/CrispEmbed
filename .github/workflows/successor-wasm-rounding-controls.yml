@@ -1,0 +1,80 @@
+name: Conditional WASM rounding operator controls
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  operators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact candidate declaration and legacy preservation
+        run: |
+          mkdir -p "$RUNNER_TEMP/rounding-controls"
+          python tests/test_wasm_q8_rounding_source.py -v
+          python - <<'PYCODE'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          spec=json.loads(Path('docs/wasm-q8-rounding-candidate.json').read_text())
+          actual=subprocess.check_output(['git','-C','ggml','rev-parse','HEAD'],text=True).strip()
+          assert actual==spec['ggml_candidate']
+          changed=subprocess.check_output(['git','-C','ggml','diff','--name-only',spec['ggml_base'],actual],text=True).splitlines()
+          assert sorted(changed)==sorted(spec['files'])
+          for name,identity in spec['files'].items():
+              assert hashlib.sha256((Path('ggml')/name).read_bytes()).hexdigest()==identity['candidate_sha256'],name
+          assert hashlib.sha256(Path('src/crispembed.cpp').read_bytes()).hexdigest()==spec['crispembed_encoder_candidate_sha256']
+          receipt={'schema':'crispembed-wasm-rounding-operator-source-v1','source':os.environ['GITHUB_SHA'],'ggml':actual,'declaration':spec,'model_access':False,'qualification':False}
+          (Path(os.environ['RUNNER_TEMP'])/'rounding-controls/source.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PYCODE
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configure isolated weight-free operator executable
+        run: |
+          emcmake cmake -S ggml/tests/wasm-q8-rounding -B "$RUNNER_TEMP/rounding-build" \
+            -DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+            -DGGML_NATIVE=OFF -DGGML_OPENMP=OFF -DGGML_BLAS=OFF -DGGML_LLAMAFILE=OFF \
+            -DGGML_CUDA=OFF -DGGML_METAL=OFF -DGGML_VULKAN=OFF \
+            -DCMAKE_C_FLAGS="-msimd128 -pthread" -DCMAKE_CXX_FLAGS="-msimd128 -pthread" \
+            -DCMAKE_EXE_LINKER_FLAGS="-msimd128 -pthread -sPTHREAD_POOL_SIZE=2 -sENVIRONMENT=node -sALLOW_MEMORY_GROWTH=1 -sEXIT_RUNTIME=1" \
+            > "$RUNNER_TEMP/rounding-controls/configure.log" 2>&1
+      - name: Build only the candidate controls with two workers
+        run: cmake --build "$RUNNER_TEMP/rounding-build" --target test-wasm-q8-rounding -j2 > "$RUNNER_TEMP/rounding-controls/build.log" 2>&1
+      - name: Execute actual WASM converter, matmul, expert and context controls
+        run: |
+          timeout 120s node "$RUNNER_TEMP/rounding-build/test-wasm-q8-rounding.js" > "$RUNNER_TEMP/rounding-controls/runtime.log" 2>&1
+          python - <<'PYCODE'
+          import json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'rounding-controls'
+          rows=[json.loads(line) for line in (root/'runtime.log').read_text().splitlines() if line.startswith('{')]
+          assert len(rows)==5 and all(row['passed'] for row in rows)
+          assert rows[0]['control']=='converter'
+          assert {(r['type'],r['indirect']) for r in rows[1:]}=={(8,False),(8,True),(20,False),(20,True)}
+          assert all(r['legacy']==158 and r['nearest']==189 for r in rows[1:])
+          receipt={'schema':'crispembed-wasm-rounding-operator-result-v1','passed':True,'controls':rows,'qualification':False,'limits':['Weight-free operator and backend-isolation controls only; no model inference, source-cause or default promotion.']}
+          (root/'controls.json').write_text(json.dumps(receipt,indent=2)+'\n')
+          PYCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-rounding-operator-controls-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/rounding-controls/
+            ${{ runner.temp }}/rounding-build/compile_commands.json
+          if-no-files-found: error
+          retention-days: 90

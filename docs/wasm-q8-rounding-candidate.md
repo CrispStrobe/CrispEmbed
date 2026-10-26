@@ -77,3 +77,15 @@ anchors. Candidate ordinary/dump neutrality, complete stages and actual final
 outputs must satisfy unchanged maximum absolute0.002/minimum cosine0.99999 gates.
 A controlled dot or successful weight-free test alone cannot qualify the network
 or identify its earliest failing operator.
+
+
+The registered metadata phase `successor-wasm-rounding-controls` runs the separate
+[weight-free hosted workflow](../.github/workflows/successor-wasm-rounding-controls.yml).
+It verifies the exact declared fork/file identities before compiling only the
+operator executable with Emscripten6.0.2, processor `wasm`, two build workers and
+a25-minute ceiling. Actual Node/WASM execution must emit all five converter/
+backend control records, including both storage types and both matmul paths.
+Reports retain source identities and compiler/runtime logs even on failure;
+no model file is downloaded. The generic FFN unit fixture uses the existing
+mainline repair that distinguishes a valid frozen recipe from current-source
+rejection. The historical runtime preflight itself remains unchanged.
