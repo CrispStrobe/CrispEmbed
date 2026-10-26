@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -50,10 +51,29 @@ class Contract(unittest.TestCase):
                         with self.assertRaises(ValueError):audit.member(z,'x',Path(d)/'x','0'*64,3)
                         with self.assertRaises(ValueError):audit.member(z,'x',Path(d)/'x','0'*64,4)
 
-    def test_frozen_receipt_and_no_runtime_modification(self):
-        receipt,source=audit.preflight()
+    def git_fixture(self, args, **kwargs):
+        key=tuple(args[1:])
+        if key==('rev-parse','HEAD:src'):return audit.NATIVE_TREE.encode()
+        if key==('rev-parse','HEAD:ggml'):return audit.GGML.encode()
+        if key==('rev-parse','HEAD'):return b'0'*40
+        if key==('diff','--name-only','HEAD','--','src','ggml'):return b''
+        raise AssertionError('Unexpected source-contract command: '+str(args))
+
+    def test_frozen_receipt_and_source_contract(self):
+        with patch.object(audit.subprocess,'check_output',side_effect=self.git_fixture):
+            receipt,source=audit.preflight()
         self.assertEqual(source['native_tree'],audit.NATIVE_TREE)
         self.assertFalse(receipt['producer']['quant_numerical']['passed'])
+
+    def test_manual_gate_still_rejects_new_or_dirty_native_source(self):
+        for override,value in [(('rev-parse','HEAD:src'),b'1'*40),
+                               (('rev-parse','HEAD:ggml'),b'1'*40),
+                               (('diff','--name-only','HEAD','--','src','ggml'),b'src/qwen35_vision.cpp')]:
+            def call(args, **kwargs):
+                return value if tuple(args[1:])==override else self.git_fixture(args,**kwargs)
+            with self.subTest(override=override),patch.object(audit.subprocess,'check_output',side_effect=call):
+                with self.assertRaises(ValueError):audit.preflight()
+
 
 
 if __name__=='__main__':unittest.main()
