@@ -70,6 +70,15 @@ def indexed_rows(p,arm):
     return result
 
 
+def vision_stage_order(stages):
+    # Captured dictionary insertion is not the DAG: the interpolated position
+    # probe was appended after the layer observations. Inspect both input
+    # branches before their sum, rather than misattributing it to embedding.
+    early=['prefill.vision.'+n for n in ('patch_embed','position','embedded','rotary_cos','rotary_sin')]
+    rest=[s for s in stages if s.startswith('prefill.vision.') and s not in early]
+    return [s for s in early if s in stages]+rest
+
+
 def calibrated(actual,reference,control=None,vision=False):
     import numpy as np
     from dump_ovisocr2_ffn_reference import metrics
@@ -149,8 +158,8 @@ def run():
             r['vision_trace']={};r['decoder_trace']={};r['norm_isolation']={};r['composed_manifest_controls']={}
             for precision in ('f32','f16'):
                 arm=precision+'-vision';trace=[]
-                for stage in p['original_capture']['stages']:
-                    if not stage.startswith('prefill.vision.') or stage not in rows[arm]:continue
+                for stage in vision_stage_order(p['original_capture']['stages']):
+                    if stage not in rows[arm]:continue
                     a=actual(arm,stage);control='backend_off.'+stage.removeprefix('prefill.')
                     trace.append({'stage':stage,**calibrated(a,original(stage),original(control) if control in targets else None,vision=True)})
                 if len(trace)!=37:raise ValueError('Missing frozen vision boundaries')

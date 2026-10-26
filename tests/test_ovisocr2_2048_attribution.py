@@ -35,6 +35,13 @@ class Controls(unittest.TestCase):
         bad=copy.deepcopy(p);bad['arms']['x']['raw']['coverage_complete']=False
         with self.assertRaises(ValueError):audit.indexed_rows(bad,'x')
 
+    def test_position_branch_precedes_embedding_sum(self):
+        p,_=audit.preflight()
+        stages=audit.vision_stage_order(p['original_capture']['stages'])
+        self.assertLess(stages.index('prefill.vision.position'),stages.index('prefill.vision.embedded'))
+        self.assertLess(stages.index('prefill.vision.patch_embed'),stages.index('prefill.vision.embedded'))
+        self.assertEqual(len(stages),len(set(stages)))
+
     def test_archive_paths_checked_before_extraction(self):
         for name in ('../escape','/absolute','bad\\path'):
             buf=io.BytesIO()

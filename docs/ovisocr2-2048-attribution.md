@@ -14,7 +14,9 @@ prepared and composed vision in both precisions. Native-positions/frontend
 manifest hashes are checked separately against native-vision; differences are
 reported rather than assumed absent. Earliest non-bit-exact stages, strict
 failures, absolute/RMS errors, magnitudes, cosine and original backend-calibrated
-ratios remain distinct. Large ZIP/reference/native arrays stay on hosted CI.
+ratios remain distinct. Check patch and interpolated-position branches before
+their embedding sum; insertion order of the old capture dictionary is not the
+computation order. Large ZIP/reference/native arrays stay on hosted CI.
 
 For prefill, cached and full-prefix, supply each retained layer23 output to the
 actual pinned Transformers5.16.1 `Qwen3_5RMSNorm` with the original checkpoint
