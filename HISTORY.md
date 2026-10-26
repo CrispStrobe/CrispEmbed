@@ -16184,3 +16184,21 @@ jobs and always preserves diagnostic/corpus/arm reports and logs. It has no
 aggregate, release qualification or final-integrated-source claim. Its actual
 RGB/model outcomes remain pending; later final-source fresh archive and Apple
 consumer gates still apply. Initial pre-inference failures remain preserved.
+
+###26 October — actual conditional WASM operators independently positive
+
+[Operator job121835635568](tests/results/packaging/wasm-rounding-operators.json)
+inside40391544739 at580e3ae3 succeeds on fork a06. All five actual records pass:
+converter zero/fraction/ties controls and Q8_0/IQ4_NL direct/expert matmul each
+produce authored legacy158/nearest189. Two backend settings remain independent,
+disable/re-enable works, cached plans preserve their captured setting, and expert
+selection distinguishes the unused scale-two weight. Release-DNDEBUG does not
+disable checks: the test uses custom require/exit, not standard assert.
+
+Root and peer verify the actual service/source/attempt, small ZIP/all six members,
+25 compilation commands, source declaration/CPP/all eight fork hashes and exact
+runtime/result agreement. Actual WASM SIMD/pthread compilation is observed;
+there are no model weights in this test. The immutable pre-execution declaration
+stays unchanged, with actual evidence in this separate receipt. Only the operator
+job is positive: parent/model A/B remains pending, so no full-network causality,
+model qualification, default change, archive publication or app upgrade follows.

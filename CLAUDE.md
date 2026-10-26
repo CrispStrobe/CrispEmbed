@@ -238,8 +238,10 @@ is independently reviewed: embedding norm exact, first captured attention0
 difference, same-input activation-rounding discrepancy and unchanged final failure.
 The default-off per-backend candidate is under actual
 [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
-at`580e3ae3`: actual weight-free operator controls precede model access and
-the frozen ten-case native/browser A/B. Source review alone permits no promotion.
+at`580e3ae3`: [actual weight-free operators](tests/results/packaging/wasm-rounding-operators.json)
+now pass all five records,158/189 outputs, backend isolation and cached plans.
+The frozen ten-case native/browser model A/B remains pending. Neither source
+review nor operator success permits a default or model promotion.
 The [prepared final-integrated-v1 validator](docs/ovisocr2-final-integrated-v1.md)
 pins the exact assembled runtime, references, helpers and six binaries without
 weakening historical guards. Its13 small controls and actual retained quality

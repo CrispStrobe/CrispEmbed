@@ -657,9 +657,11 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   rejection. Same-input Q8 activation quantization differs by187 bytes with
   exact scales; this is an operator hypothesis, not full-network causality.
   [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
-  at`580e3ae3be3671ddce5e945b0725d0583ec34110` must first execute and verify
-  weight-free operator controls on fork`a06fc0bb46b73cc10011fc90ae4054aee8438aeb`.
-  Only then may it download models, freeze the ten-case old native/browser
+  at`580e3ae3be3671ddce5e945b0725d0583ec34110` now passes independently
+  reviewed [actual weight-free operators](tests/results/packaging/wasm-rounding-operators.json)
+  on fork`a06fc0bb46b73cc10011fc90ae4054aee8438aeb`: all five records and
+  authored158/189 outputs, backend isolation and cached plans verify. The model
+  job must consume that same-run receipt, freeze the ten-case old native/browser
   panel and run unset/empty/0/1, observers, full original stages and context
   isolation. Require legacy byte identity and unchanged0.002/0.99999 candidate
   gates. Gate`CRISPEMBED_WASM_Q8_0_ROUND` stays default-off and the old

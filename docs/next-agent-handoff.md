@@ -611,8 +611,9 @@ completed evidence. The remaining loop requires actual review of these lanes:
   integrated runtime; use its exact branch, not changed main, for that diagnostic.
 - Conditional WASM rounding
   [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
-  at`580e3ae3be3671ddce5e945b0725d0583ec34110` verifies actual same-run
-  weight-free operator results before model access. It then freezes the ten-case
+  at`580e3ae3be3671ddce5e945b0725d0583ec34110` now has positive independent
+  [weight-free operator evidence](../tests/results/packaging/wasm-rounding-operators.json).
+  The model job must verify that same-run receipt before access, then freeze ten
   old native/browser panel before candidate execution, with unset/empty/0/1,
   observers, full original stages and context isolation. The per-backend gate
   stays default-off; original converter/old outputs and0.002/0.99999 remain.
