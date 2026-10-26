@@ -6,27 +6,33 @@ import math
 import os
 from pathlib import Path
 import re
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from probe_posformer_release import compare_release_records
 
 DESKTOPS=('linux-x86_64','linux-arm64','macos-arm64','windows-x86_64')
 MOBILES=('android-arm64-v8a','android-armeabi-v7a','ios-arm64')
 
 def review(root,run,audit):
- evidence={};source=None;objects=None
+ evidence={};source=None;objects=None;desktops={}
  def load(artifact,name):
   nonlocal source,objects
   p=root/(artifact+'-'+str(run))/name
   raw=p.read_bytes();d=json.loads(raw)
   evidence[str(p.relative_to(root))]={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()}
   return d
- def binding(d):
+ def binding(d,required_closure=False):
   nonlocal source,objects
   if not re.fullmatch('[0-9a-f]{40}',d.get('source_commit','')) or d.get('consumer_source')!=audit:
    raise ValueError('Consumer source identity differs')
   if source is None:source=d['source_commit']
   if source!=d['source_commit']:raise ValueError('Mixed producer revisions')
+  if required_closure and (d.get('schema')!='crispembed-successor-fresh-consumer-v2'
+   or 'runtime_source_closure' not in d):raise ValueError('Prepared consumer source closure absent')
   if 'runtime_source_closure' in d:
-   actual=d['runtime_source_closure']['objects']
-   if not actual:raise ValueError('Production source closure absent')
+   closure=d['runtime_source_closure'];actual=closure.get('objects')
+   if (not isinstance(actual,list) or not actual or not all(isinstance(v,str) and v for v in actual)
+    or closure.get('consumer_source')!=audit):raise ValueError('Production source closure absent or malformed')
    if objects is None:objects=actual
    if actual!=objects:raise ValueError('Production source objects differ')
  def parity(v):
@@ -34,7 +40,7 @@ def review(root,run,audit):
    and type(v.get('cosine')) in (float,int) and math.isfinite(v['max_abs'])
    and math.isfinite(v['cosine']) and 0<=v['max_abs']<=.002 and v['cosine']>=.99999)
  for platform in DESKTOPS:
-  d=load('successor-consumer-'+platform,'consumer.json');binding(d)
+  d=load('successor-consumer-'+platform,'consumer.json');binding(d,True);desktops[platform]=d
   expected={'cli_to_cabi','offline_cli','python_to_cabi','compiled_C_to_cabi'}
   if (d.get('desktop_bounded_consumer_positive') is not True or set(d.get('comparisons',{}))!=expected
    or not all(parity(v) for v in d['comparisons'].values())
@@ -44,27 +50,56 @@ def review(root,run,audit):
    or not all(re.fullmatch('[0-9a-f]{64}',d.get(k,'')) for k in ('library_sha256','cli_binary_sha256','compiled_c_consumer_sha256','model_sha256'))):
    raise ValueError('Incomplete desktop checks: '+platform)
  for platform in MOBILES:
-  d=load('successor-mobile-'+platform,'consumer.json');binding(d)
+  d=load('successor-mobile-'+platform,'consumer.json');binding(d,True)
   if d.get('mobile_abi')!=platform or d.get('cross_link_passed') is not True or d.get('cross_link_exit_code')!=0 or d.get('device_execution_performed') is not False:
    raise ValueError('Mobile link/device scope differs: '+platform)
  d=load('successor-wasm-consumer','browser.json');binding(d)
  if (d.get('page_errors')!=[] or d.get('ocr',{}).get('authored_black_blob_cleared_rgb_exact') is not True
   or len(d.get('embed',{}).get('vector',[]))!=384 or not parity(dict(d,passed=True))):
   raise ValueError('Browser consumer failed')
- candidate=load('successor-apple-released','apple-candidate/consumer.json');binding(candidate)
+ candidate=load('successor-apple-released','apple-candidate/consumer.json');binding(candidate,True)
+ mac=desktops['macos-arm64']
+ if (candidate.get('payload_artifact')!=mac.get('payload_artifact') or candidate.get('archives')!=mac.get('archives')
+  or not candidate.get('payload_artifact') or not candidate.get('archives')):
+  raise ValueError('Apple probe and desktop used different candidate archive identities')
  d=load('successor-apple-released','apple-released/comparison.json');binding(d)
  if (d.get('candidate_unset_one_exact') is not True or d.get('legacy_zero_preserved') is not True
   or set(d.get('comparisons',{}))!={'candidate-unset','candidate-one'}):raise ValueError('Apple compatibility incomplete')
- for v in d['comparisons'].values():
-  if v.get('cases')!=50 or not all(v.get(k) is True for k in ('token_ids_exact','text_exact','stops_exact')):
-   raise ValueError('Apple50 released-output mismatch')
- for name in ('released','candidate-unset','candidate-one','candidate-zero'):
-  item=load('successor-apple-released','apple-released/'+name+'.json')
-  if item.get('completed') is not True or len(item.get('cases',[]))!=50:raise ValueError('Apple raw case coverage missing')
+ arms={}
+ for name,gate in (('released',None),('candidate-unset',None),('candidate-one','1'),('candidate-zero','0')):
+  item=load('successor-apple-released','apple-released/'+name+'.json');arms[name]=item
+  expected_source='78493a31fc3043f3af4ab6fd2f197a32da6f07f0' if name=='released' else candidate['source_commit']
+  if (item.get('completed') is not True or len(item.get('cases',[]))!=50
+   or item.get('library_source')!=expected_source or item.get('trained_forward_env')!=gate
+   or not re.fullmatch('[0-9a-f]{64}',item.get('library_sha256',''))):
+   raise ValueError('Apple raw case/source/gate/library coverage differs: '+name)
+  if name!='released' and item['library_sha256']!=mac['library_sha256']:
+   raise ValueError('Apple raw arm does not use the verified candidate library: '+name)
+ for name in ('candidate-unset','candidate-one'):
+  measured=compare_release_records(arms['released'],arms[name])
+  if d['comparisons'][name]!=measured:raise ValueError('Apple comparison summary differs from retained raw arms')
+ # Legacy0 remains a quality-negative diagnostic; require the same retained
+ # model/corpus and actual case payloads without matching its decoded outputs.
+ legacy=arms['candidate-zero'];released=arms['released']
+ if any(legacy.get(k)!=released[k] for k in ('model_sha256','manifest_sha256','threads')):
+  raise ValueError('Apple legacy diagnostic model/input profile differs')
+ for old,new in zip(released['cases'],legacy['cases']):
+  if (any(new.get(k)!=old[k] for k in ('id','image_sha256')) or not isinstance(new.get('text'),str)
+   or not isinstance(new.get('token_ids'),list) or not new['token_ids']
+   or any(type(v) is not int or v<0 for v in new['token_ids'])
+   or new.get('stop')!=('eos' if new['token_ids'][-1]==2 else 'length')
+   or not isinstance(new.get('confidence'),list)
+   or any(type(v) not in (float,int) or not math.isfinite(v) or not 0<=v<=1 for v in new['confidence'])
+   or type(new.get('mean_confidence')) not in (float,int) or not math.isfinite(new['mean_confidence'])
+   or not 0<=new['mean_confidence']<=1):
+   raise ValueError('Apple legacy diagnostic case payload differs')
+ keys=('id','image_sha256','text','token_ids','stop','confidence','mean_confidence')
+ if any(any(a[k]!=b[k] for k in keys) for a,b in zip(arms['candidate-unset']['cases'],arms['candidate-one']['cases'])):
+  raise ValueError('Apple unset/literal1 raw outputs differ')
  d=load('successor-prebuilt-bindings','successor-bindings.json')
  if d.get('audit_source')!=audit or d.get('passed') is not True or set(d.get('surfaces',{}))!={'rust','dart'}:
   raise ValueError('Prebuilt binding coverage failed')
- binding(d['producer'])
+ binding(d['producer'],True)
  if d.get('native_build_fallback') is not False or d.get('offline_cache_unchanged') is not True:
   raise ValueError('Binding fallback/cache changed')
  for v in d['surfaces'].values():
