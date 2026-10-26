@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import importlib.metadata
 import inspect
@@ -14,6 +15,34 @@ import time
 import urllib.request
 
 from contract import CONTRACT, PANEL, ROOT, digest, read_contract, validate_checkpoint, verify_file
+
+
+@contextmanager
+def observe_forward(module, before, after):
+    """Observe the original bound method, including direct .forward() callers.
+
+    Pinned ST Transformer.forward invokes self.model.forward directly, bypassing
+    nn.Module root hooks. Preserve its exact arguments/result and restore the
+    original instance/class lookup even when inference or an observer raises.
+    """
+    missing = object()
+    previous_instance_value = vars(module).get('forward', missing)
+    original = module.forward
+
+    def observed(*args, **kwargs):
+        before(args, kwargs)
+        result = original(*args, **kwargs)
+        after(result)
+        return result
+
+    module.forward = observed
+    try:
+        yield
+    finally:
+        if previous_instance_value is missing:
+            delattr(module, 'forward')
+        else:
+            module.forward = previous_instance_value
 
 
 def download(directory, declaration):
@@ -177,7 +206,6 @@ def capture_original(variant, output):
                 actual_masks['supplied_'+key] = kwargs[key].detach().clone().cpu().tolist()
         def first_layer_input(_m, _args, kwargs):
             actual_masks['effective_attention_mask'] = kwargs['attention_mask'].detach().clone().cpu().tolist()
-        handles.append(backbone.register_forward_pre_hook(backbone_input, with_kwargs=True))
         handles.append(backbone.layers[0].register_forward_pre_hook(first_layer_input, with_kwargs=True))
 
         def event(name, value):
@@ -187,6 +215,9 @@ def capture_original(variant, output):
 
         if cid in panel['full_capture']:
             for name, module in backbone.named_modules():
+                if not name:
+                    # Root .forward is invoked directly by ST; observed below.
+                    continue
                 def before(_m, args, kwargs, name=name):
                     event('backbone.'+name+'.input', {'args': args, 'kwargs': kwargs})
                 def after(_m, _args, value, name=name):
@@ -219,10 +250,20 @@ def capture_original(variant, output):
             save(cid, name+'.output', result)
             return result
 
+        def observed_backbone_input(args, kwargs):
+            backbone_input(backbone, args, kwargs)
+            if cid in panel['full_capture']:
+                event('backbone..input', {'args': args, 'kwargs': kwargs})
+
+        def observed_backbone_output(value):
+            if cid in panel['full_capture']:
+                event('backbone..output', value)
+
         try:
             if cid in panel['full_capture']:
                 functional.scaled_dot_product_attention = observed_sdpa
-            observed = encode(text, output_value=None, show_progress_bar=False)
+            with observe_forward(backbone, observed_backbone_input, observed_backbone_output):
+                observed = encode(text, output_value=None, show_progress_bar=False)
         finally:
             functional.scaled_dot_product_attention = original_sdpa
             for handle in handles:

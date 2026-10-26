@@ -15,6 +15,51 @@ from contract import PANEL, read_contract, safetensors_inventory, tensor_schema,
 
 
 class ContractTests(unittest.TestCase):
+    def test_direct_forward_capture_is_neutral_and_restores_class_lookup(self):
+        from reference import observe_forward
+        class Direct:
+            def forward(self, *, value):
+                return {'result': value + 1}
+        model, events = Direct(), []
+        original = model.forward
+        plain = model.forward(value=4)
+        with observe_forward(model, lambda args, kwargs: events.append(('input', args, kwargs.copy())),
+                             lambda result: events.append(('output', result.copy()))):
+            self.assertEqual(model.forward(value=4), plain)
+            self.assertIn('forward', vars(model))
+        self.assertNotIn('forward', vars(model))
+        self.assertEqual(model.forward, original)
+        self.assertEqual(events, [('input', (), {'value': 4}), ('output', plain)])
+        self.assertEqual(model.forward(value=4), plain)
+
+    def test_direct_forward_restores_existing_override_after_exception(self):
+        from reference import observe_forward
+        class Direct:
+            def forward(self, value):
+                raise AssertionError('class method must not replace instance override')
+        model = Direct()
+        existing = lambda value: value * 2
+        model.forward = existing
+        def reject(_):
+            raise ValueError('observer failure')
+        with self.assertRaisesRegex(ValueError, 'observer failure'):
+            with observe_forward(model, lambda args, kwargs: None, reject):
+                model.forward(3)
+        self.assertIs(model.forward, existing)
+        self.assertEqual(model.forward(3), 6)
+
+    def test_direct_forward_restores_after_original_exception(self):
+        from reference import observe_forward
+        class Direct:
+            def forward(self):
+                raise ValueError('original failure')
+        model, events = Direct(), []
+        with self.assertRaisesRegex(ValueError, 'original failure'):
+            with observe_forward(model, lambda a, kw: events.append('input'), lambda out: events.append('output')):
+                model.forward()
+        self.assertNotIn('forward', vars(model))
+        self.assertEqual(events, ['input'])
+
     def test_dynamic_schema(self):
         for name, declaration in read_contract()['variants'].items():
             rows = tensor_schema(declaration['config'])

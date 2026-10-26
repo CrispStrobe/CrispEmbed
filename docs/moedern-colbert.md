@@ -121,6 +121,11 @@ are captured; softmax/top-2/renormalized weights and selection margins derived
 from them are explicitly labeled `derived`, not observed internal arrays.
 Other cases preserve final arrays and role/mask contracts. All snapshots clone
 before later mutation; captures never enter production model files.
+Pinned ST6.1 calls the backbone's bound `forward` method directly, bypassing
+PyTorch root-module hooks. A temporary test-only wrapper observes that actual
+method invocation and restores its original lookup in `finally`; ordinary layer
+hooks still observe the called submodules. Dependency-free direct-call controls
+cover input/output capture, unchanged results and restoration after failures.
 
 Every case checks ordinary versus observed feature dictionaries bit-exact and
 checks the public role output against the final scoring-mask slice. Original
