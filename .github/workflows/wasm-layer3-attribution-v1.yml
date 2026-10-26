@@ -1,0 +1,77 @@
+name: WASM layer3 same-input attribution v1
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-layer3-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  attribution:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-only strict protocol and overlay controls
+        run: python tests/test_wasm_layer3_attribution_v1.py -v
+      - name: Reviewed negative A/B and original model identities before access
+        run: python tools/ci-heavy/wasm_layer3_attribution_v1.py prepare --output "$RUNNER_TEMP/layer3"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Frozen580 test-only native and browser diagnostic builds, two workers
+        run: python tools/ci-heavy/wasm_layer3_attribution_v1.py build --output "$RUNNER_TEMP/layer3"
+      - name: Actual native1/2 ordinary and retained-subnode observations
+        run: python tools/ci-heavy/wasm_layer3_attribution_v1.py native --output "$RUNNER_TEMP/layer3"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned browser engine
+        run: |
+          npm install --prefix "$RUNNER_TEMP/layer3-browser-tools" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/layer3-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: WASM gate0/1 ordinary and retained-subnode observations
+        run: NODE_PATH="$RUNNER_TEMP/layer3-browser-tools/node_modules" node tests/test_wasm_layer3_attribution_v1.cjs "$RUNNER_TEMP/layer3/browser" capture
+      - name: Require all frozen stages and final bytes before trusting captures or replaying
+        run: python tools/ci-heavy/wasm_layer3_attribution_v1.py anchors --output "$RUNNER_TEMP/layer3"
+      - name: Native replay of exact native and candidate inputs through actual six projections
+        run: python tools/ci-heavy/wasm_layer3_attribution_v1.py replay-native --output "$RUNNER_TEMP/layer3"
+      - name: WASM replay of both exact input axes and ordinary-output recovery
+        run: NODE_PATH="$RUNNER_TEMP/layer3-browser-tools/node_modules" node tests/test_wasm_layer3_attribution_v1.cjs "$RUNNER_TEMP/layer3/browser" replay
+      - name: Frozen anchors first, then independent subnodes and same-input operator comparison
+        run: python tools/ci-heavy/wasm_layer3_attribution_v1.py compare --output "$RUNNER_TEMP/layer3"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-layer3-attribution-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/layer3/review/
+            ${{ runner.temp }}/layer3/*.log
+            ${{ runner.temp }}/layer3/browser/report.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-layer3-attribution-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/layer3/native-build/libcrispembed.so*
+            ${{ runner.temp }}/layer3/native/
+            ${{ runner.temp }}/layer3/replay/
+            ${{ runner.temp }}/layer3/browser/arrays/
+            ${{ runner.temp }}/layer3/browser/diagnostic/
+          retention-days: 90
+          if-no-files-found: warn
