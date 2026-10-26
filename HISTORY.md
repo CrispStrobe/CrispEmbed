@@ -15708,3 +15708,10 @@ unchanged. A corrected preservation lane must retain the exact attribution notic
 and all52 files before checking all50 frozen PNGs. Historical renderer Python
 3.11.17 ABI alignment is a reproducibility precaution, not an established cause
 of a PNG difference. No image, gold, score or inference tolerance is replaced.
+
+The notice-preserving correction passes eleven small controls. It restores the
+original Python3.11.17 renderer ABI and preserves all fifty encoded PNG hashes.
+[Corrected Linux proof40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
+is dispatched at `f284b1f67c1ae34082afb81a54301c6ab392c02a`; its actual image-byte
+result remains pending. Exact216-byte attribution notice verification applies
+on both producer and consumer; unexpected auxiliary files still reject.

@@ -564,7 +564,8 @@ source/artifact proof separately; do not claim it from vendor component parity.
 
 ### Immutable archive blockers after the first actual consumer batch
 
-- [ ] Independently review exact-byte Linux image proof40376735641 atb7983104.
+- [ ] Independently review corrected exact-byte Linux image proof40386968045
+  atf284b1f6. Initial40376735641 is retained as a pre-image inventory rejection.
   Require all50 original PNG/manifest identities before preserved images can feed
   the unchanged Mac released/candidate50 probe. Do not replace frozen PNG hashes;
   source terms, renderer identity and decoded RGB proof remain explicit.
