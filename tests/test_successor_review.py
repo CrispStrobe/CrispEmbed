@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 import tempfile
@@ -21,10 +22,10 @@ class ReviewControls(unittest.TestCase):
   for platform in review.DESKTOPS:
    data=dict(base,desktop_bounded_consumer_positive=True,empty_cache_download=True,empty_cache_offline_rejected=True,
     offline_reuse=True,comparisons={k:metric for k in ('cli_to_cabi','offline_cli','python_to_cabi','compiled_C_to_cabi')},
-    vector=[1]+[0]*383,compiled_hparams_size=40,abi_exports=['crispembed_init','crispembed_encode','crispembed_free','crispembed_resolve_model','crispembed_set_offline'],
+    vector=[1]+[0]*383,model_sha256=review.MINILM_MODEL_SHA,text=review.MINILM_TEXT,compiled_hparams_size=40,abi_exports=['crispembed_init','crispembed_encode','crispembed_free','crispembed_resolve_model','crispembed_set_offline'],
     payload_artifact={'id':1,'name':platform,'size_in_bytes':1000,'digest':'sha256:'+'d'*64},
     archives=[{'name':'crispembed-'+platform+'.tar.gz','sha256':'e'*64,'member_count':10}])
-   data.update({k:hashlib.sha256((platform+k).encode()).hexdigest() for k in ('library_sha256','cli_binary_sha256','compiled_c_consumer_sha256','model_sha256')})
+   data.update({k:hashlib.sha256((platform+k).encode()).hexdigest() for k in ('library_sha256','cli_binary_sha256','compiled_c_consumer_sha256')})
    save('successor-consumer-'+platform,'consumer.json',data);desktops[platform]=data
   for platform in review.MOBILES:
    save('successor-mobile-'+platform,'consumer.json',dict(base,mobile_abi=platform,cross_link_passed=True,cross_link_exit_code=0,device_execution_performed=False))
@@ -65,6 +66,53 @@ class ReviewControls(unittest.TestCase):
    root=Path(d);run,audit=self.fixture(root);result=review.review(root,run,audit)
    self.assertTrue(result['desktop_browser_apple50_and_linux_bindings_positive'])
    self.assertFalse(result['mobile_device_execution_verified'])
+   self.assertEqual(result['desktop_reference_platform'],'linux-x86_64')
+   self.assertEqual(set(result['desktop_vector_comparisons']),set(review.DESKTOPS))
+   self.assertTrue(all(v['passed'] and v['max_abs']==0 and v['rms']==0 for v in result['desktop_vector_comparisons'].values()))
+ def test_orthogonal_desktop_cannot_hide_behind_positive_self_comparisons(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);run,audit=self.fixture(root)
+   self.mutate(root,run,'successor-consumer-linux-arm64','consumer.json',lambda x:x.update(vector=[0,1]+[0]*382))
+   with self.assertRaisesRegex(ValueError,'Cross-platform desktop vector parity failed: linux-arm64'):
+    review.review(root,run,audit)
+ def test_every_desktop_requires_shared_model_and_text(self):
+  for platform in review.DESKTOPS:
+   for key,value in (('model_sha256','f'*64),('model_sha256',None),('text','changed'),('text',None)):
+    with self.subTest(platform=platform,field=key),tempfile.TemporaryDirectory() as d:
+     root=Path(d);run,audit=self.fixture(root)
+     self.mutate(root,run,'successor-consumer-'+platform,'consumer.json',lambda x:x.update({key:value}))
+     with self.assertRaisesRegex(ValueError,'shared model/text/finite384-vector'):review.review(root,run,audit)
+ def test_every_desktop_vector_shape_finite_type_and_magnitude(self):
+  variants=[None,{},[1]*383,[1]*385,[0]*384,[True]+[0]*383,
+   ['1']+[0]*383,[None]+[0]*383,[float('nan')]+[0]*383,[float('inf')]+[0]*383]
+  for platform in review.DESKTOPS:
+   for vector in variants:
+    with self.subTest(platform=platform,vector=str(vector)[:30]),tempfile.TemporaryDirectory() as d:
+     root=Path(d);run,audit=self.fixture(root)
+     self.mutate(root,run,'successor-consumer-'+platform,'consumer.json',lambda x:x.update(vector=vector))
+     with self.assertRaises(ValueError):review.review(root,run,audit)
+ def test_absolute_and_cosine_gates_are_both_preserved(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);run,audit=self.fixture(root)
+   delta=.0021
+   self.mutate(root,run,'successor-consumer-windows-x86_64','consumer.json',lambda x:x.update(vector=[math.sqrt(1-delta*delta),delta]+[0]*382))
+   with self.assertRaisesRegex(ValueError,'Cross-platform desktop vector parity failed'):review.review(root,run,audit)
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);run,audit=self.fixture(root);baseline=[1/math.sqrt(384)]*384
+   for platform in review.DESKTOPS:
+    self.mutate(root,run,'successor-consumer-'+platform,'consumer.json',lambda x:x.update(vector=baseline))
+   drift=[v+(.001 if i%2 else -.001) for i,v in enumerate(baseline)]
+   measured=review.compare_desktop_vectors(baseline,drift)
+   self.assertLess(measured['max_abs'],.002);self.assertLess(measured['cosine'],.99999)
+   self.mutate(root,run,'successor-consumer-macos-arm64','consumer.json',lambda x:x.update(vector=drift))
+   with self.assertRaisesRegex(ValueError,'Cross-platform desktop vector parity failed'):review.review(root,run,audit)
+ def test_small_cross_platform_drift_is_measured_and_allowed(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);run,audit=self.fixture(root);delta=.002
+   self.mutate(root,run,'successor-consumer-linux-arm64','consumer.json',lambda x:x.update(vector=[math.sqrt(1-delta*delta),delta]+[0]*382))
+   result=review.review(root,run,audit);measured=result['desktop_vector_comparisons']['linux-arm64']
+   self.assertEqual(measured['max_abs'],.002);self.assertTrue(measured['passed'])
+   self.assertGreater(measured['rms'],0);self.assertAlmostEqual(measured['native_norm'],1)
  def test_flat_apple_layout_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);run,audit=self.fixture(root)
