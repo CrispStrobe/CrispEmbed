@@ -15616,3 +15616,22 @@ the final reviewer expected flat JSON. The corrected reviewer consumes the real
 nested layout and additionally requires the candidate's archive/source closure.
 Four small positive/missing-platform/mixed-source/layout controls pass. No
 producer bytes, runtime path, model targets or numerical budgets change.
+
+## 26 October2026 — Windows packaged audit locale failure retained
+
+Consumer40354251257/49161f60 downloads and validates the40a82158 Windows archive
+and reaches header export inspection, then Python's default cp1252 decoding
+rejects UTF8 U+2581 in a header comment. The actual job121718563370 failure is
+an auditor decode error; no archive/runtime defect is inferred. The incomplete
+Windows panel remains negative in
+[its retained receipt](tests/results/packaging/successor-windows-reader-initial.json).
+The2,420-byte actual small ZIP/members and completed job log are independently
+reviewed. Other immutable491 consumers continue separately.
+
+Audit-only5702b1ae reads UTF8 source/metadata/logs explicitly and requests MSVC
+UTF8 for the compiled C consumer. Thirteen small controls pass, including the
+actual non-cp1252 header character under forced default cp1252, invalid UTF8,
+missing exports and unchanged Unix compile arguments. Production/build/binding
+objects and all247 parsed exports remain unchanged. The corrected Windows
+execution is still pending; qualify it with fresh final integrated-source
+producers/consumers rather than repeating every unchanged40-source panel now.
