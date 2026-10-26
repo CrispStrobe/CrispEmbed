@@ -15609,3 +15609,14 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 `9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
+
+## 26 October 2026 — source-order interpolation matches original operators
+
+[Original-input40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf passes all five tested grids. Coordinates, indices, weights and final
+position vectors are bit-exact to the actual original module; original frozen
+position and patch anchors reproduce exactly. Native patch error remains
+3.814697265625e-6. Unset/literal0 preserve the old ordinary native bytes. The
+new source-order interpolation stays default-off, with composed frozen-reference
+A/B still required. The operator receipt preserves27 comparisons and exact
+source/artifact identities; it makes no decoded-quality or2048 promotion claim.

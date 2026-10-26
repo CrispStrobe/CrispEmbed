@@ -1,0 +1,96 @@
+name: OvisOCR2 frozen-reference position composed AB
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source/panel controls before native build
+        run: |
+          python tools/ci-heavy/ovisocr2_position_replay.py --preflight
+      - name: Portable CPU test binaries and actual bound controls
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+          python scripts/check-cpu-baseline.py "$RUNNER_TEMP/build"
+          cmake --build "$RUNNER_TEMP/build" --target test-qwen35-decoder test-qwen35-vision test-qwen35-delta test-ovisocr2-context test-ovisocr2-quality-run test-ovisocr2-image-bounds -j2
+          "$RUNNER_TEMP/build/test-ovisocr2-image-bounds"
+          mkdir -p "$RUNNER_TEMP/bin"
+          python - <<'PY'
+          import hashlib,json,os,shutil
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP']);names=['test-qwen35-decoder','test-qwen35-vision','test-qwen35-delta','test-ovisocr2-context','test-ovisocr2-quality-run','test-ovisocr2-image-bounds']
+          hashes={}
+          for name in names:
+              shutil.copy2(root/'build'/name,root/'bin'/name)
+              hashes[name]=hashlib.sha256((root/'bin'/name).read_bytes()).hexdigest()
+          (root/'bin/binaries.json').write_text(json.dumps({'source_commit':os.environ['GITHUB_SHA'],'binary_sha256':hashes,'portable_cpu_baseline_checked':True}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ovisocr2-position-replay-binaries-${{ github.run_id }}
+          path: ${{ runner.temp }}/bin/
+          retention-days: 90
+  audit:
+    needs: build
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        case: [frozen-control, control-square, large-landscape, large-boundary]
+        gate: [0, 1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovisocr2-position-replay-binaries-${{ github.run_id }}
+          path: ${{ runner.temp }}/bin/
+      - name: Task paths and pinned original processor/model stack
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+            echo "AUDIT_BIN_DIR=$RUNNER_TEMP/bin"
+          } >> "$GITHUB_ENV"
+          python -m pip install --no-cache-dir numpy==2.2.6 pillow==12.1.0 gguf==0.19.0
+          python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
+          df -h . "$RUNNER_TEMP"
+      - name: Immutable original arrays, fourteen actual arms and owning OCR
+        run: python tools/ci-heavy/ovisocr2_position_replay.py --case "${{ matrix.case }}" --gate "${{ matrix.gate }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-position-replay-reports-${{ matrix.case }}-gate${{ matrix.gate }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovisocr2-position-replay-raw-${{ matrix.case }}-gate${{ matrix.gate }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/${{ matrix.case }}/native-diff/
+          retention-days: 90

@@ -81,3 +81,26 @@ only the next gated composed A/B, not a default flip or2048 qualification. The
 existing first-FFN manual audit keeps its historical source-tree pin; generic
 source-contract unit tests use an explicit frozen fixture plus drift rejection,
 so unrelated future source additions cannot silently rewrite that old contract.
+
+## Original interpolation operator result
+
+[Run40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at`59603adf` passes the actual original method/utility and native operator
+contract. All20 coordinate/index/weight arrays and all five position arrays
+are bit-exact; the original boundary position and patch anchors also reproduce
+bit-for-bit. Native patch max error is3.814697265625e-6. Unset and literal0
+reproduce the retained ordinary native position/patch bytes; legacy coefficients
+differ on all five tested grids. The original utility multiplies then divides
+F32 coordinates, whereas the legacy path computes a step and mirrors the second
+half. The new source-order alternative stays behind
+`CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION=1`; its default remains off.
+See the [full small receipt](../tests/results/qwen35-ocr/ovisocr2-position-attribution.json).
+
+The separately versioned `tools/ci-heavy/ovisocr2_position_replay.py` consumes
+retained original GGUF/JSON/PNG bytes for all four old grids; it never regenerates
+gold. Its hosted workflow runs all14 arms and owning OCR with literal0/1, with
+unchanged comparison budgets. Historical source guards stay unchanged; the new
+contract pins all production/comparator source to main9d107710 except the exact
+reviewed vision file. Four-grid composed A/B and the eleven-case first-F16
+quality replay must finish before any default or2048 qualification decision.
+An operator pass alone does not close the six composed numerical failures.
