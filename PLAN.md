@@ -180,6 +180,10 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
+  The claimed [frozen-input RoPE experiment](docs/ultrabert-rope-attribution.md)
+  now has a test-only target/driver and reusable`ultrabert-rope.yml` workflow.
+  Hosted compilation, all seven operator cases and independent report review
+  remain pending; no new original full-model reference or production change.
 - [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit and one-session paired
   CPU/CUDA performance review are complete (HISTORY): all15 cases run faster
   on CUDA, with9/20/649-token pooled medians27.93x/27.64x/120.11x. Next

@@ -1,0 +1,72 @@
+name: UltraBERT frozen-input RoPE attribution
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-rope-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  operators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source, frozen lineage and parser controls before tensor access
+        run: |
+          python tests/test_ultrabert_rope.py -v
+          python tools/ci-heavy/ultrabert_rope.py --preflight
+      - name: Build portable validation-only operator observer
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+          python scripts/check-cpu-baseline.py "$RUNNER_TEMP/build"
+          cmake --build "$RUNNER_TEMP/build" --target test-ultrabert-rope -j2
+          python - <<'PY'
+          import os, subprocess
+          from pathlib import Path
+          executable=Path(os.environ['RUNNER_TEMP'])/'build/test-ultrabert-rope'
+          target=Path(os.environ['RUNNER_TEMP'])/'gate-must-not-write'
+          for value in (None,'0'):
+              env={k:v for k,v in os.environ.items() if not k.startswith('CRISPEMBED_')}
+              if value is not None:env['CRISPEMBED_ULTRABERT']=value
+              result=subprocess.run([str(executable),'missing-reference.gguf',str(target)],env=env,capture_output=True)
+              assert result.returncode==2 and not result.stdout and not result.stderr and not target.exists()
+          print('PASS unset/zero reject before reference IO')
+          PY
+      - name: Pinned original source-only operator environment
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch" "$RUNNER_TEMP/hf"
+          python -m pip install torch==2.14.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 numpy==2.2.6 gguf==0.19.0 huggingface-hub==1.33.0 pillow==12.1.0
+          python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
+      - name: Actual original functions and ggml on preserved Q/K and all48 tables
+        env:
+          HF_HOME: ${{ runner.temp }}/hf
+        run: |
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" AUDIT_BIN_DIR="$RUNNER_TEMP/build" python tools/ci-heavy/ultrabert_rope.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-rope-reports-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-rope-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/scratch/ultrabert-rope/operators/
+            ${{ runner.temp }}/scratch/ultrabert-rope/native/
+          retention-days: 90
