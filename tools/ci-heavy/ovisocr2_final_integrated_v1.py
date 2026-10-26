@@ -28,6 +28,15 @@ def save(path, value):
     path.write_text(text.replace(str(ROOT), '<workspace>'), encoding='utf-8')
 
 
+def save_rejection(out, phase, gate, error):
+    out.mkdir(parents=True, exist_ok=True)
+    suffix = '-gate' + str(gate) if gate in (0, 1) else ''
+    path = out / ('final-rejection-' + phase + suffix + '.json')
+    save(path, {'phase': phase, 'gate': gate, 'source_commit': os.environ.get('GITHUB_SHA'),
+                'error': str(error), 'qualification': False})
+    return path
+
+
 def preflight(out):
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         raise ValueError('Hosted validation only')
@@ -197,7 +206,5 @@ if __name__ == '__main__':
         elif args.phase == 'quality-check': quality_check(out, args.gate)
         else: frozen(out, Path(os.environ['HEAVY_SCRATCH']), Path(os.environ['AUDIT_BIN_DIR']), args.gate)
     except Exception as error:
-        out.mkdir(parents=True, exist_ok=True)
-        save(out / 'final-rejection.json', {'phase': args.phase, 'gate': args.gate,
-             'source_commit': os.environ.get('GITHUB_SHA'), 'error': str(error), 'qualification': False})
+        save_rejection(out, args.phase, args.gate, error)
         raise

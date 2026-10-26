@@ -37,18 +37,40 @@ class FinalContract(unittest.TestCase):
         return dict(native_cases={'f16':rows}, scores={'f16':{'exact':11}},
                     f16_paired_synthetic={'screen_passed':True}, f16_paired_documents={'screen_passed':True})
 
-    def test_pending_reviews_fail_closed(self):
-        with self.assertRaisesRegex(ValueError, 'pending'):
-            c.checked_protocol(self.protocol)
+    def pending(self):
+        value = copy.deepcopy(self.protocol)
+        for item in value['dependencies'].values():
+            item.update(reviewed=False, panel_completed=False)
+        return value
 
-    def test_pending_preflight_does_not_access_services_or_models(self):
+    def driver(self):
         spec = importlib.util.spec_from_file_location('final_driver', ROOT / 'tools/ci-heavy/ovisocr2_final_integrated_v1.py')
         driver = importlib.util.module_from_spec(spec); spec.loader.exec_module(driver)
+        return driver
+
+    def test_pending_reviews_fail_closed(self):
+        with self.assertRaisesRegex(ValueError, 'pending'):
+            c.checked_protocol(self.pending())
+
+    def test_pending_preflight_does_not_access_services_or_models(self):
+        driver = self.driver()
         with tempfile.TemporaryDirectory() as temporary, mock.patch.dict('os.environ', GITHUB_ACTIONS='true'):
-            with mock.patch.object(driver, 'api', side_effect=AssertionError('Network must remain untouched')) as call:
+            pending = Path(temporary) / 'pending.json';pending.write_text(json.dumps(self.pending()))
+            with mock.patch.object(driver, 'SPEC', pending), mock.patch.object(driver, 'api', side_effect=AssertionError('Network must remain untouched')) as call:
                 with self.assertRaisesRegex(ValueError, 'pending'):
                     driver.preflight(Path(temporary) / 'out')
                 call.assert_not_called()
+
+    def test_later_quality_check_retains_earlier_structured_failure(self):
+        driver = self.driver()
+        with tempfile.TemporaryDirectory() as temporary:
+            out = Path(temporary)
+            first = driver.save_rejection(out, 'preflight', None, ValueError('first failure'))
+            before = first.read_bytes()
+            second = driver.save_rejection(out, 'quality-check', 0, ValueError('later failure'))
+            self.assertNotEqual(first, second)
+            self.assertEqual(first.read_bytes(), before)
+            self.assertEqual(json.loads(second.read_text())['phase'], 'quality-check')
 
     def test_direct_frozen_driver_requires_explicit_gate_before_access(self):
         result = subprocess.run([sys.executable, ROOT / 'tools/ci-heavy/ovisocr2_final_integrated_v1.py',
