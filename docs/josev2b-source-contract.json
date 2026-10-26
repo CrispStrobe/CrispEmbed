@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-josev2b-text-reference-v1",
-  "status": "source-prepared; original GPU capture not executed; native support absent",
+  "status": "Python3.11 bootstrap rejected before hardware/payload; Python3.13 original reference profile prepared but unexecuted",
   "qualification": {
     "reference_captured": false,
     "native_supported": false,
@@ -115,7 +115,7 @@
     "upstream_license_sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
   },
   "runtime": {
-    "python_minor": "3.11",
+    "python_minor": "3.13",
     "torch": "2.13.0",
     "transformers": "5.5.0",
     "tokenizers": "0.23.0",
@@ -291,5 +291,22 @@
     "chat_template_used": false,
     "padding": "original collator right padding; batch1 only here",
     "max_length_policy": "clip only state after fixed prefix/schema/suffix; fixed schema overflow rejects"
-  }
+  },
+  "runtime_profile": "cuda-f32-python313-v2",
+  "pre_reference_failures": [
+    {
+      "profile": "cuda-f32-python311-v1",
+      "worker_source": "89264a279cd589d622b60f5ca7d1605693cf52d8",
+      "contract_sha256": "7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a",
+      "bootstrap_source": "b6e747395f56847a72f7f4fb9b7023374285924f",
+      "bootstrap_sha256": "9f3d77cfb41eda1a68ab287e0c01fb3e837d719a8a539e86e4377c92a4858ff3",
+      "error": "ValueError: reviewed wheel/runtime profile requires Python3.11",
+      "observed_runtime_python_minor": "3.13",
+      "conclusive": false,
+      "hardware_observed": false,
+      "model_payload_accessed": false,
+      "reference_outputs_created": false,
+      "limits": "No GPU compatibility, memory, speed, original inference or native conclusion follows from this preflight failure."
+    }
+  ]
 }

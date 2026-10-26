@@ -16,13 +16,14 @@ import time
 import venv
 import zipfile
 
-WORKER_SOURCE = '89264a279cd589d622b60f5ca7d1605693cf52d8'
-CONTRACT_SHA = '7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a'
-WHEELS = {'torch': {'url': 'https://files.pythonhosted.org/packages/01/79/1f2d34ad7034ee1c7ffc1cf8bf0f8213af2a81df6ecdb3997ecec107c09d/torch-2.13.0-cp311-cp311-manylinux_2_28_x86_64.whl#sha256=60fcdcb2f3876e21146cb4524ef06397d727ca9ad5f020818547e25075fe3cb7', 'filename': 'torch-2.13.0-cp311-cp311-manylinux_2_28_x86_64.whl', 'sha256': '60fcdcb2f3876e21146cb4524ef06397d727ca9ad5f020818547e25075fe3cb7', 'bytes': 526574961}, 'torchvision': {'url': 'https://files.pythonhosted.org/packages/0b/9b/f1e68e861d4462e3e195a642c2b448e7b7d3fad5f209487162b9a2133d9b/torchvision-0.28.0-cp311-cp311-manylinux_2_28_x86_64.whl#sha256=7e80f543b22503d9415e126db5f0ff3917036925e38560ee6b9ae38c571a4002', 'filename': 'torchvision-0.28.0-cp311-cp311-manylinux_2_28_x86_64.whl', 'sha256': '7e80f543b22503d9415e126db5f0ff3917036925e38560ee6b9ae38c571a4002', 'bytes': 7670718}}
+WORKER_SOURCE = '1e723a96f8fed0ea34b0e071e88f29561a315aaa'
+CONTRACT_SHA = '39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460'
+WHEELS = {'torch': {'url': 'https://files.pythonhosted.org/packages/d4/5a/7c50ba1b7b713d71d34669c6d13dab0a11531a3eceb0307a5162dbfec0f7/torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'filename': 'torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'bytes': 526602329}, 'torchvision': {'url': 'https://files.pythonhosted.org/packages/32/db/062cdb5a84380a60439775311fff34d89229760d2a50680393dc18699956/torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'filename': 'torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'bytes': 7674669}}
 OUT = Path('/kaggle/working/josev2b-original')
 SCRATCH = Path('/tmp/crispembed-josev2b-original-v1')
 REPORT = {'schema': 'crispembed-josev2b-bootstrap-v1', 'conclusive': False,
           'status': 'preflight', 'retry_permitted': False, 'worker_source': WORKER_SOURCE,
+          'runtime_profile': 'cuda-f32-python313-v2', 'python_expected': '3.13',
           'contract_sha256': CONTRACT_SHA, 'commands': [], 'model_payload_accessed': False,
           'limits': 'Original-only four owned text cases; no native or quality qualification.'}
 
@@ -74,9 +75,9 @@ def main():
     REPORT['bootstrap_sha256'] = digest(__file__)
     save()
     try:
-        if sys.version_info[:2] != (3, 11):
-            raise ValueError('reviewed wheel/runtime profile requires Python3.11')
-        # Hardware proof before framework installation or any model/tokenizer access.
+        REPORT['python'] = sys.version
+        save()
+        # Hardware proof precedes Python-profile rejection, installation and payload access.
         data = subprocess.check_output(['nvidia-smi',
             '--query-gpu=name,compute_cap,memory.total,memory.free,driver_version',
             '--format=csv,noheader,nounits'], text=True, timeout=20)
@@ -92,6 +93,8 @@ def main():
                 raise ValueError('driver is below CUDA13.0 Linux baseline; no retry')
             if int(total) < 14*1024 or int(free) < 11*1024:
                 raise ValueError('GPU memory bound not met')
+        if sys.version_info[:2] != (3, 13):
+            raise ValueError('reviewed wheel/runtime profile requires Python3.13')
         if shutil.disk_usage('/tmp').free < 25*2**30 or shutil.disk_usage(OUT).free < 3*2**30:
             raise ValueError('need25GiB scratch before install and3GiB result space')
         SCRATCH.mkdir()
