@@ -716,8 +716,13 @@ continue on their frozen branches. Do not alter those producer sources.
   [40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
   at790f7b1d0372c12d1807dfb2fc7fc3af20a3c445. All six original/GGUF source,
   weight and Apache2 license identities are frozen in
-  [the contract](docs/moedern-colbert-source-contract.json); no model result
-  exists yet. Initial40411490747 was cancelled while queued after review found
+  [the contract](docs/moedern-colbert-source-contract.json). The original job
+  succeeds:10 neutral final cases,250 stage declarations and32-tensor F32
+  conversion. [Independent review](tests/results/moedern-colbert/initial-original-review.json)
+  finds missing Dense/Normalize pipeline Mapping outputs; native stage coverage
+  is incomplete. Correct the observer in a new source and require exact old
+  final-ID/mask/vector continuity before accepting additional intermediates.
+  Native pins remain unset until that corrected capture is reviewed. Initial40411490747 was cancelled while queued after review found
   ST directly calls backbone.forward; the corrected neutral observer has nine
   source controls. Review actual tokenizer descriptor/IDs, three separate masks,
   all modules/SDPA, routing,128-vectors and MaxSim before native outputs. Strict

@@ -16322,3 +16322,22 @@ ZIP/member hashes and job-log hashes are retained. The remaining six native
 shards are cancelled while queued with zero steps; all eight completed original
 shards and the original freeze remain unchanged. A distinct hosted tokenizer
 diagnostic and all5,483 input checks precede any corrected native embedding run.
+
+## 27 October 2026 — Smallest MoEdern original captured; observer gap retained
+
+[Original40412164041](tests/results/moedern-colbert/initial-original-review.json)
+at790f7b1d completes all10 owned CPU/F32 cases with exact ordinary/observer and
+public-slice equality,250 array declarations,32 loaded tensors, three exact
+MaxSim scores and original-first F32 conversion (5,941,568 bytes). Actual
+Tokenizer JSON confirms Unigram with NFKD/accent stripping/lowercase and
+WhitespaceSplit/Metaspace; query masks are distinct from supplied attention.
+The ordinary per-case output is `[tokens,128]`; batch-first pipeline boundaries
+are separate. These are source/owned-output results, not native retrieval quality.
+
+Independent review finds no `pipeline.*` arrays: the observer serializer skips
+Mapping objects returned by the pipeline, omitting Dense and Normalize targets.
+The initial original/converted receipts and remote raw artifact identity remain
+retained; native pins stay unset. A separately versioned Mapping-aware correction
+must authenticate all old final IDs/masks/vector hashes, capture mandatory
+pipeline stages without changing arithmetic, then undergo original-first review.
+No original arrays, model weights or tokenizer payloads are downloaded locally.
