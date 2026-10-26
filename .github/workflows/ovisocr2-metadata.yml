@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference]
         default: metadata
       native_run_id:
         type: string
@@ -199,6 +199,30 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'attribution-2048'
     needs: controls
     uses: ./.github/workflows/ovisocr2-2048-attribution.yml
+
+  migan-native:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-native'
+    needs: controls
+    uses: ./.github/workflows/migan-native.yml
+    with:
+      phase: replay
+      reference_run: '40330674649'
+      reference_head: '9bd331545abf88ab5bb54289026df7d399dce410'
+      reference_workflow: '.github/workflows/ovisocr2-metadata.yml'
+      reference_artifact_id: '12657201225'
+      reference_archive_sha256: '14c7a49016fa3d68cc4392ce301705ff163d3701855cafc7a555811e44f25b48'
+      reference_report_sha256: '6f463545ad3acef9525594230e74b9f29641db0526a4e6414e9bfd2fa5054588'
+      conversion_report_sha256: '48c99d3eeca06a7c1646d707142ca8d8c90f378cd5ef62bfa43629e3627ec4b2'
+      checkpoint_sha256: '8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f'
+      model_gguf_sha256: 'b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b'
+  migan-reference:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-reference'
+    needs: controls
+    uses: ./.github/workflows/migan-reference.yml
+  ultrabert-rope:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ultrabert-rope'
+    needs: controls
+    uses: ./.github/workflows/ultrabert-rope.yml
   preserve-evidence:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'preserve-evidence'
     needs: controls

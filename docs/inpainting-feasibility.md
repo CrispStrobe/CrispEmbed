@@ -36,4 +36,17 @@ LaMa's [`big-lama.yaml`](https://github.com/advimman/lama/blob/786f5936b27fb3dac
 3. **Native/API qualification:** export a GGUF only after tensor mapping and F32 original/native stage comparison; then test CPU and each claimed backend, F16/quantization separately, finite outputs, mask polarity, seams, quality, latency and peak memory. Keep reference probes out of distributed weights and do not add a registry alias before exact artifact/review receipts.
 4. **Video is a separate lane:** batch or stdin-list should load one model for many frames and preserve ordering/error records. A static subtitle span may reuse a single completed background only when registration, camera motion, occlusion and temporal drift checks permit it. Per-frame independent completion can flicker; neither static-span reuse nor temporal propagation is established by a still-image result. Text detection/dilation and region limiting likewise need separately frozen mask contracts.
 
-**Current result:** source-level feasibility only. No issue closure, production model, publication, API change, temporal claim, or quality conclusion follows from this audit.
+**Result of the25 October source-only audit:** source-level feasibility only. No issue closure, production model, publication, API change, temporal claim, or quality conclusion follows from this audit.
+
+
+## 26 October bounded implementation result
+
+The [fixed256 CPU/F32 prototype](migan-native-prototype.md) now passes its
+[reviewed original/native panel](../tests/results/migan/native-parity.json):
+494 comparisons and eight authored RGB/mask fixtures, with known pixels exact.
+The original checkpoint SHA and lossless154-tensor conversion are recorded in
+[the original receipt](../tests/results/migan/original-reference.json). The first
+native attempt's stale observer captures remain retained; fixing test-only
+allocation ownership preserves every ordinary final output SHA. This closes
+the bounded reference/prototype experiment, while production interfaces, real
+subtitle/scene quality and video behavior remain pending in PLAN.

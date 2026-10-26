@@ -1,0 +1,137 @@
+name: MI-GAN fixed-256 CPU prototype build and reviewed replay
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        options: [build-only, replay]
+        default: build-only
+        description: 'Build-only has no model access; replay requires all reviewed original identities'
+      reference_run:
+        type: string
+        default: ''
+        description: 'Reviewed successful original run ID (replay only)'
+      reference_head:
+        type: string
+        default: ''
+        description: 'Exact original producer Git commit (40 hex)'
+      reference_workflow:
+        type: string
+        default: '.github/workflows/migan-reference.yml'
+        description: 'Original run workflow path; metadata dispatcher is also explicitly supported'
+      reference_artifact_id:
+        type: string
+        default: ''
+        description: 'Reviewed migan-original-raw-RUN artifact ID'
+      reference_archive_sha256:
+        type: string
+        default: ''
+        description: 'Reviewed artifact ZIP SHA-256; API digest and downloaded ZIP must match'
+      reference_report_sha256:
+        type: string
+        default: ''
+        description: 'Reviewed original/report.json byte SHA-256'
+      conversion_report_sha256:
+        type: string
+        default: ''
+        description: 'Reviewed original F32 conversion receipt SHA-256'
+      checkpoint_sha256:
+        type: string
+        default: ''
+        description: 'Reviewed first-observed actual official checkpoint SHA-256'
+      model_gguf_sha256:
+        type: string
+        default: ''
+        description: 'Reviewed actual original F32 conversion GGUF SHA-256'
+  workflow_call:
+    inputs:
+      phase:
+        type: string
+        default: build-only
+      reference_run:
+        type: string
+        default: ''
+      reference_head:
+        type: string
+        default: ''
+      reference_workflow:
+        type: string
+        default: '.github/workflows/migan-reference.yml'
+      reference_artifact_id:
+        type: string
+        default: ''
+      reference_archive_sha256:
+        type: string
+        default: ''
+      reference_report_sha256:
+        type: string
+        default: ''
+      conversion_report_sha256:
+        type: string
+        default: ''
+      checkpoint_sha256:
+        type: string
+        default: ''
+      model_gguf_sha256:
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: migan-native-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      PHASE: ${{ inputs.phase }}
+      REFERENCE_RUN: ${{ inputs.reference_run }}
+      REFERENCE_HEAD: ${{ inputs.reference_head }}
+      REFERENCE_WORKFLOW: ${{ inputs.reference_workflow }}
+      REFERENCE_ARTIFACT_ID: ${{ inputs.reference_artifact_id }}
+      REFERENCE_ARCHIVE_SHA256: ${{ inputs.reference_archive_sha256 }}
+      REFERENCE_REPORT_SHA256: ${{ inputs.reference_report_sha256 }}
+      CONVERSION_REPORT_SHA256: ${{ inputs.conversion_report_sha256 }}
+      CHECKPOINT_SHA256: ${{ inputs.checkpoint_sha256 }}
+      MODEL_GGUF_SHA256: ${{ inputs.model_gguf_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependency-free reference, parser and security controls
+        run: |
+          python tests/test_migan_reference_contract.py -v
+          python tests/test_migan_native_driver.py -v
+      - name: Install only replay readers; no framework or model conversion
+        if: inputs.phase == 'replay'
+        run: python -m pip install --disable-pip-version-check numpy==2.2.6 pillow==11.3.0
+      - name: Explicit CPU prototype build or fully reviewed original replay
+        shell: bash
+        run: |
+          python tools/ci-heavy/migan_native.py --phase "$PHASE" \
+            --output "$RUNNER_TEMP/migan-native-out" --scratch "$RUNNER_TEMP/migan-native-scratch"
+      - name: Preserve native logs, raw arrays, decoded outputs and build archives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migan-native-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/migan-native-out/
+          retention-days: 90
+          if-no-files-found: warn
+          compression-level: 1
+      - name: Small independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migan-native-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/migan-native-out/review/
+          retention-days: 90
+          if-no-files-found: warn
