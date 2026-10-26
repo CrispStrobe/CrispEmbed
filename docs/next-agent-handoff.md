@@ -615,8 +615,13 @@ completed evidence. The remaining loop requires actual review of these lanes:
 - Review-only integration branch`integration/bounded-closure-20261026` combines
   the frozen lane sources. Producer branches stay unchanged, and historical
   whole-source guards intentionally reject changed runtime trees. Final integrated
-  source still needs a declared validation contract, fresh seven native/two WASM
-  producers and all actual consumers. Initial producer success is not that proof.
+  source has a separately reviewed [final-integrated-v1 validator](ovisocr2-final-integrated-v1.md)
+  at5a843b06, with13 small controls and retained real-report reanalysis passing.
+  Its exact f3f1b9e7/a06 source closure keeps both defaults off; actual reviewed
+  Ovis/WASM completion and artifact/report pins are still pending and block model
+  access. Any changed source/default requires an explicit new closure. Fresh
+  seven native/two WASM producers and all actual consumers remain required;
+  initial producer success is not that proof.
   The [aggregation repair](../tests/results/packaging/successor-desktop-vector-review-repair.json)
   now independently compares all four desktop vectors with unchanged gates.
   Its14 controls and retained Linux ARM/x86 cross-check pass; actual final

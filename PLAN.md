@@ -615,7 +615,13 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   40334662677 are reviewed: all1,841 IDs/text/EOS exact, gate0 confidence exact,
   gate1 confidence drift at most0.000024796. Keep interpolation off and2048
   unqualified until the full composed evidence is reviewed. Any promotion also
-  needs final-source frozen14 and first-F16 eleven-case replay.
+  needs final-source frozen14 and first-F16 eleven-case replay via the
+  [prepared final-integrated-v1 protocol](docs/ovisocr2-final-integrated-v1.md).
+  Its pending reviewed-completion pins deliberately block dispatch/model access;
+  fill exact reviewed Ovis/WASM outcomes and artifact/report hashes first.
+  Current source closure is f3f1b9e7/a06 with both new defaults off. Any later
+  source/default choice requires an explicit new closure, never a historical
+  guard exception or dynamic latest-source allowance.
 - [ ] **Finish canonical SciFact retrieval.** The original-first full
   [40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
   uses`e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`; do not modify its branch

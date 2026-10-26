@@ -16124,3 +16124,25 @@ This is partial compatibility evidence, not a new successful consumer batch.
 Initial40354251257 remains rejected for Windows/Apple/browser failures; all
 four final-source desktop reports and the complete consumer aggregate remain
 required. No production default, archive, publication or app pin changes.
+
+###26 October — separate final integrated validation prepared
+
+Source5a843b06 prepares the [final-integrated-v1 workflow/contract](docs/ovisocr2-final-integrated-v1.md)
+for assembled runtime f3f1b9e7/ggmla06 with both interpolation and WASM rounding
+default-off. It leaves every historical guard/reference/scorer untouched and
+pins all source/build/binding objects, executed quality helpers, preparation
+receipt, six validation binaries and original first-F16 inputs/outputs.
+Actual reviewed Ovis/WASM completion plus exact artifact/report pins remain
+deliberately pending; the validator rejects before service/model access.
+
+Independent source review found and corrected missing helper/bounds-source
+coverage and a structured-failure overwrite. Per-phase/gate negatives now
+survive the always-run quality check. All13 bounded stdlib controls pass;
+workflow structural lint and independent source review are positive. The root
+also runs the new quality comparator on both retained actual40334662677 reports:
+each preserves11 cases/1,841 IDs; off confidence drift is zero and on maximum
+drift0.000024796. This is report reanalysis, not new inference or final-source
+qualification. No hosted build/model job has been dispatched for this prepared
+lane. After actual prerequisites, two frozen14 jobs precede two full eleven-case
+quality jobs, capped at two concurrent model jobs. Final assets and consumers
+remain separate gates.

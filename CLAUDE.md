@@ -237,6 +237,11 @@ The default-off per-backend candidate is under actual
 [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
 at`580e3ae3`: actual weight-free operator controls precede model access and
 the frozen ten-case native/browser A/B. Source review alone permits no promotion.
+The [prepared final-integrated-v1 validator](docs/ovisocr2-final-integrated-v1.md)
+pins the exact assembled runtime, references, helpers and six binaries without
+weakening historical guards. Its13 small controls and actual retained quality
+report reanalysis pass; pending independent-completion pins still block model
+access. Source preparation is not qualification.
 Final integrated source requires fresh seven native/two WASM archive producers
 and all consumers. No tag, model publication, app-pin update or overall loop
 closure follows from these preparations.
