@@ -16341,3 +16341,16 @@ retained; native pins stay unset. A separately versioned Mapping-aware correctio
 must authenticate all old final IDs/masks/vector hashes, capture mandatory
 pipeline stages without changing arithmetic, then undergo original-first review.
 No original arrays, model weights or tokenizer payloads are downloaded locally.
+
+## 26 October 2026 — Josev installation succeeds; metadata verifier rejects
+
+[Actual corrected environment](tests/results/josev2b/initial-installed-metadata-preflight.json)
+at bootstrapc9aa40b7/worker2133cfa1 passes isolation, full lock preflight, all57
+package installs and pip-check on the supported T4/Python3.13 profile. The next
+installed-metadata guard rejects setuptools before runtime imports, CUDA smoke
+or model/tokenizer access. All ten command logs are independently rehashed.
+Its message combines wrong candidate count and hash mismatch, so a wheel-byte
+drift is not established: the selector also accepts vendored dist-info entries.
+A separate hosted CPU owner-metadata/sidecar audit precedes a selector/profile
+correction or further GPU submission. No actual original inference or native
+parity is claimed; all previous setup failures remain retained.

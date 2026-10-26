@@ -95,3 +95,11 @@ It retains the rounding default off and grants no experimental qualification.
 The Ovis composed dependency is still pending, so preflight remains closed.
 Layer3 attribution may justify a later source change; any such change requires
 a new explicit runtime closure instead of silently reusing this protocol.
+
+The accumulated integration now includes the unrelated Josev regression fixture,
+so its `tests/regression` tree differs from the v1 frozen closure. A local
+13-control check retains eleven passes and two source-closure rejections at
+that tree; no runtime/scorer/budget bytes changed. Do not bypass this guard or
+claim the current integration is covered by v1. Once final source decisions are
+complete, declare a separately versioned closed base, authenticate unchanged
+historical fixtures and rerun the source/negative controls before hosted replay.

@@ -747,8 +747,13 @@ continue on their frozen branches. Do not alter those producer sources.
   [the rejection](tests/results/josev2b/initial-install-preflight.json). Corrected
   worker2133cfa1/bootstrapc9aa40b7 use tokenizers0.22.2 and a complete57-wheel
   URL/SHA lock, metadata/ABI-origin controls and loaded-head identity proof. The
-  corrected GPU capture is submitted; its actual outcome remains pending. Review
-  completion before conversion/native comparisons or another profile change. GPU capability/driver/memory/scratch checks remain mandatory; no
+  corrected GPU attempt installs all57 packages and passes pip-check, then
+  rejects the installed setuptools METADATA selector/hash guard before framework
+  import, CUDA smoke or model access. [The receipt](tests/results/josev2b/initial-installed-metadata-preflight.json)
+  preserves all ten command hashes. The error conflates candidate count with
+  digest mismatch; inspect exact top-level owner versus vendored metadata on
+  hosted CPU before another GPU attempt. Review completed original inference
+  before conversion/native comparisons; none exists yet. GPU capability/driver/memory/scratch checks remain mandatory; no
   unsupported-hardware retry loop. Review the four original text cases≤512,
   actual IDs/spans/masks, all24 layers and512-wide joint-head intermediates,
   logits/probabilities/typed answers before native outputs. Port an explicit
