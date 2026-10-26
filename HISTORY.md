@@ -15613,3 +15613,52 @@ strength to genuine F16 while preserving every padded offset; all malformed
 models must now report their intended loader guard. Source review also matches
 all238 native observation names/order/shapes to each of the two frozen full
 captures. This is a source check; actual compiled/native evidence remains separate.
+
+## 26 October 2026 — completed operator/reference evidence before remaining panels
+
+[Norm isolation40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at91292cb0 reproduces all12 original anchors exactly. Actual original RMSNorm
+on the same native input differs by at most3.05176e-5; applying it to native
+hidden states reproduces the composed failure. This supports upstream error
+amplification, not a local normalization fix or relaxed budget. The separate
+[position operator40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf matches all five tested grids' coordinates/indices/weights/position
+vectors exactly. Unset/literal0 retain ordinary position/patch bytes; native
+patch error remains3.81470e-6. Composed and first-F16 replays remain pending.
+
+[MI-GAN original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 completes eight deterministic256fixtures, two neutral238-stage
+captures and lossless154-F32-tensor conversion. First observed checkpoint SHA
+is8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f;
+converted25,185,504-byte GGUF isb8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b.
+The reviewed receipt is retained on candidate2849cb78. No native, perceptual,
+video, API or publication qualification follows from that reference result.
+
+The successor candidate40a82158 prepares immutable archive/member manifests
+and compiled/package consumers. Independent source review fixes doubled WASM
+extraction, Android's omitted shared ggml dependencies and iOS's unmerged static
+dependencies. Eight small archive/layout controls pass; actual compiled consumers
+are pending. Candidate development manifests advance to0.17.14; no tag exists,
+main and the app retain their previous versions until separate integration.
+All source preparation and queued workflows remain explicitly unqualified.
+
+## 26 October 2026 — first MI-GAN native panel isolates stale observer views
+
+[Actual40336246545](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336246545)
+at2849cb78 compiles and completes all eight cases, rechecking595 original
+artifact members first. All final raw/image gates pass, worst raw max1.40667e-5,
+known-pixel errors0 and worst filled MAE7.12077e-5/max1. Both full cases preserve
+ordinary/observed final bits. The full panel remains rejected:128 stale captures
+per full case produce256 intermediate failures among494 comparisons.
+
+The first stale `encoder.b256.conv1.input.0` has subtitle max14.8653 and native
+L2 norm2149.386 versus original1805.116. Its SHA is exactly the later valid
+`encoder.b256.conv2.conv1.output` SHA, whose comparison passes3.81470e-6.
+Pinned gallocr source frees an expired view's allocation owner; marking only
+the observed clamp/reshape view does not retain that owner. The test-only repair
+marks the complete owner chain before allocation. A tiny hosted old-versus-fixed
+allocation regression and all eight unchanged ordinary-final SHA controls precede
+the next full replay. No arithmetic, original tensors or thresholds change.
+The [initial receipt](tests/results/migan/initial-native-parity.json) retains
+all failed comparisons and actual artifact/source identities; qualification is
+still false until the complete corrected panel is reviewed.

@@ -65,7 +65,9 @@ input. It never substitutes golden outputs or reconstructed operator outputs.
 
 Subtitle-bar and edge cases execute a second observed graph. Its retained nodes
 are marked `ggml_set_output` **before allocation**, preventing allocator reuse
-from destroying intermediates. Ordinary and observed final output bytes must
+from destroying intermediates. Retained views also mark every `view_src`
+allocation owner: the pinned allocator can free an unmarked owner when its last
+view expires even if the view itself is an output. Ordinary and observed final output bytes must
 match exactly. Each original stage must be compared exactly once, including
 block inputs and tuple outputs; missing or extra stage coverage rejects.
 The other six cases execute only the ordinary graph and final comparison.
@@ -90,6 +92,25 @@ or decoded-image failures, and exit2 indicates setup/contract/coverage failure.
 unset/empty/literal0 without a model; `--reject MODEL SHA` checks a
 hosted malformed-model control with the gate enabled. These are validation
 interfaces, not product CLI options.
+
+The first [native run40336246545](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336246545)
+is rejected and retained. It completed all494 float comparisons, all eight image
+gates, ordinary/observed final neutrality, eight malformed-model controls and
+source/member checks, but128 intermediate views per full case were stale.
+Earliest `encoder.b256.conv1.input.0` max error14.8653 and subtitle L2
+2149.386/1805.116 share the exact payload SHA of a later passing depthwise output,
+evidence of allocator reuse. All eight final raw stages pass; subtitle/edge
+maxima3.33786e-6/2.29478e-6 and every known RGB byte match. This does not waive
+the256 failed intermediate comparisons or qualify the initial prototype receipt.
+
+The correction changes only the test observer's retention flags. A hosted
+`--observer-retention` regression uses the real private mark helper on a small
+clamp/reshape view, followed by a consuming operation and competing allocation.
+It requires the old view-only path to reproduce corruption, the owner-chain path
+to preserve the anchor, and both final arithmetic outputs to match exactly.
+Every rerun also compares all eight ordinary final payload SHAs to that reviewed
+initial run. Original arrays, weights, numerical/image budgets and ordinary graph
+arithmetic remain unchanged; the full494-field replay is still required.
 
 No local builds, framework imports, model access or inference are part of this
 preparation. Formatting and existing dependency-free contracts can be checked

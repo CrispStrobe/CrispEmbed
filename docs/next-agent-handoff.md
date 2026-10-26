@@ -529,3 +529,26 @@ and inspect large archives only on hosted resources. Original numerical flags,
 source-quality failure and publication-disabled status stay unchanged. Preserve
 other January archives before their recorded deadlines; future renewal must
 verify these original ZIP/member bytes rather than regenerate model outputs.
+
+
+### Current executing closure,26 October
+
+Use PLAN's active four-lane closure for current immutable branch/run identifiers.
+Completed norm/position operator and MI-GAN original results are in HISTORY;
+composed/native/representative/packaged-consumer results remain pending. Feature
+branches contain the executable protocols and actual source guards; fetch their
+exact recorded commits rather than reconstructing commands from old handoffs.
+
+For SciFact, the registered metadata phase`ultrabert-scifact-prepare` runs only
+preparation. After independent review,`ultrabert-scifact-panel` forwards
+`native_run_id` as preparation run and`native_artifact_name` as its receipt SHA.
+Do not dispatch the full panel without the actual dataset/length/timing receipt.
+For assets, use both completed producer IDs on the same candidate source;
+`successor-consumer` forwards`native_run_id` and`original_run` to native/WASM
+producer inputs. No latest-run lookup, source substitution, tag or app-pin change.
+
+Preserve every initial cancellation, HTTP service error and negative receipt.
+Queued jobs are not evidence. Builds/inference/corpus/framework work stay hosted;
+only small reports are needed for independent review. GitHub push/dispatch
+HTTP500 errors were observed during SciFact registration; retry exact commits,
+check remote refs and actual service run identities, and avoid duplicate panels.

@@ -30,6 +30,21 @@ GGML = "890278a8342c620197c90e702e1188bcab94f510"
 REPOSITORY = "CrispStrobe/CrispEmbed"
 MODEL = "migan-256-places2-f32-experimental.gguf"
 CONVERSION = "migan-256-places2-f32-experimental.json"
+# Reviewed rejected observer run: all ordinary final payloads passed original
+# gates. Retention-only repair must not change any of those arithmetic bytes.
+INITIAL_NATIVE_RUN = "40336246545"
+INITIAL_NATIVE_REVIEW_ARTIFACT = "12660335674"
+INITIAL_NATIVE_REVIEW_ZIP_SHA256 = "b1ede41be759a91135319a48dbb14c8cd09a2ce0e9dab3f6501d34fb8b03773c"
+INITIAL_ORDINARY_FINAL_SHA256 = {
+    "subtitle_bar": "02bfba9cc6e2f6453e04a38b8ec054b5f84bf6bbaca804a23ded1ea0207403e2",
+    "edge_touch": "948b94ba0c86b63c8849ec39c3d5723f61ceeec56a282503927d2cb152293080",
+    "empty": "d784f29d420be1b4ca97ba554fe26d56a1da88a0685166f1d9cf30712d3945f0",
+    "full": "26b2e50e8216c450335d4643958452871c3ad4591b8c3ddfa3e1d1f79280ec70",
+    "center": "003d207e11c18634ccc88a4c3510057b1429e835c86c7b3baf5cb0e7f0b6c69f",
+    "one_pixel": "812d9dfca333a132e9a2fada748843193a9d897078e5977fcf31c32a31d7b47c",
+    "checkerboard": "24f9131313ecc4fcc1c0048bcf3a6b0d1336b9b27fca9ff4a60d17daafb13fae",
+    "thin_strip": "90c0bdadf2bd3670d7cd905579cbbbec2f6c638c07a2ad2b872aeb2ef1b8bf4f",
+}
 SOURCE_FILES = ("CMakeLists.txt", "src/migan.cpp", "src/migan.h", "tests/migan_test_observer.h",
                 "tests/test_migan_diff.cpp", "src/crispembed_diff.h", "src/core/gguf_loader.cpp",
                 "src/core/gguf_loader.h", "src/core/ggml_cpu_backend.h", "src/core/env_gate.h",
@@ -391,6 +406,7 @@ def verify_native_case(original_directory, case, native_directory, parsed, rgb, 
     neutrality = ordinary.read_bytes() == (native_directory / "generator.output.f32").read_bytes()
     if neutrality != parsed["summary"]["observer_neutrality_bit_exact"]:
         raise ValueError("ordinary/observed raw bit comparison contradicts log")
+    initial_ordinary_exact = sha256(ordinary) == INITIAL_ORDINARY_FINAL_SHA256[case["id"]]
     generated = (np.clip(raw[0] * np.float32(0.5) + np.float32(0.5), 0, 1) * np.float32(255)).astype(np.uint8).transpose(1, 2, 0)
     filled = np.frombuffer(mask, dtype=np.uint8).reshape(256, 256) == 255
     input_rgb = np.frombuffer(rgb, dtype=np.uint8).reshape(256, 256, 3)
@@ -425,9 +441,10 @@ def verify_native_case(original_directory, case, native_directory, parsed, rgb, 
             "observer_neutrality_checked": case["id"] in FULL_STAGE_CASES,
             "observer_neutrality_bit_exact": neutrality,
             "ordinary_output_sha256": sha256(ordinary),
+            "initial_ordinary_final_bit_exact": initial_ordinary_exact,
             "observed_graph_buffer_bytes": parsed["summary"]["observed_graph_buffer_bytes"],
             "native_generator_seconds": parsed["summary"]["generator_seconds"],
-            "passed": not failures and image["passed"] and parsed["summary"]["observer_neutrality_bit_exact"]}
+            "passed": not failures and image["passed"] and parsed["summary"]["observer_neutrality_bit_exact"] and initial_ordinary_exact}
 
 
 def command(label, args, output, report, expected=(0,), env=None, timeout=2400):
@@ -471,6 +488,9 @@ def build(scratch, output, report):
     binary = next(path for path in (build_dir / "test-migan-diff", build_dir / "bin/test-migan-diff") if path.is_file())
     command("contracts", [binary, "--contracts"], output, report)
     command("gate-controls", [binary, "--gate-controls"], output, report)
+    command("observer-retention", [binary, "--observer-retention"], output, report)
+    if strict_json((output / "observer-retention.log").read_text().split("MIGAN_RETENTION ", 1)[1].splitlines()[0]) != {"passed": True}:
+        raise ValueError("view-owner regression failed")
     if strict_json((output / "contracts.log").read_text().split("MIGAN_CONTRACT ", 1)[1].splitlines()[0]) != {"passed": True}:
         raise ValueError("build helper controls differ")
     expected_gates = {"unset_rejected": True, "empty_rejected": True, "literal_zero_rejected": True}
@@ -587,6 +607,9 @@ def main():
     report = {"schema": "crispembed-migan-native-v1", "phase": args.phase, "commands": {}, "cases": [],
               "native_qualified": False, "representative_quality_qualified": False, "published": False,
               "contract_sha256": sha256(ROOT / "docs/migan-reference-contract.json")}
+    report["initial_ordinary_final_control"] = {"run_id": INITIAL_NATIVE_RUN,
+        "review_artifact_id": INITIAL_NATIVE_REVIEW_ARTIFACT, "review_zip_sha256": INITIAL_NATIVE_REVIEW_ZIP_SHA256,
+        "case_final_sha256": INITIAL_ORDINARY_FINAL_SHA256, "scope": "Retention-only repair preserves prior ordinary arithmetic bytes"}
     status = 2
     try:
         binary = build(args.scratch, args.output, report)

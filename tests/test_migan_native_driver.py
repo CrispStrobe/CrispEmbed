@@ -52,6 +52,13 @@ def log(records):
 class NativeDriverTest(unittest.TestCase):
     expected = ["generator.input", "known_mask", "generator.output"]
 
+    def test_initial_arithmetic_anchor_has_complete_case_hashes(self):
+        self.assertEqual(native.INITIAL_NATIVE_RUN, "40336246545")
+        self.assertEqual(native.INITIAL_NATIVE_REVIEW_ARTIFACT, "12660335674")
+        self.assertTrue(native.valid_digest(native.INITIAL_NATIVE_REVIEW_ZIP_SHA256))
+        self.assertEqual(set(native.INITIAL_ORDINARY_FINAL_SHA256), set(native.CASES))
+        self.assertTrue(all(native.valid_digest(value) for value in native.INITIAL_ORDINARY_FINAL_SHA256.values()))
+
     def test_replay_requires_every_reviewed_identity(self):
         native.validate_inputs(good_args())
         for key in vars(good_args()):

@@ -142,6 +142,13 @@ bool image_metrics(const std::vector<uint8_t> & actual, const std::vector<uint8_
 } // namespace
 
 static int crispembed_test_main(int argc, char ** argv) {
+    if (argc == 2 && std::strcmp(argv[1], "--observer-retention") == 0) {
+        std::string error;
+        const bool passed = migan::test::observer_retention_regression(error);
+        if (!passed) std::fprintf(stderr, "%s\n", error.c_str());
+        std::printf("MIGAN_RETENTION {\"passed\":%s}\n", passed ? "true" : "false");
+        return passed ? 0 : 1;
+    }
     if (argc == 2 && std::strcmp(argv[1], "--contracts") == 0) return contract_controls() ? 0 : 1;
     if (argc == 2 && std::strcmp(argv[1], "--gate-controls") == 0)
         return gate_controls("nonexistent-model.gguf", nullptr) ? 0 : 1;
