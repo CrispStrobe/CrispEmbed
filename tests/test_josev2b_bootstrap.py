@@ -64,6 +64,21 @@ class BootstrapTests(unittest.TestCase):
             self.assertFalse(module.SCRATCH.exists())
             self.assertFalse(json.loads((module.OUT / 'bootstrap.json').read_text())['conclusive'])
 
+    def test_missing_ensurepip_uses_existing_isolated_bootstrap_route(self):
+        with tempfile.TemporaryDirectory() as directory:
+            module = self.load(directory)
+            module.OUT.mkdir()
+            with patch.object(module.venv, 'EnvBuilder') as factory, patch.object(module, 'run') as execute:
+                python = module.isolated_environment({'PIP_USER':'0'})
+            self.assertFalse(factory.call_args.kwargs['with_pip'])
+            self.assertFalse(factory.call_args.kwargs['system_site_packages'])
+            factory.return_value.create.assert_called_once_with(module.SCRATCH/'venv')
+            args=execute.call_args.args[1]
+            self.assertEqual(args[:5],[module.sys.executable,'-m','pip','--python',python])
+            self.assertEqual(args[-1],module.PIP_BOOTSTRAP['url'])
+            self.assertEqual(module.PIP_BOOTSTRAP['url'].split('#sha256=')[1],module.PIP_BOOTSTRAP['sha256'])
+            self.assertFalse(module.REPORT['model_payload_accessed'])
+
     def test_worker_commit_and_contract_are_exact(self):
         with tempfile.TemporaryDirectory() as directory:
             module = self.load(directory)

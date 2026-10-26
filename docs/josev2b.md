@@ -252,3 +252,13 @@ bounds. Only reports/logs/source notices and bounded reference arrays are retain
 as kernel outputs; checkpoints, tokenizer and environment stay in task scratch.
 Failures retain their bootstrap journal, command status/log SHA256 and partial
 reference manifest. This prepared bootstrap is not an actual reference result.
+
+The corrected Python3.13 attempt at142cc75c passes actual two-T4 capability,
+driver580.178.04 and memory preflight, then its venv `ensurepip` child fails before
+framework installation or any tokenizer/checkpoint access. Preserve that complete
+bootstrap journal and four successful Git command logs. The subsequent setup
+repair reuses the established Ovis recipe: create a fresh venv without ensurepip,
+then use base pip's `--python` option to install SHA-pinned pip26.2.2 into that
+venv. User pip configuration is disabled for this task. No global environment or
+model arithmetic changes; supported-GPU evidence is separate from original
+inference, which still has not run. Unsupported hardware still stops without retry.
