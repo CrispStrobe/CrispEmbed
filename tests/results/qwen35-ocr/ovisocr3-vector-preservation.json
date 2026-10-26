@@ -1,0 +1,70 @@
+{
+  "schema": "crispembed-ovis3-vector-preservation-review-v1",
+  "run": 40287253703,
+  "source_commit": "17e2e9d4f00885e94f06f611dc2ce7bee79a4e45",
+  "report_artifact": {
+    "id": 12635381697,
+    "name": "ovis-evidence-preservation-reports-40287253703",
+    "bytes": 1033,
+    "zip_sha256": "8e52db61b2764b327594e48327e5963aad9f4eda6d10a83ddf58b3dd93dc4a6b"
+  },
+  "review": {
+    "service_run_source_conclusion_success": true,
+    "small_zip_and_report_bytes_rehashed": true,
+    "source_helper_hash_checked": true,
+    "all_1662_original_manifest_records_independently_reconstructed": true,
+    "reconstructed_manifest_bytes_sha256": "6630f7e237fad2c5ecd0439ff153e055f4e92f1fd8f4a2131e80ca879d8eb59f",
+    "limitations": [
+      "Original and copied large ZIPs were rehashed on hosted CI; this review fetched only the small reports.",
+      "No original reference, numerical result, decoded quality or qualification changed."
+    ]
+  },
+  "producer": {
+    "schema": "crispembed-ovis-evidence-preservation-v1",
+    "status": "completed byte-exact evidence preservation",
+    "original_run": 40183489780,
+    "original_source": "26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51",
+    "original_raw_artifact": [
+      12595929739,
+      "ovisocr3-native14-diff-40183489780",
+      1237632076,
+      "006d73e811f18bad66dabf9c1cf7f8476b0c845957d733e4a2fcd3a599a5cd3b"
+    ],
+    "preservation_head": "17e2e9d4f00885e94f06f611dc2ce7bee79a4e45",
+    "preservation_run": 40287253703,
+    "no_inference_conversion_or_reference_regeneration": true,
+    "source_helper_sha256": "d4d1ae5b512e3e9f6629b83fdb1b1900a3381ae411025508c3d939e97d1f7a41",
+    "source_receipt_sha256": "971f9b19d1fc45f318f228d331b993d05fff34662beb958e63f9a3e1eca00fa1",
+    "source_raw_service": {
+      "run": 40183489780,
+      "head": "26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51",
+      "conclusion": "success",
+      "artifact_id": 12595929739,
+      "artifact_name": "ovisocr3-native14-diff-40183489780",
+      "artifact_bytes": 1237632076,
+      "artifact_zip_sha256": "006d73e811f18bad66dabf9c1cf7f8476b0c845957d733e4a2fcd3a599a5cd3b"
+    },
+    "source_small_service": {
+      "run": 40183489780,
+      "head": "26dcb07f29b0f1bd4e7d1fa2cd762650ab340a51",
+      "conclusion": "success",
+      "artifact_id": 12596845085,
+      "artifact_name": "ovisocr3-native14-reports-40183489780",
+      "artifact_bytes": 334611,
+      "artifact_zip_sha256": "f7211bbb70feb7c25e02c6154a4b36cf7d5e44e53bada8c9290fb345f4b19bad"
+    },
+    "vector_count": 1662,
+    "total_uncompressed_bytes": 1379292992,
+    "member_manifest_sha256": "6630f7e237fad2c5ecd0439ff153e055f4e92f1fd8f4a2131e80ca879d8eb59f",
+    "members_canonical_sha256": "3a16b7d79abe67b0e9f3ff29c031e613b5a6e513b6cca9667e2cdfdb999164c6",
+    "readback_all_1662_vectors_rehashed": true,
+    "original_zip_bit_exact": true,
+    "preserved_artifact": {
+      "id": 12635202371,
+      "name": "ovisocr3-native14-raw-40183489780-preserved-40287253703",
+      "size_in_bytes": 1238156482,
+      "digest": "sha256:cb82d736244ed1af5ac912e7f32f06a85b9f0198f543f212e0be7dc9ca836695",
+      "expires_at": "2027-01-24T07:40:40Z"
+    }
+  }
+}

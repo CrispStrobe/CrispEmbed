@@ -15565,3 +15565,28 @@ the receipt. The bounded first-FFN lane is closed, its ownership row removed.
 The next separate lane is2048 numerical attribution, then MI-GAN. Published F16,
 all four rejected candidates, development0.17.13 and immutable app0.17.12 remain
 unchanged; this validation tooling creates no runtime release.
+
+
+## 26 October 2026 — expiring Ovis3 native vectors preserved without inference
+
+[Actual40287253703](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40287253703)
+at`17e2e9d4f00885e94f06f611dc2ce7bee79a4e45` preserves original native14 run
+40183489780/source26dcb07f and its ZIP006d73e8 unchanged. All1,662 vectors,
+1,379,292,992 uncompressed bytes, match the twelve original manifests before
+copy and after actual empty-destination remote readback. The copy is artifact
+12635202371, ZIPcb82d736, expiring24 January2027; its inner original ZIP remains
+1,237,632,076 bytes with the old SHA. Full original identities and report review
+are in [the preservation receipt](tests/results/qwen35-ocr/ovisocr3-vector-preservation.json).
+Independent small-report review reconstructs all original member declarations
+and exact manifest bytes; large payload rehashing occurs on hosted CI. No
+model/reference execution, conversion, numerical/quality waiver or publication
+occurs. The first dispatch definition at7a9b15e4 was rejected before execution
+because runner paths used a job-level environment;17e2e9d4 sets them in a step.
+Source/raw quality-negative Ovis3 receipts remain immutable. January archives
+and future renewal remain in PLAN; this bounded November-expiry copy is done.
+
+
+[Preservation PR83](https://github.com/CrispStrobe/CrispEmbed/pull/83) merged as
+`9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
+Its preservation ownership row is closed. Fresh-main integration checks are
+tracked separately; no model or runtime source changed in this lane.
