@@ -13,13 +13,15 @@ jobs:
     timeout-minutes: 45
     env:
       GH_TOKEN: ${{ github.token }}
-      HEAVY_OUT: ${{ runner.temp }}/out
-      HEAVY_SCRATCH: ${{ runner.temp }}/preservation
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Isolate preservation and report destinations
+        run: |
+          echo "HEAVY_OUT=$RUNNER_TEMP/out" >> "$GITHUB_ENV"
+          echo "HEAVY_SCRATCH=$RUNNER_TEMP/preservation" >> "$GITHUB_ENV"
       - name: Source and corruption controls
         run: python tests/test_preserve_ovis_evidence.py -v
       - name: Verify original ZIP and every frozen member without inference
