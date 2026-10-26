@@ -208,3 +208,29 @@ patch/merge order, media placeholders, positions/masks and composed decision
 outputs. Ovis's OCR image preprocessing/prompt is not that processor contract.
 Long context, batching/padding, BF16, alternate calibration, quantization and
 prefill caching also remain separate experiments with original-first references.
+
+### Concrete private GPU bootstrap
+
+The [single-script bootstrap](../tools/kaggle/josev2b-original/bootstrap.py)
+fetches the exact original worker at89264a279cd589d622b60f5ca7d1605693cf52d8
+and contract SHA7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a.
+Its own script version is separately recorded; pushing other repository commits
+does not update a submitted kernel. Account substitution stays in private execution
+metadata; no account, token dataset or credentials are embedded in this recipe.
+
+Primary PyPI release metadata confirms the pinned2.13.0/0.28.0 Python3.11 Linux
+wheels and their SHA256s. These wheels use CUDA13.0.3; they are not available in
+the inspected CUDA12.8 wheel index. The bootstrap therefore checks Turing or newer
+(capability7.5), driver580.65.06 or newer and14/11GiB total/free GPU RAM before
+framework installation. It requires25GiB initial scratch and3GiB output space,
+then the original worker independently checks18GiB scratch before checkpoint
+access. Unsupported hardware exits inconclusive with no automatic retry.
+
+Installation uses a new isolated environment and exact top-level versions/wheel
+hashes. `pip check`, a tiny exact F32 CUDA matrix product, compiled GPU architecture
+reporting, contract/source controls and actual original source hashes precede
+model access. Setup/download and the30-minute capture have separate
+bounds. Only reports/logs/source notices and bounded reference arrays are retained
+as kernel outputs; checkpoints, tokenizer and environment stay in task scratch.
+Failures retain their bootstrap journal, command status/log SHA256 and partial
+reference manifest. This prepared bootstrap is not an actual reference result.
