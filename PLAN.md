@@ -246,8 +246,9 @@ Require affected exact-source checks again for each new implementation change.
 
 - [ ] **Issue71 MI-GAN still-image prototype:** finish actual hosted replay of
   the fixed256 Places2 original reference. Candidate branch
-  `test/migan-reference-dispatch-20261026` at2849cb78 consumes reviewed
-  original40330674649; native40336246545 is pending. Require all494 declared
+  `test/migan-reference-dispatch-20261026` at2526fcac consumes reviewed
+  original40330674649; corrected native40344396533 is pending. Preserve the
+  initial40336246545 stale-view observer rejection and all256 failed captures. Require all494 declared
   stage comparisons across eight fixtures, actual original/raw byte rechecks,
   ordinary/observer neutrality, eight malformed-model rejections, known-pixel
   preservation, final fill-pixel metrics and scoped latency/RSS. Keep the path
@@ -580,7 +581,8 @@ source/artifact proof separately; do not claim it from vendor component parity.
   copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
   recorded source identities and renewal dates when reviewed.
 - [ ] Review the SciFact original-only preparation on
-  `audit/ultrabert-scifact-20261026` atff030c0a, then explicitly dispatch its
+  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
+  explicitly dispatch its
   eight-original→freeze→eight-native panel with the reviewed preparation run and
   receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
   gates and predeclared ranking tolerances stay unchanged. Preserve author gold
@@ -588,7 +590,10 @@ source/artifact proof separately; do not claim it from vendor component parity.
   model publication remain separate from this representative retrieval audit.
 - [ ] Finish successor actual archive consumers from
   `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
-  unpublished WASM40339800364, then exact-source packaged consumers.
+  unpublished WASM40339800364, then packaged consumers. WASM build completion
+  is recorded in HISTORY; executable browser consumers still require the native
+  producer. Audit helpers may advance only with exact production/build/binding
+  Git objects, producer pairing and generator provenance retained.
   This candidate advances development manifests to0.17.14 for mobile dependency
   packaging corrections; main remains0.17.13 until reviewed integration. Require
   actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
