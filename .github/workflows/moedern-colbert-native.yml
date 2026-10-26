@@ -1,0 +1,48 @@
+name: Prepared MoEdern 1.5M native token-ID F32 experiment
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Lightweight source/dependency controls
+        run: python tests/test_moedern_native_contract.py -v
+      - name: Require immutable reviewed original before installation/build/model access
+        run: python tools/moedern-colbert/native.py --phase preflight --output "$RUNNER_TEMP/native-preflight"
+      - name: Hosted array and fixture dependencies
+        run: python -m pip install numpy==2.2.6 gguf==0.17.1
+      - name: Authenticate original then build and replay bounded native panel
+        run: python tools/moedern-colbert/native.py --phase run --output "$RUNNER_TEMP/native-output"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-native-1p5m-small-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/native-preflight/native.json
+            ${{ runner.temp }}/native-output/native.json
+            ${{ runner.temp }}/native-output/*.log
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-native-1p5m-arrays-${{ github.run_id }}
+          path: ${{ runner.temp }}/native-output/
+          retention-days: 90
+          if-no-files-found: warn

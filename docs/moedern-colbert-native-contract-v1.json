@@ -1,0 +1,112 @@
+{
+  "schema": "crispembed-moedern-native-1p5m-v1",
+  "status": "source preparation only; model access blocked pending independently reviewed original",
+  "variant": "1.5M",
+  "base_source": "790f7b1d0372c12d1807dfb2fc7fc3af20a3c445",
+  "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+  "original_contract_sha256": "9717685ed64ef0f9915204602c2721b0b10ad8284419f162f6bf25edf4644b8d",
+  "panel_sha256": "ea56d031d58b607b6f8735228d30c9b4f99a983b6bf3aa6be8f22c675948ba93",
+  "reviewed_original": {
+    "reviewed": false,
+    "run": null,
+    "source": "790f7b1d0372c12d1807dfb2fc7fc3af20a3c445",
+    "review_artifact": {
+      "id": null,
+      "bytes": null,
+      "sha256": null
+    },
+    "raw_artifact": {
+      "id": null,
+      "bytes": null,
+      "sha256": null
+    },
+    "receipt_sha256": null,
+    "gguf_sha256": null,
+    "conversion_receipt_sha256": null
+  },
+  "gate": "CRISPEMBED_MOEDERN_COLBERT",
+  "scope": {
+    "F32_only": true,
+    "tensor_count": 32,
+    "hidden": 128,
+    "projection": 16,
+    "layers": 2,
+    "query_heads": 2,
+    "kv_heads": 1,
+    "head_dim": 64,
+    "experts": 8,
+    "top_k": 2,
+    "shared_experts": 1,
+    "dense": 128,
+    "max_tokens": 512,
+    "query_tokens": 32,
+    "batch": 1,
+    "tokenizer_implemented": false,
+    "public_ABI_registered": false,
+    "other_variants": false,
+    "quantization": false,
+    "router_exact_ties": "reject with explicit error; no stable-index substitution claim"
+  },
+  "gates": {
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "maxsim_max_absolute": 0.002,
+    "ids_masks_router_indices_exact": true,
+    "ordinary_dump_repeat_bit_exact": true,
+    "gate0_and_observer_failure_recovery": true,
+    "two_context_ownership": true
+  },
+  "qualification": {
+    "original_reviewed": false,
+    "native_executed": false,
+    "native_parity": false,
+    "retrieval_quality": false,
+    "release": false
+  },
+  "shared_paths": [
+    "src",
+    "ggml",
+    "cmake",
+    "CMakeLists.txt",
+    "VERSION",
+    "Cargo.lock",
+    "python",
+    "flutter",
+    "crispembed",
+    "crispembed-sys",
+    "wasm",
+    "examples",
+    "tools/quantize.cpp",
+    "build-wasm.sh",
+    "build-embed-wasm.sh",
+    "scripts/check-cpu-baseline.py",
+    "scripts/check-bundled-deps.py",
+    ".github/workflows/release.yml",
+    ".github/workflows/release-wasm.yml",
+    "tools/successor_asset_manifest.py",
+    "README.md",
+    "LICENSE",
+    "tools/moedern-colbert/contract.py",
+    "tools/moedern-colbert/reference.py",
+    "tools/moedern-colbert/convert_f32.py",
+    "docs/moedern-colbert-source-contract.json",
+    "tests/fixtures/moedern-colbert/panel-v1.json",
+    ".gitattributes"
+  ],
+  "allowed_new_src": [
+    "src/moedern_colbert.cpp",
+    "src/moedern_colbert.h"
+  ],
+  "limits": [
+    "No model access/build/inference dispatched by this preparation.",
+    "Original and native arrays stay remote; only review reports should be retrieved.",
+    "Owned cases establish numerical/token-ID controls, not representative retrieval quality."
+  ],
+  "normalization_reference": {
+    "sentence_transformers_revision": "b0bf39968ba461c34b29372144794eff1be06f6d",
+    "source": "sentence_transformers/base/modules/normalize.py",
+    "source_sha256": "0f22bbfa174bd71a47ec77743d8a3e15017dce8aea88ac3822b70de88262004e",
+    "semantics": "F.normalize(x,p=2,dim=-1), norm clamped at1e-12; native explicit row norm clamp, not an assumed ggml_l2_norm eps mapping",
+    "author_ggml_epsilon_equivalence": "unproven"
+  }
+}
