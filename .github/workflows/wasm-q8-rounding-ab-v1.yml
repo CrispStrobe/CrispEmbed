@@ -6,7 +6,10 @@ permissions:
   contents: read
   actions: read
 jobs:
+  operator-controls:
+    uses: ./.github/workflows/successor-wasm-rounding-controls.yml
   ab:
+    needs: operator-controls
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:

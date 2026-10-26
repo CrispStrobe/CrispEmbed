@@ -15707,3 +15707,11 @@ an added cache header. The actual historical guard and all numerical limits
 remain unchanged. Thirteen larger-input controls, five FFN controls and four
 candidate source-preservation controls pass; actual WASM operator execution
 remains pending.
+
+The corrected standalone operator dispatch40390724614 was cancelled while its
+controls were queued, before operator compilation. The same operator workflow is
+now a required predecessor of the source-bound model A/B workflow, avoiding a
+second independent queue round trip and duplicate compilation. The model job
+also verifies the completed same-source job and its actual five-record numeric
+receipt before downloading model data. This scheduling change widens no source,
+output or numerical gate. The original40385214740 fixture rejection stays retained.

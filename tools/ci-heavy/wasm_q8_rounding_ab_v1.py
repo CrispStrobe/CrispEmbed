@@ -16,7 +16,7 @@ import zipfile
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT/'tools'),str(Path(__file__).resolve().parent)]
 from wasm_q8_rounding_ab_v1 import (BASE,CANDIDATE_GGML,OLD_GGML,TRACE_RUN,TRACE_SOURCE,
- NEUTRALITY,GATES,canonical,panel,reviewed_spec,trusted_report,source_guard,overlay_ab,
+ NEUTRALITY,GATES,canonical,panel,reviewed_spec,trusted_report,operator_receipt,source_guard,overlay_ab,
  PRODUCER,MODEL_SHA,STAGES,digest,f32_bytes,floats,metrics,tokens,stage_rows,git)
 from successor_wasm_trace_contract import INITIAL_RUN,INITIAL_SOURCE,NATIVE_REPORT_SHA,FIXTURE_ID,FIXTURE_BYTES,FIXTURE_SHA
 from successor_assets import api,artifact,RUNTIME_PATHS
@@ -62,14 +62,37 @@ def pinned_artifact(run,name,path,identity):
  if (actual['id'],actual['size_in_bytes'],actual['digest'])!=expected:raise ValueError('Reviewed trace artifact identity differs')
  return actual
 
+def operator_barrier(out):
+ run=os.environ['GITHUB_RUN_ID'];current=os.environ['GITHUB_SHA']
+ meta=api('actions/runs/'+run)
+ if meta['head_sha']!=current or meta['event']!='workflow_dispatch' or meta['path'] not in ('.github/workflows/ovisocr2-metadata.yml','.github/workflows/wasm-q8-rounding-ab-v1.yml'):
+  raise ValueError('Current operator parent identity differs')
+ jobs=api('actions/runs/'+run+'/jobs?per_page=100')
+ selected=[j for j in jobs['jobs'] if j['name']=='operator-controls / operators' or j['name'].endswith(' / operator-controls / operators')]
+ if jobs['total_count']>100 or len(selected)!=1 or selected[0]['status']!='completed' or selected[0]['conclusion']!='success':
+  raise ValueError('Successful same-source operator job required before model access')
+ identity=artifact(run,'wasm-rounding-operator-controls-'+run,out/'operator-controls.zip',4*1024**2)
+ files=zip_files(out/'operator-controls.zip',16*1024**2)
+ def one(basename):
+  matches=[data for name,data in files.items() if Path(name).name==basename]
+  if len(matches)!=1:raise ValueError('Missing/ambiguous operator receipt: '+basename)
+  return json.loads(matches[0])
+ declaration=json.loads((ROOT/'docs/wasm-q8-rounding-candidate.json').read_text())
+ proof=operator_receipt(one('source.json'),one('controls.json'),current,declaration)
+ proof.update(run=int(run),job=selected[0]['id'],artifact=identity,
+              members={name:{'bytes':len(data),'sha256':digest(data)} for name,data in files.items()})
+ save(out/'operator-proof.json',proof)
+ return proof
+
 def preflight(out):
  hosted();out.mkdir(exist_ok=False);s=spec()
  check=subprocess.run(['git','-C','ggml','cat-file','-e',OLD_GGML+'^{commit}'],cwd=ROOT,stderr=subprocess.DEVNULL)
  if check.returncode:subprocess.run(['git','-C','ggml','fetch','--depth=1','origin',OLD_GGML],cwd=ROOT,check=True,timeout=180)
  guard=source_guard(ROOT,RUNTIME_PATHS)
+ operators=operator_barrier(out)
  cases=panel(s);(out/'browser').mkdir();save(out/'browser/panel.json',cases)
  save(out/'ab.json',{'schema':'crispembed-wasm-q8-rounding-ab-result-v1','source':os.environ['GITHUB_SHA'],
-  'protocol_sha256':sha(SPEC),'panel_sha256':digest(canonical(cases)),'source_guard':guard,'state':'preflight-passed','qualification':False})
+  'protocol_sha256':sha(SPEC),'panel_sha256':digest(canonical(cases)),'source_guard':guard,'operator_controls':operators,'state':'preflight-passed','qualification':False})
 
 
 def package(out,kind,proof):

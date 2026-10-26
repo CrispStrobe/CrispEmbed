@@ -15,6 +15,22 @@ driver=importlib.util.module_from_spec(module);module.loader.exec_module(driver)
 
 class Contract(unittest.TestCase):
  def setUp(self):self.spec=json.loads((ROOT/'docs/wasm-q8-rounding-ab-v1.json').read_text())
+ def test_actual_operator_receipts_precede_model_access(self):
+  declaration={'candidate':'fixed'}
+  source={'schema':'crispembed-wasm-rounding-operator-source-v1','source':'a'*40,'ggml':c.CANDIDATE_GGML,'declaration':declaration,'model_access':False,'qualification':False}
+  rows=[{'control':'converter','passed':True}]+[{'control':'backend','type':t,'indirect':i,'legacy':158,'nearest':189,'passed':True} for t in (8,20) for i in (False,True)]
+  result={'schema':'crispembed-wasm-rounding-operator-result-v1','passed':True,'qualification':False,'controls':rows}
+  c.operator_receipt(source,result,'a'*40,declaration)
+  for key,value in [('source','b'*40),('model_access',True),('ggml',c.OLD_GGML)]:
+   bad=copy.deepcopy(source);bad[key]=value
+   with self.assertRaises(ValueError):c.operator_receipt(bad,result,'a'*40,declaration)
+  for edit in ('missing','wrong-value','duplicate','failure'):
+   bad=copy.deepcopy(result)
+   if edit=='missing':bad['controls'].pop()
+   elif edit=='wrong-value':bad['controls'][1]['nearest']=158
+   elif edit=='duplicate':bad['controls'][1]=copy.deepcopy(bad['controls'][2])
+   else:bad['passed']=False
+   with self.assertRaises(ValueError):c.operator_receipt(source,bad,'a'*40,declaration)
  def test_review_pins_fail_closed(self):
   pending=copy.deepcopy(self.spec);pending['trace']['reviewed']=False
   with self.assertRaisesRegex(ValueError,'independently reviewed'):c.reviewed_spec(pending)

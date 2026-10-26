@@ -65,6 +65,23 @@ def trusted_report(report):
  if not report.get('token_ids') or report['token_ids'][0]!=101 or report['token_ids'][-1]!=102:raise ValueError('First trace token blueprint differs')
  return report
 
+def operator_receipt(source, result, current_source, declaration):
+ if (source.get('schema')!='crispembed-wasm-rounding-operator-source-v1'
+     or source.get('source')!=current_source or source.get('ggml')!=CANDIDATE_GGML
+     or source.get('declaration')!=declaration or source.get('model_access') is not False
+     or source.get('qualification') is not False):
+  raise ValueError('Operator source receipt differs from the current candidate')
+ if (result.get('schema')!='crispembed-wasm-rounding-operator-result-v1'
+     or result.get('passed') is not True or result.get('qualification') is not False):
+  raise ValueError('Actual operator controls have not passed')
+ rows=result.get('controls',[])
+ if len(rows)!=5 or rows[0].get('control')!='converter' or any(r.get('passed') is not True for r in rows):
+  raise ValueError('Incomplete operator control coverage')
+ if ({(r.get('type'),r.get('indirect')) for r in rows[1:]}!={(8,False),(8,True),(20,False),(20,True)}
+     or any(r.get('control')!='backend' or r.get('legacy')!=158 or r.get('nearest')!=189 for r in rows[1:])):
+  raise ValueError('Actual operator values or backend coverage differ')
+ return {'source':source,'result':result}
+
 def git(root,*args):return subprocess.check_output(['git',*args],cwd=root,text=True,encoding='utf-8').strip()
 
 def source_guard(root,runtime_paths):

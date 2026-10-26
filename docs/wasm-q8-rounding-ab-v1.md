@@ -107,3 +107,11 @@ A/B remain dependencies. Even an entirely passing numerical panel would not
 establish representative task accuracy, qualify release assets or promote a
 default. A production asset change requires new immutable producers and fresh
 consumers after review.
+
+The workflow now runs the reusable weight-free operator job first. The model
+job has an explicit dependency and validates that completed job's current-run
+source, exact candidate declaration and all five actual numeric control records
+before downloading model data. It preserves the operator artifact's ZIP/member
+identities in `operator-proof.json`. A failed or missing operator receipt blocks
+the model job; source checks alone cannot satisfy this barrier. The standalone
+operator phase remains available for separate bounded debugging.
