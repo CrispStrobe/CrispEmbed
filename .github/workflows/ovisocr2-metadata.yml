@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, successor-consumer, successor-corpus, successor-wasm-trace, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, successor-consumer, successor-apple-only, successor-corpus, successor-wasm-trace, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -187,6 +187,13 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-trace'
     needs: controls
     uses: ./.github/workflows/successor-wasm-trace.yml
+  successor-apple-only:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-apple-only'
+    needs: controls
+    uses: ./.github/workflows/successor-apple-only.yml
+    with:
+      native_run: ${{ inputs.native_run_id }}
+      corpus_run: ${{ inputs.candidate_run_id }}
   successor-corpus:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-corpus'
     needs: controls
