@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 25 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 26 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -21,9 +21,9 @@ The bounded converted-weight cache experiment is complete in
 the three-pair warm median gain is only0.797%, with one slower pair and increased
 RSS. Do not repeat its successful model runs for the corrected manifest adapter.
 
-1. **Numerical attribution:** independently compare quantized weights/activation
-   semantics before another precision selection; separately trace the2048
-   original-embedding versus composed native-vision normalization difference.
+1. **Numerical attribution:** finish the frozen four-grid interpolation A/B and
+   eleven-case first-F16 quality replay. Any later precision selection needs new
+   development/evaluation inputs after the completed same-weight FFN isolation.
    Preserve all failed recipes, raw strict flags and the unqualified2048 path.
 2. **Next permissive implementation:** MI-GAN single-resolution still-image
    references and native F32 prototype, or the next declared OCR source audit.
@@ -240,17 +240,21 @@ Require affected exact-source checks again for each new implementation change.
   Cloud deployment and collaboration remain separate optional product decisions.
   Exact scopes and dependencies: [consumer handoff](docs/current-state-and-next-steps.md).
 
-- [ ] **Issue71 MI-GAN still-image prototype:** use the completed
-  [source/blueprint feasibility audit](docs/inpainting-feasibility.md) and pinned
-  [source receipt](docs/inpainting-source-contract.json). Choose one256/512
-  resolution, verify exact MIT checkpoint payload/config/tensor inventory and
-  preserve copied-helper notices or implement the graph independently. Freeze
-  original RGB/mask/block/final-output references, including white=fill polarity,
-  empty/full/edge/nonbinary masks, before native F32 work. Require stage errors,
-  known-pixel preservation, final image quality, scoped latency/RSS and actual
-  gated APIs before any model registry/publication. Batching, text-derived masks
-  and temporal propagation are separate lanes. LaMa remains held on authoritative
-  checkpoint terms and unimplemented FFT/complex semantics. Issue71 stays open.
+- [ ] **Issue71 MI-GAN still-image prototype:** finish actual hosted replay of
+  the fixed256 Places2 original reference. Candidate branch
+  `test/migan-reference-dispatch-20261026` at2526fcac consumes reviewed
+  original40330674649; corrected native40344396533 is pending. Preserve the
+  initial40336246545 stale-view observer rejection and all256 failed captures. Require all494 declared
+  stage comparisons across eight fixtures, actual original/raw byte rechecks,
+  ordinary/observer neutrality, eight malformed-model rejections, known-pixel
+  preservation, final fill-pixel metrics and scoped latency/RSS. Keep the path
+  default-off and excluded from ordinary runtime artifacts. An optional
+  [M1 build-only handoff](docs/handover-m1-migan-build.md) needs no model/framework
+  downloads and does not replace the owning Linux numerical panel. Do not call source
+  preparation or a queued build qualification. Public APIs/registry/model
+  publication, real subtitle/perceptual quality,512resolution, batching,
+  text-derived masks and temporal propagation are separate follow-ups.
+  LaMa remains held on checkpoint terms and FFT semantics. Issue71 stays open.
 
 ## OCR portfolio and performance carry-forward
 
@@ -378,6 +382,8 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
+| 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
 | 2026-10-26 | `audit/ultrabert-rope-20261026` | Frozen-input UltraBERT RoPE operator attribution | Test actual original rotation and ggml coefficients using preserved arrays; retain strict failures and budgets, no full-model gold recapture or default change. Hosted builds/operators only. |
 | 2026-10-26 | `feat/migan-reference-20261026` | MI-GAN256 Places2 original reference, F32 conversion and bounded native prototype | Freeze hosted original evidence before native results; separate native prototype branch uses exact154-tensor contract and default-off CPU/F32 path. No local inference, API/registry/video qualification or model publication. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
@@ -521,13 +527,13 @@ before any gated correction; this result does not qualify2048 or waive budgets.
   the combined receipt. Preserve original source ac1bb9cb, all initial failures,
   calibrated budgets, pixels, gold, caps and raw strict flags. Download large
   arrays only inside hosted CI; keep shared-host work to small reports.
-- [ ] Trace the first composed vision/output divergence through prefill layer23
-  and final norm. Compare original-module and native values/magnitudes before
-  normalization, source-fed vision projection/reduction and original-embedding
-  isolation. Use `tools/dump_ovisocr2_reference.py`,
-  `tools/ci-heavy/ovisocr2_large_inputs.py`, `tests/test_qwen35_vision.cpp`,
-  `tests/test_qwen35_decoder.cpp` and crispembed-diff. A prepared replay passing
-  does not identify RMS normalization as the defective operator.
+- [ ] Finish the source-order interpolation alternative's actual composed A/B
+  and first-F16 replay from `audit/ovis-2048-attribution-20261026`.
+  Current composed40338087357 and quality40334662677 are pending. Literal0
+  must reproduce every retained ordinary vector and the historical failure set;
+  literal1 must pass all unchanged gates, with raw strict flags retained.
+  Local norm and position operator results are archived in HISTORY. They do not
+  qualify the2048 boundary or authorize a default change.
 - [ ] Before any runtime/bound/preset promotion, keep an experimental gate and
   require all original14 numerical/decoded checks at each grid, owning OCR,
   rejection/recovery and final-source frozen14/eleven-case first-F16 controls.
@@ -569,3 +575,39 @@ default engines and the three experimental gates. Acceptance requires actual
 selected-library identity, empty-cache model hash resolution, output/confidence,
 cap/custom-prompt rejection and fallback-stage behavior. Record the consumer
 source/artifact proof separately; do not claim it from vendor component parity.
+
+
+## Active four-lane closure — remaining execution gates
+
+- [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
+  gated source/tooling and run final/merged-source checks. Preserve initial
+  queued cancellations and all historical numerical/quantization rejections.
+- [ ] Finish MI-GAN's bounded original-versus-native prototype above; a negative
+  result requires earliest-stage attribution/fix or an explicit retained limit,
+  not a widened threshold. Full issue71 product surfaces remain separate.
+- [ ] Preserve later January archives before expiry; the urgent November Ovis3
+  copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
+  recorded source identities and renewal dates when reviewed.
+- [ ] Execute UltraBERT frozen-input RoPE40336758177 fromb689f871 and review
+  magnitudes/table drift/source-fed controls. Keep183 F32/1294 F16 historical
+  stage failures and strict replay failures; never regenerate their gold.
+- [ ] Review the SciFact original-only preparation on
+  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
+  explicitly dispatch its
+  eight-original→freeze→eight-native panel with the reviewed preparation run and
+  receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
+  gates and predeclared ranking tolerances stay unchanged. Preserve author gold
+  mapping differences and all applicable dataset notices. Public pairs and
+  model publication remain separate from this representative retrieval audit.
+- [ ] Finish successor actual archive consumers from
+  `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
+  unpublished WASM40339800364, then packaged consumers. WASM build completion
+  is recorded in HISTORY; executable browser consumers still require the native
+  producer. Audit helpers may advance only with exact production/build/binding
+  Git objects, producer pairing and generator provenance retained.
+  This candidate advances development manifests to0.17.14 for mobile dependency
+  packaging corrections; main remains0.17.13 until reviewed integration. Require
+  actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
+  cross-link evidence. Device execution and optional GPU assets remain explicit
+  limits. Repeat qualification on the final integrated source when runtime
+  paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.

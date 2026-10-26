@@ -15627,3 +15627,53 @@ now checks every retained ordinary vector SHA, context markers are required,
 and the baseline control succeeds only when its old numerical failure set is
 reproduced exactly. The six old failures stay explicit numerical failures;
 a positive baseline byte-control is separate from candidate qualification.
+
+## 26 October 2026 — completed operator/reference evidence before remaining panels
+
+[Norm isolation40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at91292cb0 reproduces all12 original anchors exactly. Actual original RMSNorm
+on the same native input differs by at most3.05176e-5; applying it to native
+hidden states reproduces the composed failure. This supports upstream error
+amplification, not a local normalization fix or relaxed budget. The separate
+[position operator40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf matches all five tested grids' coordinates/indices/weights/position
+vectors exactly. Unset/literal0 retain ordinary position/patch bytes; native
+patch error remains3.81470e-6. Composed and first-F16 replays remain pending.
+
+[MI-GAN original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 completes eight deterministic256fixtures, two neutral238-stage
+captures and lossless154-F32-tensor conversion. First observed checkpoint SHA
+is8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f;
+converted25,185,504-byte GGUF isb8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b.
+The reviewed receipt is retained on candidate2849cb78. No native, perceptual,
+video, API or publication qualification follows from that reference result.
+
+The successor candidate40a82158 prepares immutable archive/member manifests
+and compiled/package consumers. Independent source review fixes doubled WASM
+extraction, Android's omitted shared ggml dependencies and iOS's unmerged static
+dependencies. Eight small archive/layout controls pass; actual compiled consumers
+are pending. Candidate development manifests advance to0.17.14; no tag exists,
+main and the app retain their previous versions until separate integration.
+All source preparation and queued workflows remain explicitly unqualified.
+
+
+## 26 October 2026 — first MI-GAN native result and unpublished WASM bytes
+
+Native40336246545/2849cb78 compiles and completes all8 cases after exact original
+transport/member checks. Final raw max1.40667e-5, known-pixel errors0 and all8
+image gates pass. Both full captures preserve ordinary/observed final bits, but
+128 intermediate observations each are stale, retaining256 failures among494
+comparisons. The first stale input SHA equals a later valid convolution output;
+pinned gallocr frees its unretained view owner. Test-only correction2526fcac
+retains owner chains, adds a tiny old-versus-fixed allocation regression and
+requires all8 original ordinary-final SHAs. Full retry40344396533 remains pending;
+no operator, original target or numerical budget changes.
+
+Unpublished WASM40339800364/40a82158 completes at candidate development0.17.14.
+Its actual manifests bind both bundles and all9 file members: embed archive
+523,299B/SHA3f65d7cb and OCR archive1,280,866B/SHAe1571ac9. OCR module3,676,523B
+passes its existing4MiB cap. The small manifest is independently inspected;
+bundle/browser/native consumers remain separate pending checks. Producer pairing
+and exact production/build/binding objects protect audit-only helper updates;
+actual producer and consumer sources are recorded separately. No release tag,
+model qualification or application0.17.12 pin changes.
