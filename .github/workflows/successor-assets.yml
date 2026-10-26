@@ -8,6 +8,9 @@ on:
       wasm_run:
         type: string
         required: true
+      corpus_run:
+        type: string
+        required: true
   workflow_dispatch:
     inputs:
       native_run:
@@ -18,6 +21,10 @@ on:
         type: string
         required: true
         description: 'Successful exact-source unpublished Release WASM run ID'
+      corpus_run:
+        type: string
+        required: true
+        description: 'Successful frozen PosFormer Linux image-byte proof run ID'
 permissions:
   contents: read
   actions: read
@@ -181,11 +188,16 @@ jobs:
         env:
           PRODUCER_RUN: ${{ inputs.native_run }}
         run: python tools/ci-heavy/successor_assets.py --run "$PRODUCER_RUN" --kind native --artifact macos-arm64 --output "$RUNNER_TEMP/apple-candidate"
-      - name: Exact existing corpus renderer and published model
+      - name: Pinned image decoder
+        run: python -m pip install Pillow==12.3.0
+      - name: Retained exact original image bytes from successful Linux proof
+        env:
+          CORPUS_RUN: ${{ inputs.corpus_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/ci-heavy/successor_posformer_corpus.py consume --run "$CORPUS_RUN" --corpus "$GITHUB_WORKSPACE/.ci/CrispMath/.dart_tool/inference/handwriting-corpus" --report "$RUNNER_TEMP/apple-corpus-receipt.json"
+      - name: Published model
         working-directory: .ci/CrispMath
         run: |
-          python -m pip install Pillow==12.3.0
-          python tool/provision_handwriting_quality.py
           curl --fail --location --retry 3 https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/230657859144cc43a88605a4e737b47929181d4c/posformer-crohme-q8_0.gguf --output posformer-q8.gguf
           echo '450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4  posformer-q8.gguf' | shasum -a 256 --check
       - name: Actual released Apple library versus candidate unset, literal1 and legacy0
@@ -196,6 +208,7 @@ jobs:
           name: successor-apple-released-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/apple-candidate/consumer.json
+            ${{ runner.temp }}/apple-corpus-receipt.json
             ${{ runner.temp }}/apple-released/*.json
             ${{ runner.temp }}/apple-released/*-logs/
           retention-days: 90

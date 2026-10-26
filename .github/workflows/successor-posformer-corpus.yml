@@ -1,0 +1,40 @@
+name: Reproduce frozen PosFormer image bytes
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  reproduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: CrispStrobe/CrispMath
+          ref: 23f1470df0a0853234880ac7e0c6135fd4c02f59
+          path: .ci/CrispMath
+          sparse-checkout: tool
+          filter: blob:none
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -B -m unittest discover -s tests -p test_successor_posformer_corpus.py
+      - run: python -m pip install Pillow==12.3.0
+      - name: Reproduce every original PNG hash before preservation
+        run: python tools/ci-heavy/successor_posformer_corpus.py prepare --app "$GITHUB_WORKSPACE/.ci/CrispMath" --output "$RUNNER_TEMP/verified-corpus" --report "$RUNNER_TEMP/corpus-report.json"
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: posformer-frozen-corpus
+          path: ${{ runner.temp }}/verified-corpus/
+          if-no-files-found: error
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: posformer-frozen-corpus-report
+          path: ${{ runner.temp }}/corpus-report.json
+          if-no-files-found: error
+          retention-days: 90
