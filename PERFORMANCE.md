@@ -6760,3 +6760,16 @@ Observed full-case processes take3.93–4.25s with peak RSS2,264,284KiB; this
 includes ordinary plus retained-observer graphs/reference comparison. These are
 diagnostic measurements, not a paired speedup or a production memory budget.
 The original uses four threads; no cross-backend/representative/video claim.
+
+## UltraBERT local RoPE attribution,26 October2026
+
+Actual40336758177/b689f871 uses seven frozen inputs and original functions,
+with no checkpoint/full-model forward. All1,344 comparisons/336 bit controls
+pass. Worst ordinary coefficient absolute error3.05157e-5; Q1.37925e-4;
+K1.61648e-4 (RMS8.86829e-6, original max21.2058); minimum Q/K row cosine
+0.999999999867789. All336 frozen/current table fields and source-fed native
+Q/K fields are exact. These are local numerical measurements, not a speed,
+full-stage parity or task-quality result. Empty rotation is exact, excluding it
+as the cause of the earliest empty pre-RoPE Q drift. Preserve historical gates
+and prioritize the separately declared complete SciFact audit. See the
+[receipt](tests/results/ultrabert/rope-attribution.json).
