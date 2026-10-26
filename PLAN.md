@@ -394,9 +394,11 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-26 | `integration/bounded-closure-20261026` | Review-only integration of active audit/model lanes | Recoverable checkpoint7d06b016; runtime remains f3f1b9e7/a06 with both new defaults OFF. Actual Mac40399358753 compatibility is reviewed; rounding40391544739 rejects8/10 finals and layer3 attribution40415950220 is pending. SciFact40375626336 originals/freeze pass; native/ranking, remaining Ovis grids and final fresh assets/all consumers still required. New-model original capture precedes native/API qualification. Main integration, complete docs/mirror and final checks close the authorized loop. |
 | 2026-10-26 | `test/wasm-layer3-attribution-20261026` | Test-only earliest remaining WASM operator attribution | Actual580e3ae rounding A/B40391544739 rejects8/10 finals; preserve negative, old anchors and0.002/0.99999. Trace first layer3 suboperation using exact retained model/input, check observation neutrality, compare same-input conversions/dots on hosted CI. No production/default or gold changes. |
 | 2026-10-26 | `feat/moedern-native-1p5m-20261026` | Smallest MoEdern native token-ID/role prototype | Source preparation only until original40412164041 is reviewed. Strict32-tensor CPU/F32 graph, all query/document masks and128-vectors/MaxSim, original-module and neutral native dumps. Root owns shared API/build integration; all compilation/model work hosted. Wider variants/tokenizer/public surfaces remain separate gates. |
 | 2026-10-26 | `feat/moedern-colbert-20261026` | Requested SauerkrautLM-MoEdernColBERT family:1.5M→27M→115M and author GGUF variants | Source/license/base audit first; freeze original tokenizer, hash routing, token projection/masks/normalization and MaxSim before native outputs. Start smallest, retain original-first intermediate and task parity, then public C/Python/Rust/Dart surfaces. Hosted builds/models only; preserve existing model gates. |
+| 2026-10-26 | `feat/josev-head-schema-20261026` | Strict original-first Josev joint-head schema and F32 conversion | Derive122 tensors from the pinned original class, retain BF16/F32 source dtype and exact F32 promotion, require reviewed original loaded-head identities before conversion. Source-only preparation; no local weights/frameworks or native quality claim. Joint-head math and full Qwen3.5-2B integration remain subsequent gates. |
 | 2026-10-26 | `audit/josev2b-20261026` | Requested mayflowergmbh/Josev-2B architecture and typed-decision port | Pin Apache-tagged checkpoint/base/code/head sources; trace joint-schema inference and calibration before choosing shared Qwen3.5 or dedicated path. Original-first reference and native decision/output gates, then integration. Source audit first; all large model/GPU work remote and separately scoped. |
 | 2026-10-26 | `integration/bounded-closure-20261026` | Combine frozen lane sources and final immutable consumers | Preserve producer branches; require actual pending panels, independent merge review and final same-source native/WASM producers/consumers before main integration. |
 | 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Canonical v2 preparation is reviewed after strict-v1 rejection and complete legacy/author provenance. Full40375626336 at frozene35 runs8 originals→freeze→8 native→aggregate; exact5483 rows and unchanged ranking/vector gates. No pair API or model publication. |
@@ -743,3 +745,22 @@ continue on their frozen branches. Do not alter those producer sources.
 Actual permissive source/license bytes are inspected and pinned; this source
 audit is distinct from model execution and qualification. Keep new runtime paths value-parsed and
 experimental until their own original/intermediate/final-output gates pass.
+
+### Josev joint-head artifact preparation (26 October 2026)
+
+- [x] Derive the exact 122-tensor / 30,472,708-parameter head schema from the
+  pinned publisher class; prepare an original-first F32 component converter and
+  eight standard-library controls. See [conversion protocol](docs/josev2b-head-conversion.md).
+  No checkpoint conversion or native inference has executed.
+- [ ] Review the completed original capture at worker
+  `2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`, including all seven source hashes,
+  actual tokenizer/span freeze, four observer/repeat-neutral cases and every
+  checkpoint-promoted/loaded-head F32 hash. Corrected GPU bootstrap is
+  `c9aa40b761846aa1a4a24d67d32f1c107a22ecd2`; actual outcome remains pending.
+- [ ] Convert the separate head on hosted resources using that reviewed receipt;
+  preserve license/notices and verify exact GGUF dimensions and payload hashes.
+  Then implement the gated native head and compare actual hidden-row/lexical/span
+  inputs through projections, routing, field decoder, logits and probabilities
+  with the dumper and crispembed-diff. Compose only after parity with an explicit
+  Qwen3.5-2B hidden-only prefill profile. Keep the official no-extra-temperature
+  route distinct from author-GGUF calibration. No public alias or release yet.

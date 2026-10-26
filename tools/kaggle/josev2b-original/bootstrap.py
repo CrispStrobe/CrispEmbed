@@ -16,15 +16,15 @@ import time
 import venv
 import zipfile
 
-WORKER_SOURCE = '1e723a96f8fed0ea34b0e071e88f29561a315aaa'
-CONTRACT_SHA = '39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460'
+WORKER_SOURCE = '2133cfa12dbdd25653fd68b1a6054f69f80f7e9c'
+CONTRACT_SHA = '6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da'
 WHEELS = {'torch': {'url': 'https://files.pythonhosted.org/packages/d4/5a/7c50ba1b7b713d71d34669c6d13dab0a11531a3eceb0307a5162dbfec0f7/torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'filename': 'torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'bytes': 526602329}, 'torchvision': {'url': 'https://files.pythonhosted.org/packages/32/db/062cdb5a84380a60439775311fff34d89229760d2a50680393dc18699956/torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'filename': 'torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'bytes': 7674669}}
 PIP_BOOTSTRAP = {'url': 'https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70', 'sha256': 'fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70', 'bytes': 1819850, 'filename': 'pip-26.2.2-py3-none-any.whl'}
 OUT = Path('/kaggle/working/josev2b-original')
 SCRATCH = Path('/tmp/crispembed-josev2b-original-v1')
 REPORT = {'schema': 'crispembed-josev2b-bootstrap-v1', 'conclusive': False,
           'status': 'preflight', 'retry_permitted': False, 'worker_source': WORKER_SOURCE,
-          'runtime_profile': 'cuda-f32-python313-v2', 'python_expected': '3.13',
+          'runtime_profile': 'cuda-f32-python313-v3-locked', 'python_expected': '3.13',
           'contract_sha256': CONTRACT_SHA, 'commands': [], 'model_payload_accessed': False,
           'limits': 'Original-only four owned text cases; no native or quality qualification.'}
 
@@ -81,6 +81,34 @@ def isolated_environment(env):
     return python
 
 
+def locked_requirements(repo, cfg):
+    declaration=cfg['environment_lock']
+    lock_path=repo/declaration['path'];requirements=repo/declaration['requirements_path']
+    if digest(lock_path)!=declaration['sha256'] or digest(requirements)!=declaration['requirements_sha256']:
+        raise ValueError('reviewed complete environment lock/requirements SHA differs')
+    lock=json.loads(lock_path.read_text())
+    if len(lock['packages'])!=declaration['packages'] or lock['roots']!={k:v for k,v in cfg['runtime'].items() if k!='python_minor'}:
+        raise ValueError('complete locked root profile/count differs')
+    rows={row['name']:row for row in lock['packages']}
+    for name,original in WHEELS.items():
+        row=rows[name]
+        actual={'url':row['url']+'#sha256='+row['sha256'],'filename':row['filename'],
+                'sha256':row['sha256'],'bytes':row['bytes']}
+        if actual!=original:raise ValueError('original framework wheel changed: '+name)
+    shutil.copy2(lock_path,OUT/'environment-lock.json')
+    shutil.copy2(requirements,OUT/'requirements.lock')
+    REPORT['environment_lock']=declaration
+    save()
+    return requirements
+
+
+def install_locked(python, requirements, env):
+    # No live transitive resolution: all57 wheel URLs and hashes are frozen.
+    run('install-original', [python,'-m','pip','install','--no-deps','--require-hashes',
+        '--only-binary=:all:','--index-url','https://pypi.org/simple','-r',requirements],
+        timeout=1500, env=env)
+
+
 def main():
     if OUT.exists() or SCRATCH.exists():
         raise ValueError('fresh task-owned paths required; earlier attempts must be preserved')
@@ -127,15 +155,23 @@ def main():
                    HF_HOME=str(SCRATCH/'hf'), OMP_NUM_THREADS='2', MKL_NUM_THREADS='2',
                    OPENBLAS_NUM_THREADS='2', HF_HUB_DISABLE_TELEMETRY='1', TOKENIZERS_PARALLELISM='false')
         env.update(PIP_CONFIG_FILE=os.devnull, PIP_USER='0')
-        python = isolated_environment(env)
-        requirements = [wheel['url'] for wheel in WHEELS.values()]
         cfg = json.loads((repo/'docs/josev2b-source-contract.json').read_text())
-        requirements += [name+'=='+version for name,version in cfg['runtime'].items()
-                         if name not in ('python_minor','torch','torchvision')]
-        run('install-original', [python,'-m','pip','install','--index-url','https://pypi.org/simple',*requirements],
-            timeout=1500, env=env)
-        # pip check and exact source checks run before checkpoint access.
+        if cfg['runtime_profile']!=REPORT['runtime_profile']:
+            raise ValueError('explicit reviewed runtime profile differs')
+        requirements = locked_requirements(repo,cfg)
+        python = isolated_environment(env)
+        prefix=SCRATCH/'venv'
+        env['CRISPEMBED_JOSEV_EXPECTED_VENV']=str(prefix)
+        verifier=repo/'tools/josev2b_environment.py'
+        run('verify-isolated-prefix', [python,verifier,'verify-isolation','--expected-prefix',prefix,
+            '--report',OUT/'isolated-prefix.json'],env=env,timeout=60)
+        run('verify-complete-lock', [python,verifier,'verify-lock','--report',OUT/'lock-preflight.json'],env=env,timeout=60)
+        install_locked(python,requirements,env)
+        # All installed wheel metadata, versions and loaded module origins precede
+        # CUDA smoke, original source checks, tokenizer and checkpoint access.
         run('pip-check', [python,'-m','pip','check'], env=env, timeout=60)
+        run('verify-installed-environment', [python,verifier,'verify-installed','--expected-prefix',prefix,
+            '--import-runtime','--report',OUT/'installed-environment.json'],env=env,timeout=120)
         cuda_smoke = """import json, torch
 assert torch.cuda.is_available()
 torch.backends.cuda.matmul.allow_tf32=False
@@ -150,6 +186,8 @@ print(json.dumps({'torch':torch.__version__,'cuda':torch.version.cuda,
 """
         run('cuda-runtime-smoke', [python,'-c',cuda_smoke], env=env, timeout=60)
         run('source-controls', [python,'tests/test_josev2b_contract.py','-v'], cwd=repo, env=env, timeout=60)
+        run('environment-controls', [python,'tests/test_josev2b_environment.py','-v'], cwd=repo, env=env, timeout=60)
+        run('head-identity-controls', [python,'tests/test_josev2b_head_identity.py','-v'], cwd=repo, env=env, timeout=60)
         (OUT/'wheel-pins.json').write_text(json.dumps(WHEELS,indent=2)+'\n')
         # Preserve logs and partial reference outputs; model downloads stay in scratch.
         REPORT['model_payload_accessed'] = 'worker_phase_entered; see worker receipt for actual access'
