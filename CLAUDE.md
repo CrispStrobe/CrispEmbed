@@ -240,8 +240,11 @@ The default-off per-backend candidate is under actual
 [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
 at`580e3ae3`: [actual weight-free operators](tests/results/packaging/wasm-rounding-operators.json)
 now pass all five records,158/189 outputs, backend isolation and cached plans.
-The frozen ten-case native/browser model A/B remains pending. Neither source
-review nor operator success permits a default or model promotion.
+The [completed model A/B](tests/results/packaging/wasm-rounding-ab-v1.json)
+rejects8/10 finals despite preserved legacy/observer/context controls. Attention0
+improves to1.19e-7 and layers0–2 remain below9.54e-7; first remaining divergence
+is layer3 max0.00291893, then encoder_out0.02850568. Keep default off and use
+same-input earliest-operator replay before another candidate. No gate is widened.
 The [prepared final-integrated-v1 validator](docs/ovisocr2-final-integrated-v1.md)
 pins the exact assembled runtime, references, helpers and six binaries without
 weakening historical guards. Its13 small controls and actual retained quality

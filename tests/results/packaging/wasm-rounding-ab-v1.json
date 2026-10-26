@@ -1,0 +1,4722 @@
+{
+  "schema": "crispembed-wasm-rounding-ab-review-v1",
+  "run": 40391544739,
+  "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+  "outcome": "completed-rejected-numerical",
+  "qualification": false,
+  "producer_report_sha256": "85102ccff26f3579f050a62a2747ef3f423b2546fc4dd9454e5b12663be76526",
+  "review_artifact": {
+    "id": 12692262412,
+    "bytes": 503633,
+    "zip_sha256": "6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047"
+  },
+  "raw_artifact_remote_only": {
+    "id": 12692387342,
+    "bytes": 2357641,
+    "zip_sha256": "0ac59ef65d00c4f267791b47323dc5705a958bdfab4805e1f8337d2eb6da65da"
+  },
+  "independent_review": {
+    "final_comparisons_recomputed": 80,
+    "vectors_source_sha256_rehashed": true,
+    "legacy_final_and_full_stage_anchors_exact": true,
+    "raw_arrays_downloaded_locally": false,
+    "budgets_unchanged": {
+      "max_abs": 0.002,
+      "min_cosine": 0.99999
+    },
+    "failed_final_cases": 8,
+    "next_boundary": "layer_3; same-input operator attribution required",
+    "peer_review": {
+      "token_log_controls_exact": 110,
+      "native_vector_and_json_hash_controls": 20,
+      "old_packaged_diagnostic_neutral_pairs": 10,
+      "candidate_ordinary_dump_neutral_pairs": 40,
+      "legacy_final_byte_anchors": 30,
+      "final_metrics_recomputed": 80,
+      "interleaved_vector_and_token_controls": 4,
+      "crispembed_diff_log_rows_exact": 64,
+      "legacy_full_stage_hash_anchors": 48,
+      "non_numerical_control_failures": 0,
+      "raw_arrays_accessed": false,
+      "qualification": false
+    }
+  },
+  "producer_metrics": {
+    "schema": "crispembed-wasm-q8-rounding-ab-result-v1",
+    "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+    "protocol_sha256": "ed1968c45b01b6027ade3c60f083022b226efed4b960a5089118ba0d0158d465",
+    "panel_sha256": "d01c0fcc3046bf1c3a1024f890e1c721852052b2cfc84f37e7b7c4e4f2b03406",
+    "source_guard": {
+      "base": "973b200edd5d1d7429edecff1bd3ff42f0d80ca7",
+      "producer": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+      "encoder_sha256": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+      "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "dependency_files": {
+        "include/ggml-cpu.h": {
+          "base_sha256": "316279e004cdeb8e6ef78599acb602bf79a8abdf897fed9fd1914808c1518c6e",
+          "candidate_sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae"
+        },
+        "src/ggml-cpu/arch/wasm/quants.c": {
+          "base_sha256": "defc3f28aa882d52a390d4573f5308ddc3aa95c5f487bbdaf311e7b0874493b3",
+          "candidate_sha256": "0f842b90c7fd3f83c7591454d85ac21985b3e572c21bc0f781f5159f751e0a42"
+        },
+        "src/ggml-cpu/ggml-cpu-impl.h": {
+          "base_sha256": "e7008069e3e46f1db5e3d2eaafb4ddec3c7d0ece5c0454f99c5a8e33a50f20ba",
+          "candidate_sha256": "0a2fc96b34833c1a952d17b8232f3f714f8391e7b78f0be507c92e257fd525d0"
+        },
+        "src/ggml-cpu/ggml-cpu.c": {
+          "base_sha256": "7cf141bad746526b0bd87b08d2a7557759035a4b9ab2755f4ecccf99b3f9cb17",
+          "candidate_sha256": "b8c04a65c4ee295428501c0951c52b334920fef9101cb100061731b1b9fbee94"
+        },
+        "src/ggml-cpu/ggml-cpu.cpp": {
+          "base_sha256": "c35e6337ddadb2fcc86c888528ba1f3991b6761947c3ec81debcfbf6b56d7f9e",
+          "candidate_sha256": "898063fa671f65e5cee7b9a6520e7fedf2125765015f5c16eb3675be2c79af7e"
+        },
+        "src/ggml-cpu/quants.h": {
+          "base_sha256": "918d6755b3e601ec7bb83c7dbf1d73304490651ccbb4072b0d31a2b45df751da",
+          "candidate_sha256": "02457a2e34ffb102ad046868f2087d1f07e744b36cbb6ffee9ad5295e78a6781"
+        },
+        "tests/test-wasm-q8-rounding.cpp": {
+          "base_sha256": null,
+          "candidate_sha256": "bc930d5da844df31e5868e1ad28bc8389952809d5f6b218a043421b9e276f960"
+        },
+        "tests/wasm-q8-rounding/CMakeLists.txt": {
+          "base_sha256": null,
+          "candidate_sha256": "e3cd46be12d5607b1e0aee31a6e118e06de64f6b4597fb4b97442670008353e6"
+        }
+      },
+      "unchanged_paths": [
+        "cmake",
+        "CMakeLists.txt",
+        "VERSION",
+        "Cargo.lock",
+        "examples",
+        "python",
+        "flutter",
+        "crispembed",
+        "crispembed-sys",
+        "wasm",
+        "tools/quantize.cpp",
+        "build-wasm.sh",
+        "build-embed-wasm.sh",
+        "scripts/check-cpu-baseline.py",
+        "scripts/check-bundled-deps.py",
+        "tools/successor_asset_manifest.py",
+        ".gitattributes",
+        ".github/workflows/release.yml",
+        ".github/workflows/release-wasm.yml",
+        "README.md",
+        "LICENSE"
+      ]
+    },
+    "state": "completed-rejected",
+    "qualification": false,
+    "old_panel_freeze_sha256": "5e5870ea9f21709a6cbb79125c01c7638877bbd66b9d1b2eae9d00e4a77be2c3",
+    "failures": [
+      "original/1 final gates",
+      "empty/1 final gates",
+      "punctuation-currency/1 final gates",
+      "mixed-scripts/1 final gates",
+      "whitespace/1 final gates",
+      "numbers/1 final gates",
+      "near-limit/1 final gates",
+      "truncating/1 final gates",
+      "original/1/stage/1/layer_3",
+      "original/1/stage/1/layer_4",
+      "original/1/stage/1/encoder_out",
+      "original/1/recomputed-mean/1",
+      "original/1/stage/2/layer_3",
+      "original/1/stage/2/layer_4",
+      "original/1/stage/2/encoder_out",
+      "original/1/recomputed-mean/2"
+    ],
+    "first_sentence_stages": {
+      "unset": {
+        "1": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "824b0a36518528140eccadcd522831225aefbbe9655fb4e0c4f53d42946bbe77",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.08330392837524414,
+              "mean_abs": 0.00441886245582484,
+              "rms": 0.0058155582387408675,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 12.834886076359929,
+              "cosine": 0.999683600667877,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.6641055345535278,
+              "wasm_max": 4.154519081115723
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 0.0833039283752,
+              "mean_abs": 0.00441886251792,
+              "rms": 0.00581555813551,
+              "cos_min": 0.99951761961,
+              "cos_global": 0.999683618546,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 12.8348865509
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "4f540dd2ce00e1d484dc38a04cf1d91bf985c1c689de2072013013c3807ba308",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.06821545958518982,
+              "mean_abs": 0.009029158700425595,
+              "rms": 0.011840132400377658,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.118545619019116,
+              "cosine": 0.9997993610106656,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.156374216079712,
+              "wasm_max": 8.13119888305664
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 0.0682154595852,
+              "mean_abs": 0.00902915839106,
+              "rms": 0.0118401320651,
+              "cos_min": 0.999430954456,
+              "cos_global": 0.999799370766,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.1185455322
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "48362198843ba694232c39bf39a6153f2d5f629ae1aec1ad963531358011cf7f",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0647515058517456,
+              "mean_abs": 0.011450702449666197,
+              "rms": 0.01482371086118023,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.302219035540965,
+              "cosine": 0.999672385740351,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.0549163818359375,
+              "wasm_max": 7.993314743041992
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 0.0647515058517,
+              "mean_abs": 0.0114507023245,
+              "rms": 0.0148237105459,
+              "cos_min": 0.999498069286,
+              "cos_global": 0.999672412872,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.3022193909
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "9608472f57ad76784e7978a8b38d1055368b8911a3b52265b8640f946a21b5d4",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.07281601428985596,
+              "mean_abs": 0.013941443184977389,
+              "rms": 0.018214235143410206,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.79021668436704,
+              "cosine": 0.9995176216892927,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.409307479858398,
+              "wasm_max": 9.660163879394531
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 0.0728160142899,
+              "mean_abs": 0.0139414435253,
+              "rms": 0.0182142350823,
+              "cos_min": 0.999179601669,
+              "cos_global": 0.99951761961,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7902183533
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "0cddcf9bd79accaad227229d65a26607c96c8a7c2f723d45d6377b34d4b248f7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0953059196472168,
+              "mean_abs": 0.01623698064018855,
+              "rms": 0.02111188974218151,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.60628025095924,
+              "cosine": 0.9994615724595901,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.339417457580566,
+              "wasm_max": 10.509990692138672
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.0953059196472,
+              "mean_abs": 0.016236981377,
+              "rms": 0.0211118906736,
+              "cos_min": 0.999047100544,
+              "cos_global": 0.999461591244,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.6062812805
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "ac2266af79264e328617275895a22e25652c7804c4ce4c08387632ba3139248d",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.09810686111450195,
+              "mean_abs": 0.016109358294165252,
+              "rms": 0.02089907081754942,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.560821307741996,
+              "cosine": 0.9993260369994795,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.46386194229126,
+              "wasm_max": 9.7500581741333
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0981068611145,
+              "mean_abs": 0.0161093585193,
+              "rms": 0.0208990704268,
+              "cos_min": 0.998641848564,
+              "cos_global": 0.999326050282,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.5608215332
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "e317d0bbb4f3a814f70bfdc7e2c6116f2fe7115530bede1d8e56594d22ceaeb7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.10510826110839844,
+              "mean_abs": 0.016962486408860538,
+              "rms": 0.022556053605920386,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.14654500383818,
+              "cosine": 0.998521247885999,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -2.059436798095703,
+              "wasm_max": 5.895451545715332
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.105108261108,
+              "mean_abs": 0.0169624872506,
+              "rms": 0.0225560534745,
+              "cos_min": 0.996879279613,
+              "cos_global": 0.998521268368,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1465454102
+            },
+            "gate_pass": false
+          }
+        ],
+        "2": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "824b0a36518528140eccadcd522831225aefbbe9655fb4e0c4f53d42946bbe77",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.08330392837524414,
+              "mean_abs": 0.00441886245582484,
+              "rms": 0.0058155582387408675,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 12.834886076359929,
+              "cosine": 0.999683600667877,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.6641055345535278,
+              "wasm_max": 4.154519081115723
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 0.0833039283752,
+              "mean_abs": 0.00441886251792,
+              "rms": 0.00581555813551,
+              "cos_min": 0.99951761961,
+              "cos_global": 0.999683618546,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 12.8348865509
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "4f540dd2ce00e1d484dc38a04cf1d91bf985c1c689de2072013013c3807ba308",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.06821545958518982,
+              "mean_abs": 0.009029158700425595,
+              "rms": 0.011840132400377658,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.118545619019116,
+              "cosine": 0.9997993610106656,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.156374216079712,
+              "wasm_max": 8.13119888305664
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 0.0682154595852,
+              "mean_abs": 0.00902915839106,
+              "rms": 0.0118401320651,
+              "cos_min": 0.999430954456,
+              "cos_global": 0.999799370766,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.1185455322
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "48362198843ba694232c39bf39a6153f2d5f629ae1aec1ad963531358011cf7f",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0647515058517456,
+              "mean_abs": 0.011450702449666197,
+              "rms": 0.01482371086118023,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.302219035540965,
+              "cosine": 0.999672385740351,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.0549163818359375,
+              "wasm_max": 7.993314743041992
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 0.0647515058517,
+              "mean_abs": 0.0114507023245,
+              "rms": 0.0148237105459,
+              "cos_min": 0.999498069286,
+              "cos_global": 0.999672412872,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.3022193909
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "9608472f57ad76784e7978a8b38d1055368b8911a3b52265b8640f946a21b5d4",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.07281601428985596,
+              "mean_abs": 0.013941443184977389,
+              "rms": 0.018214235143410206,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.79021668436704,
+              "cosine": 0.9995176216892927,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.409307479858398,
+              "wasm_max": 9.660163879394531
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 0.0728160142899,
+              "mean_abs": 0.0139414435253,
+              "rms": 0.0182142350823,
+              "cos_min": 0.999179601669,
+              "cos_global": 0.99951761961,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7902183533
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "0cddcf9bd79accaad227229d65a26607c96c8a7c2f723d45d6377b34d4b248f7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0953059196472168,
+              "mean_abs": 0.01623698064018855,
+              "rms": 0.02111188974218151,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.60628025095924,
+              "cosine": 0.9994615724595901,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.339417457580566,
+              "wasm_max": 10.509990692138672
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.0953059196472,
+              "mean_abs": 0.016236981377,
+              "rms": 0.0211118906736,
+              "cos_min": 0.999047100544,
+              "cos_global": 0.999461591244,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.6062812805
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "ac2266af79264e328617275895a22e25652c7804c4ce4c08387632ba3139248d",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.09810686111450195,
+              "mean_abs": 0.016109358294165252,
+              "rms": 0.02089907081754942,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.560821307741996,
+              "cosine": 0.9993260369994795,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.46386194229126,
+              "wasm_max": 9.7500581741333
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0981068611145,
+              "mean_abs": 0.0161093585193,
+              "rms": 0.0208990704268,
+              "cos_min": 0.998641848564,
+              "cos_global": 0.999326050282,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.5608215332
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "e317d0bbb4f3a814f70bfdc7e2c6116f2fe7115530bede1d8e56594d22ceaeb7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.10510826110839844,
+              "mean_abs": 0.016962486408860538,
+              "rms": 0.022556053605920386,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.14654500383818,
+              "cosine": 0.998521247885999,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -2.059436798095703,
+              "wasm_max": 5.895451545715332
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.105108261108,
+              "mean_abs": 0.0169624872506,
+              "rms": 0.0225560534745,
+              "cos_min": 0.996879279613,
+              "cos_global": 0.998521268368,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1465454102
+            },
+            "gate_pass": false
+          }
+        ]
+      },
+      "empty": {
+        "1": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "824b0a36518528140eccadcd522831225aefbbe9655fb4e0c4f53d42946bbe77",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.08330392837524414,
+              "mean_abs": 0.00441886245582484,
+              "rms": 0.0058155582387408675,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 12.834886076359929,
+              "cosine": 0.999683600667877,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.6641055345535278,
+              "wasm_max": 4.154519081115723
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 0.0833039283752,
+              "mean_abs": 0.00441886251792,
+              "rms": 0.00581555813551,
+              "cos_min": 0.99951761961,
+              "cos_global": 0.999683618546,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 12.8348865509
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "4f540dd2ce00e1d484dc38a04cf1d91bf985c1c689de2072013013c3807ba308",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.06821545958518982,
+              "mean_abs": 0.009029158700425595,
+              "rms": 0.011840132400377658,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.118545619019116,
+              "cosine": 0.9997993610106656,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.156374216079712,
+              "wasm_max": 8.13119888305664
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 0.0682154595852,
+              "mean_abs": 0.00902915839106,
+              "rms": 0.0118401320651,
+              "cos_min": 0.999430954456,
+              "cos_global": 0.999799370766,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.1185455322
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "48362198843ba694232c39bf39a6153f2d5f629ae1aec1ad963531358011cf7f",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0647515058517456,
+              "mean_abs": 0.011450702449666197,
+              "rms": 0.01482371086118023,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.302219035540965,
+              "cosine": 0.999672385740351,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.0549163818359375,
+              "wasm_max": 7.993314743041992
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 0.0647515058517,
+              "mean_abs": 0.0114507023245,
+              "rms": 0.0148237105459,
+              "cos_min": 0.999498069286,
+              "cos_global": 0.999672412872,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.3022193909
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "9608472f57ad76784e7978a8b38d1055368b8911a3b52265b8640f946a21b5d4",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.07281601428985596,
+              "mean_abs": 0.013941443184977389,
+              "rms": 0.018214235143410206,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.79021668436704,
+              "cosine": 0.9995176216892927,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.409307479858398,
+              "wasm_max": 9.660163879394531
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 0.0728160142899,
+              "mean_abs": 0.0139414435253,
+              "rms": 0.0182142350823,
+              "cos_min": 0.999179601669,
+              "cos_global": 0.99951761961,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7902183533
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "0cddcf9bd79accaad227229d65a26607c96c8a7c2f723d45d6377b34d4b248f7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0953059196472168,
+              "mean_abs": 0.01623698064018855,
+              "rms": 0.02111188974218151,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.60628025095924,
+              "cosine": 0.9994615724595901,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.339417457580566,
+              "wasm_max": 10.509990692138672
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.0953059196472,
+              "mean_abs": 0.016236981377,
+              "rms": 0.0211118906736,
+              "cos_min": 0.999047100544,
+              "cos_global": 0.999461591244,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.6062812805
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "ac2266af79264e328617275895a22e25652c7804c4ce4c08387632ba3139248d",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.09810686111450195,
+              "mean_abs": 0.016109358294165252,
+              "rms": 0.02089907081754942,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.560821307741996,
+              "cosine": 0.9993260369994795,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.46386194229126,
+              "wasm_max": 9.7500581741333
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0981068611145,
+              "mean_abs": 0.0161093585193,
+              "rms": 0.0208990704268,
+              "cos_min": 0.998641848564,
+              "cos_global": 0.999326050282,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.5608215332
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "e317d0bbb4f3a814f70bfdc7e2c6116f2fe7115530bede1d8e56594d22ceaeb7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.10510826110839844,
+              "mean_abs": 0.016962486408860538,
+              "rms": 0.022556053605920386,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.14654500383818,
+              "cosine": 0.998521247885999,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -2.059436798095703,
+              "wasm_max": 5.895451545715332
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.105108261108,
+              "mean_abs": 0.0169624872506,
+              "rms": 0.0225560534745,
+              "cos_min": 0.996879279613,
+              "cos_global": 0.998521268368,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1465454102
+            },
+            "gate_pass": false
+          }
+        ],
+        "2": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "824b0a36518528140eccadcd522831225aefbbe9655fb4e0c4f53d42946bbe77",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.08330392837524414,
+              "mean_abs": 0.00441886245582484,
+              "rms": 0.0058155582387408675,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 12.834886076359929,
+              "cosine": 0.999683600667877,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.6641055345535278,
+              "wasm_max": 4.154519081115723
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 0.0833039283752,
+              "mean_abs": 0.00441886251792,
+              "rms": 0.00581555813551,
+              "cos_min": 0.99951761961,
+              "cos_global": 0.999683618546,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 12.8348865509
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "4f540dd2ce00e1d484dc38a04cf1d91bf985c1c689de2072013013c3807ba308",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.06821545958518982,
+              "mean_abs": 0.009029158700425595,
+              "rms": 0.011840132400377658,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.118545619019116,
+              "cosine": 0.9997993610106656,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.156374216079712,
+              "wasm_max": 8.13119888305664
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 0.0682154595852,
+              "mean_abs": 0.00902915839106,
+              "rms": 0.0118401320651,
+              "cos_min": 0.999430954456,
+              "cos_global": 0.999799370766,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.1185455322
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "48362198843ba694232c39bf39a6153f2d5f629ae1aec1ad963531358011cf7f",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0647515058517456,
+              "mean_abs": 0.011450702449666197,
+              "rms": 0.01482371086118023,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.302219035540965,
+              "cosine": 0.999672385740351,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.0549163818359375,
+              "wasm_max": 7.993314743041992
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 0.0647515058517,
+              "mean_abs": 0.0114507023245,
+              "rms": 0.0148237105459,
+              "cos_min": 0.999498069286,
+              "cos_global": 0.999672412872,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.3022193909
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "9608472f57ad76784e7978a8b38d1055368b8911a3b52265b8640f946a21b5d4",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.07281601428985596,
+              "mean_abs": 0.013941443184977389,
+              "rms": 0.018214235143410206,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.79021668436704,
+              "cosine": 0.9995176216892927,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.409307479858398,
+              "wasm_max": 9.660163879394531
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 0.0728160142899,
+              "mean_abs": 0.0139414435253,
+              "rms": 0.0182142350823,
+              "cos_min": 0.999179601669,
+              "cos_global": 0.99951761961,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7902183533
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "0cddcf9bd79accaad227229d65a26607c96c8a7c2f723d45d6377b34d4b248f7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0953059196472168,
+              "mean_abs": 0.01623698064018855,
+              "rms": 0.02111188974218151,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.60628025095924,
+              "cosine": 0.9994615724595901,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.339417457580566,
+              "wasm_max": 10.509990692138672
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.0953059196472,
+              "mean_abs": 0.016236981377,
+              "rms": 0.0211118906736,
+              "cos_min": 0.999047100544,
+              "cos_global": 0.999461591244,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.6062812805
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "ac2266af79264e328617275895a22e25652c7804c4ce4c08387632ba3139248d",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.09810686111450195,
+              "mean_abs": 0.016109358294165252,
+              "rms": 0.02089907081754942,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.560821307741996,
+              "cosine": 0.9993260369994795,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.46386194229126,
+              "wasm_max": 9.7500581741333
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0981068611145,
+              "mean_abs": 0.0161093585193,
+              "rms": 0.0208990704268,
+              "cos_min": 0.998641848564,
+              "cos_global": 0.999326050282,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.5608215332
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "e317d0bbb4f3a814f70bfdc7e2c6116f2fe7115530bede1d8e56594d22ceaeb7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.10510826110839844,
+              "mean_abs": 0.016962486408860538,
+              "rms": 0.022556053605920386,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.14654500383818,
+              "cosine": 0.998521247885999,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -2.059436798095703,
+              "wasm_max": 5.895451545715332
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.105108261108,
+              "mean_abs": 0.0169624872506,
+              "rms": 0.0225560534745,
+              "cos_min": 0.996879279613,
+              "cos_global": 0.998521268368,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1465454102
+            },
+            "gate_pass": false
+          }
+        ]
+      },
+      "0": {
+        "1": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "824b0a36518528140eccadcd522831225aefbbe9655fb4e0c4f53d42946bbe77",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.08330392837524414,
+              "mean_abs": 0.00441886245582484,
+              "rms": 0.0058155582387408675,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 12.834886076359929,
+              "cosine": 0.999683600667877,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.6641055345535278,
+              "wasm_max": 4.154519081115723
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 0.0833039283752,
+              "mean_abs": 0.00441886251792,
+              "rms": 0.00581555813551,
+              "cos_min": 0.99951761961,
+              "cos_global": 0.999683618546,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 12.8348865509
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "4f540dd2ce00e1d484dc38a04cf1d91bf985c1c689de2072013013c3807ba308",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.06821545958518982,
+              "mean_abs": 0.009029158700425595,
+              "rms": 0.011840132400377658,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.118545619019116,
+              "cosine": 0.9997993610106656,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.156374216079712,
+              "wasm_max": 8.13119888305664
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 0.0682154595852,
+              "mean_abs": 0.00902915839106,
+              "rms": 0.0118401320651,
+              "cos_min": 0.999430954456,
+              "cos_global": 0.999799370766,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.1185455322
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "48362198843ba694232c39bf39a6153f2d5f629ae1aec1ad963531358011cf7f",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0647515058517456,
+              "mean_abs": 0.011450702449666197,
+              "rms": 0.01482371086118023,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.302219035540965,
+              "cosine": 0.999672385740351,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.0549163818359375,
+              "wasm_max": 7.993314743041992
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 0.0647515058517,
+              "mean_abs": 0.0114507023245,
+              "rms": 0.0148237105459,
+              "cos_min": 0.999498069286,
+              "cos_global": 0.999672412872,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.3022193909
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "9608472f57ad76784e7978a8b38d1055368b8911a3b52265b8640f946a21b5d4",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.07281601428985596,
+              "mean_abs": 0.013941443184977389,
+              "rms": 0.018214235143410206,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.79021668436704,
+              "cosine": 0.9995176216892927,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.409307479858398,
+              "wasm_max": 9.660163879394531
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 0.0728160142899,
+              "mean_abs": 0.0139414435253,
+              "rms": 0.0182142350823,
+              "cos_min": 0.999179601669,
+              "cos_global": 0.99951761961,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7902183533
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "0cddcf9bd79accaad227229d65a26607c96c8a7c2f723d45d6377b34d4b248f7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0953059196472168,
+              "mean_abs": 0.01623698064018855,
+              "rms": 0.02111188974218151,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.60628025095924,
+              "cosine": 0.9994615724595901,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.339417457580566,
+              "wasm_max": 10.509990692138672
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.0953059196472,
+              "mean_abs": 0.016236981377,
+              "rms": 0.0211118906736,
+              "cos_min": 0.999047100544,
+              "cos_global": 0.999461591244,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.6062812805
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "ac2266af79264e328617275895a22e25652c7804c4ce4c08387632ba3139248d",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.09810686111450195,
+              "mean_abs": 0.016109358294165252,
+              "rms": 0.02089907081754942,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.560821307741996,
+              "cosine": 0.9993260369994795,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.46386194229126,
+              "wasm_max": 9.7500581741333
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0981068611145,
+              "mean_abs": 0.0161093585193,
+              "rms": 0.0208990704268,
+              "cos_min": 0.998641848564,
+              "cos_global": 0.999326050282,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.5608215332
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "e317d0bbb4f3a814f70bfdc7e2c6116f2fe7115530bede1d8e56594d22ceaeb7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.10510826110839844,
+              "mean_abs": 0.016962486408860538,
+              "rms": 0.022556053605920386,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.14654500383818,
+              "cosine": 0.998521247885999,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -2.059436798095703,
+              "wasm_max": 5.895451545715332
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.105108261108,
+              "mean_abs": 0.0169624872506,
+              "rms": 0.0225560534745,
+              "cos_min": 0.996879279613,
+              "cos_global": 0.998521268368,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1465454102
+            },
+            "gate_pass": false
+          }
+        ],
+        "2": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "824b0a36518528140eccadcd522831225aefbbe9655fb4e0c4f53d42946bbe77",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.08330392837524414,
+              "mean_abs": 0.00441886245582484,
+              "rms": 0.0058155582387408675,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 12.834886076359929,
+              "cosine": 0.999683600667877,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.6641055345535278,
+              "wasm_max": 4.154519081115723
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 0.0833039283752,
+              "mean_abs": 0.00441886251792,
+              "rms": 0.00581555813551,
+              "cos_min": 0.99951761961,
+              "cos_global": 0.999683618546,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 12.8348865509
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "4f540dd2ce00e1d484dc38a04cf1d91bf985c1c689de2072013013c3807ba308",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.06821545958518982,
+              "mean_abs": 0.009029158700425595,
+              "rms": 0.011840132400377658,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.118545619019116,
+              "cosine": 0.9997993610106656,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.156374216079712,
+              "wasm_max": 8.13119888305664
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 0.0682154595852,
+              "mean_abs": 0.00902915839106,
+              "rms": 0.0118401320651,
+              "cos_min": 0.999430954456,
+              "cos_global": 0.999799370766,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.1185455322
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "48362198843ba694232c39bf39a6153f2d5f629ae1aec1ad963531358011cf7f",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0647515058517456,
+              "mean_abs": 0.011450702449666197,
+              "rms": 0.01482371086118023,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.302219035540965,
+              "cosine": 0.999672385740351,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.0549163818359375,
+              "wasm_max": 7.993314743041992
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 0.0647515058517,
+              "mean_abs": 0.0114507023245,
+              "rms": 0.0148237105459,
+              "cos_min": 0.999498069286,
+              "cos_global": 0.999672412872,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.3022193909
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "9608472f57ad76784e7978a8b38d1055368b8911a3b52265b8640f946a21b5d4",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.07281601428985596,
+              "mean_abs": 0.013941443184977389,
+              "rms": 0.018214235143410206,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.79021668436704,
+              "cosine": 0.9995176216892927,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.409307479858398,
+              "wasm_max": 9.660163879394531
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 0.0728160142899,
+              "mean_abs": 0.0139414435253,
+              "rms": 0.0182142350823,
+              "cos_min": 0.999179601669,
+              "cos_global": 0.99951761961,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7902183533
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "0cddcf9bd79accaad227229d65a26607c96c8a7c2f723d45d6377b34d4b248f7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0953059196472168,
+              "mean_abs": 0.01623698064018855,
+              "rms": 0.02111188974218151,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.60628025095924,
+              "cosine": 0.9994615724595901,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.339417457580566,
+              "wasm_max": 10.509990692138672
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.0953059196472,
+              "mean_abs": 0.016236981377,
+              "rms": 0.0211118906736,
+              "cos_min": 0.999047100544,
+              "cos_global": 0.999461591244,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.6062812805
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "ac2266af79264e328617275895a22e25652c7804c4ce4c08387632ba3139248d",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.09810686111450195,
+              "mean_abs": 0.016109358294165252,
+              "rms": 0.02089907081754942,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.560821307741996,
+              "cosine": 0.9993260369994795,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.46386194229126,
+              "wasm_max": 9.7500581741333
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0981068611145,
+              "mean_abs": 0.0161093585193,
+              "rms": 0.0208990704268,
+              "cos_min": 0.998641848564,
+              "cos_global": 0.999326050282,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.5608215332
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "e317d0bbb4f3a814f70bfdc7e2c6116f2fe7115530bede1d8e56594d22ceaeb7",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.10510826110839844,
+              "mean_abs": 0.016962486408860538,
+              "rms": 0.022556053605920386,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.14654500383818,
+              "cosine": 0.998521247885999,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -2.059436798095703,
+              "wasm_max": 5.895451545715332
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.105108261108,
+              "mean_abs": 0.0169624872506,
+              "rms": 0.0225560534745,
+              "cos_min": 0.996879279613,
+              "cos_global": 0.998521268368,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1465454102
+            },
+            "gate_pass": false
+          }
+        ]
+      },
+      "1": {
+        "1": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "045d29b731b72d4aac91c385c670f19ae8062c033473f183b027699a333fc9e2",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 1.1920928955078125e-07,
+              "mean_abs": 1.4271083475452745e-08,
+              "rms": 2.152716714346965e-08,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 13.0580226331015,
+              "cosine": 0.9999999999999937,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.673003077507019,
+              "wasm_max": 4.237823009490967
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 1.19209289551e-07,
+              "mean_abs": 1.42710838702e-08,
+              "rms": 2.15271676041e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 13.0580224991
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "9b4123d32e9c494c615283ae20d12386371f9b957940434395ac0c5bab2c82de",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 9.5367431640625e-07,
+              "mean_abs": 4.9642545087004287e-08,
+              "rms": 7.933089955092406e-08,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.09640785698769,
+              "cosine": 0.9999999999999911,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.1629292964935303,
+              "wasm_max": 8.131218910217285
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 9.53674316406e-07,
+              "mean_abs": 4.96425442975e-08,
+              "rms": 7.93309027358e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.096408844
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "f275ae8c8f492e6d279eebf389b7ecaa34d36db34c3058e70308bb2985cc29eb",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 5.960464477539062e-07,
+              "mean_abs": 5.7503459376878e-08,
+              "rms": 8.698079810515314e-08,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.26423092822312,
+              "cosine": 0.9999999999999888,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.091527938842773,
+              "wasm_max": 7.993340492248535
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 5.96046447754e-07,
+              "mean_abs": 5.75034597716e-08,
+              "rms": 8.69807976756e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.2642326355
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "badf436ad247b1ab9c119715fc168ed0dada51cfe54e8d80e793623019f8b7f4",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 5.960464477539062e-07,
+              "mean_abs": 6.482799916638113e-08,
+              "rms": 9.729281928919948e-08,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.730413845785556,
+              "cosine": 0.9999999999999861,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.418696403503418,
+              "wasm_max": 9.659926414489746
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 5.96046447754e-07,
+              "mean_abs": 6.48280007454e-08,
+              "rms": 9.72928191345e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7304153442
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "1b9f197629e1049f266eef71e005634375fed99a413199ae9e696190794609d8",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.002918928861618042,
+              "mean_abs": 5.3643376708755066e-05,
+              "rms": 0.00023248943908119334,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.500874345961066,
+              "cosine": 0.9999999341992208,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.320265293121338,
+              "wasm_max": 10.507977485656738
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.00291892886162,
+              "mean_abs": 5.36433763045e-05,
+              "rms": 0.000232489444898,
+              "cos_min": 0.999999165535,
+              "cos_global": 0.999999940395,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.5008735657
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "07f3273f3b43975b14bcd9b64a92de5d0009f1c85466ca4fb0ecda9240cf5d37",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.019972508773207664,
+              "mean_abs": 0.0029241550964040166,
+              "rms": 0.003912406545773343,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.43898704636417,
+              "cosine": 0.9999761321207664,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.433466911315918,
+              "wasm_max": 9.750628471374512
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0199725087732,
+              "mean_abs": 0.00292415521108,
+              "rms": 0.00391240650788,
+              "cos_min": 0.999956786633,
+              "cos_global": 0.999976158142,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.4389877319
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "0481e7c1e768c1ec03d980c010293ea0436e763384fcc91a6547028c73aed582",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.028505682945251465,
+              "mean_abs": 0.004781248250654689,
+              "rms": 0.00623421371773263,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.145518529661548,
+              "cosine": 0.9998871762446241,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -1.9835786819458008,
+              "wasm_max": 5.8329758644104
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.0285056829453,
+              "mean_abs": 0.00478124804795,
+              "rms": 0.00623421370983,
+              "cos_min": 0.999848246574,
+              "cos_global": 0.999887168407,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1455192566
+            },
+            "gate_pass": false
+          }
+        ],
+        "2": [
+          {
+            "stage": "emb_ln_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "candidate_sha256": "b7875f3ea3843b7107941bf62f020eca8b6cab9fa37f442acf15b59c99d909d9",
+            "old_wasm_bit_exact": true,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "rms": 0.0,
+              "native_l2": 34.89998995230721,
+              "wasm_l2": 34.89998995230721,
+              "cosine": 1.0,
+              "native_min": -1.9473278522491455,
+              "native_max": 6.333610534667969,
+              "wasm_min": -1.9473278522491455,
+              "wasm_max": 6.333610534667969
+            },
+            "crispembed_diff": {
+              "stage": "emb_ln_out",
+              "n": 4608,
+              "max_abs": 0,
+              "mean_abs": 0,
+              "rms": 0,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 34.8999900818,
+              "wasm_l2": 34.8999900818
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "attn_out_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b34d4a59aca7e813bf42370ae20ed09557cfaf666ed5f3c148a567e6e68170f2",
+            "candidate_sha256": "045d29b731b72d4aac91c385c670f19ae8062c033473f183b027699a333fc9e2",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 1.1920928955078125e-07,
+              "mean_abs": 1.4271083475452745e-08,
+              "rms": 2.152716714346965e-08,
+              "native_l2": 13.05802264626357,
+              "wasm_l2": 13.0580226331015,
+              "cosine": 0.9999999999999937,
+              "native_min": -0.6730031967163086,
+              "native_max": 4.237823009490967,
+              "wasm_min": -0.673003077507019,
+              "wasm_max": 4.237823009490967
+            },
+            "crispembed_diff": {
+              "stage": "attn_out_0",
+              "n": 4608,
+              "max_abs": 1.19209289551e-07,
+              "mean_abs": 1.42710838702e-08,
+              "rms": 2.15271676041e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 13.0580224991,
+              "wasm_l2": 13.0580224991
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_0",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "b06273b45dbe54974c4dc46a1bd999642905f9867e5ccd5523d7a9ae97d39d41",
+            "candidate_sha256": "9b4123d32e9c494c615283ae20d12386371f9b957940434395ac0c5bab2c82de",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 9.5367431640625e-07,
+              "mean_abs": 4.9642545087004287e-08,
+              "rms": 7.933089955092406e-08,
+              "native_l2": 40.09640729832326,
+              "wasm_l2": 40.09640785698769,
+              "cosine": 0.9999999999999911,
+              "native_min": -3.1629292964935303,
+              "native_max": 8.131219863891602,
+              "wasm_min": -3.1629292964935303,
+              "wasm_max": 8.131218910217285
+            },
+            "crispembed_diff": {
+              "stage": "layer_0",
+              "n": 4608,
+              "max_abs": 9.53674316406e-07,
+              "mean_abs": 4.96425442975e-08,
+              "rms": 7.93309027358e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 40.096408844,
+              "wasm_l2": 40.096408844
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_1",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "4af764e604380f7979c7e567797094ffd535b5c04eed780daebbb9efffcd4201",
+            "candidate_sha256": "f275ae8c8f492e6d279eebf389b7ecaa34d36db34c3058e70308bb2985cc29eb",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 5.960464477539062e-07,
+              "mean_abs": 5.7503459376878e-08,
+              "rms": 8.698079810515314e-08,
+              "native_l2": 39.264231212269735,
+              "wasm_l2": 39.26423092822312,
+              "cosine": 0.9999999999999888,
+              "native_min": -5.091527938842773,
+              "native_max": 7.993340492248535,
+              "wasm_min": -5.091527938842773,
+              "wasm_max": 7.993340492248535
+            },
+            "crispembed_diff": {
+              "stage": "layer_1",
+              "n": 4608,
+              "max_abs": 5.96046447754e-07,
+              "mean_abs": 5.75034597716e-08,
+              "rms": 8.69807976756e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 39.2642326355,
+              "wasm_l2": 39.2642326355
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_2",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "96d633d55ed750c77422d77efbe091f5d5d473d60f1ca5ac90c3e66c49ecd17e",
+            "candidate_sha256": "badf436ad247b1ab9c119715fc168ed0dada51cfe54e8d80e793623019f8b7f4",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 5.960464477539062e-07,
+              "mean_abs": 6.482799916638113e-08,
+              "rms": 9.729281928919948e-08,
+              "native_l2": 39.73041395674114,
+              "wasm_l2": 39.730413845785556,
+              "cosine": 0.9999999999999861,
+              "native_min": -4.418696403503418,
+              "native_max": 9.659926414489746,
+              "wasm_min": -4.418696403503418,
+              "wasm_max": 9.659926414489746
+            },
+            "crispembed_diff": {
+              "stage": "layer_2",
+              "n": 4608,
+              "max_abs": 5.96046447754e-07,
+              "mean_abs": 6.48280007454e-08,
+              "rms": 9.72928191345e-08,
+              "cos_min": 1,
+              "cos_global": 1,
+              "native_l2": 39.7304153442,
+              "wasm_l2": 39.7304153442
+            },
+            "gate_pass": true
+          },
+          {
+            "stage": "layer_3",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "2de01fb2455f7696634b2c3a6a99dd8cb5a74570e3510e54c412f381bda70f36",
+            "candidate_sha256": "1b9f197629e1049f266eef71e005634375fed99a413199ae9e696190794609d8",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.002918928861618042,
+              "mean_abs": 5.3643376708755066e-05,
+              "rms": 0.00023248943908119334,
+              "native_l2": 43.50068301611458,
+              "wasm_l2": 43.500874345961066,
+              "cosine": 0.9999999341992208,
+              "native_min": -4.320265293121338,
+              "native_max": 10.507977485656738,
+              "wasm_min": -4.320265293121338,
+              "wasm_max": 10.507977485656738
+            },
+            "crispembed_diff": {
+              "stage": "layer_3",
+              "n": 4608,
+              "max_abs": 0.00291892886162,
+              "mean_abs": 5.36433763045e-05,
+              "rms": 0.000232489444898,
+              "cos_min": 0.999999165535,
+              "cos_global": 0.999999940395,
+              "native_l2": 43.5006828308,
+              "wasm_l2": 43.5008735657
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "layer_4",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "67a77c86ea41e26377120a0a8cbade0e0d40cc363f2782acc334f0771f676612",
+            "candidate_sha256": "07f3273f3b43975b14bcd9b64a92de5d0009f1c85466ca4fb0ecda9240cf5d37",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.019972508773207664,
+              "mean_abs": 0.0029241550964040166,
+              "rms": 0.003912406545773343,
+              "native_l2": 38.43977511403392,
+              "wasm_l2": 38.43898704636417,
+              "cosine": 0.9999761321207664,
+              "native_min": -4.431457042694092,
+              "native_max": 9.749995231628418,
+              "wasm_min": -4.433466911315918,
+              "wasm_max": 9.750628471374512
+            },
+            "crispembed_diff": {
+              "stage": "layer_4",
+              "n": 4608,
+              "max_abs": 0.0199725087732,
+              "mean_abs": 0.00292415521108,
+              "rms": 0.00391240650788,
+              "cos_min": 0.999956786633,
+              "cos_global": 0.999976158142,
+              "native_l2": 38.4397735596,
+              "wasm_l2": 38.4389877319
+            },
+            "gate_pass": false
+          },
+          {
+            "stage": "encoder_out",
+            "shape": [
+              384,
+              12
+            ],
+            "native_sha256": "6da58f5c2e56e454d9dbcb52426c6c3da85a6a81d12d97615b8aa9a6a957508d",
+            "candidate_sha256": "0481e7c1e768c1ec03d980c010293ea0436e763384fcc91a6547028c73aed582",
+            "old_wasm_bit_exact": false,
+            "independent": {
+              "n": 4608,
+              "max_abs": 0.028505682945251465,
+              "mean_abs": 0.004781248250654689,
+              "rms": 0.00623421371773263,
+              "native_l2": 28.16107017809034,
+              "wasm_l2": 28.145518529661548,
+              "cosine": 0.9998871762446241,
+              "native_min": -1.9881963729858398,
+              "native_max": 5.837557315826416,
+              "wasm_min": -1.9835786819458008,
+              "wasm_max": 5.8329758644104
+            },
+            "crispembed_diff": {
+              "stage": "encoder_out",
+              "n": 4608,
+              "max_abs": 0.0285056829453,
+              "mean_abs": 0.00478124804795,
+              "rms": 0.00623421370983,
+              "cos_min": 0.999848246574,
+              "cos_global": 0.999887168407,
+              "native_l2": 28.16106987,
+              "wasm_l2": 28.1455192566
+            },
+            "gate_pass": false
+          }
+        ]
+      }
+    },
+    "first_sentence_pooling": {
+      "unset": {
+        "1": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.04432596266269684,
+            "mean_abs": 0.010350264300557984,
+            "rms": 0.013719162363268686,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.139136710803194,
+            "cosine": 0.9986498387651833,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7016618847846985,
+            "wasm_max": 0.8204023241996765
+          }
+        },
+        "2": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.04432596266269684,
+            "mean_abs": 0.010350264300557984,
+            "rms": 0.013719162363268686,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.139136710803194,
+            "cosine": 0.9986498387651833,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7016618847846985,
+            "wasm_max": 0.8204023241996765
+          }
+        }
+      },
+      "empty": {
+        "1": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.04432596266269684,
+            "mean_abs": 0.010350264300557984,
+            "rms": 0.013719162363268686,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.139136710803194,
+            "cosine": 0.9986498387651833,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7016618847846985,
+            "wasm_max": 0.8204023241996765
+          }
+        },
+        "2": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.04432596266269684,
+            "mean_abs": 0.010350264300557984,
+            "rms": 0.013719162363268686,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.139136710803194,
+            "cosine": 0.9986498387651833,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7016618847846985,
+            "wasm_max": 0.8204023241996765
+          }
+        }
+      },
+      "0": {
+        "1": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.04432596266269684,
+            "mean_abs": 0.010350264300557984,
+            "rms": 0.013719162363268686,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.139136710803194,
+            "cosine": 0.9986498387651833,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7016618847846985,
+            "wasm_max": 0.8204023241996765
+          }
+        },
+        "2": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.04432596266269684,
+            "mean_abs": 0.010350264300557984,
+            "rms": 0.013719162363268686,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.139136710803194,
+            "cosine": 0.9986498387651833,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7016618847846985,
+            "wasm_max": 0.8204023241996765
+          }
+        }
+      },
+      "1": {
+        "1": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.008080286614131182,
+            "mean_abs": 0.001957031611449093,
+            "rms": 0.0025083446031899043,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.160819335132602,
+            "cosine": 0.9999548494775317,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7360641360282898,
+            "wasm_max": 0.8070783019065857
+          }
+        },
+        "2": {
+          "native_provenance": "Sequential-F32 recomputation from frozen actual native encoder_out and source-derived all-one mask; not captured.",
+          "wasm_provenance": "Actual test-overlay buffer",
+          "comparison": {
+            "n": 384,
+            "max_abs": 0.008080286614131182,
+            "mean_abs": 0.001957031611449093,
+            "rms": 0.0025083446031899043,
+            "native_l2": 5.163905894563598,
+            "wasm_l2": 5.160819335132602,
+            "cosine": 0.9999548494775317,
+            "native_min": -0.7372210621833801,
+            "native_max": 0.8081621527671814,
+            "wasm_min": -0.7360641360282898,
+            "wasm_max": 0.8070783019065857
+          }
+        }
+      }
+    },
+    "passed": false,
+    "limits": [
+      "Owned ten-case numerical/tokenization/length panel only; no representative task accuracy, default promotion or asset qualification.",
+      "The first trace and original first-sentence anchors stay immutable; this old-native/browser supplementary panel was frozen before candidate inference.",
+      "Global Q8_0 trait conversion stays legacy. This lane tests the selected backend through actual graphs, not a trait-probe surrogate.",
+      "Full eight-stage comparison covers the original sentence only. Other dump modes test output neutrality and actual pooling buffers; native pre-L2 vectors are not captured."
+    ],
+    "artifact_files": {
+      "browser/arrays/candidate-unset-mixed-scripts-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "123a2d8fd660676e04ffef0e6077545bf9acdccc7f39a442e7a5199aef3c2a54"
+      },
+      "browser/arrays/candidate-empty-original-stages.gguf": {
+        "bytes": 148000,
+        "sha256": "6dca18deb249dec0ac73c62c82facfe006c31cd17bfe905a5d01d9dfede227ae"
+      },
+      "browser/arrays/candidate-unset-punctuation-currency-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "f65bb7f54c70a1f02708285e604e56d85595699e15d05bcec60887814f1bbdc3"
+      },
+      "browser/arrays/candidate-empty-original-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "02cd7f1fda1c20733ca843ec132d21c1cfab45bbb06fa7870d76e17c25fbde0d"
+      },
+      "browser/arrays/candidate-0-empty-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "b8ffb4f57933010917b3601c2f469e3850c10c3b2b4fbfbbad66d7215549e3aa"
+      },
+      "browser/arrays/candidate-empty-whitespace-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "4ba7964022fe10597ff523ce7f589bf0d3ab77432055ca8a990e255c0d5bcba3"
+      },
+      "browser/arrays/candidate-empty-mixed-scripts-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "123a2d8fd660676e04ffef0e6077545bf9acdccc7f39a442e7a5199aef3c2a54"
+      },
+      "browser/arrays/candidate-empty-numbers-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "bc23bd6062b50abe12778182697d27f97032e0ca98d927783b8b34058f71284a"
+      },
+      "browser/arrays/candidate-1-one-character-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "3a811c0e58125b32fae7b15dc4ea67e1928dbc5a99513d56f478fc47e553151e"
+      },
+      "browser/arrays/candidate-0-near-limit-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "ab75b7a1b830dd8ea1edfe03b57f0b248114452045534f5ed33cc8953dec2cdd"
+      },
+      "browser/arrays/candidate-1-diacritics-emoji-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "a293e26164df427ebdd6db1b8600dae2ff5a5faf4966d524de9ef3c9870f8c99"
+      },
+      "browser/arrays/candidate-1-whitespace-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "0a3d0c5a95a2dcfca28546b6166445675e11d70777a27aec9d46b963dc812281"
+      },
+      "browser/arrays/candidate-empty-near-limit-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "ab75b7a1b830dd8ea1edfe03b57f0b248114452045534f5ed33cc8953dec2cdd"
+      },
+      "browser/arrays/candidate-0-diacritics-emoji-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "271ec286f9b1b33a09bdbadf0a0345fd2585085077cf069da4be5a4d1802fd8d"
+      },
+      "browser/arrays/candidate-unset-original-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "02cd7f1fda1c20733ca843ec132d21c1cfab45bbb06fa7870d76e17c25fbde0d"
+      },
+      "browser/arrays/candidate-unset-diacritics-emoji-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "1c883358b7359fd07393c2d4ffc5225d24e641cbb49c7d1cb4afe57572a975c0"
+      },
+      "browser/arrays/candidate-1-punctuation-currency-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "4e4654ff9e9e42963e52a6b9273ef4f66d00f8aa9988f6901a1966c99ed5d398"
+      },
+      "browser/arrays/candidate-unset-one-character-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "eb8dc9580b5f3cfa3727c284f89e6e3dfca5ee79bd12237fbd4deeaacdf8f80b"
+      },
+      "browser/arrays/candidate-0-numbers-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "bc23bd6062b50abe12778182697d27f97032e0ca98d927783b8b34058f71284a"
+      },
+      "browser/arrays/candidate-empty-original-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8"
+      },
+      "browser/arrays/candidate-unset-punctuation-currency-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "54565a69950b17f5cd70a39ccc1b49d6dbea0f4513e86ea29174352730aa0a7b"
+      },
+      "browser/arrays/candidate-unset-truncating-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "e9e52037e56bae91a28e115a395c45ebc36c5d1e46f8f997dd503dca87e2158f"
+      },
+      "browser/arrays/candidate-unset-one-character-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "8cd9f6944d2c96b1bdb3295180437e400679bcaa0ad70aa21a4d7b574baa8800"
+      },
+      "browser/arrays/candidate-0-mixed-scripts-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "5f437d7e449109c6226b76a07e3fddda4665625731c08e989faea45737556a17"
+      },
+      "browser/arrays/candidate-1-numbers-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "c1f8f21f85a86d64bdc1ee00a75533b0b982e20ef43b37bdc047f8acef2742ce"
+      },
+      "browser/arrays/candidate-unset-truncating-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "479666ad5195758fc7143dc15499f0a482d0e7fd010b9f17a4b676046b0e30df"
+      },
+      "browser/arrays/candidate-empty-empty-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "a5ce309ff59e62540dd02cbdc83c62962cb861bee7fd89319d155df6acc34d00"
+      },
+      "browser/arrays/candidate-0-whitespace-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "4ba7964022fe10597ff523ce7f589bf0d3ab77432055ca8a990e255c0d5bcba3"
+      },
+      "browser/arrays/candidate-0-punctuation-currency-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "54565a69950b17f5cd70a39ccc1b49d6dbea0f4513e86ea29174352730aa0a7b"
+      },
+      "browser/arrays/candidate-empty-truncating-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "479666ad5195758fc7143dc15499f0a482d0e7fd010b9f17a4b676046b0e30df"
+      },
+      "browser/arrays/candidate-1-diacritics-emoji-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "e8780959513fcf169279c784468d50f0706551b2e3e49fac34f674367bc82f92"
+      },
+      "browser/arrays/candidate-0-punctuation-currency-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "f65bb7f54c70a1f02708285e604e56d85595699e15d05bcec60887814f1bbdc3"
+      },
+      "browser/arrays/candidate-unset-original-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8"
+      },
+      "browser/arrays/candidate-0-whitespace-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "4f4a98a2332499556fab4f901d1d157cf433fa998a94709411e4e05c7749cf90"
+      },
+      "browser/arrays/candidate-empty-empty-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "b8ffb4f57933010917b3601c2f469e3850c10c3b2b4fbfbbad66d7215549e3aa"
+      },
+      "browser/arrays/candidate-1-whitespace-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "891f9b639f66f3374240349ce27f533962fa5994a98a4169284d65dc2725d2f2"
+      },
+      "browser/arrays/candidate-0-original-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8"
+      },
+      "browser/arrays/candidate-0-near-limit-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "8b778e9d65a10b3565dab754ca1d65c8728aa2d60bb19c285c697b19acfe87c0"
+      },
+      "browser/arrays/candidate-empty-truncating-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "e9e52037e56bae91a28e115a395c45ebc36c5d1e46f8f997dd503dca87e2158f"
+      },
+      "browser/arrays/candidate-unset-whitespace-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "4f4a98a2332499556fab4f901d1d157cf433fa998a94709411e4e05c7749cf90"
+      },
+      "browser/arrays/candidate-empty-one-character-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "8cd9f6944d2c96b1bdb3295180437e400679bcaa0ad70aa21a4d7b574baa8800"
+      },
+      "browser/arrays/candidate-1-punctuation-currency-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "77a58e6b54db8a2c0bd20f83a64dcea2d768823ab0b1e251a95f608c4bed5b3f"
+      },
+      "browser/arrays/candidate-1-original-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "6d8c5851dc55b35078c20519b240460f9f2817f8fca10d985158478492c92477"
+      },
+      "browser/arrays/candidate-empty-numbers-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "4c06bbfa27bcddcf0dbcf029a7f5de6d1400c7b0fdd7e3868ee527c72d409924"
+      },
+      "browser/arrays/candidate-unset-diacritics-emoji-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "271ec286f9b1b33a09bdbadf0a0345fd2585085077cf069da4be5a4d1802fd8d"
+      },
+      "browser/arrays/candidate-1-empty-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "f1dfa95a048d2bf648a48910cb01913e05e7f617f685d6c99c3a25111b1967fe"
+      },
+      "browser/arrays/candidate-0-mixed-scripts-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "123a2d8fd660676e04ffef0e6077545bf9acdccc7f39a442e7a5199aef3c2a54"
+      },
+      "browser/arrays/candidate-unset-whitespace-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "4ba7964022fe10597ff523ce7f589bf0d3ab77432055ca8a990e255c0d5bcba3"
+      },
+      "browser/arrays/candidate-1-near-limit-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "1c8e2f62101406799997e00168c199d351b5c6636a60a1bbb15b6a209220563e"
+      },
+      "browser/arrays/old-dump-original-stages.gguf": {
+        "bytes": 148000,
+        "sha256": "6dca18deb249dec0ac73c62c82facfe006c31cd17bfe905a5d01d9dfede227ae"
+      },
+      "browser/arrays/candidate-empty-punctuation-currency-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "f65bb7f54c70a1f02708285e604e56d85595699e15d05bcec60887814f1bbdc3"
+      },
+      "browser/arrays/candidate-1-mixed-scripts-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "b8805160d9ed1d2144bdc38bee3f4a7c5b2578d29ab269048a0538ea524c8033"
+      },
+      "browser/arrays/candidate-unset-original-stages.gguf": {
+        "bytes": 148000,
+        "sha256": "6dca18deb249dec0ac73c62c82facfe006c31cd17bfe905a5d01d9dfede227ae"
+      },
+      "browser/arrays/candidate-1-near-limit-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "77150bc94fc1c639f6861af5a70d3f93e140401a1a11714f1630eaa34eec911b"
+      },
+      "browser/arrays/candidate-0-empty-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "a5ce309ff59e62540dd02cbdc83c62962cb861bee7fd89319d155df6acc34d00"
+      },
+      "browser/arrays/candidate-unset-mixed-scripts-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "5f437d7e449109c6226b76a07e3fddda4665625731c08e989faea45737556a17"
+      },
+      "browser/arrays/candidate-1-empty-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "5779983c46ac93ca116ba97e58387fe70fdac18229337e1cbfbd92341cc3c462"
+      },
+      "browser/arrays/candidate-1-mixed-scripts-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "6e6ddba02d7dc57739c08376a17961f44efbe2ab3f58868ea4843545b0ba43f9"
+      },
+      "browser/arrays/candidate-empty-mixed-scripts-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "5f437d7e449109c6226b76a07e3fddda4665625731c08e989faea45737556a17"
+      },
+      "browser/arrays/candidate-unset-empty-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "b8ffb4f57933010917b3601c2f469e3850c10c3b2b4fbfbbad66d7215549e3aa"
+      },
+      "browser/arrays/candidate-0-original-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "02cd7f1fda1c20733ca843ec132d21c1cfab45bbb06fa7870d76e17c25fbde0d"
+      },
+      "browser/arrays/candidate-1-original-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "218afa7ea9f8d1cd538ced3c85cf38ae71c116f3becb52491135469b7510bed6"
+      },
+      "browser/arrays/candidate-empty-diacritics-emoji-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "271ec286f9b1b33a09bdbadf0a0345fd2585085077cf069da4be5a4d1802fd8d"
+      },
+      "browser/arrays/candidate-0-numbers-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "4c06bbfa27bcddcf0dbcf029a7f5de6d1400c7b0fdd7e3868ee527c72d409924"
+      },
+      "browser/arrays/old-dump-original-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8"
+      },
+      "browser/arrays/candidate-1-numbers-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "ac728758b1b675a1e4dd04b0f9cafc466923b82d9140aee2c8f3a230df6d86bd"
+      },
+      "browser/arrays/candidate-0-diacritics-emoji-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "1c883358b7359fd07393c2d4ffc5225d24e641cbb49c7d1cb4afe57572a975c0"
+      },
+      "browser/arrays/candidate-empty-whitespace-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "4f4a98a2332499556fab4f901d1d157cf433fa998a94709411e4e05c7749cf90"
+      },
+      "browser/arrays/candidate-1-truncating-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "7f86b823277ea22ac595cc3d44620518fc80b2fab37ae4f9849cdcf64b3cfd3f"
+      },
+      "browser/arrays/candidate-unset-empty-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "a5ce309ff59e62540dd02cbdc83c62962cb861bee7fd89319d155df6acc34d00"
+      },
+      "browser/arrays/candidate-0-one-character-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "8cd9f6944d2c96b1bdb3295180437e400679bcaa0ad70aa21a4d7b574baa8800"
+      },
+      "browser/arrays/candidate-empty-punctuation-currency-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "54565a69950b17f5cd70a39ccc1b49d6dbea0f4513e86ea29174352730aa0a7b"
+      },
+      "browser/arrays/candidate-unset-near-limit-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "ab75b7a1b830dd8ea1edfe03b57f0b248114452045534f5ed33cc8953dec2cdd"
+      },
+      "browser/arrays/candidate-empty-near-limit-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "8b778e9d65a10b3565dab754ca1d65c8728aa2d60bb19c285c697b19acfe87c0"
+      },
+      "browser/arrays/candidate-empty-diacritics-emoji-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "1c883358b7359fd07393c2d4ffc5225d24e641cbb49c7d1cb4afe57572a975c0"
+      },
+      "browser/arrays/candidate-unset-near-limit-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "8b778e9d65a10b3565dab754ca1d65c8728aa2d60bb19c285c697b19acfe87c0"
+      },
+      "browser/arrays/candidate-empty-one-character-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "eb8dc9580b5f3cfa3727c284f89e6e3dfca5ee79bd12237fbd4deeaacdf8f80b"
+      },
+      "browser/arrays/candidate-0-truncating-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "e9e52037e56bae91a28e115a395c45ebc36c5d1e46f8f997dd503dca87e2158f"
+      },
+      "browser/arrays/candidate-0-truncating-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "479666ad5195758fc7143dc15499f0a482d0e7fd010b9f17a4b676046b0e30df"
+      },
+      "browser/arrays/candidate-1-one-character-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "564d38ce826d99e41400ec6786ec827e3be270e5edadc78cf714f802f8f852d2"
+      },
+      "browser/arrays/candidate-0-original-stages.gguf": {
+        "bytes": 148000,
+        "sha256": "6dca18deb249dec0ac73c62c82facfe006c31cd17bfe905a5d01d9dfede227ae"
+      },
+      "browser/arrays/candidate-unset-numbers-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "4c06bbfa27bcddcf0dbcf029a7f5de6d1400c7b0fdd7e3868ee527c72d409924"
+      },
+      "browser/arrays/candidate-unset-numbers-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "bc23bd6062b50abe12778182697d27f97032e0ca98d927783b8b34058f71284a"
+      },
+      "browser/arrays/old-dump-original-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "02cd7f1fda1c20733ca843ec132d21c1cfab45bbb06fa7870d76e17c25fbde0d"
+      },
+      "browser/arrays/candidate-1-truncating-pool.final.f32": {
+        "bytes": 1536,
+        "sha256": "353668342088aa5d604a045b1d7f0d17913e26a0026a2bfa6efb631047bad668"
+      },
+      "browser/arrays/candidate-0-one-character-pool.mean.f32": {
+        "bytes": 1536,
+        "sha256": "eb8dc9580b5f3cfa3727c284f89e6e3dfca5ee79bd12237fbd4deeaacdf8f80b"
+      },
+      "browser/arrays/candidate-1-original-stages.gguf": {
+        "bytes": 148000,
+        "sha256": "3607a1dbbaf1ba88a9ccb96fca6cd43c0d150c40b1686b879934ee7e552e6db4"
+      }
+    },
+    "failed_phase": "compare",
+    "error": "Unchanged A/B gates rejected 16 controls/stages",
+    "cases": {
+      "original": {
+        "unset": {
+          "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00837269052863121,
+              "mean_abs": 0.0020216863949706156,
+              "rms": 0.0026518087181893898,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 1.000000169705224,
+              "cosine": 0.9986498388732881,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.13653305172920227,
+              "wasm_max": 0.1596381813287735
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00837269052863121,
+              "mean_abs": 0.0020216863949706156,
+              "rms": 0.0026518087181893898,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 1.000000169705224,
+              "cosine": 0.9986498388732881,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.13653305172920227,
+              "wasm_max": 0.1596381813287735
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.139136,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.139136,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.139136710803194,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00837269052863121,
+              "mean_abs": 0.0020216863949706156,
+              "rms": 0.0026518087181893898,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 1.000000169705224,
+              "cosine": 0.9986498388732881,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.13653305172920227,
+              "wasm_max": 0.1596381813287735
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00837269052863121,
+              "mean_abs": 0.0020216863949706156,
+              "rms": 0.0026518087181893898,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 1.000000169705224,
+              "cosine": 0.9986498388732881,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.13653305172920227,
+              "wasm_max": 0.1596381813287735
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.139136,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.139136,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.139136710803194,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "87e2bd71d734f6c52fd49d849c497ca815339e558c43231980fa3e3f60c699c8",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00837269052863121,
+              "mean_abs": 0.0020216863949706156,
+              "rms": 0.0026518087181893898,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 1.000000169705224,
+              "cosine": 0.9986498388732881,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.13653305172920227,
+              "wasm_max": 0.1596381813287735
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00837269052863121,
+              "mean_abs": 0.0020216863949706156,
+              "rms": 0.0026518087181893898,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 1.000000169705224,
+              "cosine": 0.9986498388732881,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.13653305172920227,
+              "wasm_max": 0.1596381813287735
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.139136,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.139136,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.139136710803194,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "6d8c5851dc55b35078c20519b240460f9f2817f8fca10d985158478492c92477",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00156465831969399,
+              "mean_abs": 0.00037733510384814484,
+              "rms": 0.00048493172656009754,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 0.9999999630452155,
+              "cosine": 0.9999548495067963,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.14262543618679047,
+              "wasm_max": 0.15638568997383118
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00156465831969399,
+              "mean_abs": 0.00037733510384814484,
+              "rms": 0.00048493172656009754,
+              "native_l2": 0.9999998695443191,
+              "wasm_l2": 0.9999999630452155,
+              "cosine": 0.9999548495067963,
+              "native_min": -0.14276421070098877,
+              "native_max": 0.15650208294391632,
+              "wasm_min": -0.14262543618679047,
+              "wasm_max": 0.15638568997383118
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.16082,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.16082,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.160819335132602,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "empty": {
+        "unset": {
+          "sha256": "b8ffb4f57933010917b3601c2f469e3850c10c3b2b4fbfbbad66d7215549e3aa",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.013877488672733307,
+              "mean_abs": 0.003614174978804762,
+              "rms": 0.004571621511290312,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000001673086427,
+              "cosine": 0.9959872543727547,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.16234853863716125,
+              "wasm_max": 0.3963715136051178
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.013877488672733307,
+              "mean_abs": 0.003614174978804762,
+              "rms": 0.004571621511290312,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000001673086427,
+              "cosine": 0.9959872543727547,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.16234853863716125,
+              "wasm_max": 0.3963715136051178
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.24081,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.24081,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.24081097097029,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "b8ffb4f57933010917b3601c2f469e3850c10c3b2b4fbfbbad66d7215549e3aa",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.013877488672733307,
+              "mean_abs": 0.003614174978804762,
+              "rms": 0.004571621511290312,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000001673086427,
+              "cosine": 0.9959872543727547,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.16234853863716125,
+              "wasm_max": 0.3963715136051178
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.013877488672733307,
+              "mean_abs": 0.003614174978804762,
+              "rms": 0.004571621511290312,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000001673086427,
+              "cosine": 0.9959872543727547,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.16234853863716125,
+              "wasm_max": 0.3963715136051178
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.24081,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.24081,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.24081097097029,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "b8ffb4f57933010917b3601c2f469e3850c10c3b2b4fbfbbad66d7215549e3aa",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.013877488672733307,
+              "mean_abs": 0.003614174978804762,
+              "rms": 0.004571621511290312,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000001673086427,
+              "cosine": 0.9959872543727547,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.16234853863716125,
+              "wasm_max": 0.3963715136051178
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.013877488672733307,
+              "mean_abs": 0.003614174978804762,
+              "rms": 0.004571621511290312,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000001673086427,
+              "cosine": 0.9959872543727547,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.16234853863716125,
+              "wasm_max": 0.3963715136051178
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.24081,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.24081,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.24081097097029,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "5779983c46ac93ca116ba97e58387fe70fdac18229337e1cbfbd92341cc3c462",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.001014169305562973,
+              "mean_abs": 0.0002717791397320914,
+              "rms": 0.0003362160108967862,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000000372860762,
+              "cosine": 0.999978296092316,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.153960183262825,
+              "wasm_max": 0.39592617750167847
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.001014169305562973,
+              "mean_abs": 0.0002717791397320914,
+              "rms": 0.0003362160108967862,
+              "native_l2": 1.0000001405386647,
+              "wasm_l2": 1.0000000372860762,
+              "cosine": 0.999978296092316,
+              "native_min": -0.15421511232852936,
+              "native_max": 0.39567434787750244,
+              "wasm_min": -0.153960183262825,
+              "wasm_max": 0.39592617750167847
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.182432,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.182432,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.182432417918468,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "punctuation-currency": {
+        "unset": {
+          "sha256": "f65bb7f54c70a1f02708285e604e56d85595699e15d05bcec60887814f1bbdc3",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.007434461265802383,
+              "mean_abs": 0.0018526265013746185,
+              "rms": 0.00231965891409665,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000002185922068,
+              "cosine": 0.998966883306072,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.18013004958629608,
+              "wasm_max": 0.1524786502122879
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.007434461265802383,
+              "mean_abs": 0.0018526265013746185,
+              "rms": 0.00231965891409665,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000002185922068,
+              "cosine": 0.998966883306072,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.18013004958629608,
+              "wasm_max": 0.1524786502122879
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.906581,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.906581,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.9065817753345726,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "f65bb7f54c70a1f02708285e604e56d85595699e15d05bcec60887814f1bbdc3",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.007434461265802383,
+              "mean_abs": 0.0018526265013746185,
+              "rms": 0.00231965891409665,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000002185922068,
+              "cosine": 0.998966883306072,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.18013004958629608,
+              "wasm_max": 0.1524786502122879
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.007434461265802383,
+              "mean_abs": 0.0018526265013746185,
+              "rms": 0.00231965891409665,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000002185922068,
+              "cosine": 0.998966883306072,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.18013004958629608,
+              "wasm_max": 0.1524786502122879
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.906581,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.906581,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.9065817753345726,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "f65bb7f54c70a1f02708285e604e56d85595699e15d05bcec60887814f1bbdc3",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.007434461265802383,
+              "mean_abs": 0.0018526265013746185,
+              "rms": 0.00231965891409665,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000002185922068,
+              "cosine": 0.998966883306072,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.18013004958629608,
+              "wasm_max": 0.1524786502122879
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.007434461265802383,
+              "mean_abs": 0.0018526265013746185,
+              "rms": 0.00231965891409665,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000002185922068,
+              "cosine": 0.998966883306072,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.18013004958629608,
+              "wasm_max": 0.1524786502122879
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.906581,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.906581,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.9065817753345726,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "4e4654ff9e9e42963e52a6b9273ef4f66d00f8aa9988f6901a1966c99ed5d398",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.002718273550271988,
+              "mean_abs": 0.0006184619562628289,
+              "rms": 0.0007727699545453954,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000001449438198,
+              "cosine": 0.9998853427273064,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.17634539306163788,
+              "wasm_max": 0.154597207903862
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.002718273550271988,
+              "mean_abs": 0.0006184619562628289,
+              "rms": 0.0007727699545453954,
+              "native_l2": 1.0000000347988602,
+              "wasm_l2": 1.0000001449438198,
+              "cosine": 0.9998853427273064,
+              "native_min": -0.17676086723804474,
+              "native_max": 0.15496033430099487,
+              "wasm_min": -0.17634539306163788,
+              "wasm_max": 0.154597207903862
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.885495,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.885495,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.8854957578463463,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "diacritics-emoji": {
+        "unset": {
+          "sha256": "271ec286f9b1b33a09bdbadf0a0345fd2585085077cf069da4be5a4d1802fd8d",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.008483218960464,
+              "mean_abs": 0.0016982996389616662,
+              "rms": 0.002161297820155174,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999997252693517,
+              "cosine": 0.9991031277430987,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1357239931821823,
+              "wasm_max": 0.13684098422527313
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.008483218960464,
+              "mean_abs": 0.0016982996389616662,
+              "rms": 0.002161297820155174,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999997252693517,
+              "cosine": 0.9991031277430987,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1357239931821823,
+              "wasm_max": 0.13684098422527313
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.174265,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.174265,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.174263209261764,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "271ec286f9b1b33a09bdbadf0a0345fd2585085077cf069da4be5a4d1802fd8d",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.008483218960464,
+              "mean_abs": 0.0016982996389616662,
+              "rms": 0.002161297820155174,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999997252693517,
+              "cosine": 0.9991031277430987,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1357239931821823,
+              "wasm_max": 0.13684098422527313
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.008483218960464,
+              "mean_abs": 0.0016982996389616662,
+              "rms": 0.002161297820155174,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999997252693517,
+              "cosine": 0.9991031277430987,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1357239931821823,
+              "wasm_max": 0.13684098422527313
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.174265,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.174265,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.174263209261764,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "271ec286f9b1b33a09bdbadf0a0345fd2585085077cf069da4be5a4d1802fd8d",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.008483218960464,
+              "mean_abs": 0.0016982996389616662,
+              "rms": 0.002161297820155174,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999997252693517,
+              "cosine": 0.9991031277430987,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1357239931821823,
+              "wasm_max": 0.13684098422527313
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.008483218960464,
+              "mean_abs": 0.0016982996389616662,
+              "rms": 0.002161297820155174,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999997252693517,
+              "cosine": 0.9991031277430987,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1357239931821823,
+              "wasm_max": 0.13684098422527313
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.174265,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.174265,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.174263209261764,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "e8780959513fcf169279c784468d50f0706551b2e3e49fac34f674367bc82f92",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 3.725290298461914e-08,
+              "mean_abs": 6.239702092976825e-09,
+              "rms": 8.60046983126716e-09,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999999051935515,
+              "cosine": 0.9999999999999882,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1366121917963028,
+              "wasm_max": 0.13643507659435272
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 3.725290298461914e-08,
+              "mean_abs": 6.239702092976825e-09,
+              "rms": 8.60046983126716e-09,
+              "native_l2": 0.9999999741417149,
+              "wasm_l2": 0.9999999051935515,
+              "cosine": 0.9999999999999882,
+              "native_min": -0.1366121917963028,
+              "native_max": 0.13643509149551392,
+              "wasm_min": -0.1366121917963028,
+              "wasm_max": 0.13643507659435272
+            }
+          },
+          "final_gate_pass": true,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.165189,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.165189,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.165188654358943,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "mixed-scripts": {
+        "unset": {
+          "sha256": "5f437d7e449109c6226b76a07e3fddda4665625731c08e989faea45737556a17",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00803700229153037,
+              "mean_abs": 0.0022895021132607976,
+              "rms": 0.002833454789080211,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999998054812178,
+              "cosine": 0.9984585342651413,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.1422206610441208,
+              "wasm_max": 0.15602408349514008
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00803700229153037,
+              "mean_abs": 0.0022895021132607976,
+              "rms": 0.002833454789080211,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999998054812178,
+              "cosine": 0.9984585342651413,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.1422206610441208,
+              "wasm_max": 0.15602408349514008
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 2.546359,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 2.546359,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 2.5463588046924968,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "5f437d7e449109c6226b76a07e3fddda4665625731c08e989faea45737556a17",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00803700229153037,
+              "mean_abs": 0.0022895021132607976,
+              "rms": 0.002833454789080211,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999998054812178,
+              "cosine": 0.9984585342651413,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.1422206610441208,
+              "wasm_max": 0.15602408349514008
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00803700229153037,
+              "mean_abs": 0.0022895021132607976,
+              "rms": 0.002833454789080211,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999998054812178,
+              "cosine": 0.9984585342651413,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.1422206610441208,
+              "wasm_max": 0.15602408349514008
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 2.546359,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 2.546359,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 2.5463588046924968,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "5f437d7e449109c6226b76a07e3fddda4665625731c08e989faea45737556a17",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00803700229153037,
+              "mean_abs": 0.0022895021132607976,
+              "rms": 0.002833454789080211,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999998054812178,
+              "cosine": 0.9984585342651413,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.1422206610441208,
+              "wasm_max": 0.15602408349514008
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00803700229153037,
+              "mean_abs": 0.0022895021132607976,
+              "rms": 0.002833454789080211,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999998054812178,
+              "cosine": 0.9984585342651413,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.1422206610441208,
+              "wasm_max": 0.15602408349514008
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 2.546359,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 2.546359,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 2.5463588046924968,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "6e6ddba02d7dc57739c08376a17961f44efbe2ab3f58868ea4843545b0ba43f9",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.003993667894974351,
+              "mean_abs": 0.0009506454190964982,
+              "rms": 0.0011997776986327731,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999999637214908,
+              "cosine": 0.9997236224250219,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.13888773322105408,
+              "wasm_max": 0.15654608607292175
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.003993667894974351,
+              "mean_abs": 0.0009506454190964982,
+              "rms": 0.0011997776986327731,
+              "native_l2": 1.0000000291790134,
+              "wasm_l2": 0.9999999637214908,
+              "cosine": 0.9997236224250219,
+              "native_min": -0.1400572508573532,
+              "native_max": 0.15561023354530334,
+              "wasm_min": -0.13888773322105408,
+              "wasm_max": 0.15654608607292175
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 2.533283,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 2.533283,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 2.5332828970849333,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "whitespace": {
+        "unset": {
+          "sha256": "4ba7964022fe10597ff523ce7f589bf0d3ab77432055ca8a990e255c0d5bcba3",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.01395277725532651,
+              "mean_abs": 0.0027436980021130256,
+              "rms": 0.0034815732539890576,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 0.9999997981444834,
+              "cosine": 0.9976726995103907,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.15880946815013885,
+              "wasm_max": 0.22880251705646515
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.01395277725532651,
+              "mean_abs": 0.0027436980021130256,
+              "rms": 0.0034815732539890576,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 0.9999997981444834,
+              "cosine": 0.9976726995103907,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.15880946815013885,
+              "wasm_max": 0.22880251705646515
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.724087,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.724087,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.724085596003615,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "4ba7964022fe10597ff523ce7f589bf0d3ab77432055ca8a990e255c0d5bcba3",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.01395277725532651,
+              "mean_abs": 0.0027436980021130256,
+              "rms": 0.0034815732539890576,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 0.9999997981444834,
+              "cosine": 0.9976726995103907,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.15880946815013885,
+              "wasm_max": 0.22880251705646515
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.01395277725532651,
+              "mean_abs": 0.0027436980021130256,
+              "rms": 0.0034815732539890576,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 0.9999997981444834,
+              "cosine": 0.9976726995103907,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.15880946815013885,
+              "wasm_max": 0.22880251705646515
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.724087,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.724087,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.724085596003615,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "4ba7964022fe10597ff523ce7f589bf0d3ab77432055ca8a990e255c0d5bcba3",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.01395277725532651,
+              "mean_abs": 0.0027436980021130256,
+              "rms": 0.0034815732539890576,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 0.9999997981444834,
+              "cosine": 0.9976726995103907,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.15880946815013885,
+              "wasm_max": 0.22880251705646515
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.01395277725532651,
+              "mean_abs": 0.0027436980021130256,
+              "rms": 0.0034815732539890576,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 0.9999997981444834,
+              "cosine": 0.9976726995103907,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.15880946815013885,
+              "wasm_max": 0.22880251705646515
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.724087,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.724087,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.724085596003615,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "0a3d0c5a95a2dcfca28546b6166445675e11d70777a27aec9d46b963dc812281",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.0028039738535881042,
+              "mean_abs": 0.0007509983864503744,
+              "rms": 0.0009454625714816375,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 1.0000001035691728,
+              "cosine": 0.9998283712912194,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.1596745252609253,
+              "wasm_max": 0.22724421322345734
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.0028039738535881042,
+              "mean_abs": 0.0007509983864503744,
+              "rms": 0.0009454625714816375,
+              "native_l2": 0.9999998393690175,
+              "wasm_l2": 1.0000001035691728,
+              "cosine": 0.9998283712912194,
+              "native_min": -0.15981359779834747,
+              "native_max": 0.2260235995054245,
+              "wasm_min": -0.1596745252609253,
+              "wasm_max": 0.22724421322345734
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 5.712056,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 5.712056,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 5.712056262123891,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "numbers": {
+        "unset": {
+          "sha256": "bc23bd6062b50abe12778182697d27f97032e0ca98d927783b8b34058f71284a",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.007270386442542076,
+              "mean_abs": 0.002148783314785343,
+              "rms": 0.0026892423133308974,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 0.9999999674756269,
+              "cosine": 0.9986114508478304,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16395823657512665,
+              "wasm_max": 0.1290433555841446
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.007270386442542076,
+              "mean_abs": 0.002148783314785343,
+              "rms": 0.0026892423133308974,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 0.9999999674756269,
+              "cosine": 0.9986114508478304,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16395823657512665,
+              "wasm_max": 0.1290433555841446
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.552619,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.552619,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.5526193591166644,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "bc23bd6062b50abe12778182697d27f97032e0ca98d927783b8b34058f71284a",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.007270386442542076,
+              "mean_abs": 0.002148783314785343,
+              "rms": 0.0026892423133308974,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 0.9999999674756269,
+              "cosine": 0.9986114508478304,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16395823657512665,
+              "wasm_max": 0.1290433555841446
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.007270386442542076,
+              "mean_abs": 0.002148783314785343,
+              "rms": 0.0026892423133308974,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 0.9999999674756269,
+              "cosine": 0.9986114508478304,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16395823657512665,
+              "wasm_max": 0.1290433555841446
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.552619,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.552619,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.5526193591166644,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "bc23bd6062b50abe12778182697d27f97032e0ca98d927783b8b34058f71284a",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.007270386442542076,
+              "mean_abs": 0.002148783314785343,
+              "rms": 0.0026892423133308974,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 0.9999999674756269,
+              "cosine": 0.9986114508478304,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16395823657512665,
+              "wasm_max": 0.1290433555841446
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.007270386442542076,
+              "mean_abs": 0.002148783314785343,
+              "rms": 0.0026892423133308974,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 0.9999999674756269,
+              "cosine": 0.9986114508478304,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16395823657512665,
+              "wasm_max": 0.1290433555841446
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.552619,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.552619,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.5526193591166644,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "c1f8f21f85a86d64bdc1ee00a75533b0b982e20ef43b37bdc047f8acef2742ce",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.00395597331225872,
+              "mean_abs": 0.0008102874078068876,
+              "rms": 0.0010374663708821545,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 1.0000000817957504,
+              "cosine": 0.9997933433466191,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16954882442951202,
+              "wasm_max": 0.129192516207695
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.00395597331225872,
+              "mean_abs": 0.0008102874078068876,
+              "rms": 0.0010374663708821545,
+              "native_l2": 0.99999967098863,
+              "wasm_l2": 1.0000000817957504,
+              "cosine": 0.9997933433466191,
+              "native_min": -0.17005053162574768,
+              "native_max": 0.12813115119934082,
+              "wasm_min": -0.16954882442951202,
+              "wasm_max": 0.129192516207695
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 3.591782,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 3.591782,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 3.591782125963552,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "one-character": {
+        "unset": {
+          "sha256": "8cd9f6944d2c96b1bdb3295180437e400679bcaa0ad70aa21a4d7b574baa8800",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.013261120766401291,
+              "mean_abs": 0.002789632077967672,
+              "rms": 0.003555599939373429,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 1.0000000751200746,
+              "cosine": 0.997572680118018,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.17033031582832336,
+              "wasm_max": 0.19074036180973053
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.013261120766401291,
+              "mean_abs": 0.002789632077967672,
+              "rms": 0.003555599939373429,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 1.0000000751200746,
+              "cosine": 0.997572680118018,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.17033031582832336,
+              "wasm_max": 0.19074036180973053
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.562161,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.562161,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.562161427172754,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "8cd9f6944d2c96b1bdb3295180437e400679bcaa0ad70aa21a4d7b574baa8800",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.013261120766401291,
+              "mean_abs": 0.002789632077967672,
+              "rms": 0.003555599939373429,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 1.0000000751200746,
+              "cosine": 0.997572680118018,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.17033031582832336,
+              "wasm_max": 0.19074036180973053
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.013261120766401291,
+              "mean_abs": 0.002789632077967672,
+              "rms": 0.003555599939373429,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 1.0000000751200746,
+              "cosine": 0.997572680118018,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.17033031582832336,
+              "wasm_max": 0.19074036180973053
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.562161,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.562161,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.562161427172754,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "8cd9f6944d2c96b1bdb3295180437e400679bcaa0ad70aa21a4d7b574baa8800",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.013261120766401291,
+              "mean_abs": 0.002789632077967672,
+              "rms": 0.003555599939373429,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 1.0000000751200746,
+              "cosine": 0.997572680118018,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.17033031582832336,
+              "wasm_max": 0.19074036180973053
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.013261120766401291,
+              "mean_abs": 0.002789632077967672,
+              "rms": 0.003555599939373429,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 1.0000000751200746,
+              "cosine": 0.997572680118018,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.17033031582832336,
+              "wasm_max": 0.19074036180973053
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.562161,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.562161,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.562161427172754,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "564d38ce826d99e41400ec6786ec827e3be270e5edadc78cf714f802f8f852d2",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 1.043081283569336e-07,
+              "mean_abs": 1.100412798151392e-08,
+              "rms": 1.5335606993441903e-08,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 0.999999860935889,
+              "cosine": 0.9999999999999563,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.1716228425502777,
+              "wasm_max": 0.1881270408630371
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 1.043081283569336e-07,
+              "mean_abs": 1.100412798151392e-08,
+              "rms": 1.5335606993441903e-08,
+              "native_l2": 0.9999999151361698,
+              "wasm_l2": 0.999999860935889,
+              "cosine": 0.9999999999999563,
+              "native_min": -0.1716228574514389,
+              "native_max": 0.1881270706653595,
+              "wasm_min": -0.1716228425502777,
+              "wasm_max": 0.1881270408630371
+            }
+          },
+          "final_gate_pass": true,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 6.590719,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 6.590719,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 6.590718292783615,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "near-limit": {
+        "unset": {
+          "sha256": "ab75b7a1b830dd8ea1edfe03b57f0b248114452045534f5ed33cc8953dec2cdd",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.008008372038602829,
+              "mean_abs": 0.001944863814995405,
+              "rms": 0.0024590672206080337,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 1.000000116687708,
+              "cosine": 0.998838974059867,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12445095926523209,
+              "wasm_max": 0.16263823211193085
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.008008372038602829,
+              "mean_abs": 0.001944863814995405,
+              "rms": 0.0024590672206080337,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 1.000000116687708,
+              "cosine": 0.998838974059867,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12445095926523209,
+              "wasm_max": 0.16263823211193085
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.203923,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.203923,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.203922646043918,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "ab75b7a1b830dd8ea1edfe03b57f0b248114452045534f5ed33cc8953dec2cdd",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.008008372038602829,
+              "mean_abs": 0.001944863814995405,
+              "rms": 0.0024590672206080337,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 1.000000116687708,
+              "cosine": 0.998838974059867,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12445095926523209,
+              "wasm_max": 0.16263823211193085
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.008008372038602829,
+              "mean_abs": 0.001944863814995405,
+              "rms": 0.0024590672206080337,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 1.000000116687708,
+              "cosine": 0.998838974059867,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12445095926523209,
+              "wasm_max": 0.16263823211193085
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.203923,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.203923,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.203922646043918,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "ab75b7a1b830dd8ea1edfe03b57f0b248114452045534f5ed33cc8953dec2cdd",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.008008372038602829,
+              "mean_abs": 0.001944863814995405,
+              "rms": 0.0024590672206080337,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 1.000000116687708,
+              "cosine": 0.998838974059867,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12445095926523209,
+              "wasm_max": 0.16263823211193085
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.008008372038602829,
+              "mean_abs": 0.001944863814995405,
+              "rms": 0.0024590672206080337,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 1.000000116687708,
+              "cosine": 0.998838974059867,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12445095926523209,
+              "wasm_max": 0.16263823211193085
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.203923,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.203923,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.203922646043918,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "1c8e2f62101406799997e00168c199d351b5c6636a60a1bbb15b6a209220563e",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.0022523049265146255,
+              "mean_abs": 0.00048230765434951567,
+              "rms": 0.0006067236045608865,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 0.9999998800002509,
+              "cosine": 0.9999293222025174,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12493860721588135,
+              "wasm_max": 0.1679384410381317
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.0022523049265146255,
+              "mean_abs": 0.00048230765434951567,
+              "rms": 0.0006067236045608865,
+              "native_l2": 1.0000001298157386,
+              "wasm_l2": 0.9999998800002509,
+              "cosine": 0.9999293222025174,
+              "native_min": -0.12423864752054214,
+              "native_max": 0.1680624634027481,
+              "wasm_min": -0.12493860721588135,
+              "wasm_max": 0.1679384410381317
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.198751,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.198751,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.1987505905334113,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      },
+      "truncating": {
+        "unset": {
+          "sha256": "479666ad5195758fc7143dc15499f0a482d0e7fd010b9f17a4b676046b0e30df",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.006709016859531403,
+              "mean_abs": 0.0019123458420639376,
+              "rms": 0.002408196996735997,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.000000150791648,
+              "cosine": 0.9988865128194673,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12807337939739227,
+              "wasm_max": 0.1565169394016266
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.006709016859531403,
+              "mean_abs": 0.0019123458420639376,
+              "rms": 0.002408196996735997,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.000000150791648,
+              "cosine": 0.9988865128194673,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12807337939739227,
+              "wasm_max": 0.1565169394016266
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.294378,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.294378,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.2943782367416048,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "empty": {
+          "sha256": "479666ad5195758fc7143dc15499f0a482d0e7fd010b9f17a4b676046b0e30df",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.006709016859531403,
+              "mean_abs": 0.0019123458420639376,
+              "rms": 0.002408196996735997,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.000000150791648,
+              "cosine": 0.9988865128194673,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12807337939739227,
+              "wasm_max": 0.1565169394016266
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.006709016859531403,
+              "mean_abs": 0.0019123458420639376,
+              "rms": 0.002408196996735997,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.000000150791648,
+              "cosine": 0.9988865128194673,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12807337939739227,
+              "wasm_max": 0.1565169394016266
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.294378,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.294378,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.2943782367416048,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "0": {
+          "sha256": "479666ad5195758fc7143dc15499f0a482d0e7fd010b9f17a4b676046b0e30df",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.006709016859531403,
+              "mean_abs": 0.0019123458420639376,
+              "rms": 0.002408196996735997,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.000000150791648,
+              "cosine": 0.9988865128194673,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12807337939739227,
+              "wasm_max": 0.1565169394016266
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.006709016859531403,
+              "mean_abs": 0.0019123458420639376,
+              "rms": 0.002408196996735997,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.000000150791648,
+              "cosine": 0.9988865128194673,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12807337939739227,
+              "wasm_max": 0.1565169394016266
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": true,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.294378,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.294378,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.2943782367416048,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        },
+        "1": {
+          "sha256": "353668342088aa5d604a045b1d7f0d17913e26a0026a2bfa6efb631047bad668",
+          "native_comparison": {
+            "1": {
+              "n": 384,
+              "max_abs": 0.0013908501714468002,
+              "mean_abs": 0.0003757722820295073,
+              "rms": 0.00046753195584892365,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.0000001734632074,
+              "cosine": 0.9999580314667984,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12813115119934082,
+              "wasm_max": 0.16292522847652435
+            },
+            "2": {
+              "n": 384,
+              "max_abs": 0.0013908501714468002,
+              "mean_abs": 0.0003757722820295073,
+              "rms": 0.00046753195584892365,
+              "native_l2": 0.9999999141002945,
+              "wasm_l2": 1.0000001734632074,
+              "cosine": 0.9999580314667984,
+              "native_min": -0.12790313363075256,
+              "native_max": 0.16299061477184296,
+              "wasm_min": -0.12813115119934082,
+              "wasm_max": 0.16292522847652435
+            }
+          },
+          "final_gate_pass": false,
+          "legacy_bit_exact": false,
+          "ordinary_dump_bit_exact": true,
+          "ordinary_raw_norm": {
+            "six_decimal_log": 1.282836,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "dump_raw_norm": {
+            "six_decimal_log": 1.282836,
+            "provenance": "Actual runtime diagnostic rounded to six decimals; not a captured vector."
+          },
+          "actual_wasm_pre_L2_mean_l2": 1.2828366602205612,
+          "pre_L2_provenance": "Actual test-overlay WASM buffer. Native panel exposes only six-decimal raw norm diagnostics; no captured native pre-L2 vector claim."
+        }
+      }
+    },
+    "interleaving": [
+      {
+        "label": "A0",
+        "logs": [
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "[crispembed-rawnorm] 5.139136"
+        ]
+      },
+      {
+        "label": "B1",
+        "logs": [
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "[crispembed-rawnorm] 5.160820"
+        ]
+      },
+      {
+        "label": "C0",
+        "logs": [
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "[crispembed-rawnorm] 5.139136"
+        ]
+      },
+      {
+        "label": "A0-repeat",
+        "logs": [
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102",
+          "[crispembed-rawnorm] 5.139136"
+        ]
+      }
+    ],
+    "operator_receipt": "tests/results/packaging/wasm-rounding-operators.json"
+  }
+}

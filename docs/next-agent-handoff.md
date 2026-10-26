@@ -611,14 +611,15 @@ completed evidence. The remaining loop requires actual review of these lanes:
   integrated runtime; use its exact branch, not changed main, for that diagnostic.
 - Conditional WASM rounding
   [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
-  at`580e3ae3be3671ddce5e945b0725d0583ec34110` now has positive independent
-  [weight-free operator evidence](../tests/results/packaging/wasm-rounding-operators.json).
-  The model job must verify that same-run receipt before access, then freeze ten
-  old native/browser panel before candidate execution, with unset/empty/0/1,
-  observers, full original stages and context isolation. The per-backend gate
-  stays default-off; original converter/old outputs and0.002/0.99999 remain.
-  Initial common-control failure40385214740 and all queued cancellations stay
-  retained. Review the complete actual results before any default decision.
+  at`580e3ae3be3671ddce5e945b0725d0583ec34110` passes actual operators but its
+  [complete model A/B](../tests/results/packaging/wasm-rounding-ab-v1.json)
+  rejects8/10 final cases at unchanged0.002/0.99999. Legacy stages/finals,
+  observers and interleaved contexts preserve anchors. Attention0 improves to
+  max1.19e-7, layers0–2 below9.54e-7, then layer3 reaches0.00291893 and encoder_out
+  reaches0.02850568. Retain raw artifact12692387342 remotely; trace the first
+  layer3 operator with actual retained inputs and weights before changing scale,
+  precision or defaults. Keep both converters and the per-backend gate off.
+  Initial common-control failure40385214740 and queued cancellations stay retained.
 - Review-only integration branch`integration/bounded-closure-20261026` combines
   the frozen lane sources. Producer branches stay unchanged, and historical
   whole-source guards intentionally reject changed runtime trees. Final integrated

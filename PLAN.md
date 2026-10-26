@@ -400,7 +400,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 | 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Canonical v2 preparation is reviewed after strict-v1 rejection and complete legacy/author provenance. Full40375626336 at frozene35 runs8 originals→freeze→8 native→aggregate; exact5483 rows and unchanged ranking/vector gates. No pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Initial seven-native/two-WASM producers complete; first consumers fail Windows/Apple/browser. Corrected corpus, UTF8 audit, strict cross-desktop aggregation and actual rounding A/B precede fresh final-source producers/all consumers. No tag/app pin change; device limits explicit. |
 | 2026-10-26 | `feat/wasm-q8-rounding-candidate-20261026` | Conditional WASM Q8_0 rounding candidate | Isolated ggml890-based fork a06, encoder-only per-backend opt-in and preserved legacy/Q8_1 kernels. Actual40391544739 requires numeric operator controls before ten-case model A/B; candidate stays off before reviewed strict parity/default decision. |
-| 2026-10-26 | `test/wasm-q8-rounding-ab-20261026` | Versioned conditional WASM model A/B | [Prepared v1 consumer](docs/wasm-q8-rounding-ab-v1.md) pins reviewed first trace40379523009, freezes ten owned old-native/browser controls before candidate execution, and preserves strict legacy/final/full-stage gates. Historical guards remain untouched; actual outputs and independent review are pending, with no default promotion. |
+| 2026-10-26 | `test/wasm-q8-rounding-ab-20261026` | Versioned conditional WASM model A/B | [Prepared v1 consumer](docs/wasm-q8-rounding-ab-v1.md) pins reviewed first trace40379523009, freezes ten owned old-native/browser controls before candidate execution, and preserves strict legacy/final/full-stage gates. Actual model A/B is numerically rejected (8/10 final cases; first remaining stage layer3). Preserve actual receipt and attribute same-input operators before a new candidate; no default promotion. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Four-grid composed interpolation A/B | Norm/position attribution and both first-F16 quality arms are reviewed. Corrected40376882009 at frozen8bb must retain literal0 vector hashes/failure set and apply unchanged numerical/decoded gates to literal1 on all four grids. No original recapture, budget waiver or input-bound default change. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
@@ -631,8 +631,9 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   during the panel. Preparation40372423343 is independently reviewed in
   [the receipt](tests/results/ultrabert/scifact-canonical-preparation.json).
   All5,483 wrapper inputs/masks are frozen, including460 right-truncated
-  documents. Finish eight original shards, freeze all originals, then eight
-  native shards and aggregate. Require all rows/IDs,0.002/0.99999 vector gates,
+  documents. All eight original shards completed and their exact disjoint5,483-ID union
+  was independently checked. Freeze all originals, then finish eight native
+  shards and aggregate. Require all rows/IDs,0.002/0.99999 vector gates,
   NDCG@10/MRR@10/Recall@100 degradation≤0.001 and top1 agreement≥99%.
   V1 author-column rejection and1,055 author-abstract differences remain
   preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
@@ -653,23 +654,23 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   40376735641 and40354251257 stay negative; no image hash, gold, score or
   seven-of-fifty quality result changed. Historical renderer ABI alignment
   does not attribute the earlier Mac mismatch to a particular environment cause.
-- [ ] **Finish actual WASM rounding A/B.** The independently reviewed
-  [first trace](tests/results/packaging/successor-wasm-source-trace.json)
-  reproduces all eight native/browser neutrality anchors, exact embedding norm,
-  first captured divergence at attention0 and final0.00837269/0.99864984
-  rejection. Same-input Q8 activation quantization differs by187 bytes with
-  exact scales; this is an operator hypothesis, not full-network causality.
-  [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
-  at`580e3ae3be3671ddce5e945b0725d0583ec34110` now passes independently
-  reviewed [actual weight-free operators](tests/results/packaging/wasm-rounding-operators.json)
-  on fork`a06fc0bb46b73cc10011fc90ae4054aee8438aeb`: all five records and
-  authored158/189 outputs, backend isolation and cached plans verify. The model
-  job must consume that same-run receipt, freeze the ten-case old native/browser
-  panel and run unset/empty/0/1, observers, full original stages and context
-  isolation. Require legacy byte identity and unchanged0.002/0.99999 candidate
-  gates. Gate`CRISPEMBED_WASM_Q8_0_ROUND` stays default-off and the old
-  converter remains. Preserve initial common-control failure40385214740 and
-  pre-execution cancellations. No promotion from source review alone.
+- [ ] **Attribute remaining WASM layer3 divergence and correct it behind a gate.**
+  [Actual40391544739](tests/results/packaging/wasm-rounding-ab-v1.json)
+  at580e3ae3 passes all five operator controls and completes every ten-case
+  unset/empty/0/1, observer and interleaved-context arm, preserving old anchors.
+  Candidate attention0 max1.19209e-7 and layers0–2 below9.53675e-7 improve sharply,
+  but layer3 max0.00291893, layer4 max0.01997251 and encoder_out max0.02850568
+  reject unchanged0.002/0.99999 gates. Eight of ten final cases fail; original
+  cosine0.9999548495 still fails. This completed negative belongs in HISTORY.
+  Use retained raw artifact12692387342 and the exact old model on hosted CI to
+  locate the first differing layer3 operation, replay both actual retained inputs
+  through the same operator and record Q8 byte/scale and dot/output differences.
+  Test reciprocal/scaling/reduction hypotheses rather than attributing causality
+  to an approximate F32 match. Preserve all original golds, failures and source
+  guards; any new alternative needs an explicit versioned source/experiment.
+  Gate`CRISPEMBED_WASM_Q8_0_ROUND` remains default-off, legacy remains intact.
+  Require the complete unchanged model A/B after an evidenced fix, before any
+  final runtime/default decision or fresh packaged producer qualification.
 - [ ] **Qualify final immutable assets.** After reviewed runtime changes and
   any justified default decision, freeze one final integrated source. Build
   fresh seven CPU/mobile archives and both WASM bundles from that same source;

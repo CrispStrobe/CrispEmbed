@@ -16202,3 +16202,21 @@ there are no model weights in this test. The immutable pre-execution declaration
 stays unchanged, with actual evidence in this separate receipt. Only the operator
 job is positive: parent/model A/B remains pending, so no full-network causality,
 model qualification, default change, archive publication or app upgrade follows.
+
+## 26 October 2026 — actual WASM rounding model A/B rejected
+
+[40391544739](tests/results/packaging/wasm-rounding-ab-v1.json) at580e3ae3
+completes the operator barrier, all ten frozen cases with unset/empty/0/1 and
+ordinary/dump execution, eight full first-sentence stages and live0/1/0 contexts.
+Independent reviews recompute80 final comparisons, verify110 token-log controls,
+40 observer pairs, four live-context pairs and all64 diff log rows;
+legacy final/stage anchors remain exact. Candidate attention0 max1.19209e-7
+and layers0–2 below9.53675e-7 demonstrate a bounded improvement. The first
+remaining captured failure is layer3 max0.00291893, followed by layer4
+max0.01997251 and encoder_out0.02850568. Eight of ten candidate finals fail the
+unchanged0.002/0.99999 budgets; original final max0.00156465832/cos0.9999548495
+still fails. Pre-L2 mean max0.00808028661 is separately negative, with recomputed
+native versus captured WASM provenance retained. This is a completed numerical
+rejection, not a preflight failure. Source/fork/weights/panel/gold stay frozen;
+raw arrays remain remote. Default stays off. Next is same-input attribution of
+layer3's first differing operator, not a tolerance change or final-asset promotion.

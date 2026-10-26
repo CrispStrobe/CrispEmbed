@@ -5,7 +5,9 @@ This is a new, versioned consumer for the unmerged
 trace driver, its production guard and the metadata dispatcher unchanged. The
 zero-input reusable workflow is
 [wasm-q8-rounding-ab-v1.yml](../.github/workflows/wasm-q8-rounding-ab-v1.yml).
-It is prepared for review; no model A/B has run and no default or release is
+Actual run40391544739 at580e3ae3 completed with a numerical rejection.
+The [reviewed result](../tests/results/packaging/wasm-rounding-ab-v1.json)
+preserves the unchanged gates and all ten cases; no default or release is
 promoted. The caller must use a reviewed commit. Builds run hosted with two
 workers and a60-minute job ceiling.
 
@@ -102,8 +104,8 @@ are excluded from both uploads.
 
 Seven stdlib protocol/source controls, Python/JavaScript syntax checks and
 workflow lint pass. No local build, inference, framework, model or raw-array
-batch ran. Actual hosted weight-free operator controls and the complete model
-A/B remain dependencies. Even an entirely passing numerical panel would not
+batch ran. Actual hosted weight-free operator controls pass, while the completed model
+A/B rejects eight of ten candidate finals. Even an entirely passing numerical panel would not
 establish representative task accuracy, qualify release assets or promote a
 default. A production asset change requires new immutable producers and fresh
 consumers after review.
@@ -115,3 +117,28 @@ before downloading model data. It preserves the operator artifact's ZIP/member
 identities in `operator-proof.json`. A failed or missing operator receipt blocks
 the model job; source checks alone cannot satisfy this barrier. The standalone
 operator phase remains available for separate bounded debugging.
+
+## Actual result: candidate rejected
+
+[40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
+completed the operator barrier and complete model matrix. Unset, empty and literal0
+preserve all old final/stage anchors; observers and interleaved contexts preserve
+their own isolated results. Literal1 fixes attention0 from maximum0.0833039284
+to1.1920929e-7. Layers0–2 stay below9.5367432e-7, but layer3 reaches0.00291892886,
+layer4 reaches0.0199725088 and encoder_out reaches0.0285056829. These are actual
+`crispembed-diff` stages, checked against independent metrics at unchanged budgets.
+The first sentence final improves to max0.00156465832/cosine0.9999548495, which
+still fails0.99999. Eight of ten final cases fail; only diacritics/emoji and the
+one-character case pass. Pre-L2 mean max0.00808028661 fails separately; native
+mean remains a labeled sequential-F32 recomputation, not a captured native buffer.
+
+Small review artifact12692262412 is503633 bytes, SHA256
+`6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047`.
+Raw artifact12692387342 is2357641 bytes, SHA256
+`0ac59ef65d00c4f267791b47323dc5705a958bdfab4805e1f8337d2eb6da65da`;
+keep it remote. The public receipt retains full metrics, failures and raw/member
+identities, with vector payloads available in the immutable remote producer.
+Next trace layer3's first differing operator using the same retained input/weights
+on both backends, separating tiny composed input differences from local arithmetic.
+No scale formula or precision change is established as the remaining cause.
+Keep both converters and the candidate gate off; never widen0.002/0.99999.
