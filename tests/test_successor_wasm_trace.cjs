@@ -80,7 +80,7 @@ const server=http.createServer((req,res)=>{
             }
             try{
               const fractional=Array(32).fill(0);fractional.splice(0,7,127,1.6,-1.6,1.49,-1.49,2.5,-2.5);
-              operators={weight:weightInfo,controls:[quantize('zero',Array(32).fill(0)),quantize('fractional-and-ties',fractional),quantize('actual-first-token-emb_ln_out',actual)],
+              operators={actual_backend_wasm_simd:module.ccall('wasm_trace_simd','number',[],[]),weight:weightInfo,controls:[quantize('zero',Array(32).fill(0)),quantize('fractional-and-ties',fractional),quantize('actual-first-token-emb_ln_out',actual)],
                 limits:['Actual WASM Q8_0 architecture conversion versus pinned roundf reference on identical inputs. One actual query-weight output-channel dot when actual stored type is IQ4_NL; not a native SIMD or full-network fix proof.']};
             }finally{if(wp)module._free(wp);}
           }catch(error){operators={error:String(error)};}}

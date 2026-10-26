@@ -117,7 +117,6 @@ def overlay(source):
     p.write_bytes(before+br'''
 /* Test-only environment setter and operator controls; never shipped. */
 #include "../ggml/src/ggml-quants.h"
-#include "../ggml/src/ggml-cpu/quants.h"
 #include "ggml-cpu.h"
 WASM_EXPORT
 int wasm_trace_setenv(const char * key, const char * value) {
@@ -126,10 +125,14 @@ int wasm_trace_setenv(const char * key, const char * value) {
 WASM_EXPORT
 int wasm_trace_q8(const float * x, int n, void * arch, void * ref) {
     if (n <= 0 || n > 384 || n % 32) return -1;
-    quantize_row_q8_0(x, arch, n);
+    const struct ggml_type_traits_cpu * trait = ggml_get_type_traits_cpu(GGML_TYPE_Q8_0);
+    if (!trait->from_float) return -2;
+    trait->from_float(x, arch, n);
     quantize_row_q8_0_ref(x, (block_q8_0 *) ref, n);
     return (n / 32) * sizeof(block_q8_0);
 }
+WASM_EXPORT
+int wasm_trace_simd(void) { return ggml_cpu_has_wasm_simd(); }
 WASM_EXPORT
 int wasm_trace_dot(int type, int n, const void * weight, const void * q8, float * out) {
     if (type != GGML_TYPE_IQ4_NL || n != 384) return -1;
@@ -156,7 +159,7 @@ int wasm_trace_dot(int type, int n, const void * weight, const void * q8, float 
     p.write_text(text,encoding='utf-8')
     changes['src/crispembed.cpp']={'before':digest(before),'after':digest(p.read_bytes())}
     p=source/'build-embed-wasm.sh';before=p.read_bytes();text=before.decode()
-    text=replace_one(text,"'_wasm_embed_version',", "'_wasm_trace_setenv',\\\n'_wasm_trace_q8',\\\n'_wasm_trace_dot',\\\n'_wasm_embed_version',")
+    text=replace_one(text,"'_wasm_embed_version',", "'_wasm_trace_setenv',\\\n'_wasm_trace_q8',\\\n'_wasm_trace_simd',\\\n'_wasm_trace_dot',\\\n'_wasm_embed_version',")
     text=replace_one(text,'-j$(nproc 2>/dev/null || echo 4)','-j2')
     p.write_text(text,encoding='utf-8')
     changes['build-embed-wasm.sh']={'before':digest(before),'after':digest(p.read_bytes())}
