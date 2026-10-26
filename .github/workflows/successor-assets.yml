@@ -1,0 +1,208 @@
+name: Immutable successor packaged consumers
+on:
+  workflow_call:
+    inputs:
+      native_run:
+        type: string
+        required: true
+      wasm_run:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      native_run:
+        type: string
+        required: true
+        description: 'Successful exact-source Release dry-run ID'
+      wasm_run:
+        type: string
+        required: true
+        description: 'Successful exact-source unpublished Release WASM run ID'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: linux-x86_64
+          - os: ubuntu-24.04-arm
+            artifact: linux-arm64
+          - os: macos-15
+            artifact: macos-arm64
+          - os: windows-2022
+            artifact: windows-x86_64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: runner.os == 'Windows'
+      - name: Fresh candidate download and all member hashes
+        shell: bash
+        env:
+          PRODUCER_RUN: ${{ inputs.native_run }}
+          PACKAGE_ARTIFACT: ${{ matrix.artifact }}
+        run: python tools/ci-heavy/successor_assets.py --run "$PRODUCER_RUN" --kind native --artifact "$PACKAGE_ARTIFACT" --output "$RUNNER_TEMP/consumer"
+      - name: Packaged Linux dependency and glibc floor
+        if: runner.os == 'Linux'
+        run: python scripts/check-bundled-deps.py "$RUNNER_TEMP/consumer/crispembed-${{ matrix.artifact }}" --max-glibc 2.28
+      - name: Python binding reader
+        run: python -m pip install numpy==2.2.6
+      - name: Actual CLI, shipped header exports, compiled C ABI and Python vectors
+        shell: bash
+        run: python tools/ci-heavy/successor_assets.py --desktop --output "$RUNNER_TEMP/consumer"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-consumer-${{ matrix.artifact }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/consumer/consumer.json
+            ${{ runner.temp }}/consumer/*.log
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: success() && matrix.artifact == 'linux-x86_64'
+        with:
+          name: successor-minilm-fixture-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/consumer/consumer.json
+            ${{ runner.temp }}/consumer/model-cache/**/all-MiniLM-L6-v2-iq4_xs.gguf
+          retention-days: 90
+  wasm:
+    needs: desktop
+    if: always() && !cancelled()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fresh WASM archive download and exact members
+        env:
+          PRODUCER_RUN: ${{ inputs.wasm_run }}
+        run: python tools/ci-heavy/successor_assets.py --run "$PRODUCER_RUN" --kind wasm --artifact crispembed-wasm-release --output "$RUNNER_TEMP/browser"
+      - uses: actions/download-artifact@v4
+        with:
+          name: successor-minilm-fixture-${{ github.run_id }}
+          path: ${{ runner.temp }}/native-fixture
+      - name: Reuse exact native model and comparison vector
+        run: |
+          python - <<'PYCODE'
+          import os,shutil
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP']);files=list((root/'native-fixture').rglob('all-MiniLM-L6-v2-iq4_xs.gguf'))
+          assert len(files)==1
+          shutil.copy2(files[0],root/'browser/model.gguf')
+          shutil.copy2(root/'native-fixture/consumer.json',root/'browser/native.json')
+          PYCODE
+          npm install --prefix "$RUNNER_TEMP/browser-tools" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Actual packaged browser model and classical OCR-module consumer
+        run: NODE_PATH="$RUNNER_TEMP/browser-tools/node_modules" node tests/test_successor_wasm.cjs "$RUNNER_TEMP/browser" "$RUNNER_TEMP/browser/browser.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-wasm-consumer-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/browser/consumer.json
+            ${{ runner.temp }}/browser/browser.json
+          retention-days: 90
+  apple-released:
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: CrispStrobe/CrispMath
+          ref: 23f1470df0a0853234880ac7e0c6135fd4c02f59
+          path: .ci/CrispMath
+          sparse-checkout: tool
+          filter: blob:none
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Actual candidate archive and complete member checks
+        env:
+          PRODUCER_RUN: ${{ inputs.native_run }}
+        run: python tools/ci-heavy/successor_assets.py --run "$PRODUCER_RUN" --kind native --artifact macos-arm64 --output "$RUNNER_TEMP/apple-candidate"
+      - name: Exact existing corpus renderer and published model
+        working-directory: .ci/CrispMath
+        run: |
+          python -m pip install Pillow==12.3.0
+          python tool/provision_handwriting_quality.py
+          curl --fail --location --retry 3 https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/230657859144cc43a88605a4e737b47929181d4c/posformer-crohme-q8_0.gguf --output posformer-q8.gguf
+          echo '450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4  posformer-q8.gguf' | shasum -a 256 --check
+      - name: Actual released Apple library versus candidate unset, literal1 and legacy0
+        run: python tools/ci-heavy/successor_posformer.py --candidate "$RUNNER_TEMP/apple-candidate/crispembed-macos-arm64" --app "$GITHUB_WORKSPACE/.ci/CrispMath" --output "$RUNNER_TEMP/apple-released"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-apple-released-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/apple-candidate/consumer.json
+            ${{ runner.temp }}/apple-released/*.json
+            ${{ runner.temp }}/apple-released/*-logs/
+          retention-days: 90
+  mobile-link:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            artifact: android-arm64-v8a
+          - os: ubuntu-24.04
+            artifact: android-armeabi-v7a
+          - os: macos-15
+            artifact: ios-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fresh mobile archive and all member identities
+        env:
+          PRODUCER_RUN: ${{ inputs.native_run }}
+          PACKAGE_ARTIFACT: ${{ matrix.artifact }}
+        run: python tools/ci-heavy/successor_assets.py --run "$PRODUCER_RUN" --kind native --artifact "$PACKAGE_ARTIFACT" --output "$RUNNER_TEMP/mobile"
+      - name: Cross-link actual mobile C ABI with platform SDK
+        env:
+          PACKAGE_ABI: ${{ matrix.artifact }}
+        run: python tools/ci-heavy/successor_mobile.py --output "$RUNNER_TEMP/mobile" --abi "$PACKAGE_ABI"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-mobile-${{ matrix.artifact }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/mobile/consumer.json
+            ${{ runner.temp }}/mobile/mobile-link.log
+            ${{ runner.temp }}/mobile/mobile-symbols.txt
+          retention-days: 90
