@@ -9,9 +9,35 @@ import re
 import sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from probe_posformer_release import compare_release_records
+from successor_assets import MODEL_SHA as MINILM_MODEL_SHA, TEXT as MINILM_TEXT
 
 DESKTOPS=('linux-x86_64','linux-arm64','macos-arm64','windows-x86_64')
 MOBILES=('android-arm64-v8a','android-armeabi-v7a','ios-arm64')
+
+
+def desktop_vector(record,platform):
+ vector=record.get('vector')
+ if (record.get('model_sha256')!=MINILM_MODEL_SHA or record.get('text')!=MINILM_TEXT
+  or not isinstance(vector,list) or len(vector)!=384
+  or any(type(v) not in (float,int) or not math.isfinite(v) for v in vector)):
+  raise ValueError('Desktop shared model/text/finite384-vector contract differs: '+platform)
+ norm=math.sqrt(math.fsum(v*v for v in vector))
+ if not math.isfinite(norm) or norm<=0:
+  raise ValueError('Desktop vector magnitude invalid: '+platform)
+ return vector
+
+
+def compare_desktop_vectors(reference,vector):
+ # Recompute from retained values rather than trusting platform self-comparisons.
+ reference_norm=math.sqrt(math.fsum(v*v for v in reference))
+ native_norm=math.sqrt(math.fsum(v*v for v in vector))
+ errors=[abs(a-b) for a,b in zip(reference,vector)]
+ cosine=math.fsum(a*b for a,b in zip(reference,vector))/(reference_norm*native_norm)
+ maximum=max(errors)
+ return {'max_abs':maximum,'mean_abs':math.fsum(errors)/384,
+  'rms':math.sqrt(math.fsum(e*e for e in errors)/384),'cosine':cosine,
+  'reference_norm':reference_norm,'native_norm':native_norm,
+  'passed':maximum<=.002 and math.isfinite(cosine) and cosine>=.99999}
 
 def review(root,run,audit):
  evidence={};source=None;objects=None;desktops={}
@@ -41,6 +67,7 @@ def review(root,run,audit):
    and math.isfinite(v['cosine']) and 0<=v['max_abs']<=.002 and v['cosine']>=.99999)
  for platform in DESKTOPS:
   d=load('successor-consumer-'+platform,'consumer.json');binding(d,True);desktops[platform]=d
+  desktop_vector(d,platform)
   expected={'cli_to_cabi','offline_cli','python_to_cabi','compiled_C_to_cabi'}
   if (d.get('desktop_bounded_consumer_positive') is not True or set(d.get('comparisons',{}))!=expected
    or not all(parity(v) for v in d['comparisons'].values())
@@ -49,6 +76,13 @@ def review(root,run,audit):
    or not {'crispembed_init','crispembed_encode','crispembed_free','crispembed_resolve_model','crispembed_set_offline'}<=set(d.get('abi_exports',[]))
    or not all(re.fullmatch('[0-9a-f]{64}',d.get(k,'')) for k in ('library_sha256','cli_binary_sha256','compiled_c_consumer_sha256','model_sha256'))):
    raise ValueError('Incomplete desktop checks: '+platform)
+ desktop_comparisons={}
+ reference=desktops['linux-x86_64']['vector']
+ for platform in DESKTOPS:
+  measured=compare_desktop_vectors(reference,desktops[platform]['vector'])
+  desktop_comparisons[platform]=measured
+  if not measured['passed']:
+   raise ValueError('Cross-platform desktop vector parity failed: '+platform+' '+repr(measured))
  for platform in MOBILES:
   d=load('successor-mobile-'+platform,'consumer.json');binding(d,True)
   if d.get('mobile_abi')!=platform or d.get('cross_link_passed') is not True or d.get('cross_link_exit_code')!=0 or d.get('device_execution_performed') is not False:
@@ -107,6 +141,8 @@ def review(root,run,audit):
    raise ValueError('Binding vector comparison failed')
  return {'schema':'crispembed-successor-bounded-consumer-review-v1','producer_source':source,'audit_source':audit,
   'desktop_platforms':list(DESKTOPS),'mobile_cross_link_platforms':list(MOBILES),'small_reports':evidence,
+  'desktop_reference_platform':'linux-x86_64','desktop_model_sha256':MINILM_MODEL_SHA,'desktop_text':MINILM_TEXT,
+  'desktop_vector_comparisons':desktop_comparisons,
   'desktop_browser_apple50_and_linux_bindings_positive':True,'mobile_cross_links_positive':True,
   'mobile_device_execution_verified':False,'model_portfolio_qualified':False,'release_published':False,
   'application_pin_changed':False,'limits':['One published MiniLM plus frozen50PosFormer compatibility; no new task-quality qualification.',
