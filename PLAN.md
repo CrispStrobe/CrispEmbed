@@ -391,11 +391,11 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
+| 2026-10-26 | `integration/bounded-closure-20261026` | Combine frozen lane sources and final immutable consumers | Preserve producer branches; require actual pending panels, independent merge review and final same-source native/WASM producers/consumers before main integration. |
+| 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
 | 2026-10-26 | `feat/wasm-q8-rounding-candidate-20261026` | Conditional WASM Q8_0 rounding candidate | Isolated ggml890-based per-backend opt-in, encoder-only environment gate, preserved legacy/Q8_1 kernels and weight-free hosted controls. Source preparation only; original trace and full A/B must establish cause/parity before merge, defaults or new assets. |
 | 2026-10-26 | `test/wasm-q8-rounding-ab-20261026` | Versioned conditional WASM model A/B | [Prepared v1 consumer](docs/wasm-q8-rounding-ab-v1.md) pins reviewed first trace40379523009, freezes ten owned old-native/browser controls before candidate execution, and preserves strict legacy/final/full-stage gates. No old guard/dispatcher edits, inference result or promotion. |
-| 2026-10-26 | `test/successor-wasm-trace-20261026` | Frozen packaged MiniLM WASM attribution | [Hosted source trace](docs/successor-wasm-trace.md): retain initial native/browser anchors, require ordinary/dump neutrality, compare full named stages and actual GGUF types; test-only quantization controls. No production/archive change or qualification. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
@@ -529,8 +529,9 @@ native hidden states reproduces composed max0.00394583/0.00438643, retaining
 calibrated ratios1.07324/1.19308. Final norm is propagating upstream error.
 The trace begins at patch3.81470e-6, position4.52995e-6 and rotary5.96046e-8;
 position helper source uses multiply-then-divide while native retains legacy
-linspace. Next isolate actual original position coordinates/weights/reduction
-before any gated correction; this result does not qualify2048 or waive budgets.
+linspace. The completed position operator audit matches original coordinates/weights/output
+exactly. Its source-order alternative remains default-off pending the composed
+four-grid replay; neither operator receipt qualifies2048 or waives budgets.
 
 - [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
   and retained original/native arrays; boundary raw artifact12598011436 is in
@@ -539,7 +540,7 @@ before any gated correction; this result does not qualify2048 or waive budgets.
   arrays only inside hosted CI; keep shared-host work to small reports.
 - [ ] Finish the source-order interpolation alternative's actual composed A/B
   and first-F16 replay from `audit/ovis-2048-attribution-20261026`.
-  Current composed40356657327 remains pending; both quality40334662677 arms
+  Corrected composed40376882009 at8bb9f074 remains pending; both quality40334662677 arms
   are reviewed in HISTORY. Literal0
   must reproduce every retained ordinary vector and the historical failure set;
   literal1 must pass all unchanged gates, with raw strict flags retained.
@@ -588,80 +589,85 @@ cap/custom-prompt rejection and fallback-stage behavior. Record the consumer
 source/artifact proof separately; do not claim it from vendor component parity.
 
 
-## Active four-lane closure — remaining execution gates
+## Active four-lane closure — actual results and remaining gates
 
-Current Ovis composed replay is40356657327 on exactad09168e via the
-`audit/ovis-position-composed-20261026` dispatch ref. The separate ref removes
-the per-branch workflow lock; it changes no source or two-job bound. Earlier
-40338087357 was cancelled pending with no jobs. Quality40334662677 at95a9ba48
-has independently verified both arms:1841 decoded IDs/text/EOS exact, gate0
-confidences exact and gate1 maximum confidence drift0.000024796 without a new
-tolerance. Composed square-grid pre-inference JSON identity failures require a
-narrow hash-preserving redaction adapter; retain the initial failed run.
+MI-GAN256 CPU/F32 prototype and the OvisOCR3 preservation copy are complete and
+merged through PR85/PR83. UltraBERT RoPE attribution is complete through PR84.
+Their original failures, qualified scopes and later product/quality tasks stay in
+HISTORY and the model sections above. These are not jobs to rerun.
 
-- [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
-  gated source/tooling and run final/merged-source checks. Preserve initial
-  queued cancellations and all historical numerical/quantization rejections.
-- [ ] Integrate the reviewed MI-GAN bounded prototype above after platform checks.
-  Its original/native panel and observer attribution are complete in HISTORY;
-  full issue71 product surfaces and representative/video quality remain separate.
-- [ ] Preserve later January archives before expiry; the urgent November Ovis3
-  copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
-  recorded source identities and renewal dates when reviewed.
-- [ ] Review the SciFact original-only preparation on
-  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
-  explicitly dispatch its
-  eight-original→freeze→eight-native panel with the reviewed preparation run and
-  receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
-  gates and predeclared ranking tolerances stay unchanged. Preserve author gold
-  mapping differences and all applicable dataset notices. Public pairs and
-  model publication remain separate from this representative retrieval audit.
-- [ ] Finish successor actual archive consumers from
-  `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
-  unpublished WASM40339800364, then packaged consumers. WASM build completion
-  is recorded in HISTORY; executable browser consumers still require the native
-  producer. Audit helpers may advance only with exact production/build/binding
-  Git objects, producer pairing and generator provenance retained.
-  This candidate advances development manifests to0.17.14 for mobile dependency
-  packaging corrections; main remains0.17.13 until reviewed integration. Require
-  actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
-  cross-link evidence. Device execution and optional GPU assets remain explicit
-  limits. Repeat qualification on the final integrated source when runtime
-  paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
+The integration branch `integration/bounded-closure-20261026` assembles the
+reviewed source changes without changing any frozen producer branch. It is
+unqualified until the actual remaining results and final-source checks below.
+Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
 
-SciFact v1 preparation40353858454 at57aab2cf rejects stored author/BEIR corpus
-columns at10068634 before tokenizer/weights/model outputs. Preserve that negative
-receipt. The next preparation adds hosted legacy-JSONL/Parquet provenance and
-bounded exact first-difference diagnostics; it applies no guessed text cleanup.
-Resolve the provenance decision before freezing any original full-panel vectors.
+- [ ] **Finish Ovis composed interpolation.** Review
+  [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)
+  at`8bb9f074d1ca6fa2cb2be6a892fc2fd116202912`. Four grids ×literal0/1 each
+  run14 unchanged numerical arms and both owning OCR cases. Literal0 must match
+  retained vector hashes and the historical failure set; literal1 must pass all
+  existing calibrated gates. Initial40356657327 remains a pre-inference
+  raw/public-report redaction failure; the adapter checks raw bytes before a
+  single comparison-only path normalization. Both eleven-case quality arms of
+  40334662677 are reviewed: all1,841 IDs/text/EOS exact, gate0 confidence exact,
+  gate1 confidence drift at most0.000024796. Keep interpolation off and2048
+  unqualified until the full composed evidence is reviewed. Any promotion also
+  needs final-source frozen14 and first-F16 eleven-case replay.
+- [ ] **Finish canonical SciFact retrieval.** The original-first full
+  [40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
+  uses`e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`; do not modify its branch
+  during the panel. Preparation40372423343 is independently reviewed in
+  [the receipt](tests/results/ultrabert/scifact-canonical-preparation.json).
+  All5,483 wrapper inputs/masks are frozen, including460 right-truncated
+  documents. Finish eight original shards, freeze all originals, then eight
+  native shards and aggregate. Require all rows/IDs,0.002/0.99999 vector gates,
+  NDCG@10/MRR@10/Recall@100 degradation≤0.001 and top1 agreement≥99%.
+  V1 author-column rejection and1,055 author-abstract differences remain
+  preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
+  selected before model outputs. No gold/text normalization, row drops, public
+  pair API or model publication follows. Keep strict183/1,294 numerical debts.
+- [ ] **Verify corrected Apple corpus.** Review image-only
+  [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
+  at`f284b1f67c1ae34082afb81a54301c6ab392c02a`. Require all50 original
+  encoded PNG hashes, manifest, decoded RGB identities and pinned216-byte
+  NOTICE before the unchanged Mac released/candidate50 probe. Initial
+  40376735641 failed member coverage before PNG comparison; preserve that
+  rejection. The fix includes the original benchmark notice and historical
+  Python3.11.17 renderer ABI; it changes no frozen PNG hash or seven-of-fifty
+  quality result. Benchmark-only source terms remain explicit.
+- [ ] **Finish actual WASM rounding A/B.** The independently reviewed
+  [first trace](tests/results/packaging/successor-wasm-source-trace.json)
+  reproduces all eight native/browser neutrality anchors, exact embedding norm,
+  first captured divergence at attention0 and final0.00837269/0.99864984
+  rejection. Same-input Q8 activation quantization differs by187 bytes with
+  exact scales; this is an operator hypothesis, not full-network causality.
+  [40391544739](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40391544739)
+  at`580e3ae3be3671ddce5e945b0725d0583ec34110` must first execute and verify
+  weight-free operator controls on fork`a06fc0bb46b73cc10011fc90ae4054aee8438aeb`.
+  Only then may it download models, freeze the ten-case old native/browser
+  panel and run unset/empty/0/1, observers, full original stages and context
+  isolation. Require legacy byte identity and unchanged0.002/0.99999 candidate
+  gates. Gate`CRISPEMBED_WASM_Q8_0_ROUND` stays default-off and the old
+  converter remains. Preserve initial common-control failure40385214740 and
+  pre-execution cancellations. No promotion from source review alone.
+- [ ] **Qualify final immutable assets.** After reviewed runtime changes and
+  any justified default decision, freeze one final integrated source. Build
+  fresh seven CPU/mobile archives and both WASM bundles from that same source;
+  initial producers40339796226/40339800364 at40a82158 do not qualify changed
+  runtime objects. Run all desktop C/Python/CLI/cache, Rust/Dart, real browser,
+  released/candidate Mac50 and mobile cross-link consumers, then independent
+  aggregation. Windows UTF-8 repair still requires its actual hosted retry.
+  Pass the reviewed corpus proof through metadata`candidate_run_id`.
+  Candidate development manifests are0.17.14; main is0.17.13 before integration.
+  Device inference, optional GPU assets, broad model quality, tag publication
+  and app upgrade stay separate.
+- [ ] **Close documentation and remote integration.** Commit reviewed results,
+  move completed work to HISTORY and measurements to PERFORMANCE, refresh
+  CLAUDE/executable/shared handoffs and mirror the shared public document in
+  CrispMath. Scope every remaining task with source, acceptance and dependency.
+  Preserve exact remote January archives before their recorded expiry; the
+  urgent November Ovis3 copy is already closed. Private continuity stays ignored.
 
-SciFact40364838418 now attributes the source discrepancy: all canonical legacy
-JSON/Parquet columns match, while1,055 current-author abstracts differ. V1 stays
-rejected. Execute the distinct literal-canonical v2 preparation on
-`audit/ultrabert-scifact-canonical-integration-20261026` only with the frozen
-reviewed provenance pins, published module config and all5483 actual wrapper
-input checks. Review its real dataset/token/timing receipt before the full panel.
-Do not interpret source protocol selection as numerical/model qualification.
-### Immutable archive blockers after the first actual consumer batch
-
-- [ ] Independently review corrected exact-byte Linux image proof40386968045
-  atf284b1f6. Initial40376735641 is retained as a pre-image inventory rejection.
-  Require all50 original PNG/manifest identities before preserved images can feed
-  the unchanged Mac released/candidate50 probe. Do not replace frozen PNG hashes;
-  source terms, renderer identity and decoded RGB proof remain explicit.
-- [ ] Review source-frozen WASM trace40379523009 atf8bac049. It must reproduce
-  initial40354251257 native/browser outputs and observer neutrality before eight
-  full encoder stages, actual tensor types and same-input quantization blocks
-  support attribution. Keep the initial0.00837269/0.99864984 failure, fixed gates
-  and both pre-execution cancellations. A source rounding difference is not yet
-  an established full-network cause; do not infer a production fix from it.
-- [ ] Integrate only an evidenced correction behind the shared value-parsed
-  experimental gate, keep the working legacy alternative and unchanged outputs/
-  references, then execute paired actual native/browser checks before promotion.
-  Windows UTF-8 audit repair still needs actual hosted execution.
-- [ ] After reviewed runtime/build changes are integrated, build fresh seven CPU/
-  mobile archives and both WASM bundles at one final immutable source; complete
-  all desktop/C/Python/CLI/Rust/Dart/browser/Apple/mobile-cross-link consumers and
-  independent aggregation. Pass the reviewed corpus proof run via metadata
-  candidate_run_id. Keep device execution, broad model quality, tag publication
-  and application upgrade as separate gates; the app remains on0.17.12.
+Queued jobs and successful diagnostic execution are not model qualification.
+Retain every failed numerical/quality screen; never replace gold, widen budgets
+or regenerate original anchors to turn a panel green.
