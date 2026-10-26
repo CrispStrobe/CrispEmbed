@@ -38,7 +38,7 @@ def artifact(run,name,destination,max_bytes):
 RUNTIME_PATHS=('src','ggml','cmake','CMakeLists.txt','VERSION','Cargo.lock','examples',
  'python','flutter','crispembed','crispembed-sys','wasm','tools/quantize.cpp',
  'build-wasm.sh','build-embed-wasm.sh','scripts/check-cpu-baseline.py',
- 'scripts/check-bundled-deps.py','.github/workflows/release.yml',
+ 'scripts/check-bundled-deps.py','tools/successor_asset_manifest.py','.gitattributes','.github/workflows/release.yml',
  '.github/workflows/release-wasm.yml','README.md','LICENSE')
 
 def runtime_closure(producer_source):
@@ -66,9 +66,11 @@ def prepare(run,kind,artifact_name,out):
  with zipfile.ZipFile(out/'manifest.zip') as z:
   if z.namelist()!=['successor-'+kind+'-manifest.json']:raise ValueError('Manifest artifact members differ')
   manifest=json.loads(z.read(z.namelist()[0]))
+ generator_blob=subprocess.check_output(['git','show',source+':tools/successor_asset_manifest.py'],cwd=ROOT)
+ generator_source_sha=hashlib.sha256(generator_blob).hexdigest()
  expected_ggml=subprocess.check_output(['git','rev-parse','HEAD:ggml'],cwd=ROOT,text=True).strip()
  if (manifest.get('schema')!='crispembed-successor-archive-manifest-v1' or manifest['source_commit']!=source
-     or manifest['ggml_gitlink']!=expected_ggml or manifest['generator_sha256']!=sha(ROOT/'tools/successor_asset_manifest.py')
+     or manifest['ggml_gitlink']!=expected_ggml or manifest['generator_sha256']!=generator_source_sha
      or manifest['kind']!=kind or manifest['version']!=(ROOT/'VERSION').read_text().strip()):
   raise ValueError('Manifest/source closure differs')
  archive_identity=artifact(run,artifact_name,out/'payload.zip',2*1024**3)
@@ -94,6 +96,7 @@ def prepare(run,kind,artifact_name,out):
     with tarfile.open(target,'r:gz') as package:package.extractall(destination,filter='data')
    selected.append({'name':name,'sha256':row['sha256'],'member_count':len(row['members'])})
  receipt={'schema':'crispembed-successor-fresh-consumer-v2','source_commit':source,'consumer_source':consumer_source,'runtime_source_closure':closure,'ggml_gitlink':expected_ggml,
+          'generator_git_blob_sha256':generator_source_sha,'consumer_generator_file_sha256':sha(ROOT/'tools/successor_asset_manifest.py'),
           'producer_run':run,'manifest_artifact':identity,'payload_artifact':archive_identity,'archives':selected,
           'qualification':False,'limits':['Archive validation alone is not runtime/model quality qualification.']}
  (out/'consumer.json').write_text(json.dumps(receipt,indent=2)+'\n')
