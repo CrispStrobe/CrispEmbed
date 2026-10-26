@@ -51,14 +51,15 @@ def review(root,run,audit):
  if (d.get('page_errors')!=[] or d.get('ocr',{}).get('authored_black_blob_cleared_rgb_exact') is not True
   or len(d.get('embed',{}).get('vector',[]))!=384 or not parity(dict(d,passed=True))):
   raise ValueError('Browser consumer failed')
- d=load('successor-apple-released','comparison.json');binding(d)
+ candidate=load('successor-apple-released','apple-candidate/consumer.json');binding(candidate)
+ d=load('successor-apple-released','apple-released/comparison.json');binding(d)
  if (d.get('candidate_unset_one_exact') is not True or d.get('legacy_zero_preserved') is not True
   or set(d.get('comparisons',{}))!={'candidate-unset','candidate-one'}):raise ValueError('Apple compatibility incomplete')
  for v in d['comparisons'].values():
   if v.get('cases')!=50 or not all(v.get(k) is True for k in ('token_ids_exact','text_exact','stops_exact')):
    raise ValueError('Apple50 released-output mismatch')
  for name in ('released','candidate-unset','candidate-one','candidate-zero'):
-  item=load('successor-apple-released',name+'.json')
+  item=load('successor-apple-released','apple-released/'+name+'.json')
   if item.get('completed') is not True or len(item.get('cases',[]))!=50:raise ValueError('Apple raw case coverage missing')
  d=load('successor-prebuilt-bindings','successor-bindings.json')
  if d.get('audit_source')!=audit or d.get('passed') is not True or set(d.get('surfaces',{}))!={'rust','dart'}:

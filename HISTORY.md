@@ -15603,3 +15603,16 @@ manifests to0.17.14; actual artifact links/runtime checks remain required.
 Initial preliminary producers40338612955/40338616900 were cancelled with every
 build still queued. No executed mobile failure or positive runtime qualification
 is claimed, and no tag or application0.17.12 pin changes.
+
+## 26 October 2026 — packaged-consumer report layout corrected before execution
+
+Native/mobile producer40339796226 and WASM producer40339800364 both complete
+successfully at40a82158146faf0cd44de2a4ee7056e7b0c6a58c. They bind seven
+CPU/mobile archives and two WASM bundles; compiled consumer qualification remains
+separate. Consumer40352845316/cab577ab was cancelled with its controls still
+queued, before archive consumers ran. Independent source review found that the
+Apple multi-path upload preserves`apple-candidate/` and`apple-released/`, whereas
+the final reviewer expected flat JSON. The corrected reviewer consumes the real
+nested layout and additionally requires the candidate's archive/source closure.
+Four small positive/missing-platform/mixed-source/layout controls pass. No
+producer bytes, runtime path, model targets or numerical budgets change.

@@ -23,9 +23,11 @@ class ReviewControls(unittest.TestCase):
    save('successor-mobile-'+platform,'consumer.json',dict(base,mobile_abi=platform,cross_link_passed=True,cross_link_exit_code=0,device_execution_performed=False))
   save('successor-wasm-consumer','browser.json',dict(base,page_errors=[],ocr={'authored_black_blob_cleared_rgb_exact':True},embed={'vector':[1]+[0]*383},max_abs=0,cosine=1))
   apple={'cases':50,'token_ids_exact':True,'text_exact':True,'stops_exact':True}
-  save('successor-apple-released','comparison.json',dict(base,candidate_unset_one_exact=True,legacy_zero_preserved=True,comparisons={'candidate-unset':apple,'candidate-one':apple}))
+  # Multiple upload paths preserve both sibling directories below RUNNER_TEMP.
+  save('successor-apple-released','apple-candidate/consumer.json',base)
+  save('successor-apple-released','apple-released/comparison.json',dict(base,candidate_unset_one_exact=True,legacy_zero_preserved=True,comparisons={'candidate-unset':apple,'candidate-one':apple}))
   for name in ('released','candidate-unset','candidate-one','candidate-zero'):
-   save('successor-apple-released',name+'.json',{'completed':True,'cases':[{}]*50})
+   save('successor-apple-released','apple-released/'+name+'.json',{'completed':True,'cases':[{}]*50})
   binding={'passed':True,'comparisons':[metric]*12}
   save('successor-prebuilt-bindings','successor-bindings.json',dict(audit_source=audit,passed=True,producer=base,native_build_fallback=False,offline_cache_unchanged=True,surfaces={'rust':binding,'dart':binding}))
   return run,audit
@@ -34,6 +36,12 @@ class ReviewControls(unittest.TestCase):
    root=Path(d);run,audit=self.fixture(root);result=review.review(root,run,audit)
    self.assertTrue(result['desktop_browser_apple50_and_linux_bindings_positive'])
    self.assertFalse(result['mobile_device_execution_verified'])
+ def test_flat_apple_layout_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);run,audit=self.fixture(root)
+   artifact=root/('successor-apple-released-'+run)
+   (artifact/'apple-released/comparison.json').rename(artifact/'comparison.json')
+   with self.assertRaises(FileNotFoundError):review.review(root,run,audit)
  def test_missing_platform_rejected(self):
   with tempfile.TemporaryDirectory() as d:
    root=Path(d);run,audit=self.fixture(root)
