@@ -16091,3 +16091,17 @@ second independent queue round trip and duplicate compilation. The model job
 also verifies the completed same-source job and its actual five-record numeric
 receipt before downloading model data. This scheduling change widens no source,
 output or numerical gate. The original40385214740 fixture rejection stays retained.
+
+## 26 October 2026 — bounded MI-GAN and RoPE integration complete
+
+PR84 merged atb5c99662 after all23 checks pass; PR85 merged at1b74b12a after
+all29 checks pass. All11 fresh-main workflows at
+`1b74b12aff48f3d510a2140aa48b8221e73d3320` subsequently pass, including the
+full native/mobile/Flutter build matrix, both WASM builds, Rust packaging,
+static/model/precision controls, style/security and Pages deployment.
+[Main build40375549096](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375549096)
+and [native MI-GAN evidence](tests/results/migan/native-parity.json) remain
+separate: ordinary integration CI does not replace original/native model parity.
+The default-off fixed256 prototype and test-only RoPE attribution are integrated;
+no tag, model publication, application upgrade or broad inpainting product claim
+follows. Issue71 and the remaining numerical/task/release gates stay open.
