@@ -1,3 +1,34 @@
+## 26 October 2026 — Position replay stopped on raw/public report path redaction
+
+Composed replay [40356657327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327)
+at`ad09168e40041ef945d16fdb2e554c8433c7cffc` retains four actual structural
+failures: control-square and large-landscape, each with the interpolation gate0
+and1. Each passes bounds/recovery controls and immutable extraction, then stops
+before the fourteen-arm audit at the raw/public original-JSON comparison. The
+two frozen-control jobs complete successfully. Both queued boundary jobs are
+cancelled before any job steps after the same frozen metadata discrepancy is
+demonstrated; they are not executed numerical failures.
+
+[The negative receipt](tests/results/qwen35-ocr/ovisocr2-position-report-redaction-failure.json)
+records exact jobs, four small artifact ZIP/member hashes, complete job-log hashes,
+original JSON identities and cancellation state. Only small reports/logs are
+downloaded for this review. The retained raw `original.json` was hashed before
+the public producer writer redacted the runner prefix in its enclosing
+`original_capture.source_config._name_or_path`. A private comparison-only
+unredaction reconstructs the exact frozen original-JSON byte count/SHA for all
+three authored input sizes; no scientific field differs.
+
+The bounded harness correction rechecks the raw file's frozen byte count/SHA
+before parsing, requires the declared model/revision suffix, maps only that
+single absolute prefix to the existing public`<scratch>` marker on a comparison
+copy, and still rejects every other field difference. The raw file, original
+arrays, models, prompts, caps, gold, numerical budgets, runtime and both gated
+alternatives remain unchanged. Five dependency-free controls cover exact raw
+identity, the one permitted redaction, other config/numerical/output differences,
+wrong snapshots and invalid prefixes. Corrected hosted composed execution and
+independent numerical/decoded review remain pending; no gate is waived by this
+report comparison repair.
+
 ## 25 October 2026 — Bounded decoder weight cache audited; default remains off
 
 The per-context F32/F16 decoder weight cache is complete behind
