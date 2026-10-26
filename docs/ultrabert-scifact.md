@@ -80,3 +80,32 @@ stored-column mismatch. No normalization recipe is assumed from the
 [format-migration announcement](https://huggingface.co/datasets/BeIR/scifact/discussions/3).
 A successful preparation also copies its data-freeze/length summary and notices
 to the small reports, so independent review needs no local corpus payload.
+
+## Canonical BEIR v2 — original-first protocol after actual provenance review
+
+[Data attribution40364838418](../tests/results/ultrabert/scifact-data-provenance.json)
+atbf2f9e48 verifies exact legacy-JSON/Parquet IDs and stored columns for all5,183
+corpus rows and1,109 queries. The current author archive differs in1,055 abstract
+fields, with titles unchanged. The first eight bounded contexts illustrate
+internal whitespace differences; this is not a claim that a guessed cleanup
+reconstructs every field. Strict v1 remains rejected, with no model outputs.
+
+The distinct [v2 protocol](../tests/regression/ultrabert/scifact-protocol-v2.json)
+uses the actual pinned canonical BEIR columns literally. It changes no rows,
+qrels, model precision,512-token policy or vector/ranking budget. Author-column,
+claim, evidence and citation differences are journaled rather than relabeled
+identical. Its runner must retrieve the exact reviewed negative v1 report ZIP
+and verify both selected member SHAs before accessing data/models. It then
+repeats exact legacy/Parquet comparison on the current pinned payloads.
+
+The actual published241-byte`sentence_bert_config.json` is now downloaded and
+pinned separately from the nine historical converter source files. This retains
+the real text-forward/output mapping without changing GGUF converter metadata.
+Pinned SentenceTransformer6.0.1 preserves input whitespace and prepends prompts
+literally; its512 override actively changes the tokenizer limit. No historical
+wrapper stripping assumption is adopted. Before the first original forward,
+all5,483 rows must match the frozen IDs/masks through both actual
+`preprocess(raw,prompt)` and`tokenize(literal-prefix+text)` paths. All-row controls
+include a last-row mismatch; runtime proof remains an actual hosted gate.
+Preparation still requires independent receipt/timing review before the complete
+eight-original→freeze→eight-native panel. No publication/default/app promotion.

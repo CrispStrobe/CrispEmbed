@@ -21,7 +21,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from ultrabert_contract import MODEL, REVISION, QUERY, profile, sha256, validate_sources, validate_weight_file
-from ultrabert_scifact import PROTOCOL_SHA, protocol, digest, equivalence, canonical_claims, migration_equivalence, qrels, shard_rows, rank_scores, quality
+from ultrabert_scifact import digest, canonical_claims, migration_equivalence, qrels, shard_rows, rank_scores, quality
+from ultrabert_scifact_canonical import PROTOCOL_SHA, protocol, equivalence, checked_migration
 ST_SOURCE = 'b0acd1a4d22ba2bc10072868ddea7612561c9424'
 ST_WRAPPER_SHA = '3d677757bf3e684c45d3634ae67918cd9a67cee6aac6760e5fa1c72dfe820650'
 ST_POOL_SHA = 'b6e96e0eac50ebc33d6310ef3b8d35b7cd2b7e0e521809552bba34c05c13d43d'
@@ -54,6 +55,8 @@ PINS = {
 FILES = ('tools/ci-heavy/ultrabert_scifact.py', 'tools/ultrabert_scifact.py',
          'tests/test_ultrabert_scifact.py', 'tests/test_ultrabert_scifact_wrapper.py',
          'tests/regression/ultrabert/scifact-protocol-v1.json',
+         'tools/ultrabert_scifact_canonical.py', 'tests/test_ultrabert_scifact_canonical.py',
+         'tests/regression/ultrabert/scifact-protocol-v2.json',
          '.github/workflows/ultrabert-scifact.yml', 'src/ultrabert_profile.h', 'src/ultrabert_embed.cpp',
          'python/crispembed/_binding.py', 'models/convert-ultrabert-to-gguf.py', 'CMakeLists.txt',
          'tests/test_ultrabert_truncation.cpp', 'docs/ultrabert-scifact-notices.md',
@@ -184,6 +187,60 @@ def original_snapshot(weights):
     if weights:
         validate_weight_file(directory / 'model.safetensors')
     return directory
+
+
+def reviewed_data_provenance(scratch, payload, out):
+    """Verify the exact reviewed negative v1/data-only capture, not a new baseline."""
+    pin = protocol()['data_provenance_review']
+    run = pin['run']; service = api('actions/runs/' + str(run))
+    if (service.get('path') != pin['workflow'] or service.get('head_sha') != pin['source_commit']
+            or service.get('status') != 'completed' or service.get('conclusion') != 'failure'
+            or service.get('event') != 'workflow_dispatch'):
+        raise ValueError('Reviewed v1 data-provenance producer identity differs')
+    spec = pin['artifact']
+    artifacts = api('actions/runs/' + str(run) + '/artifacts?per_page=100')['artifacts']
+    matches = [a for a in artifacts if a['id'] == spec['id'] and a['name'] == spec['name'] and not a['expired']]
+    if (len(matches) != 1 or matches[0]['size_in_bytes'] != spec['bytes']
+            or matches[0]['digest'] != 'sha256:' + spec['sha256']):
+        raise ValueError('Reviewed data-provenance report artifact differs')
+    archive = scratch / 'reviewed-data-provenance.zip'
+    with archive.open('wb') as stream:
+        subprocess.run(['gh', 'api', 'repos/' + REPO + '/actions/artifacts/' + str(spec['id']) + '/zip'],
+                       stdout=stream, check=True, timeout=120)
+    if archive.stat().st_size != spec['bytes'] or sha256(archive) != spec['sha256']:
+        raise ValueError('Actual reviewed provenance report ZIP differs')
+    with zipfile.ZipFile(archive) as z:
+        names = z.namelist()
+        if (len(names) != len(set(names)) or any('/' in n or '\\' in n or n in ('.', '..') for n in names)
+                or sum(i.file_size for i in z.infolist()) > 1024**2):
+            raise ValueError('Unsafe reviewed provenance report artifact')
+        failure_bytes = z.read('initial-data-equivalence-failure.json')
+        migration_bytes = z.read('legacy-parquet-equivalence.json')
+    if (hashlib.sha256(failure_bytes).hexdigest() != pin['failure_report_sha256']
+            or hashlib.sha256(migration_bytes).hexdigest() != pin['migration_report_sha256']):
+        raise ValueError('Independently reviewed provenance member bytes differ')
+    failure, migration = json.loads(failure_bytes), json.loads(migration_bytes)
+    diagnostic = failure['mismatch_diagnostics']
+    if (failure.get('status') != 'rejected before model outputs' or failure['source']['head'] != pin['source_commit']
+            or failure.get('protocol_sha256') != pin['v1_protocol_sha256']
+            or diagnostic.get('compared_corpus_rows') != 5183
+            or diagnostic.get('mismatch_count') != pin['author_abstract_mismatches']
+            or diagnostic.get('text_mismatches') != pin['author_abstract_mismatches']
+            or diagnostic.get('title_mismatches') != pin['author_title_mismatches']
+            or diagnostic.get('transformations_applied') is not False
+            or diagnostic.get('model_outputs_produced') is not False):
+        raise ValueError('Reviewed v1 rejection/data scope differs')
+    checked_migration(migration)
+    (payload / 'reviewed-v1-data-rejection.json').write_bytes(failure_bytes)
+    (payload / 'reviewed-legacy-parquet-equivalence.json').write_bytes(migration_bytes)
+    proof = dict(run=run, head=pin['source_commit'], service_conclusion='failure',
+                 artifact=spec, failure_report_sha256=pin['failure_report_sha256'],
+                 migration_report_sha256=pin['migration_report_sha256'],
+                 strict_v1_rejection_preserved=True, no_reference_outputs_from_v1=True,
+                 legacy_parquet_columns_exact=True, author_abstract_mismatches=1055,
+                 canonical_inputs_chosen_before_first_model_output=True)
+    write(out / 'reviewed-data-provenance.json', proof)
+    return proof
 
 
 def module_config(directory):
@@ -369,6 +426,7 @@ def prepare(args, out, scratch, closure):
     payload = out / 'payload'; downloads = payload / 'sources'; notices = payload / 'notices'
     downloads.mkdir(parents=True); notices.mkdir()
     sources = {}
+    provenance = reviewed_data_provenance(scratch, payload, out)
     author_url = 'https://raw.githubusercontent.com/allenai/scifact/' + spec['author_revision'] + '/'
     for name, url, checksum in [
         ('author-LICENSE.md', author_url + 'LICENSE.md', '56ee69bc639cbab8f0b2e4b67091ec5e9390aa99a1d65f0a35e4274686c9a806'),
@@ -426,7 +484,7 @@ def prepare(args, out, scratch, closure):
                 legacy[kind] = [json.loads(line) for line in stream if line.strip()]
         migration = migration_equivalence(legacy['corpus'], legacy['queries'], parquet['corpus'], parquet['queries'])
         write(out / 'legacy-parquet-equivalence.json', migration)
-        data, mapping = equivalence(extracted['corpus.jsonl'], claims, parquet['corpus'], parquet['queries'], gold)
+        data, mapping = equivalence(extracted['corpus.jsonl'], claims, parquet['corpus'], parquet['queries'], gold, migration)
     except Exception as error:
         write(out / 'initial-data-equivalence-failure.json', dict(status='rejected before model outputs',
             source=closure, protocol_sha256=PROTOCOL_SHA, sources=sources, error=str(error),
@@ -446,8 +504,10 @@ def prepare(args, out, scratch, closure):
             source=closure, sources=sources, mapping=mapping, protocol_sha256=PROTOCOL_SHA, error=str(error)))
         raise
     write(payload / 'lengths.json', rows)
-    freeze = dict(schema='crispembed-scifact-data-freeze-v1', source=closure, protocol_sha256=PROTOCOL_SHA,
-        sources=sources, mapping=mapping, dataset_sha256=sha256(payload / 'dataset.json'),
+    if mapping['model_input_utf8_sha256'] != {r['id']:r['input_utf8_sha256'] for r in rows}:
+        raise ValueError('Canonical literal input bytes differ from frozen tokenizer rows')
+    freeze = dict(schema='crispembed-scifact-data-freeze-v2', source=closure, protocol_sha256=PROTOCOL_SHA,
+        sources=sources, reviewed_data_provenance=provenance, mapping=mapping, dataset_sha256=sha256(payload / 'dataset.json'),
         original_model_files_sha256={**profile()['inspected_file_sha256'], 'sentence_bert_config.json':MODULE_CONFIG_SHA},
         lengths_sha256=sha256(payload / 'lengths.json'), rows=len(rows), queries=300, corpus=5183,
         truncated_rows=sum(r['truncated'] for r in rows), max_untruncated_tokens=max(r['untruncated_tokens'] for r in rows),
@@ -481,8 +541,9 @@ def prepare(args, out, scratch, closure):
     timings = encode_original(model, [lookup[name] for name in selected], {r['id']: r for r in rows}, payload / 'preflight')
     worst = max(t['total_seconds'] for t in timings)
     projection = max(len(shard_rows(data, i)) for i in range(8)) * worst * p['execution']['projection_safety_factor']
-    receipt = dict(schema='crispembed-scifact-preparation-v1', source=closure, status='prepared original-only preflight',
+    receipt = dict(schema='crispembed-scifact-preparation-v2', source=closure, status='prepared original-only preflight',
         protocol_sha256=PROTOCOL_SHA, data_freeze_sha256=sha256(payload / 'data-freeze.json'), mapping=mapping,
+        reviewed_data_provenance=provenance,
         original_environment=env, actual_wrapper_input_preflight=actual_wrapper_inputs,
         original_preflight=timings, original_hook_neutral=True,
         projected_worst_original_shard_seconds=projection, projected_native_runtime='unmeasured; bounded by240min job timeout',
@@ -498,7 +559,7 @@ def prepared(args, scratch):
     target = scratch / 'prepared'
     receipt, proof = reuse(args.prepare_run, 'ultrabert-scifact-prepared-' + str(args.prepare_run), target,
                            report_sha=args.prepare_sha)
-    if (receipt.get('schema') != 'crispembed-scifact-preparation-v1'
+    if (receipt.get('schema') != 'crispembed-scifact-preparation-v2'
             or receipt.get('status') != 'prepared original-only preflight'
             or receipt.get('protocol_sha256') != PROTOCOL_SHA or receipt.get('original_hook_neutral') is not True
             or receipt.get('projected_original_within_bound') is not True):
@@ -526,7 +587,7 @@ def original_shard(args, out, scratch, closure):
     payload = out / 'payload'
     timing = encode_original(model, rows, tokens, payload)
     shutil.copytree(prepared_root / 'notices', payload / 'notices')
-    receipt = dict(schema='crispembed-scifact-original-shard-v1', source=closure, shard=args.shard,
+    receipt = dict(schema='crispembed-scifact-original-shard-v2', source=closure, shard=args.shard,
         status='completed original shard', preparation=proof, protocol_sha256=PROTOCOL_SHA,
         data_freeze_sha256=preparation['data_freeze_sha256'], original_environment=env,
         rows=[r['id'] for r in rows], raw_seconds=sum(r['raw_seconds'] for r in timing),
@@ -541,7 +602,7 @@ def freeze_original(args, out, scratch, closure):
     shards, proofs = [], []
     for i in range(8):
         receipt, lineage = reuse(os.environ['GITHUB_RUN_ID'], 'ultrabert-scifact-original-' + str(i), scratch / ('original-' + str(i)))
-        if (receipt.get('schema') != 'crispembed-scifact-original-shard-v1' or receipt.get('shard') != i
+        if (receipt.get('schema') != 'crispembed-scifact-original-shard-v2' or receipt.get('shard') != i
                 or receipt.get('status') != 'completed original shard' or receipt.get('all_rows_hook_neutral') is not True
                 or receipt.get('data_freeze_sha256') != preparation['data_freeze_sha256']
                 or receipt.get('rows') != [r['id'] for r in shard_rows(data, i)]):
@@ -549,7 +610,7 @@ def freeze_original(args, out, scratch, closure):
         shards.append(receipt); proofs.append(lineage)
     # This inventory freezes all original vector bytes before any native job may start.
     payload = out / 'payload'; payload.mkdir()
-    receipt = dict(schema='crispembed-scifact-original-freeze-v1', source=closure,
+    receipt = dict(schema='crispembed-scifact-original-freeze-v2', source=closure,
         status='all8 original shards frozen before native', preparation=proof, protocol_sha256=PROTOCOL_SHA,
         data_freeze_sha256=preparation['data_freeze_sha256'], shards=shards, service=proofs,
         original_run=int(os.environ['GITHUB_RUN_ID']), original_rows=5483,
@@ -628,7 +689,7 @@ def native_shard(args, out, scratch, closure):
     np.save(payload / 'normalized.npy', np.asarray(normalized, dtype='<f4'), allow_pickle=False)
     write(payload / 'ids.json', ids_seen); write(payload / 'timing.json', timing)
     shutil.copytree(prepared_root / 'notices', payload / 'notices')
-    receipt = dict(schema='crispembed-scifact-native-shard-v1', status='completed native shard', source=closure,
+    receipt = dict(schema='crispembed-scifact-native-shard-v2', status='completed native shard', source=closure,
         shard=args.shard, preparation=proof, original_freeze=frozen_proof, protocol_sha256=PROTOCOL_SHA,
         data_freeze_sha256=preparation['data_freeze_sha256'], rows=[r['id'] for r in rows],
         library_sha256=sha256(library), model_sha256=sha256(model_path),
@@ -704,7 +765,7 @@ def aggregate(args, out, scratch, closure):
     write(payload / 'vector-comparisons.json', comparisons)
     shutil.copytree(prepared_root / 'notices', payload / 'notices')
     passed = result['passed'] and all(r['passed'] for r in comparisons)
-    receipt = dict(schema='crispembed-scifact-quality-v1', source=closure,
+    receipt = dict(schema='crispembed-scifact-quality-v2', source=closure,
         status='passed bounded full SciFact task gates' if passed else 'rejected full SciFact task gates',
         protocol_sha256=PROTOCOL_SHA, preparation=proof, original_freeze=frozen_proof,
         data_freeze_sha256=preparation['data_freeze_sha256'], service=service_proofs,

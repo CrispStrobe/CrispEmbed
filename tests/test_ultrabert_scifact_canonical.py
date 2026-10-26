@@ -31,7 +31,7 @@ class CanonicalControls(unittest.TestCase):
     def test_new_protocol_preserves_all_budgets_licenses_and_v1_bytes(self):
         p, old = canonical.protocol(), v1.protocol()
         self.assertEqual(p['version'], 2)
-        self.assertIn('Conditional source preparation only', p['activation'])
+        self.assertIn('pinned independent data-provenance review', p['activation'])
         for name in ('model', 'execution', 'acceptance', 'licenses', 'limits'):
             self.assertEqual(p[name], old[name], name)
         self.assertEqual(hashlib.sha256((ROOT / p['preserved_v1']['protocol']).read_bytes()).hexdigest(), canonical.V1_PROTOCOL_SHA)
@@ -52,7 +52,7 @@ class CanonicalControls(unittest.TestCase):
         self.assertTrue(mapping['author_corpus_columns_exact']); self.assertTrue(mapping['author_all1109_claim_text_exact'])
         self.assertFalse(mapping['strict_v1_author_equivalence_claimed'])
         self.assertFalse(mapping['source_columns_normalized']); self.assertFalse(mapping['rows_dropped'])
-        self.assertFalse(mapping['model_outputs_produced']); self.assertFalse(mapping['activation_performed'])
+        self.assertFalse(mapping['model_outputs_produced']); self.assertTrue(mapping['source_mapping_only'])
         self.assertEqual(mapping['gold_sha256'], v1.digest(values[4]))
         actual = [r for i in range(8) for r in v1.shard_rows(data, i)]
         self.assertEqual(len(actual), 5483); self.assertEqual(len({r['id'] for r in actual}), 5483)

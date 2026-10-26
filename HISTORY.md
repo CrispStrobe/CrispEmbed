@@ -15711,3 +15711,24 @@ bundle/browser/native consumers remain separate pending checks. Producer pairing
 and exact production/build/binding objects protect audit-only helper updates;
 actual producer and consumer sources are recorded separately. No release tag,
 model qualification or application0.17.12 pin changes.
+
+## 26 October2026 — actual SciFact provenance distinguishes the evaluation source
+
+Data-only40364838418/bf2f9e48 verifies unchanged legacy-JSON/Parquet stored IDs,
+title/text columns for5,183 corpus rows and1,109 queries. Current author titles
+match, but1,055 joined abstracts differ. The first eight contexts show internal
+whitespace differences; no general normalization is assumed or applied. Strict
+v1 remains rejected before tokenizer/weights/outputs. Root verifies the actual
+36,042-byte report ZIP/members and all272 source hashes. Full datasets remain
+remote, and public metadata omits raw context excerpts. See
+[the retained provenance](tests/results/ultrabert/scifact-data-provenance.json).
+
+A distinct original-first canonical BEIR v2 is selected before any dataset model
+outputs: use literal pinned benchmark columns, keep all5,483 rows/canonical gold
+and every numerical/ranking budget, and journal all author differences. The
+runner verifies the exact reviewed negative v1 ZIP/member identities and fresh
+legacy/Parquet equality before data/model access. The published241-byte module
+config and actual pinned preprocessing sources are explicit; both wrapper token
+paths must match all5,483 frozen IDs/masks before any forward. The original
+strict model failures and v1 source rejection remain separate. Preparation/full
+panel are still unqualified until their actual hosted receipts pass review.

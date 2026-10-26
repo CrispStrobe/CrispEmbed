@@ -2,7 +2,7 @@
   "schema": "crispembed-ultrabert-scifact-protocol-v2",
   "version": 2,
   "dataset": {
-    "name": "SciFact / canonical BEIR test (distinct conditional v2)",
+    "name": "SciFact / canonical BEIR test (distinct v2)",
     "corpus": 5183,
     "queries": 300,
     "beir_queries_total": 1109,
@@ -98,5 +98,30 @@
     "helper_sha256": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
     "scope": "V1 author-column equivalence remains an independent strict target; its existing rejection is not replaced or relabeled by v2"
   },
-  "activation": "Conditional source preparation only. No activation or dispatch before independent review of actual data provenance and explicit integration; every input/ID/gold/source hash must freeze before any model output."
+  "activation": "Requires the pinned independent data-provenance review before dataset/model access; every input/ID/gold/source hash and all5483 actual wrapper token paths must freeze before the first model output.",
+  "data_provenance_review": {
+    "run": 40364838418,
+    "source_commit": "bf2f9e48075e8b811a1ec7c999aafb24098fcf92",
+    "workflow": ".github/workflows/ovisocr2-metadata.yml",
+    "v1_protocol_sha256": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+    "artifact": {
+      "id": 12672485140,
+      "name": "ultrabert-scifact-prepare-reports-40364838418",
+      "bytes": 36042,
+      "sha256": "fee770cb623ab1dc2dc0c70ebaac67ab793eda82fc6dffe6793ce518a72168f7"
+    },
+    "failure_report_sha256": "20d2e934bd158660986bebb1c630ccb0ccf112aea8414a5430bc76c77247ae6a",
+    "migration_report_sha256": "7906d394fc3a3141217049dcabd5741a5e5624b65474ed322b0b35cdc3e8bd19",
+    "author_abstract_mismatches": 1055,
+    "author_title_mismatches": 0,
+    "source_outputs_produced": false,
+    "decision": "Use unchanged canonical BEIR stored inputs only after actual exact legacy/Parquet equality; preserve strict v1 author-column rejection. No normalization or gold/budget change."
+  },
+  "original_blueprint": {
+    "sentence_bert_config.json": {
+      "bytes": 241,
+      "sha256": "3084164002c0bca01b0259c5327123803fce32e660a57feb93184ffead186fc8"
+    },
+    "preflight": "All5483 actual wrapper preprocess(raw,prompt) and tokenize(literal-prefix+text) IDs/masks must match frozen direct IDs before any model forward."
+  }
 }

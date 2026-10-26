@@ -1,4 +1,4 @@
-"""Conditional canonical-BEIR v2 mapping; no activation, models or normalization.
+"""Canonical-BEIR v2 source mapping; no model execution or normalization.
 
 V1 remains a separate strict author-column equivalence target. This module only
 prepares explicit canonical inputs and a complete source-difference journal.
@@ -11,7 +11,7 @@ from ultrabert_scifact import digest, unique
 
 ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL_PATH = ROOT / 'tests/regression/ultrabert/scifact-protocol-v2.json'
-PROTOCOL_SHA = 'a072749f5a6b8b80f2b039c2f9e25209c3a9f2bb82d5a907c59fde0570e388ed'
+PROTOCOL_SHA = '9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac'
 V1_PROTOCOL_SHA = 'b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb'
 V1_HELPER_SHA = 'e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249'
 
@@ -19,7 +19,7 @@ V1_HELPER_SHA = 'e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda24
 def protocol():
     payload = PROTOCOL_PATH.read_bytes()
     if hashlib.sha256(payload).hexdigest() != PROTOCOL_SHA:
-        raise ValueError('Frozen conditional canonical-BEIR v2 protocol changed')
+        raise ValueError('Frozen canonical-BEIR v2 protocol changed')
     old_payload = (ROOT / 'tests/regression/ultrabert/scifact-protocol-v1.json').read_bytes()
     if (hashlib.sha256(old_payload).hexdigest() != V1_PROTOCOL_SHA
             or hashlib.sha256((ROOT / 'tools/ultrabert_scifact.py').read_bytes()).hexdigest() != V1_HELPER_SHA):
@@ -146,6 +146,6 @@ def equivalence(corpus, claims, beir_corpus, beir_queries, gold, migration):
         model_input_utf8_sha256={row['id']: hashlib.sha256(((spec['model']['query_prompt'] if row['id'].startswith('q:') else '')
             + row['text']).encode()).hexdigest() for row in ordered},
         applicable_terms=spec['licenses'], inherited_acceptance=spec['acceptance'],
-        model_outputs_produced=False, activation_performed=False,
-        scope='Conditional source preparation; independent actual provenance review and original-first execution remain required')
+        model_outputs_produced=False, source_mapping_only=True,
+        scope='Source mapping before model outputs; runner verifies pinned provenance and original-first execution')
     return data, mapping

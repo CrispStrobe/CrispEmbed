@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 spec=importlib.util.spec_from_file_location('scifact_wrapper_driver', ROOT/'tools/ci-heavy/ultrabert_scifact.py')
@@ -55,4 +56,13 @@ class Controls(unittest.TestCase):
   data,tokens=self.fixture();tokens.pop();model=Wrapper()
   with self.assertRaises(ValueError):driver.wrapper_token_preflight(model,data,tokens)
   self.assertEqual(model.calls,[])
+ def test_unreviewed_provenance_service_rejects_before_artifact_download(self):
+  pin=driver.protocol()['data_provenance_review']
+  good=dict(path=pin['workflow'],head_sha=pin['source_commit'],status='completed',conclusion='failure',event='workflow_dispatch')
+  for key,value in [('path','wrong'),('head_sha','0'*40),('status','in_progress'),('conclusion','success'),('event','push')]:
+   with self.subTest(field=key),tempfile.TemporaryDirectory() as d:
+    root=Path(d)
+    with patch.object(driver,'api',return_value=dict(good,**{key:value})),patch.object(driver.subprocess,'run') as download:
+     with self.assertRaises(ValueError):driver.reviewed_data_provenance(root,root,root)
+     download.assert_not_called()
 if __name__=='__main__':unittest.main()

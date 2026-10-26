@@ -611,3 +611,11 @@ columns at10068634 before tokenizer/weights/model outputs. Preserve that negativ
 receipt. The next preparation adds hosted legacy-JSONL/Parquet provenance and
 bounded exact first-difference diagnostics; it applies no guessed text cleanup.
 Resolve the provenance decision before freezing any original full-panel vectors.
+
+SciFact40364838418 now attributes the source discrepancy: all canonical legacy
+JSON/Parquet columns match, while1,055 current-author abstracts differ. V1 stays
+rejected. Execute the distinct literal-canonical v2 preparation on
+`audit/ultrabert-scifact-canonical-integration-20261026` only with the frozen
+reviewed provenance pins, published module config and all5483 actual wrapper
+input checks. Review its real dataset/token/timing receipt before the full panel.
+Do not interpret source protocol selection as numerical/model qualification.
