@@ -1,7 +1,7 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Consumer snapshot verified5 October2026; vendor roadmap updated 25 October 2026.
-For current vendor work, start with the [executable handoff](next-agent-handoff.md).
+Consumer snapshot verified5 October2026; vendor roadmap updated26 October2026.
+For current vendor work, start with the [executable handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md).
 The application snapshot below keeps its original verification dates. Read the status, choose one lane, and record
 its exact source, evidence and remaining dependencies before handing it on.
 All references are public repository paths, workflow runs or published services.
@@ -18,7 +18,7 @@ All references are public repository paths, workflow runs or published services.
 | Cloud | Off without configuration; local work needs no account. Real browser profiles emit zero backend requests. Configured-cloud tests use a disposable backend, not a production project | [Cloud behavior](https://github.com/CrispStrobe/CrispMath/blob/main/docs/workspace-backups.md), [contract CI](https://github.com/CrispStrobe/CrispMath/actions/runs/37230602216) |
 | Native screenshots | 33 populated captures pass: eleven each for iPhone, iPad and Mac. New Mac renders are 2560×1600; four selected Mac scenes are visually reviewed. Both iOS simulators pass first attempt, no recovery; sixteen tool controls pass | [Native run](https://github.com/CrispStrobe/CrispMath/actions/runs/37239843806), [selection/provenance](https://github.com/CrispStrobe/CrispMath/blob/main/docs/native-apple-gallery.md) |
 | CrispEmbed app runtime | Published 0.17.12 at 78493a31fc3043f3af4ab6fd2f197a32da6f07f0 contains decoder input normalization and ceil-pooling fixes. Fourteen CPU/Apple/Android/WASM assets have verified release hashes; the app pins the release | [Release](https://github.com/CrispStrobe/CrispEmbed/releases/tag/v0.17.12), [native assets](https://github.com/CrispStrobe/CrispEmbed/actions/runs/37222310628), [WASM assets](https://github.com/CrispStrobe/CrispEmbed/actions/runs/37222310650) |
-| Python wheel preview | Four platforms/23 repaired-wheel installs/native loads/C-ABI checks and aggregation pass; no PyPI/runtime release | [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845), [full matrix evidence](../tests/results/packaging/wheel-matrix.json) |
+| Python wheel preview | Four platforms/23 repaired-wheel installs/native loads/C-ABI checks and aggregation pass; no PyPI/runtime release | [39003273845](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39003273845), [full matrix evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/packaging/wheel-matrix.json) |
 | Browser OCR packaging | Hosted builds stage the checksummed published JS/WASM. A bounded upstream UTF-8 compatibility patch handles resizable buffers; downloaded/staged JS hashes are separate and WASM unchanged. Actual module/Unicode/heap checks pass | [Staging helper](https://github.com/CrispStrobe/CrispMath/blob/main/tool/stage_ocr_wasm_runtime.py), [model-free browser gate](https://github.com/CrispStrobe/CrispMath/blob/main/tool/check_ocr_wasm_runtime_browser.py) |
 
 Earlier full app validation recorded 5,774 Dart passes/eight skips, 511 focused
@@ -69,12 +69,12 @@ regressions, exact source/workflow links, retained initial/final evidence and
 updated status here and in both affected PLAN files. Never publish host paths,
 credentials, private service references or operator contact details.
 
-## Vendor status — updated 25 October 2026
+## Vendor status — updated26 October2026
 
-[Executable next-agent tasks](next-agent-handoff.md) give exact sources, tool paths,
-corrected audit, artifact expiry and acceptance checks. [PLAN](../PLAN.md) contains
-pending work, [HISTORY](../HISTORY.md) completed milestones and every initial
-failure, [PERFORMANCE](../PERFORMANCE.md) numerical/quality/storage limits.
+[Executable next-agent tasks](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md) give exact sources, tool paths,
+corrected audit, artifact expiry and acceptance checks. [PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md) contains
+pending work, [HISTORY](https://github.com/CrispStrobe/CrispEmbed/blob/main/HISTORY.md) completed milestones and every initial
+failure, [PERFORMANCE](https://github.com/CrispStrobe/CrispEmbed/blob/main/PERFORMANCE.md) numerical/quality/storage limits.
 Completed wheel/source changes and test-only UltraBERT tools are integrated;
 merged-source platform CI and Pages/live metadata verification pass (HISTORY23 October).
 The app remains pinned to immutable0.17.12, not vendor main.
@@ -87,35 +87,35 @@ The app remains pinned to immutable0.17.12, not vendor main.
 | UltraBERT tokenizer | All8 native BPE/test-template rows match original IDs/masks; both wrong alternatives fail8/8 | Scoped public F32 IDs/masks pass; pair/reserved-token profiles remain separate |
 | UltraBERT numerical | Initial14-arm panel/700 exact controls complete,183 F32/1,294 F16 numerical failures retained | [Corrected local audit39009703362](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39009703362) complete: all21 F32 local probes pass; six F16 down failures; reference/projection attribution and both strict replay failures remain |
 | OCR quantization | Original/F16 plus all9 independent Q8/mixed/Q4 audits and auditor controls complete | No tested recipe qualifies; retained numerical/recognition/format/cap debt blocks promotion |
-| LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](../tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
+| LFM2.5 Encoder | Official F16 CPU/CUDA T4 audit passes594 direct checks and both15-case ordinary API panels; [full report](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/lfm2-encoder/cuda-f16.json). Paired v2 performance passes independent recipe/placement/hash/420-sample review; all15 cases faster on CUDA in one T4 session | Pooled9/20/649-token medians27.93x/27.64x/120.11x are session-scoped; other GPU/precision/MMQ, throughput, long-context and task quality remain open; GPU default unchanged |
 | Typed Gemma | Integration/publication completed in its model document | Independent task quality, GPU and performance remain open |
-| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | [Protected Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is complete and rejected for numerical and two-column text regression. All four quantization attempts are rejected; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Published CLI/HTTP/offline consumer40080458492 passes; PR79 and final platform/Flutter/WASM/style/security checks are integrated. The bounded latency/RSS attribution is complete; next performance work is a separately gated, byte-budgeted converted-weight reuse experiment. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; F16 publication and actual source alias consumer are verified. Indra public-code-only |
+| Permissive OCR queue | OvisOCR2 export/frontend/original GPU pass; reviewed [native40049244654](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes14/14 F32/F16 arms on943 frozen fields, [public40053283383](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-public-surfaces.json) passes27 C/Python/CLI/HTTP/Rust/Dart arms, [original HF eleven-case quality40054043629](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-original-quality.json) is frozen, and [first native F16 quality40056641800](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-f16-quality.json) has a positive independent eleven-case review | [Protected Q8 40061433357](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is complete and rejected for numerical and two-column text regression. All four quantization attempts are rejected; qualified F16 is selected. F16 publication40074370335 and immutable readback pass; real precision alias is wired. Published CLI/HTTP/offline consumer40080458492 passes; PR79 and final platform/Flutter/WASM/style/security checks are integrated. The bounded cache experiment is complete and remains default-off: only0.797% median warm gain with increased RSS. First-FFN attribution reproduces the rejected Q4 error in original Python; no kernel mismatch or new precision is selected. Initial12/14 vision failures and four strict0.002 exceedances remain recorded; F16 publication and actual source alias consumer are verified. Indra public-code-only |
 | PosFormer/app | PR73 merged75e87ea6 after all source790f9a6b checks; unset/1 trained,0 legacy. Actual Linux released/default50-case outputs and bounded references pass | Successor native/WASM artifacts/hashes and consumer qualification remain separate; app stays0.17.12 |
-| Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](../tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
+| Development desktop bundles | [PR76](https://github.com/CrispStrobe/CrispEmbed/pull/76) merged1f8ff4d5; [39979940916](https://github.com/CrispStrobe/CrispEmbed/actions/runs/39979940916) passes Linux/macOS/Windows CPU-baseline configure/build/smoke/install | [Flag/log review](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/packaging/development-cpu-baseline.json) is scoped to development bundles; successor release assets and cross-host consumer checks remain |
 
 UltraBERT original arrays were verified and copied by preservation39913800444;
 the remote copy expires21 January2027. Original producer/manifest/payload
-identities remain unchanged. [Preservation provenance](../tests/results/ultrabert/reference-preservation.json).
+identities remain unchanged. [Preservation provenance](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ultrabert/reference-preservation.json).
 Numerical replay drift and cause remain unresolved. Component cosine, exact
 tokenizer IDs or local operator agreement do not establish full model/task quality.
 Default-off CPU/F32 public text support merged viaPR74 at3f3d023a after complete
 source4be9f864 platform/Flutter/WASM/style/security checks. Hosted39943940607
 passes actual C API/Python/CLI/HTTP and all twelve pooled/seven text-row checks.
-[API evidence](../tests/results/ultrabert/public-f32-api.json). Original-first
+[API evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ultrabert/public-f32-api.json). Original-first
 retrieval39950831201 at812e56e5/native4be9f864 passes all32 IDs/64 vectors and
 8/8 exact top1; original/native Recall@1/MRR@10/NDCG@10 all1.0. Raw max7.34e-5,
-normalized5.51e-7, minimum cosine0.999999999999019. [Full smoke evidence](../tests/results/ultrabert/retrieval-smoke.json).
+normalized5.51e-7, minimum cosine0.999999999999019. [Full smoke evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ultrabert/retrieval-smoke.json).
 This authored panel does not establish representative MTEB/BEIR quality.
 Actual Rust/Dart39979622930 passes all seven rows/42 pooled checks; PR75 merged
-at2f078406. [Reviewed binding evidence](../tests/results/ultrabert/public-bindings.json)
+at2f078406. [Reviewed binding evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ultrabert/public-bindings.json)
 retains raw maxima6.723403930664062e-5/5.941838026046753e-7/6.07222318649292e-7
 for raw/dense/normalized-token CLS, both languages, and all14 binding ID rows.
 Public pairs, long-context/GPU/performance and validated
 quantization/publication remain U3/U4. Initial harness failures and183/1294
 intermediate failures are retained. No new runtime tag/model alias/app pin.
-The [M1 native handover](handover-m1-ultrabert-f32-api.md) supplies
+The [M1 native handover](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handover-m1-ultrabert-f32-api.md) supplies
 complementary Apple coverage, with no repeated Python audit. Original-backend reproducibility39915714794 completes all four controls without
-recovering frozen anchors. The [M1 follow-up](handover-m1-validation.md) is complete:
+recovering frozen anchors. The [M1 follow-up](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handover-m1-validation.md) is complete:
 raw/normalized CLS max6.52e-5/6.41e-7, long hidden0.00579. Independent review
 checks all returned stage identities and same-input hashes. Preserve the full audit
 and scope F32 pooled-output/API/retrieval qualification separately; no repeated arms.
@@ -127,10 +127,31 @@ are separate checks. Released-binary compatibility is measured; PR73 default res
 release/consumer qualification remains open.
 Other portfolio/app owners remain separate.
 
+## 26 October executing closure
+
+The following reviewed receipts and running checks extend the dated snapshots
+above. They create no runtime release, model promotion or application-pin change.
+
+| Lane | Actual evidence | Remaining gate |
+| --- | --- | --- |
+| Ovis2048 | Norm40286291355 excludes a local RMS defect; source-order position40328446801 matches all five operator grids. Both quality40334662677 arms retain1841 IDs/text/EOS; off confidences exact, on maximum drift0.000024796. | Corrected four-grid composed40376882009 at8bb9f074 has both frozen controls14/14; the other grids remain pending after four retained pre-inference path-redaction failures and two unexecuted cancellations. Keep the alternative default-off and2048 unqualified. |
+| MI-GAN256 | [PR85](https://github.com/CrispStrobe/CrispEmbed/pull/85) merged at1b74b12a after29 successful checks. Original40330674649 and corrected40344396533 pass494 comparisons/eight authored images; ordinary final SHAs and known pixels remain exact. Initial256 stale observer captures are retained. | Production APIs/registry/publication, real subtitle/perceptual quality and video remain separate. Issue71 stays open. |
+| Remote preservation | [Ovis3 copy40287253703](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-vector-preservation.json) verifies all1,662 payloads and unchanged original inner ZIP before/after actual remote readback. | Renew the preserved copy before24 January2027 and other original/Ovis/Ultra archives before their individual January expiries. |
+| UltraBERT | [PR84](https://github.com/CrispStrobe/CrispEmbed/pull/84) merged; RoPE passes1344 comparisons/336 controls, empty rotation exact. Canonical SciFact preparation40372423343 passes276 source hashes,5483 actual wrapper token/mask rows and13 neutral timing probes;460 documents retain fixed512-token truncation. | Full original-first panel40375626336 at immutablee35cd1a0 has four original shards independently reviewed; finish eight originals, freeze, eight native and aggregation. Strict-v1 data rejections and separately declared canonical-v2 inputs stay retained, as do historical183/1294 and strict replay failures. |
+| Immutable delivery | Seven native/mobile archives40339796226 and two WASM bundles40339800364 complete at40a82158. Initial consumers40354251257 pass Linux/macOS desktop, mobile cross-links and Rust/Dart, but overall fail. | Windows UTF-8 auditor repair awaits hosted retry. Initial Linux corpus40376735641 rejects omitted notice before PNG comparison; corrected exact-byte40386968045 atf284b1f6 is pending. Require all50 original encoded PNG hashes before Mac. Fresh final-source producers/all consumers remain required; no tag or app upgrade. |
+| WASM attribution | [Actual trace40379523009](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/packaging/successor-wasm-source-trace.json) reproduces eight output anchors; embedding norm exact, first captured divergence attention0, final max0.00837269/cos0.99864984 remains negative. Same-input Q8 activation rounding differs despite exact scales. | Actual40391544739 at580e3ae3 first verifies weight-free operator receipts, then freezes ten old native/browser cases before unset/empty/0/1 A/B and context controls. Candidate stays default-off; component attribution is not full-network causality or qualification. |
+| Cross-platform aggregation | [Auditor repair](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/packaging/successor-desktop-vector-review-repair.json) rejects synthetic orthogonal vectors hidden behind positive local self-comparisons;14 controls pass. Retained Linux ARM/x86 max0.000119589/cos0.999999698 passes without inference. | Apply independent model/text/vector and unchanged0.002/0.99999 comparisons to all four actual final-source desktops. Two-platform reanalysis does not close the original negative batch. |
+
+Use the [active vendor plan](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md)
+for exact current commits, acceptance gates and initial failures. Queued/prepared
+work is not qualification. Independent model/reference arrays stay remote;
+small reports, source identities, magnitudes and actual decoded output support
+review. The app consumes immutable0.17.12 rather than arbitrary vendor main.
+
 ## Recommended order and dependencies
 
-W1 packaging is complete and archived in [HISTORY](../HISTORY.md).
-Continue vendor UltraBERT tasks from [the executable handoff](next-agent-handoff.md);
+W1 packaging is complete and archived in [HISTORY](https://github.com/CrispStrobe/CrispEmbed/blob/main/HISTORY.md).
+Continue vendor UltraBERT tasks from [the executable handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md);
 V1 (selective PosFormer reconciliation) remains a separate bounded change.
 M1 (fresh mathematics) and U1 (UX coverage) can proceed independently on hosted
 runners. O1 can extend diagnostics now; O2 waits for checkpoint/license/access
@@ -156,7 +177,7 @@ IDs/text/EOS/confidence for all50 cases, unset/1 and zero/legacy agreement,
 public API/printed regressions, primitive controls and both five-case/five-step
 exported-F32/original-code reference paths. Recognition remains7/50; original
 training-checkpoint/BN and unrestricted full-sequence parity are unproved.
-[All raw reports/limits](../tests/results/posformer/released-default-validation.json).
+[All raw reports/limits](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/posformer/released-default-validation.json).
 Earlier actual-binary comparison retains up to2.0265579223632812e-6 confidence
 drift, without fitting a tolerance or claiming general bitwise parity.
 
@@ -384,20 +405,20 @@ Do not treat this longer-term idea as an unfinished build 23 feature.
 ## Published OvisOCR2 baseline — 24 October 2026
 
 Frontend PR78 and the controlled original T4/FP16/TRITON_ATTN reference pass.
-The initial [native40041958521](../tests/results/qwen35-ocr/initial-ovisocr2-model-vision-failure.json)
+The initial [native40041958521](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/initial-ovisocr2-model-vision-failure.json)
 retains its12/14 result and vision failures. Existing precision A/B40047163838
 selects the explicit `both` vision preset. The reviewed frozen
-[replay40049244654](../tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes
+[replay40049244654](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-model-audit.json) passes
 all14 F32/F16 arms without recapturing the943 original fields; nine generated
 IDs reach EOS248046 and decode to `Hello OCR\n\n12345`. Four vision stages still
 exceed raw0.002 absolute error and pass the unchanged original backend-calibrated
-budgets. [Public audit40053283383](../tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
+budgets. [Public audit40053283383](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-public-surfaces.json)
 passes27 C/Python/CLI/HTTP/Rust/Dart arms with exact text and bounded confidence.
-The frozen [original HF eleven-case quality reference40054043629](../tests/results/qwen35-ocr/ovisocr2-original-quality.json)
+The frozen [original HF eleven-case quality reference40054043629](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-original-quality.json)
 has eight synthetic WER0 cases, all EOS/no cap, and15/15 inventory table cells;
 newline CER and strict-v1 border parse failures remain visible.
 
-The [first native F16 quality run40056641800](../tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
+The [first native F16 quality run40056641800](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-f16-quality.json)
 at638380f6 has a positive independent review. Its eleven native cases retain
 all1,841 generated IDs and match the frozen original HF IDs, raw text and
 processed text exactly; all stop at EOS248046 without a cap hit. Eight authored
@@ -408,7 +429,7 @@ Its native CPU was AMD EPYC7763 with two threads; the original HF CPU was a
 different model. The recorded per-case times and cumulative child RSS are
 diagnostics, not a causal paired speed result.
 
-The [quality workflow](../.github/workflows/ovisocr2-quality.yml) now selects
+The [quality workflow](https://github.com/CrispStrobe/CrispEmbed/blob/main/.github/workflows/ovisocr2-quality.yml) now selects
 one same-run `dev-hello` F16 host control for quant phases after exact first
 F16 receipt, source, build and runtime checks. Direct driver calls still default
 to the full eleven-case control, and the workflow accepts `full` explicitly.
@@ -419,36 +440,36 @@ calibrated Q4 also retains the development-only importance proof. Each new Q4
 run captures a same-run F16 first-linear control, candidate first-linear probe
 and full decoder probe with unchanged thresholds. Raw vectors stay in a separate
 remote artifact; small manifests and all failures stay in the report. Protected
-[Q8 40061433357](../tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is
+[Q8 40061433357](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-q8-quality.json) is
 complete and rejected: its first decoder-layer error is0.00376427 with minimum
 cosine0.999920726, and the two-column page changes `Lorem Ipsum` to `Lorem Ispum`
 with697→700 IDs and increased raw/content CER/WER. All eleven cases reach EOS;
 the frozen first F16 baseline remains qualified. Reviewed Q8 diagnostic
 completion permits separate Q4 experiments, without qualifying Q8 publication.
-Actual [plain Q4](../tests/results/qwen35-ocr/ovisocr2-q4-quality.json) and
-[calibrated Q4](../tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json)
+Actual [plain Q4](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-q4-quality.json) and
+[calibrated Q4](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-q4-calibrated-quality.json)
 are complete and rejected for numerical and document nonregression failures.
 All11 cases in each reach EOS without caps; F16 local controls pass18/18.
-The72-vector [development-only calibration proof](../tests/results/qwen35-ocr/ovisocr2-q4-calibrated-calibration.json)
+The72-vector [development-only calibration proof](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-q4-calibrated-calibration.json)
 is positive separately from candidate qualification. All473 tensor records and
 261 raw manifest entries per Q4 arm are retained; large payloads stay remote.
-[Q8 candidate-only replay](../tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
+[Q8 candidate-only replay](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-q8-raw-diff.json)
 retains243 vectors and first QKV max0.0564889908, without replacing the rejected
 Q8 quality wrapper. Earlier pre-model failures and raw strict flags stay in
 HISTORY and their immutable receipts.
 
-[Completed selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
-chooses qualified first F16. [Actual publication40074370335](../tests/results/qwen35-ocr/ovisocr2-publication.json)
+[Completed selection](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-quant-attempts.json)
+chooses qualified first F16. [Actual publication40074370335](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-publication.json)
 at121dc943 passes upload and immutable empty-cache full readback at
 [Hub b7229e46](https://huggingface.co/cstr/OvisOCR2-GGUF/tree/b7229e46f31bcf342d0999966bae8a03bf02bb07).
 Anonymous tree/small-file verification passes; no probes/test weights are
-included. The [initial403](../tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
+included. The [initial403](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/initial-ovisocr2-publication-authorization-failure.json)
 stays separate; the temporary publisher binding is removed after success.
 The real `ovisocr2-f16` URL/SHA alias and both loader fixes are wired. All25
 recorded native source files and qualified `src`/ggml/CMake objects remain
 unchanged; ten current consumer controls pass, including native-source drift
 rejection and Darwin RSS units. Actual
-[consumer40080458492](../tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
+[consumer40080458492](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-published-consumer.json)
 at5296e955 passes two fresh-cache full model hash checks, offline CLI cache
 reuse and actual CLI/HTTP text, region and existing confidence budgets. Both
 independent reviews verify all seven report members/six logs, seven helper and
@@ -457,7 +478,7 @@ native nine-ID/EOS proof remains unchanged. PR79 is merged after final-source
 and merged-source checks. The qualification loop is closed; next select the
 bounded latency/RSS profiling lane in PLAN.
 Model publication does not upgrade the app or create a runtime release.
-Follow the [executable handoff](next-agent-handoff.md) and [PLAN](../PLAN.md).
+Follow the [executable handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md) and [PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md).
 The app remains on immutable0.17.12; published F16 and wired source alias do not upgrade it.
 
 
@@ -466,8 +487,8 @@ The app remains on immutable0.17.12; published F16 and wired source alias do not
 Profiling, source feasibility, selective quantization and larger-input audits
 have reviewed outcomes, including the OvisOCR3 paired/interface diagnostics.
 The remaining work is source-quality/numerical attribution and the separately
-scoped implementation, benchmark, preservation and immutable-release lanes. Use the [executable vendor handoff](next-agent-handoff.md) and
-[PLAN](../PLAN.md) for current dependencies. The application remains pinned to
+scoped implementation, benchmark, preservation and immutable-release lanes. Use the [executable vendor handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md) and
+[PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md) for current dependencies. The application remains pinned to
 published0.17.12; development0.17.13 and model experiments do not upgrade it.
 
 - [Profile40171223309](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40171223309)
@@ -476,8 +497,8 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   with about3.32 GiB process RSS including load. Eight decode steps materialize
   24.06 GB of F32 data, spending11.16 seconds materializing versus0.57 computing
   projections. Nested counters are not additive and this is no broad speed claim.
-  [Full evidence](../tests/results/qwen35-ocr/ovisocr2-profiling.json).
-- [Issue71 feasibility](inpainting-feasibility.md) is complete at source level.
+  [Full evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-profiling.json).
+- [Issue71 feasibility](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/inpainting-feasibility.md) is complete at source level.
   MI-GAN has explicit MIT code/weight terms; one independently implemented fixed-
   resolution graph with original RGB/mask/block/output references is the first
   bounded prototype. Payload identity and any copied helper notices remain gates.
@@ -487,10 +508,10 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   is complete and rejected. Its72 FFN matrices use Q4_K;401 tensors, including78
   attention matrices, remain byte exact. The first full layer has max error
   0.0328895 despite global cosine0.999563; receipt and two-column CER/WER regress.
-  [Four-attempt selection](../tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
+  [Four-attempt selection](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-quant-attempts-v2.json)
   keeps the published F16 candidate. Independent same-quantized-weight operator
   attribution precedes any newly declared precision-selection protocol. The
-  [bounded first-FFN run40231922668](../tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
+  [bounded first-FFN run40231922668](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-first-ffn-attribution.json)
   now passes: independent dequantization and original/native anchors are bit
   exact, same-weight operator errors stay below1.669e-6, and original Python
   with the same Q4 weights reproduces the0.032889 layer error. No local operator
@@ -498,25 +519,25 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   further precision selection requires a fresh development/evaluation protocol.
   PR82 is merged at`160520e8`; all22 final PR checks and11 fresh-main
   workflows pass. The next numerical lane is2048 attribution.
-- [Larger-input audit40177774574](../tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
+- [Larger-input audit40177774574](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-larger-inputs.json)
   is complete: frozen/1024-square/1200-landscape pass14/14;2048 boundary passes8/14.
   Six composed decoder arms fail prefill/full-prefix norm, F32/F16 max
   0.003945589/0.004386902, despite exact nine IDs/text/EOS. Original-embedding
   replay passes; root cause remains open. The2048 experiment stays unqualified,
   default1024 unchanged. All four full producer reports are retained in Git.
-  [Final-source frozen14](../tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
-  and [eleven-case F16 replay](../tests/results/qwen35-ocr/ovisocr2-final-runtime-f16-quality.json)
+  [Final-source frozen14](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-final-runtime-frozen-replay.json)
+  and [eleven-case F16 replay](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr2-final-runtime-f16-quality.json)
   pass with exact1,841 first-F16 outputs, stops and confidences.
 - OvisOCR3 actual controlled T4 execution, processor anchors and original943-stage
-  CPU/F32 capture are reviewed. [Final-source native14](../tests/results/qwen35-ocr/ovisocr3-native-model.json)
+  CPU/F32 capture are reviewed. [Final-source native14](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-native-model.json)
   passes14/14 with exact nine-ID smoke output and profile-bound isolation.
   Its original plain OCR11 capture is complete, but two-column output caps1024
-  without EOS (CER0.52365/WER0.83993). [Paired F16 run40187405735](../tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
+  without EOS (CER0.52365/WER0.83993). [Paired F16 run40187405735](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-f16-quality.json)
   faithfully matches all11 cases/1,679 IDs/raw text/stops/caps. [Public-interface
-  diagnostic40196755934](../tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
+  diagnostic40196755934](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-public-diagnostic.json)
   passes all29 recorded checks across six clients, ABI/cache and negative guards.
   It retains model-qualified=false/publication-eligible=false. The initial
   missing-artifact-name dispatch failed safe before dependencies/model transfer/build.
   A faithful diagnostic cannot override source-quality failure: no qualification,
   model alias or publication. Preserve unchanged prompts/gold/caps/scorers.
-  [Original quality evidence](../tests/results/qwen35-ocr/ovisocr3-original-quality.json).
+  [Original quality evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-original-quality.json).
