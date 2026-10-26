@@ -394,6 +394,8 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-26 | `feat/moedern-colbert-20261026` | Requested SauerkrautLM-MoEdernColBERT family:1.5M→27M→115M and author GGUF variants | Source/license/base audit first; freeze original tokenizer, hash routing, token projection/masks/normalization and MaxSim before native outputs. Start smallest, retain original-first intermediate and task parity, then public C/Python/Rust/Dart surfaces. Hosted builds/models only; preserve existing model gates. |
+| 2026-10-26 | `audit/josev2b-20261026` | Requested mayflowergmbh/Josev-2B architecture and typed-decision port | Pin Apache-tagged checkpoint/base/code/head sources; trace joint-schema inference and calibration before choosing shared Qwen3.5 or dedicated path. Original-first reference and native decision/output gates, then integration. Source audit first; all large model/GPU work remote and separately scoped. |
 | 2026-10-26 | `integration/bounded-closure-20261026` | Combine frozen lane sources and final immutable consumers | Preserve producer branches; require actual pending panels, independent merge review and final same-source native/WASM producers/consumers before main integration. |
 | 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Canonical v2 preparation is reviewed after strict-v1 rejection and complete legacy/author provenance. Full40375626336 at frozene35 runs8 originals→freeze→8 native→aggregate; exact5483 rows and unchanged ranking/vector gates. No pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Initial seven-native/two-WASM producers complete; first consumers fail Windows/Apple/browser. Corrected corpus, UTF8 audit, strict cross-desktop aggregation and actual rounding A/B precede fresh final-source producers/all consumers. No tag/app pin change; device limits explicit. |
@@ -594,6 +596,7 @@ source/artifact proof separately; do not claim it from vendor component parity.
 
 ## Active four-lane closure — actual results and remaining gates
 
+<<<<<<< HEAD
 MI-GAN256 CPU/F32 prototype and the OvisOCR3 preservation copy are complete and
 merged through PR85/PR83. UltraBERT RoPE attribution is complete through PR84.
 Their original failures, qualified scopes and later product/quality tasks stay in
@@ -688,3 +691,63 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
 Queued jobs and successful diagnostic execution are not model qualification.
 Retain every failed numerical/quality screen; never replace gold, widen budgets
 or regenerate original anchors to turn a panel green.
+=======
+- [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
+  gated source/tooling and run final/merged-source checks. Preserve initial
+  queued cancellations and all historical numerical/quantization rejections.
+- [ ] Integrate the reviewed MI-GAN bounded prototype above after platform checks.
+  Its original/native panel and observer attribution are complete in HISTORY;
+  full issue71 product surfaces and representative/video quality remain separate.
+- [ ] Preserve later January archives before expiry; the urgent November Ovis3
+  copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
+  recorded source identities and renewal dates when reviewed.
+- [ ] Review the SciFact original-only preparation on
+  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
+  explicitly dispatch its
+  eight-original→freeze→eight-native panel with the reviewed preparation run and
+  receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
+  gates and predeclared ranking tolerances stay unchanged. Preserve author gold
+  mapping differences and all applicable dataset notices. Public pairs and
+  model publication remain separate from this representative retrieval audit.
+- [ ] Finish successor actual archive consumers from
+  `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
+  unpublished WASM40339800364, then packaged consumers. WASM build completion
+  is recorded in HISTORY; executable browser consumers still require the native
+  producer. Audit helpers may advance only with exact production/build/binding
+  Git objects, producer pairing and generator provenance retained.
+  This candidate advances development manifests to0.17.14 for mobile dependency
+  packaging corrections; main remains0.17.13 until reviewed integration. Require
+  actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
+  cross-link evidence. Device execution and optional GPU assets remain explicit
+  limits. Repeat qualification on the final integrated source when runtime
+  paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
+
+
+## Newly requested model families — original-first support
+
+The user also requested the complete
+[SauerkrautLM-MoEdernColBERT collection](https://huggingface.co/collections/VAGOsolutions/sauerkrautlm-moederncolbert)
+and [Josev-2B](https://huggingface.co/mayflowergmbh/Josev-2B).
+These extend the roadmap while the active Ovis/SciFact/immutable-consumer audits
+continue on their frozen branches. Do not alter those producer sources.
+
+- [ ] SauerkrautLM-MoEdernColBERT: audit all three base/GGUF revisions and
+  Apache-2.0 license files; trace the published custom Python model and author C
+  engine. Start1.5M, then27M/115M. Freeze exact input IDs, hash/expert routing,
+  every earliest differing stage, per-token vectors and real MaxSim/rank outputs.
+  Original Python and author-GGUF fidelity are distinct from quantization loss.
+  Reuse existing ModernBERT/ColBERT components only after matching the blueprint;
+  preserve special-token masks, padding/normalization and existing models.
+  Add pinned aliases/all bindings only after actual model/API/negative checks.
+- [ ] Josev-2B: inspect checkpoint6f0a31c8ed683aba79097eb3f48df2c9ab560afd,
+  its Qwen3.5-2B base provenance and custom joint-schema/head/calibration code.
+  Establish the real typed-decision outputs and input/format limits before
+  implementation. Original-first hosted/GPU probes precede native comparisons;
+  no multi-GB weights, framework installs, compilation or inference on the shared
+  host. Public API/model publication remain conditional on actual parity and
+  decision-quality evidence.
+
+Model-card license tags are preliminary provenance, not a completed code/base
+license audit or model qualification. Keep new runtime paths value-parsed and
+experimental until their own original/intermediate/final-output gates pass.
+>>>>>>> origin/main
