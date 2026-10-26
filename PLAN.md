@@ -386,6 +386,8 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-26 | `feat/moedern-colbert-20261026` | Requested SauerkrautLM-MoEdernColBERT family:1.5M→27M→115M and author GGUF variants | Source/license/base audit first; freeze original tokenizer, hash routing, token projection/masks/normalization and MaxSim before native outputs. Start smallest, retain original-first intermediate and task parity, then public C/Python/Rust/Dart surfaces. Hosted builds/models only; preserve existing model gates. |
+| 2026-10-26 | `audit/josev2b-20261026` | Requested mayflowergmbh/Josev-2B architecture and typed-decision port | Pin Apache-tagged checkpoint/base/code/head sources; trace joint-schema inference and calibration before choosing shared Qwen3.5 or dedicated path. Original-first reference and native decision/output gates, then integration. Source audit first; all large model/GPU work remote and separately scoped. |
 | 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
 | 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
@@ -599,3 +601,32 @@ source/artifact proof separately; do not claim it from vendor component parity.
   cross-link evidence. Device execution and optional GPU assets remain explicit
   limits. Repeat qualification on the final integrated source when runtime
   paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
+
+
+## Newly requested model families — original-first support
+
+The user also requested the complete
+[SauerkrautLM-MoEdernColBERT collection](https://huggingface.co/collections/VAGOsolutions/sauerkrautlm-moederncolbert)
+and [Josev-2B](https://huggingface.co/mayflowergmbh/Josev-2B).
+These extend the roadmap while the active Ovis/SciFact/immutable-consumer audits
+continue on their frozen branches. Do not alter those producer sources.
+
+- [ ] SauerkrautLM-MoEdernColBERT: audit all three base/GGUF revisions and
+  Apache-2.0 license files; trace the published custom Python model and author C
+  engine. Start1.5M, then27M/115M. Freeze exact input IDs, hash/expert routing,
+  every earliest differing stage, per-token vectors and real MaxSim/rank outputs.
+  Original Python and author-GGUF fidelity are distinct from quantization loss.
+  Reuse existing ModernBERT/ColBERT components only after matching the blueprint;
+  preserve special-token masks, padding/normalization and existing models.
+  Add pinned aliases/all bindings only after actual model/API/negative checks.
+- [ ] Josev-2B: inspect checkpoint6f0a31c8ed683aba79097eb3f48df2c9ab560afd,
+  its Qwen3.5-2B base provenance and custom joint-schema/head/calibration code.
+  Establish the real typed-decision outputs and input/format limits before
+  implementation. Original-first hosted/GPU probes precede native comparisons;
+  no multi-GB weights, framework installs, compilation or inference on the shared
+  host. Public API/model publication remain conditional on actual parity and
+  decision-quality evidence.
+
+Model-card license tags are preliminary provenance, not a completed code/base
+license audit or model qualification. Keep new runtime paths value-parsed and
+experimental until their own original/intermediate/final-output gates pass.
