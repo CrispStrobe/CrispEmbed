@@ -499,6 +499,17 @@ The F32 native-vision input-embedding difference is3.92198563e-5 (norms
 209.240433/209.240448), before the final norm's0.00394558907. Preserve these
 magnitudes rather than inferring a root cause from the first threshold failure.
 
+
+[Retained norm isolation40286291355](tests/results/qwen35-ocr/ovisocr2-2048-norm-attribution.json)
+now passes all12 original anchor/identical-input controls: original anchors are
+bit exact; same-input native/original norm max3.05176e-5. Original RMSNorm on
+native hidden states reproduces composed max0.00394583/0.00438643, retaining
+calibrated ratios1.07324/1.19308. Final norm is propagating upstream error.
+The trace begins at patch3.81470e-6, position4.52995e-6 and rotary5.96046e-8;
+position helper source uses multiply-then-divide while native retains legacy
+linspace. Next isolate actual original position coordinates/weights/reduction
+before any gated correction; this result does not qualify2048 or waive budgets.
+
 - [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
   and retained original/native arrays; boundary raw artifact12598011436 is in
   the combined receipt. Preserve original source ac1bb9cb, all initial failures,

@@ -15565,3 +15565,24 @@ the receipt. The bounded first-FFN lane is closed, its ownership row removed.
 The next separate lane is2048 numerical attribution, then MI-GAN. Published F16,
 all four rejected candidates, development0.17.13 and immutable app0.17.12 remain
 unchanged; this validation tooling creates no runtime release.
+
+
+## 26 October 2026 — retained 2048 final-norm isolation
+
+[Actual40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at`91292cb00b54d9e62e675d8acc6c13b0c73e37ca` consumes the byte-pinned rejected
+2048 source archive without a full model/native forward or conversion. All12
+original norm anchors reproduce bit-for-bit; original RMSNorm on identical
+native inputs differs from native by at most3.05176e-5 under unchanged local
+gates. Original RMSNorm instead reproduces upstream-amplified composed failures
+0.00394583/0.00438643, so no norm correction or budget waiver is justified.
+All37 vision boundaries and prefill decoder layers are retained in
+[the complete producer/review](tests/results/qwen35-ocr/ovisocr2-2048-norm-attribution.json).
+Patch/position/rotary first differ by3.81470e-6/4.52995e-6/5.96046e-8. The
+coordinates/weights and reduction of the original position utility are the next
+source-input probe. The initial40285243787 was cancelled during framework setup
+to inspect patch/position branches before their sum, rather than treating the
+old dictionary insertion order as computation order. Five small source/archive
+controls pass. Large vectors remain remote, the original8/14 result and all
+six failed arms unchanged;2048 remains unqualified/default1024. This is the
+completed norm-isolation stage, not completion of vision attribution.
