@@ -15715,3 +15715,32 @@ original Python3.11.17 renderer ABI and preserves all fifty encoded PNG hashes.
 is dispatched at `f284b1f67c1ae34082afb81a54301c6ab392c02a`; its actual image-byte
 result remains pending. Exact216-byte attribution notice verification applies
 on both producer and consumer; unexpected auxiliary files still reject.
+
+## 26 October 2026 — actual WASM/native error localized before candidate A/B
+
+[Source trace40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
+completes atf8bac049. The independently reviewed [full receipt](tests/results/packaging/successor-wasm-source-trace.json)
+verifies the actual small ZIP/all14 members, five source hashes, eight exact
+output anchors, both native thread counts' full-stage identities and independent
+Q8 reference-byte controls. Every original final vector remains bit exact; the
+unchanged final comparison still fails maximum0.00837269/cosine0.99864984.
+
+All12 input IDs and the complete embedding-normalization tensor are exact. The
+first captured differing stage is first attention output: max0.0833039284,
+RMS0.00581555824, reference max4.23782301 and L2 magnitudes13.05802/12.83489.
+Final encoder max reaches0.105108261. Actual first-query weights are IQ4_NL,
+with Q8_0 activations. On the identical first-token input,187 quantized bytes
+differ from the pinned independent rounding reference while all twelve FP16
+scales match. A real first-query output-channel dot shifts by0.0260053873.
+The model includes30 IQ4_NL and6 IQ4_XS matrices; its filename alone is not a
+tensor-format contract.
+
+Actual WASM mean-pool reconstruction and both native recomputed means reproduce
+their respective final L2 vectors exactly. Native pre-L2 is explicitly derived
+from the complete encoder tensor, while WASM pooling is captured by test overlay.
+The error is already upstream of pooling. These results justify a separately
+source-bound rounding experiment; one dot does not prove full-network causality.
+The conditional backend-local candidate remains default-off and unmerged until
+actual operator and full-model A/B gates complete. No reference, weight, input,
+tolerance, production archive, application pin or default is replaced. Stage
+arrays and diagnostic modules remain remote through24 January2027.
