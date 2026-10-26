@@ -126,6 +126,8 @@ def capture_case(model, name, directory):
                 save(f"{stage}.{key}", child)
 
     with torch.inference_mode():
+        save("generator.input", x)
+        save("known_mask", known)
         start = time.perf_counter()
         baseline = model(x).clone()
         elapsed = time.perf_counter() - start
@@ -149,8 +151,6 @@ def capture_case(model, name, directory):
                     handle.remove()
             if not torch.equal(baseline, observed):
                 raise AssertionError("hooks changed original output")
-        save("generator.input", x)
-        save("known_mask", known)
         save("generator.output", baseline)
     generated, composed = decode(baseline, rgb, mask)
     Image.fromarray(generated).save(directory / "generated.png")
