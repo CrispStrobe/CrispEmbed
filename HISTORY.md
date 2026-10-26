@@ -16323,7 +16323,7 @@ shards are cancelled while queued with zero steps; all eight completed original
 shards and the original freeze remain unchanged. A distinct hosted tokenizer
 diagnostic and all5,483 input checks precede any corrected native embedding run.
 
-## 27 October 2026 — Smallest MoEdern original captured; observer gap retained
+## 26 October 2026 — Smallest MoEdern original captured; observer gap retained
 
 [Original40412164041](tests/results/moedern-colbert/initial-original-review.json)
 at790f7b1d completes all10 owned CPU/F32 cases with exact ordinary/observer and
