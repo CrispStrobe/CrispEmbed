@@ -189,6 +189,8 @@ def quality_check(out, gate):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(); p.add_argument('--phase', choices=('preflight', 'frozen', 'quality-check'), required=True)
     p.add_argument('--gate', type=int, choices=(0, 1)); args = p.parse_args()
+    if args.phase != 'preflight' and args.gate is None:
+        p.error('--gate is required for frozen/quality-check')
     out = Path(os.environ['HEAVY_OUT'])
     try:
         if args.phase == 'preflight': preflight(out)

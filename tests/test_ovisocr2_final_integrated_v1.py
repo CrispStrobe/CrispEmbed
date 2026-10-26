@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -48,6 +49,12 @@ class FinalContract(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'pending'):
                     driver.preflight(Path(temporary) / 'out')
                 call.assert_not_called()
+
+    def test_direct_frozen_driver_requires_explicit_gate_before_access(self):
+        result = subprocess.run([sys.executable, ROOT / 'tools/ci-heavy/ovisocr2_final_integrated_v1.py',
+                                 '--phase', 'frozen'], text=True, capture_output=True)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn('--gate is required', result.stderr)
 
     def test_reviewed_negative_is_not_default_acceptance(self):
         value = self.reviewed()
