@@ -52,3 +52,10 @@ Only source and lightweight stdlib controls have run when this contract is
 introduced. Actual dataset/preflight, all16 shards and independent artifact
 review remain pending. Retain report and raw artifacts for90 days, then preserve
 verified ZIP/member bytes remotely before the returned service expiry.
+
+The author archive's canonical claim inputs are exactly`claims_train.jsonl`,
+`claims_dev.jsonl` and`claims_test.jsonl`, as documented by its pinned README.
+Five additional cross-validation train/dev pairs repeat these IDs; retain their
+source identities separately and never concatenate them into the canonical
+inventory. Duplicate canonical IDs remain an error. Initial40346793408 preserves
+that adapter rejection before any model output in the retained result receipt.

@@ -20,7 +20,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from ultrabert_contract import MODEL, REVISION, QUERY, profile, sha256, validate_sources, validate_weight_file
-from ultrabert_scifact import PROTOCOL_SHA, protocol, digest, equivalence, qrels, shard_rows, rank_scores, quality
+from ultrabert_scifact import PROTOCOL_SHA, protocol, digest, equivalence, canonical_claims, qrels, shard_rows, rank_scores, quality
 ST_SOURCE = 'b0acd1a4d22ba2bc10072868ddea7612561c9424'
 ST_WRAPPER_SHA = '3d677757bf3e684c45d3634ae67918cd9a67cee6aac6760e5fa1c72dfe820650'
 ST_POOL_SHA = 'b6e96e0eac50ebc33d6310ef3b8d35b7cd2b7e0e521809552bba34c05c13d43d'
@@ -325,7 +325,8 @@ def prepare(args, out, scratch, closure):
     shutil.copy2(ROOT / 'docs/ultrabert-scifact-notices.md', notices / 'ATTRIBUTION.md')
     author = downloads / 'author-data.tar.gz'
     sources['author_archive'] = fetch(spec['author_archive_url'], author, size=spec['author_archive_bytes'],
-                                      etag=spec['author_archive_etag'])
+                                      etag=spec['author_archive_etag'],
+                                      checksum='11c621288d41ac144d29b13b0f8503b3820b7d6e8b1f6ff24dff335c196d76be')
     extracted = {}
     with tarfile.open(author, 'r:gz') as archive:
         members = archive.getmembers()
@@ -344,7 +345,7 @@ def prepare(args, out, scratch, closure):
     if 'corpus.jsonl' not in extracted or 'claims_dev.jsonl' not in extracted:
         raise ValueError('Author complete corpus/dev claims absent')
     # No author-derived evidence/citation mapping is silently treated as gold.
-    claims = [row for name, values in extracted.items() if name.startswith('claims_') for row in values]
+    claims = canonical_claims(extracted)
     parquet = {}
     for kind, size, checksum in [('corpus', 4469916, '243324b35f03d82bd6d98a5f575966876e86cad7ce16e5333a35b1b793dc4f45'),
                                  ('queries', 64982, '1c37956c5dc8b810b60302323c24d1a9e79e26411ba8f5ad9d0888642e2a9034')]:
@@ -366,6 +367,8 @@ def prepare(args, out, scratch, closure):
         write(out / 'initial-data-equivalence-failure.json', dict(status='rejected before model outputs',
             source=closure, protocol_sha256=PROTOCOL_SHA, sources=sources, error=str(error)))
         raise
+    mapping['author_claim_files'] = ['claims_train.jsonl', 'claims_dev.jsonl', 'claims_test.jsonl']
+    mapping['unused_cross_validation_files'] = sorted(name for name in extracted if name.startswith('claims_') and name not in mapping['author_claim_files'])
     write(out / 'initial-author-gold-mapping.json', mapping)
     write(payload / 'dataset.json', data)
     write(payload / 'protocol.json', p)

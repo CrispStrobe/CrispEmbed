@@ -33,6 +33,16 @@ def unique(rows, key):
     return result
 
 
+def canonical_claims(extracted):
+    """Author README's canonical split; cross-validation files repeat IDs."""
+    names = ('claims_train.jsonl', 'claims_dev.jsonl', 'claims_test.jsonl')
+    if any(name not in extracted for name in names):
+        raise ValueError('Author canonical train/dev/test split absent')
+    rows = [row for name in names for row in extracted[name]]
+    unique(rows, 'id')  # Still reject duplicates within or across canonical splits.
+    return rows
+
+
 def qrels(payload):
     reader = csv.DictReader(io.StringIO(payload.decode()), delimiter='\t')
     if reader.fieldnames != ['query-id', 'corpus-id', 'score']:

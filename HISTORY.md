@@ -15638,3 +15638,21 @@ negative changed-tree, wrong-ggml and dirty-source controls. The manual
 The SciFact protocol, input policy, sources and acceptance budgets are unchanged;
 actual preparation and independent data/length/timing review remain pending
 before the full original-first panel. The failed run stays preserved.
+
+## 26 October 2026 — SciFact canonical split adapter rejection retained
+
+Preparation40346793408/4469e913 passes parent/source controls and installs its
+pinned original environment, then fails before tokenizer/weight access or model
+outputs with duplicate author claim ID6. The author archive includes canonical
+train/dev/test plus five overlapping cross-validation partitions; the loader
+incorrectly concatenated every`claims_*` member. The pinned author README
+explicitly distinguishes these partitions. The corrected adapter selects exactly
+the canonical three files and still rejects missing files and duplicate canonical
+IDs. All unused cross-validation member hashes remain retained; no retrieval
+query, document, gold, token policy or numerical/ranking budget changes.
+[The initial receipt](tests/results/ultrabert/scifact-initial-data-rejection.json)
+preserves actual source/member identities and failure; every recorded source hash
+is independently matched to4469e913. Actual original archive SHA11c62128 is now
+pinned in addition to version ID/size/ETag. Twelve source controls pass, including
+canonical duplicates and exclusion of overlapping cross-validation copies.
+The corrected original-only preparation must complete before a full panel.

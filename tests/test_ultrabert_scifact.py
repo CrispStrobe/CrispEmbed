@@ -70,6 +70,16 @@ class Contract(unittest.TestCase):
             else: values[4]['0'] = {'99999': 1}
             with self.subTest(kind=kind), self.assertRaises(ValueError): scorer.equivalence(*values)
 
+    def test_author_canonical_splits_exclude_cross_validation_copies(self):
+        a, b, c = [dict(id=i, claim=str(i)) for i in range(3)]
+        split = {'claims_train.jsonl':[a], 'claims_dev.jsonl':[b], 'claims_test.jsonl':[c],
+                 'claims_train_1.jsonl':[a, b], 'claims_dev_1.jsonl':[c]}
+        self.assertEqual(scorer.canonical_claims(split), [a, b, c])
+        split['claims_test.jsonl'].append(a)
+        with self.assertRaises(ValueError): scorer.canonical_claims(split)
+        del split['claims_test.jsonl']
+        with self.assertRaises(ValueError): scorer.canonical_claims(split)
+
     def test_canonical_qrels_duplicate_score_rejected(self):
         header = 'query-id\tcorpus-id\tscore\n'
         self.assertEqual(scorer.qrels((header + '1\t2\t1\n').encode()), {'1':{'2':1}})
