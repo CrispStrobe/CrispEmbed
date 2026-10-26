@@ -15590,3 +15590,18 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 `9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
+
+## 26 October 2026 — original MI-GAN256 capture and lossless conversion
+
+[Original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 succeeds before native inference. The actual author-linked MIT
+checkpoint is25,231,129 bytes/SHA8b82b2e8; this is a first observed transport
+hash, not an author-declared digest. All eight deterministic fixtures complete;
+two full captures each retain238 stages with bit-exact hook neutrality. Known
+pixels are exact on all eight, and four invalid-input controls reject. Conversion
+preserves all154 F32 tensor payloads exactly in25,185,504-byte GGUFb8fcefc3.
+The [independent receipt](tests/results/migan/original-reference.json) retains
+source, checkpoint, artifact, conversion and fixture identities. Six final-only
+cases do not claim hook neutrality. Synthetic images do not establish real
+subtitle/video quality, public API qualification or model publication. Native
+execution is a separate default-off prototype consuming these frozen bytes.
