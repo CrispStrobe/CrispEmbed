@@ -15693,3 +15693,18 @@ The corrected source-reviewed trace is
 at `f8bac049a7c143773b330cfc4c217b1f0a47ef56`, retained on
 `audit/successor-wasm-trace-dispatch-v2-20261026`. Hosted results are pending;
 source controls alone establish no output parity or production correction.
+
+## 26 October 2026 — image preservation inventory rejection retained
+
+[Linux proof40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
+atb7983104 fails before any original PNG hash or RGB check. Its helper incorrectly
+expected only a manifest and50 images; the pinned renderer also emitsNOTICE.txt.
+[Exact rejection receipt](tests/results/packaging/posformer-corpus-initial-rejection.json)
+retains the actual small ZIP, report and log identities. No corpus payload was
+published and no Linux PNG mismatch or model result follows from this failure.
+The original pinned writer hashes encoded file bytes before decoding, independently
+verified from its4932-byte source/SHA39c36a74; the existing image hashes remain
+unchanged. A corrected preservation lane must retain the exact attribution notice
+and all52 files before checking all50 frozen PNGs. Historical renderer Python
+3.11.17 ABI alignment is a reproducibility precaution, not an established cause
+of a PNG difference. No image, gold, score or inference tolerance is replaced.
