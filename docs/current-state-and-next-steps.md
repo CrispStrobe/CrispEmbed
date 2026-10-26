@@ -542,3 +542,42 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   A faithful diagnostic cannot override source-quality failure: no qualification,
   model alias or publication. Preserve unchanged prompts/gold/caps/scorers.
   [Original quality evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-original-quality.json).
+
+## Requested model additions — 26 October 2026
+
+SauerkrautLM-MoEdernColBERT (1.5M,27M,115M) and Josev-2B are added to
+[PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md), restricted
+to the audited permissive sources. Neither has a public CrispEmbed model alias,
+release or native-parity qualification.
+
+The smallest MoEdern original
+[40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
+completes10 neutral owned cases and original-first F32 conversion.
+[Review](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/moedern-colbert/initial-original-review.json)
+finds missing Dense/Normalize intermediate observations because their Mapping
+outputs were skipped. Corrected original-only
+[40423259251](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251)
+at8b153739 must preserve all250 old array hashes and capture mandatory pipeline
+stages before the prepared native graph/diff experiment can run. Continue
+27M and115M only after smallest-model parity and public role/tokenizer support.
+
+Josev source/head schema and exact F32 conversion guards are prepared. The
+corrected GPU environment installs all57 locked packages and passes pip-check,
+then its installed-metadata selector/hash guard rejects setuptools before
+framework imports, CUDA smoke or original-model inference.
+[The retained receipt](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/josev2b/initial-installed-metadata-preflight.json)
+distinguishes that failure from a proved wheel-byte mismatch. Audit exact owner
+and vendored metadata on hosted CPU before another GPU attempt; then finish
+the four-case original capture, native head and explicit Qwen3.5-2B hidden-only
+prefill with typed-answer parity.
+
+SciFact's eight original shards and freeze are complete. Two actual native
+shards reject under512 document token streams before vector acceptance; the
+remaining six are cancelled with zero steps. A frozen-input token-only
+diagnostic and all5,483 ID/mask checks precede corrected embeddings. All old
+strict replay failures and unchanged vector/ranking gates remain.
+
+The runtime snapshot still has interpolation and WASM rounding off. Final
+release/consumer closure must explicitly account for new source or regression
+fixtures; the old frozen v1 guard is preserved rather than bypassed. The app
+continues to use immutable0.17.12.

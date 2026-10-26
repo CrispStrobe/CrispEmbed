@@ -778,7 +778,9 @@ experimental until their own original/intermediate/final-output gates pass.
   `2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`, including all seven source hashes,
   actual tokenizer/span freeze, four observer/repeat-neutral cases and every
   checkpoint-promoted/loaded-head F32 hash. Corrected GPU bootstrap is
-  `c9aa40b761846aa1a4a24d67d32f1c107a22ecd2`; actual outcome remains pending.
+  `c9aa40b761846aa1a4a24d67d32f1c107a22ecd2`; that environment attempt rejects
+  its installed-metadata guard before model access. The completed original
+  capture still requires a reviewed metadata correction and immutable worker.
 - [ ] Convert the separate head on hosted resources using that reviewed receipt;
   preserve license/notices and verify exact GGUF dimensions and payload hashes.
   Then implement the gated native head and compare actual hidden-row/lexical/span
