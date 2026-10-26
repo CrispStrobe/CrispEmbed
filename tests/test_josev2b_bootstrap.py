@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""Mocked bootstrap negatives; no hardware, framework or payload access."""
+import hashlib
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import tempfile
+import types
+import unittest
+from unittest.mock import patch
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / 'tools/kaggle/josev2b-original/bootstrap.py'
+
+
+class BootstrapTests(unittest.TestCase):
+    def load(self, directory):
+        spec = importlib.util.spec_from_file_location('josev_bootstrap_test', SOURCE)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        module.OUT = Path(directory) / 'out'
+        module.SCRATCH = Path(directory) / 'scratch'
+        return module
+
+    def reject(self, hardware, python, error):
+        with tempfile.TemporaryDirectory() as directory:
+            module = self.load(directory)
+            with patch.object(module.subprocess, 'check_output', return_value=hardware), \
+                 patch.object(module.sys, 'version_info', python), \
+                 patch.object(module.sys, 'version', 'mock actual Python version'), \
+                 patch.object(module, 'run', side_effect=AssertionError('must not install or access payload')):
+                with self.assertRaisesRegex(ValueError, error):
+                    module.main()
+            receipt = json.loads((module.OUT / 'bootstrap.json').read_text())
+            self.assertFalse(receipt['conclusive'])
+            self.assertFalse(receipt['retry_permitted'])
+            self.assertFalse(receipt['model_payload_accessed'])
+            self.assertEqual(receipt['commands'], [])
+            self.assertEqual(receipt['python'], 'mock actual Python version')
+            self.assertTrue(receipt['hardware'])
+            self.assertFalse(module.SCRATCH.exists())
+            return receipt
+
+    def test_unsupported_gpu_rejects_before_wrong_python(self):
+        receipt = self.reject('Tesla P100, 6.0, 16384, 16000, 580.65.06\n', (3, 11), 'unsupported GPU')
+        self.assertIn('no retry', receipt['error'])
+
+    def test_supported_gpu_wrong_python_is_recorded_before_install(self):
+        self.reject('Tesla T4, 7.5, 15360, 15000, 580.65.06\n', (3, 11), 'requires Python3.13')
+
+    def test_old_driver_rejects_before_python_or_install(self):
+        self.reject('Tesla T4, 7.5, 15360, 15000, 570.00.00\n', (3, 11), 'driver is below')
+
+    def test_python313_still_requires_disk_before_install(self):
+        with tempfile.TemporaryDirectory() as directory:
+            module = self.load(directory)
+            with patch.object(module.subprocess, 'check_output', return_value='Tesla T4, 7.5, 15360, 15000, 580.65.06\n'), \
+                 patch.object(module.sys, 'version_info', (3, 13)), \
+                 patch.object(module.shutil, 'disk_usage', return_value=types.SimpleNamespace(free=10 * 2**30)), \
+                 patch.object(module, 'run', side_effect=AssertionError('must not install')):
+                with self.assertRaisesRegex(ValueError, 'scratch'):
+                    module.main()
+            self.assertFalse(module.SCRATCH.exists())
+            self.assertFalse(json.loads((module.OUT / 'bootstrap.json').read_text())['conclusive'])
+
+    def test_worker_commit_and_contract_are_exact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            module = self.load(directory)
+            contract = subprocess.check_output(['git', 'show', module.WORKER_SOURCE + ':docs/josev2b-source-contract.json'], cwd=ROOT)
+            self.assertEqual(hashlib.sha256(contract).hexdigest(), module.CONTRACT_SHA)
+            self.assertEqual(json.loads(contract)['runtime']['python_minor'], '3.13')
+            for wheel in module.WHEELS.values():
+                self.assertIn('-cp313-cp313-manylinux_2_28_x86_64.whl', wheel['filename'])
+                self.assertEqual(wheel['url'].split('#sha256=')[1], wheel['sha256'])
+
+
+if __name__ == '__main__':
+    unittest.main()
