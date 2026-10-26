@@ -1,0 +1,70 @@
+{
+  "schema": "crispembed-ultrabert-scifact-protocol-v1",
+  "version": 1,
+  "dataset": {
+    "name": "SciFact / BEIR test",
+    "corpus": 5183,
+    "queries": 300,
+    "beir_queries_total": 1109,
+    "author_revision": "68b98a56d93e0f9da0d2aab4e6c3294699a0f72e",
+    "author_archive_url": "https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz?versionId=8LiW3OUBLBvhehDzrRdGD1ibIaXL.6PQ",
+    "author_archive_bytes": 3115079,
+    "author_archive_etag": "cb7da4d8609e30f2c7483b61aa447f7e",
+    "beir_revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+    "qrels_revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+    "qrels_git_blob": "c62f58c75f10c0cee23483b7269bff2902ae4080",
+    "qrels_bytes": 5389,
+    "gold": "Canonical pinned BEIR test qrels; author evidence and cited_doc_ids compared and differences retained, never silently substituted",
+    "document_join": "title + single ASCII space + abstract sentences joined by single ASCII spaces; no strip or normalization",
+    "id_order": "ascending lexicographic UTF-8 string ID, queries first then corpus"
+  },
+  "model": {
+    "model": "dmis-lab/UltraBERT-Embed-150M",
+    "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+    "device": "cpu",
+    "dtype": "float32",
+    "attention": "eager",
+    "threads": 2,
+    "wrapper": "sentence-transformers==6.0.1",
+    "query_prompt": "Instruct: Given a question, retrieve passages that answer the question\nQuery: ",
+    "document_prompt": "",
+    "pooling": "CLS",
+    "normalize": "original wrapper normalize_embeddings=True, separate raw CLS observation",
+    "max_tokens": 512,
+    "truncation": "single text; right; exact first512 original tokenizer IDs including attended BOS0",
+    "batch_size": 1,
+    "observation": "Every row: actual hooked raw CLS equals unobserved ordinary wrapper raw bit-for-bit; actual wrapper normalized output measured separately"
+  },
+  "execution": {
+    "shards": 8,
+    "assignment": "ordered row index modulo8",
+    "original_before_native": "all8 original shards and frozen original inventory complete before any native shard",
+    "preflight_sample": "first query + query at maximum untruncated length + corpus quantiles0,10,20,30,40,50,60,70,80,90,100 by capped token length, duplicate row IDs removed",
+    "max_projected_shard_seconds": 13200,
+    "projection_safety_factor": 2,
+    "full_job_timeout_minutes": 240
+  },
+  "acceptance": {
+    "vector_max_abs": 0.002,
+    "vector_cosine_min": 0.99999,
+    "ndcg_at_10_degradation_max": 0.001,
+    "mrr_at_10_degradation_max": 0.001,
+    "recall_at_100_degradation_max": 0.001,
+    "top1_agreement_min": 0.99,
+    "ids": "all5483 rows exact, no dropped/truncated-away rows",
+    "ranking": "float64 cosine on normalized F32 vectors; ties ascending lexicographic document ID",
+    "quality": "relative to frozen actual original, no absolute dataset score claimed in advance"
+  },
+  "licenses": {
+    "claims_annotations": "CC BY4.0, author LICENSE.md",
+    "abstracts": "ODC-By1.0 via S2ORC, author LICENSE.md",
+    "BEIR_snapshot_and_qrels": "CC BY-SA4.0 declared by both pinned BEIR dataset cards; retained alongside upstream terms, never relabeled Apache2.0",
+    "distribution": "raw data and prepared copies only in attributed remote artifacts, not Git; retain all notices and source URLs"
+  },
+  "limits": [
+    "Public pair API remains excluded",
+    "Owned32-row smoke unchanged",
+    "Historical183 F32/1294 F16 stage failures and strict replay failures remain",
+    "No model publication/default change/app upgrade/release qualification"
+  ]
+}

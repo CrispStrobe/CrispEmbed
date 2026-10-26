@@ -1,0 +1,29 @@
+name: UltraBERT SciFact protocol controls
+on:
+  push:
+    paths:
+      - 'tools/ultrabert_scifact.py'
+      - 'tools/ci-heavy/ultrabert_scifact.py'
+      - 'tests/test_ultrabert_scifact.py'
+      - 'tests/regression/ultrabert/scifact-protocol-v1.json'
+      - '.github/workflows/ultrabert-scifact*.yml'
+      - '.github/actions/scifact-setup/action.yml'
+  pull_request:
+    paths:
+      - 'tools/ultrabert_scifact.py'
+      - 'tools/ci-heavy/ultrabert_scifact.py'
+      - 'tests/test_ultrabert_scifact.py'
+      - 'tests/regression/ultrabert/scifact-protocol-v1.json'
+      - '.github/workflows/ultrabert-scifact*.yml'
+      - '.github/actions/scifact-setup/action.yml'
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python tests/test_ultrabert_scifact.py -v

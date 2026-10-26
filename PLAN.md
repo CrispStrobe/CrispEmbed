@@ -162,6 +162,11 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
 
 ## Text encoders and typed decisions
 
+- [ ] **Full SciFact original-first task audit:** execute the hosted `prepare` phase of
+  [the versioned contract](docs/ultrabert-scifact.md); independently review exact
+  author/BEIR mapping, data/input/gold freeze, all lengths and original-only timing
+  before the8-original→freeze→8-native panel. The explicit right-truncation gate
+  stays default-off; fixed vector/ranking budgets, all rows and old failures remain.
 - [ ] **UltraBERT native port:** follow [U1–U4](docs/next-agent-handoff.md) and
   [the architecture contract](docs/ultrabert.md). Original reference/conversions
   and8-row native tokenizer/template parity pass; the test-only native graph
@@ -620,3 +625,17 @@ narrow hash-preserving redaction adapter; retain the initial failed run.
   cross-link evidence. Device execution and optional GPU assets remain explicit
   limits. Repeat qualification on the final integrated source when runtime
   paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
+
+SciFact v1 preparation40353858454 at57aab2cf rejects stored author/BEIR corpus
+columns at10068634 before tokenizer/weights/model outputs. Preserve that negative
+receipt. The next preparation adds hosted legacy-JSONL/Parquet provenance and
+bounded exact first-difference diagnostics; it applies no guessed text cleanup.
+Resolve the provenance decision before freezing any original full-panel vectors.
+
+SciFact40364838418 now attributes the source discrepancy: all canonical legacy
+JSON/Parquet columns match, while1,055 current-author abstracts differ. V1 stays
+rejected. Execute the distinct literal-canonical v2 preparation on
+`audit/ultrabert-scifact-canonical-integration-20261026` only with the frozen
+reviewed provenance pins, published module config and all5483 actual wrapper
+input checks. Review its real dataset/token/timing receipt before the full panel.
+Do not interpret source protocol selection as numerical/model qualification.

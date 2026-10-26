@@ -1268,6 +1268,9 @@ endif() # NOT iOS: standalone validation executables
 add_executable(test-ultrabert-api tests/test_ultrabert_api.cpp)
 target_link_libraries(test-ultrabert-api PRIVATE crispembed)
 
+add_executable(test-ultrabert-truncation tests/test_ultrabert_truncation.cpp src/tokenizer_bpe.cpp)
+target_link_libraries(test-ultrabert-truncation PRIVATE crispembed-core)
+
 add_executable(test-ultrabert-profile tests/test_ultrabert_profile.cpp src/tokenizer_bpe.cpp)
 target_link_libraries(test-ultrabert-profile PRIVATE crispembed-core)
 

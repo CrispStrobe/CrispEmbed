@@ -1,0 +1,127 @@
+{
+  "schema": "crispembed-ultrabert-scifact-protocol-v2",
+  "version": 2,
+  "dataset": {
+    "name": "SciFact / canonical BEIR test (distinct v2)",
+    "corpus": 5183,
+    "queries": 300,
+    "beir_queries_total": 1109,
+    "author_revision": "68b98a56d93e0f9da0d2aab4e6c3294699a0f72e",
+    "author_archive_url": "https://scifact.s3-us-west-2.amazonaws.com/release/latest/data.tar.gz?versionId=8LiW3OUBLBvhehDzrRdGD1ibIaXL.6PQ",
+    "author_archive_bytes": 3115079,
+    "author_archive_etag": "cb7da4d8609e30f2c7483b61aa447f7e",
+    "beir_revision": "b3b5335604bf5ee3c4447671af975ea25143d4f5",
+    "qrels_revision": "2938d17dc3b09882fdb8c12bbbe2e2dc0e75a029",
+    "qrels_git_blob": "c62f58c75f10c0cee23483b7269bff2902ae4080",
+    "qrels_bytes": 5389,
+    "gold": "Canonical pinned BEIR test qrels; author evidence and cited_doc_ids compared and differences retained, never silently substituted",
+    "document_join": "canonical BEIR title + single ASCII space + canonical BEIR text; no strip or normalization",
+    "id_order": "ascending lexicographic UTF-8 string ID, queries first then corpus",
+    "canonical_input_source": "Pinned BEIR stored columns; author columns are compared and journaled, not substituted or declared identical",
+    "legacy_equivalence": {
+      "revision": "984eed826375f18d27936c4a32bf0f8491e3f414",
+      "loader_sha256": "f839e4910524fd6577117a4dabd4133168eb50603a13e333666646053adf902d",
+      "loader_rule": "JSON parse, remove optional metadata, supply missing title only as empty string; preserve all stored title/text values",
+      "files": {
+        "corpus.jsonl.gz": {
+          "bytes": 2758600,
+          "sha256": "2f4a2a264485e5b5b95ae9cd5534817447757423991a4767d6da811539c0853e"
+        },
+        "queries.jsonl.gz": {
+          "bytes": 49271,
+          "sha256": "c29574b9cb8fdf043df8494f689de15f4604ac4b585eb34bda9b6a389aa6c4d3"
+        }
+      },
+      "required": "All5183 corpus and1109 query IDs/title/text exact against pinned Parquet before canonical inputs or model outputs"
+    }
+  },
+  "model": {
+    "model": "dmis-lab/UltraBERT-Embed-150M",
+    "revision": "367d5343b5a0164d57b810cedf5de4b8983d5984",
+    "device": "cpu",
+    "dtype": "float32",
+    "attention": "eager",
+    "threads": 2,
+    "wrapper": "sentence-transformers==6.0.1",
+    "query_prompt": "Instruct: Given a question, retrieve passages that answer the question\nQuery: ",
+    "document_prompt": "",
+    "pooling": "CLS",
+    "normalize": "original wrapper normalize_embeddings=True, separate raw CLS observation",
+    "max_tokens": 512,
+    "truncation": "single text; right; exact first512 original tokenizer IDs including attended BOS0",
+    "batch_size": 1,
+    "observation": "Every row: actual hooked raw CLS equals unobserved ordinary wrapper raw bit-for-bit; actual wrapper normalized output measured separately"
+  },
+  "execution": {
+    "shards": 8,
+    "assignment": "ordered row index modulo8",
+    "original_before_native": "all8 original shards and frozen original inventory complete before any native shard",
+    "preflight_sample": "first query + query at maximum untruncated length + corpus quantiles0,10,20,30,40,50,60,70,80,90,100 by capped token length, duplicate row IDs removed",
+    "max_projected_shard_seconds": 13200,
+    "projection_safety_factor": 2,
+    "full_job_timeout_minutes": 240
+  },
+  "acceptance": {
+    "vector_max_abs": 0.002,
+    "vector_cosine_min": 0.99999,
+    "ndcg_at_10_degradation_max": 0.001,
+    "mrr_at_10_degradation_max": 0.001,
+    "recall_at_100_degradation_max": 0.001,
+    "top1_agreement_min": 0.99,
+    "ids": "all5483 rows exact, no dropped/truncated-away rows",
+    "ranking": "float64 cosine on normalized F32 vectors; ties ascending lexicographic document ID",
+    "quality": "relative to frozen actual original, no absolute dataset score claimed in advance"
+  },
+  "licenses": {
+    "claims_annotations": "CC BY4.0, author LICENSE.md",
+    "abstracts": "ODC-By1.0 via S2ORC, author LICENSE.md",
+    "BEIR_snapshot_and_qrels": "CC BY-SA4.0 declared by both pinned BEIR dataset cards; retained alongside upstream terms, never relabeled Apache2.0",
+    "distribution": "raw data and prepared copies only in attributed remote artifacts, not Git; retain all notices and source URLs"
+  },
+  "limits": [
+    "Public pair API remains excluded",
+    "Owned32-row smoke unchanged",
+    "Historical183 F32/1294 F16 stage failures and strict replay failures remain",
+    "No model publication/default change/app upgrade/release qualification"
+  ],
+  "provenance_policy": {
+    "author_inventory": "All5183 corpus IDs must equal canonical corpus IDs; author canonical claims must cover all1109 BEIR query IDs; duplicates and missing IDs reject",
+    "author_columns": "Journal every differing corpus title/joined-abstract and every differing query claim with exact hashes, lengths and first differing codepoints; never apply normalization",
+    "author_gold": "Journal every test-qrel difference against both author evidence and cited_doc_ids; canonical frozen qrels remain unchanged",
+    "row_policy": "All300 test queries and5183 corpus rows retained, including duplicate texts; no query/document dropping or input selection from output scores",
+    "model_inputs": "Literal query prompt + canonical query text; literal canonical title + ASCII space + canonical text; preserve leading/trailing/internal whitespace"
+  },
+  "preserved_v1": {
+    "protocol": "tests/regression/ultrabert/scifact-protocol-v1.json",
+    "sha256": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+    "helper": "tools/ultrabert_scifact.py",
+    "helper_sha256": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+    "scope": "V1 author-column equivalence remains an independent strict target; its existing rejection is not replaced or relabeled by v2"
+  },
+  "activation": "Requires the pinned independent data-provenance review before dataset/model access; every input/ID/gold/source hash and all5483 actual wrapper token paths must freeze before the first model output.",
+  "data_provenance_review": {
+    "run": 40364838418,
+    "source_commit": "bf2f9e48075e8b811a1ec7c999aafb24098fcf92",
+    "workflow": ".github/workflows/ovisocr2-metadata.yml",
+    "v1_protocol_sha256": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+    "artifact": {
+      "id": 12672485140,
+      "name": "ultrabert-scifact-prepare-reports-40364838418",
+      "bytes": 36042,
+      "sha256": "fee770cb623ab1dc2dc0c70ebaac67ab793eda82fc6dffe6793ce518a72168f7"
+    },
+    "failure_report_sha256": "20d2e934bd158660986bebb1c630ccb0ccf112aea8414a5430bc76c77247ae6a",
+    "migration_report_sha256": "7906d394fc3a3141217049dcabd5741a5e5624b65474ed322b0b35cdc3e8bd19",
+    "author_abstract_mismatches": 1055,
+    "author_title_mismatches": 0,
+    "source_outputs_produced": false,
+    "decision": "Use unchanged canonical BEIR stored inputs only after actual exact legacy/Parquet equality; preserve strict v1 author-column rejection. No normalization or gold/budget change."
+  },
+  "original_blueprint": {
+    "sentence_bert_config.json": {
+      "bytes": 241,
+      "sha256": "3084164002c0bca01b0259c5327123803fce32e660a57feb93184ffead186fc8"
+    },
+    "preflight": "All5483 actual wrapper preprocess(raw,prompt) and tokenize(literal-prefix+text) IDs/masks must match frozen direct IDs before any model forward."
+  }
+}

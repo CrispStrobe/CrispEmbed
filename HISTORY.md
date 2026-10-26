@@ -15731,6 +15731,57 @@ The [initial receipt](tests/results/migan/initial-native-parity.json) retains
 all failed comparisons and actual artifact/source identities; qualification is
 still false until the complete corrected panel is reviewed.
 
+## 26 October 2026 — initial SciFact preparation stopped in generic controls
+
+[Preparation40340827694](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40340827694)
+at`ff030c0ae46a5147232ae3f561b308abdae6b509` failed the parent metadata
+workflow's weight-free controls before SciFact dataset access, framework setup
+or model output. The positive fixture in `tests/test_ovisocr2_ffn.py` called the
+manual historical first-FFN preflight against the current whole `src` tree; the
+unrelated, default-off UltraBERT truncation addition correctly differed from
+that old arithmetic pin. This is an initial controls-fixture failure, with no
+SciFact quality or throughput result.
+
+The generic test now uses the frozen mocked Git contract from1fb17248 and keeps
+negative changed-tree, wrong-ggml and dirty-source controls. The manual
+`tools/ci-heavy/ovisocr2_ffn.py` historical whole-source guard is unchanged.
+The SciFact protocol, input policy, sources and acceptance budgets are unchanged;
+actual preparation and independent data/length/timing review remain pending
+before the full original-first panel. The failed run stays preserved.
+
+## 26 October 2026 — SciFact canonical split adapter rejection retained
+
+Preparation40346793408/4469e913 passes parent/source controls and installs its
+pinned original environment, then fails before tokenizer/weight access or model
+outputs with duplicate author claim ID6. The author archive includes canonical
+train/dev/test plus five overlapping cross-validation partitions; the loader
+incorrectly concatenated every`claims_*` member. The pinned author README
+explicitly distinguishes these partitions. The corrected adapter selects exactly
+the canonical three files and still rejects missing files and duplicate canonical
+IDs. All unused cross-validation member hashes remain retained; no retrieval
+query, document, gold, token policy or numerical/ranking budget changes.
+[The initial receipt](tests/results/ultrabert/scifact-initial-data-rejection.json)
+preserves actual source/member identities and failure; every recorded source hash
+is independently matched to4469e913. Actual original archive SHA11c62128 is now
+pinned in addition to version ID/size/ETag. Twelve source controls pass, including
+canonical duplicates and exclusion of overlapping cross-validation copies.
+The corrected original-only preparation must complete before a full panel.
+
+## 26 October2026 — SciFact stored-column mismatch retained before model access
+
+Preparation40353858454/57aab2cf fixes the earlier cross-validation duplication
+but rejects exact author/BEIR corpus equivalence at document10068634. It stops
+before tokenizer/weights/model outputs. The initial report omits the differing
+field/codepoints, so no normalization or input-policy change is justified.
+[The retained receipt](tests/results/ultrabert/scifact-initial-corpus-rejection.json)
+binds actual report/raw service identities; independent review checks its small
+ZIP/members and every source hash against57aab2cf. Large datasets stay remote.
+Primary loader/source review finds no documented stored-column cleanup. New
+hosted diagnostics preserve all mismatch IDs/counts and eight bounded exact
+codepoint examples, plus pinned legacy-BEIR-JSONL versus Parquet comparison.
+Strict v1 equality, full row inventories, gold and numerical/ranking budgets
+remain unchanged; fifteen source controls pass. No full panel is dispatched.
+
 ## 26 October 2026 — bounded UltraBERT RoPE attribution closed
 
 [Actual40336758177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336758177)
@@ -15826,3 +15877,23 @@ large raw/model payloads remain remote. Both new artifacts expire24 January2027.
 The bounded original/reference/CPU prototype lane is positive. Public APIs,
 registry/model publication, real subtitle/perceptual quality and video remain
 separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.
+## 26 October2026 — actual SciFact provenance distinguishes the evaluation source
+
+Data-only40364838418/bf2f9e48 verifies unchanged legacy-JSON/Parquet stored IDs,
+title/text columns for5,183 corpus rows and1,109 queries. Current author titles
+match, but1,055 joined abstracts differ. The first eight contexts show internal
+whitespace differences; no general normalization is assumed or applied. Strict
+v1 remains rejected before tokenizer/weights/outputs. Root verifies the actual
+36,042-byte report ZIP/members and all272 source hashes. Full datasets remain
+remote, and public metadata omits raw context excerpts. See
+[the retained provenance](tests/results/ultrabert/scifact-data-provenance.json).
+
+A distinct original-first canonical BEIR v2 is selected before any dataset model
+outputs: use literal pinned benchmark columns, keep all5,483 rows/canonical gold
+and every numerical/ranking budget, and journal all author differences. The
+runner verifies the exact reviewed negative v1 ZIP/member identities and fresh
+legacy/Parquet equality before data/model access. The published241-byte module
+config and actual pinned preprocessing sources are explicit; both wrapper token
+paths must match all5,483 frozen IDs/masks before any forward. The original
+strict model failures and v1 source rejection remain separate. Preparation/full
+panel are still unqualified until their actual hosted receipts pass review.
