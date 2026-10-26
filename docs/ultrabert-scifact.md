@@ -59,3 +59,24 @@ Five additional cross-validation train/dev pairs repeat these IDs; retain their
 source identities separately and never concatenate them into the canonical
 inventory. Duplicate canonical IDs remain an error. Initial40346793408 preserves
 that adapter rejection before any model output in the retained result receipt.
+
+Preparation40353858454/57aab2cf next rejects author document10068634 before
+any tokenizer, weight or model output. Stored corpus columns differ; the
+initial failure does not yet identify the changed field/codepoints. Preserve
+[the initial corpus rejection](../tests/results/ultrabert/scifact-initial-corpus-rejection.json).
+The strict v1 author/BEIR equality gate remains unchanged. Hosted diagnostics
+now retain all mismatch IDs/counts and eight bounded first-difference examples,
+without applying any candidate text transformation. They independently compare
+pinned pre-migration BEIR JSONL with Parquet to locate where divergence entered.
+
+The [historical HF loader](https://huggingface.co/datasets/BeIR/scifact/raw/984eed826375f18d27936c4a32bf0f8491e3f414/scifact.py)
+(SHA f839e4910524fd6577117a4dabd4133168eb50603a13e333666646053adf902d)
+and [BEIR loader](https://github.com/beir-cellar/beir/blob/ef83d29307061c65d04b035b4f4e7c18bd8374af/beir/datasets/data_loader.py)
+(SHA bcb39af11b73861eda44f3083b399ba78c46ef11c25d56d8e195572af0be336f)
+preserve stored strings. The [retrieval input join](https://github.com/beir-cellar/beir/blob/ef83d29307061c65d04b035b4f4e7c18bd8374af/beir/retrieval/models/util.py)
+(SHA90585957246ac5a6baf4e7e0a13b01821b4ed0a0544136221ce1a1c995caf4ca)
+strips outer whitespace after joining title/text; this does not explain a
+stored-column mismatch. No normalization recipe is assumed from the
+[format-migration announcement](https://huggingface.co/datasets/BeIR/scifact/discussions/3).
+A successful preparation also copies its data-freeze/length summary and notices
+to the small reports, so independent review needs no local corpus payload.

@@ -600,3 +600,9 @@ source/artifact proof separately; do not claim it from vendor component parity.
   cross-link evidence. Device execution and optional GPU assets remain explicit
   limits. Repeat qualification on the final integrated source when runtime
   paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
+
+SciFact v1 preparation40353858454 at57aab2cf rejects stored author/BEIR corpus
+columns at10068634 before tokenizer/weights/model outputs. Preserve that negative
+receipt. The next preparation adds hosted legacy-JSONL/Parquet provenance and
+bounded exact first-difference diagnostics; it applies no guessed text cleanup.
+Resolve the provenance decision before freezing any original full-panel vectors.

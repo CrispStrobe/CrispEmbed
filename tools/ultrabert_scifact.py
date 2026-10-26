@@ -43,6 +43,64 @@ def canonical_claims(extracted):
     return rows
 
 
+class MappingMismatch(ValueError):
+    def __init__(self, message, details):
+        super().__init__(message)
+        self.details = details
+
+
+def text_difference(author, beir):
+    """Bounded diagnostics only: never apply a candidate transformation."""
+    if not isinstance(author, str) or not isinstance(beir, str):
+        raise ValueError('Corpus column is not text')
+    index = next((i for i, (a, b) in enumerate(zip(author, beir)) if a != b), min(len(author), len(beir)))
+    return dict(author_sha256=hashlib.sha256(author.encode()).hexdigest(),
+                beir_sha256=hashlib.sha256(beir.encode()).hexdigest(),
+                author_characters=len(author), beir_characters=len(beir), first_differing_index=index,
+                author_context=author[max(0, index-64):index+128],
+                beir_context=beir[max(0, index-64):index+128],
+                author_codepoint=ord(author[index]) if index < len(author) else None,
+                beir_codepoint=ord(beir[index]) if index < len(beir) else None,
+                diagnostic_only_strip_would_match=author.strip() == beir,
+                diagnostic_only_whitespace_collapse_would_match=' '.join(author.split()) == beir)
+
+
+def corpus_diagnostics(author, beir):
+    mismatches, examples, title_count, text_count = [], [], 0, 0
+    for name in sorted(author):
+        row, reference = author[name], beir[name]
+        abstract = ' '.join(row['abstract'])
+        title_bad, text_bad = row['title'] != reference['title'], abstract != reference['text']
+        if not title_bad and not text_bad:
+            continue
+        mismatches.append(name); title_count += title_bad; text_count += text_bad
+        if len(examples) < 8:
+            fields = {}
+            if title_bad: fields['title'] = text_difference(row['title'], reference['title'])
+            if text_bad: fields['text'] = text_difference(abstract, reference['text'])
+            examples.append(dict(id=name, fields=fields))
+    return dict(compared_corpus_rows=len(author), mismatch_count=len(mismatches),
+                title_mismatches=title_count, text_mismatches=text_count,
+                all_mismatched_ids=mismatches, first_eight_examples=examples,
+                transformations_applied=False, model_outputs_produced=False)
+
+
+def migration_equivalence(legacy_corpus, legacy_queries, corpus, queries):
+    """The published old HF loader only supplies missing title=''; no cleanup."""
+    report = {}
+    for name, before, after, count in [('corpus', legacy_corpus, corpus, 5183),
+                                       ('queries', legacy_queries, queries, 1109)]:
+        old, current = unique(before, '_id'), unique(after, '_id')
+        if len(old) != count or set(old) != set(current):
+            raise ValueError('Legacy BEIR/Parquet inventories differ: ' + name)
+        changed = [key for key in sorted(old) if old[key].get('title', '') != current[key]['title']
+                   or old[key]['text'] != current[key]['text']]
+        report[name] = dict(rows=count, ids_and_columns_exact=not changed, mismatched_ids=changed)
+        if changed:
+            raise MappingMismatch('Legacy BEIR/Parquet columns differ: ' + name, report)
+    return report
+
+
 def qrels(payload):
     reader = csv.DictReader(io.StringIO(payload.decode()), delimiter='\t')
     if reader.fieldnames != ['query-id', 'corpus-id', 'score']:
@@ -67,12 +125,13 @@ def equivalence(corpus, claims, beir_corpus, beir_queries, gold):
     ac = unique(claims, 'id')
     if len(author) != 5183 or set(author) != set(bc) or len(bq) != 1109 or len(gold) != 300:
         raise ValueError('Changed complete SciFact inventories')
+    diagnostic = corpus_diagnostics(author, bc)
+    if diagnostic['mismatch_count']:
+        raise MappingMismatch('Earliest corpus text mapping mismatch: ' + diagnostic['all_mismatched_ids'][0], diagnostic)
     documents = []
     for name in sorted(author):
-        row, reference = author[name], bc[name]
+        row = author[name]
         abstract = ' '.join(row['abstract'])
-        if row['title'] != reference['title'] or abstract != reference['text']:
-            raise ValueError('Earliest corpus text mapping mismatch: ' + name)
         documents.append(dict(id='d:' + name, source_id=name, text=row['title'] + ' ' + abstract))
     for name, row in sorted(bq.items()):
         if name not in ac or ac[name]['claim'] != row['text'] or row['title'] != '':

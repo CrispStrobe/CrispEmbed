@@ -1,6 +1,7 @@
 """Hosted original-first full SciFact preparation, shards and frozen scoring."""
 import argparse
 import gc
+import gzip
 import hashlib
 import importlib.util
 import importlib.metadata
@@ -20,7 +21,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from ultrabert_contract import MODEL, REVISION, QUERY, profile, sha256, validate_sources, validate_weight_file
-from ultrabert_scifact import PROTOCOL_SHA, protocol, digest, equivalence, canonical_claims, qrels, shard_rows, rank_scores, quality
+from ultrabert_scifact import PROTOCOL_SHA, protocol, digest, equivalence, canonical_claims, migration_equivalence, qrels, shard_rows, rank_scores, quality
 ST_SOURCE = 'b0acd1a4d22ba2bc10072868ddea7612561c9424'
 ST_WRAPPER_SHA = '3d677757bf3e684c45d3634ae67918cd9a67cee6aac6760e5fa1c72dfe820650'
 ST_POOL_SHA = 'b6e96e0eac50ebc33d6310ef3b8d35b7cd2b7e0e521809552bba34c05c13d43d'
@@ -362,13 +363,25 @@ def prepare(args, out, scratch, closure):
         raise ValueError('Canonical BEIR qrels immutable Git blob differs')
     gold = qrels(content)
     try:
+        legacy = {}
+        for kind, size, checksum in [('corpus', 2758600, '2f4a2a264485e5b5b95ae9cd5534817447757423991a4767d6da811539c0853e'),
+                                     ('queries', 49271, 'c29574b9cb8fdf043df8494f689de15f4604ac4b585eb34bda9b6a389aa6c4d3')]:
+            path = downloads / ('legacy-' + kind + '.jsonl.gz')
+            url = 'https://huggingface.co/datasets/BeIR/scifact/resolve/984eed826375f18d27936c4a32bf0f8491e3f414/' + kind + '.jsonl.gz'
+            sources['BEIR/legacy-' + kind] = fetch(url, path, size=size, checksum=checksum)
+            with gzip.open(path, 'rt', encoding='utf-8') as stream:
+                legacy[kind] = [json.loads(line) for line in stream if line.strip()]
+        migration = migration_equivalence(legacy['corpus'], legacy['queries'], parquet['corpus'], parquet['queries'])
+        write(out / 'legacy-parquet-equivalence.json', migration)
         data, mapping = equivalence(extracted['corpus.jsonl'], claims, parquet['corpus'], parquet['queries'], gold)
     except Exception as error:
         write(out / 'initial-data-equivalence-failure.json', dict(status='rejected before model outputs',
-            source=closure, protocol_sha256=PROTOCOL_SHA, sources=sources, error=str(error)))
+            source=closure, protocol_sha256=PROTOCOL_SHA, sources=sources, error=str(error),
+            mismatch_diagnostics=getattr(error, 'details', None)))
         raise
     mapping['author_claim_files'] = ['claims_train.jsonl', 'claims_dev.jsonl', 'claims_test.jsonl']
     mapping['unused_cross_validation_files'] = sorted(name for name in extracted if name.startswith('claims_') and name not in mapping['author_claim_files'])
+    mapping['legacy_parquet_equivalence'] = migration
     write(out / 'initial-author-gold-mapping.json', mapping)
     write(payload / 'dataset.json', data)
     write(payload / 'protocol.json', p)
@@ -386,6 +399,14 @@ def prepare(args, out, scratch, closure):
         truncated_rows=sum(r['truncated'] for r in rows), max_untruncated_tokens=max(r['untruncated_tokens'] for r in rows),
         created_before_first_model_output=True, applicable_terms=p['licenses'], acceptance=p['acceptance'])
     write(payload / 'data-freeze.json', freeze)
+    write(out / 'data-freeze.json', freeze)
+    write(out / 'input-length-summary.json', dict(rows=len(rows), queries=300, corpus=5183,
+        truncated_queries=sum(r['truncated'] for r in rows if r['id'].startswith('q:')),
+        truncated_documents=sum(r['truncated'] for r in rows if r['id'].startswith('d:')),
+        max_untruncated_tokens=max(r['untruncated_tokens'] for r in rows),
+        ordered_ids_sha256=digest([r['id'] for r in rows]), token_rows_sha256=sha256(payload / 'lengths.json')))
+    for notice in notices.iterdir():
+        shutil.copy2(notice, out / (notice.name + '.txt'))
     # Every dataset/input/gold/protocol bit is frozen before loading weights or any vector output.
     directory = original_snapshot(True)
     model, env = original_model(directory)

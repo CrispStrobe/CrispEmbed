@@ -15656,3 +15656,18 @@ is independently matched to4469e913. Actual original archive SHA11c62128 is now
 pinned in addition to version ID/size/ETag. Twelve source controls pass, including
 canonical duplicates and exclusion of overlapping cross-validation copies.
 The corrected original-only preparation must complete before a full panel.
+
+## 26 October2026 — SciFact stored-column mismatch retained before model access
+
+Preparation40353858454/57aab2cf fixes the earlier cross-validation duplication
+but rejects exact author/BEIR corpus equivalence at document10068634. It stops
+before tokenizer/weights/model outputs. The initial report omits the differing
+field/codepoints, so no normalization or input-policy change is justified.
+[The retained receipt](tests/results/ultrabert/scifact-initial-corpus-rejection.json)
+binds actual report/raw service identities; independent review checks its small
+ZIP/members and every source hash against57aab2cf. Large datasets stay remote.
+Primary loader/source review finds no documented stored-column cleanup. New
+hosted diagnostics preserve all mismatch IDs/counts and eight bounded exact
+codepoint examples, plus pinned legacy-BEIR-JSONL versus Parquet comparison.
+Strict v1 equality, full row inventories, gold and numerical/ranking budgets
+remain unchanged; fifteen source controls pass. No full panel is dispatched.

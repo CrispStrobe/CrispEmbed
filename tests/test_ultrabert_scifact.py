@@ -86,6 +86,49 @@ class Contract(unittest.TestCase):
         for lines in ('1\t2\t1\n1\t2\t1\n', '1\t2\t0\n'):
             with self.assertRaises(ValueError): scorer.qrels((header + lines).encode())
 
+    def test_corpus_diagnostics_preserve_strict_rejection_and_exact_codepoints(self):
+        values = self.fixture()
+        values[0][0]['abstract'] = [' One.', 'Two. ']
+        values[0][1]['title'] = 'Title\u00a0'
+        with self.assertRaises(scorer.MappingMismatch) as captured:
+            scorer.equivalence(*values)
+        details = captured.exception.details
+        self.assertEqual(details['compared_corpus_rows'], 5183)
+        self.assertEqual(details['mismatch_count'], 2)
+        self.assertEqual(details['all_mismatched_ids'], ['0', '1'])
+        first = details['first_eight_examples'][0]['fields']['text']
+        self.assertEqual(first['first_differing_index'], 0)
+        self.assertEqual((first['author_codepoint'], first['beir_codepoint']), (32, ord('O')))
+        self.assertTrue(first['diagnostic_only_strip_would_match'])
+        self.assertFalse(details['transformations_applied'])
+        self.assertFalse(details['model_outputs_produced'])
+        self.assertEqual(values[0][0]['abstract'], [' One.', 'Two. '])
+
+    def test_corpus_diagnostics_bound_examples_and_keep_all_mismatch_ids(self):
+        values = self.fixture()
+        for row in values[0][:12]: row['title'] += ' ' * 1000
+        with self.assertRaises(scorer.MappingMismatch) as captured: scorer.equivalence(*values)
+        details = captured.exception.details
+        self.assertEqual(len(details['all_mismatched_ids']), 12)
+        self.assertEqual(len(details['first_eight_examples']), 8)
+        for example in details['first_eight_examples']:
+            self.assertLessEqual(len(example['fields']['title']['author_context']), 192)
+
+    def test_legacy_parquet_comparison_preserves_columns_and_loader_title_default(self):
+        values = self.fixture(); corpus, queries = values[2:4]
+        legacy = copy.deepcopy(queries)
+        for row in legacy: row.pop('title'); row['metadata'] = {'ignored by original loader':True}
+        result = scorer.migration_equivalence(copy.deepcopy(corpus), legacy, corpus, queries)
+        self.assertTrue(result['corpus']['ids_and_columns_exact'])
+        self.assertTrue(result['queries']['ids_and_columns_exact'])
+        for variant in ('text', 'missing', 'duplicate'):
+            before = copy.deepcopy(corpus)
+            if variant == 'text': before[0]['text'] += ' '
+            elif variant == 'missing': before.pop()
+            else: before.append(before[0])
+            with self.subTest(variant=variant), self.assertRaises(ValueError):
+                scorer.migration_equivalence(before, legacy, corpus, queries)
+
     def test_rank_metrics_ties_misses_and_nonfinite(self):
         ids = ['d:' + str(i).zfill(3) for i in range(110)]
         result = scorer.rank_scores(ids, [1.] * 110, [ids[0], ids[10], ids[109]])
