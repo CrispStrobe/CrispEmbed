@@ -92,3 +92,17 @@ The final hosted review requires every desktop/browser/Apple/mobile/binding
 receipt and hashes each small report. Missing platforms, mixed producer sources
 or failed comparisons reject. It keeps device execution, model portfolio,
 publication and application-pin flags separate from the bounded positive checks.
+
+
+The initial Apple run rejected rendered PNG byte identity before library/model
+initialization. Dispatch the registered metadata phase `successor-corpus` first.
+This hosted Linux-only lane uses the pinned app renderer/Pillow and must reproduce
+all50 frozen PNG hashes and the original manifest before preserving any corpus.
+Its successful `posformer-frozen-corpus` artifact binds original PNG identities
+and subsequently measured RGB hashes; failure publishes only a rejection report.
+Apple consumes these retained bytes and independently verifies service/source,
+ZIP/member identities, dimensions and decoded RGB before the unchanged probe.
+For metadata phase `successor-consumer`, `candidate_run_id` supplies this reviewed
+corpus run as `corpus_run`; `native_run_id` and `original_run` retain their native
+and WASM producer meanings. No gold/hash replacement or qualification follows
+from corpus preparation. Large corpus images remain remote.
