@@ -1,0 +1,197 @@
+{
+  "schema": "crispembed-migan-reference-contract-v1",
+  "frozen_on_utc": "2026-10-26",
+  "original_source": {
+    "repository": "https://github.com/Picsart-AI-Research/MI-GAN",
+    "commit": "2b793c5ece43f4253e32d4afc257120a5deed6f5",
+    "files": {
+      "LICENSE": {
+        "bytes": 1083,
+        "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+      },
+      "LICENSE-WEIGHTS": {
+        "bytes": 1083,
+        "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+      },
+      "README.md": {
+        "bytes": 12659,
+        "sha256": "64419d21ad45b70337dc501f2aa1a1c18eb1115be6378bc05fca048937d4498b"
+      },
+      "configs/experiment/migan_places256.yaml": {
+        "bytes": 1435,
+        "sha256": "7a9a77f7ad460eba8b642daed6844f1fd3140a69d4feea641b84d19c4bccc8bc"
+      },
+      "configs/model/migan.yaml": {
+        "bytes": 6027,
+        "sha256": "422f34ca35b348b2cbeb221075af496f94a2abdf282f6e977b13f4738b4885d7"
+      },
+      "lib/model_zoo/migan_inference.py": {
+        "bytes": 10431,
+        "sha256": "1e35a181e516742ae32af935848e6a9a4382f528ea7096db6658f14cd8b9ace0"
+      },
+      "scripts/demo.py": {
+        "bytes": 5478,
+        "sha256": "08815d6e437c04304e5d77c820eff4e4e01ac82ba8fcb17ac0cdcc90d2766100"
+      }
+    },
+    "reference_entry_point": "lib/model_zoo/migan_inference.py::Generator(resolution=256)",
+    "source_license": "MIT LICENSE",
+    "weights_license": "MIT LICENSE-WEIGHTS",
+    "copy_boundary": "Execute only standalone original module; no SH-GAN or ONNX smoothing helper is copied."
+  },
+  "checkpoint": {
+    "filename": "migan_256_places2.pt",
+    "declared_bytes": 25231129,
+    "official_folder": "https://drive.google.com/drive/folders/1xNtvN2lto0p5yFKOEEg9RioMjGrYM74w",
+    "file_id": "1rEJ8uJszUOkP95hcq4Bbr-4M-dlyDeMa",
+    "download_url": "https://drive.usercontent.google.com/download?id=1rEJ8uJszUOkP95hcq4Bbr-4M-dlyDeMa&export=download&confirm=t",
+    "upstream_sha256": null,
+    "first_observed_sha256": null,
+    "identity_policy": "First hosted original capture records observed SHA before torch load; this is not an author-declared hash. Review/freeze that exact digest before subsequent native qualification or publication."
+  },
+  "input": {
+    "width": 256,
+    "height": 256,
+    "rgb": "uint8 HWC RGB, exactly 3 channels",
+    "fill_mask": "uint8 HW, binary only, 255=fill and 0=known",
+    "preprocess": "known=1-fill/255; concat([known-0.5,(RGB.float()*2/255-1)*known]), NCHW F32",
+    "nonbinary": "reject; no implicit threshold",
+    "other_dimensions": "reject; no implicit resize/crop",
+    "empty_mask": "run original generator; composite preserves all original bytes",
+    "full_mask": "run original generator and fill entire output"
+  },
+  "output": {
+    "generator_shape": [
+      1,
+      3,
+      256,
+      256
+    ],
+    "generator_dtype": "float32",
+    "postprocess": "((raw*0.5+0.5).clamp(0,1)*255).to(uint8), HWC; truncate exactly as original demo",
+    "composition": "original*(1-fill/255)+generated*(fill/255)",
+    "known_pixels": "bit exact RGB8"
+  },
+  "acceptance": {
+    "frozen_before_candidate": true,
+    "every_float_stage": {
+      "cosine_min": 0.99999,
+      "max_abs_max": 0.002,
+      "finite_required": true,
+      "all_zero_rule": "both all-zero passes; one all-zero fails cosine"
+    },
+    "final_raw_float": {
+      "cosine_min": 0.99999,
+      "max_abs_max": 0.002
+    },
+    "final_fill_rgb8": {
+      "max_abs_max": 1,
+      "mae_max": 0.1,
+      "psnr_min_db": 50.0,
+      "empty_fill_rule": "metrics null; all known pixels must match exactly"
+    },
+    "known_rgb8": "every pixel/channel bit exact",
+    "required_reports": [
+      "first differing stage in execution order",
+      "max absolute error",
+      "MAE",
+      "L2/RMS magnitudes",
+      "cosine",
+      "generated/composited PNGs",
+      "hole-only RGB8 max/MAE/PSNR",
+      "finite output and exact dimensions",
+      "mask/input negative controls",
+      "hook neutrality bit exact"
+    ],
+    "promotion": "Every numerical/output/contract gate must pass; this authored panel does not establish representative inpainting/subtitle/video quality."
+  },
+  "fixtures": [
+    {
+      "id": "subtitle_bar",
+      "rgb_sha256": "3c7701b70e4f0604a935b06123e3b3dfe8c691ffaa8f5e0f75bcac3dda8c6d1a",
+      "fill_mask_sha256": "c5a8f9d748513f4617cc25ea229348963a2edba5ed20f8ceba1f4b0a1dc4953e",
+      "fill_pixels": 6656,
+      "full_stage_capture": true
+    },
+    {
+      "id": "edge_touch",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "50e500bb6dcfd719d7738fa26dc40fcf3608021fd5acc11d265a885ca6d89bb0",
+      "fill_pixels": 5600,
+      "full_stage_capture": true
+    },
+    {
+      "id": "empty",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "de2f256064a0af797747c2b97505dc0b9f3df0de4f489eac731c23ae9ca9cc31",
+      "fill_pixels": 0,
+      "full_stage_capture": false
+    },
+    {
+      "id": "full",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "71189f7fb6aed638640078fba3a35fda6c39c8962e74dcc75935aac948da9063",
+      "fill_pixels": 65536,
+      "full_stage_capture": false
+    },
+    {
+      "id": "center",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "40bf9969e6855c095452440da432d662ce09b841e1ab07a73109b25fe6795108",
+      "fill_pixels": 6400,
+      "full_stage_capture": false
+    },
+    {
+      "id": "one_pixel",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "a052a011337b728214edeff05705fd09919f2ff75000e8041487f4f52f07f1ee",
+      "fill_pixels": 1,
+      "full_stage_capture": false
+    },
+    {
+      "id": "checkerboard",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "60ebf37a61a79acdd5a76c67140e59333d1b91e79fc9fc2cd559aac8dcc1b33b",
+      "fill_pixels": 32768,
+      "full_stage_capture": false
+    },
+    {
+      "id": "thin_strip",
+      "rgb_sha256": "dbf1db6f80816d566c4d1facd6eceaf0c6c116b2839ae920c3074f61ec2f7bfb",
+      "fill_mask_sha256": "73b78bb20eabe842de2b1a709f82fd6ad6e85549bf0e00c6d12bbe9a48d4b230",
+      "fill_pixels": 768,
+      "full_stage_capture": false
+    }
+  ],
+  "capture": {
+    "device": "cpu",
+    "threads": 4,
+    "interop_threads": 1,
+    "full_stage_cases": [
+      "subtitle_bar",
+      "edge_touch"
+    ],
+    "other_cases": "preprocessed input, known mask, generator raw F32, RGB8 generated/composited outputs only",
+    "weights_only_load": true,
+    "strict_state_dict": true,
+    "reference_and_weight_artifacts_separate": true
+  },
+  "native_candidate": {
+    "status": "not implemented or qualified by this source/reference lane",
+    "storage": "all original state entries F32; no dropping constants/noise",
+    "layout": "original names; contiguous original-order bytes; reverse dimensions in GGUF; scalar noise_strength stored as [1]",
+    "gate": "any future runtime entry point must be default-off and value-parsed",
+    "registry_or_publication": false
+  },
+  "architecture_notes": [
+    "Depthwise 3x3, leaky_relu(0.2), sqrt(2) gain, clamp256; optional downsample; pointwise1x1; optional upsample; noise_const*noise_strength; activation again.",
+    "Downsample filter outer([1,3,3,1]) /64, stride2, padding1. Upsample nearest2, multiply fixed zero-insertion filter_const, pad(2,1,2,1), depthwise4x4 outer filter /64 *4.",
+    "Encoder256..4 captures conv1 skip features. Synthesis4..256 conv1, add encoder skip, conv2, toRGB plus upsampled previous RGB. Every checkpoint noise constant and strength is retained."
+  ],
+  "related_implementation": {
+    "repository": "https://github.com/Acly/vision.cpp",
+    "commit": "26a752912d49f6c4ff4545b35a1bdf7400d349ed",
+    "license": "MIT; no source copied for this reference preparation",
+    "scope": "Study source only; the pinned original Python generator remains the blueprint."
+  }
+}
