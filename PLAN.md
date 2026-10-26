@@ -529,7 +529,8 @@ before any gated correction; this result does not qualify2048 or waive budgets.
   arrays only inside hosted CI; keep shared-host work to small reports.
 - [ ] Finish the source-order interpolation alternative's actual composed A/B
   and first-F16 replay from `audit/ovis-2048-attribution-20261026`.
-  Current composed40338087357 and quality40334662677 are pending. Literal0
+  Current composed40356657327 remains pending; both quality40334662677 arms
+  are reviewed in HISTORY. Literal0
   must reproduce every retained ordinary vector and the historical failure set;
   literal1 must pass all unchanged gates, with raw strict flags retained.
   Local norm and position operator results are archived in HISTORY. They do not
@@ -583,7 +584,10 @@ Current Ovis composed replay is40356657327 on exactad09168e via the
 `audit/ovis-position-composed-20261026` dispatch ref. The separate ref removes
 the per-branch workflow lock; it changes no source or two-job bound. Earlier
 40338087357 was cancelled pending with no jobs. Quality40334662677 at95a9ba48
-has independently verified gate0 output/confidence identity; gate1 remains open.
+has independently verified both arms:1841 decoded IDs/text/EOS exact, gate0
+confidences exact and gate1 maximum confidence drift0.000024796 without a new
+tolerance. Composed square-grid pre-inference JSON identity failures require a
+narrow hash-preserving redaction adapter; retain the initial failed run.
 
 - [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
   gated source/tooling and run final/merged-source checks. Preserve initial

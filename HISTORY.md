@@ -15692,3 +15692,21 @@ sourcead09168e is retained on`audit/ovis-position-composed-20261026` and dispatc
 as40356657327. The separate ref permits independent scheduling; all source
 bytes, frozen references,14-arm/four-grid gates and maximum two parallel jobs
 are unchanged. The earlier queued cancellation40334434703 remains retained.
+
+## 26 October 2026 — source-order interpolation first-F16 quality reviewed
+
+[Both gate arms40334662677](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40334662677)
+complete successfully at `95a9ba4841e876e5c7473bc83ab128fad87fdfb4`. Independent
+review rehashes both actual report ZIPs, every member,37 source files and15
+command logs per arm. All11 cases retain1841 IDs, raw/processed text, EOS,
+unchanged caps and input identities against the frozen first-F16 baseline.
+Gate0 confidences remain bit exact. Gate1 changes confidences in six cases,
+maximum absolute drift0.000024796 on the two-column page; no new tolerance or
+confidence-exactness claim follows. Public C ABI text/confidence and test-only
+ID/stop evidence remain separate. The source-order gate reaches actual child
+processes through the inherited environment.
+
+[Full paired receipt](tests/results/qwen35-ocr/ovisocr2-source-interpolation-quality.json)
+preserves both complete producer reports and immutable member identities. Larger-
+input composed numerical qualification remains separate and pending; default
+interpolation and1024 resolution remain unchanged.
