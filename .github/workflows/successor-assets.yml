@@ -22,7 +22,31 @@ permissions:
   contents: read
   actions: read
 jobs:
+  producer-identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NATIVE_RUN: ${{ inputs.native_run }}
+      WASM_RUN: ${{ inputs.wasm_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require successful dry runs at one immutable producer commit
+        run: |
+          python - <<'PYCODE'
+          import json,os,subprocess
+          results=[]
+          for key,path in [('NATIVE_RUN','.github/workflows/release.yml'),('WASM_RUN','.github/workflows/release-wasm.yml')]:
+              run=os.environ[key]
+              assert run.isdigit()
+              item=json.loads(subprocess.check_output(['gh','api','repos/CrispStrobe/CrispEmbed/actions/runs/'+run]))
+              assert item['status']=='completed' and item['conclusion']=='success' and item['event']=='workflow_dispatch' and item['path']==path
+              results.append(item['head_sha'])
+          assert results[0]==results[1]
+          print('Native/WASM immutable producer source:',results[0])
+          PYCODE
   desktop:
+    needs: producer-identity
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -81,8 +105,8 @@ jobs:
             ${{ runner.temp }}/consumer/model-cache/**/all-MiniLM-L6-v2-iq4_xs.gguf
           retention-days: 90
   wasm:
-    needs: desktop
-    if: always() && !cancelled()
+    needs: [producer-identity, desktop]
+    if: always() && !cancelled() && needs.producer-identity.result == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -126,6 +150,7 @@ jobs:
             ${{ runner.temp }}/browser/browser.json
           retention-days: 90
   apple-released:
+    needs: producer-identity
     runs-on: macos-15
     timeout-minutes: 120
     env:
@@ -168,6 +193,7 @@ jobs:
             ${{ runner.temp }}/apple-released/*-logs/
           retention-days: 90
   mobile-link:
+    needs: producer-identity
     strategy:
       fail-fast: false
       max-parallel: 2

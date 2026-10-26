@@ -69,4 +69,29 @@ class ConsumerLayoutTests(unittest.TestCase):
  def test_windows_drive_path_rejected(self):
   with self.assertRaises(ValueError):m.safe_name('C:escape.dll')
 
+class RuntimeClosureTests(unittest.TestCase):
+ def fixture(self,root):
+  def git(*args):
+   return subprocess.check_output(['git','-C',str(root),'-c','user.name=Audit Test',
+    '-c','user.email=audit@example.invalid','-c','core.hooksPath='+str(root/'no-hooks'),*args],text=True).strip()
+  subprocess.run(['git','init','-q',str(root)],check=True)
+  (root/'src').mkdir();(root/'docs').mkdir()
+  (root/'src/code.c').write_text('int fixture = 1;\n');(root/'VERSION').write_text('1.0.0\n')
+  (root/'docs/audit.md').write_text('initial audit\n');git('add','.');git('commit','-qm','fixture')
+  return git,git('rev-parse','HEAD')
+ def test_audit_commit_allowed_runtime_commit_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);git,producer=self.fixture(root)
+   (root/'docs/audit.md').write_text('new audit only\n');git('add','.');git('commit','-qm','audit update')
+   with mock.patch.object(consumer,'ROOT',root):
+    proof=consumer.runtime_closure(producer)
+    self.assertEqual(proof['consumer_source'],git('rev-parse','HEAD'))
+    (root/'src/code.c').write_text('int fixture = 2;\n');git('add','.');git('commit','-qm','runtime update')
+    with self.assertRaises(ValueError):consumer.runtime_closure(producer)
+ def test_dirty_production_source_rejected(self):
+  with tempfile.TemporaryDirectory() as d:
+   root=Path(d);git,producer=self.fixture(root)
+   (root/'VERSION').write_text('2.0.0\n')
+   with mock.patch.object(consumer,'ROOT',root),self.assertRaises(ValueError):consumer.runtime_closure(producer)
+
 if __name__=='__main__':unittest.main()

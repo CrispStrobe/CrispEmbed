@@ -16,12 +16,14 @@ Publication steps remain guarded. Both runs must complete successfully.
 archive SHA256/size and every member hash/link. Duplicate normalized paths,
 traversal, special files, dangling links and cycles reject. Native coverage
 requires all seven CPU/mobile archives; WASM coverage requires both bundles.
-Hashing alone leaves qualification false. Eight small archive/layout controls exercise
+Hashing alone leaves qualification false. Ten small archive/layout/source controls exercise
 these rejection cases without builds or models.
 
 The reusable `.github/workflows/successor-assets.yml` then downloads actual
-producer artifacts into fresh hosted consumers. Its source must equal both
-producer commits. The registered metadata phase`successor-consumer` forwards
+producer artifacts into fresh hosted consumers. Both producers must use the same immutable commit. Consumer audit code may
+advance while every production/build/binding Git object stays identical; v2
+receipts record producer and audit commits separately, and reject runtime edits
+or dirty production files. The registered metadata phase`successor-consumer` forwards
 `native_run_id` as the native producer and`original_run` as the WASM producer.
 No latest-run lookup or source-tree substitution is accepted.
 
@@ -35,8 +37,8 @@ No latest-run lookup or source-tree substitution is accepted.
   supported prefix of the appended C structure, not an equal-size claim.
 - The browser consumes both unchanged WASM bundles. It loads the exact same
   published model bytes as the native consumer, checks actual embedding output
-  against the native vector, exported wrapper functions, and a classical RGB
-  no-op cleanup through the OCR module. This is not an OCR model-quality audit.
+  against the native vector, exported wrapper functions, and the default classical blackfilter clearing an authored solid RGB
+  blob through the OCR module. This is not an OCR model-quality audit.
 - Apple additionally downloads the actual released0.17.12 archive, verifies its
   frozen hash, and runs the existing fifty-case PosFormer public-ABI probe on
   released and candidate unset/literal1/legacy0 paths. Released versus unset/1
@@ -66,3 +68,15 @@ and the application remains on0.17.12. Initial preliminary producers40338612955
 and40338616900 were cancelled while every build was queued, before compilation;
 WASM extraction was also corrected to preserve the archive's existing directory
 root, with a dependency-free round-trip regression.
+
+
+The consumer's source guard permits audit-only repairs without rebuilding
+unchanged binaries. It compares complete source/build/binding Git objects,
+including both producer workflows and the manifest generator hash, before
+loading an archive. Actual producer identity remains the library/model source;
+consumer identity records the independent audit code. Runtime changes require
+new producers. Small Git-repository controls prove documentation-only updates
+pass while committed or dirty production edits reject. The browser fixture
+expects the existing default blackfilter to remove its authored solid blob;
+setting only the four simple cleanup flags to0 does not disable despeckling
+and blackfilter, so treating that call as a no-op would be an incorrect oracle.

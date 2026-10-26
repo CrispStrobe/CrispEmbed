@@ -24,13 +24,14 @@ def run(candidate,app,out):
  archive_members(archive)  # Validate normalized paths/links before extraction.
  baseline=out/'released';baseline.mkdir()
  with tarfile.open(archive) as package:package.extractall(baseline,filter='data')
+ candidate_source=json.loads((candidate.parent/'consumer.json').read_text())['source_commit']
  results={}
  env={k:v for k,v in os.environ.items() if k not in ('CRISPEMBED_POSFORMER_TRAINED_FORWARD','POSFORMER_SCALAR_ENCODER')}
  for name,library,source,gate in (
    ('released',baseline/'libcrispembed.dylib',BASE,None),
-   ('candidate-unset',candidate/'libcrispembed.dylib',os.environ['GITHUB_SHA'],None),
-   ('candidate-one',candidate/'libcrispembed.dylib',os.environ['GITHUB_SHA'],'1'),
-   ('candidate-zero',candidate/'libcrispembed.dylib',os.environ['GITHUB_SHA'],'0')):
+   ('candidate-unset',candidate/'libcrispembed.dylib',candidate_source,None),
+   ('candidate-one',candidate/'libcrispembed.dylib',candidate_source,'1'),
+   ('candidate-zero',candidate/'libcrispembed.dylib',candidate_source,'0')):
   actual_env=dict(env)
   if gate is not None:actual_env['CRISPEMBED_POSFORMER_TRAINED_FORWARD']=gate
   subprocess.run([sys.executable,ROOT/'tools/probe_posformer_release.py','--library',library,'--library-source',source,
@@ -38,7 +39,7 @@ def run(candidate,app,out):
    '--frozen-report',ROOT/'tests/results/posformer/main-backport-reference.json','--output',out/(name+'.json'),
    '--logs',out/(name+'-logs')],env=actual_env,check=True,timeout=2700)
   results[name]=json.loads((out/(name+'.json')).read_text())
- summary={'schema':'crispembed-successor-apple-released-comparison-v1','source_commit':os.environ['GITHUB_SHA'],
+ summary={'schema':'crispembed-successor-apple-released-comparison-v1','source_commit':candidate_source,'consumer_source':os.environ['GITHUB_SHA'],
    'released_archive_sha256':old['sha256'],'comparisons':{},'legacy_zero_preserved':True,
    'recognition_quality_improvement_claimed':False,'limits':['Fifty frozen MathWriting cases; the prior recognition score is7/50.',
     'Confidence drift is measured without a new tolerance. Legacy zero is retained as a separate diagnostic.']}

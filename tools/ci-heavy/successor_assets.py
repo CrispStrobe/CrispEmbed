@@ -33,13 +33,34 @@ def artifact(run,name,destination,max_bytes):
  if destination.stat().st_size!=item['size_in_bytes'] or item['digest']!='sha256:'+sha(destination):raise ValueError('Artifact ZIP identity differs')
  return {k:item[k] for k in ('id','name','size_in_bytes','digest')}
 
+# Audit-only changes may differ from the immutable build revision. Every
+# production/build/binding object must still be identical; no runtime exception.
+RUNTIME_PATHS=('src','ggml','cmake','CMakeLists.txt','VERSION','Cargo.lock','examples',
+ 'python','flutter','crispembed','crispembed-sys','wasm','tools/quantize.cpp',
+ 'build-wasm.sh','build-embed-wasm.sh','scripts/check-cpu-baseline.py',
+ 'scripts/check-bundled-deps.py','.github/workflows/release.yml',
+ '.github/workflows/release-wasm.yml','README.md','LICENSE')
+
+def runtime_closure(producer_source):
+ def git(*args):return subprocess.check_output(['git',*args],cwd=ROOT,text=True,timeout=180).strip()
+ check=subprocess.run(['git','cat-file','-e',producer_source+'^{commit}'],cwd=ROOT,stderr=subprocess.DEVNULL)
+ if check.returncode:subprocess.run(['git','fetch','--depth=1','origin',producer_source],cwd=ROOT,check=True,timeout=180)
+ before=git('ls-tree',producer_source,'--',*RUNTIME_PATHS).splitlines()
+ after=git('ls-tree','HEAD','--',*RUNTIME_PATHS).splitlines()
+ if before!=after or git('status','--porcelain','--',*RUNTIME_PATHS):
+  raise ValueError('Consumer production/build/binding source differs from immutable producer')
+ return {'scope':'Exact production/build/binding Git objects; audit helpers may differ',
+         'objects':before,'consumer_source':git('rev-parse','HEAD')}
+
 def prepare(run,kind,artifact_name,out):
  if os.environ.get('GITHUB_ACTIONS')!='true':raise ValueError('Hosted only')
- source=os.environ['GITHUB_SHA'];service=api('actions/runs/'+str(run))
+ consumer_source=os.environ['GITHUB_SHA'];service=api('actions/runs/'+str(run));source=service['head_sha']
  path='.github/workflows/release.yml' if kind=='native' else '.github/workflows/release-wasm.yml'
- if (not re.fullmatch('[0-9a-f]{40}',source) or service['head_sha']!=source or service['path']!=path
+ if (not re.fullmatch('[0-9a-f]{40}',source) or service['path']!=path
      or service['status']!='completed' or service['conclusion']!='success' or service['event']!='workflow_dispatch'):
   raise ValueError('Successful exact-source dry-run producer required')
+ closure=runtime_closure(source)
+ if closure['consumer_source']!=consumer_source:raise ValueError('Consumer checkout/source identity differs')
  out.mkdir(parents=True,exist_ok=False)
  identity=artifact(run,'successor-'+kind+'-manifest',out/'manifest.zip',4*1024**2)
  with zipfile.ZipFile(out/'manifest.zip') as z:
@@ -72,7 +93,7 @@ def prepare(run,kind,artifact_name,out):
    else:
     with tarfile.open(target,'r:gz') as package:package.extractall(destination,filter='data')
    selected.append({'name':name,'sha256':row['sha256'],'member_count':len(row['members'])})
- receipt={'schema':'crispembed-successor-fresh-consumer-v1','source_commit':source,'ggml_gitlink':expected_ggml,
+ receipt={'schema':'crispembed-successor-fresh-consumer-v2','source_commit':source,'consumer_source':consumer_source,'runtime_source_closure':closure,'ggml_gitlink':expected_ggml,
           'producer_run':run,'manifest_artifact':identity,'payload_artifact':archive_identity,'archives':selected,
           'qualification':False,'limits':['Archive validation alone is not runtime/model quality qualification.']}
  (out/'consumer.json').write_text(json.dumps(receipt,indent=2)+'\n')
