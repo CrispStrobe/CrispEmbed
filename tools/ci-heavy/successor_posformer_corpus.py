@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Hosted reproduction/preservation of frozen PosFormer PNG bytes; no inference."""
+"""Hosted reproduction/preservation of frozen PosFormer PNG bytes; no inference.
+
+The pinned original writer hashes encoded file bytes before decodePng, not RGB:
+https://github.com/CrispStrobe/CrispMath/blob/23f1470df0a0853234880ac7e0c6135fd4c02f59/native_test/handwriting_quality_test.dart#L75
+Its exact source SHA is checked before rendering and retained in the receipt.
+"""
 import argparse
 import hashlib
 import json
@@ -25,6 +30,18 @@ RENDERERS = {
 FROZEN = ROOT / 'tests/results/posformer/main-backport-reference.json'
 WORKFLOW = '.github/workflows/successor-posformer-corpus.yml'
 ARTIFACT = 'posformer-frozen-corpus'
+NOTICE = (b'Real human drawings from MathWriting (Google Research), CC BY-NC-SA 4.0.\n'
+          b'https://github.com/google-research/google-research/tree/master/mathwriting\n'
+          b'Images and reports are benchmark artifacts, not application assets.\n')
+NOTICE_SHA = '85278d8bed64dd44528bfb7a321fdf7b6dd3508b8e4db5ca12de49ee27114eb1'
+NOTICE_IDENTITY = {'path': 'NOTICE.txt', 'bytes': 216, 'sha256': NOTICE_SHA,
+                   'writer': 'tool/provision_handwriting_quality.py',
+                   'writer_sha256': RENDERERS['provision_handwriting_quality.py']}
+WRITER_PATH = 'native_test/handwriting_quality_test.dart'
+WRITER_SHA = '39c36a74dedce65dd101aeb313b672b7a7e0ce00e49a637361c40bbce8f0b67c'
+IMAGE_IDENTITY = {'original_field': 'image_sha256', 'semantics': 'SHA256 of encoded PNG file bytes before decodePng',
+                  'writer_source': 'https://github.com/CrispStrobe/CrispMath/blob/' + APP_SOURCE + '/' + WRITER_PATH + '#L75',
+                  'writer_source_sha256': WRITER_SHA}
 
 
 def sha(path):
@@ -41,10 +58,12 @@ def frozen_cases():
 def verify(corpus, cases=None, manifest_sha=MANIFEST_SHA):
     """Require original encoded bytes, not merely dimensions or similar pixels."""
     cases = frozen_cases() if cases is None else cases
-    expected = {'manifest.json'} | {c['id'] + '.png' for c in cases}
+    expected = {'manifest.json', 'NOTICE.txt'} | {c['id'] + '.png' for c in cases}
     actual = {p.name for p in corpus.iterdir()}
     if actual != expected or any(not p.is_file() or p.is_symlink() for p in corpus.iterdir()):
         raise ValueError('Corpus member coverage differs')
+    if (corpus / 'NOTICE.txt').read_bytes() != NOTICE or sha(corpus / 'NOTICE.txt') != NOTICE_SHA:
+        raise ValueError('Pinned renderer NOTICE bytes changed')
     if sha(corpus / 'manifest.json') != manifest_sha:
         raise ValueError('Frozen manifest bytes changed')
     manifest = json.loads((corpus / 'manifest.json').read_text(encoding='utf-8'))
@@ -80,10 +99,15 @@ def prepare(app, output, report):
     for name, digest in RENDERERS.items():
         if sha(app / 'tool' / name) != digest:
             raise ValueError('Renderer bytes changed: ' + name)
+    writer = subprocess.check_output(['git', '-C', str(app), 'show', 'HEAD:' + WRITER_PATH], timeout=90)
+    if hashlib.sha256(writer).hexdigest() != WRITER_SHA:
+        raise ValueError('Original PNG identity writer source changed')
     import PIL
     from PIL import Image, features
     if PIL.__version__ != '12.3.0':
         raise ValueError('Renderer Pillow version changed')
+    if platform.python_version() != '3.11.17':
+        raise ValueError('Historical renderer Python version changed')
     output.mkdir(parents=True, exist_ok=False)
     subprocess.run([sys.executable, 'tool/provision_handwriting_quality.py'], cwd=app, check=True, timeout=900)
     source = app / '.dart_tool/inference/handwriting-corpus'
@@ -99,11 +123,14 @@ def prepare(app, output, report):
     value = {'schema': 'crispembed-posformer-frozen-corpus-v1', 'completed': True,
              'source_commit': os.environ['GITHUB_SHA'], 'run_id': os.environ['GITHUB_RUN_ID'],
              'app_source': APP_SOURCE, 'renderer_sha256': RENDERERS,
+             'notice': NOTICE_IDENTITY,
+             'original_image_identity': IMAGE_IDENTITY,
              'helper_sha256': sha(__file__), 'frozen_report_sha256': sha(FROZEN),
              'manifest_sha256': MANIFEST_SHA, 'cases': rows,
              'environment': {'platform': platform.platform(), 'python': sys.version,
                              'pillow': PIL.__version__, 'pillow_zlib': features.version('zlib')},
              'limits': ['All50 original encoded PNG hashes reproduced before RGB hashes recorded.',
+                        'Python3.11.17/Pillow12.3.0 align with original39918191021 Linux renderer logs; environment alignment alone does not prove a PNG mismatch cause.',
                         'No model, library, recognition, score or gold recapture.']}
     write(output / 'receipt.json', value)
     write(report, value)
@@ -138,7 +165,7 @@ def consume(run, corpus, report):
     identity = artifact(run, ARTIFACT, archive, 16 * 1024**2)
     with zipfile.ZipFile(archive) as package:
         names = package.namelist()
-        expected = {'receipt.json', 'corpus/manifest.json'} | {'corpus/' + c['id'] + '.png' for c in frozen_cases()}
+        expected = {'receipt.json', 'corpus/manifest.json', 'corpus/NOTICE.txt'} | {'corpus/' + c['id'] + '.png' for c in frozen_cases()}
         files = [n for n in names if not n.endswith('/')]
         if len(files) != len(set(files)) or set(files) != expected or sum(i.file_size for i in package.infolist()) > 32 * 1024**2:
             raise ValueError('Corpus artifact member coverage differs')
@@ -146,6 +173,8 @@ def consume(run, corpus, report):
         if (receipt.get('completed') is not True or receipt['source_commit'] != source
                 or receipt['run_id'] != str(run) or receipt['app_source'] != APP_SOURCE
                 or receipt['renderer_sha256'] != RENDERERS or receipt['helper_sha256'] != sha(__file__)
+                or receipt['notice'] != NOTICE_IDENTITY
+                or receipt['original_image_identity'] != IMAGE_IDENTITY
                 or receipt['frozen_report_sha256'] != sha(FROZEN) or receipt['manifest_sha256'] != MANIFEST_SHA):
             raise ValueError('Corpus producer provenance changed')
         corpus.mkdir(parents=True, exist_ok=False)
