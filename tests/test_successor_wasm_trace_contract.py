@@ -8,7 +8,7 @@ import tempfile
 import unittest
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
-from successor_wasm_trace_contract import Reader,digest,floats,f32_bytes,gguf,metrics,overlay,tokens,replace_one
+from successor_wasm_trace_contract import Reader,digest,floats,f32_bytes,gguf,metrics,overlay,tokens,replace_one,reference_q8_0
 
 class Contract(unittest.TestCase):
  def test_tokens_require_one_actual_line(self):
@@ -21,6 +21,12 @@ class Contract(unittest.TestCase):
   self.assertEqual(m['max_abs'],2);self.assertAlmostEqual(m['cosine'],1);self.assertAlmostEqual(m['wasm_l2']/m['native_l2'],2)
   for a,b in (([1.],[]),([0.],[0.]),([1.],[math.inf])):
    with self.assertRaises(ValueError):metrics(a,b)
+ def test_independent_q8_rounding_and_scale(self):
+  values=[127.,1.6,-1.6,1.49,-1.49,2.5,-2.5]+[0.]*25
+  b=reference_q8_0(values)
+  self.assertEqual(len(b),34);self.assertEqual(b[:9],bytes([0,60,127,2,254,1,255,3,253]))
+  self.assertEqual(reference_q8_0([0.]*32),bytes(34))
+  with self.assertRaises(ValueError):reference_q8_0([1.]*31)
  def test_f32_rejects_truncated_and_nonfinite(self):
   self.assertEqual(floats(f32_bytes([1.,2.])),[1.,2.])
   for b in (b'',b'abc',struct.pack('<f',math.nan)):

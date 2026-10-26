@@ -14,7 +14,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from successor_wasm_trace_contract import (PRODUCER,INITIAL_RUN,INITIAL_SOURCE,MODEL_SHA,
  NATIVE_REPORT_SHA,FIXTURE_ID,FIXTURE_BYTES,FIXTURE_SHA,STAGES,TEXT,digest,f32_bytes,
- floats,metrics,tokens,gguf,stage_rows,overlay)
+ floats,metrics,tokens,gguf,stage_rows,overlay,reference_q8_0)
 from successor_assets import prepare,artifact,api,sha,runtime_closure
 
 
@@ -210,6 +210,23 @@ def analyze(out):
  save(out/'trace.json',report)
  report['operators']=browser['modes']['diagnostic-dump'].get('operators')
  if not report['operators'] or report['operators'].get('error'):raise ValueError('Test-only operator controls failed: '+str(report['operators']))
+ controls=report['operators']['controls']
+ if [c['label'] for c in controls]!=['zero','fractional-and-ties','actual-first-token-emb_ln_out']:raise ValueError('Q8 control coverage differs')
+ if f32_bytes(controls[-1]['input'])!=f32_bytes(wasm['emb_ln_out']['values'][:384]):raise ValueError('Actual Q8 input differs from captured first token')
+ weight=json.loads((out/'browser/operator-weight.json').read_text())
+ if report['operators']['weight']!=weight:raise ValueError('Operator weight identity differs')
+ for c in controls:
+  if len(c['input'])!=(384 if c['label'].startswith('actual-') else 32):raise ValueError('Q8 control input width differs')
+  reference=reference_q8_0(c['input']);actual=bytes(c['arch_bytes']);observed_reference=bytes(c['reference_bytes'])
+  if observed_reference!=reference or len(actual)!=len(reference):raise ValueError('Independent Q8_0 reference byte verification failed')
+  c['independent_reference_bytes_exact']=True;c['input_sha256']=digest(f32_bytes(c['input']))
+  c['arch_sha256']=digest(actual);c['reference_sha256']=digest(reference)
+  c['byte_mismatches']=sum(a!=b for a,b in zip(actual,reference))
+  c['blocks']=[{'block':i//34,'arch_scale_f16':struct.unpack('<e',actual[i:i+2])[0],
+   'reference_scale_f16':struct.unpack('<e',reference[i:i+2])[0],
+   'signed_q_max_abs_difference':max(abs(struct.unpack('b',actual[j:j+1])[0]-struct.unpack('b',reference[j:j+1])[0]) for j in range(i+2,i+34))}
+   for i in range(0,len(reference),34)]
+
  report['final']=metrics(floats(native_anchor),floats(browser_anchor))
  rows=report['stages']['packaged-2-dump']
  report['earliest_nonidentical_stage']=next((r['stage'] for r in rows if r['native_sha256']!=r['wasm_sha256']),None)

@@ -38,6 +38,21 @@ def metrics(a,b):
             'cosine':sum(x*y for x,y in zip(a,b))/math.sqrt(aa*bb),
             'native_min':min(a),'native_max':max(a),'wasm_min':min(b),'wasm_max':max(b)}
 
+def reference_q8_0(values):
+    """Independent tiny pinned roundf oracle, including F32 arithmetic and FP16 scales."""
+    if not values or len(values)%32:raise ValueError('Q8 block width')
+    def f(x):return struct.unpack('<f',struct.pack('<f',x))[0]
+    values=floats(f32_bytes(values));result=bytearray()
+    for start in range(0,len(values),32):
+        block=values[start:start+32];d=f(max(abs(x) for x in block)/127)
+        reciprocal=f(1/d) if d else 0.
+        result.extend(struct.pack('<e',d))
+        for x in block:
+            scaled=f(x*reciprocal)
+            q=math.floor(abs(scaled)+.5)*(1 if scaled>=0 else -1)
+            result.append(q%256)
+    return bytes(result)
+
 def tokens(log):
     matches=re.findall(r'^crispembed: token_ids \(n=(\d+)\):([ 0-9]+)$',log,re.M)
     if len(matches)!=1:raise ValueError('Expected one actual token-ID line')
