@@ -54,11 +54,22 @@ def reference_q8_0(values):
     return bytes(result)
 
 def tokens(log):
+    """Require both source-pinned single-encode observations to agree exactly.
+
+    Producer40a's src/crispembed.cpp logs once in crispembed_encode after
+    tokenization and once in encode_tokens before uploading graph inputs.
+    This lane invokes that public entry point once per fresh process/context.
+    """
     matches=re.findall(r'^crispembed: token_ids \(n=(\d+)\):([ 0-9]+)$',log,re.M)
-    if len(matches)!=1:raise ValueError('Expected one actual token-ID line')
-    n,text=matches[0];ids=[int(x) for x in text.split()]
-    if len(ids)!=int(n) or not ids or any(x<0 or x>=30522 for x in ids):raise ValueError('Token count/range differs')
-    return ids
+    if len(matches)!=2 or len(re.findall(r'^crispembed: token_ids',log,re.M))!=2:
+        raise ValueError('Expected two actual public/graph token-ID lines')
+    observed=[]
+    for n,text in matches:
+        ids=[int(x) for x in text.split()]
+        if len(ids)!=int(n) or not ids or any(x<0 or x>=30522 for x in ids):raise ValueError('Token count/range differs')
+        observed.append(ids)
+    if observed[0]!=observed[1]:raise ValueError('Public/graph token-ID observations differ')
+    return observed[0]
 
 class Reader:
     def __init__(self,data):self.data=data;self.pos=0

@@ -11,10 +11,13 @@ sys.path.insert(0,str(ROOT/'tools'))
 from successor_wasm_trace_contract import Reader,digest,floats,f32_bytes,gguf,metrics,overlay,tokens,replace_one,reference_q8_0
 
 class Contract(unittest.TestCase):
- def test_tokens_require_one_actual_line(self):
-  self.assertEqual(tokens('crispembed: token_ids (n=3): 101 1 102\n'),[101,1,102])
-  for bad in ('', 'crispembed: token_ids (n=2): 101\n','crispembed: token_ids (n=1): 30522\n',
-   'crispembed: token_ids (n=1): 101\ncrispembed: token_ids (n=1): 101\n'):
+ def test_tokens_require_both_real_entry_path_observations(self):
+  line='crispembed: token_ids (n=3): 101 1 102\n'
+  self.assertEqual(tokens('startup\n'+line+'other diagnostic\n'+line),[101,1,102])
+  for bad in ('',line,line*3,line+'crispembed: token_ids (n=3): 101 2 102\n',
+   line+'crispembed: token_ids (n=2): 101\n',
+   line+'crispembed: token_ids (n=1): 30522\n',
+   line+'crispembed: token_ids malformed\n',line*2+'crispembed: token_ids malformed\n'):
    with self.assertRaises(ValueError):tokens(bad)
  def test_magnitudes_and_shape_controls(self):
   m=metrics([1.,2.],[2.,4.])
