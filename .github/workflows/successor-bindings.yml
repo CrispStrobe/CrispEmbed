@@ -1,0 +1,53 @@
+name: Successor Linux prebuilt Rust and Dart consumers
+on:
+  workflow_call:
+    inputs:
+      native_run:
+        type: string
+        required: true
+      consumer_run:
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      native_run:
+        type: string
+        required: true
+        description: Successful immutable Release CPU dry-run producer
+      consumer_run:
+        type: string
+        required: true
+        description: Successor consumer run retaining the exact Linux MiniLM fixture
+permissions:
+  contents: read
+  actions: read
+jobs:
+  bindings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NATIVE_RUN: ${{ inputs.native_run }}
+      CONSUMER_RUN: ${{ inputs.consumer_run }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Lightweight protocol controls before artifacts
+        run: python tools/ci-heavy/successor_bindings.py --self-test
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Actual unchanged wrappers against retained Linux prebuilt and model
+        run: python tools/ci-heavy/successor_bindings.py --native-run "$NATIVE_RUN" --consumer-run "$CONSUMER_RUN" --output "$RUNNER_TEMP/binding-reports" --scratch "$RUNNER_TEMP/binding-scratch"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-prebuilt-bindings-${{ github.run_id }}
+          path: ${{ runner.temp }}/binding-reports/
+          retention-days: 90
