@@ -15591,6 +15591,28 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
 
+## 26 October 2026 — original MI-GAN256 capture and lossless conversion
+
+[Original40330674649](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40330674649)
+at9bd33154 succeeds before native inference. The actual author-linked MIT
+checkpoint is25,231,129 bytes/SHA8b82b2e8; this is a first observed transport
+hash, not an author-declared digest. All eight deterministic fixtures complete;
+two full captures each retain238 stages with bit-exact hook neutrality. Known
+pixels are exact on all eight, and four invalid-input controls reject. Conversion
+preserves all154 F32 tensor payloads exactly in25,185,504-byte GGUFb8fcefc3.
+The [independent receipt](tests/results/migan/original-reference.json) retains
+source, checkpoint, artifact, conversion and fixture identities. Six final-only
+cases do not claim hook neutrality. Synthetic images do not establish real
+subtitle/video quality, public API qualification or model publication. Native
+execution is a separate default-off prototype consuming these frozen bytes.
+
+The initial native dispatch40335853768 was cancelled while queued, before any
+job ran: source review found that its F16 negative fixture could fail at generic
+GGUF offset validation. The corrected fixture converts a one-element noise
+strength to genuine F16 while preserving every padded offset; all malformed
+models must now report their intended loader guard. Source review also matches
+all238 native observation names/order/shapes to each of the two frozen full
+captures. This is a source check; actual compiled/native evidence remains separate.
 
 ## 26 October 2026 — completed operator/reference evidence before remaining panels
 
@@ -15619,6 +15641,27 @@ dependencies. Eight small archive/layout controls pass; actual compiled consumer
 are pending. Candidate development manifests advance to0.17.14; no tag exists,
 main and the app retain their previous versions until separate integration.
 All source preparation and queued workflows remain explicitly unqualified.
+
+## 26 October 2026 — first MI-GAN native panel isolates stale observer views
+
+[Actual40336246545](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336246545)
+at2849cb78 compiles and completes all eight cases, rechecking595 original
+artifact members first. All final raw/image gates pass, worst raw max1.40667e-5,
+known-pixel errors0 and worst filled MAE7.12077e-5/max1. Both full cases preserve
+ordinary/observed final bits. The full panel remains rejected:128 stale captures
+per full case produce256 intermediate failures among494 comparisons.
+
+The first stale `encoder.b256.conv1.input.0` has subtitle max14.8653 and native
+L2 norm2149.386 versus original1805.116. Its SHA is exactly the later valid
+`encoder.b256.conv2.conv1.output` SHA, whose comparison passes3.81470e-6.
+Pinned gallocr source frees an expired view's allocation owner; marking only
+the observed clamp/reshape view does not retain that owner. The test-only repair
+marks the complete owner chain before allocation. A tiny hosted old-versus-fixed
+allocation regression and all eight unchanged ordinary-final SHA controls precede
+the next full replay. No arithmetic, original tensors or thresholds change.
+The [initial receipt](tests/results/migan/initial-native-parity.json) retains
+all failed comparisons and actual artifact/source identities; qualification is
+still false until the complete corrected panel is reviewed.
 
 ## 26 October 2026 — bounded UltraBERT RoPE attribution closed
 
@@ -15659,3 +15702,26 @@ bundle/browser/native consumers remain separate pending checks. Producer pairing
 and exact production/build/binding objects protect audit-only helper updates;
 actual producer and consumer sources are recorded separately. No release tag,
 model qualification or application0.17.12 pin changes.
+
+## 26 October 2026 — MI-GAN fixed256 original/native prototype passes
+
+[Corrected native40344396533](tests/results/migan/native-parity.json) at2526fcac
+passes all494 comparisons (two238-stage captures plus six3-stage final captures)
+and all8 image gates against unchanged original40330674649. The tiny old-versus-
+fixed allocator test passes; both full observers preserve ordinary final bits,
+and all8 ordinary final SHAs match the initial rejected run. The256 stale fields
+from40336246545 remain retained; the repair changes test-only owner retention,
+without changing inference arithmetic, weights, original arrays or budgets.
+
+Worst intermediate max1.77096e-5 occurs at edge-touch synthesis.b256.conv1.conv1,
+reference max11.7464/RMS0.732548. Minimum row cosine0.99999998399 occurs at the
+small-magnitude subtitle32×32 toRGB output. Worst final raw max1.40667e-5;
+known RGB errors0, fill max1/worst MAE7.12077e-5/minimum nonexact PSNR89.6055dB.
+All8 malformed models reject. Ordinary/test archive symbol separation passes.
+Independent review verifies17 source hashes, actual1,038,072-byte ZIP and all46
+members/log hashes; eight decoded image metrics are remeasured from original
+and native PNGs. Hosted NumPy independently recomputes all494 raw comparisons;
+large raw/model payloads remain remote. Both new artifacts expire24 January2027.
+The bounded original/reference/CPU prototype lane is positive. Public APIs,
+registry/model publication, real subtitle/perceptual quality and video remain
+separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.

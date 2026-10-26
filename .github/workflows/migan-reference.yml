@@ -1,0 +1,71 @@
+name: MI-GAN original fixed-256 reference
+on:
+  workflow_dispatch:
+    inputs:
+      checkpoint_sha256:
+        type: string
+        description: 'Reviewed checkpoint SHA; empty only for first hosted original observation'
+        default: ''
+      convert_after_original:
+        type: boolean
+        description: 'After complete original capture, verify lossless F32 GGUF conversion'
+        default: true
+  workflow_call:
+    inputs:
+      checkpoint_sha256:
+        type: string
+        required: false
+        default: ''
+      convert_after_original:
+        type: boolean
+        required: false
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: migan-original-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  original:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      OMP_NUM_THREADS: '4'
+      MKL_NUM_THREADS: '4'
+      OPENBLAS_NUM_THREADS: '4'
+      CHECKPOINT_SHA256: ${{ inputs.checkpoint_sha256 }}
+      CONVERT_AFTER_ORIGINAL: ${{ inputs.convert_after_original }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependency-free identity and negative controls
+        run: python tests/test_migan_reference_contract.py -v
+      - name: Install original reference dependencies on hosted CPU
+        run: |
+          python -m pip install --disable-pip-version-check numpy==2.2.6 pillow==11.3.0
+          python -m pip install --disable-pip-version-check torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+      - name: Original first; freeze checkpoint and all tensor identities
+        shell: bash
+        run: |
+          args=(--output "$RUNNER_TEMP/migan-reference" --checkpoint-sha256 "$CHECKPOINT_SHA256")
+          if [[ "$CONVERT_AFTER_ORIGINAL" == 'true' ]]; then args+=(--convert-after-original); fi
+          python tools/ci-heavy/migan_reference.py "${args[@]}"
+      - name: Preserve original arrays, exact source/notices and model bytes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migan-original-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/migan-reference/
+          retention-days: 90
+          if-no-files-found: warn
+          compression-level: 1
+      - name: Small independent review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: migan-original-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/migan-reference/review/
+          retention-days: 90
+          if-no-files-found: warn
