@@ -138,7 +138,7 @@ Use an authorized free GPU slot after source/resource review. Do not submit this
 2B reference to a CPU matrix. The proposed original profile is CUDA/F32 with
 PyTorch2.13.0, Transformers5.5.0, tokenizers0.23.0, safetensors0.8.0,
 huggingface-hub1.33.0, NumPy2.2.6, accelerate1.13.0, torchvision0.28.0 and
-Pillow12.3.0 on Python3.11. The latter two are needed to construct the original
+Pillow12.3.0 on Python3.13. The latter two are needed to construct the original
 processor even for this text-only path; they do not establish image parity. It pins the
 actual Qwen implementation bytes. It uses eager backbone attention, math SDPA
 for the head, deterministic algorithms, disabled TF32/MHA fast paths, and an
@@ -212,14 +212,32 @@ prefill caching also remain separate experiments with original-first references.
 ### Concrete private GPU bootstrap
 
 The [single-script bootstrap](../tools/kaggle/josev2b-original/bootstrap.py)
-fetches the exact original worker at89264a279cd589d622b60f5ca7d1605693cf52d8
-and contract SHA7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a.
-Its own script version is separately recorded; pushing other repository commits
+pins its original worker commit and contract digest explicitly. The current
+prepared worker profile is `cuda-f32-python313-v2`; its arithmetic, source files,
+tokenizer, four owned requests and acceptance gates are unchanged. Its own script
+version is separately recorded; pushing other repository commits
 does not update a submitted kernel. Account substitution stays in private execution
 metadata; no account, token dataset or credentials are embedded in this recipe.
 
-Primary PyPI release metadata confirms the pinned2.13.0/0.28.0 Python3.11 Linux
-wheels and their SHA256s. These wheels use CUDA13.0.3; they are not available in
+The initial bootstrap at[b6e74739](https://github.com/CrispStrobe/CrispEmbed/commit/b6e747395f56847a72f7f4fb9b7023374285924f)
+(SHA256 `9f3d77cfb41eda1a68ab287e0c01fb3e837d719a8a539e86e4377c92a4858ff3`)
+used worker89264a279cd589d622b60f5ca7d1605693cf52d8 and contract
+SHA7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a.
+It rejected the actual Python3.13 environment because that first profile required
+Python3.11. The rejection occurred before hardware inspection, dependency
+installation, checkpoint/tokenizer access or any reference output. It was
+inconclusive and says nothing about the assigned GPU or model. The initial
+profile, source, failure and journal are retained; there is no gold recapture.
+
+Before any reference output, this revision declares Python3.13 explicitly.
+Primary [torch2.13.0 release metadata](https://pypi.org/pypi/torch/2.13.0/json)
+and [torchvision0.28.0 metadata](https://pypi.org/pypi/torchvision/0.28.0/json)
+confirm the cp313 Linux wheels and their SHA256s. NumPy2.2.6 also publishes a
+cp313 Linux wheel. Wheel payloads were not downloaded during source preparation.
+The bootstrap records the actual Python version and inspects hardware before
+checking its Python profile, so unsupported hardware is recorded immediately.
+The Python3.13 profile remains unexecuted until a reviewed bounded run occurs.
+ These wheels use CUDA13.0.3; they are not available in
 the inspected CUDA12.8 wheel index. The bootstrap therefore checks Turing or newer
 (capability7.5), driver580.65.06 or newer and14/11GiB total/free GPU RAM before
 framework installation. It requires25GiB initial scratch and3GiB output space,
