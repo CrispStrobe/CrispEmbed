@@ -15677,3 +15677,18 @@ bundle/browser/native consumers remain separate pending checks. Producer pairing
 and exact production/build/binding objects protect audit-only helper updates;
 actual producer and consumer sources are recorded separately. No release tag,
 model qualification or application0.17.12 pin changes.
+
+## 26 October 2026 — unchanged Ovis quality control and independent replay scheduling
+
+The gate0 job of40334662677/95a9ba48 completes the full first-F16 eleven-case
+control: all1,841 IDs, raw/processed text, EOS/caps, input hashes and selected
+confidences match the immutable first F16 receipt exactly. Independent review
+checks the actual1,680,184-byte ZIP,34 members,37 source hashes and15 command
+logs. Its gate1 arm is still pending; no interpolation/2048 promotion follows.
+
+Composed attempt40338087357 was cancelled while pending with no jobs, solely
+to remove an orchestration dependency on the full eleven-case workflow. Exact
+sourcead09168e is retained on`audit/ovis-position-composed-20261026` and dispatched
+as40356657327. The separate ref permits independent scheduling; all source
+bytes, frozen references,14-arm/four-grid gates and maximum two parallel jobs
+are unchanged. The earlier queued cancellation40334434703 remains retained.

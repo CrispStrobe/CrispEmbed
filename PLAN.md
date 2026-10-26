@@ -579,6 +579,12 @@ source/artifact proof separately; do not claim it from vendor component parity.
 
 ## Active four-lane closure — remaining execution gates
 
+Current Ovis composed replay is40356657327 on exactad09168e via the
+`audit/ovis-position-composed-20261026` dispatch ref. The separate ref removes
+the per-branch workflow lock; it changes no source or two-job bound. Earlier
+40338087357 was cancelled pending with no jobs. Quality40334662677 at95a9ba48
+has independently verified gate0 output/confidence identity; gate1 remains open.
+
 - [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
   gated source/tooling and run final/merged-source checks. Preserve initial
   queued cancellations and all historical numerical/quantization rejections.
