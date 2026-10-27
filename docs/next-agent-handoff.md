@@ -670,24 +670,35 @@ producer unchanged while its outputs are reviewed; no new gold or budget waiver.
   [backbone40438416809](../tests/results/josev2b/backbone-f32-review.json)
   atab998277 passes104 stages and exact320-tensor F32 conversion. Reviewed
   [frontend/serializer](../tests/results/josev2b/text-components-review.json)
-  pass18 input cases/17 output cases/66 rounding controls. Full composition
-  source8ab95372 is dispatched40447333269; its explicit dependencies pin both
-  successful producers, with227 mapped stages/24 unmapped declarations and
-  raw ordinary/observed/repeat/final typed gates. Review before442-tensor packing
-  and dedicated public capability. No task-quality or release claim yet.
+  pass18 input cases/17 output cases/66 rounding controls. Reviewed full
+  [raw-request composition40449265616](../tests/results/josev2b/composed-text-review.json)
+  ated23f1ae passes227 stages and four complete typed responses without reference
+  vector injection. Twenty-four unmapped records and all initial failures remain.
+  Next: reviewed-receipt streaming442-tensor packer, actual0f0b1e59 packed-owner
+  original comparisons, then actual new SystemOne C/Python/CLI/HTTP/Rust/Dart
+  consumers. Model-free packed build40451936611 passes; public source73ddb5ee
+  root build40455424346 is queued. Shared Qwen contraction flags require final
+  same-source Ovis qualification. No task-quality/registry/publication claim yet.
 - **MoEdern:** [native-v2 actual40441341206](../tests/results/moedern-colbert/native-v2-review.json)
   atcec6b7f0 is independently reviewed: all10 cases/177 checks/three old-primary
   MaxSim pairs pass. Preserve112 mapped versus138 unmapped primary arrays,
   separate21 supplemental leaves and rejected156 historical byte changes.
-  Next `feat/moedern-unigram-frontend-20261027` at54917168/40447670169 implements exact original-first
-  dedicated tokenizer/role metadata with query32 expansion and three masks.
-  Native text composition/public APIs follow;27M/115M require separate originals.
+  Exact frontend3da7cf8e/40451408614 passes34 token/mask streams and1040
+  normalization checks. Retained Rust normalized Q/D matcher history corrects
+  the initial32/34 overlap failure; original gold is unchanged. Raw-text model
+  composition1a053116/40455093591 requires independent small-report review:
+  ten raw inputs/twenty old final arrays/three MaxSim pairs plus actual Ref,
+  production observer exclusion, output/repeat/recovery/ownership controls.
+  Then self-contained tokenizer metadata and explicit public query/document roles;
+  27M/115M require separately frozen originals and115M dilated-conv implementation.
 - **UltraBERT:** reviewed [Unicode A/B40434717493](../tests/results/ultrabert/unicode-pretoken-review-v1.json)
   at01878e80 passes all5,483 original ID/mask/full-length/hash rows and14 authored
   cases; unset/empty/0 retain historical24/25 mismatches. Next native-v3 uses
   explicit assembled source02402a0d preserving integration truncation; review
-  its source contract. Reviewedee51e10e is dispatched in40444873884; every CAPI ID preflight precedes accepted
-  embeddings; all-attended masks are source-derived, not observed getter values.
+  its source contract. Initial40444873884 failed before native inference on
+  dynamic dependency resolution. Corrected d993038e/40452077037 performs actual
+  fresh-process CDLL/export/hash smoke before eight native shards; every actual
+  CAPI ID preflight precedes accepted embeddings; all-attended masks are source-derived, not observed getter values.
   Reuse frozen originals, unchanged numerical/ranking gates and strict debt;
   no original forward repeat or default promotion.
 - **Ovis/WASM:** [all8 replay outcomes](../tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
