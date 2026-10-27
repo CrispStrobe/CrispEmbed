@@ -2113,6 +2113,8 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
         fprintf(stderr, "unlimited_ocr2: head_dim %d unsupported\n", HDm);
         return false;
     }
+    const bool dbg = core_env::on("UOCR_DBG");
+    if (dbg) fprintf(stderr, "  [uocr2] decoder start S=%d L=%d NH=%d NKV=%d\n", S, L, NH, NKV);
     std::vector<uocr2_layer_f32> W(L);
     for (int li = 0; li < L; li++) {
         auto & ly = ctx.m.llm_layers[li];
@@ -2126,6 +2128,7 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
             w.fg = to_f32(ly.ffn_gate_w), w.fu = to_f32(ly.ffn_up_w), w.fd = to_f32(ly.ffn_down_w);
         }
     }
+    if (dbg) fprintf(stderr, "  [uocr2] layer weights dequantized\n");
     const auto norm_w = to_f32(ctx.m.output_norm_w);
     const auto head_w = to_f32(ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens);
 
@@ -2199,6 +2202,7 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
                 linear_cpu(att.data() + (size_t)t * NH * HDm, o.data() + (size_t)t * D, NH * HDm, D, w.o.data(), nullptr);
                 for (int d = 0; d < D; d++) h[(size_t)t * D + d] += o[(size_t)t * D + d];
             }
+            if (dbg && T > 1) fprintf(stderr, "  [uocr2] prefill layer %d attention done\n", li);
             if (li == 0) {
                 std::vector<float> nrm(D), ff(D);
                 for (int t = 0; t < T; t++) {
@@ -2214,6 +2218,7 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
 
     std::vector<float> h(prompt_embeds, prompt_embeds + (size_t)S * D);
     forward(h, S, 0, co.tok, co.page, [&](int t, int) { return cand_prefill(t); });
+    if (dbg) fprintf(stderr, "  [uocr2] prefill done\n");
 
     std::vector<float> last(h.end() - D, h.end()), xn(D), logits(V);
     const int expected_pages = (int)std::count(prompt_ids.begin(), prompt_ids.end(), uocr2::PAGE);
