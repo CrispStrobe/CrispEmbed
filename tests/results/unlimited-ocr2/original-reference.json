@@ -1,0 +1,57 @@
+{
+  "schema": "crispembed-unlimited-ocr2-original-receipt-v1",
+  "revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+  "versions": {
+    "torch": "2.13.0+cpu",
+    "transformers": "4.52.1",
+    "numpy": "2.2.6"
+  },
+  "files_verified": 20,
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-unlimited-ocr2-reference",
+    "kernel_version": 4,
+    "source_commit": "7e0630c3ace994658c3a779b70c20394b3974ce9"
+  },
+  "reference_sha256": "3124cbb585d08028c52c81e1d9a14b1f30ecd2aba8f05fb8c3839140ab1edef7",
+  "cases": [
+    {
+      "id": "small-untiled",
+      "size": [
+        640,
+        480
+      ],
+      "image_sha256": "6f37acc1622f458888c17fa5172aa8a7cd244f4dba0e1be9ee2496ee9ebef5cf",
+      "tokens": 65,
+      "cap_hit": false,
+      "text": "<PAGE><BLOCK>text[60, 114, 410, 172]<FORK>Unlimited OCR 2\n<BLOCK>text[60, 284, 476, 348]<FORK>Small page, no tiles.\n<BLOCK>text[60, 450, 410, 506]<FORK>Total: 42.00 EUR",
+      "token_ids_sha256": "611f72c6230aa15018915aca0e630619aa699a8f98d8770aa054cb0d91fc5aa6"
+    },
+    {
+      "id": "para-en",
+      "size": [
+        1024,
+        768
+      ],
+      "image_sha256": "e905bfe315123d86ff7618ee3a5a35cbe7f3d7520d606e7b76f005b328ec107d",
+      "tokens": 117,
+      "cap_hit": false,
+      "text": "<PAGE><BLOCK>text[37, 72, 470, 117]<FORK>Unlimited OCR 2 reference page.\n<BLOCK>text[37, 174, 631, 222]<FORK>The quick brown fox jumps over the lazy dog.\n<BLOCK>text[37, 279, 545, 320]<FORK>Invoice 2026-10-27: total 1,234.56 EUR\n<BLOCK>text[37, 384, 555, 427]<FORK>Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+      "token_ids_sha256": "9e79d1e10e57861deabe4760829173882590a8693a55856a5e76e28522729bcf"
+    },
+    {
+      "id": "table",
+      "size": [
+        1024,
+        768
+      ],
+      "image_sha256": "9676c4b1a248a3ad32e07d2119f0626758a0a3df04a0052c6478212cd364a8e9",
+      "tokens": 97,
+      "cap_hit": false,
+      "text": "<PAGE><BLOCK>text[37, 69, 252, 117]<FORK>Item | Qty | Price\n<BLOCK>text[37, 172, 231, 222]<FORK>Apple | 3 | 1.20\n<BLOCK>text[37, 276, 228, 325]<FORK>Pear | 12 | 0.85\n<BLOCK>text[37, 380, 253, 428]<FORK>Total | 15 | 13.80",
+      "token_ids_sha256": "386cda93c6aac654e73082e26c60862b105ee2625bfaa07abf7513833d7c63b6"
+    }
+  ],
+  "notes": "CPU F32 publisher infer path (Triton CUDA-only, torch fallback). para-en text shows X for umlauts because the rendering font lacks those glyphs.",
+  "native_qualified": false
+}
