@@ -1,8 +1,7 @@
-// Size-parameterised MoEdern ColBERT engine for the attention+MoE variants
-// (SauerkrautLM-MoEdernColBERT 1.5M and 27M, Apache-2.0). Same mathematics as
+// Size-parameterised MoEdern ColBERT engine (SauerkrautLM-MoEdernColBERT 1.5M,
+// 27M and 115M, Apache-2.0); 115M adds gated depthwise dilated-conv layers. Same mathematics as
 // moedern_text_engine.cpp, which stays byte-identical and keeps its 1.5M-only
 // contract; this path is separately gated by CRISPEMBED_MOEDERN_FAMILY.
-// The 115M variant (dilated conv blocks) is rejected until it has its own proof.
 #include "moedern_family_engine.h"
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
@@ -25,13 +24,15 @@ using floats = std::vector<float>;
 using dims = std::array<int64_t, 4>;
 constexpr float EPS = 1e-5f, ROUTER_EPS = 1e-9f, THETA = 160000.f;
 constexpr const char * ARCH = "modernbert_hash_moe_v10";
-constexpr int VOCAB = 30002, LAYERS = 2, OUT = 128;
+constexpr int VOCAB = 30002, OUT = 128, KERNEL = 3;
 
 // Only pinned revisions whose original panels are frozen are accepted.
 const std::map<std::string, profile> & profiles() {
     static const std::map<std::string, profile> p = {
-        { "9d360b8b88ae11bea5784bf9012ff509fdd5c2da", { "1.5M", 128, 2, 1, 16, 8, 2, 128 } },
-        { "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a", { "27M", 640, 10, 5, 80, 8, 2, 640 } },
+        { "9d360b8b88ae11bea5784bf9012ff509fdd5c2da", { "1.5M", 128, 2, 1, 16, 8, 2, 128, 2, { 0, 0 } } },
+        { "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a", { "27M", 640, 10, 5, 80, 8, 2, 640, 2, { 0, 0 } } },
+        { "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+          { "115M", 1024, 16, 8, 192, 8, 2, 640, 10, { 1, 1, 0, 2, 1, 0, 1, 0, 2, 0 } } },
     };
     return p;
 }
@@ -49,8 +50,17 @@ std::map<std::string, dims> schema(const profile & p) {
     add("token_embd.proj.weight", p.hash, H);
     add("token_embd.norm.weight", H);
     add("token_embd.norm.bias", H);
-    for (int i = 0; i < LAYERS; ++i) {
+    for (int i = 0; i < p.layers; ++i) {
         const std::string b = "blk." + std::to_string(i) + ".";
+        if (p.conv_dilation[i] > 0) {
+            add(b + "conv_norm.weight", H);
+            add(b + "conv_in.weight", H, 3 * H);
+            add(b + "conv_gate_b_norm.weight", H);
+            add(b + "conv_gate_c_norm.weight", H);
+            add(b + "conv_dw.weight", H, KERNEL);
+            add(b + "conv_out.weight", H, H);
+            continue;
+        }
         add(b + "attn_norm.weight", H);
         add(b + "attn_q.weight", H, H);
         add(b + "attn_k.weight", H, KV);
@@ -83,13 +93,23 @@ profile read_profile(gguf_context * g) {
     require(it != profiles().end(), "Unqualified MoEdern revision (115M conv variant not supported)");
     const profile & p = it->second;
     const std::map<std::string, uint32_t> expect = {
-        { "hidden_size", uint32_t(p.hidden) },         { "num_hidden_layers", uint32_t(LAYERS) },
+        { "hidden_size", uint32_t(p.hidden) },         { "num_hidden_layers", uint32_t(p.layers) },
         { "num_attention_heads", uint32_t(p.heads) },   { "num_key_value_heads", uint32_t(p.kv_heads) },
         { "vocab_size", uint32_t(VOCAB) },              { "hash_projections", uint32_t(p.hash) },
         { "num_routed_experts", uint32_t(p.experts) },  { "num_shared_experts", 1 },
         { "expert_dim", uint32_t(p.expert_dim) },       { "top_k", uint32_t(p.top_k) },
         { "head_dim", uint32_t(p.hidden / p.heads) },   { "out_dim", uint32_t(OUT) } };
     for (const auto & e : expect) require(u32(g, e.first) == e.second, "Profile metadata differs: " + e.first);
+    if (std::any_of(p.conv_dilation.begin(), p.conv_dilation.end(), [](int d) { return d > 0; })) {
+        require(u32(g, "conv_kernel_size") == KERNEL && u32(g, "conv_use_gate_norm") == 1, "Conv profile differs");
+        const int at = gguf_find_key(g, (std::string(ARCH) + ".conv_dilations_per_layer").c_str());
+        require(at >= 0 && gguf_get_kv_type(g, at) == GGUF_TYPE_ARRAY && int(gguf_get_arr_n(g, at)) == p.layers,
+                "Per-layer dilations required");
+        const auto type = gguf_get_arr_type(g, at);
+        require(type == GGUF_TYPE_INT32 || type == GGUF_TYPE_UINT32, "Dilation array type differs");
+        const auto * d = static_cast<const int32_t *>(gguf_get_arr_data(g, at));
+        for (int i = 0; i < p.layers; ++i) require(d[i] == p.conv_dilation[i], "Layer kind/dilation differs");
+    }
     const auto expected = schema(p);
     require(gguf_get_n_tensors(g) == int64_t(expected.size()), "Exact tensor inventory required");
     for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
@@ -221,8 +241,39 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
         }
         hidden = linear(ctx->get("token_embd.proj.weight"), hidden, ctx->threads);
         hidden = normalized(hidden, H, ctx->get("token_embd.norm.weight"), ctx->get("token_embd.norm.bias"), false, ctx->threads);
-        for (int layer = 0; layer < LAYERS; ++layer) {
+        for (int layer = 0; layer < p.layers; ++layer) {
             const std::string b = "blk." + std::to_string(layer) + ".";
+            if (const int dil = p.conv_dilation[layer]; dil > 0) {
+                // GatedShortConv: in_norm -> in_proj [B|C|x] -> RMS(B), RMS(C) -> B*x (masked)
+                // -> depthwise Conv1d(k=3, dilation, same padding) -> C*conv -> out_proj -> +residual.
+                const floats xin = normalized(hidden, H, ctx->get(b + "conv_norm.weight"), nullptr, true, ctx->threads);
+                const floats bcx = linear(ctx->get(b + "conv_in.weight"), xin, ctx->threads);
+                floats bg(size_t(S) * H), cg(size_t(S) * H), bx(size_t(S) * H);
+                for (int t = 0; t < S; ++t) {
+                    std::copy_n(bcx.data() + size_t(t) * 3 * H, H, bg.data() + size_t(t) * H);
+                    std::copy_n(bcx.data() + size_t(t) * 3 * H + H, H, cg.data() + size_t(t) * H);
+                }
+                bg = normalized(bg, H, ctx->get(b + "conv_gate_b_norm.weight"), nullptr, true, ctx->threads);
+                cg = normalized(cg, H, ctx->get(b + "conv_gate_c_norm.weight"), nullptr, true, ctx->threads);
+                for (int t = 0; t < S; ++t)
+                    for (int c = 0; c < H; ++c)
+                        bx[size_t(t) * H + c] = mask[t] ? bg[size_t(t) * H + c] * bcx[size_t(t) * 3 * H + 2 * H + c] : 0.f;
+                auto * dw = ctx->get(b + "conv_dw.weight");
+                floats w(size_t(H) * KERNEL);
+                ggml_backend_tensor_get(dw, w.data(), 0, w.size() * sizeof(float));
+                floats y(size_t(S) * H);
+                for (int t = 0; t < S; ++t)
+                    for (int c = 0; c < H; ++c) {
+                        float acc = 0;
+                        for (int tap = 0; tap < KERNEL; ++tap) {
+                            const int src = t + (tap - (KERNEL - 1) / 2) * dil;
+                            if (src >= 0 && src < S) acc += w[size_t(tap) * H + c] * bx[size_t(src) * H + c];
+                        }
+                        y[size_t(t) * H + c] = cg[size_t(t) * H + c] * acc;
+                    }
+                add(hidden, linear(ctx->get(b + "conv_out.weight"), y, ctx->threads));
+                continue;
+            }
             floats norm = normalized(hidden, H, ctx->get(b + "attn_norm.weight"), nullptr, true, ctx->threads);
             auto q = linear(ctx->get(b + "attn_q.weight"), norm, ctx->threads);
             auto k = linear(ctx->get(b + "attn_k.weight"), norm, ctx->threads);

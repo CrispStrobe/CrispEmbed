@@ -1,5 +1,5 @@
 #pragma once
-// Size-parameterised MoEdern ColBERT engine (1.5M, 27M); gated by
+// Size-parameterised MoEdern ColBERT engine (1.5M, 27M, 115M); gated by
 // CRISPEMBED_MOEDERN_FAMILY and CRISPEMBED_MOEDERN_COLBERT. Internal C++ API.
 #include <cstddef>
 #include <cstdint>
@@ -8,7 +8,8 @@
 namespace moedern_family {
 struct profile {
     const char * name = "";
-    int hidden = 0, heads = 0, kv_heads = 0, hash = 0, experts = 0, top_k = 0, expert_dim = 0;
+    int hidden = 0, heads = 0, kv_heads = 0, hash = 0, experts = 0, top_k = 0, expert_dim = 0, layers = 2;
+    std::vector<int> conv_dilation; // per layer: 0 = attention+MoE, >0 = gated depthwise conv
 };
 struct context;
 context * init(const char * path, int threads, std::string & failure);
