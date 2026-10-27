@@ -21,7 +21,9 @@
     "tests/moedern-public/dart_consumer.dart": "9642d457db685c11566295de51ad58b6cc2cb0bfe0533a7885c26aac1c634747",
     "examples/cli/main.cpp": "5d98fb58e86149c241a3fbd712ba3b14f834fe972ba2e89ad34eade8dc84b597",
     "examples/server/server.cpp": "4241d14cef4d99de78a26cfbae8c127b720e1c4c5f2d25235fb7a3975b65c960",
-    ".github/workflows/ovisocr2-metadata.yml": "582b19682c75c0e06d03905edb339c26549280efabbf4abb0332d6f07c8888be",
-    ".github/workflows/moedern-public-consumers.yml": "ce45adbd91e5ca0e633c01ea46603f4e3a47d90d61500655efcd087ee74f78a6"
+    ".github/workflows/ovisocr2-metadata.yml": "b942f12fc520c3f5c3744fb9da54d10f18d3288ee63b79995a1621d90775df39",
+    ".github/workflows/moedern-public-consumers.yml": "ce45adbd91e5ca0e633c01ea46603f4e3a47d90d61500655efcd087ee74f78a6",
+    ".github/workflows/moedern-publish.yml": "f06692ca3050347ffcbd74d9b5f5a06f73abf8f125f4468f034e8854d2e3c4cf",
+    "tools/ci-heavy/moedern_publish.py": "c724223f7b0bbf64b01614d5f586575dd45dd75488e1a366458140e9735dd1b6"
   }
 }

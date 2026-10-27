@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [moedern-public-consumers, moedern-text-composed, moedern-unigram, moedern-native-v2, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [moedern-publish, moedern-public-consumers, moedern-text-composed, moedern-unigram, moedern-native-v2, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -531,3 +531,9 @@ jobs:
   moedern-public-consumers:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-public-consumers'
     uses: ./.github/workflows/moedern-public-consumers.yml
+
+  moedern-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-publish'
+    uses: ./.github/workflows/moedern-publish.yml
+    secrets:
+      HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
