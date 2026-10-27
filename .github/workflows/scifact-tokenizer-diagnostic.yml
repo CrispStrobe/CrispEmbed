@@ -1,0 +1,61 @@
+name: SciFact retained tokenizer-only diagnosis
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: scifact-tokenizer-diagnostic-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tokenizer-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bounded stdlib source and rejection controls before payload access
+        run: python tests/test_scifact_tokenizer_diagnostic.py -v
+      - name: Original tokenizer Rust backend only; exact wheel and no transitive install
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from scifact_tokenizer_diagnostic import TOKENIZER_WHEEL, TOKENIZER_WHEEL_SHA
+          Path('tokenizer-only-requirements.txt').write_text(TOKENIZER_WHEEL + ' --hash=sha256:' + TOKENIZER_WHEEL_SHA + '\n')
+          PY
+          python -m pip install --no-deps --only-binary=:all: --require-hashes --disable-pip-version-check -r tokenizer-only-requirements.txt
+      - name: Retained two negatives plus complete 5483-row tokenizer-only preflight
+        env:
+          DIAGNOSTIC_OUTPUT: ${{ runner.temp }}/scifact-tokenizer-diagnostic
+        run: python tools/ci-heavy/scifact_tokenizer_diagnostic.py --output "$DIAGNOSTIC_OUTPUT"
+      - name: Preserve small diagnostic and every failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scifact-tokenizer-diagnostic-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/scifact-tokenizer-diagnostic/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve retained metadata, exact standalone binary and all token rows remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scifact-tokenizer-diagnostic-metadata-${{ github.run_id }}
+          path: ${{ runner.temp }}/scifact-tokenizer-diagnostic/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn

@@ -1,0 +1,30 @@
+{
+  "schema": "crispembed-scifact-tokenizer-diagnostic-source-v1",
+  "runtime_source": "e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902",
+  "original_run": 40375626336,
+  "preparation_run": 40372423343,
+  "original_frozen_rows": 5483,
+  "qualification": false,
+  "embeddings_authorized": false,
+  "runtime_sources": {
+    "LICENSE": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+    "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+    "src/core/bpe.h": "5edbadf3010d765720fa853bbf90fc8e2094a223d51c4bd6f2842bc197ca27c6",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/env_gate.h": "ad79d73c333f34ed9f971ae80136e410f0c44bc048439fcee9d4ac3ead63b9ec",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/unicode_categ.h": "32015ee5940c48e8fa4f727c7adbc89fbba8564c74700733fabd70d9d5183553",
+    "src/core/unicode_class.h": "4f35f5216cbf1817909616d81f2b81f6b304a70dbbed4f18204d9f5adb4a5be1",
+    "src/tokenizer.h": "47de576ac2dd57078807f1a3eb45ece1586e2670e8cfa0a822b16d191b03e023",
+    "src/tokenizer_bpe.cpp": "031eb6f0aca9fffc0dcb6007239cf3755d35039089d4af0b54a72dc59ab3ef01",
+    "src/ultrabert_profile.h": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31"
+  },
+  "diagnostic_sources": {
+    ".github/workflows/scifact-tokenizer-diagnostic.yml": "52e15d0fdc785e55fcea62bac3898a5807483c4a4ffb0cc9e0dc4001d992c9cc",
+    "tests/test_scifact_tokenizer_diagnostic.cpp": "7820f561ec32dd513f966a550f3c8cf2afc566fafb6bfcfadaf14683d4b3d3da",
+    "tests/test_scifact_tokenizer_diagnostic.py": "66ca289a9e430c43ead7eb4111ca25e8a778c459179101b6e2ade2cd9f78a2d0",
+    "tools/ci-heavy/scifact_tokenizer_diagnostic.py": "8c17bab61b9561e1d988663471cdb4e060100c30f7f56fa4dab20e137326a0eb",
+    "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+    "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8"
+  }
+}
