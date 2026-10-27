@@ -1,0 +1,33 @@
+{
+  "schema": "crispembed-josev-wheel-metadata-review-v1",
+  "completed": true,
+  "passed": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423930364",
+  "source": "1f3ee0402498a10e31ec36c94d6fa67b7a390fe6",
+  "protocol_sha256": "662ca4854446a9cf04aaaa73390fb51ed9b351760a05b4574c215de31d7ae02e",
+  "packages": 57,
+  "small_metadata_files_rehashed": 114,
+  "all_ordered_versions_archives_owners_sidecars_dependency_fields_exact": true,
+  "source_files_sha256": {
+    "tools/ci-heavy/josev2b_wheel_metadata.py": "503bcc6e9387511101897ea95fc9b2984adf531e63f482220cc6c8ed08c9b14b",
+    "docs/josev2b-wheel-metadata-protocol-v1.json": "662ca4854446a9cf04aaaa73390fb51ed9b351760a05b4574c215de31d7ae02e",
+    "tests/test_josev2b_wheel_metadata.py": "cd887c4f6b2c0fc676edf851a2fd1dca27442cfeae4d6007d71b6733ba86af16",
+    ".github/workflows/josev2b-wheel-metadata.yml": "906778911f56eba421b9a8e866d05d1b607b6261d10d7b49c5fbf36b82f708c7",
+    "docs/josev2b-environment-lock.json": "7d16c6560da3a9bf24f1c19f3581f1a5911b87360c0cef6484b92f8810aa8be8",
+    "tools/kaggle/josev2b-original/requirements.lock": "89fa4670a29ccfe3df867660715884c0b76e45103c44bcbb54ba825a2eccc489",
+    "docs/josev2b-source-contract.json": "6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da",
+    "tools/josev2b_environment.py": "4e5375679c5975e3443e64b947d4598235fe3721e88ac98dfcc1a618eb833f01"
+  },
+  "artifact": {
+    "id": 12701936876,
+    "bytes": 398689,
+    "sha256": "be62f657bbe36849bfe3702266961cad226e6eaa06422191c0530c69c1d10356"
+  },
+  "framework_imported": false,
+  "model_tokenizer_accessed": false,
+  "wheel_installed_or_executed": false,
+  "limits": [
+    "Exact wheel payloads and archive RECORD/owning metadata were verified on hosted CPU; only114 small metadata files and audit receipt were downloaded for independent rehash/review.",
+    "This verifies package provenance, separately from the completed GPU installation/original capture and pending native head/backbone qualification."
+  ]
+}

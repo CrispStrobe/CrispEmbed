@@ -1,3 +1,23 @@
+## 27 October 2026 — Josev raw preservation and F32 head conversion reviewed
+
+Hosted [40429513945](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40429513945)
+at`5da7c64d` authenticates all251 original arrays and exports the four native
+input adapters, then promotes all122 head tensors losslessly and checks GGUF
+readback. Independent review checks all loaded-F32 tensor hashes/shapes,251
+ordered descriptors/manifest hashes, case order and four small report-member
+hashes. The [head component](tests/results/josev2b/head-artifact-review.json) is
+121,900,352 bytes, SHA256`5b0a4bfe769526569102e3cde115887593875124c94bb723fb9087bc40c29507`.
+The317,814,519-byte preserved original/component archive stays remote; no native
+or full-model parity follows from successful conversion.
+
+Separate [40423930364](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423930364)
+at`1f3ee040` audits all57 wheel archives/sidecars/owning metadata without
+framework imports, installation or model access. Independent review rehashes
+all114 small metadata files and matches every ordered package/version/archive/
+owner/sidecar/dependency field plus measured source. [Evidence](tests/results/josev2b/wheel-metadata-review.json)
+retains the distinction between hosted raw archive verification and local small
+metadata review. Native head/backbone and composed typed outputs remain pending.
+
 ## 27 October 2026 — composed Ovis interpolation replay reviewed
 
 All eight grid/gate jobs in [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)

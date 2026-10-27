@@ -1,0 +1,37 @@
+{
+  "schema": "crispembed-josev-head-artifact-review-v1",
+  "completed": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40429513945",
+  "source": "5da7c64d1a95df0f9a829c62938fc8d7d64f77b7",
+  "original_receipt_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+  "original_source": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
+  "arrays": 251,
+  "array_payload_bytes": 279087860,
+  "head_tensors": 122,
+  "gguf_bytes": 121900352,
+  "gguf_sha256": "5b0a4bfe769526569102e3cde115887593875124c94bb723fb9087bc40c29507",
+  "small_artifact": {
+    "id": 12702676604,
+    "bytes": 33345,
+    "sha256": "f452ef7c9583258a77341c56d96fd0c3f257926f3e053862d469e3501399e1e8"
+  },
+  "raw_artifact": {
+    "id": 12702553413,
+    "bytes": 317814519,
+    "sha256": "eff25c8ec207646602cb885abc6d17f7fc646cd2b0d7e5f7ab9b27650e175708",
+    "downloaded": false
+  },
+  "review": {
+    "all_122_loaded_f32_hashes_and_source_shapes_exact": true,
+    "all_251_ordered_original_events_exact": true,
+    "all_original_array_manifest_hashes_exact": true,
+    "four_input_case_order_exact": true,
+    "small_report_members_rehashed": 4
+  },
+  "native_parity": false,
+  "full_model": false,
+  "limits": [
+    "Hosted producer authenticates raw251 NPY arrays, finite policy, sourcecheckpoint, exact F32 promotion/GGUF readback and raw input adapters. Independent development-host review rehashes small reports/manifests; raw arrays/checkpoint/GGUF were not downloaded.",
+    "Actual head CPU/CUDA comparison is separate; no backbone, tokenizer, composed output or representative quality qualification."
+  ]
+}

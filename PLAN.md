@@ -828,8 +828,8 @@ on immutable0.17.12.
   convert exact F32 head and pass all123 stages plus full answers on both
   backends using actual Ref and independent metrics. See [GPU protocol](docs/josev2b-head-gpu.md).
   Preserve numeric failures. Original51a2e16b and sourceb2 remain immutable.
-  The equivalent CPU artifact40429513945 and metadata40423930364 jobs are
-  queued; assess redundancy only after real completed preservation/audit proof.
+  CPU artifact40429513945 and metadata40423930364 are completed and reviewed
+  in HISTORY; preserve their immutable remote artifacts rather than rerunning.
   Native hidden-only2048/6144 Qwen3.5-2B backbone, tokenizer/schema composition,
   C/Python/CLI/Rust/Dart/registry and representative decision quality remain
   separate gates; existing Gemma decision API semantics differ.
