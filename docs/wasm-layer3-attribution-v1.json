@@ -1,0 +1,109 @@
+{
+  "schema": "crispembed-wasm-layer3-attribution-source-v1",
+  "status": "observer graph-view correction; actual replay pending",
+  "qualification": false,
+  "runtime_base": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "encoder_sha256": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+  "ab": {
+    "run": 40391544739,
+    "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+    "conclusion": "failure",
+    "review": {
+      "id": 12692262412,
+      "bytes": 503633,
+      "sha256": "6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047"
+    },
+    "report_sha256": "85102ccff26f3579f050a62a2747ef3f423b2546fc4dd9454e5b12663be76526",
+    "raw": {
+      "id": 12692387342,
+      "bytes": 2357641,
+      "sha256": "0ac59ef65d00c4f267791b47323dc5705a958bdfab4805e1f8337d2eb6da65da"
+    }
+  },
+  "model_sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2",
+  "gates": {
+    "max_abs": 0.002,
+    "min_row_cosine": 0.99999
+  },
+  "subnodes": [
+    "layer3_input",
+    "layer3_q_raw",
+    "layer3_k_raw",
+    "layer3_v_raw",
+    "layer3_q",
+    "layer3_k",
+    "layer3_v",
+    "layer3_flash",
+    "layer3_o_raw",
+    "layer3_o",
+    "layer3_attention_residual",
+    "layer3_attention_norm",
+    "layer3_attention_scaled",
+    "layer3_attention_output",
+    "layer3_fc1_raw",
+    "layer3_fc1",
+    "layer3_gelu",
+    "layer3_fc2_raw",
+    "layer3_fc2",
+    "layer3_ffn_residual",
+    "layer3_ffn_norm",
+    "layer3_ffn_scaled",
+    "layer3_output"
+  ],
+  "weights": {
+    "blk.3.attn_q.weight": [
+      "input",
+      "q_raw"
+    ],
+    "blk.3.attn_k.weight": [
+      "input",
+      "k_raw"
+    ],
+    "blk.3.attn_v.weight": [
+      "input",
+      "v_raw"
+    ],
+    "blk.3.attn_output.weight": [
+      "flash",
+      "o_raw"
+    ],
+    "blk.3.ffn_up.weight": [
+      "attention_output",
+      "fc1_raw"
+    ],
+    "blk.3.ffn_down.weight": [
+      "gelu",
+      "fc2_raw"
+    ]
+  },
+  "protected_sources": {
+    "tools/wasm_layer3_attribution_v1.py": "3cbd347ea731fe0a4799b3f7dcfe75450ca856b8a404c1887148b709cbef9133",
+    "tools/ci-heavy/wasm_layer3_attribution_v1.py": "31c865e59da362f2a115a0c53e62224901e043451ea93d8bbe27a6ffd3c3e792",
+    "tests/wasm-layer3/kernel_capture.inc": "9f23f14feabefb2683db8d0930cff771d8085caa18fabd5d290db5b3a4349480",
+    "tests/wasm-layer3/replay.inc": "79d47717c2ae08a5a8e66cdbb007ae101ef0bf9180ea1d2e480f0c757f9c7337",
+    "tests/test_wasm_layer3_attribution_v1.cjs": "d8b11979fee4ab5b268ffbffb8a46f5aa49c7b6594e75634aaf686cc102917bd",
+    "tests/test_wasm_layer3_diff.cpp": "94f5a2deeaeb8842361c46a26eb8adc2bc79a9ca452466f5cdc8ded423ac6c25",
+    "tools/successor_wasm_trace_contract.py": "19467192afd73f900185e5ed4783f95449876932603d4786ebb140333d2b246a",
+    "tools/ci-heavy/successor_assets.py": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
+    "tools/successor_asset_manifest.py": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041"
+  },
+  "initial_observer_rejection": {
+    "run": 40415950220,
+    "source": "bbc80ae2c1e607813326d8b30f1390f6b18a00fd",
+    "phase": "native capture scheduler reservation",
+    "signal": "SIGABRT",
+    "small_artifact": {
+      "id": 12698206960,
+      "bytes": 72931,
+      "sha256": "c6f4dfd6d217f54675464405f649106cc3a858ef08cab13106fd5c6cc299d962"
+    },
+    "raw_remote_only": {
+      "id": 12698771174,
+      "bytes": 11967695,
+      "sha256": "8365d52383148384a2b409bfb38acce4a5da1cdad7b95c5a8296de7a26119fcf"
+    },
+    "ordinary_native_passed": true,
+    "numerical_attribution_completed": false
+  }
+}

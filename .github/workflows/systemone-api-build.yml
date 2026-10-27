@@ -1,0 +1,67 @@
+name: SystemOne real public library model-free build
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: systemone-api-build-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  public-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Closed source and wrapper lifecycle controls before compilation
+        run: |
+          python tools/systemone_api_contract.py
+          python tests/test_systemone_binding.py -v
+      - name: Build actual shared library, CLI and HTTP server
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/public-build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake --build "$RUNNER_TEMP/public-build" --target crispembed-shared crispembed-cli crispembed-server --parallel 2
+      - name: Actual exported ABI and gates without any model
+        run: |
+          mkdir -p "$RUNNER_TEMP/systemone-review"
+          python tests/systemone/native_controls.py "$RUNNER_TEMP/public-build/libcrispembed.so" "$RUNNER_TEMP/systemone-review/native.json"
+          nm -D "$RUNNER_TEMP/public-build/libcrispembed.so" > "$RUNNER_TEMP/systemone-review/symbols.txt"
+          cp "$RUNNER_TEMP/public-build/compile_commands.json" "$RUNNER_TEMP/systemone-review/compile_commands.json"
+          "$RUNNER_TEMP/public-build/crispembed" --help > "$RUNNER_TEMP/systemone-review/cli-help.txt" 2>&1
+          python tests/systemone/check_build.py "$RUNNER_TEMP/public-build" "$RUNNER_TEMP/systemone-review"
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          toolchain: 1.90.0
+      - name: Check Rust wrapper against the actual new prebuilt
+        env:
+          CRISPEMBED_SYS_LIB_DIR: ${{ runner.temp }}/public-build
+        run: cargo check --workspace
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Format and analyze independent Dart wrapper with exact ffi dependency
+        run: |
+          mkdir -p "$RUNNER_TEMP/systemone-dart/lib"
+          cp flutter/crispembed/lib/src/systemone.dart "$RUNNER_TEMP/systemone-dart/lib/"
+          printf 'name: systemone_audit\nenvironment:\n  sdk: ">=3.0.0 <4.0.0"\ndependencies:\n  ffi: 2.1.4\n' > "$RUNNER_TEMP/systemone-dart/pubspec.yaml"
+          cd "$RUNNER_TEMP/systemone-dart"
+          dart pub get
+          dart format lib/systemone.dart
+          dart analyze --fatal-infos
+          cp lib/systemone.dart "$RUNNER_TEMP/systemone-review/systemone.dart"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: systemone-api-build-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/systemone-review/
+          retention-days: 90
+          if-no-files-found: warn

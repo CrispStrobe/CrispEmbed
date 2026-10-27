@@ -1,0 +1,41 @@
+name: Josev packed runtime build controls
+on:
+  workflow_call:
+jobs:
+  build-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Explicit new source and frozen inference/schema controls
+        run: |
+          python3 tools/josev2b_packed_runtime_contract.py
+          python3 tests/test_josev2b_packed_runtime.py -v
+      - name: Build standalone packed ordinary and observed variants
+        run: |
+          cmake -S tests/josev-packed -B "$RUNNER_TEMP/josev-packed-build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/josev-packed-build" --parallel 2
+      - name: Real metadata-only shape and failure controls, no weights
+        run: '"$RUNNER_TEMP/josev-packed-build/test-josev-packed"'
+      - name: Packed gate rejects before model access in both variants
+        run: |
+          unset CRISPEMBED_JOSEV_COMPOSED CRISPEMBED_JOSEV_PACKED
+          "$RUNNER_TEMP/josev-packed-build/josev-packed-plain-probe" --gates
+          "$RUNNER_TEMP/josev-packed-build/josev-packed-observed-probe" --gates
+      - name: Production archive excludes reference observers
+        run: |
+          nm -C "$RUNNER_TEMP/josev-packed-build/libjosev-packed-plain.a" > "$RUNNER_TEMP/josev-packed-symbols.txt"
+          if grep -E 'composed_test::|josev2b_head::test::|run_observed' "$RUNNER_TEMP/josev-packed-symbols.txt"; then exit 1; fi
+          if strings "$RUNNER_TEMP/josev-packed-build/libjosev-packed-plain.a" | grep -F 'head/option_context_projection'; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-packed-build-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-packed-build/compile_commands.json
+            ${{ runner.temp }}/josev-packed-symbols.txt
+          retention-days: 90
+          if-no-files-found: warn

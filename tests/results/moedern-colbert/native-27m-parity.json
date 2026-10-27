@@ -1,0 +1,45 @@
+{
+  "schema": "crispembed-moedern-27m-native-parity-receipt-v1",
+  "variant": "27M",
+  "revision": "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+  "passed": true,
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-moedern-27m-native-parity",
+    "kernel_version": 1,
+    "source_commit": "2e5ccf0ca4b9c1402384613e682738a431a997ef",
+    "original": "tests/results/moedern-colbert/original-27m.json"
+  },
+  "parity_report_sha256": "4aebceed32551fd826f1d4d283620a60a2a75cd423d28348adbdb70ec5695ece",
+  "gates": {
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "maxsim_max_absolute": 0.002
+  },
+  "cases": 10,
+  "worst_max_absolute": 5.364418029785156e-07,
+  "min_row_cosine": 0.9999999999986432,
+  "scores": [
+    {
+      "pair": "q-de|d-de",
+      "native": 15.958082001199294,
+      "original": 15.95808219909668,
+      "passed": true
+    },
+    {
+      "pair": "q-empty|d-one",
+      "native": 21.06187438466238,
+      "original": 21.061874389648438,
+      "passed": true
+    },
+    {
+      "pair": "q-markers|d-unicode",
+      "native": 23.182272241843418,
+      "original": 23.18227195739746,
+      "passed": true
+    }
+  ],
+  "engine": "src/moedern_family_engine.cpp behind CRISPEMBED_MOEDERN_FAMILY + CRISPEMBED_MOEDERN_COLBERT; frozen original token IDs (no tokenizer/public API in this proof)",
+  "limits": "Linux x64 CPU F32, frozen IDs only; tokenizer composition, public roles, packing, retrieval quality and publication remain.",
+  "public_api_qualified": false
+}

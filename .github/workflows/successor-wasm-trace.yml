@@ -1,0 +1,68 @@
+name: Frozen successor WASM source attribution
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Small parser and exact overlay controls
+        run: python tests/test_successor_wasm_trace_contract.py -v
+      - name: Require frozen services, archives, native anchor and model bytes
+        run: python tools/ci-heavy/successor_wasm_trace.py prepare --output "$RUNNER_TEMP/wasm-trace"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Test-only diagnostic modules and crispembed-diff reader, bounded to two build workers
+        run: python tools/ci-heavy/successor_wasm_trace.py build --output "$RUNNER_TEMP/wasm-trace"
+      - name: Actual native1/2 ordinary and dump processes
+        run: python tools/ci-heavy/successor_wasm_trace.py native --output "$RUNNER_TEMP/wasm-trace"
+      - name: Pinned browser harness
+        run: |
+          npm install --prefix "$RUNNER_TEMP/wasm-trace-browser-tools" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/wasm-trace-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Packaged browser and test-only overlay ordinary/dump
+        run: NODE_PATH="$RUNNER_TEMP/wasm-trace-browser-tools/node_modules" node tests/test_successor_wasm_trace.cjs "$RUNNER_TEMP/wasm-trace/browser"
+      - name: Require initial anchors and observer neutrality before full-stage attribution
+        run: python tools/ci-heavy/successor_wasm_trace.py analyze --output "$RUNNER_TEMP/wasm-trace"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-wasm-trace-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/wasm-trace/trace.json
+            ${{ runner.temp }}/wasm-trace/overlay.json
+            ${{ runner.temp }}/wasm-trace/model-inventory.json
+            ${{ runner.temp }}/wasm-trace/compile-commands.json
+            ${{ runner.temp }}/wasm-trace/*.log
+            ${{ runner.temp }}/wasm-trace/browser/browser-trace.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: successor-wasm-trace-arrays-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/wasm-trace/*.gguf
+            ${{ runner.temp }}/wasm-trace/*.f32
+            ${{ runner.temp }}/wasm-trace/browser/wasm-*.gguf
+            ${{ runner.temp }}/wasm-trace/browser/wasm-*.f32
+            ${{ runner.temp }}/wasm-trace/browser/diagnostic/crispembed_embed.*
+          retention-days: 90

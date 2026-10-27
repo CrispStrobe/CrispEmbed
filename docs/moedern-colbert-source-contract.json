@@ -1,0 +1,584 @@
+{
+  "schema": "crispembed.moedern-colbert.sources.v1",
+  "status": "source-only; no original or native inference result yet",
+  "collection": "https://huggingface.co/collections/VAGOsolutions/sauerkrautlm-moederncolbert",
+  "license": "Apache-2.0",
+  "author_ggml": {
+    "repository": "https://github.com/ggml-org/ggml",
+    "revision": "3612c0af93f2cfc8f048295300a61187723b12ae",
+    "license": "MIT"
+  },
+  "variants": {
+    "1.5M": {
+      "original": {
+        "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-1.5M",
+        "revision": "9d360b8b88ae11bea5784bf9012ff509fdd5c2da",
+        "files": {
+          "moe_triton.py": {
+            "bytes": 10728,
+            "sha256": "1ad1c291ec1d7ea6b35d02d24ffafba7a12fb916395c522864ab3616c62f339f"
+          },
+          "config_sentence_transformers.json": {
+            "bytes": 758,
+            "sha256": "007399a787035b4350ed00166bc77380a16fbf5b161153f9452e86b0cb3932a7"
+          },
+          "README.md": {
+            "bytes": 7738,
+            "sha256": "5b7d2ba6ee057c9d0c8b81c0c76a5fe9ec6c2d09820119b7c82498406b522c2e"
+          },
+          "LICENSE": {
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          "sentence_bert_config.json": {
+            "bytes": 57,
+            "sha256": "58ffae3751d252be0313f661207de131aa09f3dbaf80df1a95b7dafc5bf45e5f"
+          },
+          "config.json": {
+            "bytes": 1226,
+            "sha256": "54f7e0dc02d5814b3bd9b2f2f7f1f2cbd732aef7c4de7f334eaf2daa43e75e6e"
+          },
+          "modules.json": {
+            "bytes": 216,
+            "sha256": "02e279a7d7019ebac4183eb61ff776bb36688b0b01202849423bbc58850e99c5"
+          },
+          "tokenizer_config.json": {
+            "bytes": 646,
+            "sha256": "fc250460005ed0c1d47fa58829a31ccfd57a5abacf89029c27271869a588dc18"
+          },
+          "modeling_modernbert_hash_moe_v10.py": {
+            "bytes": 32641,
+            "sha256": "528afffbd33210845ed521b12af5569f9b6d0b0eb3f176beebb3efd83cee6668"
+          },
+          "1_Dense/config.json": {
+            "bytes": 160,
+            "sha256": "0b0dfe7f9ccd774f5e90f84256060b4bea73f371caf81967ee9c03c46b71fad9"
+          },
+          "1_Dense/model.safetensors": {
+            "bytes": 65624,
+            "sha256": "ef5c34a87882b098f044dfb30892e485ffe5cffe95d5ad78563d6f656666d6a9"
+          },
+          "model.safetensors": {
+            "bytes": 5875264,
+            "sha256": "3cd03bd9a9671a05f4c34dc3b3af30d0eb802f89d7f96923873dab06bdff8cfb"
+          },
+          "tokenizer.json": {
+            "bytes": 1956542,
+            "git_blob_sha1": "e1fc54fd0e0456a6c76106be4a338bfc08f29861",
+            "sha256": null
+          }
+        }
+      },
+      "author_gguf": {
+        "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-1.5M-GGUF",
+        "revision": "fcc9c64025ba5d6cc0d8f88f846f55c5cd4e8bae",
+        "files": {
+          "README.md": {
+            "bytes": 7974,
+            "sha256": "83380e216334f8cf4986e33d15e52647a2c0b185c6f719469d114e2f21ce4a08"
+          },
+          "LICENSE": {
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          "moedern_gguf.py": {
+            "bytes": 7246,
+            "sha256": "c178b4c312bcf42764e8dfc72c2aaca554d0b2b21c490a9f1920b55ec2b46014"
+          },
+          "example.py": {
+            "bytes": 735,
+            "sha256": "2c2b88e8f4161ac4ea1f5ee29e8bb29954727d03463928d72586e376f49a0fc2"
+          },
+          "engine/CMakeLists.txt": {
+            "bytes": 963,
+            "sha256": "07ac8c507a608cf71b45100943adfed8a4133b3dd0c4ee8737b8ce941ff23335"
+          },
+          "engine/convert_v10_to_gguf.py": {
+            "bytes": 7551,
+            "sha256": "a00f7f38b9d87617078ee6958d2ba4dbc75890ae226e56bbce8b7f151567a7c3"
+          },
+          "engine/main_v10.c": {
+            "bytes": 34092,
+            "sha256": "102a251846cdddb788e7aee3162c8657f64f2ea85a2991d52d05abdf30e262eb"
+          },
+          "SauerkrautLM-MoEdernColBERT-1.5M-F16.gguf": {
+            "bytes": 2978144,
+            "sha256": "638a24f7197d46f59171e1d4a6f901ddb3a2121c4288fa872790837d3a53930b"
+          },
+          "SauerkrautLM-MoEdernColBERT-1.5M-F32.gguf": {
+            "bytes": 5941152,
+            "sha256": "1d0e5429d47be9b4dfd59eccfbfd4532fba4236737627c2855e557d32606e8b3"
+          },
+          "SauerkrautLM-MoEdernColBERT-1.5M-Q4_0.gguf": {
+            "bytes": 1549664,
+            "sha256": "e30cbca21f32adcb6fec1f2c51a3350b374f9d3b724666d752de64943447ae03"
+          },
+          "SauerkrautLM-MoEdernColBERT-1.5M-Q8_0.gguf": {
+            "bytes": 2041184,
+            "sha256": "1d265f536fe86a5afa6c822d285da92bd5043389419aecf2b25c54f824d094dc"
+          },
+          "tokenizer.json": {
+            "bytes": 1956542,
+            "git_blob_sha1": "e1fc54fd0e0456a6c76106be4a338bfc08f29861",
+            "sha256": null
+          }
+        }
+      },
+      "config": {
+        "allow_mask_attention": true,
+        "architectures": [
+          "ModernBertHashMoEHybridModel"
+        ],
+        "attention_dropout": 0.0,
+        "auto_map": {
+          "AutoConfig": "modeling_modernbert_hash_moe_v10.ModernBertHashMoEHybridConfig",
+          "AutoModel": "modeling_modernbert_hash_moe_v10.ModernBertHashMoEHybridModel"
+        },
+        "bos_token_id": 2,
+        "cls_token_id": 2,
+        "conv_dilations": [],
+        "conv_kernel_size": 3,
+        "conv_use_gate_norm": true,
+        "disable_flash_attention": true,
+        "dtype": "float32",
+        "embedding_dropout": 0.0,
+        "eos_token_id": 3,
+        "expert_dim": 128,
+        "hash_projections": 16,
+        "hidden_activation": "gelu",
+        "hidden_size": 128,
+        "initializer_range": 0.02,
+        "layer_types": [
+          "attn_moe",
+          "attn_moe"
+        ],
+        "load_balance_coef": 0.05,
+        "m_replicas": 2,
+        "max_position_embeddings": 512,
+        "mlp_dropout": 0.0,
+        "model_type": "modernbert_hash_moe_hybrid",
+        "norm_eps": 1e-05,
+        "num_attention_heads": 2,
+        "num_hidden_layers": 2,
+        "num_key_value_heads": 1,
+        "num_routed_experts": 8,
+        "num_shared_experts": 1,
+        "pad_token_id": 0,
+        "rope_theta": 160000.0,
+        "router_z_coef": 0.005,
+        "sep_token_id": 3,
+        "tie_word_embeddings": false,
+        "top_k": 2,
+        "transformers_version": "5.3.0",
+        "vocab_size": 30002
+      },
+      "dense_config": {
+        "in_features": 128,
+        "out_features": 128,
+        "bias": false,
+        "activation_function": "torch.nn.modules.linear.Identity",
+        "use_residual": false
+      }
+    },
+    "27M": {
+      "original": {
+        "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-27M",
+        "revision": "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+        "files": {
+          "moe_triton.py": {
+            "bytes": 10728,
+            "sha256": "1ad1c291ec1d7ea6b35d02d24ffafba7a12fb916395c522864ab3616c62f339f"
+          },
+          "config_sentence_transformers.json": {
+            "bytes": 758,
+            "sha256": "007399a787035b4350ed00166bc77380a16fbf5b161153f9452e86b0cb3932a7"
+          },
+          "README.md": {
+            "bytes": 7751,
+            "sha256": "a107040dd0f4987cf741b3391bda58dd97a2296b0e3dd3b9dee7fa11fb02ab71"
+          },
+          "LICENSE": {
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          "sentence_bert_config.json": {
+            "bytes": 57,
+            "sha256": "58ffae3751d252be0313f661207de131aa09f3dbaf80df1a95b7dafc5bf45e5f"
+          },
+          "config.json": {
+            "bytes": 1227,
+            "sha256": "4a4a1b8ab25f4ea0a8b111f48bbcb88f3005771ac56fac50fe8e569ffd3e06e1"
+          },
+          "modules.json": {
+            "bytes": 216,
+            "sha256": "02e279a7d7019ebac4183eb61ff776bb36688b0b01202849423bbc58850e99c5"
+          },
+          "tokenizer_config.json": {
+            "bytes": 646,
+            "sha256": "fc250460005ed0c1d47fa58829a31ccfd57a5abacf89029c27271869a588dc18"
+          },
+          "modeling_modernbert_hash_moe_v10.py": {
+            "bytes": 32641,
+            "sha256": "528afffbd33210845ed521b12af5569f9b6d0b0eb3f176beebb3efd83cee6668"
+          },
+          "1_Dense/config.json": {
+            "bytes": 160,
+            "sha256": "934dadda2f5abfa68d6584585472935e35b06cd30fc14dd648802f437aac6f95"
+          },
+          "1_Dense/model.safetensors": {
+            "bytes": 327768,
+            "sha256": "e380c324221a4dfb1f0bebe35de2b741774965c9283370cc9c3e68af710e72eb"
+          },
+          "model.safetensors": {
+            "bytes": 108171392,
+            "sha256": "a258ed25e26ed92c449381af9e0da64f90df746fb1989268326a3656ccb60a59"
+          },
+          "tokenizer.json": {
+            "bytes": 1956542,
+            "git_blob_sha1": "e1fc54fd0e0456a6c76106be4a338bfc08f29861",
+            "sha256": null
+          }
+        }
+      },
+      "author_gguf": {
+        "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-27M-GGUF",
+        "revision": "4ff61393a179480ed624e79606ea45353a40d52d",
+        "files": {
+          "README.md": {
+            "bytes": 7962,
+            "sha256": "3d7e51937f9253395d48c304b74ce806a04025bc6258563ef93a950087357313"
+          },
+          "LICENSE": {
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          "moedern_gguf.py": {
+            "bytes": 7246,
+            "sha256": "c178b4c312bcf42764e8dfc72c2aaca554d0b2b21c490a9f1920b55ec2b46014"
+          },
+          "example.py": {
+            "bytes": 734,
+            "sha256": "55a0e517cea4cb9516ec2b651c5144be6d2e6eeb6cb57aa169720b98ed9aba23"
+          },
+          "engine/CMakeLists.txt": {
+            "bytes": 963,
+            "sha256": "07ac8c507a608cf71b45100943adfed8a4133b3dd0c4ee8737b8ce941ff23335"
+          },
+          "engine/convert_v10_to_gguf.py": {
+            "bytes": 7551,
+            "sha256": "a00f7f38b9d87617078ee6958d2ba4dbc75890ae226e56bbce8b7f151567a7c3"
+          },
+          "engine/main_v10.c": {
+            "bytes": 34092,
+            "sha256": "102a251846cdddb788e7aee3162c8657f64f2ea85a2991d52d05abdf30e262eb"
+          },
+          "SauerkrautLM-MoEdernColBERT-27M-F16.gguf": {
+            "bytes": 54280800,
+            "sha256": "f40b784e45cb54cc2e7bdbae922a98a7f3c9eda6afdfa2c84189351886a59ad4"
+          },
+          "SauerkrautLM-MoEdernColBERT-27M-F32.gguf": {
+            "bytes": 108499360,
+            "sha256": "bedc3325a68ee9da7d7a929e5d61673aa2a551075970735b2968992a03a9ed36"
+          },
+          "SauerkrautLM-MoEdernColBERT-27M-Q4_0.gguf": {
+            "bytes": 18876000,
+            "sha256": "60e6bf1e31b123eda82fa4a1f7ad7a71e7b14653443500d64eee74bd51947d4e"
+          },
+          "SauerkrautLM-MoEdernColBERT-27M-Q8_0.gguf": {
+            "bytes": 31164000,
+            "sha256": "e4db6013311fe3e17b63d88e4be2dd061828a3747eada519cc4b74793e6287b5"
+          },
+          "tokenizer.json": {
+            "bytes": 1956542,
+            "git_blob_sha1": "e1fc54fd0e0456a6c76106be4a338bfc08f29861",
+            "sha256": null
+          }
+        }
+      },
+      "config": {
+        "allow_mask_attention": true,
+        "architectures": [
+          "ModernBertHashMoEHybridModel"
+        ],
+        "attention_dropout": 0.0,
+        "auto_map": {
+          "AutoConfig": "modeling_modernbert_hash_moe_v10.ModernBertHashMoEHybridConfig",
+          "AutoModel": "modeling_modernbert_hash_moe_v10.ModernBertHashMoEHybridModel"
+        },
+        "bos_token_id": 2,
+        "cls_token_id": 2,
+        "conv_dilations": [],
+        "conv_kernel_size": 3,
+        "conv_use_gate_norm": true,
+        "disable_flash_attention": true,
+        "dtype": "float32",
+        "embedding_dropout": 0.0,
+        "eos_token_id": 3,
+        "expert_dim": 640,
+        "hash_projections": 80,
+        "hidden_activation": "gelu",
+        "hidden_size": 640,
+        "initializer_range": 0.02,
+        "layer_types": [
+          "attn_moe",
+          "attn_moe"
+        ],
+        "load_balance_coef": 0.05,
+        "m_replicas": 2,
+        "max_position_embeddings": 512,
+        "mlp_dropout": 0.0,
+        "model_type": "modernbert_hash_moe_hybrid",
+        "norm_eps": 1e-05,
+        "num_attention_heads": 10,
+        "num_hidden_layers": 2,
+        "num_key_value_heads": 5,
+        "num_routed_experts": 8,
+        "num_shared_experts": 1,
+        "pad_token_id": 0,
+        "rope_theta": 160000.0,
+        "router_z_coef": 0.005,
+        "sep_token_id": 3,
+        "tie_word_embeddings": false,
+        "top_k": 2,
+        "transformers_version": "5.3.0",
+        "vocab_size": 30002
+      },
+      "dense_config": {
+        "in_features": 640,
+        "out_features": 128,
+        "bias": false,
+        "activation_function": "torch.nn.modules.linear.Identity",
+        "use_residual": false
+      }
+    },
+    "115M": {
+      "original": {
+        "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-115M",
+        "revision": "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+        "files": {
+          "moe_triton.py": {
+            "bytes": 10728,
+            "sha256": "1ad1c291ec1d7ea6b35d02d24ffafba7a12fb916395c522864ab3616c62f339f"
+          },
+          "config_sentence_transformers.json": {
+            "bytes": 758,
+            "sha256": "007399a787035b4350ed00166bc77380a16fbf5b161153f9452e86b0cb3932a7"
+          },
+          "README.md": {
+            "bytes": 7916,
+            "sha256": "476783e79c1c34c4b7f3cb79e3fe0bdecee79f3618fb1a7afc7933d166934f8d"
+          },
+          "LICENSE": {
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          "sentence_bert_config.json": {
+            "bytes": 57,
+            "sha256": "58ffae3751d252be0313f661207de131aa09f3dbaf80df1a95b7dafc5bf45e5f"
+          },
+          "config.json": {
+            "bytes": 1378,
+            "sha256": "b0d48552e71a950c7506ea2b6d2ed9052ab9b977f0caad00807fbec92229b594"
+          },
+          "modules.json": {
+            "bytes": 216,
+            "sha256": "02e279a7d7019ebac4183eb61ff776bb36688b0b01202849423bbc58850e99c5"
+          },
+          "tokenizer_config.json": {
+            "bytes": 646,
+            "sha256": "fc250460005ed0c1d47fa58829a31ccfd57a5abacf89029c27271869a588dc18"
+          },
+          "modeling_modernbert_hash_moe_v10.py": {
+            "bytes": 32641,
+            "sha256": "528afffbd33210845ed521b12af5569f9b6d0b0eb3f176beebb3efd83cee6668"
+          },
+          "1_Dense/config.json": {
+            "bytes": 161,
+            "sha256": "357bb4088ab1b65cfd378ac0acc06caff88c9e6b6b2db3014f89cdf15d49a7e1"
+          },
+          "1_Dense/model.safetensors": {
+            "bytes": 524376,
+            "sha256": "7a35d4c318c1ad91724382017af5b6001490786ac0c6927cb13d05bc4328c9ce"
+          },
+          "model.safetensors": {
+            "bytes": 458271440,
+            "sha256": "3d73e27fe4cdd4c246d29e493076e6f6e674008f9d1e6da68d881d7377d92c56"
+          },
+          "tokenizer.json": {
+            "bytes": 1956542,
+            "git_blob_sha1": "e1fc54fd0e0456a6c76106be4a338bfc08f29861",
+            "sha256": null
+          }
+        }
+      },
+      "author_gguf": {
+        "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-115M-GGUF",
+        "revision": "d86747d5c597c7eb53ed793d5c29773f77f5d411",
+        "files": {
+          "README.md": {
+            "bytes": 8120,
+            "sha256": "38c4620874c9f22774024b286c4f20fd4d9f92c16e65cb764c5d637a21e02d9d"
+          },
+          "LICENSE": {
+            "bytes": 11358,
+            "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+          },
+          "moedern_gguf.py": {
+            "bytes": 7246,
+            "sha256": "c178b4c312bcf42764e8dfc72c2aaca554d0b2b21c490a9f1920b55ec2b46014"
+          },
+          "example.py": {
+            "bytes": 735,
+            "sha256": "aa3747314d8123e445694a24beede727447f34ba50e39a2c8837b8f2286a2e0e"
+          },
+          "engine/CMakeLists.txt": {
+            "bytes": 963,
+            "sha256": "07ac8c507a608cf71b45100943adfed8a4133b3dd0c4ee8737b8ce941ff23335"
+          },
+          "engine/convert_v10_to_gguf.py": {
+            "bytes": 7551,
+            "sha256": "a00f7f38b9d87617078ee6958d2ba4dbc75890ae226e56bbce8b7f151567a7c3"
+          },
+          "engine/main_v10.c": {
+            "bytes": 34092,
+            "sha256": "102a251846cdddb788e7aee3162c8657f64f2ea85a2991d52d05abdf30e262eb"
+          },
+          "SauerkrautLM-MoEdernColBERT-115M-F16.gguf": {
+            "bytes": 229562432,
+            "sha256": "4e10cabe56e25750f6a47b4cf1ee34c40ea3acd1dadffac6d8910d6625c7bcc8"
+          },
+          "SauerkrautLM-MoEdernColBERT-115M-F32.gguf": {
+            "bytes": 458793792,
+            "sha256": "997b587ebc31e8355f588ff9be47a82eba90266166693597e64c21beb34704fd"
+          },
+          "SauerkrautLM-MoEdernColBERT-115M-Q4_0.gguf": {
+            "bytes": 73431104,
+            "sha256": "7bdac7e920db4a152ab2ce5de8990c16faac6164d10879ade42767c51f7626d0"
+          },
+          "SauerkrautLM-MoEdernColBERT-115M-Q8_0.gguf": {
+            "bytes": 127694912,
+            "sha256": "c307203282243b8bf131002af2597ee3331c5e94b6a93376333a5f069586ce78"
+          },
+          "tokenizer.json": {
+            "bytes": 1956542,
+            "git_blob_sha1": "e1fc54fd0e0456a6c76106be4a338bfc08f29861",
+            "sha256": null
+          }
+        }
+      },
+      "config": {
+        "allow_mask_attention": true,
+        "architectures": [
+          "ModernBertHashMoEHybridModel"
+        ],
+        "attention_dropout": 0.0,
+        "auto_map": {
+          "AutoConfig": "modeling_modernbert_hash_moe_v10.ModernBertHashMoEHybridConfig",
+          "AutoModel": "modeling_modernbert_hash_moe_v10.ModernBertHashMoEHybridModel"
+        },
+        "bos_token_id": 2,
+        "cls_token_id": 2,
+        "conv_dilations": [
+          1,
+          1,
+          2,
+          1,
+          1,
+          2
+        ],
+        "conv_kernel_size": 3,
+        "conv_use_gate_norm": true,
+        "disable_flash_attention": true,
+        "dtype": "float32",
+        "embedding_dropout": 0.0,
+        "eos_token_id": 3,
+        "expert_dim": 640,
+        "hash_projections": 192,
+        "hidden_activation": "gelu",
+        "hidden_size": 1024,
+        "initializer_range": 0.02,
+        "layer_types": [
+          "conv",
+          "conv",
+          "attn_moe",
+          "conv",
+          "conv",
+          "attn_moe",
+          "conv",
+          "attn_moe",
+          "conv",
+          "attn_moe"
+        ],
+        "load_balance_coef": 0.05,
+        "m_replicas": 2,
+        "max_position_embeddings": 512,
+        "mlp_dropout": 0.0,
+        "model_type": "modernbert_hash_moe_hybrid",
+        "norm_eps": 1e-05,
+        "num_attention_heads": 16,
+        "num_hidden_layers": 10,
+        "num_key_value_heads": 8,
+        "num_routed_experts": 8,
+        "num_shared_experts": 1,
+        "pad_token_id": 0,
+        "rope_theta": 160000.0,
+        "router_z_coef": 0.005,
+        "sep_token_id": 3,
+        "tie_word_embeddings": false,
+        "top_k": 2,
+        "transformers_version": "5.3.0",
+        "vocab_size": 30002
+      },
+      "dense_config": {
+        "in_features": 1024,
+        "out_features": 128,
+        "bias": false,
+        "activation_function": "torch.nn.modules.linear.Identity",
+        "use_residual": false
+      }
+    }
+  },
+  "reference_runtime": {
+    "sentence_transformers": {
+      "version": "6.1.0",
+      "repository": "https://github.com/huggingface/sentence-transformers",
+      "revision": "b0bf39968ba461c34b29372144794eff1be06f6d",
+      "files": {
+        "sentence_transformers/base/modules/transformer.py": {
+          "sha256": "58f677db3412bf24539c1320014f0b8a405b329801c34418d3854624309243ed",
+          "bytes": 139358
+        },
+        "sentence_transformers/multi_vector_encoder/model.py": {
+          "sha256": "e7bd2c7692ceff913fec878b0cb4e7b5d7a8a979b3721593381484a130757f67",
+          "bytes": 81195
+        },
+        "sentence_transformers/multi_vector_encoder/modules/multi_vector_mask.py": {
+          "sha256": "26beab94501aa243e3ae1a2981595fc80ce9f39ee7eef70b1deea01f83140414",
+          "bytes": 8568
+        },
+        "sentence_transformers/base/model.py": {
+          "sha256": "46016f24f1bf6923ef32d704ba6bea7e1b06d1687b82372a3b34a6a94f040899",
+          "bytes": 83473
+        }
+      }
+    },
+    "transformers": "5.3.0",
+    "torch": "2.8.0",
+    "numpy": "2.2.6"
+  },
+  "gates": {
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "maxsim_max_absolute": 0.002,
+    "ids_and_masks_exact": true,
+    "ordinary_observer_bit_exact": true
+  },
+  "pending": [
+    "original hosted capture",
+    "author GGUF actual tensor inventory and independently instrumented graph capture",
+    "native CPU F32 engine",
+    "CoreML tensor inventory and parity",
+    "public role-aware adapters",
+    "representative retrieval quality"
+  ]
+}

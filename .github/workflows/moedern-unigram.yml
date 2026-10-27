@@ -1,0 +1,79 @@
+name: MoEdern1.5M original-first Unigram frontend
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-unigram-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tokenizer-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONNOUSERSITE: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      OMP_NUM_THREADS: '2'
+      PIP_CONFIG_FILE: /dev/null
+      PIP_USER: '0'
+      PIP_NO_CACHE_DIR: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stdlib controls and authenticated sources; no model payload
+        run: |
+          python tests/test_moedern_unigram.py -v
+          python tools/ci-heavy/moedern_unigram.py --phase prepare --output "$RUNNER_TEMP/moedern-unigram"
+      - name: Isolated original Rust tokenizer0.22.2 only
+        env:
+          CRISPEMBED_MOEDERN_TOKENIZER_VENV: ${{ runner.temp }}/moedern-tokenizer-venv
+        run: |
+          python -m venv --without-pip "$CRISPEMBED_MOEDERN_TOKENIZER_VENV"
+          python - <<'PY'
+          import os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools/moedern-unigram')
+          from contract import WHEEL, WHEEL_SHA
+          Path(os.environ['CRISPEMBED_MOEDERN_TOKENIZER_VENV'], 'requirements.txt').write_text(WHEEL + ' --hash=sha256:' + WHEEL_SHA + '\n')
+          PY
+          python -m pip --python "$CRISPEMBED_MOEDERN_TOKENIZER_VENV/bin/python" install --no-deps --only-binary=:all: --require-hashes --disable-pip-version-check -r "$CRISPEMBED_MOEDERN_TOKENIZER_VENV/requirements.txt"
+      - name: Original ten streams first; then owned gold, exact normalization data and F64 units
+        env:
+          CRISPEMBED_MOEDERN_TOKENIZER_VENV: ${{ runner.temp }}/moedern-tokenizer-venv
+        run: '"$CRISPEMBED_MOEDERN_TOKENIZER_VENV/bin/python" tools/ci-heavy/moedern_unigram.py --phase original --output "$RUNNER_TEMP/moedern-unigram"'
+      - name: Standalone tokenizer-only build after original barrier
+        run: |
+          git submodule update --init --depth 1 ggml
+          cmake -S tests/moedern-unigram -B "$RUNNER_TEMP/moedern-unigram-build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/moedern-unigram-build" -j2
+      - name: Exact native IDs and three masks; diagnostics, negatives, ownership and recovery
+        run: python tools/ci-heavy/moedern_unigram.py --phase native --output "$RUNNER_TEMP/moedern-unigram" --build "$RUNNER_TEMP/moedern-unigram-build"
+      - name: Preserve small reports and every rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-unigram-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-unigram/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve tokenizer-only component, source, gold and compiled probes remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-unigram-metadata-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/moedern-unigram/
+            ${{ runner.temp }}/moedern-unigram-build/moedern-text-plain-probe
+            ${{ runner.temp }}/moedern-unigram-build/moedern-text-tested-probe
+            ${{ runner.temp }}/moedern-unigram-build/libmoedern-text-plain.a
+            ${{ runner.temp }}/moedern-unigram-build/libmoedern-text-tested.a
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn

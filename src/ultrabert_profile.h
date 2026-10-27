@@ -1,6 +1,8 @@
 #pragma once
+#include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "tokenizer.h"
+#include <algorithm>
 #include <map>
 #include <stdexcept>
 #include <string>
@@ -102,9 +104,12 @@ inline bool tokenize(const BPETokenizer & raw, const std::string & text, std::ve
     // Fail explicitly rather than encoding a reserved surface as ordinary pieces.
     if (text.size() > max_text_bytes || text.find("<|") != std::string::npos) return false;
     const auto encoded = raw.encode(text);
-    if (encoded.ids.size() >= max_tokens) return false;
+    // Explicit, UltraBERT-only single-text right truncation. Keep BOS attended
+    // and count it inside the 512-token bound, matching the original wrapper.
+    if (encoded.ids.size() >= max_tokens && !core_env::on("CRISPEMBED_ULTRABERT_TRUNCATE")) return false;
     ids.push_back(0);
-    ids.insert(ids.end(), encoded.ids.begin(), encoded.ids.end());
+    const size_t count = std::min(encoded.ids.size(), size_t(max_tokens - 1));
+    ids.insert(ids.end(), encoded.ids.begin(), encoded.ids.begin() + count);
     return true;
 }
 } // namespace ultrabert_profile

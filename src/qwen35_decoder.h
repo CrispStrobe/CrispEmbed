@@ -40,4 +40,8 @@ bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vecto
 bool decoder_cpu(const decoder_weights & weights, const attention_config & config, const float * hidden,
                  const float * positions, int batch, int tokens, int threads, const decoder_cache * previous,
                  decoder_outputs & output, converted_weight_cache * weights_cache = nullptr);
+// Internal full-prefill primitive for a dedicated, strictly validated Josev
+// F32 profile. No generation, previous cache or vocabulary projection.
+bool decoder_hidden_cpu(const decoder_weights & weights, const attention_config & config, const float * hidden,
+                        const float * positions, int tokens, int threads, decoder_outputs & output);
 } // namespace qwen35_ocr

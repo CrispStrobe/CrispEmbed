@@ -1,0 +1,46 @@
+{
+  "schema": "crispembed-josev-environment-metadata-audit-v1",
+  "qualification": false,
+  "state": "complete-metadata-only",
+  "framework_imported": false,
+  "wheel_sdist_model_tokenizer_payloads_downloaded_locally": false,
+  "packages": 57,
+  "roots": {
+    "torch": "2.13.0",
+    "transformers": "5.5.0",
+    "tokenizers": "0.22.2",
+    "safetensors": "0.8.0",
+    "huggingface-hub": "1.33.0",
+    "numpy": "2.2.6",
+    "accelerate": "1.13.0",
+    "torchvision": "0.28.0",
+    "pillow": "12.3.0"
+  },
+  "wheel_published_bytes": 2790174915,
+  "lock_sha256": "7d16c6560da3a9bf24f1c19f3581f1a5911b87360c0cef6484b92f8810aa8be8",
+  "requirements_sha256": "89fa4670a29ccfe3df867660715884c0b76e45103c44bcbb54ba825a2eccc489",
+  "resolver": {
+    "pip": "25.3",
+    "binary_only": true,
+    "dry_run": true,
+    "ignore_installed": true,
+    "network_requests": 114,
+    "metadata_bytes": 22296775,
+    "payload_urls_permitted": false
+  },
+  "primary_audit": {
+    "network_requests": 114,
+    "metadata_bytes": 2214995,
+    "all_selected_wheel_urls_hashes_sizes_match": true,
+    "all_selected_pep658_dependencies_match_pip": true,
+    "all_linux_cp313_extra_dependencies_match_release_json": true,
+    "aggregate_string_differences": [
+      "cuda-toolkit",
+      "psutil"
+    ]
+  },
+  "limits": [
+    "Metadata-only complete dependency resolution; no installed ABI/CUDA/original-model execution result.",
+    "All prior GPU attempts stopped before checkpoint/tokenizer access; initial failures remain unchanged."
+  ]
+}

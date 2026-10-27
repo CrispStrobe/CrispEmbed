@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import re
 import resource
+import sys
 import time
 
 MODEL_SHA = '450211ad27ce19e2f30651e69fdc77ea76a13b66e29e045858286024864bf4a4'
@@ -22,6 +23,13 @@ MANIFEST_SHA = 'a2edabf8937298a52f072c41917bf4a8022ecaee9a50d00dcc1d52934b711109
 
 def sha(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def peak_rss_record(raw, platform_name):
+    """getrusage reports bytes on macOS, KiB on Linux; retain original units."""
+    return dict(peak_rss_raw=raw,
+                peak_rss_raw_unit='bytes' if platform_name == 'darwin' else 'KiB',
+                peak_rss_mib=raw/(1024**2 if platform_name == 'darwin' else 1024))
 
 
 def compare_release_records(released, candidate):
@@ -120,7 +128,7 @@ def main():
                 log_sha256=sha(log)))
             save()
     finally:lib.crispembed_math_ocr_free(ctx)
-    report.update(completed=True,peak_rss_mib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss/1024)
+    report.update(completed=True,**peak_rss_record(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,sys.platform))
     save();print('Completed',len(report['cases']),'bounded actual-library cases')
 
 

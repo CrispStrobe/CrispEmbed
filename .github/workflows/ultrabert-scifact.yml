@@ -1,0 +1,184 @@
+name: UltraBERT full SciFact original-first audit
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        options: [prepare, panel]
+        default: prepare
+        description: Prepare and measure first; panel requires independently reviewed receipt
+      prepare_run:
+        type: string
+        default: ''
+        description: Successful immutable preparation workflow run
+      prepare_sha:
+        type: string
+        default: ''
+        description: Independently reviewed preparation receipt SHA256
+  workflow_call:
+    inputs:
+      phase:
+        type: string
+        default: prepare
+      prepare_run:
+        type: string
+        default: ''
+      prepare_sha:
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-scifact-${{ github.ref }}
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  OMP_NUM_THREADS: '2'
+  OPENBLAS_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+  PREPARE_RUN: ${{ inputs.prepare_run }}
+  PREPARE_SHA: ${{ inputs.prepare_sha }}
+jobs:
+  prepare:
+    if: inputs.phase == 'prepare'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/scifact-setup
+      - run: python tools/ci-heavy/ultrabert_scifact.py --phase prepare
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-prepare-reports-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/out/*.json
+            ${{ runner.temp }}/out/*.txt
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-prepared-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/payload/
+          retention-days: 90
+  original:
+    if: inputs.phase == 'panel'
+    name: original-shard-${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/scifact-setup
+      - name: Frozen original shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python tools/ci-heavy/ultrabert_scifact.py --phase original --prepare-run "$PREPARE_RUN" --prepare-sha "$PREPARE_SHA" --shard "$SHARD"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-original-${{ matrix.shard }}
+          path: ${{ runner.temp }}/out/payload/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-original-report-${{ matrix.shard }}
+          path: |
+            ${{ runner.temp }}/out/*.json
+            ${{ runner.temp }}/out/*.txt
+          retention-days: 90
+  freeze-original:
+    needs: original
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/scifact-setup
+        with:
+          model: 'false'
+      - run: python tools/ci-heavy/ultrabert_scifact.py --phase freeze-original --prepare-run "$PREPARE_RUN" --prepare-sha "$PREPARE_SHA"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-original-freeze
+          path: ${{ runner.temp }}/out/payload/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-original-freeze-report
+          path: ${{ runner.temp }}/out/*.json
+          retention-days: 90
+  native:
+    needs: freeze-original
+    name: native-shard-${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/scifact-setup
+        with:
+          build: 'true'
+      - name: Native shard only after complete original freeze
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: python tools/ci-heavy/ultrabert_scifact.py --phase native --prepare-run "$PREPARE_RUN" --prepare-sha "$PREPARE_SHA" --panel-run "$GITHUB_RUN_ID" --shard "$SHARD"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-native-${{ matrix.shard }}
+          path: ${{ runner.temp }}/out/payload/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-native-report-${{ matrix.shard }}
+          path: |
+            ${{ runner.temp }}/out/*.json
+            ${{ runner.temp }}/out/*.log
+            ${{ runner.temp }}/out/*.txt
+          retention-days: 90
+  aggregate:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: ./.github/actions/scifact-setup
+        with:
+          model: 'false'
+      - run: python -m pip install numpy==2.2.6
+      - run: python tools/ci-heavy/ultrabert_scifact.py --phase aggregate --prepare-run "$PREPARE_RUN" --prepare-sha "$PREPARE_SHA" --panel-run "$GITHUB_RUN_ID"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-quality-reports-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/*.json
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-scifact-quality-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/payload/
+          retention-days: 90

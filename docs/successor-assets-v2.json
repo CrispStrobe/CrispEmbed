@@ -1,0 +1,275 @@
+{
+  "schema": "crispembed-successor-assets-v2",
+  "protocol_version": 2,
+  "supersedes_nothing": "v1 successor-asset files, guards and receipts stay unchanged and authoritative for their runs",
+  "final_base": "7abd9bc6b40489a80f4c10bcd2cd77fdf2bf13bc",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "final_declaration": "docs/ovisocr2-final-integrated-v2.json",
+  "final_source_validation": {
+    "status": "pending",
+    "run": null,
+    "note": "tools/ovisocr2_final_integrated_v2.py validation run not yet reviewed; v2 producers may run but no result qualifies until it is positive"
+  },
+  "qualification": false,
+  "release_alias_allowed": false,
+  "app_upgrade_allowed": false,
+  "producers": {
+    "native": {
+      "workflow": ".github/workflows/release.yml",
+      "inputs": {
+        "cpu_only": "true"
+      },
+      "archives": [
+        {
+          "archive": "crispembed-android-arm64-v8a.tar.gz"
+        },
+        {
+          "archive": "crispembed-android-armeabi-v7a.tar.gz"
+        },
+        {
+          "archive": "crispembed-ios-arm64.tar.gz"
+        },
+        {
+          "archive": "crispembed-linux-arm64.tar.gz"
+        },
+        {
+          "archive": "crispembed-linux-x86_64.tar.gz"
+        },
+        {
+          "archive": "crispembed-macos-arm64.tar.gz"
+        },
+        {
+          "archive": "crispembed-windows-x86_64.zip"
+        }
+      ]
+    },
+    "wasm": {
+      "workflow": ".github/workflows/release-wasm.yml",
+      "inputs": {
+        "tag": ""
+      },
+      "archives": [
+        {
+          "archive": "crispembed-embed-wasm.tar.gz"
+        },
+        {
+          "archive": "crispembed-ocr-wasm.tar.gz"
+        }
+      ]
+    },
+    "identity": "both runs successful workflow_dispatch at one head_sha whose runtime closure (v1 RUNTIME_PATHS) equals final_base"
+  },
+  "consumers": {
+    "workflow": ".github/workflows/successor-assets.yml",
+    "reused_unchanged": true,
+    "v1_jobs": [
+      "apple-released",
+      "bindings",
+      "desktop",
+      "mobile-link",
+      "review",
+      "wasm",
+      "workflow_call",
+      "workflow_dispatch"
+    ],
+    "v1_artifacts": [
+      "android-arm64-v8a",
+      "android-armeabi-v7a",
+      "ios-arm64",
+      "linux-arm64",
+      "linux-x86_64",
+      "macos-arm64",
+      "windows-x86_64"
+    ],
+    "surfaces": [
+      "apple-png-mac50",
+      "browser",
+      "c",
+      "cache",
+      "cli",
+      "dart",
+      "mobile-cross-link",
+      "python",
+      "rust",
+      "windows-utf8-path"
+    ]
+  },
+  "expectations": {
+    "c": {
+      "expected": "pass",
+      "reason": "Linux/macOS desktop C ABI passed before; Windows compiled ABI never reached in the initial run"
+    },
+    "python": {
+      "expected": "pass",
+      "reason": "desktop Python vectors; Windows still unproven"
+    },
+    "cli": {
+      "expected": "pass",
+      "reason": "fresh/offline CLI passed on all desktops in the initial run"
+    },
+    "cache": {
+      "expected": "pass",
+      "reason": "fresh-cache and offline reuse passed in the initial run"
+    },
+    "rust": {
+      "expected": "unproven",
+      "reason": "Linux prebuilt only; no final-source receipt yet"
+    },
+    "dart": {
+      "expected": "unproven",
+      "reason": "Linux prebuilt only; no final-source receipt yet"
+    },
+    "windows-utf8-path": {
+      "expected": "unproven",
+      "reason": "consumer UTF-8 reader and cl /utf-8 repair (5702b1ae) is in final base; native src has no wide-path (_wfopen/MultiByteToWideChar) conversion and v1 consumers do not exercise non-ASCII paths, so only the header-decoding failure is expected fixed"
+    },
+    "apple-png-mac50": {
+      "expected": "pass",
+      "reason": "Mac-only 40399358753 positive for compatibility with released 0.17.12; 7/50 quality unchanged and not a quality claim"
+    },
+    "mobile-cross-link": {
+      "expected": "unproven",
+      "reason": "Android/iOS link repairs need a fresh final-source receipt"
+    },
+    "browser": {
+      "expected": "fail",
+      "may_claim": false,
+      "reason": "WASM full-panel parity negative (successor-wasm-initial, wasm-rounding-ab-v1 8/10 rejected); rounding candidate stays default-off"
+    }
+  },
+  "carried_evidence": {
+    "tests/results/packaging/development-cpu-baseline.json": {
+      "verdict": "context",
+      "read_only": true,
+      "blob": "1e7869393a5b3a6498f9159029ec3005a815a48b"
+    },
+    "tests/results/packaging/posformer-corpus-initial-rejection.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "42a9e53cdcef3d7127833ab84164902a360e46d1"
+    },
+    "tests/results/packaging/posformer-corpus-proof.json": {
+      "verdict": "positive",
+      "read_only": true,
+      "blob": "80abda7ec3bafbac2a8199c1e37ad9db05b750e8"
+    },
+    "tests/results/packaging/successor-apple-initial.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "2db619dac8c15e563ac1c9690834efb908b6d5b3"
+    },
+    "tests/results/packaging/successor-desktop-vector-review-repair.json": {
+      "verdict": "context",
+      "read_only": true,
+      "blob": "0946ea94f2703ab5a7547de4465c39d5914d47ec"
+    },
+    "tests/results/packaging/successor-mac-only.json": {
+      "verdict": "positive",
+      "read_only": true,
+      "blob": "a750141a9b41edace2229e699206d90284353d0d"
+    },
+    "tests/results/packaging/successor-wasm-initial.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "2634cfb09f286a0165ad36ed2b3b8a11439dff86"
+    },
+    "tests/results/packaging/successor-wasm-source-trace.json": {
+      "verdict": "context",
+      "read_only": true,
+      "blob": "446c6b1db9e0d4a07b5df85662a0050df72200b8"
+    },
+    "tests/results/packaging/successor-windows-reader-initial.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "ed7089895fb18d91a4f64e9887420b400f936094"
+    },
+    "tests/results/packaging/wasm-layer3-attribution-v1.json": {
+      "verdict": "context",
+      "read_only": true,
+      "blob": "8f4ae0233e1927d1d0f1bb6e7e9346d74db2251f"
+    },
+    "tests/results/packaging/wasm-layer3-initial-observer-rejection.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "5835e934a276e14de5c72bbf8dfb4c5d43281e6a"
+    },
+    "tests/results/packaging/wasm-rounding-ab-v1.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "2f9e6849096f78947df7728fc5103ec547e47d01"
+    },
+    "tests/results/packaging/wasm-rounding-initial-controls-rejection.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "a1a3c116b8afe2ec7045894f5f37f72e1581fd4f"
+    },
+    "tests/results/packaging/wasm-rounding-operators.json": {
+      "verdict": "positive",
+      "read_only": true,
+      "blob": "d5e9531b7856c3ff254bd76231f3d926c2ccb337"
+    },
+    "tests/results/packaging/wheel-matrix.json": {
+      "verdict": "positive",
+      "read_only": true,
+      "blob": "0fe551a5afe7c3d63faa366aa52c502e3300d845"
+    },
+    "tests/results/packaging/wheel-target-initial.json": {
+      "verdict": "negative",
+      "read_only": true,
+      "blob": "3f7f5dc0ea99939d3d8d2b9b1de62b4bead67806"
+    }
+  },
+  "v1_read_only_blobs": {
+    ".github/workflows/successor-apple-only.yml": "e4c174c9f2d294496a8cb8e4c13766956d83f7b4",
+    ".github/workflows/successor-assets.yml": "e7ccd5c6d35e1b410caec2fe01231bf18bba47fc",
+    ".github/workflows/successor-bindings.yml": "242255a8fde66925841713268aa70f28e276447a",
+    ".github/workflows/successor-posformer-corpus.yml": "d2376f283f75c4a4bb6d003080e53e804c5df712",
+    ".github/workflows/successor-wasm-rounding-controls.yml": "a2fd45c090e536d76ae44e861a4f1e5decaa5d9d",
+    ".github/workflows/successor-wasm-trace.yml": "65fa4513cbf2f02b9b79c0716edf05d8aa67dc0f",
+    "docs/successor-apple-only.md": "3ed8d3cdbe9840d56ec25a152c6c59fc93f23cc3",
+    "docs/successor-asset-qualification.md": "f0b7a3bf40fe05f35b05726263016df578c6eac7",
+    "docs/successor-wasm-trace.md": "91070a073d440d02bc32a25d766e6b4d459fe13c",
+    "tests/results/packaging/development-cpu-baseline.json": "1e7869393a5b3a6498f9159029ec3005a815a48b",
+    "tests/results/packaging/posformer-corpus-initial-rejection.json": "42a9e53cdcef3d7127833ab84164902a360e46d1",
+    "tests/results/packaging/posformer-corpus-proof.json": "80abda7ec3bafbac2a8199c1e37ad9db05b750e8",
+    "tests/results/packaging/successor-apple-initial.json": "2db619dac8c15e563ac1c9690834efb908b6d5b3",
+    "tests/results/packaging/successor-desktop-vector-review-repair.json": "0946ea94f2703ab5a7547de4465c39d5914d47ec",
+    "tests/results/packaging/successor-mac-only.json": "a750141a9b41edace2229e699206d90284353d0d",
+    "tests/results/packaging/successor-wasm-initial.json": "2634cfb09f286a0165ad36ed2b3b8a11439dff86",
+    "tests/results/packaging/successor-wasm-source-trace.json": "446c6b1db9e0d4a07b5df85662a0050df72200b8",
+    "tests/results/packaging/successor-windows-reader-initial.json": "ed7089895fb18d91a4f64e9887420b400f936094",
+    "tests/results/packaging/wasm-layer3-attribution-v1.json": "8f4ae0233e1927d1d0f1bb6e7e9346d74db2251f",
+    "tests/results/packaging/wasm-layer3-initial-observer-rejection.json": "5835e934a276e14de5c72bbf8dfb4c5d43281e6a",
+    "tests/results/packaging/wasm-rounding-ab-v1.json": "2f9e6849096f78947df7728fc5103ec547e47d01",
+    "tests/results/packaging/wasm-rounding-initial-controls-rejection.json": "a1a3c116b8afe2ec7045894f5f37f72e1581fd4f",
+    "tests/results/packaging/wasm-rounding-operators.json": "d5e9531b7856c3ff254bd76231f3d926c2ccb337",
+    "tests/results/packaging/wheel-matrix.json": "0fe551a5afe7c3d63faa366aa52c502e3300d845",
+    "tests/results/packaging/wheel-target-initial.json": "3f7f5dc0ea99939d3d8d2b9b1de62b4bead67806",
+    "tests/successor_bindings.dart": "23346bf3c18978730db379d7c871ca16d68f3cd0",
+    "tests/successor_bindings.rs": "1feb9a6d4e3f489307b3f71659d2aa2561e9fbba",
+    "tests/successor_capi_consumer.c": "585300ed7c0d03363c24dbcac87c293fbb4fce35",
+    "tests/test_successor_apple_only.py": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+    "tests/test_successor_asset_manifest.py": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+    "tests/test_successor_posformer_corpus.py": "adebf3ca27d3cd89d44a040bd087706758ef5d63",
+    "tests/test_successor_review.py": "475bb4efea15a6957d7dc0cdc6b49fcbdc981b3a",
+    "tests/test_successor_wasm.cjs": "54e1fde512264b8367ce0dc4b16ef4ba38107eca",
+    "tests/test_successor_wasm_trace.cjs": "390d83bc9a9b2d829e0f33762a5d5122644b6b8a",
+    "tests/test_successor_wasm_trace_contract.py": "57bdc0d2101e2e72443b273a17e98ddae05fa897",
+    "tests/test_successor_wasm_trace_diff.cpp": "7471283dac9f0859ddac3e5fce9aa017f5d05d92",
+    "tools/ci-heavy/successor_assets.py": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+    "tools/ci-heavy/successor_bindings.py": "654d98e77ef7144004dc34fefc78fea7417afa08",
+    "tools/ci-heavy/successor_mobile.py": "87a9379145d76e7d5c681bd76e51479a51fb56b9",
+    "tools/ci-heavy/successor_posformer.py": "49ee260f0fbf885a257dbe62ac098b13a8170600",
+    "tools/ci-heavy/successor_posformer_corpus.py": "a241de556b38c4d20ab8fa077276620776f605a6",
+    "tools/ci-heavy/successor_review.py": "49c8774983c3d5ae2f8850a8385b88df61800e8e",
+    "tools/ci-heavy/successor_wasm_trace.py": "b2d9261a93ab64a5b35bf3cbb59824283c9d8e8a",
+    "tools/successor_asset_manifest.py": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+    "tools/successor_wasm_trace_contract.py": "a16cbc3763d6d473fd2225ef9ceac570aeb23ed3"
+  },
+  "dispatch": {
+    "mode": "standalone workflow_dispatch",
+    "workflow": ".github/workflows/successor-assets-v2.yml",
+    "reason": "ovisocr2-metadata.yml already totals 50 reusable-workflow references (nested and duplicates); adding a phase would exceed 50 and reusing the successor-consumer phase would require editing v1 files",
+    "requires": "workflow file present on the default branch (main) before it can be dispatched"
+  }
+}

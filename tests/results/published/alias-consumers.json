@@ -1,0 +1,22 @@
+{
+  "schema": "crispembed-published-alias-consumers-receipt-v1",
+  "run": 40481558569,
+  "source_branch": "integration/final-candidate-20261027",
+  "aliases": {
+    "moedern-1.5m": {
+      "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF/resolve/6f3b35143b3afdeeded7f77216b1ec072028fd5f/moedern-1.5m-text-f32.gguf",
+      "sha256": "0e2b8773abd8c78a5825280f9a73cb808b88d56f0675a8e4bb7f0509f5b6cc51",
+      "check": "frozen q-de query: original first 12 IDs and 32x128 selected vectors"
+    },
+    "josev2b-systemone": {
+      "url": "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/resolve/bffe62522f826b4c33f2e731d5b870ced5150a17/josev2b-systemone-f32.gguf",
+      "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+      "check": "first frozen raw request: complete typed response equals the original"
+    }
+  },
+  "fresh_cache_sha_verified": true,
+  "online_offline_byte_identical": true,
+  "platform": "Linux x64 CPU (GitHub Actions)",
+  "limits": "CLI consumer on Linux only; other platforms covered by the successor-asset v2 matrix.",
+  "release_qualified": false
+}

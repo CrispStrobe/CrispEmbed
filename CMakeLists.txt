@@ -335,6 +335,19 @@ list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_embed.cpp src/gemma_decision.cpp src/ultrabert_embed.cpp)
+list(APPEND CRISPEMBED_SOURCES src/josev2b_backbone.cpp src/josev2b_head.cpp
+    src/josev2b_text_frontend.cpp src/josev2b_answer_serializer.cpp
+    src/josev2b_composed.cpp src/systemone_api.cpp)
+# Match the audited scalar operation order in the composed Josev CPU profile.
+# Qwen helpers are shared with OCR; final OCR qualification must use this source.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_property(SOURCE src/josev2b_backbone.cpp src/josev2b_head.cpp
+        src/josev2b_text_frontend.cpp src/josev2b_answer_serializer.cpp
+        src/josev2b_composed.cpp src/qwen35_decoder.cpp src/qwen35_attention.cpp
+        src/qwen35_linear.cpp src/qwen35_delta.cpp src/qwen35_norm.cpp
+        src/qwen35_positions.cpp src/qwen35_profile.cpp
+        APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
+endif()
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
@@ -345,6 +358,7 @@ list(APPEND CRISPEMBED_SOURCES src/hat_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/dat_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/deepseek_ocr2.cpp)
 list(APPEND CRISPEMBED_SOURCES src/unlimited_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/unlimited_ocr2_dash.cpp)
 list(APPEND CRISPEMBED_SOURCES src/restormer.cpp)
 list(APPEND CRISPEMBED_SOURCES src/granite_vision_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/smoldocling_ocr.cpp)
@@ -381,6 +395,13 @@ list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
+# MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
+set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp
+    src/moedern_text.cpp src/moedern_text_api.cpp)
+list(APPEND CRISPEMBED_SOURCES ${CRISPEMBED_MOEDERN_SOURCES})
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(${CRISPEMBED_MOEDERN_SOURCES} PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+endif()
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 # Version string for output provenance (hOCR ocr-system, ALTO
@@ -1107,7 +1128,7 @@ if(CRISPEMBED_BUILD_SHARED)
         OUTPUT_NAME   crispembed
         VERSION       ${PROJECT_VERSION}
         SOVERSION     ${CRISPEMBED_SOVERSION}
-        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h"
+        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h;${CMAKE_CURRENT_SOURCE_DIR}/src/moedern_text_api.h"
         # Sibling-resolved RPATH so a release tarball is self-contained.
         # Build-tree RPATH preserved so dev iteration works without install.
         BUILD_WITH_INSTALL_RPATH FALSE
@@ -1220,8 +1241,23 @@ target_link_libraries(test-gemma-decision-activation PRIVATE crispembed)
 add_executable(test-qwen35-attention tests/test_qwen35_attention.cpp)
 target_link_libraries(test-qwen35-attention PRIVATE crispembed-qwen35-delta crispembed-core)
 
+add_executable(test-qwen35-position tests/test_qwen35_position.cpp)
+target_link_libraries(test-qwen35-position PRIVATE crispembed-qwen35-delta crispembed-core)
+
 add_executable(test-ovisocr2-ffn tests/test_ovisocr2_ffn.cpp)
-target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta crispembed-core)
+# The test textually includes src/qwen35_decoder.cpp to reach internals, so it must
+# not also link the library's copy of that object (duplicate definitions once any
+# other library object references a decoder symbol, e.g. decoder_hidden_cpu).
+add_library(crispembed-qwen35-delta-nodecoder STATIC EXCLUDE_FROM_ALL src/qwen35_delta.cpp src/qwen35_linear.cpp
+    src/qwen35_attention.cpp src/qwen35_vision.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp
+    src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
+target_include_directories(crispembed-qwen35-delta-nodecoder PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(crispembed-qwen35-delta-nodecoder PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)
+get_target_property(_q35_opts crispembed-qwen35-delta COMPILE_OPTIONS)
+if(_q35_opts)
+    target_compile_options(crispembed-qwen35-delta-nodecoder PRIVATE ${_q35_opts})
+endif()
+target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta-nodecoder crispembed-core)
 
 add_executable(test-qwen35-decoder tests/test_qwen35_decoder.cpp)
 target_link_libraries(test-qwen35-decoder PRIVATE crispembed-qwen35-delta crispembed-core)
@@ -1265,6 +1301,9 @@ endif() # NOT iOS: standalone validation executables
 add_executable(test-ultrabert-api tests/test_ultrabert_api.cpp)
 target_link_libraries(test-ultrabert-api PRIVATE crispembed)
 
+add_executable(test-ultrabert-truncation tests/test_ultrabert_truncation.cpp src/tokenizer_bpe.cpp)
+target_link_libraries(test-ultrabert-truncation PRIVATE crispembed-core)
+
 add_executable(test-ultrabert-profile tests/test_ultrabert_profile.cpp src/tokenizer_bpe.cpp)
 target_link_libraries(test-ultrabert-profile PRIVATE crispembed-core)
 
@@ -1277,3 +1316,10 @@ target_link_libraries(test-ultrabert-rope PRIVATE crispembed-core ggml-cpu)
 # Test-only UltraBERT tokenizer profile; does not add production dispatch.
 add_executable(test-ultrabert-tokenizer tests/test_ultrabert_tokenizer.cpp src/tokenizer_bpe.cpp)
 target_link_libraries(test-ultrabert-tokenizer PRIVATE crispembed-core)
+
+# Test-only instrumentation uses the real root backend and CPU compiler flags.
+# The ordinary library and consumers never receive observer macros or sources.
+option(CRISPEMBED_SYSTEMONE_AUDIT "Build test-only SystemOne root-profile observers" OFF)
+if(CRISPEMBED_SYSTEMONE_AUDIT)
+    add_subdirectory(tests/systemone)
+endif()

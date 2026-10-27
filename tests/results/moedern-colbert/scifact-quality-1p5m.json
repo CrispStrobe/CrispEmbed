@@ -1,0 +1,28 @@
+{
+  "schema": "crispembed-moedern-scifact-quality-receipt-v1",
+  "run": 40483998529,
+  "source": "9b42290b52d02e5382004ca80c2ff0e31940991c",
+  "status": "quality evidence only; no gate",
+  "model": {
+    "alias": "moedern-1.5m",
+    "hub": "cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF@6f3b35143b3afdeeded7f77216b1ec072028fd5f",
+    "sha256": "0e2b8773abd8c78a5825280f9a73cb808b88d56f0675a8e4bb7f0509f5b6cc51",
+    "bytes": 7037952,
+    "fresh_cache": true,
+    "seconds": 0.8478682041168213,
+    "cache_members": [
+      "moedern-1.5m-text-f32.gguf"
+    ]
+  },
+  "metrics": {
+    "ndcg_at_10": 0.6973488924629391,
+    "mrr_at_10": 0.6663637566137566,
+    "recall_at_100": 0.911
+  },
+  "queries": 300,
+  "documents": 5183,
+  "protocol": "BEIR SciFact test (UltraBERT v2 data identities); document = title + \" \" + text; raw query/document text through the public role API; frontend truncates at 512 tokens; exact float32-dot/float64-sum MaxSim over selected vectors; ties by ascending document ID",
+  "report_sha256": "9caf27a960007f0ba32d07bb91c87e9576d9f5a761a4b0410d1cb06364dbff02",
+  "original_comparison": "none claimed: no frozen original-model SciFact ranking exists for this model",
+  "context": "Same frozen SciFact panel as UltraBERT native-v3 (NDCG@10 0.7667 there); not an apples-to-apples model comparison claim."
+}

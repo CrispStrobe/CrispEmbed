@@ -1,0 +1,165 @@
+name: Prepared Ovis final integrated validation v2
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAVY_OUT: ${{ github.workspace }}/.ci/final-proof
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -B tests/test_ovisocr2_final_integrated_v2.py -v
+      - name: Pending declaration and all small reviews before dependency initialization
+        run: python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase preflight --no-submodule-check
+      - name: Initialize only the exact reviewed source dependencies
+        run: git submodule update --init --recursive
+      - name: Full reviewed checkout proof
+        run: python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase preflight
+      - name: Portable CPU frozen-reference test binaries
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_NATIVE=OFF -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+          python scripts/check-cpu-baseline.py "$RUNNER_TEMP/build"
+          cmake --build "$RUNNER_TEMP/build" --target test-qwen35-decoder test-qwen35-vision test-qwen35-delta test-ovisocr2-context test-ovisocr2-quality-run test-ovisocr2-image-bounds -j2
+          python - <<'PY'
+          import hashlib,json,os,shutil
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP']);destination=root/'bin';destination.mkdir()
+          names=['test-qwen35-decoder','test-qwen35-vision','test-qwen35-delta','test-ovisocr2-context','test-ovisocr2-quality-run','test-ovisocr2-image-bounds']
+          for name in names:shutil.copy2(root/'build'/name,destination/name)
+          record={'source_commit':os.environ['GITHUB_SHA'],'protocol_sha256':hashlib.sha256(Path('docs/ovisocr2-final-integrated-v2.json').read_bytes()).hexdigest(),'portable_cpu_baseline_checked':True,'binary_sha256':{n:hashlib.sha256((destination/n).read_bytes()).hexdigest() for n in names}}
+          (destination/'binaries.json').write_text(json.dumps(record,indent=2)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ovis-final-integrated-v2-binaries-${{ github.run_id }}
+          path: ${{ runner.temp }}/bin/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovis-final-integrated-v2-source-${{ github.run_id }}
+          path: .ci/final-proof/
+          retention-days: 90
+  frozen:
+    needs: build
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        gate: [0, 1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ovis-final-integrated-v2-binaries-${{ github.run_id }}
+          path: ${{ runner.temp }}/bin/
+      - name: Task paths and source proof before dependencies/model transfer
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "AUDIT_BIN_DIR=$RUNNER_TEMP/bin"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase preflight --no-submodule-check
+          git submodule update --init --recursive
+          HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase preflight
+          python -m pip install --no-cache-dir numpy==2.2.6 pillow==12.1.0 gguf==0.19.0
+          python -m pip freeze > "$RUNNER_TEMP/out/environment.txt"
+      - run: python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase frozen --gate "${{ matrix.gate }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovis-final-integrated-v2-report-frozen-gate${{ matrix.gate }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovis-final-integrated-v2-raw-gate${{ matrix.gate }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/scratch/native-diff/
+          retention-days: 90
+  quality:
+    needs: [build, frozen]
+    # Finish the two frozen jobs first to cap total model parallelism at two.
+    # Still retain independent quality observations after a numerical rejection.
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        gate: [0, 1]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION: ${{ matrix.gate }}
+      CRISPEMBED_QWEN35_WEIGHT_CACHE: '0'
+      CRISPEMBED_QWEN35_PARALLEL_F16: '0'
+      CRISPEMBED_QWEN35_PRECISE_RMS: '0'
+      CRISPEMBED_QWEN35_IMATRIX: '0'
+      CRISPEMBED_QWEN35_PROFILE: '0'
+      CRISPEMBED_WASM_Q8_0_ROUND: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Explicit final contract before document/model access
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/scratch/hf"
+          } >> "$GITHUB_ENV"
+          HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase preflight --no-submodule-check
+          git submodule update --init --recursive
+          HEAVY_OUT="$RUNNER_TEMP/out" python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase preflight
+          HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" python tools/ci-heavy/ovisocr2_quality_run.py --phase f16 --original-run 40054043629 --prepare-documents
+      - name: Unchanged full first-F16 quality stack
+        run: |
+          python -m pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - run: python tools/ci-heavy/ovisocr2_quality_run.py --phase f16 --original-run 40054043629
+      - name: Eleven exact decoded cases and explicit selected-confidence policy
+        if: always()
+        run: python tools/ci-heavy/ovisocr2_final_integrated_v2.py --phase quality-check --gate "${{ matrix.gate }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ovis-final-integrated-v2-report-quality-gate${{ matrix.gate }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90

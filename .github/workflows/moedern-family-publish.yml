@@ -1,0 +1,49 @@
+name: MoEdern 27M/115M owner-approved publication
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        type: choice
+        options: ['27M', '115M']
+        required: true
+      source_ref:
+        description: 'Exact commit containing the family packer and the proof receipt'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: moedern-family-publish-${{ inputs.variant }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -q huggingface-hub==1.33.0 kaggle==2.2.2
+      - name: Frozen original + tokenizer from Kaggle, repack, proven SHA, upload, readback
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+          KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          VARIANT: ${{ inputs.variant }}
+        run: |
+          set -euo pipefail
+          slug=$(echo "$VARIANT" | tr 'A-Z' 'a-z')
+          mount="$RUNNER_TEMP/mount"; mkdir -p "$mount/original" "$mount/tokenizer"
+          python -m kaggle kernels output "$KAGGLE_ACCOUNT/crispembed-moedern-$slug-original" -p "$mount/original" --file-pattern 'moedern-original/(review/original.json|model-F32.gguf)' > /dev/null
+          python -m kaggle datasets download "$KAGGLE_ACCOUNT/moedern-unigram-component" -p "$mount/tokenizer" --unzip > /dev/null
+          python tools/ci-heavy/moedern_family_publish.py "$VARIANT" "$mount" "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-family-publication-${{ inputs.variant }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn

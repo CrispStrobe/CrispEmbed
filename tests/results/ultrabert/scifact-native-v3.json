@@ -1,0 +1,51 @@
+{
+  "schema": "crispembed-ultrabert-scifact-native-v3-receipt-v1",
+  "run": 40452077037,
+  "source": "d993038e34905d9c3e28933c29c5e6bc3a8e1a43",
+  "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+  "review_artifact": {
+    "id": 12720508971,
+    "name": "ultrabert-scifact-native-v3-quality-review",
+    "bytes": 10691
+  },
+  "report_sha256": "ef7983f6b7dff99e1d0f21a54bfffdef5b3b9b947a9bb79c99c66f458725d566",
+  "status": "passed bounded frozen SciFact gates",
+  "queries": 300,
+  "corpus": 5183,
+  "vector_comparisons": 10966,
+  "vector_failures": [],
+  "all5483_actual_ids_exact": true,
+  "quality": {
+    "original": {
+      "ndcg_at_10": 0.7667047800710401,
+      "mrr_at_10": 0.7290066137566137,
+      "recall_at_100": 0.975
+    },
+    "native": {
+      "ndcg_at_10": 0.7667047800710401,
+      "mrr_at_10": 0.7290066137566137,
+      "recall_at_100": 0.975
+    },
+    "top1_agreement": 1.0,
+    "passed": true,
+    "degradation": {
+      "ndcg_at_10": 0.0,
+      "mrr_at_10": 0.0,
+      "recall_at_100": 0.0
+    }
+  },
+  "limits": [
+    "Public pair API remains excluded",
+    "Owned32-row smoke unchanged",
+    "Historical183 F32/1294 F16 stage failures and strict replay failures remain",
+    "No model publication/default change/app upgrade/release qualification"
+  ],
+  "initial_failures": [
+    {
+      "run": 40444873884,
+      "reason": "loader could not resolve newly materialized GGML libraries before native inference"
+    }
+  ],
+  "independently_reviewed": true,
+  "release_qualified": false
+}

@@ -1,0 +1,102 @@
+{
+  "schema": "crispembed-josev2b-owned-text-v1",
+  "license": "CC0-1.0",
+  "description": "New authored schema/serialization smoke inputs; no external task-quality gold or measured results. Request order is significant.",
+  "cases": [
+    {
+      "id": "mixed-de",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Die Rechnung über 42 Euro ist bezahlt. Die Lieferung kommt morgen.",
+        "questions": {
+          "bezahlt": {
+            "type": "noul",
+            "instructions": "Ist die Rechnung bezahlt?"
+          },
+          "status": {
+            "type": "choice",
+            "instructions": "Welcher Status passt?",
+            "criteria": {
+              "z_offen": "Die Rechnung ist offen.",
+              "a_bezahlt": "Die Rechnung ist bezahlt."
+            }
+          },
+          "sicherheit": {
+            "type": "score",
+            "instructions": "Wie sicher ist die Lieferung heute?",
+            "criteria": [
+              "unwahrscheinlich",
+              "unklar",
+              "wahrscheinlich"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "null-and-options",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": null,
+        "questions": {
+          "Leerstand": {
+            "type": "choice",
+            "instructions": "",
+            "criteria": {
+              "β": null,
+              "a": {
+                "hinweis": "keine Angaben"
+              }
+            }
+          },
+          "bestätigt": {
+            "type": "noul",
+            "criteria": {
+              "true": "Es gibt eine ausdrückliche Bestätigung.",
+              "false": "Es fehlt eine Bestätigung."
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "json-unicode",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": {
+          "z": "  Straße\n東京 😀  ",
+          "a": {
+            "wert": 0,
+            "aktiv": false
+          }
+        },
+        "questions": {
+          "Stufe": {
+            "type": "score",
+            "instructions": {
+              "auftrag": "Ordne den Informationsgehalt ein."
+            },
+            "criteria": [
+              null,
+              "wenig",
+              "viel"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "state-only-clip",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. Eine Bestellung wurde bestätigt. ",
+        "questions": {
+          "Bestellung": {
+            "type": "noul",
+            "instructions": "Wurde eine Bestellung bestätigt?"
+          }
+        }
+      }
+    }
+  ]
+}

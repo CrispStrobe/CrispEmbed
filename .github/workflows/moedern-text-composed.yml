@@ -1,0 +1,57 @@
+name: MoEdern1.5M raw-text composition after reviewed tokenizer
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-text-composed-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  raw-text-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONNOUSERSITE: '1'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stdlib controls and pending dependency gate BEFORE any API or payload
+        run: |
+          python tests/test_moedern_text_composed.py -v
+          python tools/ci-heavy/moedern_text_composed.py --phase preflight --output "$RUNNER_TEMP/moedern-text" --scratch "$RUNNER_TEMP/moedern-text-scratch"
+      - name: Reviewed exact tokenizer, native-v2 and immutable old primary payloads
+        run: python tools/ci-heavy/moedern_text_composed.py --phase prepare --output "$RUNNER_TEMP/moedern-text" --scratch "$RUNNER_TEMP/moedern-text-scratch"
+      - name: Exact dependency and existing array tooling; no original framework
+        run: |
+          git submodule update --init --depth 1 ggml
+          python -m pip install numpy==2.2.6 gguf==0.17.1
+          python -m pip freeze > "$RUNNER_TEMP/moedern-text/review/environment.txt"
+      - name: Raw text through frontend and F32 engine; complete old vector/score targets
+        run: python tools/ci-heavy/moedern_text_composed.py --phase run --output "$RUNNER_TEMP/moedern-text" --scratch "$RUNNER_TEMP/moedern-text-scratch"
+      - name: Preserve small reports and every rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-text-composed-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-text/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve actual ordinary/test outputs, stage observations, Ref adapters and archives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-text-composed-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-text/raw/
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn

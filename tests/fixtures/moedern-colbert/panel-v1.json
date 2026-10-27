@@ -1,0 +1,74 @@
+{
+  "schema": "crispembed.moedern-colbert.owned-panel.v1",
+  "full_capture": [
+    "q-de",
+    "d-de"
+  ],
+  "cases": [
+    {
+      "id": "q-de",
+      "role": "query",
+      "text": "Wie funktioniert die Photosynthese?"
+    },
+    {
+      "id": "d-de",
+      "role": "document",
+      "text": "Pflanzen wandeln Licht, Wasser und Kohlendioxid in chemische Energie um."
+    },
+    {
+      "id": "q-empty",
+      "role": "query",
+      "text": ""
+    },
+    {
+      "id": "d-punctuation",
+      "role": "document",
+      "text": "! \",;: € $ 123.45 — (Test)"
+    },
+    {
+      "id": "q-markers",
+      "role": "query",
+      "text": "[Q] [D] [MASK] <unk>"
+    },
+    {
+      "id": "d-unicode",
+      "role": "document",
+      "text": "Äpfel, café, Straße, 東京, العربية und 🙂."
+    },
+    {
+      "id": "q-truncate",
+      "role": "query",
+      "text": "Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort "
+    },
+    {
+      "id": "d-truncate",
+      "role": "document",
+      "text": "Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort Wort "
+    },
+    {
+      "id": "d-one",
+      "role": "document",
+      "text": "x"
+    },
+    {
+      "id": "d-space",
+      "role": "document",
+      "text": " \t\n "
+    }
+  ],
+  "scope": "Owned tokenizer/mask/numerical controls; no representative retrieval-quality claim",
+  "score_pairs": [
+    [
+      "q-de",
+      "d-de"
+    ],
+    [
+      "q-empty",
+      "d-one"
+    ],
+    [
+      "q-markers",
+      "d-unicode"
+    ]
+  ]
+}

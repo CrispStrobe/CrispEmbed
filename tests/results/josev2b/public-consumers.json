@@ -1,0 +1,45 @@
+{
+  "schema": "crispembed-systemone-public-consumers-receipt-v1",
+  "run": 40463407332,
+  "source": "08671216ba4eeb5c0d5bac3b5321aca621601e62",
+  "review_artifact": "systemone-consumers-review-40463407332",
+  "hosted_report_sha256": "22ac3f4d675026ab5ed054de1d1b50c27dad8855e6e1735b8751711208b90a9b",
+  "packed_producer": {
+    "run": 40456235976,
+    "source": "9772c89660f9eb4a0220ef46f5354493c2970c08",
+    "model_sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+    "model_bytes": 7659180448
+  },
+  "root_profile": {
+    "llamafile": true,
+    "compared_stages": 227,
+    "failures": [],
+    "plain_observed_repeat_raw_equal": true
+  },
+  "consumers": {
+    "c": true,
+    "python": true,
+    "cli": true,
+    "http": true,
+    "rust": true,
+    "dart": true
+  },
+  "cases": 4,
+  "complete_typed_responses_exact": true,
+  "production_excludes_observers": true,
+  "initial_failures": [
+    {
+      "run": 40458027951,
+      "reason": "intended pending-pin rejection before payload access"
+    },
+    {
+      "run": 40459115346,
+      "reason": "unrooted packed asset member name; root build, observer exclusion and review receipt passed"
+    }
+  ],
+  "limits": "Four frozen batch1 text requests on Linux x64 CPU/F32. No registry, HF asset, release, quantization or task quality.",
+  "independently_reviewed": true,
+  "default_enabled": false,
+  "release_qualified": false,
+  "model_quality": false
+}

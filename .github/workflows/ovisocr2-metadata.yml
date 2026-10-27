@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [systemone-api-build, systemone-consumers, josev-publish, josev-packed-build, josev-composed, josev-composed-build, josev-wheel-metadata, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, final-integrated-v1, final-integrated-v2, successor-apple-only, moedern-original-1p5m, moedern-text-composed, moedern-unigram, moedern-native-v2, moedern-publish, moedern-public-consumers]
         default: metadata
       native_run_id:
         type: string
@@ -36,7 +36,7 @@ on:
         default: dev-hello
       candidate_run_id:
         type: string
-        description: 'Quant-raw only: independently reviewed complete quantized candidate run'
+        description: 'Quant-raw candidate run; successor-consumer frozen corpus proof run'
         default: '0'
       publish_precision:
         type: choice
@@ -146,17 +146,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-native14'
     needs: controls
     uses: ./.github/workflows/ovisocr3-native14.yml
-  ovisocr3-public-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public-diagnostic'
-    needs: controls
-    uses: ./.github/workflows/ovisocr3-public-surfaces.yml
-    with:
-      model_run_id: ${{ inputs.native_run_id }}
-      model_artifact_name: ${{ inputs.native_artifact_name }}
-      diagnostic_source_quality: true
-      lighton_run_id: '40046789339'
-      lighton_artifact_name: lightonocr3-format1-receipt-40046789339
-      lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
   ovisocr3-public:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public'
     needs: controls
@@ -183,6 +172,30 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-metadata'
     needs: controls
     uses: ./.github/workflows/ovisocr3-metadata.yml
+  position-quality:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'position-quality'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-position-quality.yml
+  position-replay:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'position-replay'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-position-replay.yml
+  position-probe:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'position-probe'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-position-probe.yml
+  attribution-2048:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'attribution-2048'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-2048-attribution.yml
+
+  moedern-original-1p5m:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-original-1p5m'
+    needs: controls
+    uses: ./.github/workflows/moedern-colbert-original.yml
+    with:
+      variant: '1.5M'
+      convert_after_original: true
   migan-native:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-native'
     needs: controls
@@ -202,10 +215,49 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'migan-reference'
     needs: controls
     uses: ./.github/workflows/migan-reference.yml
+  ultrabert-scifact:
+    if: github.event_name == 'workflow_dispatch' && startsWith(inputs.phase, 'ultrabert-scifact-')
+    needs: controls
+    uses: ./.github/workflows/ultrabert-scifact.yml
+    with:
+      phase: ${{ inputs.phase == 'ultrabert-scifact-panel' && 'panel' || 'prepare' }}
+      prepare_run: ${{ inputs.native_run_id }}
+      prepare_sha: ${{ inputs.native_artifact_name }}
   ultrabert-rope:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ultrabert-rope'
     needs: controls
     uses: ./.github/workflows/ultrabert-rope.yml
+  successor-wasm-rounding-controls:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-rounding-controls'
+    needs: controls
+    uses: ./.github/workflows/successor-wasm-rounding-controls.yml
+  successor-wasm-trace:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-wasm-trace'
+    needs: controls
+    uses: ./.github/workflows/successor-wasm-trace.yml
+  successor-apple-only:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-apple-only'
+    needs: controls
+    uses: ./.github/workflows/successor-apple-only.yml
+    with:
+      native_run: ${{ inputs.native_run_id }}
+      corpus_run: ${{ inputs.candidate_run_id }}
+  successor-corpus:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-corpus'
+    needs: controls
+    uses: ./.github/workflows/successor-posformer-corpus.yml
+  successor-consumer:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'successor-consumer'
+    needs: controls
+    uses: ./.github/workflows/successor-assets.yml
+    with:
+      native_run: ${{ inputs.native_run_id }}
+      wasm_run: ${{ inputs.original_run }}
+      corpus_run: ${{ inputs.candidate_run_id }}
+  final-integrated-v1:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'final-integrated-v1'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-final-integrated-v1.yml
   preserve-evidence:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'preserve-evidence'
     needs: controls
@@ -214,10 +266,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'first-ffn'
     needs: controls
     uses: ./.github/workflows/ovisocr2-ffn.yml
-  weight-cache:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'weight-cache'
-    needs: controls
-    uses: ./.github/workflows/ovisocr2-weight-cache.yml
   weight-cache-reanalysis:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'weight-cache-reanalysis'
     needs: controls
@@ -514,3 +562,61 @@ jobs:
     uses: ./.github/workflows/ovisocr2-native-replay.yml
     with:
       preset: ${{ inputs.vision_preset }}
+
+  josev-wheel-metadata:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-wheel-metadata'
+    needs: controls
+    uses: ./.github/workflows/josev2b-wheel-metadata.yml
+
+  josev-composed-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-composed-build'
+    uses: ./.github/workflows/josev2b-composed-build.yml
+
+  josev-composed:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-composed'
+    uses: ./.github/workflows/josev2b-composed.yml
+
+  josev-packed-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-packed-build'
+    uses: ./.github/workflows/josev2b-packed-build.yml
+
+  systemone-api-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'systemone-api-build'
+    uses: ./.github/workflows/systemone-api-build.yml
+
+  systemone-consumers:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'systemone-consumers'
+    uses: ./.github/workflows/systemone-consumers.yml
+
+  josev-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-publish'
+    uses: ./.github/workflows/josev-publish.yml
+    secrets:
+      HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+  moedern-native-v2:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-native-v2'
+    needs: controls
+    uses: ./.github/workflows/moedern-native-v2.yml
+
+  moedern-unigram:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-unigram'
+    uses: ./.github/workflows/moedern-unigram.yml
+
+  moedern-text-composed:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-text-composed'
+    uses: ./.github/workflows/moedern-text-composed.yml
+
+  moedern-public-consumers:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-public-consumers'
+    uses: ./.github/workflows/moedern-public-consumers.yml
+
+  moedern-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-publish'
+    uses: ./.github/workflows/moedern-publish.yml
+    secrets:
+      HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+
+  final-integrated-v2:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'final-integrated-v2'
+    needs: controls
+    uses: ./.github/workflows/ovisocr2-final-integrated-v2.yml

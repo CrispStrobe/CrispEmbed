@@ -6,6 +6,8 @@
 // LLM decoder: ggml graph with KV cache, MoE layers use CPU-scalar expert dispatch.
 
 #include "unlimited_ocr.h"
+#include "unlimited_ocr2_dash.h"
+#include <functional>
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
 #include "core/ram_guard.h"
@@ -76,6 +78,8 @@ struct llm_hparams {
     std::vector<int32_t> prompt_instr_ids = { 34030, 76466, 16 };
     int no_repeat_ngram = 35;
     int ngram_window = 128;
+    // Unlimited-OCR-2: DASH block-sparse decoder (GGUF unlimited_ocr.variant == 2).
+    int variant = 1;
 };
 
 // ---------------------------------------------------------------------------
@@ -112,6 +116,8 @@ struct llm_layer_w {
     moe_expert_w shared_experts[2];
     // Single shared expert (combined)
     ggml_tensor *shared_gate_w{}, *shared_up_w{}, *shared_down_w{};
+    // Unlimited-OCR-2 DASH router (variant 2 only).
+    ggml_tensor *dash_head_cls{}, *dash_q_w{}, *dash_k_w{}, *dash_q_norm{}, *dash_k_norm{};
     // Experts stacked as [in, out, n_exp] for ggml_mul_mat_id (Metal MoE path).
     ggml_tensor *gate_exps{}, *up_exps{}, *down_exps{};
 };
@@ -486,6 +492,7 @@ static bool load_hparams(uocr_ctx & ctx, const char * path) {
     l.eos_token_id = u32("unlimited_ocr.eos_token_id", l.eos_token_id);
     l.no_repeat_ngram = (int)u32("unlimited_ocr.no_repeat_ngram", (uint32_t)l.no_repeat_ngram);
     l.ngram_window = (int)u32("unlimited_ocr.ngram_window", (uint32_t)l.ngram_window);
+    l.variant = (int)u32("unlimited_ocr.variant", 1);
     for (auto [key, dst] :
          { std::pair<const char *, std::vector<int32_t> *>{ "unlimited_ocr.prompt_prefix_ids", &l.prompt_prefix_ids },
            { "unlimited_ocr.prompt_instr_ids", &l.prompt_instr_ids } }) {
@@ -639,6 +646,17 @@ static bool load_tensors(uocr_ctx & ctx, const char * path) {
         ly.k_w = LF("attn_k.weight");
         ly.v_w = LF("attn_v.weight");
         ly.o_w = LF("attn_o.weight");
+        if (lhp.variant == 2) {
+            ly.dash_head_cls = LF("attn_dash.head_cls");
+            ly.dash_q_w = LF("attn_dash.q_proj.weight");
+            ly.dash_k_w = LF("attn_dash.k_proj.weight");
+            ly.dash_q_norm = LF("attn_dash.q_norm.weight");
+            ly.dash_k_norm = LF("attn_dash.k_norm.weight");
+            if (!ly.dash_head_cls || !ly.dash_q_w || !ly.dash_k_w || !ly.dash_q_norm || !ly.dash_k_norm) {
+                fprintf(stderr, "unlimited_ocr: Unlimited-OCR-2 DASH router tensors missing in layer %d\n", i);
+                return false;
+            }
+        }
 
         if (i == 0) {
             // Dense FFN
@@ -664,7 +682,7 @@ static bool load_tensors(uocr_ctx & ctx, const char * path) {
                 // parent's: to_f32's fast path gates on ->buffer (null on a fresh view) and would
                 // otherwise deref a raw device pointer (Metal segfault); ggml_backend_tensor_get
                 // then reads via view_src->buffer.
-                if (core_env::on("UOCR_MOE_CPU")) {
+                if (core_env::on("UOCR_MOE_CPU") || lhp.variant == 2) { // v2 decoder runs MoE on CPU
                     if (!ctx.moe_view_ctx) {
                         ggml_init_params vp = {
                             (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
@@ -2083,6 +2101,168 @@ static void moe_ffn_cpu(uocr_ctx & ctx, int li, float * hidden, int T) {
 }
 
 // ---------------------------------------------------------------------------
+// Unlimited-OCR-2 decoder (variant 2, gate CRISPEMBED_UNLIMITED_OCR2): page2d rope,
+// DASH block routing and block-sparse attention, greedy decode with the page-count
+// guard. Plain CPU/F32 reference path; v1 decoding is untouched.
+// ---------------------------------------------------------------------------
+struct uocr2_layer_f32 {
+    std::vector<float> in_ln, q, k, v, o, rq, rk, rqn, rkn, head_cls, post_ln, fg, fu, fd;
+};
+
+static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, const std::vector<int32_t> & prompt_ids,
+                               int max_new, std::vector<int32_t> & out_ids, std::vector<float> & out_confs) {
+    auto & lhp = ctx.m.lhp;
+    const int D = lhp.hidden, NH = lhp.heads, NKV = lhp.kv_heads, HDm = lhp.head_dim, L = lhp.n_layers;
+    const int S = (int)prompt_ids.size(), V = lhp.vocab_size, group = NH / NKV;
+    if (HDm != uocr2::HD) {
+        fprintf(stderr, "unlimited_ocr2: head_dim %d unsupported\n", HDm);
+        return false;
+    }
+    std::vector<uocr2_layer_f32> W(L);
+    for (int li = 0; li < L; li++) {
+        auto & ly = ctx.m.llm_layers[li];
+        auto & w = W[li];
+        w.in_ln = to_f32(ly.in_ln_w);
+        w.q = to_f32(ly.q_w), w.k = to_f32(ly.k_w), w.v = to_f32(ly.v_w), w.o = to_f32(ly.o_w);
+        w.rq = to_f32(ly.dash_q_w), w.rk = to_f32(ly.dash_k_w);
+        w.rqn = to_f32(ly.dash_q_norm), w.rkn = to_f32(ly.dash_k_norm), w.head_cls = to_f32(ly.dash_head_cls);
+        if (li == 0) {
+            w.post_ln = to_f32(ly.post_ln_w);
+            w.fg = to_f32(ly.ffn_gate_w), w.fu = to_f32(ly.ffn_up_w), w.fd = to_f32(ly.ffn_down_w);
+        }
+    }
+    const auto norm_w = to_f32(ctx.m.output_norm_w);
+    const auto head_w = to_f32(ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens);
+
+    uocr2::coords co = uocr2::prefill_coords(prompt_ids);
+    if (!co.page_mode) {
+        fprintf(stderr, "unlimited_ocr2: prompt without <PAGE>/image (1D YaRN fallback) is not implemented\n");
+        return false;
+    }
+    uocr2::pages pg = uocr2::prefill_pages(prompt_ids);
+    // Per layer: rotated K and V for all positions, [pos][NKV*HD]; router keys.
+    std::vector<std::vector<float>> kc(L), vc(L);
+    std::vector<uocr2::router_keys> rks(L);
+
+    auto cand_prefill = [&](int i) {
+        const int nb = (S + uocr2::BLOCK - 1) / uocr2::BLOCK;
+        std::vector<uint8_t> c(nb, 0);
+        const int q = pg.q_page[i];
+        if (q < 0) return std::vector<uint8_t>(nb, 1);
+        for (int t = 0; t < S; ++t)
+            if (pg.img_page[t] == q) c[t / uocr2::BLOCK] = 1;
+        return c;
+    };
+    auto cand_decode = [&](int nblk) {
+        const int qp = pg.decode_qp();
+        std::vector<uint8_t> c(nblk, 0);
+        bool any = false;
+        for (int b = 0; b < std::min(nblk, pg.n_prefill_blocks); ++b)
+            any |= (c[b] = pg.bmin[b] >= 0 && pg.bmin[b] <= qp && qp <= pg.bmax[b]);
+        if (qp < 0 || !any) std::fill(c.begin(), c.end(), 1);
+        return c;
+    };
+
+    // One decoder pass over T new rows starting at absolute position p0. Rows' rope
+    // coordinates and candidate rows are supplied by the caller.
+    auto forward = [&](std::vector<float> & h, int T, int p0, const std::vector<int> & tok_c,
+                       const std::vector<int> & page_c, const std::function<std::vector<uint8_t>(int, int)> & cand) {
+        std::vector<float> xn((size_t)T * D), q((size_t)T * NH * HDm), k((size_t)T * NKV * HDm),
+            v((size_t)T * NKV * HDm), iq((size_t)T * HDm), ikr((size_t)T * HDm), att((size_t)T * NH * HDm),
+            o((size_t)T * D), cs(128), sn(128);
+        for (int li = 0; li < L; li++) {
+            auto & w = W[li];
+            for (int t = 0; t < T; t++) {
+                rmsnorm_cpu(h.data() + (size_t)t * D, xn.data() + (size_t)t * D, D, w.in_ln.data(), lhp.rms_eps);
+                const float * x = xn.data() + (size_t)t * D;
+                linear_cpu(x, q.data() + (size_t)t * NH * HDm, D, NH * HDm, w.q.data(), nullptr);
+                linear_cpu(x, k.data() + (size_t)t * NKV * HDm, D, NKV * HDm, w.k.data(), nullptr);
+                linear_cpu(x, v.data() + (size_t)t * NKV * HDm, D, NKV * HDm, w.v.data(), nullptr);
+                linear_cpu(x, iq.data() + (size_t)t * HDm, D, HDm, w.rq.data(), nullptr);
+                linear_cpu(x, ikr.data() + (size_t)t * HDm, D, HDm, w.rk.data(), nullptr);
+                uocr2::gemma_rms(iq.data() + (size_t)t * HDm, HDm, w.rqn.data());
+                uocr2::gemma_rms(ikr.data() + (size_t)t * HDm, HDm, w.rkn.data());
+                uocr2::rope_table(tok_c[t], page_c[t], cs.data(), sn.data());
+                for (int hh = 0; hh < NH; hh++) uocr2::apply_rope(q.data() + ((size_t)t * NH + hh) * HDm, cs.data(), sn.data());
+                for (int hh = 0; hh < NKV; hh++) uocr2::apply_rope(k.data() + ((size_t)t * NKV + hh) * HDm, cs.data(), sn.data());
+                uocr2::apply_rope(iq.data() + (size_t)t * HDm, cs.data(), sn.data());
+                uocr2::apply_rope(ikr.data() + (size_t)t * HDm, cs.data(), sn.data());
+            }
+            kc[li].insert(kc[li].end(), k.begin(), k.begin() + (size_t)T * NKV * HDm);
+            vc[li].insert(vc[li].end(), v.begin(), v.begin() + (size_t)T * NKV * HDm);
+            for (int t = 0; t < T; t++) rks[li].append(ikr.data() + (size_t)t * HDm, w.head_cls.data());
+            const int nblk = (rks[li].rows() + uocr2::BLOCK - 1) / uocr2::BLOCK;
+            for (int t = 0; t < T; t++) {
+                const int pos = p0 + t;
+                const auto sel = uocr2::route(rks[li], iq.data() + (size_t)t * HDm, w.head_cls.data(), pos, cand(t, nblk));
+                for (int hh = 0; hh < NH; hh++) {
+                    const int kvh = hh / group;
+                    uocr2::attend(q.data() + ((size_t)t * NH + hh) * HDm, kc[li].data() + (size_t)kvh * HDm,
+                                  vc[li].data() + (size_t)kvh * HDm, NKV * HDm, pos, sel,
+                                  att.data() + ((size_t)t * NH + hh) * HDm);
+                }
+                linear_cpu(att.data() + (size_t)t * NH * HDm, o.data() + (size_t)t * D, NH * HDm, D, w.o.data(), nullptr);
+                for (int d = 0; d < D; d++) h[(size_t)t * D + d] += o[(size_t)t * D + d];
+            }
+            if (li == 0) {
+                std::vector<float> nrm(D), ff(D);
+                for (int t = 0; t < T; t++) {
+                    rmsnorm_cpu(h.data() + (size_t)t * D, nrm.data(), D, w.post_ln.data(), lhp.rms_eps);
+                    swiglu_ffn_cpu(nrm.data(), ff.data(), D, lhp.dense_intermediate, w.fg.data(), w.fu.data(), w.fd.data());
+                    for (int d = 0; d < D; d++) h[(size_t)t * D + d] += ff[d];
+                }
+            } else {
+                moe_ffn_cpu(ctx, li, h.data(), T); // post-norm, routed + shared experts, residual (as v1)
+            }
+        }
+    };
+
+    std::vector<float> h(prompt_embeds, prompt_embeds + (size_t)S * D);
+    forward(h, S, 0, co.tok, co.page, [&](int t, int) { return cand_prefill(t); });
+
+    std::vector<float> last(h.end() - D, h.end()), xn(D), logits(V);
+    const int expected_pages = (int)std::count(prompt_ids.begin(), prompt_ids.end(), uocr2::PAGE);
+    int marker_cum = 0, page_len = 0;
+    out_ids.clear();
+    out_confs.clear();
+    for (int step = 0; step < max_new; step++) {
+        rmsnorm_cpu(last.data(), xn.data(), D, norm_w.data(), lhp.rms_eps);
+        linear_cpu(xn.data(), logits.data(), D, V, head_w.data(), nullptr);
+        const float NEG = -std::numeric_limits<float>::infinity();
+        const int eos = lhp.eos_token_id;
+        if (marker_cum > expected_pages) { // page-count guard (spec §5)
+            for (int i = 0; i < V; i++) if (i != eos) logits[i] = NEG;
+        } else if (page_len >= 20000) {
+            const int keep = marker_cum < expected_pages ? uocr2::PAGE : eos;
+            for (int i = 0; i < V; i++) if (i != keep) logits[i] = NEG;
+        } else if (marker_cum < expected_pages) {
+            logits[eos] = NEG;
+        }
+        const int nxt = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        float mx = logits[nxt], se = 0;
+        for (float l : logits) if (std::isfinite(l)) se += std::exp(l - mx);
+        if (nxt == eos) break;
+        out_ids.push_back(nxt);
+        out_confs.push_back(1.0f / se);
+        if (nxt == uocr2::PAGE) { marker_cum++; page_len = 0; } else page_len++;
+        const int pos = S + (int)out_ids.size() - 1;
+        if (pos + 1 >= 131072) break;
+        co.advance(nxt);
+        pg.advance(nxt);
+        std::vector<float> e(D);
+        ggml_tensor * emb_t = ctx.m.embed_tokens;
+        const size_t rb = ggml_row_size(emb_t->type, D);
+        std::vector<uint8_t> raw(rb);
+        ggml_backend_tensor_get(emb_t, raw.data(), (size_t)nxt * rb, rb);
+        if (emb_t->type == GGML_TYPE_F32) memcpy(e.data(), raw.data(), (size_t)D * sizeof(float));
+        else ggml_get_type_traits(emb_t->type)->to_float(raw.data(), e.data(), D);
+        forward(e, 1, pos, { co.cur_tok }, { co.cur_page }, [&](int, int nblk) { return cand_decode(nblk); });
+        last = e;
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------------------
 // Fused multi-layer decode graph (UOCR_OPT_FUSED_DECODE)
 // Builds all 12 LLM layers in one ggml graph, eliminating 11 graph builds per step.
 // ---------------------------------------------------------------------------
@@ -3260,7 +3440,19 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     int max_new = 1024;
     if (const char * mn = getenv("UOCR_MAX_NEW")) max_new = atoi(mn);
     if (ctx->max_tokens > 0) max_new = ctx->max_tokens;
-    if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new, gen_ids, gen_confs, prompt_ids)) {
+    bool decoded = false;
+    if (mdl.lhp.variant == 2) {
+        // Unlimited-OCR-2 must not silently run v1 attention: its own gate is required.
+        if (!core_env::on("CRISPEMBED_UNLIMITED_OCR2")) {
+            fprintf(stderr, "unlimited_ocr: Unlimited-OCR-2 model requires CRISPEMBED_UNLIMITED_OCR2=1\n");
+            if (out_len) *out_len = 0;
+            return "";
+        }
+        decoded = run_llm_decoder_v2(ctx->inner, prompt_embeds.data(), prompt_ids, max_new, gen_ids, gen_confs);
+    } else {
+        decoded = run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new, gen_ids, gen_confs, prompt_ids);
+    }
+    if (!decoded) {
         fprintf(stderr, "unlimited_ocr: LLM decode failed\n");
         if (out_len) *out_len = 0;
         return "";
