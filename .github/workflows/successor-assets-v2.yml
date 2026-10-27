@@ -56,7 +56,9 @@ jobs:
           start=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           find_run() {
             for _ in $(seq 1 30); do
-              id=$(gh run list --workflow "$1" --event workflow_dispatch --commit "$GITHUB_SHA" \
+              # Branch + start time, not commit: the branch head may move while this runs.
+              # The runtime-closure equality is enforced by check_producer_run afterwards.
+              id=$(gh run list --workflow "$1" --event workflow_dispatch --branch "$GITHUB_REF_NAME" \
                    --json databaseId,createdAt --jq "[.[]|select(.createdAt>=\"$start\")][0].databaseId // empty")
               [ -n "$id" ] && { echo "$id"; return; }
               sleep 20
