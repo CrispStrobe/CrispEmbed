@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [systemone-api-build, systemone-consumers, josev-publish, josev-packed-build, josev-composed, josev-composed-build, josev-wheel-metadata, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, final-integrated-v1, final-integrated-v2, successor-apple-only, moedern-original-1p5m, moedern-text-composed, moedern-unigram, moedern-native-v2, moedern-publish, moedern-public-consumers]
+        options: [systemone-api-build, systemone-consumers, josev-publish, josev-packed-build, josev-composed, josev-composed-build, josev-wheel-metadata, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, final-integrated-v1, final-integrated-v2, successor-apple-only, moedern-original-1p5m, moedern-text-composed, moedern-unigram, moedern-native-v2, moedern-publish, moedern-public-consumers]
         default: metadata
       native_run_id:
         type: string
@@ -146,17 +146,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-native14'
     needs: controls
     uses: ./.github/workflows/ovisocr3-native14.yml
-  ovisocr3-public-diagnostic:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public-diagnostic'
-    needs: controls
-    uses: ./.github/workflows/ovisocr3-public-surfaces.yml
-    with:
-      model_run_id: ${{ inputs.native_run_id }}
-      model_artifact_name: ${{ inputs.native_artifact_name }}
-      diagnostic_source_quality: true
-      lighton_run_id: '40046789339'
-      lighton_artifact_name: lightonocr3-format1-receipt-40046789339
-      lighton_filename: lightonocr-3-0.8b-f16-experimental.gguf
   ovisocr3-public:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ovisocr3-public'
     needs: controls
@@ -277,10 +266,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'first-ffn'
     needs: controls
     uses: ./.github/workflows/ovisocr2-ffn.yml
-  weight-cache:
-    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'weight-cache'
-    needs: controls
-    uses: ./.github/workflows/ovisocr2-weight-cache.yml
   weight-cache-reanalysis:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'weight-cache-reanalysis'
     needs: controls
