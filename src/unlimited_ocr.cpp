@@ -35,6 +35,11 @@
 // Hyperparameters
 // ---------------------------------------------------------------------------
 
+// Internal types/helpers have internal linkage: deepseek_ocr2.cpp and unlimited_ocr.cpp both
+// define same-named structs with different layouts (llm_layer_w, model_weights, ...), an ODR
+// violation that corrupts vector instantiations across TUs.
+namespace {
+
 struct sam_hparams {
     int depth = 12, hidden = 768, heads = 12, head_dim = 64;
     int patch_size = 16, image_size = 1024, window_size = 14;
@@ -2812,6 +2817,8 @@ static std::string decode_tokens(const uocr_ctx & ctx, const int32_t * ids, int 
 // ---------------------------------------------------------------------------
 // C ABI wrappers
 // ---------------------------------------------------------------------------
+
+} // namespace (internal engine types and helpers)
 
 struct unlimited_ocr_context {
     uocr_ctx inner;
