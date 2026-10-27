@@ -764,7 +764,10 @@ continue on their frozen branches. Do not alter those producer sources.
   Qwen3.5-2B2048/6144 hidden-only prefill profile, preserve the Ovis1024/3584
   guard, then joint head with exact original serialization/order/calibration.
   Add public surfaces/hash-pinned aliases only after strict stage/logit/answer
-  and negative-input checks. Representative licensed decision quality, media,
+  and negative-input checks. Follow the [public API boundary analysis](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity):
+  existing Gemma component scores use768-vectors and a different kind enum;
+  SystemOne requires model/answers/usage semantics, ordered schema rendering
+  and Python-compatible answer rounding. Preserve both public contracts. Representative licensed decision quality, media,
   long context, batching, BF16 and quantization remain separate original-first
   gates. No large weight/framework/build/inference work on the shared host.
 

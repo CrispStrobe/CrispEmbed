@@ -332,3 +332,44 @@ It validates and preserves the complete lock before installation, checks isolate
 prefixes, then verifies exact installed metadata and actual loaded module versions
 before the unchanged CUDA/source barriers and original worker. This is prepared
 source only; no fourth GPU attempt is submitted by this change.
+
+## Public API integration boundaries after numerical parity
+
+The existing decision surface is Gemma-specific in several material ways:
+`crispembed_decision_scores` and Python `decision_scores` accept separate
+normalized768-dimensional vectors and kinds choice0/score1/noul2. Josev instead
+uses joint2048-dimensional backbone token rows plus semantic spans, with kinds
+noul0/choice1/score2. Its field decoder scores questions jointly. Do not adapt
+these differences by relabeling dimensions or reusing the Gemma kind enum.
+
+The existing `crispembed_decide_json` contract accepts state/questions/workflow
+and returns a flat per-question result. The official Josev `systemone` requires
+a string model identifier and returns `{model,answers,usage}`, including rounded
+choice probabilities, score legend/expectation and noul probability. Python
+`decide` currently omits the model field. A dedicated SystemOne request entry
+point, capability query and matching C/Python/CLI/Rust/Dart/HTTP wrappers can
+preserve both contracts; settle their exact public names after composed parity.
+Keep the Gemma scoring entry point scoped to its documented model and reject
+unsupported component calls explicitly.
+
+The ordered `Value.fields` parser in `src/core/decision_schema.h` is a potential
+syntax primitive, but its Gemma rendering and kind/criteria handling are not the
+Josev serializer. Preserve question insertion order, lexical choice encoding
+order, original criterion order for tied answer selection, compact sorted-key
+JSON for non-string semantic values, and state-only truncation. Verify native
+UTF-8 serialization/token IDs/spans against the actual original input freeze.
+Do not use an ordinary map for the insertion-ordered question sequence.
+
+Match Python's four-decimal answer rounding, including exact half cases such
+as0.03125→0.0312; ordinary `std::round` uses a different tie rule. Retain F32
+softmax probabilities as reference values before formatting and compare decoded
+answers separately from numeric stage budgets. Add schema/order/tie/rounding,
+missing-model, oversized-schema, media-rejection and unsupported-component
+controls across the real public surfaces. No public API work or answer parity
+is established by this source analysis.
+
+The backbone component must expose all unpooled final hidden rows for the
+explicit2048/6144 profile. Preserve the existing1024/3584 profile guard; avoid
+unused vocabulary projection or token generation in the new hidden-only route.
+Freeze actual original positions/masks and compare the earliest differing
+backbone/head stage before composing typed outputs.
