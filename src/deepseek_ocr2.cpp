@@ -45,6 +45,11 @@ static bool ds_env_on(const char * name) {
 // Hyperparameters
 // ---------------------------------------------------------------------------
 
+// Internal types/helpers have internal linkage: deepseek_ocr2.cpp and unlimited_ocr.cpp both
+// define same-named structs with different layouts (llm_layer_w, model_weights, ...), an ODR
+// violation that corrupts vector instantiations across TUs.
+namespace {
+
 struct sam_hparams {
     int depth = 12, hidden = 768, heads = 12, head_dim = 64;
     int patch_size = 16, image_size = 1024, window_size = 14;
@@ -2693,6 +2698,8 @@ static std::string decode_tokens(const ds_ocr2_ctx & ctx, const int32_t * ids, i
 // C ABI wrappers
 // ---------------------------------------------------------------------------
 
+} // namespace
+
 struct deepseek_ocr2_context {
     ds_ocr2_ctx inner;
     std::string result;
@@ -2810,6 +2817,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     return c;
 }
 
+namespace {
 static void free_ds_kv_cache(ds_ocr2_ctx & c) {
     if (c.kvc.buf) {
         ggml_backend_buffer_free(c.kvc.buf);
@@ -2865,6 +2873,7 @@ static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
             kt == GGML_TYPE_F16 ? "f16" : "f32", (float)bytes / 1024 / 1024);
     return true;
 }
+} // namespace
 
 void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (!ctx) return;
