@@ -86,13 +86,25 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
         require(core_env::on("CRISPEMBED_MOEDERN_TEXT_FRONTEND"), "MoEdern text frontend gate is OFF");
         require(!packed || core_env::on("CRISPEMBED_MOEDERN_PACKED"), "MoEdern packed gate is OFF");
         require(path && *path, "empty tokenizer component path");
-        if (packed && !moedern_packed::file_bounds(path, error)) return false;
+        // Family profiles (27M/115M) are considered only behind the default-off
+        // CRISPEMBED_MOEDERN_FAMILY gate; otherwise the 1.5M rules are unchanged.
+        const moedern_packed::family_pin * family = nullptr;
+        if (packed && core_env::on("CRISPEMBED_MOEDERN_FAMILY")) {
+            std::string ignored;
+            for (const auto & pin : moedern_packed::family_pins())
+                if (moedern_packed::file_bounds(path, ignored, pin.bounds)) family = &pin;
+        }
+        if (packed && !family && !moedern_packed::file_bounds(path, error)) return false;
         std::ifstream file(path, std::ios::binary | std::ios::ate);
-        require(file && file.tellg() > 0 && file.tellg() <= 16 * 1024 * 1024, "bounded tokenizer component required");
+        require(file && file.tellg() > 0 &&
+                    uint64_t(file.tellg()) <= (family ? family->bounds.max_file_bytes : uint64_t(16) * 1024 * 1024),
+                "bounded tokenizer component required");
         const gguf_init_params params = { true, nullptr };
         std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(path, params), gguf_free);
         require(bool(meta), "tokenizer metadata unavailable");
-        if (packed) {
+        if (family) {
+            if (!moedern_packed::family_metadata_valid(meta.get(), *family, error)) return false;
+        } else if (packed) {
             if (!moedern_packed::metadata_valid(meta.get(), error)) return false;
         } else
             require(gguf_get_n_tensors(meta.get()) == 0, "metadata-only tokenizer component required");
@@ -176,6 +188,7 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
         }
         result.unknown_score_ = minimum - 10.0;
         result.enabled_ = true;
+        if (family) result.family_revision_ = family->revision;
         *this = std::move(result);
         return true;
     } catch (const std::exception & e) {

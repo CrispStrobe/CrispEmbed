@@ -1,5 +1,6 @@
 #pragma once
-// New, bounded MoEdern1.5M self-contained F32 profile. All historical loaders
+// Bounded self-contained F32 packed profiles: MoEdern1.5M (default) and the
+// gated 27M/115M family profiles. All historical loaders
 // retain their original architecture/count rules. No inference math here.
 #include "gguf.h"
 #include <algorithm>
@@ -10,17 +11,45 @@
 #include <string>
 #include <vector>
 namespace moedern_packed {
-inline bool file_bounds(const char * path, std::string & error) {
+// Per-profile structural bounds. The default is the unchanged 1.5M profile; the
+// family profiles (27M/115M) are only reachable behind CRISPEMBED_MOEDERN_FAMILY.
+struct limits {
+    uint64_t max_file_bytes, tensors, parameters;
+    const char * file_message;
+};
+inline const limits & one_five_limits() {
+    static const limits l = { uint64_t(16) * 1024 * 1024, 32, 1484448, "packed file exceeds16MiB" };
+    return l;
+}
+struct family_pin {
+    const char * variant, * revision, * model_sha256, * original_report_sha256;
+    limits bounds;
+};
+// Model pins are the frozen-original F32 conversions (tests/results/moedern-colbert).
+inline const std::vector<family_pin> & family_pins() {
+    static const std::vector<family_pin> pins = {
+        { "27M", "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+          "ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9",
+          "00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3",
+          { uint64_t(128) * 1024 * 1024, 32, 27124000, "packed file exceeds128MiB" } },
+        { "115M", "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+          "2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e",
+          "01c8a0e4886eae107103845847cb5d4675752b91a987e23ad26e7a1e98e44af6",
+          { uint64_t(512) * 1024 * 1024, 94, 114696576, "packed file exceeds512MiB" } },
+    };
+    return pins;
+}
+inline bool file_bounds(const char * path, std::string & error, const limits & bound = one_five_limits()) {
     try {
         if (!path) throw std::runtime_error("null packed path");
         struct reader {
             std::ifstream file;
             uint64_t size = 0, at = 0;
             std::vector<unsigned char> data;
-            explicit reader(const char * path) : file(path, std::ios::binary | std::ios::ate) {
+            explicit reader(const char * path, const limits & bound) : file(path, std::ios::binary | std::ios::ate) {
                 if (!file || file.tellg() <= 0) throw std::runtime_error("packed file unavailable");
                 size = uint64_t(file.tellg());
-                if (size > uint64_t(16) * 1024 * 1024) throw std::runtime_error("packed file exceeds16MiB");
+                if (size > bound.max_file_bytes) throw std::runtime_error(bound.file_message);
                 file.seekg(0);
             }
             void ensure(uint64_t n) {
@@ -73,9 +102,10 @@ inline bool file_bounds(const char * path, std::string & error) {
                 } else
                     skip(count * sizes[element]);
             }
-        } r(path);
-        if (r.integer(4) != 0x46554747 || r.integer(4) != 3 || r.integer(8) != 32)
-            throw std::runtime_error("packed GGUFv3/32 tensors required");
+        } r(path, bound);
+        if (r.integer(4) != 0x46554747 || r.integer(4) != 3 || r.integer(8) != bound.tensors)
+            throw std::runtime_error(bound.tensors == 32 ? "packed GGUFv3/32 tensors required"
+                                                         : "packed GGUFv3/profile tensor count required");
         const uint64_t count = r.integer(8);
         if (count > 128) throw std::runtime_error("packed metadata count exceeds128");
         std::set<std::string> keys;
@@ -92,7 +122,7 @@ inline bool file_bounds(const char * path, std::string & error) {
         std::set<std::string> names;
         std::vector<std::pair<uint64_t, uint64_t>> ranges;
         uint64_t total = 0;
-        for (int i = 0; i < 32; ++i) {
+        for (uint64_t i = 0; i < bound.tensors; ++i) {
             const auto name = r.string();
             if (name.empty() || name.size() > 256 || name.find('\0') != std::string::npos || !names.insert(name).second)
                 throw std::runtime_error("invalid/duplicate packed tensor name");
@@ -112,7 +142,7 @@ inline bool file_bounds(const char * path, std::string & error) {
             ranges.emplace_back(offset, offset + bytes);
             total += bytes;
         }
-        if (total != uint64_t(1484448) * 4) throw std::runtime_error("packed parameter inventory differs");
+        if (total != bound.parameters * 4) throw std::runtime_error("packed parameter inventory differs");
         const auto start = (r.at + 31) / 32 * 32;
         const auto padding = start - r.at;
         r.ensure(padding);
@@ -158,6 +188,28 @@ inline bool metadata_valid(const gguf_context * g, std::string & error) {
         !text("moedern.packed.composed_report_sha256",
               "98af43c6780bbd11b1ec9ec4f26c7b2e3a2348507072408408bf726b2e89482e")) {
         error = "MoEdern packed source/profile differs";
+        return false;
+    }
+    return true;
+}
+// Family (27M/115M) packed profile; never accepts the 1.5M revision, which keeps
+// metadata_valid above.
+inline bool family_metadata_valid(const gguf_context * g, const family_pin & pin, std::string & error) {
+    auto text = [&](const char * key, const char * expected) {
+        const auto at = gguf_find_key(g, key);
+        return at >= 0 && gguf_get_kv_type(g, at) == GGUF_TYPE_STRING &&
+               std::strcmp(gguf_get_val_str(g, at), expected) == 0;
+    };
+    if (!g || gguf_get_n_tensors(g) != int64_t(pin.bounds.tensors) ||
+        !text("general.architecture", "modernbert_hash_moe_v10") || !text("general.license", "apache-2.0") ||
+        !text("modernbert_hash_moe_v10.source_revision", pin.revision) ||
+        !text("moedern.packed.format", "crispembed-moedern-family-f32-v1") ||
+        !text("moedern.packed.variant", pin.variant) ||
+        !text("moedern.packed.tokenizer_architecture", "moedern_unigram_tokenizer") ||
+        !text("moedern.packed.model_sha256", pin.model_sha256) ||
+        !text("moedern.packed.tokenizer_sha256", "3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1") ||
+        !text("moedern.packed.original_sha256", pin.original_report_sha256)) {
+        error = "MoEdern family packed source/profile differs";
         return false;
     }
     return true;

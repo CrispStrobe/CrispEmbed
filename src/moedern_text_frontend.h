@@ -18,6 +18,9 @@ public:
     bool load_packed(const char * packed_gguf, std::string & error);
     bool encode(const std::string & text, role task, text_tokens & output, std::string & error) const;
     bool enabled() const { return enabled_; }
+    // Source revision of a packed family (27M/115M) model; empty for 1.5M and
+    // for every load made while CRISPEMBED_MOEDERN_FAMILY is off.
+    const std::string & family_revision() const { return family_revision_; }
 #ifdef CRISPEMBED_MOEDERN_TEXT_TESTING
     std::string test_normalize(const std::string & text) const;
     std::vector<std::string> test_pretokens(const std::string & normalized) const;
@@ -30,6 +33,7 @@ private:
         int id = -1;
     };
     bool enabled_ = false;
+    std::string family_revision_;
     std::vector<std::string> vocab_, added_content_, normalized_content_;
     std::vector<double> scores_;
     std::vector<int32_t> added_ids_, added_flags_, normalized_ids_, skip_;

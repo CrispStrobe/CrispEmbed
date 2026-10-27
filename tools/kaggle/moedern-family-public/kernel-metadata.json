@@ -1,0 +1,13 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-moedern-@VARIANT_SLUG@-public",
+  "title": "crispembed-moedern-@VARIANT_SLUG@-public",
+  "code_file": "kernel.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": ["${KAGGLE_ACCOUNT}/moedern-unigram-component"],
+  "competition_sources": [],
+  "kernel_sources": ["${KAGGLE_ACCOUNT}/crispembed-moedern-@VARIANT_SLUG@-original"]
+}
