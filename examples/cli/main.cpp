@@ -372,6 +372,7 @@ static int cli_main(int argc, char ** argv) {
     bool gpu_backend_set = false; // --gpu-backend was given explicitly (T18)
 
     for (int i = 1; i < argc; i++) {
+        bool handled = true;
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
             model_arg = argv[++i];
         } else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
@@ -501,7 +502,12 @@ static int cli_main(int argc, char ** argv) {
             image_deskew = true;
         } else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) {
             punct_model = argv[++i];
-        } else if (strcmp(argv[i], "--output-format") == 0 && i + 1 < argc) {
+        } else {
+            handled = false;
+        }
+        // MSVC caps nested blocks (C1061); the option chain is split in two.
+        if (handled) continue;
+        if (strcmp(argv[i], "--output-format") == 0 && i + 1 < argc) {
             output_format = argv[++i];
         } else if (strcmp(argv[i], "--cleanup-only") == 0 && i + 1 < argc) {
             cleanup_only_path = argv[++i];
