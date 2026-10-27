@@ -16,7 +16,7 @@ LANE=('src/moedern_colbert.cpp','src/moedern_colbert.h','tests/moedern-native-v2
  'docs/moedern-colbert-native-v2.md','.github/workflows/moedern-native-v2.yml','.github/workflows/ovisocr2-metadata.yml')
 SHARED=('src','ggml','cmake','CMakeLists.txt','VERSION','README.md','LICENSE','Cargo.lock','python','flutter',
  'crispembed','crispembed-sys','wasm','examples','tools/quantize.cpp','build-wasm.sh','build-embed-wasm.sh',
- 'scripts/check-cpu-baseline.py','scripts/check-bundled-deps.py','.github/workflows/release.yml',
+ 'scripts/check-cpu-baseline.py','scripts/check-bundled-deps.py','.github/workflows/release.yml','.gitmodules',
  '.github/workflows/release-wasm.yml','tools/successor_asset_manifest.py','.gitattributes')
 
 
@@ -58,16 +58,20 @@ def schema_module(directory):
 def source():
     cfg=protocol()
     changed=subprocess.check_output(['git','diff','--name-only',cfg['base_source'],'HEAD','--',*SHARED],cwd=ROOT,text=True).splitlines()
-    if set(changed)!={'src/moedern_colbert.cpp','src/moedern_colbert.h'}:raise ValueError('Shared runtime/source changed outside new1.5M files')
+    if set(changed)!=set(cfg['allowed_shared_deltas']):raise ValueError('Shared runtime/source changed outside declared1.5M/a06 experiment')
     if subprocess.check_output(['git','status','--porcelain','--',*SHARED,*LANE],cwd=ROOT):raise ValueError('Dirty/untracked measured source')
     if subprocess.check_output(['git','rev-parse','HEAD:ggml'],cwd=ROOT,text=True).strip()!=cfg['ggml']:raise ValueError('Explicit v2 ggmla06 differs')
     for path,pin in cfg['copied_native_sources'].items():
         target=path.replace('tests/moedern-native/','tests/moedern-native-v2/')
         if digest(ROOT/target)!=pin or hashlib.sha256(git_blob(cfg['native_blueprint'],path)).hexdigest()!=pin:
             raise ValueError('Native79 math/probe/control bytes changed: '+path)
+    objects={}
+    for p in SHARED:
+        row=subprocess.run(['git','rev-parse','HEAD:'+p],cwd=ROOT,text=True,capture_output=True)
+        objects[p]=row.stdout.strip() if row.returncode==0 else None
     return dict(head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),base=cfg['base_source'],ggml=cfg['ggml'],
         linked_src_tree=subprocess.check_output(['git','rev-parse','HEAD:src'],cwd=ROOT,text=True).strip(),files={p:digest(ROOT/p) for p in LANE},
-        protected_git_objects={p:subprocess.check_output(['git','rev-parse','HEAD:'+p],cwd=ROOT,text=True).strip() for p in SHARED})
+        protected_git_objects=objects,absent_protected_paths=sorted(p for p,v in objects.items() if v is None))
 
 
 def indexed(report):

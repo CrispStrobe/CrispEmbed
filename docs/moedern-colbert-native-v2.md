@@ -9,7 +9,8 @@ separate names and explicitly select ggml
 `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. The earlier unexecuted v1/890
 contract remains blocked and is not widened, executed, rewritten or qualified.
 The new source guard closes the complete linked runtime/build/binding paths
-against this declared main and permits only the two new model source files.
+against this declared main and permits only the two new model source files
+and the explicit experiment-only ggml gitlink change from890 to a06.
 No root library/CMake, C ABI, public tokenizer, registry or alias is changed.
 
 The [v2 protocol](moedern-colbert-native-contract-v2.json) preserves two distinct

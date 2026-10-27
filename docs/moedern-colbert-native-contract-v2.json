@@ -5049,5 +5049,11 @@
       "tools/moedern-colbert/observer_continuity.py": "fc377b3f90fbaceb38c36b02be1afdc793a89a8f4a9d8211dab30b3cef987822",
       "docs/moedern-colbert-observer-correction-v1.json": "1ad6045a55aae1eea521166bdd65be3a9bc2aa9b0e2dce5171fae5b1b53d7b1a"
     }
-  }
+  },
+  "allowed_shared_deltas": [
+    "ggml",
+    "src/moedern_colbert.cpp",
+    "src/moedern_colbert.h"
+  ],
+  "base_ggml": "890278a8342c620197c90e702e1188bcab94f510"
 }
