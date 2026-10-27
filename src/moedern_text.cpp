@@ -1,4 +1,10 @@
 #include "moedern_text.h"
+// The family engine is linked only where the build defines
+// CRISPEMBED_MOEDERN_FAMILY_ENGINE (root library); historical 1.5M harnesses that
+// compile this file alone keep linking and reject family packed models.
+#ifdef CRISPEMBED_MOEDERN_FAMILY_ENGINE
+#include "moedern_family_engine.h"
+#endif
 #include "moedern_text_engine_internal.h"
 #include "moedern_text_frontend.h"
 #include "core/env_gate.h"
@@ -19,6 +25,10 @@ void gates() {
 struct context {
     moedern_colbert::text_frontend tokenizer;
     std::unique_ptr<detail::context, decltype(&detail::free)> engine{ nullptr, detail::free };
+    // 27M/115M packed models only, behind CRISPEMBED_MOEDERN_FAMILY; 1.5M keeps `engine`.
+#ifdef CRISPEMBED_MOEDERN_FAMILY_ENGINE
+    std::unique_ptr<moedern_family::context, decltype(&moedern_family::free)> family{ nullptr, moedern_family::free };
+#endif
     std::string failure;
     bool packed = false;
     std::mutex mutex;
@@ -48,8 +58,22 @@ context * init_packed(const char * path, int threads, std::string & error) {
         auto pending = std::make_unique<context>();
         const bool tokenizer_loaded = pending->tokenizer.load_packed(path, error);
         require(tokenizer_loaded, error.c_str());
-        pending->engine.reset(detail::init(path, threads, error));
-        require(bool(pending->engine), error.c_str());
+        const std::string & revision = pending->tokenizer.family_revision();
+        if (!revision.empty()) {
+#ifndef CRISPEMBED_MOEDERN_FAMILY_ENGINE
+            require(false, "MoEdern family engine not compiled in");
+#else
+            require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") &&
+                        (revision == "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a" ||
+                         revision == "66380d2ade3b5027bba83bdcdba052d0bb86dcdb"),
+                    "MoEdern family gate is OFF or revision unqualified");
+            pending->family.reset(moedern_family::init(path, threads, error));
+            require(bool(pending->family), error.c_str());
+#endif
+        } else {
+            pending->engine.reset(detail::init(path, threads, error));
+            require(bool(pending->engine), error.c_str());
+        }
         pending->packed = true;
         return pending.release();
     } catch (const std::exception & e) {
@@ -83,6 +107,20 @@ static bool encode_impl(context * ctx, const std::string & text, role task, resu
             ctx->failure);
         require(tokenized, ctx->failure.c_str());
         detail::result native;
+#ifdef CRISPEMBED_MOEDERN_FAMILY_ENGINE
+        if (ctx->family) {
+            require(core_env::on("CRISPEMBED_MOEDERN_FAMILY"), "MoEdern family gate is OFF");
+            const bool family_computed =
+                moedern_family::encode_tokens(ctx->family.get(), input.ids.data(), input.supplied_mask.data(),
+                                              input.ids.size(), task == role::query, native.vectors);
+            require(family_computed, moedern_family::error(ctx->family.get()));
+            // The family engine consumes the supplied mask; its backbone attends to
+            // every query position (expansion) and to the supplied mask otherwise.
+            native.supplied_mask = input.supplied_mask;
+            native.effective_mask = task == role::query ? std::vector<uint8_t>(input.ids.size(), 1) : input.supplied_mask;
+        } else
+#endif
+        {
         const bool computed = detail::encode_tokens(ctx->engine.get(), input.ids.data(), input.supplied_mask.data(),
                                                     input.ids.size(), task, native
 #ifdef CRISPEMBED_MOEDERN_COMPOSED_TESTING
@@ -91,6 +129,7 @@ static bool encode_impl(context * ctx, const std::string & text, role task, resu
 #endif
         );
         require(computed, detail::error(ctx->engine.get()));
+        }
         require(native.supplied_mask == input.supplied_mask && native.effective_mask == input.effective_mask,
                 "frontend/backbone attention contract differs");
         result pending;

@@ -1,0 +1,77 @@
+{
+ "schema": "crispembed-moedern-family-public-v1",
+ "base": "605ea35cb6c3094edb709b4a2969175750e5d411",
+ "gate": "CRISPEMBED_MOEDERN_FAMILY",
+ "default_enabled": false,
+ "public_model_proof": false,
+ "variants": {
+  "27M": {
+   "revision": "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+   "model_sha256": "ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9",
+   "original_report_sha256": "00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3",
+   "tensors": 32,
+   "parameters": 27124000
+  },
+  "115M": {
+   "revision": "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+   "model_sha256": "2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e",
+   "original_report_sha256": "01c8a0e4886eae107103845847cb5d4675752b91a987e23ad26e7a1e98e44af6",
+   "tensors": 94,
+   "parameters": 114696576
+  }
+ },
+ "tokenizer_component_sha256": "3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1",
+ "root_closure_sha256": "26e0b2eb2779dcccc6a17187f0fbec83fa517e49e9bfef7d2325627c2c45c1d6",
+ "supersedes_root_pins": [
+  "CMakeLists.txt",
+  "tools/pack_moedern_text_f32.py"
+ ],
+ "supersedes_root_note": "root_contract.py also requires the whole src tree to equal its base; that check is superseded by the per-file pins here plus unchanged_from_base.",
+ "root_drift_before_base": [
+  ".github/workflows/ovisocr2-metadata.yml"
+ ],
+ "unchanged_from_base": [
+  "ggml",
+  "src/moedern_text_engine.cpp",
+  "src/moedern_text_engine_internal.h",
+  "src/moedern_family_engine.cpp",
+  "src/moedern_family_engine.h",
+  "src/moedern_text_api.cpp",
+  "src/moedern_text_api.h",
+  "src/moedern_text.h",
+  "python/crispembed/_moedern_text.py",
+  "crispembed/src/moedern_text.rs",
+  "flutter/crispembed/lib/src/moedern_text.dart",
+  "examples/cli/main.cpp",
+  "examples/server/server.cpp"
+ ],
+ "packer_one_five_constants": {
+  "MODEL": {
+   "bytes": 5941568,
+   "sha256": "9f9792f0ae76430496ac93951cc09a0804468ba3f22b4314b303aea85dfbe8fa"
+  },
+  "TOKENIZER": {
+   "bytes": 1095840,
+   "sha256": "3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1"
+  },
+  "COMPOSED": "98af43c6780bbd11b1ec9ec4f26c7b2e3a2348507072408408bf726b2e89482e",
+  "BOUNDS": {
+   "file": 16777216,
+   "tensors": 32,
+   "elements": 2097152
+  }
+ },
+ "owned_sha256": {
+  "CMakeLists.txt": "62a705c099b208c64bc7b469513aa33a6c03dac91e92e729594e96ac09c5be83",
+  "src/moedern_packed_profile.h": "fca71a3f986eb1f4a9c557a75da170758e72dbe9269d575644128965ad78f710",
+  "src/moedern_text.cpp": "ecbdb8216f875c2c2d7ad5e7a90c5658f2d1af89dc9913d16f11cb15aa1b7de4",
+  "src/moedern_text_frontend.cpp": "4619c4d306fe018fa777b54321ad31ddea51b3427685fef0cf8b6fe9f78e20b1",
+  "src/moedern_text_frontend.h": "1717d5c88202fd5dc6491c3133d1442f7d80592ec574aa1ea5d7df1fa73c6ba4",
+  "tools/pack_moedern_text_f32.py": "9ff19785cb1941435dfeb8082bd0698b75be233c6692585b8a93a5777a0a2cd6",
+  "tools/moedern-public/family_contract.py": "3590f0e705907a28e54cd4f87bee3ba0309efcad1826b68df1e63b57e8eb4c27",
+  "tests/test_moedern_family_public.py": "ec423cb7c6fa6d3194d147f304701cf138a4f0b690262dba6526d66b426acccb",
+  "tools/kaggle/moedern-family-public/kernel.py": "62213a993bde588594beb10f3c462089e8e34264f03fc43be2906a5cd6720454",
+  "tools/kaggle/moedern-family-public/kernel-metadata.json": "b8648a8df5eedb8850be4ecbb0eaf0700b2945cd8218f0488c501bd8f936f3c3",
+  "tools/kaggle/moedern-family-public/worker.py": "957109e185a873b23c6e83973589d45e1334d7c2dc58079f7bc9952472e22da2"
+ }
+}

@@ -18,6 +18,16 @@ COMPOSED='98af43c6780bbd11b1ec9ec4f26c7b2e3a2348507072408408bf726b2e89482e'
 CHUNK=1024*1024
 SIZES={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
 FORMATS={0:'B',1:'b',2:'H',3:'h',4:'I',5:'i',6:'f',7:'?',10:'Q',11:'q',12:'d'}
+# 1.5M structural bounds (unchanged default) and the gated 27M/115M family pins.
+BOUNDS={'file':16*CHUNK,'tensors':32,'elements':2*CHUNK}
+FAMILY={
+ '27M':{'revision':'d2b7b1feaaac1bf87510ca9525208c3daeabcc5a','model':{'bytes':108499776,'sha256':'ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9'},
+        'original_report_sha256':'00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3','tensors':32,'parameters':27124000,
+        'bounds':{'file':128*CHUNK,'tensors':32,'elements':8*CHUNK}},
+ '115M':{'revision':'66380d2ade3b5027bba83bdcdba052d0bb86dcdb','model':{'bytes':458794208,'sha256':'2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e'},
+         'original_report_sha256':'01c8a0e4886eae107103845847cb5d4675752b91a987e23ad26e7a1e98e44af6','tensors':94,'parameters':114696576,
+         'bounds':{'file':512*CHUNK,'tensors':94,'elements':8*CHUNK}},
+}
 def require(ok,why):
  if not ok:raise ValueError(why)
 def digest(path):
@@ -28,8 +38,8 @@ def digest(path):
 def string(value):
  b=value.encode();return struct.pack('<Q',len(b))+b
 def scalar(key,value):return string(key)+struct.pack('<I',8)+string(value)
-def parse(path):
- path=Path(path);size=path.stat().st_size;require(0<size<=16*CHUNK,'file bound differs')
+def parse(path,bounds=BOUNDS):
+ path=Path(path);size=path.stat().st_size;require(0<size<=bounds['file'],'file bound differs')
  with path.open('rb')as f:
   def read(n):
    require(0<=n<=4*CHUNK and f.tell()+n<=min(size,4*CHUNK),'header bound/truncation differs');b=f.read(n);require(len(b)==n,'truncated header');return b
@@ -42,7 +52,7 @@ def parse(path):
     element=integer('I');n=integer('Q');require(element in SIZES or element==8,'nested/unknown array');require(n<=65536,'array count')
     return (element,[value(element)for _ in range(n)])
    require(kind in SIZES,'unknown metadata kind');v=integer(FORMATS[kind]);require(not isinstance(v,float)or math.isfinite(v),'nonfinite metadata');return v
-  require(read(4)==b'GGUF'and integer('I')==3,'GGUFv3 required');nt,nk=integer('Q'),integer('Q');require(nt<=32 and nk<=128,'metadata/tensor count')
+  require(read(4)==b'GGUF'and integer('I')==3,'GGUFv3 required');nt,nk=integer('Q'),integer('Q');require(nt<=bounds['tensors'] and nk<=128,'metadata/tensor count')
   metadata={}
   for _ in range(nk):
    start=f.tell();key=text();require(key and len(key)<=256 and '\0'not in key and key not in metadata,'metadata key differs');kind=integer('I');v=value(kind);end=f.tell();f.seek(start);raw=read(end-start);metadata[key]={'kind':kind,'value':v,'raw':raw}
@@ -50,7 +60,7 @@ def parse(path):
   tensors=[];names=set()
   for _ in range(nt):
    name=text();require(name and len(name)<=256 and '\0'not in name and name not in names,'tensor name differs');names.add(name)
-   rank=integer('I');require(1<=rank<=4,'tensor rank');shape=[integer('Q')for _ in range(rank)];require(all(0<n<=30002 for n in shape)and math.prod(shape)<=2*CHUNK,'tensor dimensions');require(integer('I')==0,'lossless F32 only');offset=integer('Q');tensors.append({'name':name,'shape':shape,'offset':offset,'bytes':4*math.prod(shape)})
+   rank=integer('I');require(1<=rank<=4,'tensor rank');shape=[integer('Q')for _ in range(rank)];require(all(0<n<=30002 for n in shape)and math.prod(shape)<=bounds['elements'],'tensor dimensions');require(integer('I')==0,'lossless F32 only');offset=integer('Q');tensors.append({'name':name,'shape':shape,'offset':offset,'bytes':4*math.prod(shape)})
   end=f.tell();data_start=(end+31)//32*32;require(not any(read(data_start-end)),'nonzero header padding');position=0
   for t in sorted(tensors,key=lambda t:t['offset']):
    aligned=(position+31)//32*32;require(t['offset']==aligned and data_start+aligned+t['bytes']<=size,'tensor offset/extent differs')
@@ -58,7 +68,7 @@ def parse(path):
   require(0<=size-data_start-position<=31,'trailing extent differs');f.seek(data_start+position);require(not any(f.read()),'nonzero trailing padding')
  return {'path':path,'bytes':size,'data_start':data_start,'metadata':metadata,'tensors':tensors}
 
-def _pack(model,tokenizer,output,extra):
+def _pack(model,tokenizer,output,extra,bounds=BOUNDS):
  """No inference/conversion; preserve raw metadata records and tensor bytes."""
  metadata=dict(model['metadata'])
  for name,row in tokenizer['metadata'].items():
@@ -83,7 +93,7 @@ def _pack(model,tokenizer,output,extra):
    while remaining:
     b=source.read(min(CHUNK,remaining));require(b,'tensor source truncated');target.write(b);h.update(b);remaining-=len(b)
    identities[row['name']]={'shape':row['shape'],'bytes':row['bytes'],'sha256':h.hexdigest()}
- readback=parse(partial);require({k:v['raw']for k,v in readback['metadata'].items()}=={k:v['raw']for k,v in metadata.items()},'metadata byte readback differs')
+ readback=parse(partial,bounds);require({k:v['raw']for k,v in readback['metadata'].items()}=={k:v['raw']for k,v in metadata.items()},'metadata byte readback differs')
  with partial.open('rb')as f:
   for row in readback['tensors']:
    f.seek(readback['data_start']+row['offset']);h=hashlib.sha256();remaining=row['bytes']
@@ -103,6 +113,19 @@ def pack(model,tokenizer,report,output):
  require(m['metadata']['general.architecture']['value']=='modernbert_hash_moe_v10'and t['metadata']['general.architecture']['value']=='moedern_unigram_tokenizer','component architectures differ')
  extra={'moedern.packed.format':'crispembed-moedern-text-f32-v1','moedern.packed.tokenizer_architecture':'moedern_unigram_tokenizer','moedern.packed.model_sha256':MODEL['sha256'],'moedern.packed.tokenizer_sha256':TOKENIZER['sha256'],'moedern.packed.original_sha256':'b50ca1369f454d61b8c95583d8eb77a847c47ede29e52ed66b575784f4e4660f','moedern.packed.composed_source':j['source'],'moedern.packed.composed_report_sha256':COMPOSED}
  return dict(schema='crispembed-moedern-packed-f32-v1',completed=True,output=_pack(m,t,output,extra),original_recomputed=False,model_qualified=False,public_api_qualified=False)
+def pack_family(variant,model,tokenizer,original_report,output):
+ """27M/115M: byte-preserving pack of the frozen-original F32 conversion plus the
+ identical reviewed tokenizer component. Hosted only (Actions or a Kaggle kernel)."""
+ require(variant in FAMILY,'unknown family variant');pin=FAMILY[variant];bounds=pin['bounds']
+ require((os.environ.get('GITHUB_ACTIONS')=='true'or bool(os.environ.get('KAGGLE_KERNEL_RUN_TYPE')))and sys.platform.startswith('linux'),'production repack hosted Linux only')
+ require(Path(original_report).is_file()and digest(original_report)==pin['original_report_sha256'],'exact frozen original report required')
+ j=json.loads(Path(original_report).read_text());require(j.get('variant')==variant and j.get('revision')==pin['revision'],'original report variant differs')
+ for path,want in [(model,pin['model']),(tokenizer,TOKENIZER)]:require(Path(path).is_file()and not Path(path).is_symlink()and Path(path).stat().st_size==want['bytes']and digest(path)==want['sha256'],'authenticated component differs')
+ m,t=parse(model,bounds),parse(tokenizer);require(len(m['tensors'])==pin['tensors']and not t['tensors']and sum(row['bytes']for row in m['tensors'])==pin['parameters']*4,'F32 parameter inventory differs')
+ require(m['metadata']['general.architecture']['value']=='modernbert_hash_moe_v10'and t['metadata']['general.architecture']['value']=='moedern_unigram_tokenizer','component architectures differ')
+ rev=m['metadata'].get('modernbert_hash_moe_v10.source_revision');require(rev is not None and rev['value']==pin['revision'],'model source revision differs')
+ extra={'moedern.packed.format':'crispembed-moedern-family-f32-v1','moedern.packed.variant':variant,'moedern.packed.tokenizer_architecture':'moedern_unigram_tokenizer','moedern.packed.model_sha256':pin['model']['sha256'],'moedern.packed.tokenizer_sha256':TOKENIZER['sha256'],'moedern.packed.original_sha256':pin['original_report_sha256']}
+ return dict(schema='crispembed-moedern-family-packed-f32-v1',variant=variant,completed=True,output=_pack(m,t,output,extra,bounds),original_recomputed=False,model_qualified=False,public_api_qualified=False)
 if __name__=='__main__':
  import argparse
  p=argparse.ArgumentParser();p.add_argument('--model',required=True);p.add_argument('--tokenizer',required=True);p.add_argument('--composed-report',required=True);p.add_argument('--output',required=True);p.add_argument('--receipt',required=True);a=p.parse_args()

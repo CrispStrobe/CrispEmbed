@@ -382,12 +382,14 @@ list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 # MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
-set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp
+set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp src/moedern_family_engine.cpp
     src/moedern_text.cpp src/moedern_text_api.cpp)
 list(APPEND CRISPEMBED_SOURCES ${CRISPEMBED_MOEDERN_SOURCES})
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_source_files_properties(${CRISPEMBED_MOEDERN_SOURCES} PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 endif()
+# 27M/115M dispatch (runtime gate CRISPEMBED_MOEDERN_FAMILY, default off).
+set_source_files_properties(src/moedern_text.cpp PROPERTIES COMPILE_DEFINITIONS CRISPEMBED_MOEDERN_FAMILY_ENGINE)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 # Version string for output provenance (hOCR ocr-system, ALTO
