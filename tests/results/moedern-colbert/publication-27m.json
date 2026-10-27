@@ -1,0 +1,11 @@
+{
+  "status": "published and re-verified",
+  "variant": "27M",
+  "repo": "cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF",
+  "commit": "351adfad4a52edf9e66baceb244e46d12856ca69",
+  "sha256": "e836acbb507ebf9d26ad6a3f5e5712487f1b90f1430b1174acb07de07e85ce18",
+  "bytes": 109596000,
+  "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF/resolve/351adfad4a52edf9e66baceb244e46d12856ca69/moedern-27m-text-f32.gguf",
+  "source": "758653da22f6fa198f7ce5d4b04d29ca0f444185",
+  "run": 40502127177
+}

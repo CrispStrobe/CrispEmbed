@@ -22,17 +22,19 @@ inline const limits & one_five_limits() {
     return l;
 }
 struct family_pin {
-    const char * variant, * revision, * model_sha256, * original_report_sha256;
+    const char *variant, *revision, *model_sha256, *original_report_sha256;
     limits bounds;
 };
 // Model pins are the frozen-original F32 conversions (tests/results/moedern-colbert).
 inline const std::vector<family_pin> & family_pins() {
     static const std::vector<family_pin> pins = {
-        { "27M", "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+        { "27M",
+          "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
           "ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9",
           "00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3",
           { uint64_t(128) * 1024 * 1024, 32, 27124000, "packed file exceeds128MiB" } },
-        { "115M", "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+        { "115M",
+          "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
           "2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e",
           "01c8a0e4886eae107103845847cb5d4675752b91a987e23ad26e7a1e98e44af6",
           { uint64_t(512) * 1024 * 1024, 94, 114696576, "packed file exceeds512MiB" } },

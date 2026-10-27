@@ -1597,8 +1597,14 @@ static const ModelEntry k_registry[] = {
       "6f3b35143b3afdeeded7f77216b1ec072028fd5f/moedern-1.5m-text-f32.gguf",
       "MoEdernColBERT 1.5M raw-text query/document multivectors (f32 packed; gated CRISPEMBED_MOEDERN_*)", "7.0 MB",
       "apache-2.0", "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF" },
+    { "moedern-27m", "moedern-27m-text-f32.gguf",
+      "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF/resolve/"
+      "351adfad4a52edf9e66baceb244e46d12856ca69/moedern-27m-text-f32.gguf",
+      "MoEdernColBERT 27M raw-text query/document multivectors (f32 packed; gated CRISPEMBED_MOEDERN_* incl. _FAMILY)",
+      "110 MB", "apache-2.0", "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF" },
     { "moedern-115m", "moedern-115m-text-f32.gguf",
-      "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF/resolve/9c5bcf770287026b8e2a0b5e0f5187282b60711b/moedern-115m-text-f32.gguf",
+      "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF/resolve/"
+      "9c5bcf770287026b8e2a0b5e0f5187282b60711b/moedern-115m-text-f32.gguf",
       "MoEdernColBERT 115M raw-text query/document multivectors (f32 packed; gated CRISPEMBED_MOEDERN_* incl. _FAMILY)",
       "460 MB", "apache-2.0", "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF" },
     { "ovisocr2-f16", "ovisocr2-f16.gguf",

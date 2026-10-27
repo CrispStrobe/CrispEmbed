@@ -117,18 +117,19 @@ static bool encode_impl(context * ctx, const std::string & text, role task, resu
             // The family engine consumes the supplied mask; its backbone attends to
             // every query position (expansion) and to the supplied mask otherwise.
             native.supplied_mask = input.supplied_mask;
-            native.effective_mask = task == role::query ? std::vector<uint8_t>(input.ids.size(), 1) : input.supplied_mask;
+            native.effective_mask =
+                task == role::query ? std::vector<uint8_t>(input.ids.size(), 1) : input.supplied_mask;
         } else
 #endif
         {
-        const bool computed = detail::encode_tokens(ctx->engine.get(), input.ids.data(), input.supplied_mask.data(),
-                                                    input.ids.size(), task, native
+            const bool computed = detail::encode_tokens(ctx->engine.get(), input.ids.data(), input.supplied_mask.data(),
+                                                        input.ids.size(), task, native
 #ifdef CRISPEMBED_MOEDERN_COMPOSED_TESTING
-                                                    ,
-                                                    observer ? *observer : moedern_text_test::observer{}
+                                                        ,
+                                                        observer ? *observer : moedern_text_test::observer{}
 #endif
-        );
-        require(computed, detail::error(ctx->engine.get()));
+            );
+            require(computed, detail::error(ctx->engine.get()));
         }
         require(native.supplied_mask == input.supplied_mask && native.effective_mask == input.effective_mask,
                 "frontend/backbone attention contract differs");
