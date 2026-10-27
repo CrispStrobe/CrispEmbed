@@ -20,6 +20,8 @@
     "tests/moedern-public/rust_consumer.rs": "60a6b6bfc6e6d2b6f4c0b04b85e50f27fe1e3246808a3af9025ac28f17e90937",
     "tests/moedern-public/dart_consumer.dart": "9642d457db685c11566295de51ad58b6cc2cb0bfe0533a7885c26aac1c634747",
     "examples/cli/main.cpp": "5d98fb58e86149c241a3fbd712ba3b14f834fe972ba2e89ad34eade8dc84b597",
-    "examples/server/server.cpp": "4241d14cef4d99de78a26cfbae8c127b720e1c4c5f2d25235fb7a3975b65c960"
+    "examples/server/server.cpp": "4241d14cef4d99de78a26cfbae8c127b720e1c4c5f2d25235fb7a3975b65c960",
+    ".github/workflows/ovisocr2-metadata.yml": "582b19682c75c0e06d03905edb339c26549280efabbf4abb0332d6f07c8888be",
+    ".github/workflows/moedern-public-consumers.yml": "da76ba0f87b21a82bbdebbe382af617dd7fdb873d36e7f9a014c507444debebd"
   }
 }
