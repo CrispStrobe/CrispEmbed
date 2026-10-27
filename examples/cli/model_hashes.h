@@ -490,6 +490,8 @@ static const ModelHash k_model_hashes[] = {
       "26ce9595afa6967a20d0781c2c3e6d01a5eb9a82b7ab25786bbffc6ba9dbeab0" },
     { "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/resolve/bffe62522f826b4c33f2e731d5b870ced5150a17/josev2b-systemone-f32.gguf",
       "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2" },
+    { "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF/resolve/6f3b35143b3afdeeded7f77216b1ec072028fd5f/moedern-1.5m-text-f32.gguf",
+      "0e2b8773abd8c78a5825280f9a73cb808b88d56f0675a8e4bb7f0509f5b6cc51" },
     { "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
       "d3a733a5d5ba5d63f5275500fad4cff585b82e2fb90d1def2fe767d04edf57db" },
     { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",

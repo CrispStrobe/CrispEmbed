@@ -1,0 +1,20 @@
+{
+  "status": "published and re-verified",
+  "repo": "cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF",
+  "commit": "6f3b35143b3afdeeded7f77216b1ec072028fd5f",
+  "sha256": "0e2b8773abd8c78a5825280f9a73cb808b88d56f0675a8e4bb7f0509f5b6cc51",
+  "bytes": 7037952,
+  "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF/resolve/6f3b35143b3afdeeded7f77216b1ec072028fd5f/moedern-1.5m-text-f32.gguf",
+  "source": "3a877850f5e5291869adbf2c07e4b902f2330a9c",
+  "run": 40475254286,
+  "anonymous_tree": [
+    "moedern-1.5m-text-f32.gguf",
+    "README.md",
+    "upstream/LICENSE",
+    "upstream/README.md",
+    ".gitattributes"
+  ],
+  "initial_failures": [
+    "Kaggle publisher: no GitHub token in the private dataset (stopped before download)"
+  ]
+}
