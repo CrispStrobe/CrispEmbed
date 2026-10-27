@@ -339,6 +339,7 @@ floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t
     x = ggml_l2_norm(g, x, 1e-12f); // x / max(||x||, 1e-12)
     ggml_set_output(x);
     auto * graph = ggml_new_graph_custom(g, NODES, false);
+    for (auto * t : router) ggml_build_forward_expand(graph, t); // tie-check readbacks are graph outputs
     ggml_build_forward_expand(graph, x);
     require(ggml_gallocr_alloc_graph(ctx->galloc, graph), "Graph allocation failed");
     std::vector<int32_t> position(S);
@@ -349,11 +350,16 @@ floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t
             additive[size_t(q) * S + j] = mask[j] ? 0.f : -std::numeric_limits<float>::infinity();
     for (int t = 0; t < S; ++t) keep[t] = mask[t] ? 1.f : 0.f;
     const float router_eps = ROUTER_EPS;
-    ggml_backend_tensor_set(tok, ids, 0, size_t(S) * sizeof(int32_t));
-    ggml_backend_tensor_set(pos, position.data(), 0, position.size() * sizeof(int32_t));
-    ggml_backend_tensor_set(kq_mask, additive.data(), 0, additive.size() * sizeof(float));
-    ggml_backend_tensor_set(col_mask, keep.data(), 0, keep.size() * sizeof(float));
-    ggml_backend_tensor_set(eps, &router_eps, 0, sizeof(float));
+    // An input unused by this profile (e.g. the conv mask on attention-only 27M) is not in
+    // the graph and has no buffer; setting it would abort, so only allocated inputs are set.
+    auto set = [](ggml_tensor * t, const void * data, size_t offset, size_t bytes) {
+        if (t->buffer) ggml_backend_tensor_set(t, data, offset, bytes);
+    };
+    set(tok, ids, 0, size_t(S) * sizeof(int32_t));
+    set(pos, position.data(), 0, position.size() * sizeof(int32_t));
+    set(kq_mask, additive.data(), 0, additive.size() * sizeof(float));
+    set(col_mask, keep.data(), 0, keep.size() * sizeof(float));
+    set(eps, &router_eps, 0, sizeof(float));
     require(ggml_backend_graph_compute(ctx->backend, graph) == GGML_STATUS_SUCCESS, "CPU graph compute failed");
     // Same router qualification as the default path: reject exact ties at the top-k boundary.
     floats pr(size_t(E) * S);
