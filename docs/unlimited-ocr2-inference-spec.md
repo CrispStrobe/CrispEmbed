@@ -441,3 +441,27 @@ query instead of the dense masked softmax; results are identical up to the maske
    decode candidate mask.
 10. Decode `position_ids` (1D) are still used for block remoteness and the local window; page coords only for
     rope.
+
+## Fast native decoder (opt-in)
+
+`CRISPEMBED_UNLIMITED_OCR2_FAST=1` (default OFF, also needs `CRISPEMBED_UNLIMITED_OCR2=1`) selects
+`run_llm_decoder_v2_fast` in `src/unlimited_ocr.cpp`. The plain-CPU F32 `run_llm_decoder_v2` stays the
+default and is the exact reference. The fast path keeps the same semantics:
+
+- per layer, graph A (ggml, native weight types, multi-threaded backend): input RMSNorm, q/k/v and router
+  q/k projections, router Gemma norm (+clamp), page2d rope from precomputed `uocr2::rope_table` cos/sin
+  tensors (split-half NEOX). Rotated K/V are written into persistent per-layer backend tensors, so a
+  decode step projects only the new row (O(L) attention per step);
+- DASH block scoring, 1.5-entmax top16->12 routing and bias stay on CPU with the same `uocr2::` helpers
+  and become an additive F32 mask (0 inside the local 128 window, the block bias for selected blocks,
+  -inf otherwise) for `ggml_soft_max_ext`;
+- graph B (per query chunk of `UOCR2_FAST_CHUNK` rows, default 256): masked attention (GQA by
+  broadcast), o_proj, residual, then the dense FFN (layer 0) or the v1 MoE (`ggml_mul_mat_id`, softmax
+  gate, top-6, no renormalisation, routed scaling, shared experts);
+- final norm + lm_head as a ggml graph; the page-count guard, first-max argmax and confidence are the
+  reference code unchanged.
+
+**Acceptance:** the fast arm must produce identical generated token IDs to the frozen reference pages
+(and to the exact native arm). Small float drift is allowed only while the IDs stay identical; any ID
+difference rejects the arm. The Kaggle kernel `tools/kaggle/unlimited-ocr2-native/kernel.py` runs each
+case with the gate off and on and records IDs and wall time for both. Not yet measured or qualified.

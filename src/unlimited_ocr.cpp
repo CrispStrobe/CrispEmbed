@@ -2523,6 +2523,340 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
 }
 
 // ---------------------------------------------------------------------------
+// Fast Unlimited-OCR-2 decoder (gate CRISPEMBED_UNLIMITED_OCR2_FAST, default OFF; also needs
+// CRISPEMBED_UNLIMITED_OCR2). Same semantics as run_llm_decoder_v2 (the exact reference,
+// still the default): projections, norms, page2d rope (precomputed cos/sin tensors,
+// split-half NEOX), DASH router q/k + Gemma norm, masked attention, dense FFN / MoE
+// (ggml_mul_mat_id, v1 math) and lm_head run as ggml graphs on the model's native weight
+// types; DASH block scoring + 1.5-entmax routing stays on CPU (same uocr2:: helpers) and
+// becomes an additive F32 mask (0 local window, bias for selected blocks, -inf otherwise)
+// for ggml_soft_max_ext. Rotated K/V persist in backend tensors across decode steps, so a
+// decode step costs O(L). Acceptance: identical generated token IDs on the frozen
+// reference pages; float drift is tolerated only while the IDs stay identical.
+// ---------------------------------------------------------------------------
+namespace uocr2_fast {
+struct graph {
+    std::vector<uint8_t> meta;
+    ggml_context * g{};
+    ggml_cgraph * gf{};
+    explicit graph(size_t nodes) {
+        meta.resize(ggml_tensor_overhead() * nodes + ggml_graph_overhead_custom(nodes, false));
+        ggml_init_params ip = { meta.size(), meta.data(), true };
+        g = ggml_init(ip);
+        gf = ggml_new_graph_custom(g, nodes, false);
+    }
+    graph(const graph &) = delete;
+    graph & operator=(const graph &) = delete;
+    ~graph() {
+        if (g) ggml_free(g);
+    }
+    ggml_tensor * input(ggml_type t, int64_t a, int64_t b = 1, int64_t c = 1) {
+        ggml_tensor * x = ggml_new_tensor_3d(g, t, a, b, c);
+        ggml_set_input(x);
+        return x;
+    }
+};
+
+// NEOX split-half rotation of x [128, heads, T] with cos/sin [128, 1, T] (= uocr2::apply_rope).
+static ggml_tensor * rope(ggml_context * g, ggml_tensor * x, ggml_tensor * cs, ggml_tensor * sn) {
+    const int64_t half = uocr2::HD / 2;
+    ggml_tensor * a = ggml_cont(g, ggml_view_3d(g, x, half, x->ne[1], x->ne[2], x->nb[1], x->nb[2], 0));
+    ggml_tensor * b =
+        ggml_cont(g, ggml_view_3d(g, x, half, x->ne[1], x->ne[2], x->nb[1], x->nb[2], half * ggml_element_size(x)));
+    ggml_tensor * rot = ggml_concat(g, ggml_neg(g, b), a, 0);
+    return ggml_add(g, ggml_mul(g, x, cs), ggml_mul(g, rot, sn));
+}
+
+// Gemma RMSNorm x*rsqrt(mean(x^2)+eps)*(1+w), clamped to +-1e4 (= uocr2::gemma_rms).
+static ggml_tensor * gemma_rms(ggml_context * g, ggml_tensor * x, ggml_tensor * w) {
+    ggml_tensor * n = ggml_rms_norm(g, x, 1e-6f);
+    return ggml_clamp(g, ggml_add(g, n, ggml_mul(g, n, ensure_f32(g, w))), -1e4f, 1e4f);
+}
+
+static bool alloc(uocr_ctx & ctx, ggml_cgraph * gf) {
+    ggml_backend_sched_reset(ctx.sched);
+    return ggml_backend_sched_alloc_graph(ctx.sched, gf);
+}
+static bool run(uocr_ctx & ctx, ggml_cgraph * gf) {
+    return ggml_backend_sched_graph_compute(ctx.sched, gf) == GGML_STATUS_SUCCESS;
+}
+} // namespace uocr2_fast
+
+static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
+                                    const std::vector<int32_t> & prompt_ids, int max_new,
+                                    std::vector<int32_t> & out_ids, std::vector<float> & out_confs) {
+    using uocr2_fast::graph;
+    auto & lhp = ctx.m.lhp;
+    const int D = lhp.hidden, NH = lhp.heads, NKV = lhp.kv_heads, HDm = lhp.head_dim, L = lhp.n_layers;
+    const int S = (int)prompt_ids.size(), V = lhp.vocab_size;
+    const int QD = NH * HDm, KD = NKV * HDm;
+    for (int li = 1; li < L; li++)
+        if (!ctx.m.llm_layers[li].gate_exps) {
+            fprintf(stderr, "unlimited_ocr2: stacked expert tensors required (layer %d)\n", li);
+            return false;
+        }
+    if (HDm != uocr2::HD || NKV <= 0 || NH % NKV != 0) {
+        fprintf(stderr, "unlimited_ocr2: head_dim %d / heads %d/%d unsupported\n", HDm, NH, NKV);
+        return false;
+    }
+    const bool dbg = core_env::on("UOCR_DBG");
+    uocr2::coords co = uocr2::prefill_coords(prompt_ids);
+    if (!co.page_mode) {
+        fprintf(stderr, "unlimited_ocr2: prompt without <PAGE>/image (1D YaRN fallback) is not implemented\n");
+        return false;
+    }
+    uocr2::pages pg = uocr2::prefill_pages(prompt_ids);
+    std::vector<std::vector<float>> head_cls(L);
+    for (int li = 0; li < L; li++) head_cls[li] = to_f32(ctx.m.llm_layers[li].dash_head_cls);
+
+    // Persistent rotated K / V per layer: [KD, cap] F32 in a backend buffer.
+    const int cap = std::min(S + std::max(max_new, 0) + 1, 131072);
+    ggml_init_params kip = { (size_t)(2 * L + 4) * ggml_tensor_overhead(), nullptr, true };
+    ggml_context * kv_ctx = ggml_init(kip);
+    std::vector<ggml_tensor *> kcache(L), vcache(L);
+    for (int li = 0; li < L; li++) {
+        kcache[li] = ggml_new_tensor_2d(kv_ctx, GGML_TYPE_F32, KD, cap);
+        vcache[li] = ggml_new_tensor_2d(kv_ctx, GGML_TYPE_F32, KD, cap);
+    }
+    ggml_backend_buffer_t kv_buf = ggml_backend_alloc_ctx_tensors(kv_ctx, ctx.backend);
+    if (!kv_buf) {
+        fprintf(stderr, "unlimited_ocr2: KV cache allocation failed (cap %d)\n", cap);
+        ggml_free(kv_ctx);
+        return false;
+    }
+    struct kv_owner {
+        ggml_context * c;
+        ggml_backend_buffer_t b;
+        ~kv_owner() {
+            ggml_backend_buffer_free(b);
+            ggml_free(c);
+        }
+    } kv_owner_{ kv_ctx, kv_buf };
+
+    std::vector<uocr2::router_keys> rks(L);
+    int chunk = 256; // prefill query rows per attention/FFN graph (bounds the [Lk, rows, NH] scores)
+    if (const char * c = getenv("UOCR2_FAST_CHUNK")) chunk = std::max(1, atoi(c));
+    const float NEG = -std::numeric_limits<float>::infinity();
+    const float attn_scale = 1.0f / sqrtf((float)HDm);
+
+    auto cand_prefill = [&](int i) {
+        const int nb = (S + uocr2::BLOCK - 1) / uocr2::BLOCK;
+        std::vector<uint8_t> c(nb, 0);
+        const int q = pg.q_page[i];
+        if (q < 0) return std::vector<uint8_t>(nb, 1);
+        for (int t = 0; t < S; ++t)
+            if (pg.img_page[t] == q) c[t / uocr2::BLOCK] = 1;
+        return c;
+    };
+    auto cand_decode = [&](int nblk) {
+        const int qp = pg.decode_qp();
+        std::vector<uint8_t> c(nblk, 0);
+        bool any = false;
+        for (int b = 0; b < std::min(nblk, pg.n_prefill_blocks); ++b)
+            any |= (c[b] = pg.bmin[b] >= 0 && pg.bmin[b] <= qp && qp <= pg.bmax[b]);
+        if (qp < 0 || !any) std::fill(c.begin(), c.end(), 1);
+        return c;
+    };
+
+    // One decoder pass over T new rows at absolute positions p0..p0+T-1 (as the reference).
+    auto forward = [&](std::vector<float> & h, int T, int p0, const std::vector<int> & tok_c,
+                       const std::vector<int> & page_c,
+                       const std::function<std::vector<uint8_t>(int, int)> & cand) -> bool {
+        std::vector<float> cs((size_t)T * HDm), sn((size_t)T * HDm);
+        for (int t = 0; t < T; t++)
+            uocr2::rope_table(tok_c[t], page_c[t], cs.data() + (size_t)t * HDm, sn.data() + (size_t)t * HDm);
+        std::vector<float> q((size_t)T * QD), iq((size_t)T * HDm), ik((size_t)T * HDm);
+        for (int li = 0; li < L; li++) {
+            auto & ly = ctx.m.llm_layers[li];
+            { // Graph A: input norm, q/k/v + router q/k projections, Gemma norms, rope; K/V -> cache.
+                graph G(256);
+                auto * g = G.g;
+                ggml_tensor * x = G.input(GGML_TYPE_F32, D, T);
+                ggml_tensor * tc = G.input(GGML_TYPE_F32, HDm, 1, T);
+                ggml_tensor * ts = G.input(GGML_TYPE_F32, HDm, 1, T);
+                ggml_tensor * xn = ggml_mul(g, ggml_rms_norm(g, x, lhp.rms_eps), ensure_f32(g, ly.in_ln_w));
+                auto proj = [&](ggml_tensor * w, int heads) {
+                    return ggml_reshape_3d(g, ggml_mul_mat(g, w, xn), HDm, heads, T);
+                };
+                ggml_tensor * Q = uocr2_fast::rope(g, proj(ly.q_w, NH), tc, ts);
+                ggml_tensor * K = uocr2_fast::rope(g, proj(ly.k_w, NKV), tc, ts);
+                ggml_tensor * Vv = proj(ly.v_w, NKV);
+                ggml_tensor * IQ =
+                    uocr2_fast::rope(g, uocr2_fast::gemma_rms(g, proj(ly.dash_q_w, 1), ly.dash_q_norm), tc, ts);
+                ggml_tensor * IK =
+                    uocr2_fast::rope(g, uocr2_fast::gemma_rms(g, proj(ly.dash_k_w, 1), ly.dash_k_norm), tc, ts);
+                const size_t row = kcache[li]->nb[1];
+                ggml_tensor * kdst = ggml_view_2d(g, kcache[li], KD, T, row, (size_t)p0 * row);
+                ggml_tensor * vdst = ggml_view_2d(g, vcache[li], KD, T, row, (size_t)p0 * row);
+                ggml_set_output(Q);
+                ggml_set_output(IQ);
+                ggml_set_output(IK);
+                ggml_build_forward_expand(G.gf, ggml_cpy(g, ggml_reshape_2d(g, K, KD, T), kdst));
+                ggml_build_forward_expand(G.gf, ggml_cpy(g, ggml_reshape_2d(g, ggml_cont(g, Vv), KD, T), vdst));
+                ggml_build_forward_expand(G.gf, Q);
+                ggml_build_forward_expand(G.gf, IQ);
+                ggml_build_forward_expand(G.gf, IK);
+                if (!uocr2_fast::alloc(ctx, G.gf)) return false;
+                ggml_backend_tensor_set(x, h.data(), 0, (size_t)T * D * sizeof(float));
+                ggml_backend_tensor_set(tc, cs.data(), 0, cs.size() * sizeof(float));
+                ggml_backend_tensor_set(ts, sn.data(), 0, sn.size() * sizeof(float));
+                if (!uocr2_fast::run(ctx, G.gf)) return false;
+                ggml_backend_tensor_get(Q, q.data(), 0, q.size() * sizeof(float));
+                ggml_backend_tensor_get(IQ, iq.data(), 0, iq.size() * sizeof(float));
+                ggml_backend_tensor_get(IK, ik.data(), 0, ik.size() * sizeof(float));
+            }
+            // CPU DASH routing with the reference helpers: all T router keys first, then queries.
+            for (int t = 0; t < T; t++) rks[li].append(ik.data() + (size_t)t * HDm, head_cls[li].data());
+            const int nblk = (rks[li].rows() + uocr2::BLOCK - 1) / uocr2::BLOCK;
+            std::vector<uocr2::selection> sel(T);
+            for (int t = 0; t < T; t++)
+                sel[t] = uocr2::route(rks[li], iq.data() + (size_t)t * HDm, head_cls[li].data(), p0 + t, cand(t, nblk));
+            const int Lk = p0 + T;
+            // Graph B per query chunk: masked attention, o_proj, residual, dense FFN / MoE.
+            for (int r0 = 0; r0 < T; r0 += chunk) {
+                const int Tc = std::min(chunk, T - r0);
+                std::vector<float> mask((size_t)Lk * Tc, NEG);
+                for (int t = 0; t < Tc; t++) {
+                    const int pos = p0 + r0 + t;
+                    float * m = mask.data() + (size_t)t * Lk;
+                    const auto & s = sel[r0 + t];
+                    for (size_t i = 0; i < s.blocks.size(); i++) {
+                        const int j0 = s.blocks[i] * uocr2::BLOCK, j1 = std::min(j0 + uocr2::BLOCK, pos + 1);
+                        for (int j = j0; j < j1; j++) m[j] = s.bias[i];
+                    }
+                    // Local window wins over a block bias (uocr2::attend: local -> bias 0).
+                    for (int j = std::max(0, pos - uocr2::LOCAL_WINDOW + 1); j <= pos; j++) m[j] = 0.0f;
+                }
+                graph G(1024);
+                auto * g = G.g;
+                ggml_tensor * hin = G.input(GGML_TYPE_F32, D, Tc);
+                ggml_tensor * qin = G.input(GGML_TYPE_F32, HDm, NH, Tc);
+                ggml_tensor * msk = G.input(GGML_TYPE_F32, Lk, Tc);
+                const size_t row = kcache[li]->nb[1], hb = (size_t)HDm * sizeof(float);
+                ggml_tensor * Kf = ggml_view_3d(g, kcache[li], HDm, NKV, Lk, hb, row, 0);
+                ggml_tensor * Vf = ggml_view_3d(g, vcache[li], HDm, NKV, Lk, hb, row, 0);
+                ggml_tensor * Qp = ggml_cont(g, ggml_permute(g, qin, 0, 2, 1, 3)); // [HD, Tc, NH]
+                ggml_tensor * Kp = ggml_cont(g, ggml_permute(g, Kf, 0, 2, 1, 3));  // [HD, Lk, NKV]
+                ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, Vf, 1, 2, 0, 3));  // [Lk, HD, NKV]
+                ggml_tensor * kq = ggml_mul_mat(g, Kp, Qp); // [Lk, Tc, NH]; head h uses kv head h/(NH/NKV)
+                kq = ggml_soft_max_ext(g, kq, msk, attn_scale, 0.0f);
+                ggml_tensor * o = ggml_mul_mat(g, Vt, kq); // [HD, Tc, NH]
+                o = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, o, 0, 2, 1, 3)), QD, Tc);
+                ggml_tensor * xo = ggml_add(g, hin, ggml_mul_mat(g, ly.o_w, o));
+                ggml_tensor * hn = ggml_mul(g, ggml_rms_norm(g, xo, lhp.rms_eps), ensure_f32(g, ly.post_ln_w));
+                ggml_tensor * ff;
+                if (li == 0) {
+                    ggml_tensor * gt = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, hn));
+                    ff = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gt, ggml_mul_mat(g, ly.ffn_up_w, hn)));
+                } else { // v1 MoE math: softmax gate, top-k, no renorm, routed scale, shared experts.
+                    const int n_exp = lhp.n_experts, K = lhp.n_experts_top;
+                    ggml_tensor * probs = ggml_soft_max(g, ggml_mul_mat(g, ly.router_w, hn));
+                    ggml_tensor * ids = ggml_top_k(g, probs, K);
+                    ggml_tensor * p3 = ggml_reshape_3d(g, probs, 1, n_exp, Tc);
+                    ggml_tensor * top_w = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, Tc);
+                    top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
+                    ggml_tensor * hn3 = ggml_reshape_3d(g, hn, D, 1, Tc);
+                    ggml_tensor * hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, K, Tc));
+                    ggml_tensor * gt = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));
+                    ggml_tensor * up = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+                    ggml_tensor * dn = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gt, up), ids);
+                    ggml_tensor * dn_p = ggml_cont(g, ggml_permute(g, dn, 1, 0, 2, 3));
+                    ggml_tensor * w_col = ggml_reshape_3d(g, top_w, K, 1, Tc);
+                    ggml_tensor * routed = ggml_reshape_2d(g, ggml_mul_mat(g, w_col, dn_p), D, Tc);
+                    ggml_tensor * sg = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+                    ggml_tensor * su = ggml_mul_mat(g, ly.shared_up_w, hn);
+                    ggml_tensor * shared = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+                    ff = ggml_add(g, routed, shared);
+                }
+                ggml_tensor * out = ggml_add(g, xo, ff);
+                ggml_set_output(out);
+                ggml_build_forward_expand(G.gf, out);
+                if (!uocr2_fast::alloc(ctx, G.gf)) return false;
+                ggml_backend_tensor_set(hin, h.data() + (size_t)r0 * D, 0, (size_t)Tc * D * sizeof(float));
+                ggml_backend_tensor_set(qin, q.data() + (size_t)r0 * QD, 0, (size_t)Tc * QD * sizeof(float));
+                ggml_backend_tensor_set(msk, mask.data(), 0, mask.size() * sizeof(float));
+                if (!uocr2_fast::run(ctx, G.gf)) return false;
+                ggml_backend_tensor_get(out, h.data() + (size_t)r0 * D, 0, (size_t)Tc * D * sizeof(float));
+            }
+            if (dbg && T > 1) fprintf(stderr, "  [uocr2-fast] prefill layer %d done\n", li);
+        }
+        return true;
+    };
+
+    const auto t_start = std::chrono::steady_clock::now();
+    auto ms_since = [&]() {
+        return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_start).count();
+    };
+    std::vector<float> h(prompt_embeds, prompt_embeds + (size_t)S * D);
+    if (!forward(h, S, 0, co.tok, co.page, [&](int t, int) { return cand_prefill(t); })) return false;
+    if (dbg) fprintf(stderr, "  [uocr2-fast] prefill done S=%d %.1f ms\n", S, ms_since());
+
+    ggml_tensor * lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
+    std::vector<float> last(h.end() - D, h.end()), logits(V);
+    const int expected_pages = (int)std::count(prompt_ids.begin(), prompt_ids.end(), uocr2::PAGE);
+    int marker_cum = 0, page_len = 0;
+    out_ids.clear();
+    out_confs.clear();
+    for (int step = 0; step < max_new; step++) {
+        { // final norm + lm_head on native weight type
+            graph G(16);
+            auto * g = G.g;
+            ggml_tensor * x = G.input(GGML_TYPE_F32, D);
+            ggml_tensor * xn = ggml_mul(g, ggml_rms_norm(g, x, lhp.rms_eps), ensure_f32(g, ctx.m.output_norm_w));
+            ggml_tensor * lg = ggml_mul_mat(g, lm_w, xn);
+            ggml_set_output(lg);
+            ggml_build_forward_expand(G.gf, lg);
+            if (!uocr2_fast::alloc(ctx, G.gf)) return false;
+            ggml_backend_tensor_set(x, last.data(), 0, (size_t)D * sizeof(float));
+            if (!uocr2_fast::run(ctx, G.gf)) return false;
+            ggml_backend_tensor_get(lg, logits.data(), 0, (size_t)V * sizeof(float));
+        }
+        // Page-count guard, argmax (first max wins) and confidence: identical to run_llm_decoder_v2.
+        const int eos = lhp.eos_token_id;
+        if (marker_cum > expected_pages) {
+            for (int i = 0; i < V; i++)
+                if (i != eos) logits[i] = NEG;
+        } else if (page_len >= 20000) {
+            const int keep = marker_cum < expected_pages ? uocr2::PAGE : eos;
+            for (int i = 0; i < V; i++)
+                if (i != keep) logits[i] = NEG;
+        } else if (marker_cum < expected_pages) {
+            logits[eos] = NEG;
+        }
+        const int nxt = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        float mx = logits[nxt], se = 0;
+        for (float l : logits)
+            if (std::isfinite(l)) se += std::exp(l - mx);
+        if (nxt == eos) break;
+        out_ids.push_back(nxt);
+        out_confs.push_back(1.0f / se);
+        if (nxt == uocr2::PAGE) {
+            marker_cum++;
+            page_len = 0;
+        } else
+            page_len++;
+        const int pos = S + (int)out_ids.size() - 1;
+        if (pos + 1 >= 131072 || pos >= cap) break;
+        co.advance(nxt);
+        pg.advance(nxt);
+        std::vector<float> e(D);
+        ggml_tensor * emb_t = ctx.m.embed_tokens;
+        const size_t rb = ggml_row_size(emb_t->type, D);
+        std::vector<uint8_t> raw(rb);
+        ggml_backend_tensor_get(emb_t, raw.data(), (size_t)nxt * rb, rb);
+        if (emb_t->type == GGML_TYPE_F32)
+            memcpy(e.data(), raw.data(), (size_t)D * sizeof(float));
+        else
+            ggml_get_type_traits(emb_t->type)->to_float(raw.data(), e.data(), D);
+        if (!forward(e, 1, pos, { co.cur_tok }, { co.cur_page }, [&](int, int nblk) { return cand_decode(nblk); }))
+            return false;
+        last = e;
+    }
+    if (dbg) fprintf(stderr, "  [uocr2-fast] decode done: %zu tokens, %.1f ms total\n", out_ids.size(), ms_since());
+    return true;
+}
+
+// ---------------------------------------------------------------------------
 // Fused multi-layer decode graph (UOCR_OPT_FUSED_DECODE)
 // Builds all 12 LLM layers in one ggml graph, eliminating 11 graph builds per step.
 // ---------------------------------------------------------------------------
@@ -3818,7 +4152,11 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
             if (out_len) *out_len = 0;
             return "";
         }
-        decoded = run_llm_decoder_v2(ctx->inner, prompt_embeds.data(), prompt_ids, max_new, gen_ids, gen_confs);
+        // The fast ggml path is opt-in; the exact CPU/F32 reference decoder stays the default.
+        decoded =
+            core_env::on("CRISPEMBED_UNLIMITED_OCR2_FAST")
+                ? run_llm_decoder_v2_fast(ctx->inner, prompt_embeds.data(), prompt_ids, max_new, gen_ids, gen_confs)
+                : run_llm_decoder_v2(ctx->inner, prompt_embeds.data(), prompt_ids, max_new, gen_ids, gen_confs);
     } else {
         decoded = run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new, gen_ids, gen_confs, prompt_ids);
     }

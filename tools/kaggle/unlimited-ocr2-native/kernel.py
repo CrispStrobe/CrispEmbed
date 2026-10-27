@@ -2,9 +2,11 @@
 original reference (mounted read-only from the reference kernel via kernel_sources).
 
 Pinned checkpoint -> lossless F32 GGUF -> CLI build -> greedy decode on the untiled
-page and the tiled 1024x768 pages (CRISPEMBED_UNLIMITED_OCR2_TILES=1) -> exact token-ID and text comparison. Small JSON report only.
+page and the tiled 1024x768 pages (CRISPEMBED_UNLIMITED_OCR2_TILES=1) -> exact token-ID and text comparison.
+Each case runs the exact reference decoder and the opt-in fast ggml decoder
+(CRISPEMBED_UNLIMITED_OCR2_FAST=1); wall time and IDs are recorded for both. Small JSON report only.
 """
-import glob, json, os, re, subprocess, sys
+import glob, json, os, re, subprocess, sys, time
 COMMIT = '@COMMIT@'
 def sh(*a, **k): print('+', *a, flush=True); subprocess.run(list(a), check=True, **k)
 sh('git', 'clone', '-q', '--filter=blob:none', 'https://github.com/CrispStrobe/CrispEmbed.git', '/kaggle/temp/ce')
@@ -29,29 +31,56 @@ sh('cmake', '-S', '.', '-B', '/kaggle/temp/b', '-DCMAKE_BUILD_TYPE=Release', '-D
 sh('cmake', '--build', '/kaggle/temp/b', '--target', 'crispembed-cli', '--parallel', '4')
 ref_json = glob.glob('/kaggle/input/**/uocr2/reference.json', recursive=True)[0]
 ref = json.load(open(ref_json)); base = os.path.dirname(ref_json)
-report = dict(schema='crispembed-unlimited-ocr2-native-v1', commit=COMMIT, reference_revision=ref['revision'], cases=[])
+# v2 schema: every case runs the exact reference decoder (default) and the opt-in fast ggml
+# decoder (CRISPEMBED_UNLIMITED_OCR2_FAST=1). Top-level per-case fields stay the reference
+# arm (v1-compatible); 'arms' records IDs and wall time for both. Acceptance for the fast
+# arm = identical generated token IDs (small float drift only while IDs stay identical).
+report = dict(schema='crispembed-unlimited-ocr2-native-v2', commit=COMMIT, reference_revision=ref['revision'], cases=[])
+subprocess.run(['bash', '-c', 'command -v gdb || (apt-get -qq update && apt-get -qq install -y gdb) >/dev/null 2>&1'])
+
+
+def first_difference(a, b):
+    if a is None or b is None:
+        return None
+    return next((i for i, (x, y) in enumerate(zip(a, b)) if x != y), None if len(a) == len(b) else min(len(a), len(b)))
+
+
+def run_arm(img, tiled, fast):
+    run_env = dict(os.environ, CRISPEMBED_UNLIMITED_OCR2='1', UOCR_DBG='1', OMP_NUM_THREADS=str(os.cpu_count()))
+    if tiled:
+        run_env['CRISPEMBED_UNLIMITED_OCR2_TILES'] = '1'
+    run_env['CRISPEMBED_UNLIMITED_OCR2_FAST'] = '1' if fast else '0'
+    run_env['ASAN_OPTIONS'] = 'detect_leaks=0:abort_on_error=0:halt_on_error=1'
+    t0 = time.monotonic()
+    r = subprocess.run(['/kaggle/temp/b/crispembed', '-m', '/kaggle/temp/uocr2-f32.gguf', '--ocr', img,
+                        '--ocr-max-tokens', '384', '-t', str(os.cpu_count())], env=run_env, capture_output=True, text=True)
+    wall = time.monotonic() - t0
+    m = re.search(r'gen_ids \(\d+\):([^\n]*)', r.stderr)
+    ids = [int(x) for x in m.group(1).split()] if m else None
+    return dict(fast=fast, exit=r.returncode, wall_seconds=round(wall, 3), ids=ids, text=r.stdout.strip(),
+                stderr_tail=r.stderr[-6000:])
+
+
 for case in ref['cases']:
     if case['id'] not in ('small-untiled', 'para-en', 'table'):
         continue
     tiled = case['id'] != 'small-untiled'  # 1024x768 pages: native gundam tiling (gated)
     img = os.path.join(base, case['id'] + '.png')
-    run_env = dict(os.environ, CRISPEMBED_UNLIMITED_OCR2='1', UOCR_DBG='1', OMP_NUM_THREADS=str(os.cpu_count()))
-    if tiled:
-        run_env['CRISPEMBED_UNLIMITED_OCR2_TILES'] = '1'
-    subprocess.run(['bash', '-c', 'command -v gdb || (apt-get -qq update && apt-get -qq install -y gdb) >/dev/null 2>&1'])
-    run_env['ASAN_OPTIONS'] = 'detect_leaks=0:abort_on_error=0:halt_on_error=1'
-    r = subprocess.run(['/kaggle/temp/b/crispembed', '-m', '/kaggle/temp/uocr2-f32.gguf', '--ocr', img,
-                        '--ocr-max-tokens', '384', '-t', str(os.cpu_count())], env=run_env, capture_output=True, text=True)
-    m = re.search(r'gen_ids \(\d+\):([^\n]*)', r.stderr)
-    native_ids = [int(x) for x in m.group(1).split()] if m else None
     ref_ids = next((case[k] for k in ('ids', 'token_ids', 'output_ids') if k in case), None)
-    first_diff = None
-    if native_ids is not None and ref_ids is not None:
-        first_diff = next((i for i, (a, b) in enumerate(zip(native_ids, ref_ids)) if a != b),
-                          None if len(native_ids) == len(ref_ids) else min(len(native_ids), len(ref_ids)))
-    report['cases'].append(dict(id=case['id'], tiled=tiled, exit=r.returncode, native_text=r.stdout.strip(), reference_text=case.get('text'),
-                                native_ids=native_ids, reference_ids=ref_ids, first_id_difference=first_diff,
-                                ids_exact=native_ids is not None and native_ids == ref_ids, stderr_tail=r.stderr[-6000:]))
+    exact, fast = run_arm(img, tiled, False), run_arm(img, tiled, True)
+    for a in (exact, fast):
+        a['first_id_difference'] = first_difference(a['ids'], ref_ids)
+        a['ids_exact'] = a['ids'] is not None and a['ids'] == ref_ids
+    report['cases'].append(dict(id=case['id'], tiled=tiled, exit=exact['exit'], native_text=exact['text'], reference_text=case.get('text'),
+                                native_ids=exact['ids'], reference_ids=ref_ids, first_id_difference=exact['first_id_difference'],
+                                ids_exact=exact['ids_exact'], stderr_tail=exact['stderr_tail'],
+                                arms=dict(exact=exact, fast=fast),
+                                fast_ids_equal_exact=fast['ids'] is not None and fast['ids'] == exact['ids'],
+                                fast_first_difference_vs_exact=first_difference(fast['ids'], exact['ids']),
+                                speedup=round(exact['wall_seconds'] / fast['wall_seconds'], 3) if fast['wall_seconds'] else None))
 os.makedirs('/kaggle/working/native', exist_ok=True)
 json.dump(report, open('/kaggle/working/native/native.json', 'w'), indent=2, ensure_ascii=False)
-print(json.dumps([{k: c[k] for k in ('id', 'exit', 'ids_exact', 'first_id_difference')} for c in report['cases']], indent=1))
+print(json.dumps([dict({k: c[k] for k in ('id', 'exit', 'ids_exact', 'first_id_difference', 'fast_ids_equal_exact', 'speedup')},
+                       exact_s=c['arms']['exact']['wall_seconds'], fast_s=c['arms']['fast']['wall_seconds'],
+                       fast_exit=c['arms']['fast']['exit'], fast_ids_exact=c['arms']['fast']['ids_exact'])
+                  for c in report['cases']], indent=1))
