@@ -101,3 +101,32 @@ values and tiny GGUF fixtures; they do not activate production packaging. All
 multi-gigabyte reads/writes, eventual packed-loader builds, inference, artifact
 preservation and qualification belong on hosted CI. No packed asset, public API,
 registry alias, model publication, default change, tag or app update is claimed.
+
+The prepared reusable workflow
+[`josev2b-packed.yml`](../.github/workflows/josev2b-packed.yml) and
+[`josev2b_packed.py`](../tools/ci-heavy/josev2b_packed.py) add an explicit hosted
+packing/qualification caller. Its separately pinned
+[`josev2b-packed-validation-v1.json`](josev2b-packed-validation-v1.json)
+uses runtime `0f0b1e5955a8791855fdba04d018b536b6a879f8` in a detached hosted
+checkout; the converter checkout and all historical component guards remain
+unchanged. No root public API is edited by this lane. The runtime's own source
+contract, metadata/legacy-rejection controls, actual Ref0/1/2 controls, compiler
+flags and ordinary/observer archive exclusions must pass before bulk model
+archives are downloaded. Tokenizer extraction uses its exact reviewed nested
+artifact member before multi-gigabyte source retrieval.
+
+The worker fetches only the exact retained component archives and reviewed
+composed receipt, verifies full original251-array inventory and notices, runs the
+streaming packer, then executes actual packed plain/observed/repeat four-request
+probes. Exact `ed23f1ae` low-level comparison helpers are authenticated before
+import and reused without invoking or changing historical source guards. The
+same frozen51a2e16b originals remain the targets:227 mapped Ref+independent
+comparisons,24 explicitly unmapped traces, exact IDs/masks/spans, native lexical
+means, all raw final/observer/repeat checks and four complete typed responses,
+with every existing budget unchanged. Numerical failures retain all completed
+arms and reports before a nonzero result. A packed asset/notices artifact and a
+separate raw-trace artifact remain remote for90 days; small review reports include
+packing hashes, compiler evidence, command logs and every comparison. This worker
+has not been dispatched or qualified yet. Its model runs/builds require hosted
+CPU resources with at least10GiB available RAM and25GiB free scratch; no original
+framework/checkpoint recapture or local payload execution is provided.

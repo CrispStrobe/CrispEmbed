@@ -1,0 +1,70 @@
+{
+  "schema": "crispembed-josev-packed-validation-v1",
+  "runtime_source": "0f0b1e5955a8791855fdba04d018b536b6a879f8",
+  "runtime_objects": {
+    "src": "7d43c25e7b3aa73eeee9c3f061b600543a2e399e",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+    "tests/josev-packed": "211d9ce89b883ded5591f3b7b891ba7a6aabc48a",
+    "tests/josev2b_composed_observer.h": "32c3821d3697225a9c95edcea1042e7be9b1bc2b",
+    "tests/josev2b_head_observer.h": "a59c8da72af68cd9f2fd0c63b576d8dc81963fdc",
+    "tools/josev2b_packed_runtime_contract.py": "ba0598d27521ecae2fe6fdb08f1849cd68bffe79",
+    "docs/josev2b-packed-runtime.json": "7039cf6d0bf31e61c6ecc192742476422ef36d0d"
+  },
+  "reference_source": "ed23f1aeb5f448b80a89b567592986bffb951de9",
+  "reference_helpers": {
+    "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
+    "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820"
+  },
+  "pack_profile_sha256": "1523832a70fdcc6b510f35a38d5405362fd1e8a0b60f8127e3d54c995734d622",
+  "composed_panel_sha256": "219af9579b394ebc7d7f8192bbaabcc7360959b8420ec9fd8ad31e599ab2f83f",
+  "component_members": {
+    "backbone": "raw/backbone-f32.gguf",
+    "head": "head/joint-head-f32.gguf",
+    "tokenizer": "josev-tokenizer-schema/josev2b-tokenizer.gguf"
+  },
+  "notices": [
+    "LICENSE",
+    "README.md",
+    "joint_schema_model.py",
+    "joint_head_config.json",
+    "config.json",
+    "unsloth_decision_config.json",
+    "tokenizer_config.json",
+    "processor_config.json"
+  ],
+  "resources": {
+    "minimum_ram_bytes": 10737418240,
+    "minimum_disk_bytes": 26843545600,
+    "compiler_parallel": 2,
+    "job_minutes": 60
+  },
+  "gates": {
+    "CRISPEMBED_JOSEV_PACKED": "1",
+    "CRISPEMBED_JOSEV_COMPOSED": "1",
+    "CRISPEMBED_JOSEV_BACKBONE": "1",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_JOSEV_HEAD": "1",
+    "CRISPEMBED_JOSEV_TEXT_FRONTEND": "1",
+    "CRISPEMBED_JOSEV_ANSWER_SERIALIZER": "1"
+  },
+  "expected": {
+    "cases": 4,
+    "compared_stages": 227,
+    "unmapped": 24,
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "logit_absolute": 0.002,
+    "probability_absolute": 0.0001,
+    "ordinal_absolute": 0.001,
+    "complete_typed_responses_exact": true
+  },
+  "qualification": {
+    "default_enabled": false,
+    "release_qualified": false,
+    "public_api_qualified": false,
+    "model_quality": false
+  }
+}
