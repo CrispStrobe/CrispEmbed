@@ -1,0 +1,56 @@
+name: Josev pure-original-first answer serializer
+on:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: josev-answer-serializer-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  answer-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONNOUSERSITE: '1'
+      OMP_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.15'
+      - name: Stdlib controls and exact new source closure before source download
+        run: |
+          python tests/test_josev2b_answer_serializer.py -v
+          python tools/ci-heavy/josev2b_answer_serializer.py --phase preflight --output "$RUNNER_TEMP/josev-answer"
+      - name: Freeze pure publisher answers and actual Python rounding BEFORE C++
+        run: python tools/ci-heavy/josev2b_answer_serializer.py --phase original --output "$RUNNER_TEMP/josev-answer"
+      - name: Standalone answer-only C++ build; no tokenizer/backend/weights
+        run: |
+          cmake -S tests/josev-answer -B "$RUNNER_TEMP/josev-answer-build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/josev-answer-build" -j2
+      - name: Native answer JSON, exact rounding, gates, negatives and recovery
+        run: python tools/ci-heavy/josev2b_answer_serializer.py --phase native --output "$RUNNER_TEMP/josev-answer" --build "$RUNNER_TEMP/josev-answer-build"
+      - name: Preserve small reports and every rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-answer-serializer-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/josev-answer/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve manual inputs, frozen outputs, source and test binaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-answer-serializer-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-answer/
+            ${{ runner.temp }}/josev-answer-build/test-josev-answer
+            ${{ runner.temp }}/josev-answer-build/test-josev-answer-plain
+            ${{ runner.temp }}/josev-answer-build/libjosev-answer-plain.a
+            ${{ runner.temp }}/josev-answer-build/libjosev-answer-tested.a
+          retention-days: 90
+          if-no-files-found: warn

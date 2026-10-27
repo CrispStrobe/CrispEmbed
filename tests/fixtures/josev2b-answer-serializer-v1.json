@@ -1,0 +1,784 @@
+{
+  "schema": "crispembed-josev-owned-answer-cases-v1",
+  "license": "CC0-1.0",
+  "metadata_scope": "Additional cases use authored logical spans, never actual tokenizer output. All probabilities promoted from native F32 bits before original Python.",
+  "cases": [
+    {
+      "id": "choice-tie-original-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "choice",
+            "criteria": {
+              "z": "last lexical",
+              "a": "first lexical"
+            }
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "a": "0.5",
+          "z": "0.5"
+        }
+      }
+    },
+    {
+      "id": "choice-unicode-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "é": {
+            "type": "choice",
+            "instructions": null,
+            "criteria": {
+              "β": null,
+              "é": "combining",
+              "😀": {
+                "z": null,
+                "a": true
+              },
+              "a": "latin"
+            }
+          }
+        }
+      },
+      "probabilities": {
+        "é": {
+          "a": "0.5",
+          "é": "0.5",
+          "β": "0.5",
+          "😀": "0.5"
+        }
+      }
+    },
+    {
+      "id": "choice-negative-zero-tie",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "choice",
+            "criteria": {
+              "z": null,
+              "a": null
+            }
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "a": "0.0",
+          "z": "-0.0"
+        }
+      }
+    },
+    {
+      "id": "noul-negative-zero",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "noul"
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "true": "-0.0",
+          "false": "1.0"
+        }
+      }
+    },
+    {
+      "id": "noul-binary-half-even",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "even": {
+            "type": "noul"
+          },
+          "odd": {
+            "type": "noul"
+          }
+        }
+      },
+      "probabilities": {
+        "even": {
+          "true": "0.03125",
+          "false": "0.96875"
+        },
+        "odd": {
+          "true": "0.09375",
+          "false": "0.90625"
+        }
+      }
+    },
+    {
+      "id": "score-nested-legend",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "score",
+            "instructions": false,
+            "criteria": [
+              {
+                "z": null,
+                "a": [
+                  " literal ",
+                  false
+                ]
+              },
+              "é\nβ",
+              null,
+              false,
+              1e-07,
+              -0.0,
+              1e+16
+            ]
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "0": "0.1",
+          "1": "0.2",
+          "2": "0.3",
+          "3": "0.4",
+          "4": "0",
+          "5": "0",
+          "6": "0"
+        }
+      }
+    },
+    {
+      "id": "score-unrenormalized",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "score",
+            "criteria": [
+              10,
+              100,
+              1000,
+              10000
+            ]
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "0": "1.0",
+          "1": "1.0",
+          "2": "1.0",
+          "3": "1.0"
+        }
+      }
+    },
+    {
+      "id": "score-compensated-counter",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "score",
+            "criteria": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43,
+              44,
+              45,
+              46,
+              47,
+              48,
+              49,
+              50,
+              51,
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63
+            ]
+          }
+        }
+      },
+      "probability_recipe": "compensated-positive-64"
+    },
+    {
+      "id": "score-negative-zero-confidence",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "score",
+            "criteria": [
+              "a",
+              "b",
+              "c"
+            ]
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "0": "-0.0",
+          "1": "0.0",
+          "2": "0.0"
+        }
+      }
+    },
+    {
+      "id": "counter-512-instruction-fallback",
+      "request": {
+        "model": "owned echo model",
+        "state": {
+          "literal": [
+            "  {}",
+            null,
+            false
+          ]
+        },
+        "questions": {
+          "q": {
+            "type": "noul",
+            "instructions": ""
+          }
+        },
+        "id": true
+      },
+      "probabilities": {
+        "q": {
+          "true": "0.75",
+          "false": "0.25"
+        }
+      },
+      "tokens": 512
+    },
+    {
+      "id": "duplicate-criteria-first-order",
+      "request_json": "{\"model\":\"x\",\"state\":null,\"questions\":{\"q\":{\"type\":\"choice\",\"criteria\":{\"z\":1,\"a\":2,\"z\":3}}}}",
+      "probabilities": {
+        "q": {
+          "a": "0.5",
+          "z": "0.5"
+        }
+      }
+    },
+    {
+      "id": "score-max-128-unrenormalized",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "q": {
+            "type": "score",
+            "criteria": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43,
+              44,
+              45,
+              46,
+              47,
+              48,
+              49,
+              50,
+              51,
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63,
+              64,
+              65,
+              66,
+              67,
+              68,
+              69,
+              70,
+              71,
+              72,
+              73,
+              74,
+              75,
+              76,
+              77,
+              78,
+              79,
+              80,
+              81,
+              82,
+              83,
+              84,
+              85,
+              86,
+              87,
+              88,
+              89,
+              90,
+              91,
+              92,
+              93,
+              94,
+              95,
+              96,
+              97,
+              98,
+              99,
+              100,
+              101,
+              102,
+              103,
+              104,
+              105,
+              106,
+              107,
+              108,
+              109,
+              110,
+              111,
+              112,
+              113,
+              114,
+              115,
+              116,
+              117,
+              118,
+              119,
+              120,
+              121,
+              122,
+              123,
+              124,
+              125,
+              126,
+              127
+            ]
+          }
+        }
+      },
+      "probabilities": {
+        "q": {
+          "0": "1.0",
+          "1": "1.0",
+          "2": "1.0",
+          "3": "1.0",
+          "4": "1.0",
+          "5": "1.0",
+          "6": "1.0",
+          "7": "1.0",
+          "8": "1.0",
+          "9": "1.0",
+          "10": "1.0",
+          "11": "1.0",
+          "12": "1.0",
+          "13": "1.0",
+          "14": "1.0",
+          "15": "1.0",
+          "16": "1.0",
+          "17": "1.0",
+          "18": "1.0",
+          "19": "1.0",
+          "20": "1.0",
+          "21": "1.0",
+          "22": "1.0",
+          "23": "1.0",
+          "24": "1.0",
+          "25": "1.0",
+          "26": "1.0",
+          "27": "1.0",
+          "28": "1.0",
+          "29": "1.0",
+          "30": "1.0",
+          "31": "1.0",
+          "32": "1.0",
+          "33": "1.0",
+          "34": "1.0",
+          "35": "1.0",
+          "36": "1.0",
+          "37": "1.0",
+          "38": "1.0",
+          "39": "1.0",
+          "40": "1.0",
+          "41": "1.0",
+          "42": "1.0",
+          "43": "1.0",
+          "44": "1.0",
+          "45": "1.0",
+          "46": "1.0",
+          "47": "1.0",
+          "48": "1.0",
+          "49": "1.0",
+          "50": "1.0",
+          "51": "1.0",
+          "52": "1.0",
+          "53": "1.0",
+          "54": "1.0",
+          "55": "1.0",
+          "56": "1.0",
+          "57": "1.0",
+          "58": "1.0",
+          "59": "1.0",
+          "60": "1.0",
+          "61": "1.0",
+          "62": "1.0",
+          "63": "1.0",
+          "64": "1.0",
+          "65": "1.0",
+          "66": "1.0",
+          "67": "1.0",
+          "68": "1.0",
+          "69": "1.0",
+          "70": "1.0",
+          "71": "1.0",
+          "72": "1.0",
+          "73": "1.0",
+          "74": "1.0",
+          "75": "1.0",
+          "76": "1.0",
+          "77": "1.0",
+          "78": "1.0",
+          "79": "1.0",
+          "80": "1.0",
+          "81": "1.0",
+          "82": "1.0",
+          "83": "1.0",
+          "84": "1.0",
+          "85": "1.0",
+          "86": "1.0",
+          "87": "1.0",
+          "88": "1.0",
+          "89": "1.0",
+          "90": "1.0",
+          "91": "1.0",
+          "92": "1.0",
+          "93": "1.0",
+          "94": "1.0",
+          "95": "1.0",
+          "96": "1.0",
+          "97": "1.0",
+          "98": "1.0",
+          "99": "1.0",
+          "100": "1.0",
+          "101": "1.0",
+          "102": "1.0",
+          "103": "1.0",
+          "104": "1.0",
+          "105": "1.0",
+          "106": "1.0",
+          "107": "1.0",
+          "108": "1.0",
+          "109": "1.0",
+          "110": "1.0",
+          "111": "1.0",
+          "112": "1.0",
+          "113": "1.0",
+          "114": "1.0",
+          "115": "1.0",
+          "116": "1.0",
+          "117": "1.0",
+          "118": "1.0",
+          "119": "1.0",
+          "120": "1.0",
+          "121": "1.0",
+          "122": "1.0",
+          "123": "1.0",
+          "124": "1.0",
+          "125": "1.0",
+          "126": "1.0",
+          "127": "1.0"
+        }
+      }
+    },
+    {
+      "id": "max-16-fields-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "authored serializer-only state",
+        "questions": {
+          "0": {
+            "type": "noul",
+            "instructions": null
+          },
+          "1": {
+            "type": "noul",
+            "instructions": null
+          },
+          "2": {
+            "type": "noul",
+            "instructions": null
+          },
+          "3": {
+            "type": "noul",
+            "instructions": null
+          },
+          "4": {
+            "type": "noul",
+            "instructions": null
+          },
+          "5": {
+            "type": "noul",
+            "instructions": null
+          },
+          "6": {
+            "type": "noul",
+            "instructions": null
+          },
+          "7": {
+            "type": "noul",
+            "instructions": null
+          },
+          "8": {
+            "type": "noul",
+            "instructions": null
+          },
+          "9": {
+            "type": "noul",
+            "instructions": null
+          },
+          "10": {
+            "type": "noul",
+            "instructions": null
+          },
+          "11": {
+            "type": "noul",
+            "instructions": null
+          },
+          "12": {
+            "type": "noul",
+            "instructions": null
+          },
+          "13": {
+            "type": "noul",
+            "instructions": null
+          },
+          "14": {
+            "type": "noul",
+            "instructions": null
+          },
+          "15": {
+            "type": "noul",
+            "instructions": null
+          }
+        }
+      },
+      "probabilities": {
+        "0": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "1": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "2": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "3": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "4": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "5": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "6": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "7": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "8": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "9": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "10": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "11": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "12": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "13": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "14": {
+          "true": "0.5",
+          "false": "0.5"
+        },
+        "15": {
+          "true": "0.5",
+          "false": "0.5"
+        }
+      }
+    }
+  ],
+  "rounding": {
+    "decimal_values": [
+      "0.0",
+      "-0.0",
+      "0.00005",
+      "0.00015",
+      "0.00025",
+      "0.03125",
+      "0.09375",
+      "0.15625",
+      "1.00005",
+      "1.23445",
+      "1.23455",
+      "127.99995",
+      "8128.0"
+    ],
+    "hex_values": [
+      "0x0.0000000000001p-1022",
+      "0x1.0p-1022",
+      "0x1.0p-15",
+      "0x1.0p-16",
+      "0x1.0p-14"
+    ],
+    "scaled_midpoint_integers": [
+      0,
+      1,
+      2,
+      3,
+      9,
+      31,
+      312,
+      937,
+      4999,
+      5000,
+      9999,
+      10000,
+      12344,
+      12345,
+      1279999,
+      81279998
+    ]
+  }
+}
