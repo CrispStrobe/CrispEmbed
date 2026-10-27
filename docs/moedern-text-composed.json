@@ -5,28 +5,28 @@
   "default_enabled": false,
   "model_recapture": false,
   "unigram": {
-    "reviewed": false,
-    "completed_parity": false,
-    "run": null,
-    "source": null,
+    "reviewed": true,
+    "completed_parity": true,
+    "run": 40451408614,
+    "source": "3da7cf8e9a4fcd6342fc9a6ac00d07de42b7c324",
     "review": {
-      "id": null,
-      "name": null,
-      "bytes": null,
-      "sha256": null
+      "id": 12710683871,
+      "name": "moedern-unigram-review-40451408614",
+      "bytes": 43614,
+      "sha256": "db542b3bd0f72ea7c1cd1254cf9292019979aff802b57d23b6676ffe73ded773"
     },
     "metadata": {
-      "id": null,
-      "name": null,
-      "bytes": null,
-      "sha256": null
+      "id": 12710648670,
+      "name": "moedern-unigram-metadata-40451408614",
+      "bytes": 4502625,
+      "sha256": "67dcf6df355aaeb8fa4326568bcd6b808d2a127c0d5b9905db2e8ba2d4032763"
     },
-    "report_sha256": null,
-    "original_report_sha256": null,
-    "component_sha256": null,
-    "component_bytes": null,
-    "component_member": null,
-    "gold_member": null
+    "report_sha256": "b1073f4a3b377c853d0573dfd44551ecdc532a1c353f3dd9b3bc96b6f121bc3c",
+    "original_report_sha256": "6a6a833faaefa66a1e3297eb0a35aa4570b552913b96de752a174e0b2697b3b1",
+    "component_sha256": "3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1",
+    "component_bytes": 1095840,
+    "component_member": "moedern-unigram/tokenizer.gguf",
+    "gold_member": "moedern-unigram/original-gold.json"
   },
   "primary": {
     "run": 40412164041,
@@ -358,7 +358,7 @@
   "source_sha256": {
     ".github/workflows/moedern-text-composed.yml": "b21c9ce74f986bf4ee0cc76d088bdf8a7a74f2733167516576e66e990042f8c5",
     ".github/workflows/ovisocr2-metadata.yml": "3a94dde4868986242b8fed90dc59ddd09e01900d742a1217467370fba7bbecad",
-    "docs/moedern-text-composed.md": "3959daaea4d36c7b8ebad56d388ba23e49c07fc03492628176d36eaf489b7d98",
+    "docs/moedern-text-composed.md": "ff61b08538197b3315265f3a21781ce87a658130c618777f981f62c512a0bd5e",
     "src/moedern_text.cpp": "3acfc49b331ab192cb1bc92a826ea31722804fd55f0eca46ad2f97e52a7d8b4c",
     "src/moedern_text.h": "0c868a7a98109808e0fd541dc46eeb0de8e9cfde503c4b00876c1e72f7953c3a",
     "src/moedern_text_engine.cpp": "2d51f2e28746228f14803c15459a243150d1b7a78added426ff619ed412998cb",

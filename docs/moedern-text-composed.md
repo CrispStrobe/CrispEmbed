@@ -3,10 +3,10 @@
 This separate source lane is based on Unigram preparation
 `3da7cf8e9a4fcd6342fc9a6ac00d07de42b7c324`, including the exact strict-dictionary
 recorder and historical normalized-role-matcher corrections. No old frontend,79/v2 kernel, producer, guard, golden array,
-root CMake, registry, C API or binding file changes. Unigram execution/review
-identities are deliberately pending in the [new contract](moedern-text-composed.json).
-The actual original-first tokenizer producer must be reviewed and explicitly
-pinned before this lane can access any dependency API, archive or model payload.
+root CMake, registry, C API or binding file changes. Reviewed Unigram execution/review
+identities are explicit in the [new contract](moedern-text-composed.json).
+This lane admits only those exact original-first service, source, report and
+component identities before it can access an archive or model payload.
 No dispatch or composed parity is claimed by source preparation.
 
 The internal `moedern_text` context accepts a separate exact tokenizer component
@@ -39,9 +39,9 @@ failure/recovery, gate0/recovery, role/bounds rejection, score reset/recovery an
 two-context destruction/ownership are checked on actual compiled components.
 All55 actual engine observations per case are retained only in test artifacts.
 
-The new hosted workflow first rejects pending Unigram identities before any
-network request, optional package or build. Once populated after independent
-review, it authenticates exact service/source/whole-ZIP/member identities for
+The new hosted workflow rejects missing/unreviewed Unigram identities before any
+network request, optional package or build. It authenticates the reviewed exact
+service/source/whole-ZIP/member identities for
 the complete tokenizer result, original report and component. Explicit pinned
 member names handle artifact namespace roots; no latest lookup, path guessing or
 historical-guard waiver is allowed. The measured frontend source/header must
@@ -82,8 +82,26 @@ The initial tokenizer comparison
 [40449174879](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40449174879)
 remains rejected: two of34 owned overlap cases omitted retained normalized role
 matchers. All ten original streams and1040 normalization compositions passed,
-but that result cannot admit a composed model run. The corrected producer must
-independently pass all34 cases, the unchanged ten Unigram units, four input
-negatives and all six metadata negatives before its explicit identities can
-replace the pending sentinel here. Original gold is never replaced by native
-outputs or by an earlier partially passing tokenizer producer.
+but that result cannot admit a composed model run. The corrected producer
+[40451408614](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40451408614)
+at the exact3da source succeeded and its SMALL report was independently reviewed:
+all34 streams/IDs/masks, frozen ten,1040 normalizer comparisons, ten Unigram units,
+four input rejection/recovery groups, six metadata negatives and the compiled
+production role-alias/context/ownership controls passed. The original34 token
+streams and normalization outputs retain the initial original bytes. Original
+gold is never replaced by native outputs or a partially passing tokenizer.
+
+The reviewed SMALL artifact12710683871 is43614 bytes with SHA256
+`db542b3bd0f72ea7c1cd1254cf9292019979aff802b57d23b6676ffe73ded773`.
+The tokenizer component is1095840 bytes with SHA256
+`3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1`;
+metadata artifact12710648670 is4502625 bytes with SHA256
+`67dcf6df355aaeb8fa4326568bcd6b808d2a127c0d5b9905db2e8ba2d4032763`.
+The component/binaries remain remote. The producer uploads the tokenizer output
+directory and sibling build outputs together, so their common root is the runner
+temporary directory: expected members are exactly
+`moedern-unigram/tokenizer.gguf` and `moedern-unigram/original-gold.json`. This
+layout is derived from the frozen upload source; the consumer must verify those
+exact members after authenticated remote transfer, with no basename fallback.
+This tokenizer review permits the bounded composition experiment, without
+claiming any composed model outcome.
