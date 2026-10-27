@@ -1,0 +1,45 @@
+{
+  "schema": "crispembed-moedern-115m-native-parity-receipt-v1",
+  "variant": "115M",
+  "revision": "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+  "passed": true,
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-moedern-115m-native-parity",
+    "kernel_version": 1,
+    "source_commit": "0955eab06ca6dffc7ef11d89232f1e4ae0f19ae2",
+    "original": "tests/results/moedern-colbert/original-115m.json"
+  },
+  "parity_report_sha256": "191b2b7cad63e626d94a749d6e2e0369c232a9ae36e1948a955507a41f525bb6",
+  "gates": {
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "maxsim_max_absolute": 0.002
+  },
+  "cases": 10,
+  "worst_max_absolute": 2.980232238769531e-07,
+  "min_row_cosine": 0.9999999999994299,
+  "scores": [
+    {
+      "pair": "q-de|d-de",
+      "native": 14.84232250479043,
+      "original": 14.84232234954834,
+      "passed": true
+    },
+    {
+      "pair": "q-empty|d-one",
+      "native": 16.203314925247877,
+      "original": 16.20331573486328,
+      "passed": true
+    },
+    {
+      "pair": "q-markers|d-unicode",
+      "native": 16.512361543805476,
+      "original": 16.512365341186523,
+      "passed": true
+    }
+  ],
+  "engine": "src/moedern_family_engine.cpp (6 gated depthwise dilated-conv layers + 4 attention/MoE layers)",
+  "limits": "Linux x64 CPU F32, frozen IDs only; tokenizer composition, public roles, packing, retrieval quality and publication remain.",
+  "public_api_qualified": false
+}
