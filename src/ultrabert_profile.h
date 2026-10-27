@@ -2,6 +2,7 @@
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "tokenizer.h"
+#include "ultrabert_tokenizer_mode.h"
 #include <algorithm>
 #include <map>
 #include <stdexcept>
@@ -95,7 +96,7 @@ inline bool load_tokenizer(gguf_context * g, BPETokenizer & raw, std::vector<std
         vocab[16] != "<|mask|>")
         return false;
     if (!raw.load(vocab, merges, -1, 0, -1, -1, false, 1048576)) return false;
-    raw.set_gpt2_regex_pretok(true);
+    configure_tokenizer_mode(raw);
     return true;
 }
 inline bool tokenize(const BPETokenizer & raw, const std::string & text, std::vector<int32_t> & ids) {
