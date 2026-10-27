@@ -13,6 +13,7 @@ test "$(grep -c ' crispembed_moedern_' "$R/exports.txt")" = 5
 grep -q ' crispembed_systemone_run_json$' "$R/exports.txt"
 if nm -C "$B/libcrispembed.so" | grep -E 'composed_test::|run_observed'; then echo "observer leaked"; exit 1; fi
 "$B/crispembed" --help 2>&1 | grep -E -- '--systemone|--moedern' | tee "$R/cli-help.txt"
+python -m pip install -q numpy==2.2.6
 ( cd python && python -c "import crispembed; print(crispembed.CrispSystemOne.__name__, crispembed.CrispMoEdern.__name__)" ) | tee "$R/python.txt"
 CRISPEMBED_SYS_LIB_DIR="$B" cargo check --workspace 2>&1 | tail -3 | tee "$R/rust.txt"
 echo "### Final candidate model-free build passed" > "$R/summary.md"
