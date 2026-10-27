@@ -1,0 +1,62 @@
+name: Josev original-first F32 text backbone audit
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: josev-backbone-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  four-case-backbone:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Small source/shape/negative controls; no payload access
+        run: |
+          python -B tests/test_josev2b_backbone_contract.py -v
+          python -B tests/test_josev2b_backbone_conversion.py -v
+          python -B tests/test_josev2b_backbone_probe.py -v
+      - name: Resource and immutable original lineage before optional packages
+        run: python -B tools/ci-heavy/josev2b_backbone.py --phase prepare --output "$RUNNER_TEMP/josev-backbone" --scratch "$RUNNER_TEMP/josev-backbone-scratch"
+      - name: Exact dependency and array/GGUF tooling; no original framework
+        run: |
+          git submodule update --init --depth 1 ggml
+          test "$(git -C ggml rev-parse HEAD)" = "a06fc0bb46b73cc10011fc90ae4054aee8438aeb"
+          python -m pip install numpy==2.2.6 gguf==0.17.1
+          python -m pip freeze > "$RUNNER_TEMP/josev-backbone/review/environment.txt"
+      - name: Exact chunk conversion then four-case104stage actualRef panel
+        run: python -B tools/ci-heavy/josev2b_backbone.py --phase run --output "$RUNNER_TEMP/josev-backbone" --scratch "$RUNNER_TEMP/josev-backbone-scratch"
+      - name: Preserve all small outcomes and initial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-backbone-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/josev-backbone/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve large exact F32 backbone, observations and lossless adapters remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-backbone-f32-and-observations-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-backbone/raw/
+            ${{ runner.temp }}/josev-backbone/inputs.packet
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn
