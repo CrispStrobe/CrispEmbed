@@ -10228,8 +10228,8 @@ remain opt-in pending backend parity. Details: [docs/lfm2-encoder.md](docs/lfm2-
 (archive them + the round-N+3 handover to HISTORY as your first hygiene act);
 the top ~5 dated `PERFORMANCE.md` sections; `PRIVATE_OPERATOR_GUIDE`
 incl. both 2026-08-06/07 addenda; `PRIVATE_OPERATOR_GUIDE` (tokens there, NEVER
-here — and it gained a wrong-account-push warning this round: ALWAYS export
-`KAGGLE_API_TOKEN` explicitly, the default `access_token` rotated to ${KAGGLE_ACCOUNT}).
+here — and it gained a wrong-account-push warning this round: ALWAYS select the
+credential explicitly, the CLI default had rotated to another account).
 
 <a id="plan-20261015-L312"></a>
 
@@ -10307,7 +10307,7 @@ flags; claim a board row BEFORE starting and push it; measure-first;
 interleaved same-binary env-gated pairs; opt-in until it wins speed AND
 quality; never delete a gated path; `tools/format.sh --fix`; ff-merge from
 the MAIN TREE; no Claude co-author trailer; one heavy model at a time;
-kernels under ${KAGGLE_ACCOUNT} — with the explicit `KAGGLE_API_TOKEN` export; no
+kernels under ${KAGGLE_ACCOUNT} — with an explicitly selected credential; no
 tokens in repo Markdown; process CPU nt1-vs-nt1; decoded-output before
 cosine severity; a brief is a hypothesis) **plus this round's additions**:
 check `uptime` before ANY timing arm and abort if the box is loaded (record

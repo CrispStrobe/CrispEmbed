@@ -1963,10 +1963,10 @@ allows (delete-then-push).
 from `${KAGGLE_ACCOUNT}/crispembed-ccache` (bare `.ccache` tree; Kaggle auto-extracts
 the seed's tar) and the CUDA build finished in ~2.3 min. v3's local
 "ccache: cold build" line was a false alarm (it only knew the tar layout;
-fixed). ⚠ The default `~/.kaggle/access_token` has ROTATED and resolves to
-${KAGGLE_ACCOUNT} — a bare push landed on the wrong account with the ${KAGGLE_ACCOUNT} datasets
-silently dropped (kernel deleted; always export `KAGGLE_API_TOKEN`
-explicitly; `kaggle_usage.md` corrected).
+fixed). ⚠ The CLI's default credential had rotated to another account — a
+bare push landed on the wrong account with the attached datasets silently
+dropped (kernel deleted; always select the publishing credential explicitly;
+the private operator notes were corrected).
 
 ## O7 increment 4: posformer measured FLAT — the BTTR verdict again; ppformulanet-l DEFERRED (box contended, arms unmeasurable) (Apple M1, 2026-08-07)
 
