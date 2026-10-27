@@ -44,3 +44,14 @@ model contract, arithmetic, inputs or numerical gates, and authorizes no GPU
 retry. An archive-only result cannot measure installation rewriting or establish
 CUDA/runtime/model compatibility. Review the actual archive audit before binding
 any corrected installed-metadata selector to a newly declared worker source.
+
+A separate prepared verifier correction selects exactly one top-level
+`<own-name>-<own-version>.dist-info/METADATA` from the owning distribution's
+RECORD. Nested vendored metadata is ineligible, and missing/duplicate owners,
+an owner outside the isolated environment, or any original locked metadata hash
+mismatch still reject. There is no vendor-hash fallback. Fake-distribution
+controls cover a real owner plus vendored copies, missing/wrong/duplicate owners,
+and corrupted owner bytes beside a vendor with the expected bytes. The wheel
+lock and bootstrap's frozen worker pointer remain unchanged: this source-only
+correction is not yet used by a GPU worker or qualified by an installed-wheel
+test. Review the actual CPU archive results first.
