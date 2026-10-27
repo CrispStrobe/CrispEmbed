@@ -1,0 +1,50 @@
+name: MoEdern1.5M frozen-primary supplemental-observer nativev2
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  native-dual-reference:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tiny dual-reference and explicit coverage controls
+        run: python -B tests/test_moedern_native_v2.py -v
+      - name: Authenticate both original outcomes and reviewed operator diagnosis
+        run: python -B tools/ci-heavy/moedern_native_v2.py --phase prepare --output "$RUNNER_TEMP/moedern-native-v2" --scratch "$RUNNER_TEMP/moedern-native-v2-scratch"
+      - name: Exact new experiment dependency and array tooling
+        run: |
+          git submodule update --init --depth 1 ggml
+          test "$(git -C ggml rev-parse HEAD)" = "a06fc0bb46b73cc10011fc90ae4054aee8438aeb"
+          python -m pip install numpy==2.2.6 gguf==0.17.1
+          python -m pip freeze > "$RUNNER_TEMP/moedern-native-v2/review/environment.txt"
+      - name: All250original drift rows then ten native cases and three OLD scores
+        run: python -B tools/ci-heavy/moedern_native_v2.py --phase run --output "$RUNNER_TEMP/moedern-native-v2" --scratch "$RUNNER_TEMP/moedern-native-v2-scratch"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-native-v2-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-native-v2/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-native-v2-observations-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-native-v2/raw/
+          retention-days: 90
+          if-no-files-found: warn
