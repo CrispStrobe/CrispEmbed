@@ -2,7 +2,7 @@ name: Josev packed F32 publication (owner-approved only)
 on:
   workflow_call:
     secrets:
-      HF_TOKEN:
+      HF_PUBLISH_TOKEN:
         required: false
 permissions:
   contents: read
@@ -27,7 +27,7 @@ jobs:
         run: python -m pip install huggingface-hub==1.33.0
       - name: Approval gate, exact artifact, upload, empty-cache readback
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
           HF_HUB_DISABLE_XET: '1'
         run: |
           mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"

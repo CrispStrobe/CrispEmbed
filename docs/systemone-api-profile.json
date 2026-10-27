@@ -4,7 +4,7 @@
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "model_qualified": false,
   "owned_sha256": {
-    ".github/workflows/ovisocr2-metadata.yml": "381498f2c483ccf88e7a6db36542cef16c572e2ce6a53dd3e2036dcafd153dd1",
+    ".github/workflows/ovisocr2-metadata.yml": "32974bfb48c3e05962ef2ea103d3e0686a9940bad206225e41b7abbf047c643a",
     ".github/workflows/systemone-api-build.yml": "1bd4362c3ed6c08fa28e69a365e92f3e8136f8509a057bb6e94b786d4a494efe",
     "CMakeLists.txt": "e64d53d68bca90e8d2a64c733aef6b685393ca57cd3b0995455e0e53e717974a",
     "crispembed-sys/src/lib.rs": "69918a928eaaf425c9a4019e32241d8356dc311b2ea9be80f495898a57478b1b",

@@ -619,4 +619,4 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-publish'
     uses: ./.github/workflows/josev-publish.yml
     secrets:
-      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_PUBLISH_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}

@@ -2,7 +2,7 @@
   "schema": "crispembed-josev-publication-v1",
   "approved_by_owner": true,
   "destination": "cstr/Josev-2B-SystemOne-GGUF",
-  "token_secret": "HF_TOKEN",
+  "token_secret": "HF_PUBLISH_TOKEN",
   "filename": "josev2b-systemone-f32.gguf",
   "consumer_receipt": "tests/results/josev2b/public-consumers.json",
   "consumer_run": 40463407332,
