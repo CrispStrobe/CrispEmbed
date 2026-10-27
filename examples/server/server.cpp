@@ -4018,6 +4018,7 @@ int main(int argc, char ** argv) {
             if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse
             if (crispembed_has_colbert(ctx)) js << ", \"colbert\": true";  // POST /colbert/score
         }
+        if (systemone) js << ", \"systemone\": true";
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
@@ -4060,6 +4061,7 @@ int main(int argc, char ** argv) {
         const bool have_orch_caps = ocr_orch_ctx && crispembed_ocr_pipeline_capabilities(ocr_orch_ctx, &oc);
         std::ostringstream js;
         js << "{\"status\":\"ok\",\"routes\":{";
+        js << "\"systemone\":" << (systemone ? "true" : "false") << ",";
         js << "\"ocr\":" << (ocr_pipeline_ctx ? "true" : "false");
         js << ",\"ocr_pipeline\":" << (ocr_orch_ctx ? "true" : "false");
         js << ",\"layout\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
@@ -4086,8 +4088,8 @@ int main(int argc, char ** argv) {
     });
 
     svr.Get("/health/ready", [&](const httplib::Request &, httplib::Response & res) {
-        const bool ready = ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx || ocr_orch_ctx ||
-                           layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
+        const bool ready = systemone || ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx ||
+                           ocr_orch_ctx || layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
         res.status = ready ? 200 : 503;
         res.set_content(ready ? "{\"status\":\"ready\"}" : "{\"status\":\"not_ready\"}", "application/json");
     });
