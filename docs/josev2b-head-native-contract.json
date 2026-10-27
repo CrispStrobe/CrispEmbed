@@ -1,0 +1,1196 @@
+{
+  "schema": "crispembed-josev-head-native-source-v1",
+  "qualification": false,
+  "full_model": false,
+  "gate": "CRISPEMBED_JOSEV_HEAD",
+  "original_receipt_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+  "original_worker": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
+  "input_freeze_sha256": "9c85fae56186517b5721be547bc74e8f92bd8e7cdb45d38afb4340e029161fe7",
+  "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+  "bounds": {
+    "tokens": 512,
+    "fields": 16,
+    "total_options": 128
+  },
+  "numerics": {
+    "storage": "F32",
+    "matmul_precision": "GGML_PREC_F32",
+    "layer_norm_epsilon": 1e-05,
+    "normalize_epsilon": 1e-12,
+    "cosine_epsilon": 1e-08,
+    "gelu": "erf",
+    "decoded_quality": "unqualified",
+    "gates": {
+      "max_abs": 0.002,
+      "min_cosine": 0.99999
+    }
+  },
+  "cases": [
+    {
+      "id": "mixed-de",
+      "input": {
+        "schema": "crispembed-josev-head-input-v1",
+        "tokens": 319,
+        "hidden_f32": "hidden.f32",
+        "fields": [
+          {
+            "id": "bezahlt",
+            "type": 0,
+            "question_start": 76,
+            "question_end": 82,
+            "options": [
+              {
+                "start": 93,
+                "end": 111
+              },
+              {
+                "start": 117,
+                "end": 135
+              }
+            ],
+            "lexical_f32": "lexical-00.f32"
+          },
+          {
+            "id": "status",
+            "type": 1,
+            "question_start": 156,
+            "question_end": 161,
+            "options": [
+              {
+                "start": 172,
+                "end": 188
+              },
+              {
+                "start": 194,
+                "end": 209
+              }
+            ],
+            "lexical_f32": "lexical-01.f32"
+          },
+          {
+            "id": "sicherheit",
+            "type": 2,
+            "question_start": 231,
+            "question_end": 238,
+            "options": [
+              {
+                "start": 249,
+                "end": 262
+              },
+              {
+                "start": 268,
+                "end": 279
+              },
+              {
+                "start": 285,
+                "end": 297
+              }
+            ],
+            "lexical_f32": "lexical-02.f32"
+          }
+        ]
+      },
+      "original_stages": [
+        {
+          "stage": "head/hidden_norm/input/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            319,
+            2048
+          ]
+        },
+        {
+          "stage": "head/hidden_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            319,
+            2048
+          ]
+        },
+        {
+          "stage": "head/memory_projection",
+          "occurrence": 0,
+          "shape": [
+            319,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 1,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 1,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 1,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 1,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 2,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 2,
+          "shape": [
+            3,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 2,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 2,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            7,
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            7,
+            512
+          ]
+        },
+        {
+          "stage": "head/question_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            3,
+            2048
+          ]
+        },
+        {
+          "stage": "head/question_projection",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_summary_norm",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/global_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/type_embedding",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/2",
+          "occurrence": 0,
+          "shape": [
+            1,
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/3",
+          "occurrence": 0,
+          "shape": [
+            1,
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/field_norm",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 0,
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 1,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 1,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 1,
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 2,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 2,
+          "shape": [
+            3,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 2,
+          "shape": [
+            3,
+            1
+          ]
+        },
+        {
+          "stage": "logits/bezahlt",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "probabilities/bezahlt",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "logits/status",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "probabilities/status",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "logits/sicherheit",
+          "occurrence": 0,
+          "shape": [
+            3
+          ]
+        },
+        {
+          "stage": "probabilities/sicherheit",
+          "occurrence": 0,
+          "shape": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "id": "null-and-options",
+      "input": {
+        "schema": "crispembed-josev-head-input-v1",
+        "tokens": 197,
+        "hidden_f32": "hidden.f32",
+        "fields": [
+          {
+            "id": "Leerstand",
+            "type": 1,
+            "question_start": 62,
+            "question_end": 64,
+            "options": [
+              {
+                "start": 75,
+                "end": 90
+              },
+              {
+                "start": 96,
+                "end": 102
+              }
+            ],
+            "lexical_f32": "lexical-00.f32"
+          },
+          {
+            "id": "bestätigt",
+            "type": 0,
+            "question_start": 124,
+            "question_end": 127,
+            "options": [
+              {
+                "start": 138,
+                "end": 155
+              },
+              {
+                "start": 161,
+                "end": 175
+              }
+            ],
+            "lexical_f32": "lexical-01.f32"
+          }
+        ]
+      },
+      "original_stages": [
+        {
+          "stage": "head/hidden_norm/input/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            197,
+            2048
+          ]
+        },
+        {
+          "stage": "head/hidden_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            197,
+            2048
+          ]
+        },
+        {
+          "stage": "head/memory_projection",
+          "occurrence": 0,
+          "shape": [
+            197,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 1,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 1,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 1,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 1,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            4,
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            4,
+            512
+          ]
+        },
+        {
+          "stage": "head/question_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/question_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_summary_norm",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/global_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/type_embedding",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/2",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/3",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/field_norm",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 0,
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 1,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 1,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 1,
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "stage": "logits/Leerstand",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "probabilities/Leerstand",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "logits/bestätigt",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "probabilities/bestätigt",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "json-unicode",
+      "input": {
+        "schema": "crispembed-josev-head-input-v1",
+        "tokens": 165,
+        "hidden_f32": "hidden.f32",
+        "fields": [
+          {
+            "id": "Stufe",
+            "type": 2,
+            "question_start": 80,
+            "question_end": 93,
+            "options": [
+              {
+                "start": 104,
+                "end": 110
+              },
+              {
+                "start": 116,
+                "end": 127
+              },
+              {
+                "start": 133,
+                "end": 143
+              }
+            ],
+            "lexical_f32": "lexical-00.f32"
+          }
+        ]
+      },
+      "original_stages": [
+        {
+          "stage": "head/hidden_norm/input/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            165,
+            2048
+          ]
+        },
+        {
+          "stage": "head/hidden_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            165,
+            2048
+          ]
+        },
+        {
+          "stage": "head/memory_projection",
+          "occurrence": 0,
+          "shape": [
+            165,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            3,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/question_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2048
+          ]
+        },
+        {
+          "stage": "head/question_projection",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_summary_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/global_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/type_embedding",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/2",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/3",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 0,
+          "shape": [
+            3,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 0,
+          "shape": [
+            3,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 0,
+          "shape": [
+            3,
+            1
+          ]
+        },
+        {
+          "stage": "logits/Stufe",
+          "occurrence": 0,
+          "shape": [
+            3
+          ]
+        },
+        {
+          "stage": "probabilities/Stufe",
+          "occurrence": 0,
+          "shape": [
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "id": "state-only-clip",
+      "input": {
+        "schema": "crispembed-josev-head-input-v1",
+        "tokens": 512,
+        "hidden_f32": "hidden.f32",
+        "fields": [
+          {
+            "id": "Bestellung",
+            "type": 0,
+            "question_start": 430,
+            "question_end": 437,
+            "options": [
+              {
+                "start": 448,
+                "end": 466
+              },
+              {
+                "start": 472,
+                "end": 490
+              }
+            ],
+            "lexical_f32": "lexical-00.f32"
+          }
+        ]
+      },
+      "original_stages": [
+        {
+          "stage": "head/hidden_norm/input/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512,
+            2048
+          ]
+        },
+        {
+          "stage": "head/hidden_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512,
+            2048
+          ]
+        },
+        {
+          "stage": "head/memory_projection",
+          "occurrence": 0,
+          "shape": [
+            512,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_context_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/option_lexical_projection",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_question_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/evidence/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/question_projection/input/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            2048
+          ]
+        },
+        {
+          "stage": "head/question_projection",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_summary_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/global_projection",
+          "occurrence": 0,
+          "shape": [
+            512
+          ]
+        },
+        {
+          "stage": "head/type_embedding",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/0",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/1",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/2",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field/3",
+          "occurrence": 0,
+          "shape": [
+            1,
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/field_norm",
+          "occurrence": 0,
+          "shape": [
+            1,
+            512
+          ]
+        },
+        {
+          "stage": "head/option_norm",
+          "occurrence": 0,
+          "shape": [
+            2,
+            512
+          ]
+        },
+        {
+          "stage": "head/residual_scorer/input/0",
+          "occurrence": 0,
+          "shape": [
+            2,
+            2048
+          ]
+        },
+        {
+          "stage": "head/residual_scorer",
+          "occurrence": 0,
+          "shape": [
+            2,
+            1
+          ]
+        },
+        {
+          "stage": "logits/Bestellung",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        },
+        {
+          "stage": "probabilities/Bestellung",
+          "occurrence": 0,
+          "shape": [
+            2
+          ]
+        }
+      ]
+    }
+  ]
+}
