@@ -396,7 +396,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 |-------|-------------------|------|--------|
 | 2026-10-27 | `fix/wasm-layer3-view-20261027` | Layer3 observer allocation abort | Actual40415950220 builds native/WASM and passes ordinary native execution, then diagnostic capture aborts in scheduler reserve before numerical attribution. Replace the disconnected ggml_view_tensor alias with an explicitly connected dimension/stride-preserving graph view in the test-only overlay; require all frozen ordinary/observer anchors unchanged. Preserve failure, no production math/default/budget changes; all compilation/model work hosted. |
 | 2026-10-26 | `test/ultrabert-scifact-tokenizer-diagnostic-20261026` | Model-free diagnosis of actual SciFact native token-ID failures | Preserve e35 originals/input freeze and two executed ID failures; six later native shards cancelled before steps. Hosted tokenizer-only two-row codepoints/pieces and all5483 input-ID preflight before any new embeddings. No runtime/default/reference changes or local corpus/tokenizer/build work. |
-| 2026-10-26 | `audit/josev-wheel-metadata-20261026` | Josev exact wheel metadata versus published sidecars | Actual corrected GPU install and pip-check pass, then installed setuptools metadata differs from the locked PEP658 hash before framework/model access. Hosted CPU audit must stream/hash all57 exact wheels, inspect archive METADATA and preserve sidecar/archive/install distinctions before any further GPU attempt. No local wheel/framework/model payload, guard weakening or blind retry. |
+| 2026-10-26 | `audit/josev-wheel-metadata-20261026` | Josev exact wheel metadata versus published sidecars | Actual corrected GPU install and pip-check pass, then the installed setuptools owner-selection/hash guard rejects before framework/model access; the original error is ambiguous. Hosted CPU audit must stream/hash all57 exact wheels, inspect archive METADATA and preserve sidecar/archive/install distinctions before any further GPU attempt. No local wheel/framework/model payload, guard weakening or blind retry. |
 | 2026-10-26 | `audit/moedern-observer-correction-20261026` | Smallest MoEdern missing pipeline observer coverage | Actual40412164041 preserves10 neutral final cases/250 arrays, but Mapping outputs omitted Dense/Normalize captures. Correct serializer/observer coverage in a new immutable original source; authenticate old receipt/raw remotely and require all10 old ordinary IDs/masks/vector hashes unchanged before accepting new intermediates. No native pins, tolerance/input/math change or local payload/build work. |
 | 2026-10-26 | `integration/bounded-closure-20261026` | Review-only integration of active audit/model lanes | Recoverable checkpoint7d06b016; runtime remains f3f1b9e7/a06 with both new defaults OFF. Actual Mac40399358753 compatibility is reviewed; rounding40391544739 rejects8/10 finals and layer3 attribution40415950220 is pending. SciFact40375626336 originals/freeze pass; native/ranking, remaining Ovis grids and final fresh assets/all consumers still required. New-model original capture precedes native/API qualification. Main integration, complete docs/mirror and final checks close the authorized loop. |
 | 2026-10-26 | `test/wasm-layer3-attribution-20261026` | Test-only earliest remaining WASM operator attribution | Actual580e3ae rounding A/B40391544739 rejects8/10 finals; preserve negative, old anchors and0.002/0.99999. Trace first layer3 suboperation using exact retained model/input, check observation neutrality, compare same-input conversions/dots on hosted CI. No production/default or gold changes. |
@@ -801,3 +801,50 @@ experimental until their own original/intermediate/final-output gates pass.
   no model/corpus/framework and authorizes no model outputs. Return the bounded
   build/control evidence; keep machine paths and local setup notes outside Git.
   Native original-reference guards remain closed until corrected capture review.
+
+## Executable audit continuation — 27 October 2026
+
+All initial failures and original byte hashes are retained. These are execution
+gates, not completed model support or release qualification. The app remains
+on immutable0.17.12.
+
+- [ ] Review corrected MoEdern original
+  [40423259251](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251)
+  at8b153739503d6d817c7271a5ce319358eadaaab3. Require mandatory Mapping pipeline
+  capture and exact old250-array/ten-case/three-score/F32-GGUF continuity.
+  Then explicitly version the native contract's base/source and five original
+  driver identities; old native79e350a0 expects three and remains blocked.
+  Keep raw artifacts remote, fill actual reviewed pins and run the full native
+  intermediate/vector/mask/MaxSim Ref panel. Broaden to public roles/tokenizer
+  and27M/115M only after smallest parity.
+- [ ] Review SciFact tokenizer-only
+  [40424357191](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424357191)
+  atc86fc007: all5,483 original token streams must replay before historical
+  standalone native tokenization; both executed negative arrays must reproduce.
+  Inspect earliest actual pretoken/codepoint/piece divergence before any gated
+  correction. Require all5,483 corrected IDs/masks before embeddings; reuse the
+  original vectors and unchanged ranking/strict numerical gates.
+- [ ] Review corrected layer3 observer
+  [40424064413](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424064413)
+  atdfd7bb4f: native allocation, two-thread ordinary/capture/repeat neutrality,
+  all prior full-stage/final anchors, then browser and same-input workspace
+  attribution. Initial40415950220 allocation abort is retained. Do not infer a
+  network correction or change the rounding default from an observer repair.
+- [ ] Review Josev archive audit
+  [40423930364](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423930364)
+  at1f3ee040 and the submitted genuine GPU original task at bootstrap
+  5e938857368820b0d4d49bd977561e3f418ed9c0/worker
+  b2edf8c83c9aca1f8a9210198d47798ac13828b8. The GPU setup authenticates each
+  exact archive/sidecar before local installation and verifies all57 installed
+  owners before imports/CUDA/model access. Preserve all partial per-wheel proof
+  if it rejects. The model/lock/panel/math are unchanged; do not retry blindly.
+  Original four-case completion, head conversion/native-head and hidden-only
+  backbone/typed-answer parity remain pending.
+- [ ] Finish both running Ovis boundary arms at40376882009; combine all eight
+  independently reviewed grid/gate outcomes. Retain the exact historical
+  gate0 failure set. Then declare a new explicit final integration source
+  closure accounting for the new regression fixture, preserving all old
+  protected fixture bytes and both experimental defaults off. The old v1 guard
+  currently rejects this integration's changed regression tree as intended.
+  Complete final same-source Ovis, archive producers and real consumers before
+  any release, model alias/publication, application pin change or final main closure.

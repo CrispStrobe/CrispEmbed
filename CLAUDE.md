@@ -266,3 +266,13 @@ negative source quality/publication flags and all other archive deadlines remain
 This file is tracked public documentation even though an ignore pattern matches
 its name. Never append private environment/access details here. Optional private
 continuity is stored in ignored `.claude/local-handoff/AGENTS.md` when available.
+
+## 27 October execution checkpoint
+
+The [executable continuation](PLAN.md#executable-audit-continuation--27-october-2026)
+records corrected MoEdern Mapping capture, SciFact token-only attribution,
+layer3 graph-view capture and Josev archive/installed-owner setup gates. Initial
+negative receipts are preserved. No new model alias or native model support is
+qualified from preparation. Final source guards must be explicitly versioned
+when protected fixtures/runtime change; historical guards remain strict.
+The app still pins immutable0.17.12.

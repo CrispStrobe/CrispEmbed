@@ -668,3 +668,20 @@ and now has explicit Python3.13 worker1e723a96/bootstrap142cc75c; review its
 actual outcome before original/native qualification. Keep public Python versus
 calibrated author-GGUF profiles distinct. Native/API/alias/retrieval/decision
 quality and quantization remain explicit follow-ups, with no local heavy work.
+
+## 27 October continuation: new execution barriers
+
+Use the final [executable PLAN section](../PLAN.md#executable-audit-continuation--27-october-2026)
+for exact corrected sources and active run IDs. Preserve each dispatched source
+branch until its actual artifacts are reviewed. All large work stays hosted;
+fetch only small reports. The smallest MoEdern original final outputs are
+retained, but its missing Mapping intermediates block native qualification.
+SciFact now needs tokenization attribution before more embeddings. The layer3
+observer allocation repair is distinct from a model numerical fix. Josev's
+archive/installed-owner setup barriers precede any model claim.
+
+The [optional M1 build-only handoff](handover-m1-moedern-build.md) checks exact
+immutable native source and synthetic controls without model/framework payloads.
+It does not bypass the model experiment's original-reference gate. Final
+source closure, release producers/consumers, public model surfaces and main/app
+reconciliation remain explicit pending tasks.
