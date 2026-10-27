@@ -101,11 +101,20 @@ int run(int argc, char ** argv) {
                         first_value.scoring_mask == second_value.scoring_mask,
                     "two-owner token mismatch");
         }
+        // Actual production encode must retain both historical normalized role
+        // matchers and the subsequently registered raw special matcher.
+        mc::text_tokens overlap;
+        require(enabled.encode("[q] [d] [Q] ", mc::role::document, overlap, error) &&
+                    overlap.ids == std::vector<int32_t>({ 2, 30001, 30000, 30001, 30000, 3 }) &&
+                    overlap.supplied_mask == std::vector<uint8_t>(6, 1) &&
+                    overlap.effective_mask == std::vector<uint8_t>(6, 1) &&
+                    overlap.scoring_mask == std::vector<uint8_t>(6, 1) && overlap.expansion_positions.empty(),
+                "raw/normalized added-token matcher history failed");
         gate("0");
         mc::text_tokens out;
         require(enabled.encode(r.text, role(r), out, error) && !out.ids.empty(), "context gate snapshot changed");
         require(!enabled.load(model, error) && !enabled.enabled(), "failed reload retained context");
-        std::cout << "PASS unset/empty/0/context gate/output/reload controls\n";
+        std::cout << "PASS unset/empty/0/context gate/output/reload/matcher-history controls\n";
         return 0;
     }
     require(argc == (diagnostic ? 5 : 4), "bad arguments");

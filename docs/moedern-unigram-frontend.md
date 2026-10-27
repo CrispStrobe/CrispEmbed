@@ -81,3 +81,27 @@ This remains source preparation until actual hosted evidence is reviewed. It
 does not qualify public text-to-vector APIs,27M/115M, quantization, representative
 retrieval, runtime defaults, release or application adoption. No new golden model
 vectors or tolerated numerical drift are introduced.
+
+The first completed tokenizer comparison,
+[40449174879](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40449174879),
+reproduced all ten frozen streams,1040 normalization compositions and ten Unigram
+units, but rejected two of34 owned cases (`overlap-query`, `overlap-document`).
+The first differing token was a lowercase literal `[q] `: Rust selected30000,
+while native code started its ordinary `▁[` piece636. The SMALL review artifact
+12710191976 is44803 bytes with SHA256
+`4dcd1c1962d6a5101565913aae7af21473ee050e63554028e4fc07dd04909649`.
+These failures remain evidence; original actions, cases and gold are unchanged.
+
+The correction records matcher history separately from the final reverse-map
+flags. In pinned Rust0.22.2
+[added_vocabulary.rs](https://github.com/huggingface/tokenizers/blob/f383101a26663708484cac0727792aad74f78234/tokenizers/src/tokenizer/added_vocabulary.rs),
+`add_tokens` retains previous ordinary normalized tokens when a same-content raw
+special is registered. `refresh_added_tokens` builds matchers from both lists,
+whereas `to_str()` exposes only final reverse-map entries. The source file SHA256
+is `ae4e5ab645ff4847b86549ccdf886981e25922ce34c06c65488e51c22c27443d`.
+The component therefore retains the two original normalized role matchers as
+explicit ID/content arrays, in addition to the seven effective raw special
+entries. Native code still extracts raw specials first, then normalizes ordinary
+spans and matches these retained roles before pretokenization. Loader mutation
+negatives and a compiled production-encode overlap control require that history.
+No parity success is claimed until the corrected hosted run is reviewed.

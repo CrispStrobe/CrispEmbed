@@ -47,6 +47,24 @@ class Controls(unittest.TestCase):
   state['content']='changed';self.assertEqual(captured['content'],'[Q] ')
   for invalid in [json.dumps(captured),json.dumps(captured).encode(),None,{'content':'[Q] '},dict(captured,special=1),dict(captured,content=''),dict(captured,other=False)]:
    with self.assertRaisesRegex(ValueError,'AddedToken state'):oracle.added_token_state(Fake(invalid))
+ def test_normalized_matcher_history_survives_reverse_map_update(self):
+  raw={'added_tokens':[{'id':30000,'content':'[Q] ','normalized':True},{'id':30001,'content':'[D] ','normalized':True}]}
+  effective={'added_tokens':[{'normalized':False,'special':True}for _ in range(7)]}
+  self.assertEqual(oracle.normalized_matchers(raw,effective),[{'id':30000,'content':'[Q] '},{'id':30001,'content':'[D] '}])
+  bad=deepcopy(raw);bad['added_tokens'][0]['normalized']=False
+  with self.assertRaisesRegex(ValueError,'matcher history'):oracle.normalized_matchers(bad,effective)
+  bad=deepcopy(effective);bad['added_tokens'][-1]['normalized']=True;bad['added_tokens'][-1].update(id=30001,content='[D] ')
+  with self.assertRaisesRegex(ValueError,'matcher history'):oracle.normalized_matchers(raw,bad)
+  bad=deepcopy(effective);bad['added_tokens'][-1]['special']=False
+  with self.assertRaisesRegex(ValueError,'matcher flags'):oracle.normalized_matchers(raw,bad)
+  source=(ROOT/'src/moedern_text_frontend.cpp').read_text()
+  self.assertIn('moedern.tokenizer.normalized_matcher_ids',source);self.assertIn('moedern.tokenizer.normalized_matcher_content',source)
+  self.assertIn('ids.push_back(normalized_ids_[selected])',source)
+  probe=(ROOT/'tests/moedern-unigram/probe.cpp').read_text()
+  self.assertIn('enabled.encode("[q] [d] [Q] "',probe)
+  self.assertIn('2, 30001, 30000, 30001, 30000, 3',probe)
+  helper=(ROOT/'tools/ci-heavy/moedern_unigram.py').read_text()
+  self.assertIn("'matcher-id'",helper);self.assertIn("'matcher-content'",helper)
  def test_registration_ast_is_source_only(self):
   tree=ast.parse((ROOT/'tools/moedern-unigram/original.py').read_text());fn=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name=='register')
   self.assertTrue(any(isinstance(n,ast.Call)and isinstance(n.func,ast.Attribute)and n.func.attr=='parse' for n in ast.walk(fn)))

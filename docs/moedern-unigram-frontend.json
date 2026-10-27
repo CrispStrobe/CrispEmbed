@@ -3663,16 +3663,16 @@
   "source_sha256": {
     ".github/workflows/moedern-unigram.yml": "85d018d8557658eaa426b88d62c41ce21c295218cad162d67852fdb61bd8cc05",
     ".github/workflows/ovisocr2-metadata.yml": "f1af04361588ea0fea85806f9278c0b3ad4e1000902163421e3a3f4055f3b037",
-    "docs/moedern-unigram-frontend.md": "7e045e5b99a0958ce98d6b7daeed8f645b7da749c692cddc972a30e8ff215b29",
-    "src/moedern_text_frontend.cpp": "4f43af92b71ec813afb43cb4b1b72b4a1e59270b2923b3366f9dfa19d8f5fe79",
-    "src/moedern_text_frontend.h": "a571048fc79eeeeae10d52a75506673e13c98f5e13f16f85e7a177bdd36c4bee",
+    "docs/moedern-unigram-frontend.md": "645a863ab710b328734436595dd332dc0da1892edb8ba3a4a15d88e901686dc2",
+    "src/moedern_text_frontend.cpp": "e2761c97e251d509f2b32cf3410183265d16bd377ee5cda40a4f4859759ab5f9",
+    "src/moedern_text_frontend.h": "24c12950968ddd002890891815b0f2a06b45ec74b06890d6466a2ca98c62423d",
     "tests/fixtures/moedern-unigram-v1.json": "f34b5eee3acf8dd243b89e3cac272f36288197065e2197f64e2072129eb68b9c",
     "tests/moedern-unigram/CMakeLists.txt": "ef7809bdd24543d821ff972ed7cbc14c7d47f67d83ce75e4f56a1495f0c3bd78",
-    "tests/moedern-unigram/probe.cpp": "9903b14efcaa22e93ad20f462794c5db0e270bbda38cffc7fa040caa0c961f68",
-    "tests/test_moedern_unigram.py": "2265b0eb71062638790de3068c1ef43793952ee993eeb9de415f6dc792078bfe",
-    "tools/ci-heavy/moedern_unigram.py": "9b5817a1c4a567bbdb3a349050335b132d5d74d61d60daf38389e6f8e910bae7",
+    "tests/moedern-unigram/probe.cpp": "b8cf8b98fceef3c920b881179b420420ca53d7c9e7c09473dea5746170b69f69",
+    "tests/test_moedern_unigram.py": "b21c665ff037dd962083f9b6f77ff0bd3f8ee842b6838cfc243fb8b4bdafc0b5",
+    "tools/ci-heavy/moedern_unigram.py": "4e7fa4c1b3898cedc5a62907f4e10ba5cc08758dcf66cfee436eb0eac2d099ed",
     "tools/moedern-unigram/contract.py": "bfcc2373d16a2a890c29f8781ee2842fc59f3ecd8f5cb4ddf1af4856f0c050a4",
-    "tools/moedern-unigram/original.py": "34765586aaec1e16594a2d2d5bdce7b0c6f0a710b16ef53e103ea59441200a32"
+    "tools/moedern-unigram/original.py": "5916322f26a79aefeb21d4e50a0e9f9a54998ee9d9b5b9392507766dcc82ed41"
   },
   "hosted_result": null,
   "qualification": {

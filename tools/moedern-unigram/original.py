@@ -58,6 +58,18 @@ def mapped(text,mapping):
  return re.sub(' {2,}',' ',out)
 
 
+def normalized_matchers(raw,effective):
+ # Rust0.22.2 refresh_added_tokens chains special_tokens + added_tokens.
+ # Re-registering a raw special updates the reverse-map flags, but does not
+ # erase its older normalized entry from added_tokens (not serialized to_str).
+ expected=[{'id':30000,'content':'[Q] '},{'id':30001,'content':'[D] '}]
+ previous=[{'id':x['id'],'content':x['content']}for x in raw['added_tokens'] if x['normalized']]
+ current=[{'id':x['id'],'content':x['content']}for x in effective['added_tokens'] if x['normalized']]
+ require(previous==expected and current==[],'pinned normalized matcher history differs')
+ require([x['normalized']for x in effective['added_tokens']]==[False]*7 and [x['special']for x in effective['added_tokens']]==[True]*7,'pinned effective matcher flags differ')
+ return previous
+
+
 def component(raw,effective,config,mapping,skip):
  require(raw['model']['type']=='Unigram' and raw['model']['unk_id']==1 and raw['model']['byte_fallback']is False,'Unigram flags differ')
  require(len(raw['model']['vocab'])==30000,'base vocabulary count differs')
@@ -65,6 +77,7 @@ def component(raw,effective,config,mapping,skip):
  vocab=[x[0] for x in raw['model']['vocab']]+['[Q] ','[D] '];scores=[x[1] for x in effective['model']['vocab']]
  require([x[0] for x in effective['model']['vocab']]==vocab[:30000],'Rust vocabulary roundtrip changed pieces')
  require(len(set(vocab))==30002 and all(isinstance(s,(float,int)) and math.isfinite(s) for s in scores),'invalid exact F64 scores/vocab')
+ normalized_history=normalized_matchers(raw,effective)
  added=effective['added_tokens'];require([x['id'] for x in added]==[0,1,2,3,4,30000,30001],'effective added ID order differs')
  flags=[]
  for x in added:
@@ -80,6 +93,8 @@ def component(raw,effective,config,mapping,skip):
   'tokenizer.ggml.tokens':vocab,'moedern.tokenizer.scores_f64':('f64',scores),
   'moedern.tokenizer.added_ids':[x['id'] for x in added],'moedern.tokenizer.added_flags':flags,
   'moedern.tokenizer.added_content':[x['content'] for x in added],
+  'moedern.tokenizer.normalized_matcher_ids':[x['id'] for x in normalized_history],
+  'moedern.tokenizer.normalized_matcher_content':[x['content'] for x in normalized_history],
   'moedern.tokenizer.normalizer_codepoints':keys,'moedern.tokenizer.normalizer_values':[mapping[k] for k in keys],
   'moedern.tokenizer.skip_ids':skip,'moedern.tokenizer.raw_descriptor_json':dump({k:v for k,v in raw.items() if k!='model'}),
   'moedern.tokenizer.effective_descriptor_json':dump({k:v for k,v in effective.items() if k!='model'}),
