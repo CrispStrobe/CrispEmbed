@@ -18,7 +18,8 @@ add_subdirectory("${CRISPEMBED_ROOT}/ggml" ggml-build)
 # ggml-base supplies GGUF parsing only. No backend/context/weights are created.
 add_library(josev-text STATIC "${CRISPEMBED_ROOT}/src/josev2b_text_frontend.cpp"
                               "${CRISPEMBED_ROOT}/src/core/shortest_double.c")
-target_include_directories(josev-text PUBLIC "${CRISPEMBED_ROOT}/src")
+target_include_directories(josev-text PUBLIC "${CRISPEMBED_ROOT}/src"
+    PRIVATE "${CRISPEMBED_ROOT}/src/core/third_party")
 target_link_libraries(josev-text PUBLIC ggml-base)
 add_executable(test-josev-text "${CRISPEMBED_ROOT}/tests/test_josev2b_text.cpp")
 target_link_libraries(test-josev-text PRIVATE josev-text)

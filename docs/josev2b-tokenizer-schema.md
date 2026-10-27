@@ -72,3 +72,27 @@ Existing model families and all original gold stay unchanged. Keep the gate off
 until actual reviewed tokenizer evidence and later composed-model evidence justify
 any integration. Builds, tokenizer payloads, packages and batches run only on
 hosted resources.
+
+
+The initial [40440257882](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40440257882)
+reproduced the four original frozen inputs and rejected the converter's strict
+pretokenizer descriptor check before native build or encoding. The diagnostic
+[40444002658](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40444002658)
+preserved the authenticated policy in small review artifact12708375999 (4153B,
+ZIP SHA256 `1d55400930538938d334776380aa19517fb42ef291db7a3c02aae8962ec55ddd`).
+The only mismatched pretokenizer field is ByteLevel `trim_offsets`: the original
+is `false`, while the initial converter required `true`. The strict profile now
+requires the observed `false`; the exact NFC, regex, Split/Isolated/invert and
+ByteLevel prefix/regex policies remain unchanged. The small policy is retained in
+[`josev2b-tokenizer-policy-v1.json`](../tests/fixtures/josev2b-tokenizer-policy-v1.json).
+Native outputs contain IDs and token-index spans, not character-offset mappings;
+this correction changes no native tokenization, shared BPE implementation, inputs,
+gold or acceptance gates. Tests accept the authenticated policy and reject altered
+policy fields, including the former `trim_offsets:true` assumption. Tokenizer
+parity and composed-model qualification still require actual corrected hosted runs.
+
+The standalone target also adds the private include directory for the existing
+Ryu source included by `shortest_double.c`, matching the shared formatter's header
+layout. This build correction follows the serializer sibling's actual missing
+`ryu/ryu.h` compile failure; the formatter implementation and runtime stay unchanged.
+No local compilation or tokenizer payload access was used to prepare these fixes.

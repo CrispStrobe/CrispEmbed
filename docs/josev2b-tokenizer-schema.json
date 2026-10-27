@@ -293,15 +293,16 @@
     ".github/workflows/josev2b-tokenizer-schema.yml": "9365d84394487e1b486abc4bf1d8694d1a6f96e64a7240146c9a35908becd96c",
     ".github/workflows/ovisocr2-metadata.yml": "c889bdd2858747f0888fd03c8e34f6079b1f827acea6c7f41d59169fc539f4cc",
     "docs/josev2b-tokenizer-schema-LICENSE.txt": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
-    "docs/josev2b-tokenizer-schema.md": "5b74437ab7473da5b22d2f63684a05a8b7ef876f36ea37c372655373c772e3a8",
+    "docs/josev2b-tokenizer-schema.md": "a5e0142d1ba3ca343114baa47026a068250dade97565c49c66ef9e1eb1327fa1",
     "src/josev2b_text_frontend.cpp": "41c3f0e3fb98a26d9c88566c4f22daca6aacb4ec635e4ab9b3d56f3e01273114",
     "src/josev2b_text_frontend.h": "bd7a70230d5ad57097f759f9f0e9d8771c9704ed415d5632a0db29565cf00b17",
     "tests/fixtures/josev2b-tokenizer-schema-v1.json": "5376fdd76f05bfea9833834b9b085b963a3f8a4d508a670cf499523fff92b61e",
-    "tests/josev-text/CMakeLists.txt": "dd7ff53b8723b068d16c621120634b56672ea9ae084a5e323fb15d13d8e07a5c",
+    "tests/josev-text/CMakeLists.txt": "39c2c85d30450c300c52596c7e93ec921469491282dee826f50ab94744661be9",
     "tests/test_josev2b_text.cpp": "bce52027ff5c93be5f7f98f86fad67451890b296d72589d53761f9c70b71be2e",
-    "tests/test_josev2b_tokenizer_schema.py": "c0e95862fe7fcc4640f681364e03f03d41799b05e5de34b70cb25c7fb215f7a2",
+    "tests/test_josev2b_tokenizer_schema.py": "66360afcbe5c4252d255310ebc70718a6b70f05c2392947a2d8928d1fe02b26d",
     "tools/ci-heavy/josev2b_tokenizer_schema.py": "6865c43a6c2eb40b076e8b4a12c50ac45bbb6fd22213eec6b98b56a1a8fc2edf",
-    "tools/josev2b_tokenizer_schema.py": "69d6dc72ce25c6154d8feb4e7709f4d23584bd392039a19aa5d18e3de1883e70"
+    "tools/josev2b_tokenizer_schema.py": "434608f8da97f3f2d43bb3657dd97b7c7ecce74fb34e8d65c4a9f92c51aaab26",
+    "tests/fixtures/josev2b-tokenizer-policy-v1.json": "1e3ff110f014cfb3baf35f07dcea52df21e7fc3454bc2e34dc07634e86ced3ec"
   },
   "hosted_result": null,
   "qualification": {

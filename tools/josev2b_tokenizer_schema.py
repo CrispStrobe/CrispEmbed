@@ -27,6 +27,7 @@ LANE_SOURCES = {
     'tests/test_josev2b_text.cpp', 'tests/josev-text/CMakeLists.txt',
     'tools/josev2b_tokenizer_schema.py', 'tools/ci-heavy/josev2b_tokenizer_schema.py',
     'tests/test_josev2b_tokenizer_schema.py', 'tests/fixtures/josev2b-tokenizer-schema-v1.json',
+    'tests/fixtures/josev2b-tokenizer-policy-v1.json',
     '.github/workflows/josev2b-tokenizer-schema.yml', '.github/workflows/ovisocr2-metadata.yml',
     'docs/josev2b-tokenizer-schema.md', 'docs/josev2b-tokenizer-schema-LICENSE.txt'}
 PROTECTED_ROOTS = {'CMakeLists.txt', '.gitmodules', 'cmake', 'python', 'crispembed', 'crispembed-sys',
@@ -125,16 +126,21 @@ def frozen_match(rows, frozen):
                 'original tokenizer-only reproduction differs from frozen original: ' + old['id'])
 
 
-def component_metadata(tokenizer, config):
+def validate_tokenizer_policy(tokenizer, config):
+    """Exact authenticated policy; offsets are unused, never silently normalized."""
     require(tokenizer['normalizer'] == {'type': 'NFC'}, 'unsupported original normalizer')
     pre = tokenizer['pre_tokenizer']
     require(pre == {'type': 'Sequence', 'pretokenizers': [
         {'type': 'Split', 'pattern': {'Regex': PATTERN}, 'behavior': 'Isolated', 'invert': False},
-        {'type': 'ByteLevel', 'add_prefix_space': False, 'trim_offsets': True, 'use_regex': False}]},
+        {'type': 'ByteLevel', 'add_prefix_space': False, 'trim_offsets': False, 'use_regex': False}]},
         'unsupported original pretokenizer')
     require(tokenizer.get('padding') is None and tokenizer.get('truncation') is None, 'unexpected backend padding/truncation')
     require(config['pretokenize_regex'] == PATTERN and config['split_special_tokens'] is False and
             config['tokenizer_class'] == 'Qwen2Tokenizer', 'tokenizer config policy differs')
+
+
+def component_metadata(tokenizer, config):
+    validate_tokenizer_policy(tokenizer, config)
     model = tokenizer['model']
     require(model['type'] == 'BPE' and all(model.get(k) in (None, '') for k in
             ('dropout', 'unk_token', 'continuing_subword_prefix', 'end_of_word_suffix')) and

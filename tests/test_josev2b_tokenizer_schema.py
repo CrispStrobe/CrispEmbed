@@ -66,6 +66,8 @@ class Controls(unittest.TestCase):
         cmake = (ROOT / 'tests/josev-text/CMakeLists.txt').read_text()
         self.assertIn('set(GGML_CPU OFF', cmake)
         self.assertIn('PUBLIC ggml-base', cmake)
+        self.assertIn('PRIVATE "${CRISPEMBED_ROOT}/src/core/third_party"', cmake)
+        self.assertTrue((ROOT / 'src/core/third_party/ryu/ryu.h').is_file())
 
     def test_metadata_only_writer_and_no_tensors(self):
         payload = lane.gguf_bytes({'text': 'é', 'strings': ['a', 'b'], 'flags': [0, 16]})
@@ -80,6 +82,32 @@ class Controls(unittest.TestCase):
             lane.component_metadata({'normalizer': None}, {})
         with self.assertRaisesRegex(ValueError, 'pretokenizer'):
             lane.component_metadata({'normalizer': {'type': 'NFC'}, 'pre_tokenizer': {}}, {})
+
+    def test_authenticated_policy_accepts_only_observed_bytelevel_descriptor(self):
+        # Actual small report40444002658, artifact12708375999: no vocab/model payload.
+        path = ROOT / 'tests/fixtures/josev2b-tokenizer-policy-v1.json'
+        self.assertEqual(lane.digest(path.read_bytes()), '1e3ff110f014cfb3baf35f07dcea52df21e7fc3454bc2e34dc07634e86ced3ec')
+        policy = json.loads(path.read_text())
+        self.assertEqual(policy['tokenizer_sha256'], lane.TOKENIZER_SHA)
+        self.assertEqual(policy['config_sha256'], lane.CONFIG_SHA)
+        config = dict(pretokenize_regex=policy['pretokenize_regex'], split_special_tokens=False,
+                      tokenizer_class='Qwen2Tokenizer')
+        lane.validate_tokenizer_policy(policy, config)
+        self.assertIs(policy['pre_tokenizer']['pretokenizers'][1]['trim_offsets'], False)
+        changes = [lambda x:x['pre_tokenizer']['pretokenizers'][1].update(trim_offsets=True),
+                   lambda x:x['pre_tokenizer']['pretokenizers'][1].update(add_prefix_space=True),
+                   lambda x:x['pre_tokenizer']['pretokenizers'][1].update(use_regex=True),
+                   lambda x:x['pre_tokenizer']['pretokenizers'][0].update(invert=True),
+                   lambda x:x['pre_tokenizer']['pretokenizers'][0].update(behavior='Removed'),
+                   lambda x:x['pre_tokenizer']['pretokenizers'][0]['pattern'].update(Regex='unobserved'),
+                   lambda x:x.update(normalizer={'type':'NFD'})]
+        for change in changes:
+            altered = deepcopy(policy); change(altered)
+            with self.assertRaises(ValueError): lane.validate_tokenizer_policy(altered, config)
+        for key, value in [('pretokenize_regex','unobserved'), ('split_special_tokens',True),
+                           ('tokenizer_class','unobserved')]:
+            with self.assertRaises(ValueError):
+                lane.validate_tokenizer_policy(policy, dict(config, **{key:value}))
 
     def test_frozen_comparator_detects_one_id_span_mask_and_lexical_change(self):
         frozen = json.loads((ROOT / 'tests/results/josev2b/original-input-freeze.json').read_text())
