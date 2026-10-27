@@ -1587,6 +1587,10 @@ static const ModelEntry k_registry[] = {
 
     // Qualified experimental format-2 CPU reader; requires all three Ovis gates
     // and the independently audited vision precision settings documented in docs/ovisocr2.md.
+    { "moedern-1.5m", "moedern-1.5m-text-f32.gguf",
+      "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF/resolve/6f3b35143b3afdeeded7f77216b1ec072028fd5f/moedern-1.5m-text-f32.gguf",
+      "MoEdernColBERT 1.5M raw-text query/document multivectors (f32 packed; gated CRISPEMBED_MOEDERN_*)", "7.0 MB",
+      "apache-2.0", "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF" },
     { "ovisocr2-f16", "ovisocr2-f16.gguf",
       "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
       "OvisOCR2 experimental CPU OCR (853M, f16, format2; gated, <=1024 patches)", "1.717 GB", "apache-2.0",
