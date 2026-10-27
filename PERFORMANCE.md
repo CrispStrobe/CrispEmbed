@@ -1,3 +1,40 @@
+## 27 October 2026 — UltraBERT SciFact native-v3 retrieval
+
+[Full frozen SciFact](tests/results/ultrabert/scifact-native-v3.json), run 40452077037:
+300 queries/5,183 documents, 10,966 vector comparisons, zero failures. Original and
+native NDCG@10 0.7667047800710401, MRR@10 0.7290066137566137, Recall@100 0.975;
+degradation 0.0, top1 agreement 1.0. Not release qualification; strict stage debt
+(183 F32/1,294 F16) remains.
+
+## 27 October 2026 — MoEdern 27M/115M native and 1.5M public consumers, CPU/F32
+
+| Scope | Cases | Worst abs | Min row cosine | Receipt |
+| --- | --- | --- | --- | --- |
+| 27M native, frozen IDs | 10 | 5.364418e-7 | 0.9999999999986432 | [native-27m](tests/results/moedern-colbert/native-27m-parity.json) |
+| 115M native, frozen IDs | 10 | 2.980232e-7 | 0.9999999999994299 | [native-115m](tests/results/moedern-colbert/native-115m-parity.json) |
+| 1.5M seven public consumers | 10 | 6.258488e-7 | 0.9999999999972198 | [40470702013](tests/results/moedern-colbert/public-consumers-1p5m.json) |
+
+Gates 0.002/0.99999/0.002. Largest MaxSim deviation: 27M 2.84e-7, 115M 3.80e-6
+(both q-markers|d-unicode). Original stage arrays 271 (27M)/663 (115M). Packed 1.5M
+GGUF 7,037,952 bytes; 27M/115M conversions 108,499,776/458,794,208 bytes. Linux x64
+CPU F32 only; no latency/RSS, retrieval quality, 27M/115M tokenizer or public roles,
+quantization or GPU.
+
+## 27 October 2026 — SystemOne public consumers, CPU/F32
+
+Six consumers (C/Python/CLI/HTTP/Rust/Dart), four frozen batch1 requests, complete
+typed responses exact; llamafile root profile 227 stages, no failures
+([40463407332](tests/results/josev2b/public-consumers.json)). Packed GGUF
+7,659,180,448 bytes. No timing, quantization or task quality.
+
+## 27 October 2026 — Unlimited-OCR-2 original reference only
+
+Original CPU/F32 decode (Triton CUDA-only, torch fallback): small-untiled 640x480
+65 tokens, para-en 1024x768 117, table 1024x768 97; no cap hit
+([reference](tests/results/unlimited-ocr2/original-reference.json)). The native
+decoder is not validated (first runs crashed; ODR fix applied, re-run pending), so
+there are no native numbers.
+
 ## 27 October 2026 — MoEdern1.5M full raw-text CPU/F32
 
 [Ten raw-text cases](tests/results/moedern-colbert/text-composed.json) pass all

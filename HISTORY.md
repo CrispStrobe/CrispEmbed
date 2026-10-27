@@ -1,3 +1,81 @@
+## 27 October 2026 — Final candidate assembled; Unlimited-OCR-2 native decoder not yet validated
+
+Branch `integration/final-candidate-20261027` assembles PR86, SystemOne, MoEdern,
+Unlimited-OCR-2 and the Ovis final-v2 validator. Model-free build
+[40475963161](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40475963161)
+passes. The Ovis final-v2 declaration is filled at base
+1a3315f03c34a7ff6b24e59f68763947fb58c8dc (ggml a06fc0bb); its hosted run is
+pending and no result is claimed. Five completed one-off phases
+(scifact-tokenizer-diagnostic, wasm-q8-rounding-ab-v1, wasm-layer3-attribution-v1,
+weight-cache, ovisocr3-public-diagnostic) were removed from the dispatcher to stay
+within GitHub's 50 reusable-workflow reference limit; their workflow files are kept.
+
+Unlimited-OCR-2 rev 04647c7a has a frozen [original CPU/F32 reference](tests/results/unlimited-ocr2/original-reference.json)
+(Kaggle kernel version 4, source 7e0630c3, 20 files verified, torch 2.13.0+cpu,
+transformers 4.52.1): small-untiled/para-en/table decode 65/117/97 tokens with no
+cap hit. para-en shows X for umlauts because the rendering font lacks the glyphs.
+The [inference spec](docs/unlimited-ocr2-inference-spec.md) records the v1→v2
+deltas (page2d RoPE, DASH block-sparse attention, router tensors, page guard).
+The **native decoder is NOT validated**: the first native runs crashed. Root cause
+was an ODR clash of same-named structs across `src/unlimited_ocr.cpp`,
+`src/deepseek_ocr2.cpp` and `src/lfm2_vl_ocr.cpp`, fixed by internal linkage. The
+re-run is pending; `native_qualified` stays false.
+
+## 27 October 2026 — MoEdern 27M/115M native parity and 1.5M publication
+
+Original CPU/F32 panels: [27M](tests/results/moedern-colbert/original-27m.json)
+rev d2b7b1fe (10 cases, 271 stage arrays, all ordinary observers bit-exact;
+32-tensor GGUF 108,499,776 bytes) and [115M](tests/results/moedern-colbert/original-115m.json)
+rev 66380d2a (10 cases, 663 arrays, bit-exact; 94 tensors, 458,794,208 bytes).
+Initial 27M kernels failed: v1 preinstalled transformers import conflict, v2 stdlib
+venv without ensurepip. Native frozen-ID parity passes the fixed 0.002/0.99999/0.002
+gates: [27M](tests/results/moedern-colbert/native-27m-parity.json) worst absolute
+5.364418e-7, minimum cosine 0.9999999999986432;
+[115M](tests/results/moedern-colbert/native-115m-parity.json) (six gated depthwise
+dilated-conv plus four attention/MoE layers) worst 2.980232e-7, minimum cosine
+0.9999999999994299. No tokenizer, public role, packing or retrieval quality is in
+these proofs.
+
+1.5M [public consumers](tests/results/moedern-colbert/public-consumers-1p5m.json)
+[40470702013](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40470702013)
+at 3dcc75f3: C, C repeat, Python, Rust, Dart, CLI and HTTP pass ten cases/three
+pairs, typed exact, float32-identical across consumers, repeat byte-identical,
+gate-off rejected, llamafile root profile. Worst absolute 6.258488e-7, minimum
+cosine 0.9999999999972198. Initial 40469547910 stopped before payload access (no
+artifact credential); 40470473595 was cancelled before start to add numpy. The
+packed 7,037,952-byte GGUF (no tensor math) is [published](tests/results/moedern-colbert/publication-1p5m.json)
+at `cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF@6f3b3514` by run
+40475254286 and re-verified. An initial Kaggle publisher attempt stopped before
+download without a write-scoped publication secret. Default off; not release-qualified.
+
+## 27 October 2026 — SystemOne six public consumers and publication
+
+[Run 40463407332](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40463407332)
+at 08671216 passes C, Python, CLI, HTTP, Rust and Dart on four frozen batch1 text
+requests with complete typed responses exact; the llamafile root profile compares
+227 stages without failure, plain/observed/repeat raw-equal, and production
+excludes observers. Packed producer 40456235976 (9772c896, 7,659,180,448 bytes).
+[Receipt](tests/results/josev2b/public-consumers.json), independently reviewed.
+Initial 40458027951 was the intended pending-pin rejection; 40459115346 failed on
+an unrooted packed asset member name after root build/observer checks passed.
+The GGUF is [published](tests/results/josev2b/publication.json) at
+`cstr/Josev-2B-SystemOne-GGUF@bffe6252` by run 40475202851 and re-verified
+(SHA256 72684e39…26ccf2). Initial 40470569893 got 403 creating the repo with a
+read-oriented credential after exact artifact verification; a Kaggle attempt
+stopped before download without a write-scoped publication secret. Not default
+enabled, not release-qualified, no model-quality claim.
+
+## 27 October 2026 — UltraBERT full frozen SciFact native-v3 passes
+
+[Run 40452077037](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40452077037)
+at d993038e (runtime 02402a0d): 300 queries, 5,183 documents, 10,966 vector
+comparisons without failure, all 5,483 actual IDs exact. Native equals original:
+NDCG@10 0.7667047800710401, MRR@10 0.7290066137566137, Recall@100 0.975, zero
+degradation, top1 agreement 1.0. [Receipt](tests/results/ultrabert/scifact-native-v3.json),
+independently reviewed. Initial 40444873884 failed before native inference (loader
+could not resolve new GGML libraries). Public pair API stays excluded; historical
+183 F32/1,294 F16 stage failures and strict replay failures remain.
+
 ## 27 October 2026 — Actual SystemOne public library build
 
 [Public build job122030886126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40456478353/job/122030886126)

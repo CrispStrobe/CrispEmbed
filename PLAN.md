@@ -785,3 +785,33 @@ on immutable0.17.12.
 - [ ] Finish final same-source Ovis, native/WASM archive producers and actual
   consumers before main/release closure. Both experimental defaults remain off.
   Preserve app0.17.12, no model alias/publication or application pin change.
+
+### Later on 27 October — status of the gates above
+
+Completed (see HISTORY): UltraBERT SciFact native-v3 40452077037 passes with zero
+degradation; SystemOne six public consumers 40463407332 pass and
+`cstr/Josev-2B-SystemOne-GGUF@bffe6252` is published; MoEdern 1.5M seven public
+consumers 40470702013 pass and its GGUF is published at `@6f3b3514`; MoEdern 27M
+and 115M frozen-ID native parity pass. Remaining owned gates:
+
+- [ ] Re-run the native Unlimited-OCR-2 decoder after the ODR fix (internal linkage
+  for same-named structs in `src/unlimited_ocr.cpp`, `src/deepseek_ocr2.cpp`,
+  `src/lfm2_vl_ocr.cpp`) against the frozen three-case
+  [original reference](tests/results/unlimited-ocr2/original-reference.json):
+  exact token IDs/text/stops before any quality or publication claim. The first
+  native runs crashed; nothing native is validated yet.
+- [ ] Run and review the hosted Ovis final-v2 validator at declared base
+  1a3315f03c34a7ff6b24e59f68763947fb58c8dc (ggml a06fc0bb) on
+  `integration/final-candidate-20261027` (model-free build 40475963161 passed).
+  No result is claimed until it completes.
+- [ ] MoEdern 27M/115M: tokenizer composition, public query/document roles,
+  packing, retrieval quality and publication. Only frozen-ID native parity exists.
+- [ ] SystemOne/MoEdern 1.5M: registry aliases are on the candidate; independent
+  task/retrieval quality, quantization, GPU and release qualification remain.
+  Both stay default-off.
+- [ ] UltraBERT: public pair API, historical 183 F32/1,294 F16 stage failures and
+  strict replay failures remain open despite the SciFact pass.
+- [ ] Keep five removed one-off dispatcher phases (scifact-tokenizer-diagnostic,
+  wasm-q8-rounding-ab-v1, wasm-layer3-attribution-v1, weight-cache,
+  ovisocr3-public-diagnostic) out of the dispatcher unless a reference slot is
+  freed (GitHub's 50 reusable-workflow limit); their workflow files are kept.
