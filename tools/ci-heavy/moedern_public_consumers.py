@@ -143,7 +143,7 @@ def run(cmd, log, cwd=ROOT, env=None, timeout=1800):
 
 def main():
     out, scratch = Path(os.environ['HEAVY_OUT']), Path(os.environ['HEAVY_SCRATCH'])/'moedern'
-    require(os.environ.get('GITHUB_ACTIONS') == 'true', 'hosted only')
+    require(os.environ.get('GITHUB_ACTIONS') == 'true' or bool(os.environ.get('KAGGLE_KERNEL_RUN_TYPE')), 'hosted only')
     import importlib.util
     spec = importlib.util.spec_from_file_location('root_guard', ROOT/'tools/moedern-public/root_contract.py')
     guard = importlib.util.module_from_spec(spec); spec.loader.exec_module(guard); closure = guard.source()
