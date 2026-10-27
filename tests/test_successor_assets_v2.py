@@ -25,7 +25,7 @@ class SuccessorAssetsV2(unittest.TestCase):
     def test_controls_pass_on_declared_final_base(self):
         result = v2.controls(copy.deepcopy(self.p))
         self.assertEqual((result['native_archives'], result['wasm_archives']), (7, 2))
-        self.assertEqual(self.p['final_base'], 'c71cb92aa99f2b337da3696e72cd7267a934b560')
+        self.assertEqual(self.p['final_base'], '8d67f3249a650367d08257aa99205f920195d00e')
         self.assertEqual(self.p['ggml'], 'a06fc0bb46b73cc10011fc90ae4054aee8438aeb')
 
     def test_pending_base_blocks(self):
