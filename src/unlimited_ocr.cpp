@@ -33,6 +33,12 @@
 #include <unordered_map>
 #include <vector>
 
+// Internal types/helpers have internal linkage: deepseek_ocr2.cpp and lfm2_vl_ocr.cpp
+// define same-named structs (e.g. llm_layer_w), and differing layouts across TUs are an
+// ODR violation (AddressSanitizer: heap-buffer-overflow in load_tensors once v2 fields
+// were added).
+namespace {
+
 // ---------------------------------------------------------------------------
 // Hyperparameters
 // ---------------------------------------------------------------------------
@@ -3063,6 +3069,8 @@ static std::string decode_tokens(const uocr_ctx & ctx, const int32_t * ids, int 
 // ---------------------------------------------------------------------------
 // C ABI wrappers
 // ---------------------------------------------------------------------------
+
+} // namespace (internal Unlimited-OCR types and helpers)
 
 struct unlimited_ocr_context {
     uocr_ctx inner;
