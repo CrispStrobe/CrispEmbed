@@ -1,0 +1,56 @@
+name: Josev composed original-first CPU audit
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  composed:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.15'
+      - name: Exact source and unreviewed-dependency rejection controls
+        run: |
+          python tools/josev2b_composed_contract.py
+          python tests/test_josev2b_composed_panel.py -v
+      - name: Install only pinned numeric comparison package
+        run: python -m pip install numpy==2.2.6
+      - name: Actual raw-request composition against frozen original inputs and outputs
+        run: python tools/ci-heavy/josev2b_composed.py --output "$RUNNER_TEMP/josev-composed-out" --scratch "$RUNNER_TEMP/josev-composed-scratch" --build "$RUNNER_TEMP/josev-composed-build"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-composed-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-composed-out/hosted.json
+            ${{ runner.temp }}/josev-composed-out/*.log
+            ${{ runner.temp }}/josev-composed-out/comparison/panel.json
+            ${{ runner.temp }}/josev-composed-out/comparison/*/diff.json
+            ${{ runner.temp }}/josev-composed-out/ref-controls/**/*.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-composed-traces-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-composed-out/plain/
+            ${{ runner.temp }}/josev-composed-out/observed/
+            ${{ runner.temp }}/josev-composed-out/repeat/
+            ${{ runner.temp }}/josev-composed-out/comparison/
+            ${{ runner.temp }}/josev-composed-out/requests.json
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn

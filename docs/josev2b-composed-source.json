@@ -286,8 +286,8 @@
   },
   "owned_sha256": {
     ".github/workflows/josev2b-composed-build.yml": "99e1e9be765ff28b821891368354afd1c945541ed2216fe12e05fafe31a0030a",
-    ".github/workflows/ovisocr2-metadata.yml": "73b72aa5370faf769d85928d9923d1d25ebfeae7c02fdff40692afba2adc3b01",
-    "docs/josev2b-composed-text.md": "43035d0f882752dd90a7f8e6fa439408c26291e572df9c6a62151b9b615fc578",
+    ".github/workflows/ovisocr2-metadata.yml": "8e29db66ffa3b455451180a8891e421def3fa1cd6f5bf92508acef2d220fc2c9",
+    "docs/josev2b-composed-text.md": "928b7da423bec8c85c9e186ff758c1bccb75ad9c839c43b0f103d4224b1d3be9",
     "src/josev2b_answer_serializer.cpp": "b7881901333fc3498651b999a05bd4529675c621d05713c82e1aa6232b6ec94b",
     "src/josev2b_answer_serializer.h": "f853594c3912dfbb40ab659d9e75578e30b748800fd2dcc9e23cb69e388358e9",
     "src/josev2b_backbone.cpp": "d02931531b40da619cd6deb27d283d0e0dadb0c0451585e210d2a99eab273b89",
@@ -309,6 +309,9 @@
     "tools/josev2b_composed_panel.py": "965b3833b1dc8c5985a03afe40f6f115210b24871f90455884d03eb8c8e0b20c",
     "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
     "tests/josev-composed/diff.cpp": "267ef2117f358aa77a26abf2efddd7f07851ef29c76dc79ee18f82151ba0e286",
-    "tests/test_josev2b_composed_panel.py": "93531fe331762a4dfb0dc54050baaa4d87209241c57e4fee8fed220c0ce5cbc0"
+    "tests/test_josev2b_composed_panel.py": "ceaf758b917e2cc02cf3e8d68939615530fa1e156fb973b2a92bfd4b261d3796",
+    "docs/josev2b-composed-dependencies.json": "ee35dd3399c02409b228731b333abd552e8386e54a7b16543d478e8ca9480b7a",
+    "tools/ci-heavy/josev2b_composed.py": "b6d624bbcac03884ece139b545cb95b67691da0caea014efd1a77dcfd1f61f1a",
+    ".github/workflows/josev2b-composed.yml": "5f41ebc59a6908c5554cbe79aa028cd9a3c6cbd8f2b5f797d231bb3d415efffa"
   }
 }

@@ -1,0 +1,36 @@
+{
+  "schema": "crispembed-josev-composed-dependencies-v1",
+  "reviewed": false,
+  "frontend": {
+    "run": null,
+    "source": null,
+    "artifacts": {},
+    "native_report_sha256": null,
+    "component_bytes": null,
+    "component_sha256": null
+  },
+  "answer": {
+    "run": null,
+    "source": null,
+    "artifacts": {},
+    "native_report_sha256": null
+  },
+  "fixed": {
+    "backbone": {
+      "run": 40438416809,
+      "source": "ab9982779574b38ea9698667dd5dd3614208bee6",
+      "id": 12705232941,
+      "name": "josev-backbone-f32-and-observations-40438416809",
+      "bytes": 4506964734,
+      "sha256": "c4ac07e8eaaf37e7e1ea191646ebd5cfd28afdef590696119477bb8e9ef9b9ac"
+    },
+    "head": {
+      "run": 40429513945,
+      "source": "5da7c64d1a95df0f9a829c62938fc8d7d64f77b7",
+      "id": 12702553413,
+      "name": "josev-head-original-and-component-40429513945",
+      "bytes": 317814519,
+      "sha256": "eff25c8ec207646602cb885abc6d17f7fc646cd2b0d7e5f7ab9b27650e175708"
+    }
+  }
+}

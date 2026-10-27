@@ -4,6 +4,10 @@ import json
 from pathlib import Path
 import sys
 import unittest
+from unittest import mock
+import importlib.util
+import os
+import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'tools'))
 import josev2b_composed_panel as panel
@@ -47,5 +51,15 @@ class Coverage(unittest.TestCase):
         self.assertEqual([r['occurrence'] for r in rows],[0,1,2])
         self.assertEqual([r['shape'] for r in rows],[[2,2048],[2,2048],[3,2048]])
         self.assertEqual(len({r['sha256'] for r in rows}),3)
+
+class DependencyBarrier(unittest.TestCase):
+    def test_pending_review_rejects_before_api_or_payload(self):
+        spec=importlib.util.spec_from_file_location('composed_hosted',ROOT/'tools/ci-heavy/josev2b_composed.py')
+        hosted=importlib.util.module_from_spec(spec);spec.loader.exec_module(hosted)
+        head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+        with mock.patch.object(hosted,'verify',return_value={}), mock.patch.object(hosted,'api') as remote, \
+             mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_SHA':head}):
+            with self.assertRaisesRegex(ValueError,'dependency review pending'):hosted.policy()
+            remote.assert_not_called()
 
 if __name__=='__main__':unittest.main()

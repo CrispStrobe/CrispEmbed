@@ -49,3 +49,16 @@ Float lexical reduction follows the publisher's mean over actual option-span
 embedding rows. Exact GPU/CPU reduction order is unproved; compare this earliest
 new stage before attributing a later head difference. No precision, quality,
 long-context, media, batching/padding, GPU-backbone or release claim follows.
+
+The full hosted driver is `tools/ci-heavy/josev2b_composed.py` and metadata
+phase `josev-composed`. Its distinct dependency file deliberately sets
+`reviewed=false` and has no tokenizer/answer producer pins until independent
+small-report review. The driver rejects before any API/model access in that
+state. After review, pin both exact successful runs/sources/review ZIPs/report
+hashes, tokenizer component bytes/hash and tokenizer-only raw artifact; commit
+all updated source hashes. No latest-source escape or old guard exception.
+The fixed reviewed backbone/head archives are reused, with every original
+member rehashed and the backbone GGUF rehashed after selective extraction.
+No original framework forward, new conversion or new reference is required.
+Only then dispatch the full phase, review227 fixed comparisons/all typed outputs,
+and preserve large traces remotely. Build-only result is not composition parity.
