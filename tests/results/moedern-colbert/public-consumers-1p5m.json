@@ -1,0 +1,52 @@
+{
+  "schema": "crispembed-moedern-public-consumers-receipt-v1",
+  "run": 40470702013,
+  "source": "3dcc75f348ed3fb5b29bb269a21fcc9979ee27fd",
+  "closure_base": "cf49c7f6d7264a6141d3e3afbef3a2ae6bb62fca",
+  "report_sha256": "3b5cc33e965561bb77e1e1e518026e49a5f2334d3ecca38f109df668d2c4b7af",
+  "consumers": {
+    "c": true,
+    "c-repeat": true,
+    "python": true,
+    "rust": true,
+    "dart": true,
+    "cli": true,
+    "http": true
+  },
+  "worst_max_absolute": 6.258487701416016e-07,
+  "min_row_cosine": 0.9999999999972198,
+  "typed_exact": true,
+  "scores_passed": true,
+  "repeat_byte_identical": true,
+  "cross_consumer_float32_identical": {
+    "c": true,
+    "c-repeat": true,
+    "python": true,
+    "rust": true,
+    "dart": true,
+    "cli": true,
+    "http": true
+  },
+  "gate_off_rejected": true,
+  "root_profile": {
+    "llamafile": true
+  },
+  "pack": {
+    "tensor_math_performed": false,
+    "sha256": "0e2b8773abd8c78a5825280f9a73cb808b88d56f0675a8e4bb7f0509f5b6cc51",
+    "bytes": 7037952
+  },
+  "initial_failures": [
+    {
+      "run": 40469547910,
+      "reason": "heavy-cpu had no artifact credential (gh exit 4) before payload access"
+    },
+    {
+      "run": 40470473595,
+      "reason": "cancelled before start to add numpy install"
+    }
+  ],
+  "limits": "1.5M only, Linux x64 CPU F32, ten frozen cases and three pairs. No retrieval quality, registry or publication.",
+  "default_enabled": false,
+  "release_qualified": false
+}

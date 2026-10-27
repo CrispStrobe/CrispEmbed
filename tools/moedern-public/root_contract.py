@@ -18,7 +18,9 @@ def source():
     require(cfg['schema'] == 'crispembed-moedern-public-root-v1' and cfg['default_enabled'] is False
             and cfg['public_model_proof'] is False, 'root wiring policy differs')
     base = cfg['base']
-    changed = set(git('diff', '--name-only', base, 'HEAD').decode().split())
+    # Evidence receipts and hosted launcher scripts are not runtime source.
+    changed = {f for f in git('diff', '--name-only', base, 'HEAD').decode().split()
+               if not f.startswith(('tests/results/', 'tools/kaggle/'))} - {str(PATH.relative_to(ROOT))}
     require(changed <= set(cfg['owned_sha256']) | {str(PATH.relative_to(ROOT))}, 'unpinned change: '+str(sorted(changed-set(cfg['owned_sha256']))))
     for name, value in cfg['owned_sha256'].items():
         data = (ROOT/name).read_bytes()

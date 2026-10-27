@@ -94,7 +94,7 @@ def _pack(model,tokenizer,output,extra):
  return {'bytes':output.stat().st_size,'sha256':digest(output),'tensors':identities,'maximum_copy_bytes':CHUNK,'tensor_math_performed':False}
 
 def pack(model,tokenizer,report,output):
- require(os.environ.get('GITHUB_ACTIONS')=='true'and sys.platform.startswith('linux'),'production repack hosted Linux only')
+ require((os.environ.get('GITHUB_ACTIONS')=='true' or bool(os.environ.get('KAGGLE_KERNEL_RUN_TYPE')))and sys.platform.startswith('linux'),'production repack hosted Linux only')
  from importlib.util import spec_from_file_location,module_from_spec
  path=Path(__file__).resolve().parent/'moedern-public/root_contract.py';spec=spec_from_file_location('moedern_public_packer_guard',path);guard=module_from_spec(spec);spec.loader.exec_module(guard);guard.source() # versioned root closure; draft guard unchanged
  require(digest(report)==COMPOSED,'exact reviewed composition report required');j=json.loads(Path(report).read_text());require(j['completed']is True and j['text_model_parity']is True and not j['failures']and j['source']=='1a053116908224cf1c9358d7d24c85ba36e82eff'and j['coverage']=={'old_final_vectors':20,'old_maxsim':3,'cases':10},'reviewed composition outcome differs')

@@ -9,17 +9,21 @@
     "crispembed/src/lib.rs": "3d019156635927b364057443a7c11154d7a144201d60b12412cef9f3583b34d6",
     "flutter/crispembed/lib/crispembed.dart": "b6713d6cb0b8e2f2270a1c19d136caf6efc8de2593fbaf91594f57e1da301ee2",
     "python/crispembed/__init__.py": "5d48096fc8611b62171099363d08da62ccf6197cabfa7092beaf2610bb20fd8d",
-    "tools/moedern-public/root_contract.py": "bacc142ac858c93f427967e8e6bc629c6aa913833508dd01da86d0047751b4df",
-    "tools/ci-heavy/moedern_public_root.sh": "2a65e29bafc15f79bc9142332e29792a9c40882def3d222fbaf62b2f56294a55",
+    "tools/moedern-public/root_contract.py": "b447ea75faae7d59c4fe48c2d1e689afdf80506635b53b6210f9a75489784b80",
+    "tools/ci-heavy/moedern_public_root.sh": "25d9f55f42447c13404dfa7204971030c4f33819955946ee8b4063cf19770081",
     "tests/test_moedern_public_root.py": "c9507a129b688db5c93c6cc45fed3dc7f3f926a926643571bcdf35f0f6876cbc",
-    "tools/pack_moedern_text_f32.py": "3832f6b2214622f1147e4938b21798177e69d40752cc7ba3291580024fb981c9",
-    "tools/ci-heavy/moedern_public_consumers.py": "2ecf9f55571be1760d163dd431ac78d2a1406be8610efc1daa346ff2312460d3",
+    "tools/pack_moedern_text_f32.py": "b1fb31d1ed17c3fdf99c609b7c866933a5c5712ab46955ef74066017d4e3151d",
+    "tools/ci-heavy/moedern_public_consumers.py": "1b39bdfffc478bff94400cf02bba568c83cf36691f6c28a77b5f2fc8ec7e735c",
     "tools/ci-heavy/moedern_public_consumers.sh": "c356a903f05a73d56874173103015224d14868d191c384fac6bd974657e5174e",
     "tests/moedern-public/consumer.c": "2afad5839ae664b22d2e6d405927b4c0fee5f3ffae97768dac2786fec7ffa263",
     "tests/moedern-public/python_consumer.py": "8a1fea275bf61473e151fa9cb4977792454b99831936c0db2196dfdae296fea3",
     "tests/moedern-public/rust_consumer.rs": "60a6b6bfc6e6d2b6f4c0b04b85e50f27fe1e3246808a3af9025ac28f17e90937",
     "tests/moedern-public/dart_consumer.dart": "9642d457db685c11566295de51ad58b6cc2cb0bfe0533a7885c26aac1c634747",
     "examples/cli/main.cpp": "5d98fb58e86149c241a3fbd712ba3b14f834fe972ba2e89ad34eade8dc84b597",
-    "examples/server/server.cpp": "4241d14cef4d99de78a26cfbae8c127b720e1c4c5f2d25235fb7a3975b65c960"
+    "examples/server/server.cpp": "4241d14cef4d99de78a26cfbae8c127b720e1c4c5f2d25235fb7a3975b65c960",
+    ".github/workflows/ovisocr2-metadata.yml": "b942f12fc520c3f5c3744fb9da54d10f18d3288ee63b79995a1621d90775df39",
+    ".github/workflows/moedern-public-consumers.yml": "ce45adbd91e5ca0e633c01ea46603f4e3a47d90d61500655efcd087ee74f78a6",
+    ".github/workflows/moedern-publish.yml": "f06692ca3050347ffcbd74d9b5f5a06f73abf8f125f4468f034e8854d2e3c4cf",
+    "tools/ci-heavy/moedern_publish.py": "c724223f7b0bbf64b01614d5f586575dd45dd75488e1a366458140e9735dd1b6"
   }
 }

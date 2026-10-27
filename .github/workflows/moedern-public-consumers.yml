@@ -1,0 +1,43 @@
+name: MoEdern1.5M public consumers on the actual root library
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-public-consumers-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  consumers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          toolchain: 1.90.0
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Authenticate, pack, build root, run six consumers
+        run: |
+          mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
+          export HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" DART="$(command -v dart)"
+          python -m pip install -q numpy==2.2.6
+          python tests/test_moedern_public_root.py -v
+          python -I tools/ci-heavy/moedern_public_consumers.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-public-consumers-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          retention-days: 90
+          if-no-files-found: warn
