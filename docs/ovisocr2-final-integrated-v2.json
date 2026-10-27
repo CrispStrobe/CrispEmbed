@@ -1,7 +1,7 @@
 {
   "schema": "crispembed-ovisocr2-final-integrated-v2",
   "qualification": false,
-  "runtime_base": "1a3315f03c34a7ff6b24e59f68763947fb58c8dc",
+  "runtime_base": "7abd9bc6b40489a80f4c10bcd2cd77fdf2bf13bc",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "protected_git_objects": {
     ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
@@ -13,7 +13,7 @@
     "CMakeLists.txt": "a48ce819646ff61b31cb4b076ec49f52a0d1aa37",
     "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
     "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
-    "examples": "1145cb2f6c415c9fefdb1b03d53bc6e37c6e7d50",
+    "examples": "818b428c7075aa546bf683eb4d17d3fc93367123",
     "python": "142cdc360dfbdae6260aed21e5c45530399e33e5",
     "flutter": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
     "crispembed": "ab740c359c66927579737e3f986f4785d28d711f",
@@ -667,7 +667,7 @@
   ],
   "runtime_closure_reviewed": true,
   "auditor_source_sha256": {
-    "tools/ovisocr2_final_integrated_v2.py": "a9f9e09b136bf5d72f09c04340e249cbe0af5075cbd8fde70bcea8fca0356916",
+    "tools/ovisocr2_final_integrated_v2.py": "6e99f71d6def310359d7b786c2f4fe89345a5fe07fed32ecdb686febeaceec2e",
     "tools/ci-heavy/ovisocr2_final_integrated_v2.py": "d01fff77bce83d78adcb78e88ed999b2962cb25310e3644f9fd269ee08bdef10",
     ".github/workflows/ovisocr2-final-integrated-v2.yml": "6dba6da679a883f9408f84b206123fbcd7fbb9fcac89af2b8fdbe80a3f2441ff",
     "tests/test_ovisocr2_final_integrated_v2.py": "84b713a565d157ec22b6585fdaf4d715c93c0e22a3d4eb14e61b67af259aee76"
