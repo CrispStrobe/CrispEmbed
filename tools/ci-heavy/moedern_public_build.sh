@@ -2,6 +2,7 @@
 # Model-free compile/ABI controls for the MoEdern public draft (heavy-cpu.yml).
 # Separate shared library from draft sources only; no model, no root wiring.
 set -euo pipefail
+git fetch -q --unshallow origin 2>/dev/null || git fetch -q origin 1a053116908224cf1c9358d7d24c85ba36e82eff
 R="$HEAVY_OUT"; B="$HEAVY_SCRATCH/mp"; mkdir -p "$R"
 python tools/moedern-public/public_contract.py | tee "$R/source.json"
 python tests/test_moedern_public_text.py -v 2>&1 | tee "$R/stdlib.txt"
