@@ -1,0 +1,64 @@
+{
+  "schema": "crispembed-systemone-public-consumers-v1",
+  "public_build": {
+    "source": "5f639e14",
+    "run": 40456478353,
+    "job": 122030886126,
+    "reviewed": true,
+    "formatted_source": "061d9ba4"
+  },
+  "packed_producer": {
+    "reviewed": false,
+    "source": null,
+    "run": null,
+    "review_artifact": null,
+    "review_receipt_sha256": null,
+    "asset_artifact": null,
+    "model_member": "josev2b-systemone-f32.gguf",
+    "model_sha256": null,
+    "model_bytes": null,
+    "original_archive": null
+  },
+  "reference_source": "ed23f1aeb5f448b80a89b567592986bffb951de9",
+  "reference_helpers": {
+    "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
+    "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820"
+  },
+  "original": {
+    "reference_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+    "input_freeze_sha256": "9c85fae56186517b5721be547bc74e8f92bd8e7cdb45d38afb4340e029161fe7"
+  },
+  "root_profile": {
+    "cmake": ["-DCMAKE_BUILD_TYPE=Release", "-DCRISPEMBED_BUILD_SHARED=ON", "-DBUILD_SHARED_LIBS=OFF",
+              "-DGGML_NATIVE=OFF", "-DCRISPEMBED_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
+              "-DGGML_CUDA=OFF", "-DGGML_LLAMAFILE=ON", "-DCRISPEMBED_SYSTEMONE_AUDIT=ON",
+              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"],
+    "targets": ["crispembed-shared", "crispembed-cli", "crispembed-server",
+                "systemone-audit-plain-probe", "systemone-audit-observed-probe", "systemone-audit-diff"]
+  },
+  "gates": {
+    "CRISPEMBED_JOSEV_PACKED": "1",
+    "CRISPEMBED_JOSEV_COMPOSED": "1",
+    "CRISPEMBED_JOSEV_BACKBONE": "1",
+    "CRISPEMBED_QWEN35_OCR": "1",
+    "CRISPEMBED_JOSEV_HEAD": "1",
+    "CRISPEMBED_JOSEV_TEXT_FRONTEND": "1",
+    "CRISPEMBED_JOSEV_ANSWER_SERIALIZER": "1"
+  },
+  "expected": {
+    "cases": 4,
+    "compared_stages": 227,
+    "consumers": ["c", "python", "cli", "http", "rust", "dart"],
+    "complete_typed_responses_exact": true
+  },
+  "resources": {
+    "minimum_ram_bytes": 10737418240,
+    "minimum_disk_bytes": 21474836480
+  },
+  "qualification": {
+    "default_enabled": false,
+    "release_qualified": false,
+    "public_api_qualified": false,
+    "model_quality": false
+  }
+}
