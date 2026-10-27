@@ -249,3 +249,17 @@ explicit2048/6144 profile. Preserve the existing1024/3584 profile guard; avoid
 unused vocabulary projection or token generation in the new hidden-only route.
 Freeze actual original positions/masks and compare the earliest differing
 backbone/head stage before composing typed outputs.
+
+## Native text components and composition
+
+[Reviewed frontend/answer evidence](../tests/results/josev2b/text-components-review.json)
+completes18 tokenizer/schema cases and17 formatter answers/66 rounding cases,
+with initial descriptor and standalone build failures retained in HISTORY.
+[Backbone](../tests/results/josev2b/backbone-f32-review.json) and
+[head](../tests/results/josev2b/head-cpu-cuda-review.json) component proofs are
+also complete. Full native composition8ab95372/40447333269 is a distinct gate:
+raw requests must produce correct native lexical means, logits/probabilities
+and full typed responses without original hidden/vector injection. Public APIs,
+self-contained packing, independent decision quality, other precisions, media,
+long context and qualified publication remain pending in PLAN. Component cosine
+and exact formatting do not establish those claims.

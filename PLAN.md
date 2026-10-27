@@ -698,7 +698,10 @@ preparation commands as current actions.
 
 - [ ] **MoEdern public text and variants:** native-v2 passes10 cases/177 checks/
   three old-primary MaxSim pairs (HISTORY). `feat/moedern-unigram-frontend-20261027`
-  owns the dedicated original-first tokenizer component. Implement exact pinned Unigram
+  owns the dedicated original-first tokenizer component. Source54917168 passes
+  source/DP review and13 stdlib controls; hosted40447670169 is dispatched. Require
+  actual frozen10+24 authored streams,1040 normalization composition checks and
+  ten Rust toy DP units before native text/public composition. Implement exact pinned Unigram
   NFKD/strip-accent/lowercase/WhitespaceSplit/Metaspace and added-token behavior,
   query32 expansion/attention, document truncation/punctuation scoring masks,
   native vectors/MaxSim and C/Python/CLI/HTTP/Rust/Dart paths. Author GGUF lacks
@@ -706,27 +709,22 @@ preparation commands as current actions.
   27M then115M with separate originals and six dilated-conv blocks for115M.
   Original conversion inventories are32/32/94 tensors; no generic ModernBERT
   alias, Q4_K assumption or representation-equivalence claim.
-- [ ] **Josev text/schema:** initial40440257882 reproduces all four original
-  token streams but rejects an unexpected authenticated pretokenizer descriptor
-  before native build. Diagnostic source86363ec3 preserves its exact policy
-  before rejection in40444002658. Fix only from observed source semantics,
-  retain the rejection, then require all4 original and14 authored cases exact.
-  Answer formatting source5452632d runs separately in40443922195, with original
-  publisher answers before native, ties/even rounding and CPython summation.
-- [ ] **Josev composition and interfaces:** source5c20497c is committed; hosted
-  build-only40445724363@30fbd6fc checks actual ordinary/observed compilation and archive
-  probe exclusion. Initial queued40444535106 was cancelled before execution
-  after source review found missing historical checkout depth; corrected queued
-  40444830535 was superseded before execution by raw-final/Ref controls. Full
-  source76bc0826 includes an explicit unreviewed dependency barrier and prepared
-  227-stage/raw-final/typed comparator. Combine native backbone, native
-  lexical means and verified512-wide joint head without original hidden/vector
-  injection. Compare actual full requests/logits/probabilities/all typed answers.
-  Preserve the Ovis1024/3584 guard and original no-extra-temperature semantics.
-  Follow [public API boundaries](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity):
-  dedicated SystemOne capability/request/output and C/Python/CLI/HTTP/Rust/Dart,
+- [ ] **Josev composition and interfaces:** reviewed frontend40446469585 and
+  serializer40446419257 are completed in HISTORY. Full source8ab95372 is
+  dispatched as40447333269: raw request → native tokenizer/backbone/lexical
+  means/head/formatter, no original hidden/vector injection. Authenticate
+  immutable artifacts, actual compiler/archive/Ref controls, all227 mapped
+  original stages and24 explicit unmapped rotary/argument records, unchanged
+  absolute0.002/cosine0.99999/logit0.002/probability0.0001/ordinal0.001 gates,
+  all ordinary/observer/repeat raw outputs and complete typed JSON. Preserve
+  every initial converter/build failure and queued supersession receipt.
+  Then pack a byte-preserving442-tensor self-contained GGUF plus tokenizer
+  metadata; adapt explicitly owned/borrowed component views, keeping old strict
+  component loaders and Ovis1024/3584 guard unchanged. Add dedicated SystemOne
+  C/Python/CLI/HTTP/Rust/Dart capability/request/output per
+  [public API boundaries](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity),
   with missing-model/schema/order/tie/rounding/media/error/recovery controls.
-  Existing Gemma flat JSON and768-vector scoring contracts stay unchanged.
+  Existing Gemma flat JSON and768-vector contracts stay unchanged.
 - [ ] **Quality and publication:** only after the above original-first gates,
   freeze independent licensed retrieval/decision panels, assess F16/quantization
   while retaining critical head/norm precision and every rejected recipe, and

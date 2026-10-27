@@ -1,3 +1,30 @@
+## 27 October 2026 — Josev native tokenizer and answer formatting
+
+[Independent component review](tests/results/josev2b/text-components-review.json)
+qualifies the bounded frontend and output formatter. Frontend40446469585 at65a6de45
+reports all18 original/authored cases passing, with all four original IDs/masks/
+question-option spans/lexical IDs directly reviewed. Five metadata negatives,
+six input rejection/recovery groups and context gates pass. The9,954,944-byte
+metadata component is pinned with its full SHA256. Full18 native rows remain
+remote; the independent small review discloses that inspection boundary.
+
+Serializer40446419257 at52595644 passes17 answers,66 binary64 rounding cases
+and24 rejection/recovery pairs. Independent reconstruction reproduces all
+reported native JSONL hashes; ordinary and tested answers are byte-identical.
+Actual arithmetic compiler flags and production helper exclusion pass. The
+CPython3.13.15 compensated-sum source is independently rehashed; the authored
+counterexample distinguishes correct0.0313 from plain-fold0.0312.
+
+Preserve initial frontend40440257882 and diagnostic40444002658: both reproduce
+four frozen original inputs, then reject a converter assumption that ByteLevel
+trim_offsets was true. Authenticated policy proves false; only that requirement
+is corrected. Initial serializer40443922195 completes publisher gold generation
+but fails compilation on a missing standalone Ryu include path. Corrected
+standalone targets add that path; runtime/gold/inputs remain unchanged.
+These are component proofs, not composed model, task-quality or release proof.
+The explicit full composition source8ab95372/40447333269 now reuses reviewed
+backbone/head/tokenizer artifacts with no original hidden-vector injection.
+
 ## 27 October 2026 — Smallest MoEdern native parity reviewed
 
 [Native-v2 actual40441341206](tests/results/moedern-colbert/native-v2-review.json)

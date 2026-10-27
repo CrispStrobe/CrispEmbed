@@ -668,17 +668,18 @@ producer unchanged while its outputs are reviewed; no new gold or budget waiver.
   [CPU/CUDA head](../tests/results/josev2b/head-cpu-cuda-review.json) passes246
   stages/eight typed responses from original hidden/lexical vectors. Reviewed
   [backbone40438416809](../tests/results/josev2b/backbone-f32-review.json)
-  atab998277 passes104 stages and exact320-tensor F32 conversion. Tokenizer
-  source86363ec3/40444002658 diagnoses the initial descriptor rejection before
-  C++ build; answer serializer5452632d/40443922195 is a separate hosted proof.
-  Complete these, then compose native raw requests through lexical means/head
-  and full typed answers without captured-hidden injection. No task quality,
-  public interfaces, quantization or release qualification yet.
+  atab998277 passes104 stages and exact320-tensor F32 conversion. Reviewed
+  [frontend/serializer](../tests/results/josev2b/text-components-review.json)
+  pass18 input cases/17 output cases/66 rounding controls. Full composition
+  source8ab95372 is dispatched40447333269; its explicit dependencies pin both
+  successful producers, with227 mapped stages/24 unmapped declarations and
+  raw ordinary/observed/repeat/final typed gates. Review before442-tensor packing
+  and dedicated public capability. No task-quality or release claim yet.
 - **MoEdern:** [native-v2 actual40441341206](../tests/results/moedern-colbert/native-v2-review.json)
   atcec6b7f0 is independently reviewed: all10 cases/177 checks/three old-primary
   MaxSim pairs pass. Preserve112 mapped versus138 unmapped primary arrays,
   separate21 supplemental leaves and rejected156 historical byte changes.
-  Next `feat/moedern-unigram-frontend-20261027` implements exact original-first
+  Next `feat/moedern-unigram-frontend-20261027` at54917168/40447670169 implements exact original-first
   dedicated tokenizer/role metadata with query32 expansion and three masks.
   Native text composition/public APIs follow;27M/115M require separate originals.
 - **UltraBERT:** reviewed [Unicode A/B40434717493](../tests/results/ultrabert/unicode-pretoken-review-v1.json)

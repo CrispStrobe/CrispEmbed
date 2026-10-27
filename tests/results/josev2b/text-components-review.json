@@ -1,0 +1,56 @@
+{
+  "schema": "crispembed-josev-text-components-review-v1",
+  "completed": true,
+  "answer": {
+    "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40446419257",
+    "source": "525956444afef1be2df19da3fb2842dde9b68b49",
+    "small_artifact": {
+      "id": 12708103181,
+      "bytes": 17819,
+      "sha256": "b9cd238bda0aa5bf4e0e7ae66595054424d6a4996e118867a0b94d3a43dfaa53"
+    },
+    "native_report_sha256": "667eb16469cb6469030cdaf51de46c7afc139d994d530ae2a4fae9b3bfdf711c",
+    "answers": 17,
+    "rounding_cases": 66,
+    "negative_recovery_pairs": 24,
+    "all_reconstructed_native_jsonl_hashes_exact": true,
+    "ordinary_test_byte_identical": true,
+    "protected_objects": 289,
+    "source_files": 11,
+    "compiled_arithmetic_tus_checked": 2,
+    "evidence_artifact": {
+      "id": 12708970671,
+      "bytes": 397187,
+      "sha256": "76796195458318d38ea583c274f219cb403273c7e7f013fbd8cb736419628a88",
+      "downloaded": false
+    }
+  },
+  "frontend": {
+    "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40446469585",
+    "source": "65a6de450eede1358821a52dd0fe199c24286b16",
+    "small_artifact": {
+      "id": 12708702131,
+      "bytes": 7615,
+      "sha256": "dea396a984f9540850f430ec29df0b16c41bdbfd046fa950a6b1649db3a24e11"
+    },
+    "native_report_sha256": "7ed2fb12f8c8c31608921e5fc8b78d008af8b04da2a5abce9f87e6951eff8a85",
+    "cases": 18,
+    "frozen_inputs_directly_checked": 4,
+    "metadata_negatives": 5,
+    "typed_negatives_with_recovery": 6,
+    "protected_objects": 278,
+    "source_files": 13,
+    "component_bytes": 9954944,
+    "component_sha256": "6fe488e538b172d2f3f831e7422714b7158602d9d9f2d34f336db389363c9562",
+    "raw_artifact": {
+      "id": 12708662211,
+      "bytes": 26885330,
+      "sha256": "e9967f8cf8c71f24fa8698dab2c74cf45d9f70c72ccee2e7d9fcd08ebda72883",
+      "downloaded": false
+    },
+    "review_limit": "Full18 native row files remain remote; four original frozen streams directly inspected, remaining executed assertions reviewed via authenticated source and successful job."
+  },
+  "composed_model_parity": false,
+  "representative_quality": false,
+  "release_qualified": false
+}

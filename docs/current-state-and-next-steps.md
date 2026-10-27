@@ -559,7 +559,7 @@ for current sources and acceptance gates.
 | WASM attribution | Corrected layer3 capture preserves old ordinary/observer/final anchors. All12 same-input projections have exact quantized bytes/scales and max≤1.431e-6 | Composed FFN-down error0.00331104 and prior full-panel rejection remain; no same-input kernel defect proved, default stays off |
 | UltraBERT SciFact | Unicode A/B40434717493 passes all5,483 original IDs/masks/full hashes and14 authored cases; unset/empty/0 preserve old24/25 mismatches | Explicit native-v3 against frozen originals, preserving truncation, numerical debt and ranking budgets |
 | MoEdernColBERT | Native-v2 actual40441341206 independently passes10 cases/177 checks/three old-primary MaxSim pairs; old byte-continuity rejection preserved | Exact dedicated Unigram/role frontend, public text composition, then27M/115M and representative retrieval |
-| Josev-2B | CPU/CUDA head passes246 stages/eight typed responses; backbone40438416809 passes104 stages and exact320-tensor F32 conversion | Fix observed tokenizer descriptor rejection, verify answer serializer, compose complete native typed answers, public interfaces and independent decision quality |
+| Josev-2B | CPU/CUDA head passes246 stages/eight typed responses; backbone40438416809 passes104 stages and exact320-tensor F32 conversion | Frontend18 cases and serializer17 answers/66 rounds now pass; review actual227-stage composition40447333269, then packed model/public interfaces and independent decision quality |
 
 Public detailed evidence is in [HISTORY](https://github.com/CrispStrobe/CrispEmbed/blob/main/HISTORY.md)
 and [PERFORMANCE](https://github.com/CrispStrobe/CrispEmbed/blob/main/PERFORMANCE.md).
