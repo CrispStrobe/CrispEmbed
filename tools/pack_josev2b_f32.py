@@ -20,7 +20,7 @@ import sys
 
 ROOT=Path(__file__).resolve().parents[1]
 PROFILE_PATH='docs/josev2b-packed-f32-profile.json'
-PROFILE_SHA='ed84636dbd4f6f2971e7e1b87f7e4f0ebe1e1a05f4cc5779eec22214053e2ad4'
+PROFILE_SHA='1523832a70fdcc6b510f35a38d5405362fd1e8a0b60f8127e3d54c995734d622'
 FILE_CAP=8*2**30
 HEADER_CAP=64*2**20
 CHUNK=4*2**20

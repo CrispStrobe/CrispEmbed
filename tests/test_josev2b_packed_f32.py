@@ -47,7 +47,8 @@ def expected(component):
 
 class Packed(unittest.TestCase):
     def test_declared_production_profile_exact442_reviewed_components(self):
-        cfg=p.profile();self.assertFalse(cfg['composed_review']['reviewed'])
+        cfg=p.profile();self.assertTrue(cfg['composed_review']['reviewed'])
+        self.assertEqual(cfg['composed_review']['receipt_sha256'],'45689505bcfd6de6e32a3c353ac4a502f0c82826227b2100788e9ac9b15d0fd7')
         self.assertEqual([len(x['tensors'])for x in cfg['components'].values()],[320,122,0])
         self.assertEqual(sum(x['bytes']for c in cfg['components'].values()for x in c['tensors'].values()),7649191184)
         for label,file in [('backbone','backbone-f32.json'),('head','head-f32-conversion.json')]:
@@ -62,7 +63,8 @@ class Packed(unittest.TestCase):
         self.assertEqual(cfg['components']['tokenizer']['bytes'],9954944)
 
     def test_pending_composed_proof_rejects_before_any_component_access(self):
-        with mock.patch.object(p,'source_guard',return_value={}),mock.patch.dict('os.environ',{'GITHUB_ACTIONS':'true'}),mock.patch.object(p,'parse')as parse:
+        cfg=deepcopy(p.profile());cfg['composed_review']['reviewed']=False
+        with mock.patch.object(p,'source_guard',return_value={}),mock.patch.object(p,'profile',return_value=cfg),mock.patch.dict('os.environ',{'GITHUB_ACTIONS':'true'}),mock.patch.object(p,'parse')as parse:
             with self.assertRaisesRegex(ValueError,'review pending'):
                 p.pack('missing-backbone','missing-head','missing-tokenizer','missing-review','unused-output')
             parse.assert_not_called()

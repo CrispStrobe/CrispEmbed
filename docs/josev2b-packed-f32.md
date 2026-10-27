@@ -27,9 +27,14 @@ Their declared original reference is51a2e16b and workerb2edf8c8. These component
 proofs are distinct from composed text-to-answer qualification. Initial composed
 [40447333269](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40447333269)
 failed in its artifact adapter before inference and cannot authorize packing.
-The profile has `composed_review.reviewed:false`; production execution fails
-before accessing components until an explicit new source revision freezes a
-reviewed successful corrected composed receipt/source/run/SHA. No latest-source
+The corrected [40449265616](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40449265616)
+at `ed23f1aeb5f448b80a89b567592986bffb951de9` subsequently passed all227 stages
+and four full typed responses. Its independently reviewed `hosted.json` SHA256
+`45689505bcfd6de6e32a3c353ac4a502f0c82826227b2100788e9ac9b15d0fd7`
+is now explicitly frozen in the profile, along with service review artifact
+12710133899 (101216B, ZIP SHA256
+`755ad31a56a880347a5aa9742be5e5dcad06112924beafd1bd96c79ae6119979`).
+Production packing requires that exact positive receipt before component access. No latest-source
 lookup, negative-result acceptance or implicit promotion is provided.
 
 The proposed borrowed-loader metadata contract is exact:

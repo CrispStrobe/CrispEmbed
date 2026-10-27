@@ -7,10 +7,17 @@
   "original_receipt_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
   "original_worker": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
   "composed_review": {
-    "reviewed": false,
-    "run": 40447333269,
-    "source": "8ab9537237373f64c492e1b69654916da78e3aeb",
-    "receipt_sha256": null
+    "reviewed": true,
+    "run": 40449265616,
+    "source": "ed23f1aeb5f448b80a89b567592986bffb951de9",
+    "receipt_sha256": "45689505bcfd6de6e32a3c353ac4a502f0c82826227b2100788e9ac9b15d0fd7",
+    "review_artifact": {
+      "id": 12710133899,
+      "name": "josev-composed-review-40449265616",
+      "bytes": 101216,
+      "sha256": "755ad31a56a880347a5aa9742be5e5dcad06112924beafd1bd96c79ae6119979"
+    },
+    "member": "hosted.json"
   },
   "allowed_identical_common_keys": [
     "general.license",
