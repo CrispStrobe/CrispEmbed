@@ -9,9 +9,12 @@ static void require(bool value, const char * message) {
 }
 static void gate(const char * name, const char * value) {
 #ifdef _WIN32
-    _putenv_s(name, value);
+    _putenv_s(name, value ? value : "");
 #else
-    setenv(name, value, 1);
+    if (value)
+        setenv(name, value, 1);
+    else
+        unsetenv(name);
 #endif
 }
 int main() {
@@ -54,11 +57,13 @@ int main() {
         require(tensors.size() == 320, "Expected exact source-derived320tensor profile");
         gate("CRISPEMBED_QWEN35_OCR", "1");
         qwen35_ocr::decoder_weights w;
-        for (const char * disabled : { "", "0", "false" }) {
+        for (const char * disabled : { static_cast<const char *>(nullptr), "", "0" }) {
             gate("CRISPEMBED_JOSEV_BACKBONE", disabled);
             require(!josev2b_backbone::map(tensors, w) && !w.embedding && w.layers.empty(),
                     "Disabled gate populated weights");
         }
+        gate("CRISPEMBED_JOSEV_BACKBONE", "false");
+        require(josev2b_backbone::map(tensors, w), "Shared nonzero-string gate semantics changed");
         gate("CRISPEMBED_JOSEV_BACKBONE", "1");
         require(josev2b_backbone::map(tensors, w) && !w.head && w.layers.size() == 24,
                 "Valid profile rejected or vocabulary head bound");
