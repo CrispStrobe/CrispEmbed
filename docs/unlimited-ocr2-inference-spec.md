@@ -90,6 +90,32 @@ Parity risks, most likely first:
   bicubic). Downscaling to 1024 is exact for the 1024x768 fixtures but may differ from
   `ImageOps.pad` on larger pages.
 
+**Source audit (2026-10-27, modeling_unlimitedocr.py / deepencoder.py at 04647c7a).** Concrete
+discrepancies found and fixed in the tiled path (default inside the tiles gate; the first port
+stays available as `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP=1`; v1 and untiled paths unchanged):
+1. **bf16 pixels.** `_uocr_build_inputs` stores every view as `transform(img).to(torch.bfloat16)`;
+   the F32 reference harness casts back, so the model sees bf16-rounded pixels. Native tiles and
+   the tiled page's global view now round to bf16 (nearest-even). (The untiled path does not, and
+   still matches exactly; left unchanged.)
+2. **SAM rel-pos resize at 640.** SAM global blocks at a 40x40 grid need `rel_pos` 127 -> 79 via
+   `F.interpolate(mode="linear")` (align_corners=False). The native `get_rel_pos` sampled with
+   align_corners=True math (`i*(L-1)/(n-1)`); tiles now use the torch formula.
+3. **Pos-embed coefficients.** torch's antialiased bicubic computes scale/support/centre/weights in
+   fp32 for fp32 input (Pillow uses double); tiles now use an fp32 port of `_compute_weights_aa`.
+4. **Global view of tiled pages** now uses the Pillow `ImageOps.pad` port (half-to-even `round`
+   for size/offset, antialiased resize) instead of the legacy letterbox.
+Verified as matching: grid choice (exact for 4:3), Pillow BICUBIC tile resize/crop order,
+Normalize(0.5), pad colour 127, `get_abs_pos`/`get_abs_pos_sam` (bicubic, antialias=True,
+align_corners=False, fp32, CLS kept), feature order (local rows + newline, global rows + newline,
+separator), zero-padded SAM windows at 40x40.
+
+**Vision diff.** `UOCR2_DUMP_VISION=<path>` (variant 2) writes the assembled IMG-span features as
+raw f32 `[n_vis, D]` and, when tiled, the tile pixels to `<path>.tiles.f32`. The Kaggle kernel
+`tools/kaggle/unlimited-ocr2-vision-diff/` mounts the reference kernel output and compares pixels
+(Pillow recomputation) and per-tile projector features (max abs, cosine, first block over 1e-3)
+in two arms (reference prep vs legacy prep). The reference hook keeps the first projector call,
+i.e. the local tiles for tiled pages; a tiled page's global features are not in the reference.
+
 ---
 
 ## 2. Main-attention positions and RoPE
