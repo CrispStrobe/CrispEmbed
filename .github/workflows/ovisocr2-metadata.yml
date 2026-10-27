@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [josev-composed, josev-composed-build, josev-wheel-metadata, scifact-tokenizer-diagnostic, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, final-integrated-v1, successor-apple-only, moedern-original-1p5m, wasm-layer3-attribution-v1]
+        options: [josev-packed, josev-composed, josev-composed-build, josev-wheel-metadata, scifact-tokenizer-diagnostic, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, final-integrated-v1, successor-apple-only, moedern-original-1p5m, wasm-layer3-attribution-v1]
         default: metadata
       native_run_id:
         type: string
@@ -602,3 +602,7 @@ jobs:
   josev-composed:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-composed'
     uses: ./.github/workflows/josev2b-composed.yml
+
+  josev-packed:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-packed'
+    uses: ./.github/workflows/josev2b-packed.yml
