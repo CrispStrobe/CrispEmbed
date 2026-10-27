@@ -8,6 +8,7 @@
     ".github/workflows/systemone-api-build.yml": "1bd4362c3ed6c08fa28e69a365e92f3e8136f8509a057bb6e94b786d4a494efe",
     "CMakeLists.txt": "848ad47a5741289d1507c2c27a5eb41a1f1858ab7f9b09e1860335b1d9c10250",
     "crispembed-sys/src/lib.rs": "69918a928eaaf425c9a4019e32241d8356dc311b2ea9be80f495898a57478b1b",
+    "crispembed/examples/systemone_audit.rs": "be89305c9b489062f26ef969821d1cd78c7b90e4a2fe087912e6ec3c7cee58c9",
     "crispembed/src/lib.rs": "8453343c10b2cca0d236e19fab85a5ff817ff3a2f62477bcbcbf77aa11074057",
     "crispembed/src/systemone.rs": "8901d87eadcd0464d00f2fa6d0528c25be3144d8d188bff5566892bfcf3c97cd",
     "docs/systemone-api.md": "02552311c3edc6f92c3eb63bec6c6407daf4fddaa015fdaba7f77130d077df1e",
@@ -20,6 +21,8 @@
     "src/crispembed.h": "2ae8003577438a627600dd869e94fcdca19833e54948a97dbdcd74962524bf97",
     "src/systemone_api.cpp": "2c818175b92719614fbce6b74b3161b7b3e9a437e2ceebaa16567a41d9a02b0e",
     "tests/systemone/check_build.py": "b629e0bdd6d10fa34bd3a3dad812b571ce7f4bf88948571844c55f0e9a23fac7",
+    "tests/systemone/consumer.py": "e5700a382bb24d8d3f9c24808a9a24bce3c755c8abee47b1052b49107b5c047d",
+    "tests/systemone/dart_consumer.dart": "2fab4807b486862d3e4125339105e06ceec02485fa2c5d017f845cfcfeec9d23",
     "tests/systemone/native_controls.py": "8383c2ad5eddb33b1e6c2eee900c44e69716a032638bfd009c91f96bc5c77624",
     "tests/test_systemone_binding.py": "18473195dd541093246b068d123b287f000dd71ceb7fa9656c0cb529d9682a73",
     "tools/systemone_api_contract.py": "3b7b24362a957889609e7bb4306d991df0b3536b4c09f19e66d62359c1effa37"
