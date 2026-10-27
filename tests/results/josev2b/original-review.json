@@ -1,0 +1,30 @@
+{
+  "schema": "crispembed-josev-original-review-v1",
+  "native_qualified": false,
+  "full_model_qualified": false,
+  "source": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
+  "original_receipt_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+  "input_freeze_sha256": "9c85fae56186517b5721be547bc74e8f92bd8e7cdb45d38afb4340e029161fe7",
+  "array_count": 251,
+  "array_payload_bytes": 279087860,
+  "original_cases": 4,
+  "all_observer_repeat_exact": true,
+  "head_tensors": 122,
+  "head_state_elements": 30472708,
+  "head_identity_exact": true,
+  "embedding_tied": true,
+  "peak_cuda_allocated_bytes": 9082022400,
+  "elapsed_reference_seconds": 39.45978631099996,
+  "environment_audit": {
+    "packages": 57,
+    "all_archives_and_installed_owners_exact": true,
+    "setuptools_legacy_metadata_candidates": 13
+  },
+  "remote_raw": {
+    "provider": "Kaggle",
+    "version": 5,
+    "access_details": "Private operator environment outside Git; original raw payload remains remote"
+  },
+  "review": "Primary small receipts rehashed and strict original/head schema validator passed. Independent peer review pending.",
+  "next": "Preserve all251 array bytes on hosted resources; original-first F32 head conversion then native component parity before backbone/API composition."
+}
