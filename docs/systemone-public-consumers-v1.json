@@ -24,7 +24,7 @@
       "bytes": 3642252632,
       "sha256": "3c29fec4f4e2b38049cf2e864c938ee088c812a00c749234d08a37b77eac7b5c"
     },
-    "model_member": "josev2b-systemone-f32.gguf",
+    "model_member": "raw/josev2b-systemone-f32.gguf",
     "model_sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
     "model_bytes": 7659180448,
     "original_archive": {
