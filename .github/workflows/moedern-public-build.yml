@@ -1,0 +1,63 @@
+name: MoEdern public draft model-free compile and ABI controls
+on:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: moedern-public-build-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stdlib wrapper/source controls
+        run: python tests/test_moedern_public_text.py -v
+      - name: Compile draft shared library and plain-C ABI consumer
+        run: |
+          cmake -S tests/moedern-public -B "$RUNNER_TEMP/mp" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/mp" --parallel 2
+      - name: Model-free ABI controls, exports and observer exclusion
+        run: |
+          mkdir -p "$RUNNER_TEMP/review"
+          "$RUNNER_TEMP/mp/moedern-public-controls" | tee "$RUNNER_TEMP/review/controls.txt"
+          nm -D --defined-only "$RUNNER_TEMP/mp/libmoedern-public.so" | grep ' T crispembed_' | tee "$RUNNER_TEMP/review/exports.txt"
+          test "$(grep -c crispembed_moedern_ "$RUNNER_TEMP/review/exports.txt")" = 5
+          ! nm -C "$RUNNER_TEMP/mp/libmoedern-public.so" | grep -E 'composed_test|observe' 
+          cp "$RUNNER_TEMP/mp/compile_commands.json" "$RUNNER_TEMP/review/"
+          python - "$RUNNER_TEMP/review/compile_commands.json" <<'P'
+          import json,sys
+          rows=[r for r in json.load(open(sys.argv[1])) if 'moedern_text' in r['file']]
+          assert len(rows)==4 and all('-ffp-contract=off' in r['command'] and 'TESTING' not in r['command'] for r in rows), rows
+          print('flags ok', len(rows))
+          P
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          toolchain: 1.90.0
+      - name: Rust wrapper type-check inside the crate (runner-local registration only)
+        run: |
+          echo 'pub mod moedern_text;' >> crispembed/src/lib.rs
+          cargo check -p crispembed 2>&1 | tee "$RUNNER_TEMP/review/rust.txt"
+          git checkout crispembed/src/lib.rs
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Dart analyze with exact ffi dependency
+        run: |
+          mkdir -p "$RUNNER_TEMP/dt/lib" && cp flutter/crispembed/lib/src/moedern_text.dart "$RUNNER_TEMP/dt/lib/"
+          printf 'name: moedern_audit\nenvironment:\n  sdk: ">=3.0.0 <4.0.0"\ndependencies:\n  ffi: 2.1.4\n' > "$RUNNER_TEMP/dt/pubspec.yaml"
+          cd "$RUNNER_TEMP/dt" && dart pub get && dart analyze --fatal-infos 2>&1 | tee "$RUNNER_TEMP/review/dart.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-public-build-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/review/
+          retention-days: 90
+          if-no-files-found: warn
