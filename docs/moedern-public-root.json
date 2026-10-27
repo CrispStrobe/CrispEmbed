@@ -11,6 +11,13 @@
     "python/crispembed/__init__.py": "5d48096fc8611b62171099363d08da62ccf6197cabfa7092beaf2610bb20fd8d",
     "tools/moedern-public/root_contract.py": "bacc142ac858c93f427967e8e6bc629c6aa913833508dd01da86d0047751b4df",
     "tools/ci-heavy/moedern_public_root.sh": "2a65e29bafc15f79bc9142332e29792a9c40882def3d222fbaf62b2f56294a55",
-    "tests/test_moedern_public_root.py": "85da5b5a8cb43b8fd27d1760b835e1d3cb1a128e04e42c51e3565635bdc50675"
+    "tests/test_moedern_public_root.py": "85da5b5a8cb43b8fd27d1760b835e1d3cb1a128e04e42c51e3565635bdc50675",
+    "tools/pack_moedern_text_f32.py": "3832f6b2214622f1147e4938b21798177e69d40752cc7ba3291580024fb981c9",
+    "tools/ci-heavy/moedern_public_consumers.py": "f3b336c0d15f31da083fd33dd96cb0258bc139ab2f62ba16d80e7931b8dc0223",
+    "tools/ci-heavy/moedern_public_consumers.sh": "c356a903f05a73d56874173103015224d14868d191c384fac6bd974657e5174e",
+    "tests/moedern-public/consumer.c": "2afad5839ae664b22d2e6d405927b4c0fee5f3ffae97768dac2786fec7ffa263",
+    "tests/moedern-public/python_consumer.py": "8a1fea275bf61473e151fa9cb4977792454b99831936c0db2196dfdae296fea3",
+    "tests/moedern-public/rust_consumer.rs": "60a6b6bfc6e6d2b6f4c0b04b85e50f27fe1e3246808a3af9025ac28f17e90937",
+    "tests/moedern-public/dart_consumer.dart": "9642d457db685c11566295de51ad58b6cc2cb0bfe0533a7885c26aac1c634747"
   }
 }

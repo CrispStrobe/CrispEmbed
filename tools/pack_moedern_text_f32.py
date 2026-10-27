@@ -96,7 +96,7 @@ def _pack(model,tokenizer,output,extra):
 def pack(model,tokenizer,report,output):
  require(os.environ.get('GITHUB_ACTIONS')=='true'and sys.platform.startswith('linux'),'production repack hosted Linux only')
  from importlib.util import spec_from_file_location,module_from_spec
- path=Path(__file__).resolve().parent/'moedern-public/public_contract.py';spec=spec_from_file_location('moedern_public_packer_guard',path);guard=module_from_spec(spec);spec.loader.exec_module(guard);guard.source()
+ path=Path(__file__).resolve().parent/'moedern-public/root_contract.py';spec=spec_from_file_location('moedern_public_packer_guard',path);guard=module_from_spec(spec);spec.loader.exec_module(guard);guard.source() # versioned root closure; draft guard unchanged
  require(digest(report)==COMPOSED,'exact reviewed composition report required');j=json.loads(Path(report).read_text());require(j['completed']is True and j['text_model_parity']is True and not j['failures']and j['source']=='1a053116908224cf1c9358d7d24c85ba36e82eff'and j['coverage']=={'old_final_vectors':20,'old_maxsim':3,'cases':10},'reviewed composition outcome differs')
  for path,pin in [(model,MODEL),(tokenizer,TOKENIZER)]:require(Path(path).is_file()and not Path(path).is_symlink()and Path(path).stat().st_size==pin['bytes']and digest(path)==pin['sha256'],'authenticated component differs')
  m,t=parse(model),parse(tokenizer);require(len(m['tensors'])==32 and not t['tensors']and sum(row['bytes']for row in m['tensors'])==1484448*4,'32F32 parameter inventory differs')
