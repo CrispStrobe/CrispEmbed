@@ -281,7 +281,8 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--convert-after-original', action='store_true')
     args = p.parse_args()
-    if os.environ.get('GITHUB_ACTIONS') != 'true':
+    # Hosted runners only: GitHub Actions or a Kaggle kernel, never a shared host.
+    if os.environ.get('GITHUB_ACTIONS') != 'true' and not os.environ.get('KAGGLE_KERNEL_RUN_TYPE'):
         p.error('model access/inference is hosted-only')
     args.output.mkdir(parents=True, exist_ok=True)
     receipt = capture_fresh(args.variant, args.output)
