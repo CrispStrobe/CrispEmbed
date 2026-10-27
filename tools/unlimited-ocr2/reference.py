@@ -19,9 +19,10 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT/'docs/unlimited-ocr2-source.json'
 PAGES = [
+    ('small-untiled', ['Unlimited OCR 2', 'Small page, no tiles.', 'Total: 42.00 EUR'], (640, 480)),
     ('para-en', ['Unlimited OCR 2 reference page.', 'The quick brown fox jumps over the lazy dog.',
-                 'Invoice 2026-10-27: total 1,234.56 EUR', 'Zeile mit Umlauten: Grüße, Straße, Äpfel.']),
-    ('table', ['Item | Qty | Price', 'Apple | 3 | 1.20', 'Pear | 12 | 0.85', 'Total | 15 | 13.80']),
+                 'Invoice 2026-10-27: total 1,234.56 EUR', 'Zeile mit Umlauten: Grüße, Straße, Äpfel.'], (1024, 768)),
+    ('table', ['Item | Qty | Price', 'Apple | 3 | 1.20', 'Pear | 12 | 0.85', 'Total | 15 | 13.80'], (1024, 768)),
 ]
 
 
@@ -32,11 +33,11 @@ def sha(path):
     return h.hexdigest()
 
 
-def render(lines, path):
+def render(lines, size, path):
     from PIL import Image, ImageDraw, ImageFont
-    img = Image.new('RGB', (1024, 768), 'white'); d = ImageDraw.Draw(img)
-    font = ImageFont.load_default(size=34)
-    for i, line in enumerate(lines): d.text((48, 60 + 90*i), line, fill='black', font=font)
+    img = Image.new('RGB', size, 'white'); d = ImageDraw.Draw(img)
+    font = ImageFont.load_default(size=30)
+    for i, line in enumerate(lines): d.text((40, 50 + 80*i), line, fill='black', font=font)
     img.save(path, format='PNG', optimize=False)
     return sha(path)
 
@@ -98,14 +99,14 @@ def main():
             handles.append(m.register_forward_hook(keep(name)))
     report['hooked_modules'] = len(handles)
 
-    for cid, lines in PAGES:
+    for cid, lines, size in PAGES:
         captured.clear()
-        image = out/(cid+'.png'); image_sha = render(lines, image)
+        image = out/(cid+'.png'); image_sha = render(lines, size, image)
         started = time.time()
         with torch.inference_mode():
             res = model.infer(tok, image_file=str(image), eval_mode=True, return_dict=True,
                               max_new_tokens=args.max_new_tokens, temperature=0.0)
-        row = dict(id=cid, lines=lines, image_sha256=image_sha, seconds=time.time()-started,
+        row = dict(id=cid, lines=lines, size=list(size), image_sha256=image_sha, seconds=time.time()-started,
                    prompt=res.get('prompt'), text=res.get('text'), arrays={})
         for k in ('ids', 'token_ids', 'output_ids', 'input_ids'):
             if k in res and res[k] is not None:
