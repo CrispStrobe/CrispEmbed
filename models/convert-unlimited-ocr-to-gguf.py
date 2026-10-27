@@ -121,6 +121,10 @@ def map_tensor_name(n):
             "mlp.shared_experts.down_proj.weight":"shared_exp.ffn_down.weight",
         }.get(r)
         if direct: return f"l.blk.{i}.{direct}"
+        # Unlimited-OCR-2 DASH block-sparse attention: per-layer router + indexer.
+        v2 = re.match(r"self_attn\.(dash_router|indexer)\.(head_cls|q_proj\.weight|k_proj\.weight|q_norm\.weight|k_norm\.weight)$", r)
+        if v2:
+            return f"l.blk.{i}.attn_{'dash' if v2.group(1) == 'dash_router' else 'idx'}.{v2.group(2)}"
         # MoE routed experts are NOT mapped here — they are collected and emitted as
         # STACKED 3D tensors (l.blk.{i}.ffn_{gate,up,down}_exps.weight) in the write
         # loop, so the runtime loads them directly and skips the per-expert→stacked
@@ -271,6 +275,33 @@ def main():
     # left jina on base 10000 - short text read exactly, long pages drifted.
     writer.add_float32("unlimited_ocr.rope_theta", float(lang_cfg.get("rope_theta", 10000.0)))
     writer.add_float32("unlimited_ocr.rms_norm_eps", float(lang_cfg.get("rms_norm_eps", 1e-6)))
+    # Unlimited-OCR-2: YaRN rope and DASH block-sparse attention. Absent for v1, so
+    # the runtime keeps the v1 path unless these keys are present AND gated on.
+    rs = lang_cfg.get("rope_scaling") or {}
+    if rs.get("rope_type", rs.get("type")) == "yarn":
+        writer.add_string("unlimited_ocr.rope_scaling.type", "yarn")
+        for key in ("factor", "beta_fast", "beta_slow", "attention_factor"):
+            writer.add_float32(f"unlimited_ocr.rope_scaling.{key}", float(rs[key]))
+        writer.add_uint32("unlimited_ocr.rope_scaling.original_max_position_embeddings",
+                          int(rs["original_max_position_embeddings"]))
+    sp = cfg.get("sparse_attention_config") or {}
+    if sp.get("use_sparse_attention"):
+        writer.add_uint32("unlimited_ocr.variant", 2)
+        for key in ("sparse_block_size", "sparse_index_dim", "sparse_init_block", "sparse_local_block",
+                    "sparse_num_index_heads", "sparse_topk_blocks", "dash_topk_blocks", "dash_query_chunk",
+                    "image_token_id", "page_token_id", "per_page_image_tokens", "sparse_rope_page_mod",
+                    "sparse_rope_page_pairs", "sparse_rope_page_span"):
+            writer.add_uint32(f"unlimited_ocr.sparse.{key}", int(sp[key]))
+        for key in ("dash_prior_floor", "dash_scaling_factor", "dash_sigma", "sparse_rope_page_theta",
+                    "sparse_rope_theta", "sparse_rope_tok_theta"):
+            writer.add_float32(f"unlimited_ocr.sparse.{key}", float(sp[key]))
+        for key in ("dash_router", "dash_stage0", "sparse_main_rope_mode", "sparse_main_rope_tok_freq_mode",
+                    "sparse_rope_mode", "sparse_rope_tok_freq_mode"):
+            writer.add_string(f"unlimited_ocr.sparse.{key}", str(sp[key]))
+        writer.add_bool("unlimited_ocr.sparse.dash_image_only", bool(sp["dash_image_only"]))
+        writer.add_array("unlimited_ocr.sparse.dash_floor_per_layer", [float(x) for x in sp["dash_floor_per_layer"]])
+        writer.add_array("unlimited_ocr.sparse.dash_scale_per_layer", [float(x) for x in sp["dash_scale_per_layer"]])
+        writer.add_array("unlimited_ocr.sparse.sparse_attention_freq", [int(x) for x in sp["sparse_attention_freq"]])
 
     # SAM hyperparams
     writer.add_uint32("unlimited_ocr.sam.width", sam_width)
@@ -368,6 +399,8 @@ def main():
             continue
 
         gguf_name = map_tensor_name(name)
+        if gguf_name is None and ("dash_router" in name or "indexer" in name):
+            raise ValueError(f"unmapped Unlimited-OCR-2 sparse-attention tensor: {name}")
         if gguf_name is None:
             skipped += 1
             continue
