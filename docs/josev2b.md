@@ -136,51 +136,39 @@ probabilities; attention masks may contain negative infinity. These new owned
 cases establish serialization and numerical coverage, not representative German
 decision quality. A licensed task-quality panel remains a separate dependency.
 
-## Prepared GPU recipe; not dispatched
+## Completed original GPU reference and head parity
 
-Use an authorized free GPU slot after source/resource review. Do not submit this
-2B reference to a CPU matrix. The proposed original profile is CUDA/F32 with
-PyTorch2.13.0, Transformers5.5.0, tokenizers0.23.0, safetensors0.8.0,
-huggingface-hub1.33.0, NumPy2.2.6, accelerate1.13.0, torchvision0.28.0 and
-Pillow12.3.0 on Python3.13. The latter two are needed to construct the original
-processor even for this text-only path; they do not establish image parity. It pins the
-actual Qwen implementation bytes. It uses eager backbone attention, math SDPA
-for the head, deterministic algorithms, disabled TF32/MHA fast paths, and an
-isolated environment without FLA or causal-conv1d extensions. This is an explicit
-F32 audit profile, distinct from the publisher's usual BF16 execution. No original
-GPU result has yet established its memory use, runtime or neutrality.
+The frozen original uses workerb2edf8c83c9aca1f8a9210198d47798ac13828b8,
+bootstrap5e938857368820b0d4d49bd977561e3f418ed9c0, and receipt
+SHA256`51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090`.
+Its57-package audited Python3.13 environment uses PyTorch2.13.0,
+Transformers5.5.0, tokenizers0.22.2 and the exact versioned lock. The capture
+uses CUDA/F32, eager backbone attention, math SDPA for the head, disabled TF32/
+MHA fast paths and no optional FLA/causal-convolution extensions. All four
+ordinary/observed/repeat cases pass. Actual reference time39.46s and peak CUDA
+allocation9,082,022,400 bytes are original-only session measurements.
 
-Resource preflight requires14GiB total/11GiB free CUDA memory and18GiB scratch.
-Compute capability must be at least7.0. The recipe checks `nvidia-smi` before
-framework import or payload access; a P100 draw writes `conclusive:false`,
-`retry_permitted:false` and exits. Do not retry the allocation hoping for a
-different GPU. The dumper repeats the capability guard before reading payloads.
-Allow30 minutes for capture, at most2GiB array payload, and preserve failed
-outputs. The F32 backbone alone needs approximately9.1GB of parameter storage;
-this estimate is not a measured peak. A16GiB GPU is a candidate only if actual
-preflight passes. The recipe fails on CPU or missing resources. Installation and
-download time are separate from the30-minute capture bound. Review availability
-of the pinned CUDA wheel and retain the actual driver/CUDA/package fingerprint.
+The current approved CUDA13 original profile requires compute capability≥7.5,
+driver≥580.65.6,14GiB total/11GiB free GPU memory and25GiB scratch before
+installation/payload access. Unsupported hardware rejects without automatic
+resource retry. The original is frozen; do not repeat it to test a new native
+implementation. Initial Python/pip/tokenizer-version/metadata-selector failures
+and exact old sources remain in HISTORY and the retained negative receipts.
 
-After installing those exact dependencies in the approved GPU environment and
-checking out the reviewed commit, use public service paths and fresh output
-directories supplied by the execution environment:
+All251 arrays and native adapters are preserved by
+[40429513945](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40429513945).
+The122-tensor head converts losslessly into121,900,352 bytes. The actual
+[head CPU/CUDA audit](../tests/results/josev2b/head-cpu-cuda-review.json) passes
+123 stages per backend and all four complete typed answers; worst absolute
+errors1.14441e-5/7.62939e-6. This uses original hidden/lexical inputs and does not
+qualify native backbone/composed inference, public API, representative quality
+or a new release. See [the GPU protocol](josev2b-head-gpu.md).
 
-```sh
-python tools/kaggle/josev2b_reference.py \
-  --reviewed-source REVIEWED_FULL_COMMIT \
-  --reviewed-contract-sha256 REVIEWED_CONTRACT_SHA256 \
-  --scratch "$JOSEV_SCRATCH" --out "$JOSEV_OUTPUT"
-```
-
-The helper downloads only the exact pinned files, checks their payload hashes,
-then switches offline before capture. It does not submit a job, configure an
-account, publish artifacts or clean shared storage. Preserve the Git commit,
-contract SHA, complete logs, `input-freeze.json`, `reference.json`, license/source
-notices and raw-array archive plus archive/member SHA256s in remote storage.
-Record the service run ID and expiry only after the actual run exists.
-Review reports for private environment details before adding public evidence;
-keep complete original logs in the authorized remote archive.
+The exact checkpoint index contains320 text tensors among632 total keys and no
+separate output head. Their1,881,825,088 elements imply7,527,300,352 F32 payload
+bytes before GGUF overhead. The approximately9.1GB estimate describes the full
+conditional checkpoint including unused vision. Storage calculations are not
+measured native peak memory; actual backbone conversion and parity remain gates.
 
 ## Incremental native port
 
@@ -213,129 +201,12 @@ outputs. Ovis's OCR image preprocessing/prompt is not that processor contract.
 Long context, batching/padding, BF16, alternate calibration, quantization and
 prefill caching also remain separate experiments with original-first references.
 
-### Concrete private GPU bootstrap
+## Retained setup history
 
-The [single-script bootstrap](../tools/kaggle/josev2b-original/bootstrap.py)
-pins its original worker commit and contract digest explicitly. The current
-prepared worker profile is `cuda-f32-python313-v3-locked`; its arithmetic, source files,
-tokenizer, four owned requests and acceptance gates are unchanged. Its own script
-version is separately recorded; pushing other repository commits
-does not update a submitted kernel. Account substitution stays in private execution
-metadata; no account, token dataset or credentials are embedded in this recipe.
-
-The initial bootstrap at[b6e74739](https://github.com/CrispStrobe/CrispEmbed/commit/b6e747395f56847a72f7f4fb9b7023374285924f)
-(SHA256 `9f3d77cfb41eda1a68ab287e0c01fb3e837d719a8a539e86e4377c92a4858ff3`)
-used worker89264a279cd589d622b60f5ca7d1605693cf52d8 and contract
-SHA7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a.
-It rejected the actual Python3.13 environment because that first profile required
-Python3.11. The rejection occurred before hardware inspection, dependency
-installation, checkpoint/tokenizer access or any reference output. It was
-inconclusive and says nothing about the assigned GPU or model. The initial
-profile, source, failure and journal are retained; there is no gold recapture.
-
-Before any reference output, this revision declares Python3.13 explicitly.
-Primary [torch2.13.0 release metadata](https://pypi.org/pypi/torch/2.13.0/json)
-and [torchvision0.28.0 metadata](https://pypi.org/pypi/torchvision/0.28.0/json)
-confirm the cp313 Linux wheels and their SHA256s. NumPy2.2.6 also publishes a
-cp313 Linux wheel. Wheel payloads were not downloaded during source preparation.
-The bootstrap records the actual Python version and inspects hardware before
-checking its Python profile, so unsupported hardware is recorded immediately.
-The Python3.13 profile remains unexecuted until a reviewed bounded run occurs.
- These wheels use CUDA13.0.3; they are not available in
-the inspected CUDA12.8 wheel index. The bootstrap therefore checks Turing or newer
-(capability7.5), driver580.65.06 or newer and14/11GiB total/free GPU RAM before
-framework installation. It requires25GiB initial scratch and3GiB output space,
-then the original worker independently checks18GiB scratch before checkpoint
-access. Unsupported hardware exits inconclusive with no automatic retry.
-
-Installation uses a new isolated environment and the complete57-wheel hashed
-lock described below. `pip check`, a tiny exact F32 CUDA matrix product, compiled GPU architecture
-reporting, contract/source controls and actual original source hashes precede
-model access. Setup/download and the30-minute capture have separate
-bounds. Only reports/logs/source notices and bounded reference arrays are retained
-as kernel outputs; checkpoints, tokenizer and environment stay in task scratch.
-Failures retain their bootstrap journal, command status/log SHA256 and partial
-reference manifest. This prepared bootstrap is not an actual reference result.
-
-The corrected Python3.13 attempt at142cc75c passes actual two-T4 capability,
-driver580.178.04 and memory preflight, then its venv `ensurepip` child fails before
-framework installation or any tokenizer/checkpoint access. Preserve that complete
-bootstrap journal and four successful Git command logs. The subsequent setup
-repair reuses the established Ovis recipe: create a fresh venv without ensurepip,
-then use base pip's `--python` option to install SHA-pinned pip26.2.2 into that
-venv. User pip configuration is disabled for this task. No global environment or
-model arithmetic changes; supported-GPU evidence is separate from original
-inference, which still has not run. Unsupported hardware still stops without retry.
-
-### Complete locked environment before the first original output
-
-The third setup attempt, using the v2 profile and bootstrapf5a0ac06, successfully
-creates isolated pip26.2.2. Installation then rejects unpublished
-`tokenizers==0.23.0` before any checkpoint/tokenizer access or reference output.
-It downloads the pinned framework wheels on the GPU service but does not complete
-framework installation. The preceding `sitecustomize` missing-`wrapt` warning is
-nonterminal; no `wrapt` package is added to hide it. Keep this failure separate
-from the earlier Python-profile and ensurepip failures.
-
-The new pre-reference profile is `cuda-f32-python313-v3-locked`, with
-`tokenizers==0.22.2`. Its cp39-abi3 Linux wheel is compatible with CPython3.13
-and the pinned Transformers5.5.0 requirement. The other eight package pins, original model/tokenizer files, four owned inputs,
-arithmetic and numerical gates are unchanged. CUDA13's capability7.5 minimum is now enforced by both the worker
-and bootstrap, preventing a standalone worker from reaching payloads on Volta.
-
-The [complete lock](josev2b-environment-lock.json) fixes57 distribution versions,
-exact wheel URLs, published byte counts and SHA256 values. The
-[requirements file](../tools/kaggle/josev2b-original/requirements.lock) installs
-that closure with `--no-deps --require-hashes --only-binary=:all:`; the GPU setup
-must not run an unchecked dependency resolver. It includes all CUDA-toolkit
-extras selected by Torch, with2,790,174,915 published wheel bytes in total.
-No wheel/sdist, framework, tokenizer, checkpoint or corpus was downloaded or
-imported during the local metadata-only preparation.
-
-Existing pip25.3 performed a binary-only, ignore-installed dry run for Linux
-CPython3.13 under a tested HTTP transport guard. The guard rejects every wheel,
-sdist and unrecognized URL before transport, including redirect targets; it
-permits bounded PyPI indexes/release JSON and PEP658 `.whl.metadata` only.
-The resolver completes114 metadata requests, followed by114 independent primary
-release/PEP658 checks. Every selected URL/hash matches its PyPI release file.
-An independent marker/version/extras walk verifies the entire closure for the
-resolver's Python3.13.11 and the observed GPU Python3.13.15. These are dependency
-metadata results, not installed ABI, CUDA execution or original-inference proof.
-
-Aggregate release JSON is not always the selected wheel's exact metadata:
-CUDA-toolkit uses PEP440-equivalent13.0.3/13.0.3.0 and different Windows-machine
-markers, and psutil uses underscore/hyphen spellings in a development extra.
-Those differences are retained. Actual selected-wheel metadata agrees with pip;
-Linux CPython3.13 active requirements agree with primary JSON for every provided
-extra. No active Linux dependency/version conflict is ignored.
-
-Before model access, the locked worker verifies the expected venv prefix,
-distinct base prefix, disabled user site, absence of external package paths,
-all57 installed versions and byte-exact installed wheel METADATA. The bootstrap
-also checks loaded framework versions and origins inside that venv. `pip check`,
-original Qwen source hashes, absent FLA/causal-conv extensions and the existing
-exact CUDA F32 smoke remain mandatory. Runtime CUDA/driver compatibility and the
-first original capture are still pending; no new GPU dispatch follows from
-metadata resolution alone.
-
-Immediately after the unchanged publisher loader returns, and before any forward,
-the dumper compares the loaded head state with the published small head checkpoint
-promoted to F32. Exact keys, shapes and finite F32 values are required.
-`report.weights.head_tensors[name]` records `shape`, `checkpoint_dtype`,
-`loaded_dtype`, `checkpoint_promoted_f32_sha256` and `loaded_f32_sha256`; any
-intentional loader transform fails with partial evidence rather than being
-accepted silently. BF16 checkpoint tensors and F32 scalars remain distinguishable.
-This read-only proof does not copy or rehash the full backbone a second time.
-
-The locked bootstrap targets worker
-[`2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`](https://github.com/CrispStrobe/CrispEmbed/commit/2133cfa12dbdd25653fd68b1a6054f69f80f7e9c)
-and contract SHA256
-`6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da`.
-The bootstrap's own uploaded bytes remain a separately recorded identity.
-It validates and preserves the complete lock before installation, checks isolated
-prefixes, then verifies exact installed metadata and actual loaded module versions
-before the unchanged CUDA/source barriers and original worker. This is prepared
-source only; no fourth GPU attempt is submitted by this change.
+The completed setup provenance and initial rejected recipes are archived in
+HISTORY. Current work uses the completed original and head receipts above;
+old commands describing an undispatched profile or tokenizers0.23.0 are
+historical records, not instructions to repeat model capture.
 
 ## Public API integration boundaries after numerical parity
 
