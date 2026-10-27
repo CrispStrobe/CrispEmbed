@@ -1,0 +1,109 @@
+name: Unlimited-OCR-2 GGUF publication (owner-approved only)
+# Converts baidu/Unlimited-OCR-2 (MIT) at the revision pinned in docs/unlimited-ocr2-source.json,
+# quantizes with crispembed-quantize, and uploads to the destination in
+# docs/unlimited-ocr2-publication-v1.json with the verbatim upstream LICENSE, a card and a manifest.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Exact commit containing the converter, quantizer, protocol and receipts'
+        required: true
+        type: string
+      variants:
+        description: 'Comma-separated precisions from the protocol recipes (F32,F16,Q8_0,Q5_K,Q4_K)'
+        required: true
+        default: 'F16,Q8_0'
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: unlimited-ocr2-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publish-script controls (no network)
+        run: python tests/test_unlimited_ocr2_publish.py -v
+      - name: Protocol, receipts and build plan before any download or credential
+        env:
+          VARIANTS: ${{ inputs.variants }}
+        run: |
+          set -euo pipefail
+          python tools/ci-heavy/unlimited_ocr2_publish.py plan "$VARIANTS" | tee "$RUNNER_TEMP/plan.txt"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Pinned conversion and publication clients
+        run: python -m pip install -q numpy==2.2.6 gguf==0.17.1 safetensors==0.6.2 huggingface-hub==1.33.0
+      - name: Work area on the large runner disk
+        run: |
+          sudo mkdir -p /mnt/uocr2 && sudo chown "$USER" /mnt/uocr2
+          mkdir -p /mnt/uocr2/src /mnt/uocr2/gguf /mnt/uocr2/notices /mnt/uocr2/scratch "$RUNNER_TEMP/out"
+          df -h / /mnt
+      - name: Upstream LICENSE and model card (pinned, hash-checked)
+        run: python tools/ci-heavy/unlimited_ocr2_publish.py notices /mnt/uocr2/notices
+      - name: Pinned upstream checkpoint (sha256-checked shards)
+        env:
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from huggingface_hub import hf_hub_download
+          c = json.load(open('docs/unlimited-ocr2-source.json'))
+          for n, p in c['files'].items():
+              f = hf_hub_download(c['repository'], n, revision=c['revision'], local_dir='/mnt/uocr2/src', token=False)
+              if 'sha256' in p:
+                  h = hashlib.sha256()
+                  with open(f, 'rb') as s:
+                      for b in iter(lambda: s.read(1 << 23), b''):
+                          h.update(b)
+                  assert h.hexdigest() == p['sha256'], n
+          PY
+      - name: Build crispembed-quantize
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_CUDA=OFF
+          cmake --build build --target crispembed-quantize --parallel 4
+      - name: Convert and quantize per plan
+        env:
+          OMP_NUM_THREADS: '1'
+          OPENBLAS_NUM_THREADS: '1'
+          TMPDIR: /mnt/uocr2/scratch
+        run: |
+          set -euo pipefail
+          q=$(find build -type f -name crispembed-quantize -perm -u+x | head -1)
+          f32=/mnt/uocr2/gguf/$(python -c "import json;print(json.load(open('docs/unlimited-ocr2-publication-v1.json'))['recipes']['F32']['filename'])")
+          while read -r kind variant name rest; do
+            case "$kind" in
+              convert)
+                python models/convert-unlimited-ocr-to-gguf.py --model-dir /mnt/uocr2/src \
+                  --output "/mnt/uocr2/gguf/$name" --name unlimited-ocr-2 $rest ;;
+              quantize)
+                rm -rf /mnt/uocr2/src
+                "$q" "$f32" "/mnt/uocr2/gguf/$name" $rest ;;
+              drop-f32) rm -f "$f32" ;;
+            esac
+          done < "$RUNNER_TEMP/plan.txt"
+          rm -rf /mnt/uocr2/src
+          ls -l /mnt/uocr2/gguf; df -h /mnt
+      - name: Upload, immutable LFS identity, empty-cache readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          HEAVY_SCRATCH: /mnt/uocr2/scratch
+          VARIANTS: ${{ inputs.variants }}
+        run: |
+          python tools/ci-heavy/unlimited_ocr2_publish.py publish "$VARIANTS" /mnt/uocr2/gguf /mnt/uocr2/notices "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unlimited-ocr2-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90
