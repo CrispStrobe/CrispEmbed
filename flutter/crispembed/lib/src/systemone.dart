@@ -18,6 +18,22 @@ typedef _Resolve = Pointer<Utf8> Function(Pointer<Utf8>, int);
 typedef _OfflineNative = Void Function(Int32);
 typedef _Offline = void Function(int);
 
+// Dart strings can contain unpaired UTF-16 surrogates. Reject them before FFI
+// encoding rather than silently changing the raw request to replacement chars.
+void _requireScalarString(String value) {
+  final units = value.codeUnits;
+  for (var i = 0; i < units.length; i++) {
+    final u = units[i];
+    if (u >= 0xd800 && u <= 0xdbff) {
+      if (++i >= units.length || units[i] < 0xdc00 || units[i] > 0xdfff) {
+        throw ArgumentError('SystemOne requires Unicode scalar strings');
+      }
+    } else if (u >= 0xdc00 && u <= 0xdfff) {
+      throw ArgumentError('SystemOne requires Unicode scalar strings');
+    }
+  }
+}
+
 /// Native CPU/F32 SystemOne joint-schema decisions, full model/answers/usage.
 class CrispSystemOne {
   late final DynamicLibrary _lib;
@@ -29,6 +45,7 @@ class CrispSystemOne {
 
   CrispSystemOne(String modelPath, {int nThreads = 2, String? libPath,
       bool? autoDownload, bool? offline}) {
+    _requireScalarString(modelPath);
     if (modelPath.contains('\u0000')) throw ArgumentError('SystemOne model path contains NUL');
     if (nThreads < 0 || nThreads > 64) throw ArgumentError('SystemOne threads must be0..64');
     _lib = libPath != null ? DynamicLibrary.open(libPath) : Platform.isIOS
@@ -66,6 +83,7 @@ class CrispSystemOne {
   String get profile { _requireOpen(); return _profile(_ctx).toDartString(); }
   String runJson(String request) {
     _requireOpen();
+    _requireScalarString(request);
     if (request.contains('\u0000') || utf8.encode(request).length > 65536) {
       throw ArgumentError('SystemOne requires NUL-free JSON within64KiB');
     }

@@ -14,7 +14,7 @@
     "examples/cli/main.cpp": "1da145b0d308b7076f73c59b825050af821f1b9c5003bb3e6e46e60f30088bc0",
     "examples/server/server.cpp": "bbde0065dd1d0adff3dfa0f0653b417dae09f2edf2bc2b9852dcde0b512a9c59",
     "flutter/crispembed/lib/crispembed.dart": "b2f0cea38c9d87c1289219a6e776b9d9c689047d44300b29ba3cbc6a29545dc8",
-    "flutter/crispembed/lib/src/systemone.dart": "cf67cb7f76ff4b2a21a623f0438adcb5c7e61c83754d21a1e8c057715ae44009",
+    "flutter/crispembed/lib/src/systemone.dart": "c4a9a86ae79838f52376afc4553b6c040b1d1ca8cfd3f659293e3c6a610d579d",
     "python/crispembed/__init__.py": "c543311407f36ed8e597f6e1d2f419468c395e29c14203d863d1c333b9caf075",
     "python/crispembed/_systemone.py": "9795e11374b4c00f6ea06da040816785f63533de1de4f6cdb5bf7aa8602a35d1",
     "src/crispembed.h": "2ae8003577438a627600dd869e94fcdca19833e54948a97dbdcd74962524bf97",
