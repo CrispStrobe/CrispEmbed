@@ -335,6 +335,19 @@ list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_embed.cpp src/gemma_decision.cpp src/ultrabert_embed.cpp)
+list(APPEND CRISPEMBED_SOURCES src/josev2b_backbone.cpp src/josev2b_head.cpp
+    src/josev2b_text_frontend.cpp src/josev2b_answer_serializer.cpp
+    src/josev2b_composed.cpp src/systemone_api.cpp)
+# Match the audited scalar operation order in the composed Josev CPU profile.
+# Qwen helpers are shared with OCR; final OCR qualification must use this source.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_property(SOURCE src/josev2b_backbone.cpp src/josev2b_head.cpp
+        src/josev2b_text_frontend.cpp src/josev2b_answer_serializer.cpp
+        src/josev2b_composed.cpp src/qwen35_decoder.cpp src/qwen35_attention.cpp
+        src/qwen35_linear.cpp src/qwen35_delta.cpp src/qwen35_norm.cpp
+        src/qwen35_positions.cpp src/qwen35_profile.cpp
+        APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
+endif()
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
