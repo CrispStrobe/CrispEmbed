@@ -30,7 +30,8 @@ import subprocess
 import sys
 import time
 
-BOX_RE = re.compile(r"\[\[[-\d.,\s\[\]]*\]\]")
+# Both the DeepSeek-style [[x1, y1, x2, y2]] and this model's observed text[x1, y1, x2, y2] boxes.
+BOX_RE = re.compile(r"\[\[[-\d.,\s\[\]]*\]\]|\[\s*-?\d+(?:\s*,\s*-?\d+){3}\s*\]")
 NUM_RE = re.compile(r"-?\d+(?:\.\d+)?")
 
 PRECISIONS = [
