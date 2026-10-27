@@ -31,12 +31,17 @@ void gemma_rms(float * x, int n, const float * w, float eps = 1e-6f);
 
 // §3.5 / §4.4 page-aware candidate domain bookkeeping.
 struct pages {
-    std::vector<int> img_page;            // per prompt position, -1 if not an image token
-    std::vector<int> q_page;              // per prompt position, prefill query page (-1 = open)
-    std::vector<int> bmin, bmax;          // per prefill block: image page range (-1 if none)
+    std::vector<int> img_page;   // per prompt position, -1 if not an image token
+    std::vector<int> q_page;     // per prompt position, prefill query page (-1 = open)
+    std::vector<int> bmin, bmax; // per prefill block: image page range (-1 if none)
     int prompt_pages = 0, mcum = 0, n_prefill_blocks = 0;
-    void advance(int32_t fed) { if (fed == PAGE) ++mcum; }
-    int decode_qp() const { const int qp = mcum - 1 - prompt_pages; return qp < 0 ? -1 : qp; }
+    void advance(int32_t fed) {
+        if (fed == PAGE) ++mcum;
+    }
+    int decode_qp() const {
+        const int qp = mcum - 1 - prompt_pages;
+        return qp < 0 ? -1 : qp;
+    }
 };
 pages prefill_pages(const std::vector<int32_t> & ids);
 
@@ -51,8 +56,8 @@ struct router_keys {
 };
 
 struct selection {
-    std::vector<int> blocks;  // valid selected remote blocks (<= 12)
-    std::vector<float> bias;  // one bias per selected block
+    std::vector<int> blocks; // valid selected remote blocks (<= 12)
+    std::vector<float> bias; // one bias per selected block
 };
 // §3.4 scores + §3.6 routing for one query at absolute position pos.
 selection route(const router_keys & rk, const float * iq, const float * head_cls, int pos,

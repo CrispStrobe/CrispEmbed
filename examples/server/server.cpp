@@ -640,9 +640,9 @@ int main(int argc, char ** argv) {
         ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() &&
         ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() &&
         dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
-        moedern_model_path.empty() &&
-        tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() &&
-        instructir_model_path.empty() && adair_model_path.empty() && sam2_model_path.empty()) {
+        moedern_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() &&
+        scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty() &&
+        sam2_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -876,8 +876,9 @@ int main(int argc, char ** argv) {
     svr.Post("/moedern/encode", [&](const httplib::Request & req, httplib::Response & res) {
         if (!moedern) return moedern_reject(res, 503, "no MoEdern model loaded");
         std::string text, role;
-        if (req.body.size() > 200000 || !moedern_field(req.body, "text", text) || !moedern_field(req.body, "role", role) ||
-            (role != "query" && role != "document") || text.find('\0') != std::string::npos)
+        if (req.body.size() > 200000 || !moedern_field(req.body, "text", text) ||
+            !moedern_field(req.body, "role", role) || (role != "query" && role != "document") ||
+            text.find('\0') != std::string::npos)
             return moedern_reject(res, 400, "MoEdern requires {text, role: query|document}");
         std::lock_guard<std::mutex> lock(moedern_mutex);
         const auto * r = crispembed_moedern_encode(moedern.get(), text.c_str(), role == "query" ? 0 : 1);
@@ -888,7 +889,10 @@ int main(int argc, char ** argv) {
             js << ",\"" << key << "\":[";
             for (int i = 0; i < n; ++i) {
                 if (i) js << ",";
-                if (real) js << double(v[i]); else js << int(v[i]);
+                if (real)
+                    js << double(v[i]);
+                else
+                    js << int(v[i]);
             }
             js << "]";
         };

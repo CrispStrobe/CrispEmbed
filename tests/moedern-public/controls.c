@@ -4,7 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 static int failures = 0;
-#define CHECK(c, m) do { if (!(c)) { fprintf(stderr, "FAIL %s\n", m); ++failures; } else printf("ok %s\n", m); } while (0)
+#define CHECK(c, m)                                                                                                    \
+    do {                                                                                                               \
+        if (!(c)) {                                                                                                    \
+            fprintf(stderr, "FAIL %s\n", m);                                                                           \
+            ++failures;                                                                                                \
+        } else                                                                                                         \
+            printf("ok %s\n", m);                                                                                      \
+    } while (0)
 int main(void) {
     float score = 7.0f;
     unsetenv("CRISPEMBED_MOEDERN_PUBLIC_TEXT");

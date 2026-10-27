@@ -2183,8 +2183,10 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
                 uocr2::gemma_rms(iq.data() + (size_t)t * HDm, HDm, w.rqn.data());
                 uocr2::gemma_rms(ikr.data() + (size_t)t * HDm, HDm, w.rkn.data());
                 uocr2::rope_table(tok_c[t], page_c[t], cs.data(), sn.data());
-                for (int hh = 0; hh < NH; hh++) uocr2::apply_rope(q.data() + ((size_t)t * NH + hh) * HDm, cs.data(), sn.data());
-                for (int hh = 0; hh < NKV; hh++) uocr2::apply_rope(k.data() + ((size_t)t * NKV + hh) * HDm, cs.data(), sn.data());
+                for (int hh = 0; hh < NH; hh++)
+                    uocr2::apply_rope(q.data() + ((size_t)t * NH + hh) * HDm, cs.data(), sn.data());
+                for (int hh = 0; hh < NKV; hh++)
+                    uocr2::apply_rope(k.data() + ((size_t)t * NKV + hh) * HDm, cs.data(), sn.data());
                 uocr2::apply_rope(iq.data() + (size_t)t * HDm, cs.data(), sn.data());
                 uocr2::apply_rope(ikr.data() + (size_t)t * HDm, cs.data(), sn.data());
             }
@@ -2194,21 +2196,24 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
             const int nblk = (rks[li].rows() + uocr2::BLOCK - 1) / uocr2::BLOCK;
             for (int t = 0; t < T; t++) {
                 const int pos = p0 + t;
-                const auto sel = uocr2::route(rks[li], iq.data() + (size_t)t * HDm, w.head_cls.data(), pos, cand(t, nblk));
+                const auto sel =
+                    uocr2::route(rks[li], iq.data() + (size_t)t * HDm, w.head_cls.data(), pos, cand(t, nblk));
                 for (int hh = 0; hh < NH; hh++) {
                     const int kvh = hh / group;
                     uocr2::attend(q.data() + ((size_t)t * NH + hh) * HDm, kc[li].data() + (size_t)kvh * HDm,
                                   vc[li].data() + (size_t)kvh * HDm, NKV * HDm, pos, sel,
                                   att.data() + ((size_t)t * NH + hh) * HDm);
                 }
-                linear_cpu(att.data() + (size_t)t * NH * HDm, o.data() + (size_t)t * D, NH * HDm, D, w.o.data(), nullptr);
+                linear_cpu(att.data() + (size_t)t * NH * HDm, o.data() + (size_t)t * D, NH * HDm, D, w.o.data(),
+                           nullptr);
                 for (int d = 0; d < D; d++) h[(size_t)t * D + d] += o[(size_t)t * D + d];
             }
             if (li == 0) {
                 std::vector<float> nrm(D), ff(D);
                 for (int t = 0; t < T; t++) {
                     rmsnorm_cpu(h.data() + (size_t)t * D, nrm.data(), D, w.post_ln.data(), lhp.rms_eps);
-                    swiglu_ffn_cpu(nrm.data(), ff.data(), D, lhp.dense_intermediate, w.fg.data(), w.fu.data(), w.fd.data());
+                    swiglu_ffn_cpu(nrm.data(), ff.data(), D, lhp.dense_intermediate, w.fg.data(), w.fu.data(),
+                                   w.fd.data());
                     for (int d = 0; d < D; d++) h[(size_t)t * D + d] += ff[d];
                 }
             } else {
@@ -2231,20 +2236,27 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
         const float NEG = -std::numeric_limits<float>::infinity();
         const int eos = lhp.eos_token_id;
         if (marker_cum > expected_pages) { // page-count guard (spec §5)
-            for (int i = 0; i < V; i++) if (i != eos) logits[i] = NEG;
+            for (int i = 0; i < V; i++)
+                if (i != eos) logits[i] = NEG;
         } else if (page_len >= 20000) {
             const int keep = marker_cum < expected_pages ? uocr2::PAGE : eos;
-            for (int i = 0; i < V; i++) if (i != keep) logits[i] = NEG;
+            for (int i = 0; i < V; i++)
+                if (i != keep) logits[i] = NEG;
         } else if (marker_cum < expected_pages) {
             logits[eos] = NEG;
         }
         const int nxt = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
         float mx = logits[nxt], se = 0;
-        for (float l : logits) if (std::isfinite(l)) se += std::exp(l - mx);
+        for (float l : logits)
+            if (std::isfinite(l)) se += std::exp(l - mx);
         if (nxt == eos) break;
         out_ids.push_back(nxt);
         out_confs.push_back(1.0f / se);
-        if (nxt == uocr2::PAGE) { marker_cum++; page_len = 0; } else page_len++;
+        if (nxt == uocr2::PAGE) {
+            marker_cum++;
+            page_len = 0;
+        } else
+            page_len++;
         const int pos = S + (int)out_ids.size() - 1;
         if (pos + 1 >= 131072) break;
         co.advance(nxt);
@@ -2254,8 +2266,10 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
         const size_t rb = ggml_row_size(emb_t->type, D);
         std::vector<uint8_t> raw(rb);
         ggml_backend_tensor_get(emb_t, raw.data(), (size_t)nxt * rb, rb);
-        if (emb_t->type == GGML_TYPE_F32) memcpy(e.data(), raw.data(), (size_t)D * sizeof(float));
-        else ggml_get_type_traits(emb_t->type)->to_float(raw.data(), e.data(), D);
+        if (emb_t->type == GGML_TYPE_F32)
+            memcpy(e.data(), raw.data(), (size_t)D * sizeof(float));
+        else
+            ggml_get_type_traits(emb_t->type)->to_float(raw.data(), e.data(), D);
         forward(e, 1, pos, { co.cur_tok }, { co.cur_page }, [&](int, int nblk) { return cand_decode(nblk); });
         last = e;
     }

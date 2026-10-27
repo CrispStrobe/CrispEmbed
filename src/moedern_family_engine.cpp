@@ -92,13 +92,18 @@ profile read_profile(gguf_context * g) {
     const auto it = profiles().find(gguf_get_val_str(g, rev));
     require(it != profiles().end(), "Unqualified MoEdern revision (115M conv variant not supported)");
     const profile & p = it->second;
-    const std::map<std::string, uint32_t> expect = {
-        { "hidden_size", uint32_t(p.hidden) },         { "num_hidden_layers", uint32_t(p.layers) },
-        { "num_attention_heads", uint32_t(p.heads) },   { "num_key_value_heads", uint32_t(p.kv_heads) },
-        { "vocab_size", uint32_t(VOCAB) },              { "hash_projections", uint32_t(p.hash) },
-        { "num_routed_experts", uint32_t(p.experts) },  { "num_shared_experts", 1 },
-        { "expert_dim", uint32_t(p.expert_dim) },       { "top_k", uint32_t(p.top_k) },
-        { "head_dim", uint32_t(p.hidden / p.heads) },   { "out_dim", uint32_t(OUT) } };
+    const std::map<std::string, uint32_t> expect = { { "hidden_size", uint32_t(p.hidden) },
+                                                     { "num_hidden_layers", uint32_t(p.layers) },
+                                                     { "num_attention_heads", uint32_t(p.heads) },
+                                                     { "num_key_value_heads", uint32_t(p.kv_heads) },
+                                                     { "vocab_size", uint32_t(VOCAB) },
+                                                     { "hash_projections", uint32_t(p.hash) },
+                                                     { "num_routed_experts", uint32_t(p.experts) },
+                                                     { "num_shared_experts", 1 },
+                                                     { "expert_dim", uint32_t(p.expert_dim) },
+                                                     { "top_k", uint32_t(p.top_k) },
+                                                     { "head_dim", uint32_t(p.hidden / p.heads) },
+                                                     { "out_dim", uint32_t(OUT) } };
     for (const auto & e : expect) require(u32(g, e.first) == e.second, "Profile metadata differs: " + e.first);
     if (std::any_of(p.conv_dilation.begin(), p.conv_dilation.end(), [](int d) { return d > 0; })) {
         require(u32(g, "conv_kernel_size") == KERNEL && u32(g, "conv_use_gate_norm") == 1, "Conv profile differs");
@@ -203,7 +208,8 @@ context * init(const char * path, int threads, std::string & failure) {
                 "F32 weight loading failed");
         for (const auto & row : schema(c->p)) {
             auto * t = c->get(row.first);
-            require(t->type == GGML_TYPE_F32 && ggml_is_contiguous(t) && std::equal(row.second.begin(), row.second.end(), t->ne),
+            require(t->type == GGML_TYPE_F32 && ggml_is_contiguous(t) &&
+                        std::equal(row.second.begin(), row.second.end(), t->ne),
                     "Loaded tensor layout differs");
         }
         return c.release();
@@ -212,9 +218,15 @@ context * init(const char * path, int threads, std::string & failure) {
         return nullptr;
     }
 }
-void free(context * ctx) { delete ctx; }
-const char * error(const context * ctx) { return ctx ? ctx->failure.c_str() : "Null MoEdern context"; }
-const profile * get_profile(const context * ctx) { return ctx ? &ctx->p : nullptr; }
+void free(context * ctx) {
+    delete ctx;
+}
+const char * error(const context * ctx) {
+    return ctx ? ctx->failure.c_str() : "Null MoEdern context";
+}
+const profile * get_profile(const context * ctx) {
+    return ctx ? &ctx->p : nullptr;
+}
 
 bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied, size_t count, bool query,
                    std::vector<float> & vectors) {
@@ -226,7 +238,8 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
         require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") && core_env::on("CRISPEMBED_MOEDERN_COLBERT"),
                 "MoEdern family gates are OFF");
         require(ids && supplied && count >= 3 && count <= 512 && (!query || count == 32), "Invalid input shape");
-        for (size_t i = 0; i < count; ++i) require(ids[i] >= 0 && ids[i] < VOCAB && supplied[i] <= 1, "Invalid input id/mask");
+        for (size_t i = 0; i < count; ++i)
+            require(ids[i] >= 0 && ids[i] < VOCAB && supplied[i] <= 1, "Invalid input id/mask");
         const profile & p = ctx->p;
         const int S = int(count), H = p.hidden, HEADS = p.heads, D = H / HEADS, KVH = p.kv_heads, GROUP = HEADS / KVH,
                   E = p.experts, TOP = p.top_k;
@@ -240,7 +253,8 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
             hidden = compute(a, ggml_get_rows(a.ctx, ctx->get("token_embd.hash.weight"), idx), ctx->threads);
         }
         hidden = linear(ctx->get("token_embd.proj.weight"), hidden, ctx->threads);
-        hidden = normalized(hidden, H, ctx->get("token_embd.norm.weight"), ctx->get("token_embd.norm.bias"), false, ctx->threads);
+        hidden = normalized(hidden, H, ctx->get("token_embd.norm.weight"), ctx->get("token_embd.norm.bias"), false,
+                            ctx->threads);
         for (int layer = 0; layer < p.layers; ++layer) {
             const std::string b = "blk." + std::to_string(layer) + ".";
             if (const int dil = p.conv_dilation[layer]; dil > 0) {
@@ -257,7 +271,8 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
                 cg = normalized(cg, H, ctx->get(b + "conv_gate_c_norm.weight"), nullptr, true, ctx->threads);
                 for (int t = 0; t < S; ++t)
                     for (int c = 0; c < H; ++c)
-                        bx[size_t(t) * H + c] = mask[t] ? bg[size_t(t) * H + c] * bcx[size_t(t) * 3 * H + 2 * H + c] : 0.f;
+                        bx[size_t(t) * H + c] =
+                            mask[t] ? bg[size_t(t) * H + c] * bcx[size_t(t) * 3 * H + 2 * H + c] : 0.f;
                 auto * dw = ctx->get(b + "conv_dw.weight");
                 floats w(size_t(H) * KERNEL);
                 ggml_backend_tensor_get(dw, w.data(), 0, w.size() * sizeof(float));
@@ -300,7 +315,8 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
                 for (int t = 0; t < S; ++t) {
                     for (int j = 0; j < S; ++j) {
                         float dot = 0;
-                        for (int i = 0; i < D; ++i) dot += qr[(size_t(head) * S + t) * D + i] * kr[(size_t(head) * S + j) * D + i];
+                        for (int i = 0; i < D; ++i)
+                            dot += qr[(size_t(head) * S + t) * D + i] * kr[(size_t(head) * S + j) * D + i];
                         prob[j] = mask[j] ? dot / std::sqrt(float(D)) : -std::numeric_limits<float>::infinity();
                     }
                     softmax(prob.data(), S);
@@ -313,7 +329,8 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
             floats merged(size_t(S) * H);
             for (int t = 0; t < S; ++t)
                 for (int head = 0; head < HEADS; ++head)
-                    std::copy_n(heads.data() + (size_t(head) * S + t) * D, D, merged.data() + (size_t(t) * HEADS + head) * D);
+                    std::copy_n(heads.data() + (size_t(head) * S + t) * D, D,
+                                merged.data() + (size_t(t) * HEADS + head) * D);
             add(hidden, linear(ctx->get(b + "attn_output.weight"), merged, ctx->threads));
             norm = normalized(hidden, H, ctx->get(b + "ffn_norm.weight"), nullptr, true, ctx->threads);
             auto probs = linear(ctx->get(b + "ffn_gate_inp.weight"), norm, ctx->threads);
