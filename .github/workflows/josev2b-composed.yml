@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13.15'
-      - name: Exact source and unreviewed-dependency rejection controls
+      - name: Exact source and dependency rejection controls
         run: |
           python tools/josev2b_composed_contract.py
           python tests/test_josev2b_composed_panel.py -v
@@ -35,6 +35,7 @@ jobs:
           name: josev-composed-review-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/josev-composed-out/hosted.json
+            ${{ runner.temp }}/josev-composed-out/compile-commands.json
             ${{ runner.temp }}/josev-composed-out/*.log
             ${{ runner.temp }}/josev-composed-out/comparison/panel.json
             ${{ runner.temp }}/josev-composed-out/comparison/*/diff.json

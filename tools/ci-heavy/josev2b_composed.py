@@ -118,6 +118,26 @@ def run(out,scratch,build):
                       ('gates-observed',[build/'josev-composed-observed-probe','--gates'])):
         report['commands'][name]=command(args,out/(name+'.log'),env,1200)
         write(out/'hosted.json',report);require(report['commands'][name]['exit']==0,'build/control rejected: '+name)
+    commands=json.loads((build/'compile_commands.json').read_text())
+    names={'josev2b_composed.cpp','josev2b_backbone.cpp','josev2b_head.cpp',
+           'josev2b_text_frontend.cpp','josev2b_answer_serializer.cpp','qwen35_decoder.cpp','shortest_double.c'}
+    arithmetic=[row for row in commands if Path(row['file']).name in names]
+    require(len(arithmetic)==2*len(names) and all('-ffp-contract=off' in row['command'] and
+            not any(flag in row['command'] for flag in ('-ffast-math','-Ofast','-ffp-contract=fast')) for row in arithmetic),
+            'actual ordinary/observed arithmetic compiler flags differ')
+    write(out/'compile-commands.json',arithmetic)
+    plain=build/'libjosev-composed-plain.a';observed=build/'libjosev-composed-observed.a'
+    symbols=subprocess.check_output(['nm','-C',str(plain)],text=True)
+    require(not any(marker in symbols for marker in ('composed_test::','josev2b_head::test::','run_observed')),
+            'observer symbols leaked into ordinary archive')
+    strings=subprocess.check_output(['strings',str(plain)],text=True)
+    require('head/option_context_projection' not in strings,'reference-stage label leaked into ordinary archive')
+    tested=subprocess.check_output(['nm','-C',str(observed)],text=True)
+    require('josev2b::composed_test::observe' in tested and 'josev2b_head::test::run_observed' in tested,
+            'instrumented archive positive control missing')
+    report['archives']={'plain_sha256':sha(plain),'observed_sha256':sha(observed),
+                        'ordinary_excludes_observers':True,'instrumented_symbols_present':True}
+    write(out/'hosted.json',report)
     ref_controls(build/'josev-composed-diff',out/'ref-controls')
     report['dependencies']=barrier(deps,scratch);write(out/'hosted.json',report)
     pins=deps['fixed']

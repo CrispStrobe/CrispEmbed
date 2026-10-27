@@ -51,12 +51,12 @@ new stage before attributing a later head difference. No precision, quality,
 long-context, media, batching/padding, GPU-backbone or release claim follows.
 
 The full hosted driver is `tools/ci-heavy/josev2b_composed.py` and metadata
-phase `josev-composed`. Its distinct dependency file deliberately sets
-`reviewed=false` and has no tokenizer/answer producer pins until independent
-small-report review. The driver rejects before any API/model access in that
-state. After review, pin both exact successful runs/sources/review ZIPs/report
-hashes, tokenizer component bytes/hash and tokenizer-only raw artifact; commit
-all updated source hashes. No latest-source escape or old guard exception.
+phase `josev-composed`. Its distinct dependency file now pins reviewed frontend40446469585 at65a6de45
+and serializer40446419257 at52595644, including exact successful sources,
+review ZIP/report hashes and tokenizer component bytes/hash/raw artifact.
+The negative dependency control still proves rejection before API/model access
+for an unreviewed declaration. New dependency sources require independent review
+and a committed hash update. No latest-source escape or old guard exception.
 The fixed reviewed backbone/head archives are reused, with every original
 member rehashed and the backbone GGUF rehashed after selective extraction.
 No original framework forward, new conversion or new reference is required.

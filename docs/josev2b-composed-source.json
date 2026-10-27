@@ -287,7 +287,7 @@
   "owned_sha256": {
     ".github/workflows/josev2b-composed-build.yml": "99e1e9be765ff28b821891368354afd1c945541ed2216fe12e05fafe31a0030a",
     ".github/workflows/ovisocr2-metadata.yml": "8e29db66ffa3b455451180a8891e421def3fa1cd6f5bf92508acef2d220fc2c9",
-    "docs/josev2b-composed-text.md": "928b7da423bec8c85c9e186ff758c1bccb75ad9c839c43b0f103d4224b1d3be9",
+    "docs/josev2b-composed-text.md": "2e4dfec5788da0b2fc94dda67cab3ca5e18dd201ac03d2d3232e997b1e33a5eb",
     "src/josev2b_answer_serializer.cpp": "b7881901333fc3498651b999a05bd4529675c621d05713c82e1aa6232b6ec94b",
     "src/josev2b_answer_serializer.h": "f853594c3912dfbb40ab659d9e75578e30b748800fd2dcc9e23cb69e388358e9",
     "src/josev2b_backbone.cpp": "d02931531b40da619cd6deb27d283d0e0dadb0c0451585e210d2a99eab273b89",
@@ -300,7 +300,7 @@
     "src/josev2b_text_frontend.h": "bd7a70230d5ad57097f759f9f0e9d8771c9704ed415d5632a0db29565cf00b17",
     "src/qwen35_decoder.cpp": "5eee685f2941a9b3b9ec99ceb55ff0fbe76afc2ccd4a1a0d4fd7e84266f26980",
     "src/qwen35_decoder.h": "1365edca86fd5b343cc5a60560d6567c80200d47d37512120605fd2d2b9c650b",
-    "tests/josev-composed/CMakeLists.txt": "f284c016aeada021ac8dfd58c28a592568e3d8b056009e50aea63cc7fe07b3df",
+    "tests/josev-composed/CMakeLists.txt": "43876e6f182d4d06c723618e333e91e2fc61cce8e55a7efe28a3fb8856feb950",
     "tests/josev-composed/json.h": "98dc6049948fd25e753e9a1ed591d76eec6a375c7ed39d39cbef166499531b74",
     "tests/josev-composed/probe.cpp": "92f3d139b0a003f32a71d46395c8e49cfbc5b6e355facf2627ce981f4d9c881e",
     "tests/josev2b_composed_observer.h": "712a6765bc76116b46b0a50065030f6a24864b8eaba5377e37020f28c560ea0b",
@@ -310,8 +310,8 @@
     "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
     "tests/josev-composed/diff.cpp": "267ef2117f358aa77a26abf2efddd7f07851ef29c76dc79ee18f82151ba0e286",
     "tests/test_josev2b_composed_panel.py": "4c5c9e53186ececf0d06d154188fdb4a21f34dd9486dea84765584abafc60d1a",
-    "docs/josev2b-composed-dependencies.json": "ee35dd3399c02409b228731b333abd552e8386e54a7b16543d478e8ca9480b7a",
-    "tools/ci-heavy/josev2b_composed.py": "41d94755306f99c518ad6866f3f314aadadad127c4e2efaf65c692b1488cdb41",
-    ".github/workflows/josev2b-composed.yml": "5f41ebc59a6908c5554cbe79aa028cd9a3c6cbd8f2b5f797d231bb3d415efffa"
+    "docs/josev2b-composed-dependencies.json": "a84cc629d6ce8e5ecfa9b9825324bcda958a2630a02fbb2ade1f5ba408bc0760",
+    "tools/ci-heavy/josev2b_composed.py": "102c7bef4e82125bffddb058613d900f56d8478e1b2cb956ae26228c0183ea16",
+    ".github/workflows/josev2b-composed.yml": "29fe6182525bb3e43e85c931a6af2f1bab021fbeb2b3c3c0104493dfffba4bd8"
   }
 }
