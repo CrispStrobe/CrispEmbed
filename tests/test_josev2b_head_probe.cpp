@@ -93,9 +93,14 @@ std::string text(const std::string & s) {
     return value;
 }
 int integer(const std::string & s) {
-    require(!s.empty() && std::all_of(s.begin(), s.end(), [](char c) { return c >= '0' && c <= '9'; }),
+    // json_skip_value retains trailing primitive whitespace. Trim exactly JSON's
+    // four whitespace bytes, never locale whitespace or bytes inside a number.
+    const auto first = s.find_first_not_of(" \t\r\n");
+    require(first != std::string::npos, "Nonnegative integer required");
+    const auto token = s.substr(first, s.find_last_not_of(" \t\r\n") + 1 - first);
+    require(std::all_of(token.begin(), token.end(), [](char c) { return c >= '0' && c <= '9'; }),
             "Nonnegative integer required");
-    const auto value = std::stoul(s);
+    const auto value = std::stoul(token);
     require(value <= 65536, "Manifest integer bound exceeded");
     return int(value);
 }
@@ -209,6 +214,50 @@ void contracts() {
         require(!josev2b_head::validate_input(bad, error), "Invalid input contract accepted");
     }
     require(fields("{\"id\":\"a\",\"value\":[1,2]}").size() == 2, "Parser positive failed");
+    // Exercise the actual nested parser path used by the pretty-printed exporter.
+    const auto pretty = fields(R"JSON({
+  "schema": "crispembed-josev-head-input-v1",
+  "tokens": 512 ,
+  "hidden_f32": "hidden.f32",
+  "fields": [
+    {
+      "id": "Bestellung",
+      "type": 0 ,
+      "question_start": 430 ,
+      "question_end": 437 ,
+      "options": [
+        {
+          "start": 448 ,
+          "end": 466
+        }
+      ],
+      "lexical_f32": "lexical-00.f32"
+    }
+  ]
+})JSON");
+    keys(pretty, { "schema", "tokens", "hidden_f32", "fields" });
+    require(integer(pretty.at("tokens")) == 512, "Pretty token integer failed");
+    const auto pretty_field = fields(array(pretty.at("fields")).at(0));
+    require(integer(pretty_field.at("type")) == 0 && integer(pretty_field.at("question_start")) == 430 &&
+                integer(pretty_field.at("question_end")) == 437,
+            "Pretty field integers failed");
+    const auto pretty_option = fields(array(pretty_field.at("options")).at(0));
+    require(integer(pretty_option.at("start")) == 448 && integer(pretty_option.at("end")) == 466,
+            "Pretty trailing option integer failed");
+    require(integer(" \t\r\n0 \t\r\n") == 0 && integer(" \t\r\n65536 \t\r\n") == 65536,
+            "JSON whitespace/boundary integer failed");
+    size_t malformed_integer_negatives = 0;
+    for (const char * bad : { "", " \t\r\n", "1.0", "1e2", "-1", "+1", "1 2", "1\n2", "\v1", "1\f", "true", "65537",
+                              "999999999999999999999999999999999" }) {
+        bool rejected_number = false;
+        try {
+            integer(bad);
+        } catch (...) {
+            rejected_number = true;
+        }
+        require(rejected_number, "Malformed/out-of-bound integer accepted");
+        ++malformed_integer_negatives;
+    }
     bool rejected = false;
     try {
         fields("{\"id\":1,\"id\":2}");
@@ -217,7 +266,8 @@ void contracts() {
     }
     require(rejected, "Duplicate manifest member accepted");
     std::printf("{\"weight_free_metadata_controls\":8,\"input_negatives\":8,\"manifest_duplicate_rejected\":true,"
-                "\"passed\":true}\n");
+                "\"pretty_json_integer_controls\":true,\"malformed_integer_negatives\":%zu,\"passed\":true}\n",
+                malformed_integer_negatives);
 }
 } // namespace
 static int crispembed_test_main(int argc, char ** argv) {

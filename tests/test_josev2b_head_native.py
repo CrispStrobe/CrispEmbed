@@ -44,6 +44,17 @@ class Controls(unittest.TestCase):
             elif kind=='path':m['hidden_f32']='../hidden.f32'
             else:m['temperature']=0.5
             with self.assertRaises(ValueError):n.validate_manifest(m)
+    def test_pretty_integer_fixture_and_json_whitespace_only_source(self):
+        source=(ROOT/'tests/test_josev2b_head_probe.cpp').read_text()
+        fixture=re.search(r'fields\(R"JSON\((.*?)\)JSON"\)',source,re.S).group(1)
+        value=json.loads(fixture);n.validate_manifest(value)
+        self.assertEqual(value['fields'][0]['options'][0]['end'],466)
+        self.assertIn('find_first_not_of(" \\t\\r\\n")',source)
+        self.assertIn('find_last_not_of(" \\t\\r\\n")',source)
+        self.assertNotIn('std::isspace',source)
+        self.assertIn('Malformed/out-of-bound integer accepted',source)
+        self.assertIn('integer(pretty_option.at("end")) == 466',source)
+
     def test_schema_inventory_and_fixed_original_source(self):
         schema=tensor_schema();self.assertEqual(len(schema),122);self.assertEqual(sum(__import__('math').prod(s) for s in schema.values()),30472708)
         c=self.contract;self.assertEqual(c['original_receipt_sha256'],'51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090');self.assertEqual(c['ggml'],'890278a8342c620197c90e702e1188bcab94f510')
