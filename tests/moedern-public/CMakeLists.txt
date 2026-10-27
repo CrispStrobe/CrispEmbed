@@ -15,6 +15,7 @@ set(GGML_METAL OFF CACHE BOOL "" FORCE)
 set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
 set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
 set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory("${CRISPEMBED_ROOT}/ggml" ggml-build)
 # Model-free compile of the public draft as its own shared library. The root
 # library is not changed here; observer macros are never defined.
