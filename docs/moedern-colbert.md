@@ -1,6 +1,9 @@
 # SauerkrautLM-MoEdernColBERT source and reference contract
 
-This is original-reference preparation, with no native parity or release claim.
+The smallest native token-ID/role component now passes its original-first audit;
+[reviewed evidence](../tests/results/moedern-colbert/native-v2-review.json) records
+10 cases/177 checks/three MaxSim pairs. Exact effective text tokenization and
+public surfaces remain in progress; no representative retrieval or release claim.
 The [requested collection](https://huggingface.co/collections/VAGOsolutions/sauerkrautlm-moederncolbert)
 contains three parameter scales and several representations. The machine-readable
 [source contract](moedern-colbert-source-contract.json) freezes all three original
@@ -136,47 +139,33 @@ and arrays stay in remote artifacts for 90 days; the small report contains
 identities, stages, masks, scores, timings and peak RSS. Rejection reports and
 partial stage arrays are retained even on failure.
 
-### Original observer correction, prepared separately
+### Reference coverage and preserved continuity rejection
 
-The actual original [40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
-at [790f7b1d](https://github.com/CrispStrobe/CrispEmbed/commit/790f7b1d0372c12d1807dfb2fc7fc3af20a3c445)
-completed all ten cases, retained 250 arrays and three exact original/explicit
-MaxSim scores, and established ordinary/observer and public scoring-slice
-neutrality. Its intermediate coverage is incomplete: it retained no `pipeline.*`
-arrays. The original recursive writer recognized built-in dictionaries, while
-the actual wrapper carries features in a `Mapping` such as `BatchEncoding`.
-The layer hooks can run while the former writer silently skips that container.
-Keep the initial receipt and arrays unchanged; they do not establish Dense or
-Normalize intermediate parity or native readiness.
+The primary original40412164041 at790f7b1d retains250 arrays and all ten
+ordinary/selected vectors. Corrected Mapping capture40423259251 adds21 missing
+pipeline observations but changes156 historical hashes; its byte-continuity
+check remains rejected. Same-input SDPA diagnosis40434080299 reproduces the
+corrected CPU-flash result and measures old SDPA error1.1921e-7, without proving
+unknown historical hardware/strides. Full chronology/initial failures are in
+[HISTORY](../HISTORY.md).
 
-The separately pinned [observer-correction protocol](moedern-colbert-observer-correction-v1.json)
-prepares a hosted original-only replay of the same 1.5M panel. Before installing
-frameworks it authenticates the original service run, small/raw ZIPs, source,
-receipt, conversion, GGUF and every retained array. The replay reuses that
-authenticated checkpoint. Mapping-aware capture snapshots actual tensor leaves
-without changing their shape, and all three pipeline-module outputs must exist
-with batch-first `[1,T,128]` dimensions for both full-capture cases. The pinned
-[ST encode implementation](https://github.com/huggingface/sentence-transformers/blob/b0bf39968ba461c34b29372144794eff1be06f6d/sentence_transformers/multi_vector_encoder/model.py#L880)
-then splits batch-first tensors for `output_value=None`: ordinary per-input
-vectors retain `[T,128]`; the scoring slice retains `[selected,128]`. Do not add
-a batch axis to these ordinary outputs to match pipeline hooks.
+The separately versioned native-v2 actual40441341206 atcec6b7f0 compares old
+primary final vectors/MaxSim and112 mapped primary arrays, retaining138 unmapped
+historical rows. Only the21 supplemental pipeline observations supply missing
+leaves. All fixed numeric gates pass; the primary is never replaced and no
+historical byte guard is weakened. Four native-only stages per full case lack
+original targets; eight cases have final-vector references only. See the
+[full report](../tests/results/moedern-colbert/native-v2.json) and independent
+[small review](../tests/results/moedern-colbert/native-v2-review.json).
 
-Completion requires all original 250 array descriptors and payload hashes, all
-ten request/ID/mask contracts, all loaded parameters and all three scores to
-remain exactly equal to the initial run. The unchanged converter must reproduce
-the same GGUF bytes and tensor records; only its receipt's original-report hash
-changes. Missing pipeline coverage or any old-output drift rejects, preserving
-partial/new reports, arrays and logs. Thirteen dependency-free controls cover
-mapping recursion, direct-call observation and restoration, missing/repeated or
-wrong-shape pipeline outputs, and exact continuity rejection. These are source
-controls, with no local framework, tokenizer, model or build execution.
-
-The corrected hosted replay remains undispatched. Native dependencies remain
-unqualified and must be explicitly versioned only after the corrected actual
-source and receipt are independently reviewed. No inputs, golds, arithmetic,
-precision, budgets, larger model scopes, representative quality or release
-qualification change. Preserve the initial raw/review artifacts remotely before
-their current January 24, 2027 expiry; do not commit model or array payloads.
+Next is a dedicated Unigram metadata/text frontend. Reproduce the actual
+SentenceTransformers prefix registration before freezing gold: the raw `[Q]`/
+`[D]` descriptor may be re-registered with different normalized/special flags.
+Require original-first ten cases plus Unicode/role/truncation/literal-token
+controls and all supplied/effective/scoring masks before public text composition.
+Use exact F64 Unigram scores; generic SentencePiece behavior is not equivalent.
+Codepoint-normalization and UTF8-boundary observations must state their units;
+no original-source offset API is qualified by this lane.
 
 ### Conversion and later native validation
 
@@ -198,12 +187,11 @@ precision and L2 epsilon semantics remain comparison boundaries, not proven
 Python parity. Probes must retain actual graph allocations, including view owners,
 and establish ordinary/dump neutrality before their arrays are trusted.
 
-Future candidate gates are fixed at maximum absolute error `0.002` and minimum
+Native and future candidate gates are fixed at maximum absolute error `0.002` and minimum
 per-row cosine `0.99999`, for stages and final vectors, with MaxSim absolute
 error `0.002`, exact IDs/masks and ordinary/dump neutrality. Routing tie cases
 need explicitly labeled handling rather than silent index changes. Use
 `crispembed-diff` plus independent raw-array checks for actual native replay.
 An owned panel is a tokenizer/numerical control, not representative retrieval
-quality, speed qualification, default promotion or a release. No native engine,
-public registry/API change, shared build change, quantization qualification or
-CoreML equivalence is provided by this preparation.
+quality, speed qualification, default promotion or a release. Public text APIs,
+quantization qualification and CoreML equivalence remain unqualified.

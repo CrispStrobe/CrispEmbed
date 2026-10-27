@@ -406,8 +406,8 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 | 2026-10-27 | `fix/ultrabert-unicode-pretoken-20261027` | Gated Unicode-aware UltraBERT pretokenization | Completed tokenizer40424357191 retains24 clipped/25 full mismatches; both two-row details show curly punctuation wrongly grouped as letters. Implement context-scoped default-off Unicode GPT2 byte-level pretokenization using actual original boundaries; preserve old generic/CLIP behavior. Hosted tokenizer-only A/B must retain old mismatch set and match all5483 original clipped IDs/masks/full hashes before any embeddings. Frozen original vectors and ranking/numerical budgets unchanged. |
 | 2026-10-27 | `audit/moedern-sdpa-reproducibility-20261027` | Attribute real cross-run Python SDPA drift | Corrected observer40423259251 rejects156/250 old array hashes despite exact inputs/weights and within-run neutrality; first captured divergence is SDPA0. Preserve both immutable originals and strict rejection. Hosted operator-only replay of two frozen attention inputs, actual default/math/CPU-flash kernels, layout/hardware evidence and Ref magnitudes versus both originals. No replacement gold/full-model/native qualification or tolerance changes. |
 | 2026-10-27 | `feat/josev-native-head-20261027` | Integrate verified Josev head component | Actual CPU/CUDA passes all123 stages/backend and all4 complete typed responses; see HISTORY/receipts. Frozen head d8/ggml890 remains separate until backbone/frontend composition and candidate-a06 compatibility/public surfaces are verified. Do not repeat original capture or loosen fixed budgets. |
-| 2026-10-26 | `integration/bounded-closure-20261026` | Integrate reviewed bounded lanes and immutable consumers | DraftPR86 records completed Ovis8, WASM attribution, original preservation, SDPA and Josev head evidence. Native backbone/frontend, MoEdern-v2, Unicode/retrieval and public surfaces remain gated; preserve frozen experiment branches. Declare final explicit source closure after code choices, then actual Ovis14/11, native/WASM assets/real consumers, main checks and app documentation mirror. App stays0.17.12. |
-| 2026-10-26 | `feat/moedern-colbert-20261026` | SauerkrautLM-MoEdernColBERT family support | All6 original/author-GGUF licenses/sources pinned; smallest original/conversion and SDPA attribution reviewed. Finish separately versioned native-v2 using old primary and supplemental pipeline observations, then exact Unigram/roles/public surfaces. Extend27M then115M including6 dilated-conv blocks, independent retrieval/quantization and qualified aliases. |
+| 2026-10-26 | `integration/bounded-closure-20261026` | Integrate reviewed bounded lanes and immutable consumers | DraftPR86 records completed Ovis8, WASM attribution, original preservation, SDPA and Josev head evidence. Backbone/native MoEdern/tokenizer component proofs are reviewed; frontend composition, retrieval and public surfaces remain gated; preserve frozen experiment branches. Declare final explicit source closure after code choices, then actual Ovis14/11, native/WASM assets/real consumers, main checks and app documentation mirror. App stays0.17.12. |
+| 2026-10-26 | `feat/moedern-colbert-20261026` | SauerkrautLM-MoEdernColBERT family support | All6 original/author-GGUF licenses/sources pinned; smallest original/conversion and SDPA attribution reviewed. Native-v2 actual40441341206 passes10 cases/177 checks/three MaxSim pairs. Finish exact Unigram/roles/public surfaces. Extend27M then115M including6 dilated-conv blocks, independent retrieval/quantization and qualified aliases. |
 | 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Canonical v2 preparation is reviewed after strict-v1 rejection and complete legacy/author provenance. Full40375626336 at frozene35 runs8 originals→freeze→8 native→aggregate; exact5483 rows and unchanged ranking/vector gates. No pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Initial seven-native/two-WASM producers complete; first consumers fail Windows/Apple/browser. Corrected corpus, UTF8 audit, strict cross-desktop aggregation and actual rounding A/B precede fresh final-source producers/all consumers. No tag/app pin change; device limits explicit. |
 | 2026-10-26 | `feat/wasm-q8-rounding-candidate-20261026` | Conditional WASM Q8_0 rounding candidate | Isolated ggml890-based fork a06, encoder-only per-backend opt-in and preserved legacy/Q8_1 kernels. Actual40391544739 requires numeric operator controls before ten-case model A/B; candidate stays off before reviewed strict parity/default decision. |
@@ -631,11 +631,11 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   completes22:37:43UTC. Native shards0/1 reject two under-512 document ID
   streams before vector acceptance; [the negative receipt](tests/results/ultrabert/scifact-initial-native-tokenizer-rejection.json)
   retains both exact streams. Six remaining shards are cancelled while queued
-  with zero steps. First run the bounded hosted tokenizer diagnostic, establish
-  the earliest token-piece/codepoint difference and any gated correction, then
-  all5,483 token-only ID/mask checks before new embeddings. Reuse all frozen
-  original vectors unchanged. Finish corrected native shards and aggregate only
-  after input parity. Require all rows/IDs,0.002/0.99999 vector gates,
+  with zero steps. Token diagnostic40424357191 and Unicode A/B40434717493
+  are complete (HISTORY); all5,483 IDs/masks/full hashes now match with1 and
+  old unset/empty/0 mismatches remain. Reviewed explicit v3ee51e10e is dispatched
+  as40444873884; reuse all frozen original vectors unchanged. Finish its native
+  shards and aggregate only after per-shard actual ID preflight. Require all rows/IDs,0.002/0.99999 vector gates,
   NDCG@10/MRR@10/Recall@100 degradation≤0.001 and top1 agreement≥99%.
   V1 author-column rejection and1,055 author-abstract differences remain
   preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
@@ -653,27 +653,14 @@ Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
   including the same Mac50 panel. Initial failures40376735641/40354251257 stay
   retained. Audit-only RSS unit normalization is repaired separately without
   changing original producer JSON, image/gold/score or comparison budgets.
-- [ ] **Attribute remaining WASM layer3 divergence and correct it behind a gate.**
-  [Actual40391544739](tests/results/packaging/wasm-rounding-ab-v1.json)
-  at580e3ae3 passes all five operator controls and completes every ten-case
-  unset/empty/0/1, observer and interleaved-context arm, preserving old anchors.
-  Candidate attention0 max1.19209e-7 and layers0–2 below9.53675e-7 improve sharply,
-  but layer3 max0.00291893, layer4 max0.01997251 and encoder_out max0.02850568
-  reject unchanged0.002/0.99999 gates. Eight of ten final cases fail; original
-  cosine0.9999548495 still fails. This completed negative belongs in HISTORY.
-  Use retained raw artifact12692387342 and the exact old model on hosted CI to
-  locate the first differing layer3 operation, replay both actual retained inputs
-  through the same operator and record Q8 byte/scale and dot/output differences.
-  [Actual test-only replay40415950220](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40415950220)
-  atbbc80ae2 now waits on hosted execution. Its23 subnodes and six real-projection
-  replays bind actual types, Q8_0/Q8_K workspaces and both input axes, requiring
-  frozen anchors before interpretation. Test reciprocal/scaling/reduction
-  hypotheses rather than attributing causality
-  to an approximate F32 match. Preserve all original golds, failures and source
-  guards; any new alternative needs an explicit versioned source/experiment.
-  Gate`CRISPEMBED_WASM_Q8_0_ROUND` remains default-off, legacy remains intact.
-  Require the complete unchanged model A/B after an evidenced fix, before any
-  final runtime/default decision or fresh packaged producer qualification.
+- [ ] **Choose a measured WASM correction after completed layer3 attribution.**
+  [Corrected attribution40424064413](tests/results/packaging/wasm-layer3-attribution-v1.json)
+  reproduces all old anchors and twelve same-input projection replays. Input
+  differences amplify through FFN quantization/nonlinear boundaries; no
+  same-input kernel defect is established. Retain initial allocation failure,
+  full-model8/10 rejection and rounding default-off. Propose a separately scoped
+  arithmetic correction only from measured operator evidence, then rerun the
+  complete unchanged model A/B before packaged qualification/default changes.
 - [ ] **Qualify final immutable assets.** After reviewed runtime changes and
   any justified default decision, freeze one final integrated source. Build
   fresh seven CPU/mobile archives and both WASM bundles from that same source;
@@ -727,9 +714,12 @@ preparation commands as current actions.
   Answer formatting source5452632d runs separately in40443922195, with original
   publisher answers before native, ties/even rounding and CPython summation.
 - [ ] **Josev composition and interfaces:** source5c20497c is committed; hosted
-  build-only40444830535 checks actual ordinary/observed compilation and archive
+  build-only40445724363@30fbd6fc checks actual ordinary/observed compilation and archive
   probe exclusion. Initial queued40444535106 was cancelled before execution
-  after source review found missing historical checkout depth. Combine native backbone, native
+  after source review found missing historical checkout depth; corrected queued
+  40444830535 was superseded before execution by raw-final/Ref controls. Full
+  source76bc0826 includes an explicit unreviewed dependency barrier and prepared
+  227-stage/raw-final/typed comparator. Combine native backbone, native
   lexical means and verified512-wide joint head without original hidden/vector
   injection. Compare actual full requests/logits/probabilities/all typed answers.
   Preserve the Ovis1024/3584 guard and original no-extra-temperature semantics.
@@ -761,15 +751,10 @@ All initial failures and original byte hashes are retained. These are execution
 gates, not completed model support or release qualification. The app remains
 on immutable0.17.12.
 
-- [ ] Execute and review the separately versioned MoEdern smallest native
-  experiment. Completed [SDPA attribution](tests/results/moedern-colbert/sdpa-reproducibility-v1.json)
-  reproduces the corrected observer with CPU-flash; old SDPA deviation is
-  1.1921e-7 and historical byte continuity stays rejected. The native-v2 lane
-  keeps old250 arrays/ordinary/selected vectors/three MaxSim pairs as primary
-  targets, separately pins21 supplemental pipeline-only observations, and uses
-  fixed actual Ref/vector/mask/MaxSim gates with an explicit CPU/a06 source
-  closure. No new gold, tolerance changes or old v1 guard modification. Only
-  after actual smallest parity proceed to Unigram/public roles and27M/115M.
+- [ ] Finish exact MoEdern Unigram/role frontend after completed native-v2
+  40441341206 (HISTORY). Require effective post-registration tokenizer behavior,
+  original-first IDs and three masks, then native text/public composition.
+  Extend27M then115M with separately frozen originals; no primary-gold change.
 - [ ] Execute/review UltraBERT native SciFact v3 after completed token A/B
   40434717493: all5,483 IDs/masks/full lengths/hashes and14 authored cases exact.
   Preserve unset/empty/0 historical24/25 mismatches, generic/CLIP bodies and

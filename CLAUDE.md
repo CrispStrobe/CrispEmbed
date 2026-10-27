@@ -269,10 +269,19 @@ continuity is stored in ignored `.claude/local-handoff/AGENTS.md` when available
 
 ## 27 October execution checkpoint
 
-The [executable continuation](PLAN.md#executable-audit-continuation--27-october-2026)
-records corrected MoEdern Mapping capture, SciFact token-only attribution,
-layer3 graph-view capture and Josev archive/installed-owner setup gates. Initial
-negative receipts are preserved. No new model alias or native model support is
-qualified from preparation. Final source guards must be explicitly versioned
-when protected fixtures/runtime change; historical guards remain strict.
-The app still pins immutable0.17.12.
+Use [PLAN's current continuation](PLAN.md#executable-audit-continuation--27-october-2026)
+for immutable active sources and acceptance gates. Completed proofs are in
+HISTORY/PERFORMANCE: Josev head246 CPU/CUDA stages/eight responses and backbone104
+stages, UltraBERT all5,483 corrected token streams, MoEdern1.5M native10 cases/
+177 checks/three old-primary MaxSim pairs, Ovis8-grid and WASM layer3 attribution.
+These component proofs do not establish public model/task/release qualification.
+
+Next: exact effective MoEdern Unigram/roles, Josev frontend/answer serializer
+then composed native requests without reference-vector injection, frozen
+UltraBERT native retrieval, and final same-source Ovis/archive/real consumers.
+Full Josev dependency pins remain explicitly unreviewed until their actual
+small reports pass. Preserve every initial numerical/quality/input failure,
+all old producer bytes, rejected byte continuity and unchanged strict budgets.
+Historical guards remain strict when a new explicit source protocol is added.
+App stays on immutable0.17.12; no tag or qualified model alias follows from
+preparation, queued execution, or a component cosine.
