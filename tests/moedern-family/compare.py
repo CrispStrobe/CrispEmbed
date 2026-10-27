@@ -3,7 +3,8 @@
 0.002 / 0.99999 vector and 0.002 MaxSim gates. Hosted only (Kaggle or Actions).
 
 The path is chosen by the inherited environment (CRISPEMBED_MOEDERN_FAST=1 selects
-the fast single-graph path) and MOEDERN_PROBE_THREADS (default 2). The gates are
+the fast single-graph path) and MOEDERN_PROBE_THREADS (default 2); MOEDERN_PROBE_MODEL
+optionally replaces the mounted model-F32.gguf (quantized diagnostic arms). The gates are
 identical for both paths; compare_paths.py runs every arm."""
 import glob, json, math, os, struct, subprocess, sys
 from pathlib import Path
@@ -17,7 +18,8 @@ def flag(v): return [int(x) for x in (json.loads(v.replace('True', 'true').repla
 env = dict(os.environ, CRISPEMBED_MOEDERN_FAMILY='1', CRISPEMBED_MOEDERN_COLBERT='1')
 threads = int(os.environ.get('MOEDERN_PROBE_THREADS', '2'))
 fast = os.environ.get('CRISPEMBED_MOEDERN_FAST', '') not in ('', '0')
-r = subprocess.run([str(probe), str(root/'model-F32.gguf'), str(out/'cases.tsv'), str(out/'native'), str(threads)], env=env, capture_output=True, text=True)
+model = Path(os.environ.get('MOEDERN_PROBE_MODEL') or root/'model-F32.gguf')  # quant arms override
+r = subprocess.run([str(probe), str(model), str(out/'cases.tsv'), str(out/'native'), str(threads)], env=env, capture_output=True, text=True)
 print(r.stdout, r.stderr)
 timing = {}
 for line in r.stdout.splitlines():
@@ -36,7 +38,7 @@ def metrics(a, b):
                 passed=len(a) == len(b) and worst <= GATES['max_absolute'] and cos >= GATES['min_row_cosine'])
 arr = {(s['case'], s['stage']): root/s['path'] for s in report['stage_arrays']}
 result = dict(schema='crispembed-moedern-family-parity-v1', variant=report['variant'], revision=report['revision'],
-              probe_exit=r.returncode, gates=GATES, path='fast' if fast else 'default', threads=threads,
+              probe_exit=r.returncode, gates=GATES, path='fast' if fast else 'default', threads=threads, model=model.name,
               encode_seconds=timing, cases={}, scores=[])
 selected = {}
 for c in report['cases']:
