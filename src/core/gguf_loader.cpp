@@ -2,11 +2,13 @@
 // See gguf_loader.h for the interface contract.
 
 #include "gguf_loader.h"
+#include "ggml.h"
 
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <limits>
 #include <map>
 #include <mutex>
@@ -275,7 +277,14 @@ struct MappedFile {
         (void)path;
         return;
 #elif defined(_WIN32)
-        HANDLE hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+        // Model paths are UTF-8 (as ggml's metadata reader assumes); CreateFileA would
+        // reinterpret them in the ANSI code page and fail on non-ASCII paths.
+        HANDLE hFile = INVALID_HANDLE_VALUE;
+        if (const int wn = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, nullptr, 0); wn > 0) {
+            std::wstring wpath(static_cast<size_t>(wn), L'\0');
+            if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wpath.data(), wn) == wn)
+                hFile = CreateFileW(wpath.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+        }
         if (hFile == INVALID_HANDLE_VALUE) return;
         LARGE_INTEGER fsize;
         if (!GetFileSizeEx(hFile, &fsize)) {
@@ -458,7 +467,7 @@ static bool load_weights_impl(const char * path, ggml_backend_t backend, Include
         // Fallback: read via FILE* pread/fseek. This is the rare path —
         // most systems have working mmap. We implement it inline here so
         // models don't have to.
-        FILE * fp = fopen(path, "rb");
+        FILE * fp = ggml_fopen(path, "rb"); // UTF-8 aware on Windows
         if (!fp) {
             fprintf(stderr, "%s: cannot open '%s' for fread fallback\n", tag, path);
             gguf_free(gctx);
@@ -660,7 +669,7 @@ bool load_weights_split(const char * path, ggml_backend_t gpu_backend, ggml_back
     const size_t data_off = gguf_get_data_offset(gctx);
     MappedFile mf(path);
     if (!mf.ok) {
-        FILE * fp = fopen(path, "rb");
+        FILE * fp = ggml_fopen(path, "rb"); // UTF-8 aware on Windows
         if (!fp) {
             fprintf(stderr, "%s: cannot open '%s' for fread fallback\n", tag, path);
             free_weights(out);
