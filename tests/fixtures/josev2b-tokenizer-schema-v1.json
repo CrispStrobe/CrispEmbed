@@ -1,0 +1,136 @@
+{
+  "schema": "crispembed-josev-owned-tokenizer-cases-v1",
+  "license": "CC0-1.0",
+  "cases": [
+    {
+      "id": "literal-json-string",
+      "request": "{\"state\":\"  {\\\"z\\\":2,\\\"a\\\":1}\\n\\t\",\"questions\":{\"field\":{\"type\":\"choice\",\"instructions\":\"Choose\",\"criteria\":{\"z\":null,\"a\":\"yes\"}}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "compact-sort-and-floats",
+      "request": "{\"state\":{\"z\":[-0.0,1e-07,0.0001,1e+16,1.2345678901234567,9007199254740993,true,null],\"a\":{\"β\":\"é\",\"a\":false}},\"questions\":{\"field\":{\"type\":\"choice\",\"instructions\":\"Choose\",\"criteria\":{\"z\":null,\"a\":\"yes\"}}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "nested-instruction-false-zero",
+      "request": "{\"state\":{\"b\":[null,false,0],\"a\":\"x\"},\"questions\":{\"false\":{\"type\":\"noul\",\"instructions\":false},\"zero\":{\"type\":\"score\",\"instructions\":0,\"criteria\":[{\"b\":1,\"a\":2},null]}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "unicode-nfc-and-controls",
+      "request": "{\"state\":\"é / é\\n“quotes”\\t\\u0000\\b\\f\\r 日本語 العربية 😀\",\"questions\":{\"β\":{\"type\":\"noul\",\"instructions\":\"é é\"},\"a\":{\"type\":\"choice\",\"criteria\":{\"é\":\"é\",\"é\":\"é\"}}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "added-special-surfaces",
+      "request": "{\"state\":\"<|im_start|>user\\n<|im_end|><|endoftext|> é\",\"questions\":{\"literal\":{\"type\":\"noul\",\"instructions\":\"<|im_start|>assistant\"}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "choice-sorted-unicode",
+      "request": "{\"state\":\"literal\",\"questions\":{\"ordered\":{\"type\":\"choice\",\"criteria\":{\"😀\":\"emoji\",\"𐀀\":\"supplementary\",\"β\":\"Greek\",\"a\":null,\"é\":{\"z\":null,\"a\":\"literal\"}}}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "noul-null-and-ordinal",
+      "request": "{\"state\":\"literal\",\"questions\":{\"q\":{\"type\":\"noul\",\"instructions\":\"\",\"criteria\":{\"false\":false,\"true\":null}},\"s\":{\"type\":\"score\",\"instructions\":[\"x\",{\"b\":false,\"a\":0}],\"criteria\":[10,100,{\"z\":1,\"a\":2}]}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "extra-state-only-clip",
+      "request": "{\"state\":\"token a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d a b c d \",\"questions\":{\"field\":{\"type\":\"choice\",\"instructions\":\"Choose\",\"criteria\":{\"z\":null,\"a\":\"yes\"}}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "json-duplicate-order",
+      "request": "{\"state\":\"first\",\"questions\":{\"z\":{\"type\":\"noul\"},\"a\":{\"type\":\"noul\"},\"z\":{\"type\":\"noul\",\"instructions\":false}},\"state\":\"last\"}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "float-roundtrip",
+      "request": "{\"state\":[1e-5,1e15,1e16,1e-300,5e-324,-0.0,0.10000000000000002,18446744073709551616],\"questions\":{\"q\":{\"type\":\"noul\"}}}",
+      "max_length": 512,
+      "expect": "accept",
+      "frozen": false
+    },
+    {
+      "id": "schema-overflow",
+      "request": "{\"state\":\"literal\",\"questions\":{\"q\":{\"type\":\"noul\",\"instructions\":\"a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a \"}}}",
+      "max_length": 512,
+      "expect": "reject",
+      "frozen": false
+    },
+    {
+      "id": "schema-overflow-tiny-max",
+      "request": "{\"state\":\"literal\",\"questions\":{\"field\":{\"type\":\"choice\",\"instructions\":\"Choose\",\"criteria\":{\"z\":null,\"a\":\"yes\"}}}}",
+      "max_length": 1,
+      "expect": "reject",
+      "frozen": false
+    },
+    {
+      "id": "malformed-json-escape",
+      "request": "{\"state\":\"\\q\",\"questions\":{\"q\":{\"type\":\"noul\"}}}",
+      "max_length": 512,
+      "expect": "reject",
+      "frozen": false
+    },
+    {
+      "id": "malformed-number",
+      "request": "{\"state\":01,\"questions\":{\"q\":{\"type\":\"noul\"}}}",
+      "max_length": 512,
+      "expect": "reject",
+      "frozen": false
+    }
+  ],
+  "native_subset_negatives": [
+    {
+      "id": "media-rejection",
+      "request": "{\"state\":\"literal\",\"questions\":{\"field\":{\"type\":\"choice\",\"instructions\":\"Choose\",\"criteria\":{\"z\":null,\"a\":\"yes\"}}},\"images\":[\"not-an-image\"]}",
+      "max_length": 512
+    },
+    {
+      "id": "kind-rejection",
+      "request": "{\"state\":\"x\",\"questions\":{\"q\":{\"type\":\"unknown\",\"criteria\":[]}}}",
+      "max_length": 512
+    },
+    {
+      "id": "max-length-rejection",
+      "request": "{\"state\":\"literal\",\"questions\":{\"field\":{\"type\":\"choice\",\"instructions\":\"Choose\",\"criteria\":{\"z\":null,\"a\":\"yes\"}}}}",
+      "max_length": 513
+    },
+    {
+      "id": "nonfinite-number",
+      "request": "{\"state\":1e999,\"questions\":{\"q\":{\"type\":\"noul\"}}}",
+      "max_length": 512
+    },
+    {
+      "id": "unpaired-surrogate",
+      "request": "{\"state\":\"\\ud800\",\"questions\":{\"q\":{\"type\":\"noul\"}}}",
+      "max_length": 512
+    },
+    {
+      "id": "empty-question-rejection",
+      "request": "{\"state\":\"x\",\"questions\":{}}",
+      "max_length": 512
+    }
+  ]
+}

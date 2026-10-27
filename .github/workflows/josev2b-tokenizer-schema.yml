@@ -1,0 +1,82 @@
+name: Josev original-first tokenizer/schema only
+on:
+  workflow_call:
+permissions:
+  contents: read
+concurrency:
+  group: josev-tokenizer-schema-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  tokenizer-schema:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+      PIP_USER: '0'
+      PIP_NO_CACHE_DIR: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Stdlib controls and exact source guard before payloads
+        env:
+          TEXT_OUTPUT: ${{ runner.temp }}/josev-tokenizer-schema
+        run: |
+          python tests/test_josev2b_tokenizer_schema.py -v
+          python tools/ci-heavy/josev2b_tokenizer_schema.py --phase preflight --output "$TEXT_OUTPUT"
+      - name: Isolated exact original Rust tokenizer wheel only
+        env:
+          CRISPEMBED_JOSEV_TEXT_VENV: ${{ runner.temp }}/josev-tokenizer-venv
+        run: |
+          python -m venv --without-pip "$CRISPEMBED_JOSEV_TEXT_VENV"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          lock = json.loads(Path('docs/josev2b-environment-lock.json').read_text())
+          row, = [r for r in lock['packages'] if r['name'] == 'tokenizers']
+          assert row['version'] == '0.22.2'
+          Path(os.environ['CRISPEMBED_JOSEV_TEXT_VENV'], 'requirements.txt').write_text(row['url'] + ' --hash=sha256:' + row['sha256'] + '\n')
+          PY
+          python -m pip --python "$CRISPEMBED_JOSEV_TEXT_VENV/bin/python" install --no-deps --only-binary=:all: --require-hashes --disable-pip-version-check -r "$CRISPEMBED_JOSEV_TEXT_VENV/requirements.txt"
+      - name: Freeze original four cases and additional authored cases before any C++
+        env:
+          TEXT_OUTPUT: ${{ runner.temp }}/josev-tokenizer-schema
+          CRISPEMBED_JOSEV_TEXT_VENV: ${{ runner.temp }}/josev-tokenizer-venv
+        run: '"$CRISPEMBED_JOSEV_TEXT_VENV/bin/python" tools/ci-heavy/josev2b_tokenizer_schema.py --phase original --output "$TEXT_OUTPUT"'
+      - name: Build metadata-only standalone frontend; no compute backend
+        run: |
+          git submodule update --init ggml
+          cmake -S tests/josev-text -B "$RUNNER_TEMP/josev-text-build" -DCMAKE_BUILD_TYPE=Release
+          cmake --build "$RUNNER_TEMP/josev-text-build" --target test-josev-text -j2
+      - name: Exact native IDs/masks/spans/lexical IDs and negative/recovery controls
+        env:
+          TEXT_OUTPUT: ${{ runner.temp }}/josev-tokenizer-schema
+        run: python tools/ci-heavy/josev2b_tokenizer_schema.py --phase native --output "$TEXT_OUTPUT" --build "$RUNNER_TEMP/josev-text-build"
+      - name: Preserve small reports and every rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-tokenizer-schema-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/josev-tokenizer-schema/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve tokenizer-only source, gold, component and actual native rows remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-tokenizer-schema-metadata-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-tokenizer-schema/
+            ${{ runner.temp }}/josev-text-build/test-josev-text
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn
