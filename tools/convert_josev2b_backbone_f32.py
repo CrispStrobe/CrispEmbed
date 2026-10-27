@@ -12,6 +12,9 @@ from josev2b_head_schema import reference, sha256, unique_pairs
 
 PREFIX='model.language_model.'
 ARCH='josev2b_backbone_reference'
+# Exact auxiliary namespace in the authenticated original index. The official
+# Clef path calls model.language_model, which consumes none of these tensors.
+MTP_KEYS=frozenset(('mtp.fc.weight', 'mtp.norm.weight', 'mtp.pre_fc_norm_embedding.weight', 'mtp.pre_fc_norm_hidden.weight', 'mtp.layers.0.input_layernorm.weight', 'mtp.layers.0.post_attention_layernorm.weight', 'mtp.layers.0.mlp.down_proj.weight', 'mtp.layers.0.mlp.gate_proj.weight', 'mtp.layers.0.mlp.up_proj.weight', 'mtp.layers.0.self_attn.q_proj.weight', 'mtp.layers.0.self_attn.k_proj.weight', 'mtp.layers.0.self_attn.v_proj.weight', 'mtp.layers.0.self_attn.o_proj.weight', 'mtp.layers.0.self_attn.q_norm.weight', 'mtp.layers.0.self_attn.k_norm.weight'))
 
 
 def schema():
@@ -77,8 +80,9 @@ def checked_text(rows,index,filename):
         raise ValueError('Original single-shard index and tensor inventory disagree')
     # The original model ties output embeddings. Never silently select an
     # additional vocabulary matrix or a different source tensor namespace.
-    if 'lm_head.weight' in rows or any(not k.startswith((PREFIX,'model.visual.')) for k in rows):
-        raise ValueError('Unexpected untied output head or checkpoint namespace')
+    if ('lm_head.weight' in rows or {k for k in rows if k.startswith('mtp.')}!=MTP_KEYS or
+            any(not k.startswith((PREFIX,'model.visual.')) and k not in MTP_KEYS for k in rows)):
+        raise ValueError('Unexpected untied head, auxiliary MTP set or checkpoint namespace')
     return selected
 
 
@@ -158,6 +162,9 @@ def convert(checkpoint,index_path,original_report,original_sha,original_source,o
         original_worker_source=original_source,checkpoint_sha256=report['snapshot'][filename]['sha256'],
         gguf_bytes=output.stat().st_size,gguf_sha256=sha256(output),tensor_count=len(records),
         parameter_count=sum(math.prod(v) for v in schema().values()),tensors=records,
+        excluded_original_tensors=[dict(name=name,shape=row['shape'],dtype=row['dtype'],
+            reason='Auxiliary MTP outside original language_model call' if name in MTP_KEYS else 'Unused conditional vision component')
+            for name,row in rows.items() if name not in selected],
         limits='Source checkpoint byte identity and exact F32 promotion/readback; no original loaded-backbone hash probe or native inference claim.')
     receipt.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
     return result

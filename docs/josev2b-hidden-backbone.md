@@ -52,3 +52,12 @@ bytes before GGUF overhead). The source-only converter
 and index, validates the complete source namespace, promotes bounded chunks to
 file-backed F32 staging, and checks every GGUF tensor shape/type/byte hash by
 bounded readback. Actual converted size/hash and model parity remain unmeasured.
+
+The full checkpoint also contains297 vision tensors and15 top-level auxiliary
+`mtp.*` tensors, outside the original `model.language_model` call. The first
+full audit40436303700 completed metadata/parser/Ref controls and authenticated
+the source checkpoint, then correctly rejected the initially undeclared MTP
+namespace before conversion/inference. The converter now explicitly pins all15
+auxiliary names, excludes them and vision from the320-tensor text component,
+and records every excluded tensor/reason. No source, original target or native
+arithmetic changes follow from this namespace correction.

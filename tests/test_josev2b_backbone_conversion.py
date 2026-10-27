@@ -24,13 +24,16 @@ class Controls(unittest.TestCase):
         name='model.safetensors-00001-of-00001.safetensors'
         rows={k:dict(shape=v,dtype='BF16') for k,v in m.schema().items()}
         rows['model.visual.original.weight']=dict(shape=[2,3],dtype='F32')
+        rows.update({k:dict(shape=[1],dtype='BF16') for k in m.MTP_KEYS})
         index={'weight_map':dict.fromkeys(rows,name)}
         self.assertEqual(len(m.checked_text(rows,index,name)),320)
         bad=json.loads(json.dumps(rows));bad[m.PREFIX+'norm.weight']['shape']=[1024]
         with self.assertRaises(ValueError):m.checked_text(bad,index,name)
         bad=dict(index['weight_map']);bad[next(iter(bad))]='wrong-shard'
         with self.assertRaises(ValueError):m.checked_text(rows,{'weight_map':bad},name)
-        for extra in ('lm_head.weight','unreviewed.namespace'):
+        missing=dict(rows);missing.pop(next(iter(m.MTP_KEYS)))
+        with self.assertRaises(ValueError):m.checked_text(missing,{'weight_map':dict.fromkeys(missing,name)},name)
+        for extra in ('lm_head.weight','unreviewed.namespace','mtp.unreviewed.weight'):
             changed={**rows,extra:dict(shape=[1],dtype='F32')}
             with self.assertRaises(ValueError):m.checked_text(changed,{'weight_map':dict.fromkeys(changed,name)},name)
 
