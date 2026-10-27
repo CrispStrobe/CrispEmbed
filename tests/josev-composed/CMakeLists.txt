@@ -33,7 +33,8 @@ set(COMPOSED_SOURCES
 
 foreach(variant plain observed)
   add_library(josev-composed-${variant} STATIC ${COMPOSED_SOURCES})
-  target_include_directories(josev-composed-${variant} PUBLIC "${CRISPEMBED_ROOT}/src")
+  target_include_directories(josev-composed-${variant} PUBLIC "${CRISPEMBED_ROOT}/src"
+                                                         PRIVATE "${CRISPEMBED_ROOT}/src/core/third_party")
   target_link_libraries(josev-composed-${variant} PUBLIC ggml ggml-cpu Threads::Threads)
   add_executable(josev-composed-${variant}-probe probe.cpp)
   target_link_libraries(josev-composed-${variant}-probe PRIVATE josev-composed-${variant})

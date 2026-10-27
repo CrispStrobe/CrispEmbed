@@ -300,7 +300,7 @@
     "src/josev2b_text_frontend.h": "bd7a70230d5ad57097f759f9f0e9d8771c9704ed415d5632a0db29565cf00b17",
     "src/qwen35_decoder.cpp": "5eee685f2941a9b3b9ec99ceb55ff0fbe76afc2ccd4a1a0d4fd7e84266f26980",
     "src/qwen35_decoder.h": "1365edca86fd5b343cc5a60560d6567c80200d47d37512120605fd2d2b9c650b",
-    "tests/josev-composed/CMakeLists.txt": "21b7c8ec9fef8d76a4df58a85a330342348974d230f23d8f842f3132f15f9b8a",
+    "tests/josev-composed/CMakeLists.txt": "f284c016aeada021ac8dfd58c28a592568e3d8b056009e50aea63cc7fe07b3df",
     "tests/josev-composed/json.h": "98dc6049948fd25e753e9a1ed591d76eec6a375c7ed39d39cbef166499531b74",
     "tests/josev-composed/probe.cpp": "92f3d139b0a003f32a71d46395c8e49cfbc5b6e355facf2627ce981f4d9c881e",
     "tests/josev2b_composed_observer.h": "712a6765bc76116b46b0a50065030f6a24864b8eaba5377e37020f28c560ea0b",
