@@ -500,7 +500,7 @@ context * init_borrowed_cpu(const core_gguf::tensor_map & tensors, int threads, 
     }
     try {
         require(threads >= 1 && threads <= 64, "Borrowed CPU head requires1..64 threads");
-        require(validate_packed_shapes(tensors, error), "Packed head tensor schema rejected");
+        if (!validate_packed_shapes(tensors, error)) return nullptr;
         for (const auto & item : tensors)
             require(item.second->buffer && ggml_backend_buffer_is_host(item.second->buffer),
                     "Borrowed head requires host storage");
