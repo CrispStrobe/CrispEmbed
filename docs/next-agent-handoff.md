@@ -664,20 +664,16 @@ for current ownership and actual sources. The full result history, initial
 failures and strict limits are in HISTORY/PERFORMANCE. Keep each frozen
 producer unchanged while its outputs are reviewed; no new gold or budget waiver.
 
-- **Josev:** [original review](../tests/results/josev2b/original-review.json),
-  [exact head conversion](../tests/results/josev2b/head-f32-conversion.json),
-  [preservation](../tests/results/josev2b/head-artifact-review.json) and
-  [57-package provenance](../tests/results/josev2b/wheel-metadata-review.json)
-  are complete. Original sourceb2/receipt51a2e16b and all251 arrays stay frozen.
-  The separate genuine CPU/CUDA head task freezes workera69b3fca/bootstrap91f7e721;
-  review all123 stages and complete four-case typed answers, not merely job
-  completion. The explicit hidden-only backbone branch
-  `feat/josev-hidden-backbone-20261027` preserves the old1024 mapper, accepts
-  exactly320 F32 text tensors and avoids vocabulary projection. Build-only
-  40433507655 atd0dc56a1 remains pending; later source75a5e7fc fixes full-checkpoint
-  header bounds and nonfinite hidden-output rejection. Exact new-source hosted
-  conversion/all104 backbone stage comparisons, composed outputs and old Ovis/
-  LightOn preservation must precede integration or API/model publication.
+- **Josev:** original251 arrays/receipt51a2e16b remain frozen. Reviewed
+  [CPU/CUDA head](../tests/results/josev2b/head-cpu-cuda-review.json) passes246
+  stages/eight typed responses from original hidden/lexical vectors. Reviewed
+  [backbone40438416809](../tests/results/josev2b/backbone-f32-review.json)
+  atab998277 passes104 stages and exact320-tensor F32 conversion. Tokenizer
+  source86363ec3/40444002658 diagnoses the initial descriptor rejection before
+  C++ build; answer serializer5452632d/40443922195 is a separate hosted proof.
+  Complete these, then compose native raw requests through lexical means/head
+  and full typed answers without captured-hidden injection. No task quality,
+  public interfaces, quantization or release qualification yet.
 - **MoEdern:** [corrected observer rejection](../tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
   changes156/250 historical array hashes with first difference at SDPA0, despite
   identical recorded inputs/weights/software and within-run neutrality.
@@ -688,13 +684,14 @@ producer unchanged while its outputs are reviewed; no new gold or budget waiver.
   infer them retrospectively. Native79e350a0 stays blocked. After attribution,
   explicitly update its reviewed source/five-driver contract and execute the
   smallest original-first panel before Unigram/public roles or27M/115M.
-- **UltraBERT:** [token diagnostic](../tests/results/ultrabert/scifact-tokenizer-diagnostic-v1.json)
-  replays all5,483 originals and retains24 clipped/25 full mismatches. Two actual
-  first pretokens show curly punctuation grouped with letters. The context-scoped
-  default-off Unicode lane must reproduce every old unset/empty/0 row and match
-  all5,483 original IDs/masks/full hashes with1. Keep generic GPT2/CLIP bodies,
-  original vectors and fixed ranking/strict numerical budgets. Only then run
-  remaining native retrieval legs; no original forward repeat is needed.
+- **UltraBERT:** reviewed [Unicode A/B40434717493](../tests/results/ultrabert/unicode-pretoken-review-v1.json)
+  at01878e80 passes all5,483 original ID/mask/full-length/hash rows and14 authored
+  cases; unset/empty/0 retain historical24/25 mismatches. Next native-v3 uses
+  explicit assembled source02402a0d preserving integration truncation; review
+  its source contract before dispatch. Every CAPI ID preflight precedes new
+  embeddings; all-attended masks are source-derived, not observed getter values.
+  Reuse frozen originals, unchanged numerical/ranking gates and strict debt;
+  no original forward repeat or default promotion.
 - **Ovis/WASM:** [all8 replay outcomes](../tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
   and [layer3 attribution](../tests/results/packaging/wasm-layer3-attribution-v1.json)
   are reviewed. Strict exceedances and full-model WASM negatives remain. Both

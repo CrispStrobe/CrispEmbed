@@ -1,3 +1,24 @@
+## 27 October 2026 — Josev backbone and UltraBERT corpus tokenizer parity
+
+[Josev backbone40438416809](tests/results/josev2b/backbone-f32-review.json)
+atab998277 passes all104 embedding/layer/final-norm comparisons using actual
+crispembed-diff Ref and independent metrics. Embeddings are bit exact; first
+byte differences occur at layer0. Worst absolute error0.000625908375 and
+minimum row cosine0.9999999984746153 pass fixed0.002/0.99999 gates.
+All four ordinary/repeat runs agree. Exact320-tensor F32 conversion/readback
+produces7,527,324,576 bytes;297 vision and15 auxiliary MTP tensors are excluded
+because the original calls only language_model. Preserve initial40433507655
+metadata-test failure, zero-step superseded40436018180 cancellation and
+40436303700 undeclared-MTP rejection. No composed output or task-quality claim.
+
+[UltraBERT Unicode40434717493](tests/results/ultrabert/unicode-pretoken-review-v1.json)
+at01878e80 matches all5,483 original token IDs/masks/full lengths/hashes and14
+additional authored Rust-tokenizer cases. Unset/empty/0 preserve every historical
+field and24 clipped/25 full mismatches. JSONL bytes differ because the new
+emitter adds an attention mask; historical projection is exact. No embeddings
+were executed. Continue explicit v3 native retrieval against frozen originals,
+preserving existing truncation and all strict numerical/ranking budgets.
+
 ## 27 October 2026 — MoEdern first-attention reproducibility attributed
 
 Hosted [40434080299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40434080299)

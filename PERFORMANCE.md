@@ -1,3 +1,15 @@
+## 27 October 2026 — Josev backbone component and Unicode tokenizer scope
+
+[Backbone104-stage evidence](tests/results/josev2b/backbone-f32.json) uses fixed
+absolute0.002/minimum row cosine0.99999. Worst error0.000625908375 is mixed-de
+final_norm; global minimum cosine0.9999999984746153 is null-and-options layer14.
+At the worst stage, mean error1.00358e-5, RMS1.70337e-5 and original/native L2
+2838.41061765/2838.41068105. F32 text weights occupy7.527GB decimal;
+144.924s probe time includes eight prefills, with peak Linux RSS5817.828MiB.
+This is neither end-to-end decision latency nor representative task quality.
+[Unicode token A/B](tests/results/ultrabert/unicode-pretoken-ab-v1.json) proves
+all5,483 token streams only; numerical embeddings and retrieval remain pending.
+
 ## 27 October 2026 — Josev head numerical parity, CPU and CUDA
 
 [Original-first head results](tests/results/josev2b/head-cpu-cuda-review.json):

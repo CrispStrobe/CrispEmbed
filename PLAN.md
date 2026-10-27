@@ -718,17 +718,13 @@ preparation commands as current actions.
   27M then115M with separate originals and six dilated-conv blocks for115M.
   Original conversion inventories are32/32/94 tensors; no generic ModernBERT
   alias, Q4_K assumption or representation-equivalence claim.
-- [ ] **Josev backbone:** review corrected hosted40438416809 atab998277 with
-  explicit base70876fb5/a06. Authenticate all320 text tensors, exact F32
-  conversion/readback and104 embedding/layer/norm stages before composition.
-  Preserve original51a2e16b and completed head proofs. Initial128MiB head-reader,
-  wrong metadata-test string and undeclared15 MTP failures stay in HISTORY;
-  unused vision/MTP are explicitly excluded from the original text call.
-- [ ] **Josev text/schema:** hosted40440257882 freezes sourcef424ec52. Require
-  all4 original IDs/masks/question-option spans/lexical IDs and14 authored JSON/
-  order/float/Unicode/overflow cases, original before native. Dedicated frontend
-  and component metadata remain default-off and separate from OCR/Gemma loaders.
-  No local tokenizer payload or model/framework work.
+- [ ] **Josev text/schema:** initial40440257882 reproduces all four original
+  token streams but rejects an unexpected authenticated pretokenizer descriptor
+  before native build. Diagnostic source86363ec3 preserves its exact policy
+  before rejection in40444002658. Fix only from observed source semantics,
+  retain the rejection, then require all4 original and14 authored cases exact.
+  Answer formatting source5452632d runs separately in40443922195, with original
+  publisher answers before native, ties/even rounding and CPython summation.
 - [ ] **Josev composition and interfaces:** combine native backbone, native
   lexical means and verified512-wide joint head without original hidden/vector
   injection. Compare actual full requests/logits/probabilities/all typed answers.
@@ -770,13 +766,14 @@ on immutable0.17.12.
   fixed actual Ref/vector/mask/MaxSim gates with an explicit CPU/a06 source
   closure. No new gold, tolerance changes or old v1 guard modification. Only
   after actual smallest parity proceed to Unigram/public roles and27M/115M.
-- [ ] Correct the scoped UltraBERT Unicode tokenizer. Completed diagnostic
-  40424357191 atc86fc007 replays all5,483 originals and retains24 clipped/25
-  full native mismatches; both examined first pretokens wrongly group curly
-  punctuation with letters. `fix/ultrabert-unicode-pretoken-20261027` owns a
-  default-off context-specific UnicodeGPT2 path preserving generic/CLIP behavior.
-  Require hosted gate0 reproduction and all5,483 gate1 IDs/masks/full hashes
-  before new embeddings; reuse frozen original vectors and fixed ranking gates.
+- [ ] Execute/review UltraBERT native SciFact v3 after completed token A/B
+  40434717493: all5,483 IDs/masks/full lengths/hashes and14 authored cases exact.
+  Preserve unset/empty/0 historical24/25 mismatches, generic/CLIP bodies and
+  existing truncation. Assembled runtime02402a0d retains integration truncation.
+  New explicit v3 source must preflight every actual CAPI ID stream before
+  embeddings; label all-attended masks as source-derived, not a CAPI getter.
+  Reuse frozen originals and fixed raw-CLS/dense/ranking gates; retain all
+  historical183/1294/M1 numerical debt. See token review in HISTORY.
 - [ ] Decide the next bounded WASM attribution from completed
   [layer3 evidence](tests/results/packaging/wasm-layer3-attribution-v1.json).
   All old anchors and twelve same-input kernel replays pass; composed input
@@ -784,19 +781,13 @@ on immutable0.17.12.
   initial allocation failure, rejected full panel and rounding default off.
   A proposed correction needs measured same-input evidence or a separately
   scoped arithmetic profile, then actual full-panel A/B; no component waiver.
-- [ ] Finish Josev native backbone and composition. CPU/CUDA head parity is
-  completed in HISTORY:246 stage comparisons and eight exact full typed
-  responses from frozen original hidden/lexical inputs. Native backbone
-  40438416809 freezesab998277, with explicit closed base70876fb5/ggmla06;
-  require exact320-tensor conversion, all104 original stages and ordinary/repeat
-  proof before composing native backbone/head outputs. Initial build40433507655
-  compiled but rejected a test that wrongly treated string `false` as off;
-  runtime gate semantics were correct and unchanged. Superseded40436018180 was
-  cancelled with its sole controls job queued/zero steps before payload work.
-  Full9c audit40436303700 then rejects only the initially undeclared auxiliary
-  MTP namespace before conversion/inference; corrected source explicitly
-  excludes its15 tensors and297 vision tensors outside language_model.
-  Preserve original51a2e16b/b2, exact head receipts and all initial failures.
+- [ ] Finish Josev composition. Backbone40438416809 passes104 stages and
+  exact320-tensor conversion; head passes246 CPU/CUDA comparisons and eight
+  typed responses using original hidden/lexical inputs. These completed
+  component results are in HISTORY. Compose actual native frontend/backbone,
+  native embedding lexical means, head and answer serializer without original
+  hidden/vector injection; recheck head against candidate ggml/a06 and compare
+  complete typed outputs, logits/probabilities, repeat/error/recovery controls.
   Public tokenization/schema/C/Python/CLI/Rust/Dart/registry and independent
   decision quality remain separate original-first gates; Gemma semantics differ.
 - [ ] Finish final same-source Ovis, native/WASM archive producers and actual
