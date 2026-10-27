@@ -1247,19 +1247,9 @@ add_executable(test-qwen35-position tests/test_qwen35_position.cpp)
 target_link_libraries(test-qwen35-position PRIVATE crispembed-qwen35-delta crispembed-core)
 
 add_executable(test-ovisocr2-ffn tests/test_ovisocr2_ffn.cpp)
-# The test textually includes src/qwen35_decoder.cpp to reach internals, so it must
-# not also link the library's copy of that object (duplicate definitions once any
-# other library object references a decoder symbol, e.g. decoder_hidden_cpu).
-add_library(crispembed-qwen35-delta-nodecoder STATIC EXCLUDE_FROM_ALL src/qwen35_delta.cpp src/qwen35_linear.cpp
-    src/qwen35_attention.cpp src/qwen35_vision.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp
-    src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
-target_include_directories(crispembed-qwen35-delta-nodecoder PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(crispembed-qwen35-delta-nodecoder PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)
-get_target_property(_q35_opts crispembed-qwen35-delta COMPILE_OPTIONS)
-if(_q35_opts)
-    target_compile_options(crispembed-qwen35-delta-nodecoder PRIVATE ${_q35_opts})
-endif()
-target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta-nodecoder crispembed-core)
+# The test textually includes src/qwen35_decoder.cpp with every external entry point
+# renamed, so it links the full library without duplicate definitions.
+target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta crispembed-core)
 
 add_executable(test-qwen35-decoder tests/test_qwen35_decoder.cpp)
 target_link_libraries(test-qwen35-decoder PRIVATE crispembed-qwen35-delta crispembed-core)

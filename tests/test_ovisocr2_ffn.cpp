@@ -61,11 +61,13 @@ bool audit_project(const std::vector<ggml_tensor *> & matrices, const float * in
 // Rename external entry points only; calls inside the real decoder use the observer.
 #define project_cpu audit_project
 #define decoder_cpu ffn_observed_decoder_cpu
+#define decoder_hidden_cpu ffn_observed_decoder_hidden_cpu
 #define embed_cpu ffn_observed_embed_cpu
 #define map_small_decoder ffn_observed_map_small_decoder
 #include "../src/qwen35_decoder.cpp"
 #undef map_small_decoder
 #undef embed_cpu
+#undef decoder_hidden_cpu
 #undef decoder_cpu
 #undef project_cpu
 
