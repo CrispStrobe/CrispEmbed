@@ -668,7 +668,7 @@
   "runtime_closure_reviewed": true,
   "auditor_source_sha256": {
     "tools/ovisocr2_final_integrated_v2.py": "a9f9e09b136bf5d72f09c04340e249cbe0af5075cbd8fde70bcea8fca0356916",
-    "tools/ci-heavy/ovisocr2_final_integrated_v2.py": "bcd6627b63497c415c75e0647baa195278003bcc3ce60af2ad7a67aa2d293abc",
+    "tools/ci-heavy/ovisocr2_final_integrated_v2.py": "d01fff77bce83d78adcb78e88ed999b2962cb25310e3644f9fd269ee08bdef10",
     ".github/workflows/ovisocr2-final-integrated-v2.yml": "6dba6da679a883f9408f84b206123fbcd7fbb9fcac89af2b8fdbe80a3f2441ff",
     "tests/test_ovisocr2_final_integrated_v2.py": "84b713a565d157ec22b6585fdaf4d715c93c0e22a3d4eb14e61b67af259aee76"
   },

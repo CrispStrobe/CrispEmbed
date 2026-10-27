@@ -78,10 +78,11 @@ def preflight(out, require_submodule=True):
                     import hashlib
                     if hashlib.sha256(raw).hexdigest()!=digest:
                         raise ValueError('Reviewed dependency member SHA differs: '+member)
-                    if member in pin['reports']:
-                        report=json.loads(raw)
-                        if name=='ovis_composed' and member=='ovisocr2-large-inputs.json':
-                            checked_composed_report(report,pin,dependency)
+                    # Every member is authenticated by SHA above. Only the interpreted main
+                    # report is parsed: retained negative-arm resource receipts carry the
+                    # timing tool's non-JSON exit prefix and must stay byte-exact.
+                    if name=='ovis_composed' and member=='ovisocr2-large-inputs.json':
+                        checked_composed_report(json.loads(raw),pin,dependency)
             records.append(identity)
         proofs[name] = {'reviewed_outcome': dependency['reviewed_outcome'],
                         'experimental_panel_completed': True,
