@@ -1,0 +1,36 @@
+{
+  "schema": "crispembed-josev-publication-receipt-v1",
+  "run": 40475202851,
+  "remote": {
+    "repo": "cstr/Josev-2B-SystemOne-GGUF",
+    "commit": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+    "url": "https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/resolve/bffe62522f826b4c33f2e731d5b870ced5150a17/josev2b-systemone-f32.gguf",
+    "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+    "bytes": 7659180448
+  },
+  "status": "published and re-verified",
+  "anonymous_tree": [
+    "josev2b-systemone-f32.gguf",
+    "README.md",
+    "manifest.json",
+    "upstream/LICENSE",
+    "upstream/README.md",
+    "upstream/config.json",
+    "upstream/joint_head_config.json",
+    "upstream/joint_schema_model.py",
+    "upstream/processor_config.json",
+    "upstream/tokenizer_config.json",
+    "upstream/unsloth_decision_config.json",
+    ".gitattributes"
+  ],
+  "initial_failures": [
+    {
+      "run": 40470569893,
+      "reason": "403 creating repo with read-oriented HF_TOKEN after exact artifact verification"
+    },
+    {
+      "service": "kaggle",
+      "reason": "no GitHub token in the private dataset; stopped before download"
+    }
+  ]
+}
