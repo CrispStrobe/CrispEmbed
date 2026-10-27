@@ -658,3 +658,19 @@ experimental until their own original/intermediate/final-output gates pass.
   with the dumper and crispembed-diff. Compose only after parity with an explicit
   Qwen3.5-2B hidden-only prefill profile. Keep the official no-extra-temperature
   route distinct from author-GGUF calibration. No public alias or release yet.
+
+### Actual Josev original and head artifact continuation
+
+- [x] Four-case CUDA original at workerb2 completes with observer/repeat
+  equality,251 array declarations and122 checkpoint-promoted/loaded F32 tensor
+  proofs. Preserve the [small original receipts](tests/results/josev2b/original-reference.json).
+  The57 exact wheel owners match their sidecars; setuptools has13 metadata
+  candidates, establishing the original selector ambiguity. Model/native
+  quality is unqualified.
+- [ ] Execute and review the [hosted preservation/head artifact lane](docs/josev2b-head-artifact.md):
+  exact versioned reference first, all251 NPY byte/shape/finite checks, ordered
+  per-field raw input export and exact F32 head conversion with eight notices.
+  Keep raw artifacts remote and record actual service/artifact identities.
+  Then execute all123 native head module/logit/probability comparisons through
+  crispembed-diff plus independent metrics and decoded answers, before any
+  backbone composition, public model/API or release claim.
