@@ -42,5 +42,21 @@ URLs. They do not establish an actual wheel result.
 This preparation does not change the original wheel lock, worker/bootstrap pins,
 model contract, arithmetic, inputs or numerical gates, and authorizes no GPU
 retry. An archive-only result cannot measure installation rewriting or establish
-CUDA/runtime/model compatibility. Review the actual archive audit before binding
-any corrected installed-metadata selector to a newly declared worker source.
+CUDA/runtime/model compatibility. Review exact archive evidence before framework or model access; the GPU-reference
+setup described below enforces that barrier within its original task.
+
+The corrected verifier selects exactly one top-level
+`<own-name>-<own-version>.dist-info/METADATA` from the owning distribution's
+RECORD. Nested vendored metadata is ineligible; missing/duplicate owners,
+wrong origins and any locked byte-hash mismatch still reject. Synthetic controls
+cover a real owner plus vendors and reject a corrupted owner even if a vendor
+has the expected hash. These controls do not establish installed-wheel or GPU
+compatibility.
+
+The independent hosted CPU archive audit remains pending. The separately
+[prepared GPU-reference setup](josev2b-gpu-audited-install.md) can produce the
+same exact archive/sidecar evidence inside the genuine original inference task,
+before installing each wheel. Its full57-package audit/installed-owner barrier
+precedes all framework imports, CUDA smoke and model access. This is an explicit
+source-versioned setup correction, with no lock, model, panel, arithmetic or
+acceptance change; actual completion remains pending.

@@ -94,16 +94,42 @@ class BootstrapTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'SHA'):module.locked_requirements(repo,cfg)
             self.assertFalse(module.REPORT['model_payload_accessed'])
 
-    def test_installer_uses_full_direct_url_hash_lock_without_resolution(self):
+    def installer_fixture(self,module):
+        module.OUT.mkdir();output=module.OUT/'wheel-audit-install';output.mkdir()
+        cfg=json.loads((ROOT/'docs/josev2b-source-contract.json').read_text());module.REPORT['environment_lock']=cfg['environment_lock']
+        lock=(ROOT/cfg['environment_lock']['path']).read_bytes();(module.OUT/'environment-lock.json').write_bytes(lock)
+        proof=dict(passed=True,completed=True,source=dict(head=module.WORKER_SOURCE),
+            packages=[dict(name=r['name'],version=r['version'],audited=True,installed=True,archive=dict(passed=True)) for r in json.loads(lock)['packages']],pip_check=True,
+            framework_imported=False,model_tokenizer_accessed=False,retry_permitted=False,
+            installed_environment=dict(package_count=57,all_wheel_metadata_hashes_exact=True,exact_versions=True,
+                owning_top_level_metadata_only=True,environment_lock_sha256=cfg['environment_lock']['sha256']))
+        (output/'audit.json').write_text(json.dumps(proof));return output,proof
+
+    def test_installer_requires_audited_gpu_cli_and_complete_barrier(self):
         with tempfile.TemporaryDirectory() as directory:
-            module=self.load(directory);requirements=Path(directory)/'requirements.lock'
-            with patch.object(module,'run') as execute:
-                module.install_locked('/venv/bin/python',requirements,{'PIP_USER':'0'})
+            module=self.load(directory);self.installer_fixture(module);repo=Path(directory)/'repo'
+            with patch.object(module,'run') as execute:module.install_locked('/venv/bin/python',repo,{'PIP_USER':'0'})
             args=execute.call_args.args[1]
-            for required in ('--no-deps','--require-hashes','--only-binary=:all:'):
-                self.assertIn(required,args)
-            self.assertEqual(args[-2:],['-r',requirements])
-            self.assertFalse(any('tokenizers==' in str(a) for a in args))
+            self.assertEqual(args[:2],['/venv/bin/python',repo/'tools/ci-heavy/josev2b_gpu_install.py'])
+            self.assertIn('--reviewed-source',args);self.assertIn('--gpu-preflight',args)
+            self.assertEqual(execute.call_args.kwargs['env']['CRISPEMBED_JOSEV_GPU_REFERENCE_SETUP'],'1')
+            self.assertEqual(execute.call_args.kwargs['timeout'],1500)
+            self.assertFalse(module.REPORT['model_payload_accessed']);self.assertTrue(module.REPORT['wheel_audit_install']['passed'])
+
+    def test_partial_or_unaudited_installer_cannot_reach_framework_barrier(self):
+        for field in ('partial','duplicate','unaudited','owner','pipcheck','framework','source'):
+            with tempfile.TemporaryDirectory() as directory:
+                module=self.load(directory);out,proof=self.installer_fixture(module)
+                if field=='partial':proof['packages'].pop()
+                elif field=='duplicate':proof['packages'][1]=proof['packages'][0].copy()
+                elif field=='unaudited':proof['packages'][0]['audited']=False
+                elif field=='owner':proof['installed_environment']['all_wheel_metadata_hashes_exact']=False
+                elif field=='pipcheck':proof['pip_check']=False
+                elif field=='framework':proof['framework_imported']=True
+                else:proof['source']['head']='0'*40
+                (out/'audit.json').write_text(json.dumps(proof))
+                with patch.object(module,'run'),self.assertRaisesRegex(ValueError,'barrier rejected'):
+                    module.install_locked('/venv/bin/python',Path(directory)/'repo',{})
 
     def test_worker_commit_and_contract_are_exact(self):
         with tempfile.TemporaryDirectory() as directory:

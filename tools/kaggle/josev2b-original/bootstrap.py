@@ -16,7 +16,7 @@ import time
 import venv
 import zipfile
 
-WORKER_SOURCE = '2133cfa12dbdd25653fd68b1a6054f69f80f7e9c'
+WORKER_SOURCE = 'b2edf8c83c9aca1f8a9210198d47798ac13828b8'
 CONTRACT_SHA = '6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da'
 WHEELS = {'torch': {'url': 'https://files.pythonhosted.org/packages/d4/5a/7c50ba1b7b713d71d34669c6d13dab0a11531a3eceb0307a5162dbfec0f7/torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'filename': 'torch-2.13.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'a3a9a21312872af8a26950b2c15680335a386a1f56ed03e780653d78b9607e9e', 'bytes': 526602329}, 'torchvision': {'url': 'https://files.pythonhosted.org/packages/32/db/062cdb5a84380a60439775311fff34d89229760d2a50680393dc18699956/torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl#sha256=ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'filename': 'torchvision-0.28.0-cp313-cp313-manylinux_2_28_x86_64.whl', 'sha256': 'ad7b3a439265cc3739a4ab5b4c998c0e38ea99c0ee7ca4dea35c5d0b099ec237', 'bytes': 7674669}}
 PIP_BOOTSTRAP = {'url': 'https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70', 'sha256': 'fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70', 'bytes': 1819850, 'filename': 'pip-26.2.2-py3-none-any.whl'}
@@ -102,11 +102,32 @@ def locked_requirements(repo, cfg):
     return requirements
 
 
-def install_locked(python, requirements, env):
-    # No live transitive resolution: all57 wheel URLs and hashes are frozen.
-    run('install-original', [python,'-m','pip','install','--no-deps','--require-hashes',
-        '--only-binary=:all:','--index-url','https://pypi.org/simple','-r',requirements],
-        timeout=1500, env=env)
+def install_locked(python, repo, env):
+    # Audit exact archive owner/sidecar/dependencies BEFORE each local install.
+    # The complete immutable lock is verified separately before this entry.
+    installer=repo/'tools/ci-heavy/josev2b_gpu_install.py'
+    output=OUT/'wheel-audit-install'
+    setup_env=dict(env,CRISPEMBED_JOSEV_GPU_REFERENCE_SETUP='1')
+    run('audit-install-original', [python,installer,'--reviewed-source',WORKER_SOURCE,
+        '--gpu-preflight',OUT/'bootstrap.json','--expected-prefix',SCRATCH/'venv',
+        '--scratch',SCRATCH/'wheel-install','--output',output], timeout=1500, env=setup_env)
+    proof=json.loads((output/'audit.json').read_text())
+    packages=proof['packages'];installed=proof['installed_environment']
+    expected=json.loads((OUT/'environment-lock.json').read_text())['packages']
+    if (proof['passed'] is not True or proof['completed'] is not True or
+            proof['source']['head']!=WORKER_SOURCE or len(packages)!=57 or
+            [(r.get('name'),r.get('version')) for r in packages]!=[(r['name'],r['version']) for r in expected] or
+            any(r['audited'] is not True or r['installed'] is not True or r['archive']['passed'] is not True for r in packages) or
+            proof['pip_check'] is not True or proof['framework_imported'] is not False or
+            proof['model_tokenizer_accessed'] is not False or proof['retry_permitted'] is not False or
+            installed['package_count']!=57 or installed['all_wheel_metadata_hashes_exact'] is not True or
+            installed['exact_versions'] is not True or installed['owning_top_level_metadata_only'] is not True or
+            installed['environment_lock_sha256']!=REPORT['environment_lock']['sha256']):
+        raise ValueError('Complete audited installation barrier rejected before framework import')
+    REPORT['wheel_audit_install']=dict(passed=True,packages=57,source=WORKER_SOURCE,
+        report='wheel-audit-install/audit.json',sha256=digest(output/'audit.json'),
+        framework_imported=False,model_tokenizer_accessed=False)
+    save()
 
 
 def main():
@@ -158,7 +179,7 @@ def main():
         cfg = json.loads((repo/'docs/josev2b-source-contract.json').read_text())
         if cfg['runtime_profile']!=REPORT['runtime_profile']:
             raise ValueError('explicit reviewed runtime profile differs')
-        requirements = locked_requirements(repo,cfg)
+        locked_requirements(repo,cfg)
         python = isolated_environment(env)
         prefix=SCRATCH/'venv'
         env['CRISPEMBED_JOSEV_EXPECTED_VENV']=str(prefix)
@@ -166,7 +187,7 @@ def main():
         run('verify-isolated-prefix', [python,verifier,'verify-isolation','--expected-prefix',prefix,
             '--report',OUT/'isolated-prefix.json'],env=env,timeout=60)
         run('verify-complete-lock', [python,verifier,'verify-lock','--report',OUT/'lock-preflight.json'],env=env,timeout=60)
-        install_locked(python,requirements,env)
+        install_locked(python,repo,env)
         # All installed wheel metadata, versions and loaded module origins precede
         # CUDA smoke, original source checks, tokenizer and checkpoint access.
         run('pip-check', [python,'-m','pip','check'], env=env, timeout=60)

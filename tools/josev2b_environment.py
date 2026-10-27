@@ -231,6 +231,32 @@ def isolated_prefix(expected):
             'external_package_paths':False}
 
 
+def owner_metadata_file(dist,name,version):
+    """Select the locked distribution's own metadata, excluding vendored copies.
+
+    importlib.metadata.files exposes every path in its RECORD, including nested
+    vendored dist-info directories. Only the unique top-level owner is eligible;
+    no fallback to a vendor's matching name, version or hash is permitted.
+    """
+    candidates=[]
+    for entry in dist.files or []:
+        path=Path(entry)
+        if path.name!='METADATA' or not path.parent.name.endswith('.dist-info'):
+            continue
+        if path.is_absolute() or len(path.parts)!=2 or '..' in path.parts:
+            continue
+        stem=path.parent.name[:-len('.dist-info')]
+        if '-' not in stem:
+            continue
+        owner,owner_version=stem.rsplit('-',1)
+        if re.sub(r'[-_.]+','-',owner).lower()==name and owner_version==version:
+            candidates.append(entry)
+    if len(candidates)!=1:
+        raise ValueError('installed owning METADATA file missing/ambiguous: '+name+
+                         '; matching top-level files='+str(len(candidates)))
+    return candidates[0]
+
+
 def verify_installed(cfg,expected_prefix,import_runtime=False):
     import importlib
     import importlib.metadata as metadata
@@ -255,11 +281,18 @@ def verify_installed(cfg,expected_prefix,import_runtime=False):
         dist=actual[name]
         if dist.version!=row['version'] or not Path(dist.locate_file('')).resolve().is_relative_to(prefix):
             raise ValueError('installed exact version/origin differs: '+name)
-        files=[f for f in dist.files or [] if f.name=='METADATA' and f.parent.name.endswith('.dist-info')]
-        if len(files)!=1 or sha(Path(dist.locate_file(files[0])).read_bytes())!=row['core_metadata_sha256']:
-            raise ValueError('installed wheel METADATA bytes differ: '+name)
+        entry=owner_metadata_file(dist,name,row['version'])
+        path=Path(dist.locate_file(entry)).resolve()
+        if not path.is_relative_to(prefix):
+            raise ValueError('installed owning METADATA origin outside isolated venv: '+name)
+        data=path.read_bytes();actual_sha=sha(data)
+        if actual_sha!=row['core_metadata_sha256']:
+            raise ValueError('installed owning METADATA bytes differ: '+name+
+                             '; expected='+row['core_metadata_sha256']+'; actual='+actual_sha+
+                             '; bytes='+str(len(data)))
     report.update(python_minor=cfg['runtime']['python_minor'],package_count=len(expected),
         exact_versions=True,all_wheel_metadata_hashes_exact=True,unlocked_packages=False,
+        owning_top_level_metadata_only=True,
         environment_lock_sha256=cfg['environment_lock']['sha256'])
     if import_runtime:
         modules={'torch':'torch','torchvision':'torchvision','transformers':'transformers',
