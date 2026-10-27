@@ -35,9 +35,11 @@ jobs:
           python tests/systemone/native_controls.py "$RUNNER_TEMP/public-build/libcrispembed.so" "$RUNNER_TEMP/systemone-review/native.json"
           nm -D "$RUNNER_TEMP/public-build/libcrispembed.so" > "$RUNNER_TEMP/systemone-review/symbols.txt"
           cp "$RUNNER_TEMP/public-build/compile_commands.json" "$RUNNER_TEMP/systemone-review/compile_commands.json"
-          "$RUNNER_TEMP/public-build/crispembed-cli" --help > "$RUNNER_TEMP/systemone-review/cli-help.txt" 2>&1
+          "$RUNNER_TEMP/public-build/crispembed" --help > "$RUNNER_TEMP/systemone-review/cli-help.txt" 2>&1
           python tests/systemone/check_build.py "$RUNNER_TEMP/public-build" "$RUNNER_TEMP/systemone-review"
       - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          toolchain: 1.90.0
       - name: Check Rust wrapper against the actual new prebuilt
         env:
           CRISPEMBED_SYS_LIB_DIR: ${{ runner.temp }}/public-build

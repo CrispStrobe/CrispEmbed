@@ -22,8 +22,7 @@ symbols = (out/'symbols.txt').read_text()
 for name in ('init','free','run_json','error','profile'):
     assert ' crispembed_systemone_'+name+'\n' in symbols
 assert 'composed_test' not in symbols and 'josev2b_head::test' not in symbols
-cli = build/'bin/crispembed-cli'
-if not cli.exists(): cli = build/'crispembed-cli'
+cli = build/'crispembed'
 for args, expected in [(['--systemone','{}','--dim'], 'embedding options are invalid'),
                        (['--systemone','{}','--colbert'], 'choose only one encoding mode')]:
     run = subprocess.run([str(cli), '-m', 'absent.gguf', *args], text=True, capture_output=True, timeout=20)
