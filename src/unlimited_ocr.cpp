@@ -677,7 +677,7 @@ static bool load_tensors(uocr_ctx & ctx, const char * path) {
                 // parent's: to_f32's fast path gates on ->buffer (null on a fresh view) and would
                 // otherwise deref a raw device pointer (Metal segfault); ggml_backend_tensor_get
                 // then reads via view_src->buffer.
-                if (core_env::on("UOCR_MOE_CPU") || lhp.variant == 2) { // v2 decoder runs MoE on CPU
+                if (core_env::on("UOCR_MOE_CPU")) {
                     if (!ctx.moe_view_ctx) {
                         ggml_init_params vp = {
                             (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
@@ -2100,6 +2100,67 @@ static void moe_ffn_cpu(uocr_ctx & ctx, int li, float * hidden, int T) {
 // DASH block routing and block-sparse attention, greedy decode with the page-count
 // guard. Plain CPU/F32 reference path; v1 decoding is untouched.
 // ---------------------------------------------------------------------------
+// Dequantize expert e of a stacked [in, out, n_exp] tensor by reading its slice directly
+// (no ggml view objects), for the Unlimited-OCR-2 CPU MoE.
+static std::vector<float> uocr2_expert_f32(const ggml_tensor * st, int e) {
+    const size_t bytes = st->nb[2];
+    const int64_t n = st->ne[0] * st->ne[1];
+    std::vector<uint8_t> raw(bytes);
+    ggml_backend_tensor_get(st, raw.data(), (size_t)e * bytes, bytes);
+    std::vector<float> out((size_t)n);
+    if (st->type == GGML_TYPE_F32) memcpy(out.data(), raw.data(), (size_t)n * sizeof(float));
+    else if (st->type == GGML_TYPE_F16) for (int64_t i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(((const ggml_fp16_t *)raw.data())[i]);
+    else ggml_get_type_traits(st->type)->to_float(raw.data(), out.data(), n);
+    return out;
+}
+
+// v1-identical MoE math (softmax gate, greedy top-k, no renorm, routed scale, shared experts,
+// residual add) reading experts from the stacked tensors.
+static void uocr2_moe_cpu(uocr_ctx & ctx, int li, float * hidden, int T) {
+    auto & lhp = ctx.m.lhp;
+    auto & ly = ctx.m.llm_layers[li];
+    const int D = lhp.hidden, n_exp = lhp.n_experts, top_k = lhp.n_experts_top;
+    const auto post_ln = to_f32(ly.post_ln_w), router = to_f32(ly.router_w);
+    const auto sg = to_f32(ly.shared_gate_w), su = to_f32(ly.shared_up_w), sd = to_f32(ly.shared_down_w);
+    std::vector<float> normed((size_t)T * D);
+    std::vector<std::vector<std::pair<int, float>>> pick(T);
+    std::vector<char> used(n_exp, 0);
+    for (int t = 0; t < T; t++) {
+        float * x = normed.data() + (size_t)t * D;
+        rmsnorm_cpu(hidden + (size_t)t * D, x, D, post_ln.data(), lhp.rms_eps);
+        std::vector<float> lg(n_exp);
+        for (int e = 0; e < n_exp; e++) {
+            float d = 0;
+            for (int i = 0; i < D; i++) d += x[i] * router[(size_t)e * D + i];
+            lg[e] = d;
+        }
+        const float mx = *std::max_element(lg.begin(), lg.end());
+        float se = 0;
+        for (float & v : lg) se += (v = expf(v - mx));
+        std::vector<std::pair<float, int>> sc(n_exp);
+        for (int e = 0; e < n_exp; e++) sc[e] = { lg[e] / se, e };
+        std::partial_sort(sc.begin(), sc.begin() + top_k, sc.end(), [](auto & a, auto & b) { return a.first > b.first; });
+        for (int k = 0; k < top_k; k++) {
+            pick[t].push_back({ sc[k].second, sc[k].first * lhp.routed_scaling_factor });
+            used[sc[k].second] = 1;
+        }
+    }
+    std::vector<std::array<std::vector<float>, 3>> W(n_exp);
+    for (int e = 0; e < n_exp; e++)
+        if (used[e]) W[e] = { uocr2_expert_f32(ly.gate_exps, e), uocr2_expert_f32(ly.up_exps, e), uocr2_expert_f32(ly.down_exps, e) };
+    std::vector<float> out(D), sh(D);
+    for (int t = 0; t < T; t++) {
+        const float * x = normed.data() + (size_t)t * D;
+        std::vector<float> acc(D, 0.0f);
+        for (auto [e, w] : pick[t]) {
+            swiglu_ffn_cpu(x, out.data(), D, lhp.expert_intermediate, W[e][0].data(), W[e][1].data(), W[e][2].data());
+            for (int d = 0; d < D; d++) acc[d] += w * out[d];
+        }
+        swiglu_ffn_cpu(x, sh.data(), D, lhp.shared_intermediate, sg.data(), su.data(), sd.data());
+        for (int d = 0; d < D; d++) hidden[(size_t)t * D + d] += acc[d] + sh[d];
+    }
+}
+
 struct uocr2_layer_f32 {
     std::vector<float> in_ln, q, k, v, o, rq, rk, rqn, rkn, head_cls, post_ln, fg, fu, fd;
 };
@@ -2109,6 +2170,11 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
     auto & lhp = ctx.m.lhp;
     const int D = lhp.hidden, NH = lhp.heads, NKV = lhp.kv_heads, HDm = lhp.head_dim, L = lhp.n_layers;
     const int S = (int)prompt_ids.size(), V = lhp.vocab_size, group = NH / NKV;
+    for (int li = 1; li < L; li++)
+        if (!ctx.m.llm_layers[li].gate_exps) {
+            fprintf(stderr, "unlimited_ocr2: stacked expert tensors required (layer %d)\n", li);
+            return false;
+        }
     if (HDm != uocr2::HD) {
         fprintf(stderr, "unlimited_ocr2: head_dim %d unsupported\n", HDm);
         return false;
@@ -2211,7 +2277,7 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
                     for (int d = 0; d < D; d++) h[(size_t)t * D + d] += ff[d];
                 }
             } else {
-                moe_ffn_cpu(ctx, li, h.data(), T); // post-norm, routed + shared experts, residual (as v1)
+                uocr2_moe_cpu(ctx, li, h.data(), T); // post-norm, routed + shared experts, residual (as v1)
             }
         }
     };
