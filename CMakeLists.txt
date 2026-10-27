@@ -1296,3 +1296,10 @@ target_link_libraries(test-ultrabert-rope PRIVATE crispembed-core ggml-cpu)
 # Test-only UltraBERT tokenizer profile; does not add production dispatch.
 add_executable(test-ultrabert-tokenizer tests/test_ultrabert_tokenizer.cpp src/tokenizer_bpe.cpp)
 target_link_libraries(test-ultrabert-tokenizer PRIVATE crispembed-core)
+
+# Test-only instrumentation uses the real root backend and CPU compiler flags.
+# The ordinary library and consumers never receive observer macros or sources.
+option(CRISPEMBED_SYSTEMONE_AUDIT "Build test-only SystemOne root-profile observers" OFF)
+if(CRISPEMBED_SYSTEMONE_AUDIT)
+    add_subdirectory(tests/systemone)
+endif()
