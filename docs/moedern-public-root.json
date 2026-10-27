@@ -1,0 +1,15 @@
+{
+  "schema": "crispembed-moedern-public-root-v1",
+  "base": "cf49c7f6d7264a6141d3e3afbef3a2ae6bb62fca",
+  "compiled_draft_run": 40464260258,
+  "default_enabled": false,
+  "public_model_proof": false,
+  "owned_sha256": {
+    "CMakeLists.txt": "846d6ad55ae20809fe30aa2817284b8b8bdb0802f4e992130695b009205e3f08",
+    "crispembed/src/lib.rs": "3d019156635927b364057443a7c11154d7a144201d60b12412cef9f3583b34d6",
+    "flutter/crispembed/lib/crispembed.dart": "b6713d6cb0b8e2f2270a1c19d136caf6efc8de2593fbaf91594f57e1da301ee2",
+    "python/crispembed/__init__.py": "5d48096fc8611b62171099363d08da62ccf6197cabfa7092beaf2610bb20fd8d",
+    "tools/moedern-public/root_contract.py": "bacc142ac858c93f427967e8e6bc629c6aa913833508dd01da86d0047751b4df",
+    "tools/ci-heavy/moedern_public_root.sh": "eb25d188dd807f3b8d2f9138c1800db7431a780b92f0182400eab257b0e8c94f"
+  }
+}
