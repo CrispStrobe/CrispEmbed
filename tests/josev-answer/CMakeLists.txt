@@ -12,7 +12,8 @@ add_library(josev-answer-tested STATIC "${CRISPEMBED_ROOT}/src/josev2b_answer_se
                                       "${CRISPEMBED_ROOT}/src/core/shortest_double.c")
 target_compile_definitions(josev-answer-tested PRIVATE CRISPEMBED_JOSEV_ANSWER_TESTING)
 foreach(target josev-answer-plain josev-answer-tested)
-  target_include_directories(${target} PUBLIC "${CRISPEMBED_ROOT}/src")
+  target_include_directories(${target} PUBLIC "${CRISPEMBED_ROOT}/src"
+                                        PRIVATE "${CRISPEMBED_ROOT}/src/core/third_party")
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${target} PRIVATE -ffp-contract=off)
   endif()

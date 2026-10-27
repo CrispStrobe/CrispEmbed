@@ -19,7 +19,7 @@
     "src/josev2b_answer_serializer.cpp": "b7881901333fc3498651b999a05bd4529675c621d05713c82e1aa6232b6ec94b",
     "src/josev2b_answer_serializer.h": "f853594c3912dfbb40ab659d9e75578e30b748800fd2dcc9e23cb69e388358e9",
     "tests/fixtures/josev2b-answer-serializer-v1.json": "4f814ed79500bfdd08e74d695f4cea092e73d152ac34e3627aa07d5767b01099",
-    "tests/josev-answer/CMakeLists.txt": "05c490b748a6a934fcd7d59fcd272aac05624e91f27147df76f908b4a49bce43",
+    "tests/josev-answer/CMakeLists.txt": "19ca005c63053461cef33d7a9ebd886d7f3906c34cc4773a17559ceb8cd40666",
     "tests/test_josev2b_answer.cpp": "8b447b9e326caeecfecd5252d2cff723f0eb1d7fd982bf9bfc355c2238fe7ec7",
     "tests/test_josev2b_answer_serializer.py": "9800c2940787ae979624a1f8acbe4a39f2068bc825bd8fd1880b36739147c50c",
     "tools/ci-heavy/josev2b_answer_serializer.py": "e77062b58a0029d9dc21ffddfab80f448efae81ac7782ac8eeabc9377d93eab1",
