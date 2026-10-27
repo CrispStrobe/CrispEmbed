@@ -12,7 +12,10 @@ rows = json.loads((build/'compile_commands.json').read_text())
 units = ['josev2b_backbone.cpp','josev2b_head.cpp','josev2b_composed.cpp','josev2b_text_frontend.cpp',
          'josev2b_answer_serializer.cpp','qwen35_decoder.cpp','qwen35_attention.cpp','qwen35_linear.cpp',
          'qwen35_delta.cpp','qwen35_norm.cpp','qwen35_positions.cpp','qwen35_profile.cpp']
-selected = [r for r in rows if Path(r['file']).name in units]
+targets = {'crispembed.dir', 'crispembed-shared.dir'}
+selected = [r for r in rows if Path(r['file']).name in units and
+            len(Path(r.get('output', '')).parts) >= 2 and
+            Path(r['output']).parts[0] == 'CMakeFiles' and Path(r['output']).parts[1] in targets]
 assert len(selected) == 24, 'both real static/shared copies of all twelve units required'
 for row in selected:
     flags = shlex.split(row['command'])
