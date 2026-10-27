@@ -1,0 +1,47 @@
+name: Josev hidden-only backbone bounded build
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  build-metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Preserve existing mapper and original source dimensions
+        run: python -B tests/test_josev2b_backbone_contract.py -v
+      - name: Exact runtime dependency
+        run: |
+          git submodule update --init --depth 1 ggml
+          test "$(git -C ggml rev-parse HEAD)" = "a06fc0bb46b73cc10011fc90ae4054aee8438aeb"
+      - name: Portable bounded standalone build
+        run: |
+          mkdir -p "$RUNNER_TEMP/josev-backbone-review"
+          cmake -S tests/josev-backbone -B "$RUNNER_TEMP/josev-backbone-build" -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 2>&1 | tee "$RUNNER_TEMP/josev-backbone-review/configure.log"
+          cmake --build "$RUNNER_TEMP/josev-backbone-build" --parallel 2 2>&1 | tee "$RUNNER_TEMP/josev-backbone-review/build.log"
+      - name: Actual no-payload strict metadata and gate controls
+        run: |
+          "$RUNNER_TEMP/josev-backbone-build/test-josev-backbone" 2>&1 | tee "$RUNNER_TEMP/josev-backbone-review/metadata.log"
+          cp "$RUNNER_TEMP/josev-backbone-build/compile_commands.json" "$RUNNER_TEMP/josev-backbone-review/"
+          git rev-parse HEAD > "$RUNNER_TEMP/josev-backbone-review/source.txt"
+          git -C ggml rev-parse HEAD > "$RUNNER_TEMP/josev-backbone-review/ggml.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-backbone-build-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/josev-backbone-review/
+          retention-days: 90
+          if-no-files-found: warn
