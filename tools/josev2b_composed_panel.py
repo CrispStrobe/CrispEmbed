@@ -142,7 +142,7 @@ def compare(reference_dir, freeze, report, outputs, diff, out):
                 independent[name]=measured
                 details.append(dict(stage=row['stage'],occurrence=row['occurrence'],**measured))
             # Compare the same final raw F32 fields from all real library variants.
-            raw_equal=[]
+            raw_equal=[]; ordinal=[]
             for f,field in enumerate(original_case['fields']):
                 for kind,budget in (('logits',.002),('probabilities',.0001)):
                     key=('result/'+kind+'/'+str(f),0)
@@ -154,6 +154,13 @@ def compare(reference_dir, freeze, report, outputs, diff, out):
                     require(a.shape==b.shape and np.isfinite(b).all(), 'final field shape/finite differs')
                     error=float(abs(a.astype('float64')-b.astype('float64')).max())
                     raw_equal.append(dict(field=field['id'],kind=kind,max_absolute=error,passed=error<=budget))
+                    q=record['encoded']['questions'][f]
+                    if kind=='probabilities' and q['question_type']==2:
+                        original_score=sum(n*float(prob) for n,prob in enumerate(a))
+                        native_score=sum(n*float(prob) for n,prob in enumerate(b))
+                        delta=abs(native_score-original_score)
+                        ordinal.append(dict(field=field['id'],original=original_score,native=native_score,
+                                            absolute_error=delta,budget=.001,passed=delta<=.001))
             adapters=write_pair(case_dir/'original.gguf',case_dir/'native.gguf',pairs)
             with (case_dir/'diff.log').open('w') as log:
                 process=subprocess.run([str(diff),str(case_dir/'original.gguf'),str(case_dir/'native.gguf'),str(case_dir/'diff.json')],
@@ -162,9 +169,11 @@ def compare(reference_dir, freeze, report, outputs, diff, out):
             response=json.loads(rows['observed']['response'])
             exact=response==original_case['official_response']
             case.update(completed=True,mapped=len(mapped),metrics=details,actual_ref=actual,adapters=adapters,
-                        raw_finals=raw_equal,response=response,original_response=original_case['official_response'],
+                        raw_finals=raw_equal,ordinal=ordinal,response=response,original_response=original_case['official_response'],
+                        first_byte_difference=next((r for r in details if not r['bit_exact']),None),
+                        first_failing_stage=next((r for r in details if not r['passed']),None),
                         complete_response_exact=exact,ordinary_observer_repeat_raw_equal=True)
-            case['passed']=exact and actual['all_metrics_agree'] and all(m['passed'] for m in independent.values()) and all(r['passed'] for r in raw_equal)
+            case['passed']=exact and actual['all_metrics_agree'] and all(m['passed'] for m in independent.values()) and all(r['passed'] for r in raw_equal) and all(r['passed'] for r in ordinal)
             result['compared_stages']+=len(mapped)
         except Exception as error:
             case['error']=str(error);case['passed']=False

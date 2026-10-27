@@ -306,7 +306,7 @@
     "tests/josev2b_composed_observer.h": "712a6765bc76116b46b0a50065030f6a24864b8eaba5377e37020f28c560ea0b",
     "tests/josev2b_head_observer.h": "73344939629670619cc454331369a1c28019a1e566ba9bcf1b83638e445cc5cd",
     "tools/josev2b_composed_contract.py": "d478425fab70a32ee549811697424ef8b23a4de9ffb0379a916fe0c07923303c",
-    "tools/josev2b_composed_panel.py": "965b3833b1dc8c5985a03afe40f6f115210b24871f90455884d03eb8c8e0b20c",
+    "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
     "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
     "tests/josev-composed/diff.cpp": "267ef2117f358aa77a26abf2efddd7f07851ef29c76dc79ee18f82151ba0e286",
     "tests/test_josev2b_composed_panel.py": "4c5c9e53186ececf0d06d154188fdb4a21f34dd9486dea84765584abafc60d1a",
