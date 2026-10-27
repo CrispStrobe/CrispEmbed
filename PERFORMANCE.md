@@ -1,3 +1,16 @@
+## 27 October 2026 — Josev composed CPU/F32 scope
+
+The [four-case raw-request panel](tests/results/josev2b/composed-text-panel.json)
+passes227 original-stage comparisons and all complete typed responses. Worst
+absolute error0.0006259084 occurs at mixed-de final norm; minimum cosine is
+0.9999999984746153. Logit/probability maxima are0.0000168085/0.00000214577;
+lexical means differ by at most0.00000000186265. Ordinal error is below0.000003517.
+Actual ordinary/observed/repeat panel commands take111.64/110.28/111.79 seconds,
+each running all four cases, not a per-request or warmed throughput benchmark.
+No independent decision-quality, GPU backbone, packed/public or quantized
+qualification follows. Exact evidence and raw-array inspection limits are in
+[the review](tests/results/josev2b/composed-text-review.json).
+
 ## 27 October 2026 — MoEdern1.5M native CPU/F32
 
 [Reviewed native-v2](tests/results/moedern-colbert/native-v2-review.json) passes

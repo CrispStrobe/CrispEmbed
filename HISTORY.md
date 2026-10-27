@@ -1,3 +1,44 @@
+## 27 October 2026 — Josev raw-request composition and MoEdern tokenizer
+
+[Josev40449265616](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40449265616)
+at ed23f1ae passes all227 mapped original stages and all four complete typed
+responses from raw requests, without injected reference IDs, hidden states or
+lexical vectors. Actual Ref and independent numerical comparisons retain the
+fixed0.002/0.99999 gates; nine nodes are bit-exact. Worst absolute error is
+0.0006259084 at mixed-de final norm, minimum cosine0.9999999984746153, worst
+logit/probability errors0.0000168085/0.00000214577, and ordinal error0.00000351667.
+The earliest byte difference is layer0 in every case (max0.00000500679).
+Twenty-four unmapped rotary/mask/position records remain explicit.
+[Full small panel](tests/results/josev2b/composed-text-panel.json),
+[hosted receipt](tests/results/josev2b/composed-text-hosted.json) and
+[independent review and limits](tests/results/josev2b/composed-text-review.json)
+retain exact sources, compiler/archive controls, artifacts and inspection limits.
+Raw arrays remain remote; this qualifies the bounded three-component CPU/F32
+path, before packed-model, public-interface or task-quality acceptance.
+
+Initial40447333269 at8ab95372 built and authenticated the components but failed
+before inference because the frontend artifact member was assumed to be at its
+root. The corrected adapter explicitly pins
+`josev-tokenizer-schema/josev2b-tokenizer.gguf` and authenticates that small
+component before large payloads. Model math, original gold and budgets are
+unchanged. Packed runtime build40451936611 at0f0b1e59 subsequently passes real
+weight-free shape/header/ownership/gate controls; it does not load a packed model.
+
+[MoEdern40451408614](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40451408614)
+at3da7cf8e passes all34 exact original/authored token streams and role masks,
+1040 normalization checks, ten F64 Unigram DP units, six metadata negatives and
+recovery/ownership/gate controls. See [native receipt](tests/results/moedern-colbert/unigram-native.json)
+and [original receipt](tests/results/moedern-colbert/unigram-original.json).
+All34 small token rows were independently rederived; the complete1040 raw
+normalization rows remain remote and were not independently fetched.
+Initial40447670169 rejected a recorder that treated AddedToken state as JSON
+rather than its actual six-field dictionary. Corrected40449174879 then exposes
+32/34 parity: Rust0.22.2 retains the old normalized Q/D matchers after raw-special
+re-registration, even though the serialized effective descriptor loses that
+history. Explicitly retaining both normalized aliases fixes the two overlaps;
+all old ten-case gold and1040 normalization hashes remain unchanged. This is a
+text frontend proof; model composition/public APIs and larger variants follow.
+
 ## 27 October 2026 — Josev native tokenizer and answer formatting
 
 [Independent component review](tests/results/josev2b/text-components-review.json)

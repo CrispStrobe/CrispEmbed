@@ -1,0 +1,91 @@
+{
+  "schema": "crispembed-josev-composed-hosted-v1",
+  "source": "ed23f1aeb5f448b80a89b567592986bffb951de9",
+  "completed": true,
+  "full_model_qualified": false,
+  "commands": {
+    "configure": {
+      "exit": 0,
+      "elapsed_seconds": 1.5189667630000017,
+      "log_sha256": "336817f82cb3c798461297b5c2eab642d0b523371f15ada6344e201b7aaef1fc"
+    },
+    "build": {
+      "exit": 0,
+      "elapsed_seconds": 55.266750241000004,
+      "log_sha256": "36d5a2ee45472a5d89dde9dd51a410ae3a036399f56fd68cbbfdf8c87cae20ba"
+    },
+    "gates-plain": {
+      "exit": 0,
+      "elapsed_seconds": 0.003759181000006606,
+      "log_sha256": "360554a0c3e6bebf6c246e7c4b517379b3e034318193c6ccf0fc8632c9e670d3"
+    },
+    "gates-observed": {
+      "exit": 0,
+      "elapsed_seconds": 0.003677347000007103,
+      "log_sha256": "360554a0c3e6bebf6c246e7c4b517379b3e034318193c6ccf0fc8632c9e670d3"
+    },
+    "plain": {
+      "exit": 0,
+      "elapsed_seconds": 111.64290819699994,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "observed": {
+      "exit": 0,
+      "elapsed_seconds": 110.28325618099996,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "repeat": {
+      "exit": 0,
+      "elapsed_seconds": 111.78703034500006,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "dependencies": {
+    "frontend": {
+      "id": 12708702131,
+      "name": "josev-tokenizer-schema-review-40446469585",
+      "size_in_bytes": 7615,
+      "digest": "sha256:dea396a984f9540850f430ec29df0b16c41bdbfd046fa950a6b1649db3a24e11",
+      "expires_at": "2027-01-25T03:51:17Z"
+    },
+    "answer": {
+      "id": 12708103181,
+      "name": "josev-answer-serializer-review-40446419257",
+      "size_in_bytes": 17819,
+      "digest": "sha256:b9cd238bda0aa5bf4e0e7ae66595054424d6a4996e118867a0b94d3a43dfaa53",
+      "expires_at": "2027-01-25T03:50:44Z"
+    }
+  },
+  "archives": {
+    "plain_sha256": "69224a5534fbe3e5fc8519c18828995ce5f38a38ce6d4841498e6ae6616d3caa",
+    "observed_sha256": "4c787b5f315ad90e99b6528a4469170db75e9394db045a0bfc3cbf810512ada9",
+    "ordinary_excludes_observers": true,
+    "instrumented_symbols_present": true
+  },
+  "payloads": {
+    "backbone": {
+      "id": 12705232941,
+      "name": "josev-backbone-f32-and-observations-40438416809",
+      "size_in_bytes": 4506964734,
+      "digest": "sha256:c4ac07e8eaaf37e7e1ea191646ebd5cfd28afdef590696119477bb8e9ef9b9ac",
+      "expires_at": "2027-01-25T02:26:21Z"
+    },
+    "head": {
+      "id": 12702553413,
+      "name": "josev-head-original-and-component-40429513945",
+      "size_in_bytes": 317814519,
+      "digest": "sha256:eff25c8ec207646602cb885abc6d17f7fc646cd2b0d7e5f7ab9b27650e175708",
+      "expires_at": "2027-01-25T00:56:13Z"
+    },
+    "tokenizer": {
+      "id": 12708662211,
+      "name": "josev-tokenizer-schema-metadata-40446469585",
+      "size_in_bytes": 26885330,
+      "digest": "sha256:e9967f8cf8c71f24fa8698dab2c74cf45d9f70c72ccee2e7d9fcd08ebda72883",
+      "expires_at": "2027-01-25T03:51:17Z"
+    }
+  },
+  "numeric_and_complete_typed_parity": true,
+  "compared_stages": 227,
+  "failures": []
+}

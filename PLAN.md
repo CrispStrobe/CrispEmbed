@@ -696,35 +696,33 @@ package provenance, CPU/CUDA head parity and initial failures are archived in
 HISTORY with immutable receipts. Do not repeat those jobs or treat their old
 preparation commands as current actions.
 
-- [ ] **MoEdern public text and variants:** native-v2 passes10 cases/177 checks/
-  three old-primary MaxSim pairs (HISTORY). `feat/moedern-unigram-frontend-20261027`
-  owns the dedicated original-first tokenizer component. Source54917168 passes
-  source/DP review and13 stdlib controls; hosted40447670169 is dispatched. Require
-  actual frozen10+24 authored streams,1040 normalization composition checks and
-  ten Rust toy DP units before native text/public composition. Implement exact pinned Unigram
-  NFKD/strip-accent/lowercase/WhitespaceSplit/Metaspace and added-token behavior,
-  query32 expansion/attention, document truncation/punctuation scoring masks,
-  native vectors/MaxSim and C/Python/CLI/HTTP/Rust/Dart paths. Author GGUF lacks
-  tokenizer metadata: require a pinned sidecar or byte-preserving repack. Extend
-  27M then115M with separate originals and six dilated-conv blocks for115M.
-  Original conversion inventories are32/32/94 tensors; no generic ModernBERT
-  alias, Q4_K assumption or representation-equivalence claim.
-- [ ] **Josev composition and interfaces:** reviewed frontend40446469585 and
-  serializer40446419257 are completed in HISTORY. Full source8ab95372 is
-  dispatched as40447333269: raw request → native tokenizer/backbone/lexical
-  means/head/formatter, no original hidden/vector injection. Authenticate
-  immutable artifacts, actual compiler/archive/Ref controls, all227 mapped
-  original stages and24 explicit unmapped rotary/argument records, unchanged
-  absolute0.002/cosine0.99999/logit0.002/probability0.0001/ordinal0.001 gates,
-  all ordinary/observer/repeat raw outputs and complete typed JSON. Preserve
-  every initial converter/build failure and queued supersession receipt.
-  Then pack a byte-preserving442-tensor self-contained GGUF plus tokenizer
-  metadata; adapt explicitly owned/borrowed component views, keeping old strict
-  component loaders and Ovis1024/3584 guard unchanged. Add dedicated SystemOne
-  C/Python/CLI/HTTP/Rust/Dart capability/request/output per
-  [public API boundaries](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity),
-  with missing-model/schema/order/tie/rounding/media/error/recovery controls.
-  Existing Gemma flat JSON and768-vector contracts stay unchanged.
+- [ ] **MoEdern public text and variants:** native-v2 and exact Unigram frontend
+  are completed in HISTORY. Raw-text composition source1a053116 is executing
+  in40455093591; independently review the actual ten native raw texts, all three
+  masks/expansion, twenty old final arrays, three MaxSim pairs, actual Ref and
+  ordinary/test/repeat/recovery/ownership controls before public integration.
+  Author GGUF lacks tokenizer metadata: require a pinned sidecar or byte-preserving
+  repack. Add explicit query/document roles through C/Python/CLI/HTTP/Rust/Dart;
+  never substitute pooled dense vectors or generic CLS/SEP dropping. Extend27M
+  then115M with separate originals and six dilated-conv blocks for115M. Original
+  inventories are32/32/94 tensors; narrow1.5M/27M tensors are not automatically
+  Q4_K compatible. Keep old byte-continuity rejection and every original hash.
+- [ ] **Josev packed model and interfaces:** raw-request composition40449265616
+  ated23f1ae passes all227 original stages/four typed responses (HISTORY).
+  Streaming converter4da159f3 must first pin that reviewed receipt, then pack
+  the exact442 F32 tensors and embedded tokenizer metadata. Packed runtime
+  0f0b1e59 passes model-free build40451936611; require actual packed-owner227
+  comparisons and four complete responses before publication. Preserve old
+  strict component loaders and Ovis1024/3584 shape guards.
+  Public SystemOne candidate73ddb5ee implements separate C/Python/CLI/HTTP/
+  Rust/Dart paths; model-free actual root build40455424346 is queued. Review
+  compiler arithmetic, C exports/gates/errors, wrappers and CLI/server first,
+  then run all four original requests through each actual public surface with
+  missing-model/schema/order/tie/rounding/media/error/recovery/offline controls.
+  Root Qwen compiler contraction changes require final same-source OCR audit.
+  [API boundaries](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity)
+  retain Gemma flat JSON/768-vector semantics. Registry/catalog aliases and
+  publication wait for immutable self-contained model and actual consumer proof.
 - [ ] **Quality and publication:** only after the above original-first gates,
   freeze independent licensed retrieval/decision panels, assess F16/quantization
   while retaining critical head/norm precision and every rejected recipe, and
@@ -749,16 +747,18 @@ All initial failures and original byte hashes are retained. These are execution
 gates, not completed model support or release qualification. The app remains
 on immutable0.17.12.
 
-- [ ] Finish exact MoEdern Unigram/role frontend after completed native-v2
-  40441341206 (HISTORY). Require effective post-registration tokenizer behavior,
-  original-first IDs and three masks, then native text/public composition.
-  Extend27M then115M with separately frozen originals; no primary-gold change.
+- [ ] Review MoEdern raw-text composition40455093591 after completed native-v2
+  and exact Unigram frontend. Then public roles/repack,27M,115M and separately
+  frozen retrieval/quantization. See the detailed model lane above.
 - [ ] Execute/review UltraBERT native SciFact v3 after completed token A/B
   40434717493: all5,483 IDs/masks/full lengths/hashes and14 authored cases exact.
   Preserve unset/empty/0 historical24/25 mismatches, generic/CLIP bodies and
   existing truncation. Assembled runtime02402a0d retains integration truncation.
-  Reviewed v3 sourceee51e10e is dispatched as40444873884 (build once,8 shards,
-  max2 parallel); require every actual CAPI ID stream preflight before
+  Initial40444873884 at ee51e10e failed before all eight native forwards
+  because the long-lived Python process could not resolve the newly materialized
+  GGML dependencies. Corrected d993038e is dispatched as40452077037: mandatory
+  actual fresh-process CDLL smoke, authenticated loader environment and all
+  five exports before releasing eight matrix shards (max2 parallel); require every actual CAPI ID stream preflight before
   embeddings; label all-attended masks as source-derived, not a CAPI getter.
   Reuse frozen originals and fixed raw-CLS/dense/ranking gates; retain all
   historical183/1294/M1 numerical debt. See token review in HISTORY.
@@ -769,15 +769,10 @@ on immutable0.17.12.
   initial allocation failure, rejected full panel and rounding default off.
   A proposed correction needs measured same-input evidence or a separately
   scoped arithmetic profile, then actual full-panel A/B; no component waiver.
-- [ ] Finish Josev composition. Backbone40438416809 passes104 stages and
-  exact320-tensor conversion; head passes246 CPU/CUDA comparisons and eight
-  typed responses using original hidden/lexical inputs. These completed
-  component results are in HISTORY. Compose actual native frontend/backbone,
-  native embedding lexical means, head and answer serializer without original
-  hidden/vector injection; recheck head against candidate ggml/a06 and compare
-  complete typed outputs, logits/probabilities, repeat/error/recovery controls.
-  Public tokenization/schema/C/Python/CLI/Rust/Dart/registry and independent
-  decision quality remain separate original-first gates; Gemma semantics differ.
+- [ ] Finish Josev packed/public qualification after completed227-stage
+  raw-request parity. Exact active branches, model-free builds and actual public
+  acceptance gates are listed above. Independent decision quality, GPU backbone,
+  media/batching/long context and quantization remain separate. No original rerun.
 - [ ] Finish final same-source Ovis, native/WASM archive producers and actual
   consumers before main/release closure. Both experimental defaults remain off.
   Preserve app0.17.12, no model alias/publication or application pin change.

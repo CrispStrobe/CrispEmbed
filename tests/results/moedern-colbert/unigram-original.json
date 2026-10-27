@@ -1,0 +1,43 @@
+{
+  "schema": "crispembed-moedern-unigram-original-v1",
+  "completed": true,
+  "source": "3da7cf8e9a4fcd6342fc9a6ac00d07de42b7c324",
+  "primary_sha256": "b50ca1369f454d61b8c95583d8eb77a847c47ede29e52ed66b575784f4e4660f",
+  "frozen_ten_exact": true,
+  "cases": 34,
+  "normalization_sequences": 1040,
+  "normalizer_map_entries": 19967,
+  "scores_count": 30000,
+  "score_f64_sha256": "d9e591b7b89e41136b9f6abb37f304b9bdedb55a2d3b31f8a609c574040e43d0",
+  "source_json_python_parsed_score_f64_sha256": "d9e591b7b89e41136b9f6abb37f304b9bdedb55a2d3b31f8a609c574040e43d0",
+  "source_json_and_rust_loaded_scores_equal": true,
+  "tokenizers": "0.22.2",
+  "files": {
+    "original-gold.json": {
+      "bytes": 266325,
+      "sha256": "bbe96aed0266b709178a4032e7075a2ffd0a7fb5092b02abef8c6f363eefca72"
+    },
+    "normalization-gold.json": {
+      "bytes": 609368,
+      "sha256": "c139bf0897119618edd3e6930f681807a9b0d8ef82cc96747f9387fc0405eb2c"
+    },
+    "tokenizer.gguf": {
+      "bytes": 1095840,
+      "sha256": "3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1"
+    },
+    "unigram-unit-gold.json": {
+      "bytes": 1377,
+      "sha256": "0c054e62124bf2639ff818843c268026e2f474b4d77c3606337e7c30f23acad5"
+    },
+    "toy-ties.gguf": {
+      "bytes": 1492256,
+      "sha256": "54884f3b9911d1d8b8e84a1644adbeb6f2916e346156fb964247464cdadc492d"
+    },
+    "toy-precision.gguf": {
+      "bytes": 1492256,
+      "sha256": "3c852c00543734a09a75c09251b2718f8de357a6d442373e7610cbdce7df71e4"
+    }
+  },
+  "model_weights": false,
+  "native_executed": false
+}

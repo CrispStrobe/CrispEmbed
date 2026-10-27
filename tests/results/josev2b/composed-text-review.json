@@ -1,0 +1,35 @@
+{
+  "schema": "crispembed-josev-composed-independent-review-v1",
+  "completed": true,
+  "bounded_parity": true,
+  "public_model_qualified": false,
+  "source": "ed23f1aeb5f448b80a89b567592986bffb951de9",
+  "run": 40449265616,
+  "review_artifact": {
+    "id": 12710133899,
+    "bytes": 101216,
+    "sha256": "755ad31a56a880347a5aa9742be5e5dcad06112924beafd1bd96c79ae6119979"
+  },
+  "hosted_report_sha256": "45689505bcfd6de6e32a3c353ac4a502f0c82826227b2100788e9ac9b15d0fd7",
+  "raw_artifact_remote": {
+    "id": 12710762704,
+    "bytes": 1259623136,
+    "sha256": "80272be7937f685567d775f7156095fdc57eb3c726a343887f6967aba8c22e28"
+  },
+  "source_review": {
+    "owned": 28,
+    "protected": 259
+  },
+  "compared_stages": 227,
+  "complete_typed_responses": 4,
+  "worst_absolute": 0.000625908374786377,
+  "minimum_row_cosine": 0.9999999984746153,
+  "worst_logit_absolute": 1.6808509826660156e-05,
+  "worst_probability_absolute": 2.1457672119140625e-06,
+  "limits": [
+    "Only small source, reports, command logs and service descriptors independently reviewed; raw stage arrays remain remote.",
+    "Ordinary/observed/repeat raw output identity is asserted by the authenticated hosted worker, not independently recomputed from downloaded raw arrays.",
+    "No packed-model/public-interface/task-quality/GPU/batching/long-context qualification.",
+    "Composed observer-throw and detailed stale-result controls were not induced in this panel."
+  ]
+}

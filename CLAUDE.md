@@ -276,12 +276,13 @@ stages, UltraBERT all5,483 corrected token streams, MoEdern1.5M native10 cases/
 177 checks/three old-primary MaxSim pairs, Ovis8-grid and WASM layer3 attribution.
 These component proofs do not establish public model/task/release qualification.
 
-Next: exact effective MoEdern Unigram/roles, Josev frontend/answer serializer
-then composed native requests without reference-vector injection, frozen
-UltraBERT native retrieval, and final same-source Ovis/archive/real consumers.
-Full Josev dependency pins remain explicitly unreviewed until their actual
-small reports pass. Preserve every initial numerical/quality/input failure,
-all old producer bytes, rejected byte continuity and unchanged strict budgets.
-Historical guards remain strict when a new explicit source protocol is added.
+Josev raw requests now pass227 original stages/four complete typed responses;
+MoEdern exact Unigram/roles pass34 cases and1040 normalization checks (HISTORY).
+Next: review actual MoEdern raw-text model composition, execute Josev byte-preserving
+packing/packed-owner/public APIs, corrected fresh-process UltraBERT retrieval,
+and final same-source Ovis/archive/real consumers. Preserve every initial
+numerical/quality/input/loader failure, all old producer bytes, rejected byte
+continuity and unchanged strict budgets. Historical guards remain strict when
+an explicit new source protocol is added.
 App stays on immutable0.17.12; no tag or qualified model alias follows from
 preparation, queued execution, or a component cosine.
