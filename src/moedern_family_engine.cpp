@@ -10,6 +10,14 @@
 // its acceptance gate is the unchanged 0.002 / 0.99999 vector and 0.002 MaxSim
 // gate vs the frozen originals with identical token IDs/masks. The default path
 // is unchanged.
+//
+// CRISPEMBED_MOEDERN_QUANT (default OFF, read at init, requires
+// CRISPEMBED_MOEDERN_FAST) additionally accepts Q8_0/Q4_0 for the large 2D/3D
+// matmul weights listed in quantizable() (attention projections, routed and
+// shared experts, conv in/out projections). Embeddings, the hash projection,
+// router, dense head, norms, biases and the depthwise conv stay F32. Without the
+// gate any non-F32 tensor is rejected exactly as before. Quantized outputs are a
+// diagnostic speed arm and are not held to the F32 parity gate.
 #include "moedern_family_engine.h"
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
@@ -48,6 +56,24 @@ const std::map<std::string, profile> & profiles() {
 }
 void require(bool ok, const std::string & message) {
     if (!ok) throw std::runtime_error(message);
+}
+// Large matmul weights that a quantized GGUF may store as Q8_0/Q4_0 (fast path only).
+bool quantizable(const std::string & n) {
+    static const char * suffix[] = { "attn_q.weight",         "attn_k.weight",       "attn_v.weight",
+                                     "attn_output.weight",    "ffn_up_exps.weight",  "ffn_gate_exps.weight",
+                                     "ffn_down_exps.weight",  "ffn_up_shexp.weight", "ffn_gate_shexp.weight",
+                                     "ffn_down_shexp.weight", "conv_in.weight",      "conv_out.weight" };
+    if (n.compare(0, 4, "blk.") != 0) return false;
+    for (const char * x : suffix) {
+        const size_t len = std::strlen(x);
+        if (n.size() > len && n.compare(n.size() - len, len, x) == 0 && n[n.size() - len - 1] == '.') return true;
+    }
+    return false;
+}
+bool weight_type_ok(const std::string & n, ggml_type type, int64_t ne0, bool allow_quant) {
+    if (type == GGML_TYPE_F32) return true;
+    return allow_quant && (type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_0) && quantizable(n) &&
+           ne0 % ggml_blck_size(type) == 0;
 }
 bool finite(const floats & v) {
     return std::all_of(v.begin(), v.end(), [](float x) { return std::isfinite(x); });
@@ -94,7 +120,7 @@ uint32_t u32(gguf_context * g, const std::string & key) {
     require(at >= 0 && gguf_get_kv_type(g, at) == GGUF_TYPE_UINT32, "Missing metadata: " + key);
     return gguf_get_val_u32(g, at);
 }
-profile read_profile(gguf_context * g) {
+profile read_profile(gguf_context * g, bool allow_quant) {
     const int arch = gguf_find_key(g, "general.architecture");
     require(arch >= 0 && std::string(gguf_get_val_str(g, arch)) == ARCH, "Only explicit MoEdern architecture accepted");
     const int rev = gguf_find_key(g, (std::string(ARCH) + ".source_revision").c_str());
@@ -128,8 +154,10 @@ profile read_profile(gguf_context * g) {
     const auto expected = schema(p);
     require(gguf_get_n_tensors(g) == int64_t(expected.size()), "Exact tensor inventory required");
     for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
-        const auto row = expected.find(gguf_get_tensor_name(g, i));
-        require(row != expected.end() && gguf_get_tensor_type(g, i) == GGML_TYPE_F32, "Unknown or non-F32 tensor");
+        const std::string name = gguf_get_tensor_name(g, i);
+        const auto row = expected.find(name);
+        require(row != expected.end() && weight_type_ok(name, gguf_get_tensor_type(g, i), row->second[0], allow_quant),
+                "Unknown or non-F32 tensor");
         require(std::equal(row->second.begin(), row->second.end(), gguf_get_tensor_ne(g, i)), "Tensor shape differs");
     }
     return p;
@@ -215,14 +243,18 @@ context * init(const char * path, int threads, std::string & failure) {
         std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(core_gguf::open_metadata(path), gguf_free);
         require(bool(meta), "GGUF metadata failed");
         std::unique_ptr<context> c(new context);
-        c->p = read_profile(meta.get());
+        // Quantized weights are opt-in and only for the fast graph path.
+        const bool quant = core_env::on("CRISPEMBED_MOEDERN_QUANT");
+        require(!quant || core_env::on("CRISPEMBED_MOEDERN_FAST"),
+                "CRISPEMBED_MOEDERN_QUANT requires CRISPEMBED_MOEDERN_FAST");
+        c->p = read_profile(meta.get(), quant);
         c->threads = threads;
         c->backend = ggml_backend_cpu_init();
         require(c->backend && core_gguf::load_weights(path, c->backend, "moedernfamily", c->weights),
                 "F32 weight loading failed");
         for (const auto & row : schema(c->p)) {
             auto * t = c->get(row.first);
-            require(t->type == GGML_TYPE_F32 && ggml_is_contiguous(t) &&
+            require(weight_type_ok(row.first, t->type, t->ne[0], quant) && ggml_is_contiguous(t) &&
                         std::equal(row.second.begin(), row.second.end(), t->ne),
                     "Loaded tensor layout differs");
         }
