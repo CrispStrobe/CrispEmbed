@@ -1,0 +1,49 @@
+{
+  "schema": "crispembed-moedern-115m-original-receipt-v1",
+  "variant": "115M",
+  "revision": "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-moedern-115m-original",
+    "kernel_version": 1,
+    "source_commit": "23ca55d197f653095071b277b8d34ce7945ce08d"
+  },
+  "original_report_sha256": "01c8a0e4886eae107103845847cb5d4675752b91a987e23ad26e7a1e98e44af6",
+  "versions": {
+    "torch": "2.8.0+cpu",
+    "transformers": "5.3.0",
+    "sentence-transformers": "6.1.0",
+    "numpy": "2.2.6"
+  },
+  "cases": 10,
+  "stage_arrays": 663,
+  "all_ordinary_observer_bit_exact": true,
+  "scores": [
+    {
+      "query": "q-de",
+      "document": "d-de",
+      "original_maxsim": 14.84232234954834,
+      "explicit_maxsim": 14.84232234954834
+    },
+    {
+      "query": "q-empty",
+      "document": "d-one",
+      "original_maxsim": 16.20331573486328,
+      "explicit_maxsim": 16.20331573486328
+    },
+    {
+      "query": "q-markers",
+      "document": "d-unicode",
+      "original_maxsim": 16.512365341186523,
+      "explicit_maxsim": 16.512365341186523
+    }
+  ],
+  "conversion": {
+    "tensor_count": 94,
+    "gguf_sha256": "2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e",
+    "gguf_bytes": 458794208
+  },
+  "arrays_retained": "Kaggle kernel output (remote)",
+  "limits": "Original CPU F32 owned panel only; native conv-block engine not yet written.",
+  "native_qualified": false
+}

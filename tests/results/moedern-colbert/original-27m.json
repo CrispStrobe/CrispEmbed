@@ -1,0 +1,53 @@
+{
+  "schema": "crispembed-moedern-27m-original-receipt-v1",
+  "variant": "27M",
+  "revision": "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-moedern-27m-original",
+    "kernel_version": 3,
+    "source_commit": "100f4e99e4200ed2f6dc1d2ed3803c2fd9a6609e"
+  },
+  "original_report_sha256": "00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3",
+  "versions": {
+    "torch": "2.8.0+cpu",
+    "transformers": "5.3.0",
+    "sentence-transformers": "6.1.0",
+    "numpy": "2.2.6"
+  },
+  "cases": 10,
+  "stage_arrays": 271,
+  "all_ordinary_observer_bit_exact": true,
+  "scores": [
+    {
+      "query": "q-de",
+      "document": "d-de",
+      "original_maxsim": 15.95808219909668,
+      "explicit_maxsim": 15.95808219909668
+    },
+    {
+      "query": "q-empty",
+      "document": "d-one",
+      "original_maxsim": 21.061874389648438,
+      "explicit_maxsim": 21.061874389648438
+    },
+    {
+      "query": "q-markers",
+      "document": "d-unicode",
+      "original_maxsim": 23.18227195739746,
+      "explicit_maxsim": 23.18227195739746
+    }
+  ],
+  "conversion": {
+    "tensor_count": 32,
+    "gguf_sha256": "ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9",
+    "gguf_bytes": 108499776
+  },
+  "initial_failures": [
+    "Kaggle v1: preinstalled transformers import conflict",
+    "Kaggle v2: stdlib venv lacks ensurepip"
+  ],
+  "arrays_retained": "Kaggle kernel output (remote); not copied to the shared host",
+  "limits": "Original CPU F32 owned panel only; native 27M engine, retrieval quality and publication not yet attempted.",
+  "native_qualified": false
+}
