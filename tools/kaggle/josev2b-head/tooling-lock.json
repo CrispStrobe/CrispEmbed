@@ -1,0 +1,83 @@
+{
+  "schema": "crispembed-josev-head-tooling-v1",
+  "python_minor": "3.13",
+  "packages": [
+    {
+      "name": "numpy",
+      "version": "2.2.6",
+      "filename": "numpy-2.2.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/19/49/4df9123aafa7b539317bf6d342cb6d227e49f7a35b99c287a6109b13dd93/numpy-2.2.6-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "sha256": "1bc23a79bfabc5d056d106f9befb8d50c31ced2fbc70eedb8155aec74a45798f",
+      "bytes": 16526072,
+      "wheel_tags": [
+        "cp313-cp313-manylinux2014_x86_64",
+        "cp313-cp313-manylinux_2_17_x86_64"
+      ],
+      "requires_python": ">=3.10",
+      "requires_dist": [],
+      "core_metadata_sha256": "22d648f53848429464ca643b40d73b49a920d47876fc77c395d4dca4e834904a",
+      "core_metadata_bytes": 62026,
+      "pypi_aggregate_requires_dist_strings_exact": true,
+      "pypi_aggregate_linux_cp313_all_extras_equivalent": true,
+      "pypi_release_json_sha256": "51dd78a65b122d87244ebf772615784f4cf57f2695cab22a14a58802160f9489",
+      "pypi_release_json_bytes": 110602
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "filename": "pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "url": "https://files.pythonhosted.org/packages/74/27/e5b8f34d02d9995b80abcef563ea1f8b56d20134d8f4e5e81733b1feceb2/pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "0f29edc409a6392443abf94b9cf89ce99889a1dd5376d94316ae5145dfedd5d6",
+      "bytes": 801626,
+      "wheel_tags": [
+        "cp313-cp313-manylinux2014_x86_64",
+        "cp313-cp313-manylinux_2_17_x86_64",
+        "cp313-cp313-manylinux_2_28_x86_64"
+      ],
+      "requires_python": ">=3.8",
+      "requires_dist": [],
+      "core_metadata_sha256": "03c3b415ed38d09faedc49360e930769b40c58f68585e6de00e2e4916a858d34",
+      "core_metadata_bytes": 2351,
+      "pypi_aggregate_requires_dist_strings_exact": true,
+      "pypi_aggregate_linux_cp313_all_extras_equivalent": true,
+      "pypi_release_json_sha256": "c3f35597bc2f08cc990c2a5fe57bef6687b3a3d7c61d8b0ba4cc067777eb1def",
+      "pypi_release_json_bytes": 66402
+    },
+    {
+      "name": "tqdm",
+      "version": "4.70.1",
+      "filename": "tqdm-4.70.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/a7/03/921a3d3c75785aca9ebfbfcabfbc3a1be12e2ab5265deb026d55a5a3f83e/tqdm-4.70.1-py3-none-any.whl",
+      "sha256": "c293e525e6fef9c20e8728fd4612df02a0aa31bb5fe91ecd93e123b1b7bffa73",
+      "bytes": 80199,
+      "wheel_tags": [
+        "py3-none-any"
+      ],
+      "requires_python": ">=3.8",
+      "requires_dist": [
+        "colorama; platform_system == \"Windows\"",
+        "requests; extra == \"discord\"",
+        "envwrap; extra == \"discord\"",
+        "slack-sdk; extra == \"slack\"",
+        "envwrap; extra == \"slack\"",
+        "requests; extra == \"telegram\"",
+        "envwrap; extra == \"telegram\"",
+        "ipywidgets>=6; extra == \"notebook\""
+      ],
+      "core_metadata_sha256": "a5da70b966afea3a759716041bad7187f2ece02c22348cf9e7c0a512bbf15f57",
+      "core_metadata_bytes": 57366,
+      "pypi_aggregate_requires_dist_strings_exact": true,
+      "pypi_aggregate_linux_cp313_all_extras_equivalent": true,
+      "pypi_release_json_sha256": "0589819a1bc3437c8f215d95f3f64ff24d602dc6a62598eb8d2e420c8e6a0b25",
+      "pypi_release_json_bytes": 60697
+    },
+    {
+      "name": "gguf",
+      "version": "0.17.1",
+      "filename": "gguf-0.17.1-py3-none-any.whl",
+      "url": "https://files.pythonhosted.org/packages/fc/31/6a93a887617ee7deeaa602ca3d02d1c12a6cb8a742a695de5d128f5fa46a/gguf-0.17.1-py3-none-any.whl",
+      "bytes": 96224,
+      "sha256": "7bc5aa7eeb1931f7d39b48fdc5b38fda6b294b9dca75cf607ac69557840a3943"
+    }
+  ]
+}
