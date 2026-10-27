@@ -1,0 +1,57 @@
+{
+  "schema": "crispembed-moedern-family-public-receipt-v1",
+  "variant": "27M",
+  "source": "0b7f709530fd298ca004f818e4ca5f2bf1b0b1a6",
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-moedern-27m-public",
+    "kernel_version": 1
+  },
+  "report_sha256": "51dd931a5155f9d366a22d5b6dac1a0c86afc411ca3e2d1f4c6254fc21a0c0d2",
+  "consumers": {
+    "c": true,
+    "c-repeat": true,
+    "python": true,
+    "cli": true
+  },
+  "typed_exact": true,
+  "worst_max_absolute": 4.474878234905777e-07,
+  "scores": {
+    "q-de|d-de": {
+      "native": 15.9580822,
+      "original": 15.95808219909668,
+      "independent": 15.958081513055028,
+      "passed": true
+    },
+    "q-empty|d-one": {
+      "native": 21.0618763,
+      "original": 21.061874389648438,
+      "independent": 21.061876331186706,
+      "passed": true
+    },
+    "q-markers|d-unicode": {
+      "native": 23.1822701,
+      "original": 23.18227195739746,
+      "independent": 23.182273775651474,
+      "passed": true
+    }
+  },
+  "repeat_byte_identical": true,
+  "cross_consumer_float32_identical": {
+    "c": true,
+    "c-repeat": true,
+    "python": true,
+    "cli": true
+  },
+  "gate_off_rejected": {
+    "all": true,
+    "family": true
+  },
+  "pack": {
+    "sha256": "e836acbb507ebf9d26ad6a3f5e5712487f1b90f1430b1174acb07de07e85ce18",
+    "bytes": 109596000,
+    "tensor_math_performed": false
+  },
+  "limits": "Linux x64 CPU F32, ten frozen cases and three pairs; C/Python/CLI only. No retrieval quality.",
+  "release_qualified": false
+}
