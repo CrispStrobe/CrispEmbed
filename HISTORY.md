@@ -15725,3 +15725,18 @@ large raw/model payloads remain remote. Both new artifacts expire24 January2027.
 The bounded original/reference/CPU prototype lane is positive. Public APIs,
 registry/model publication, real subtitle/perceptual quality and video remain
 separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.
+
+## 27 October 2026 — Layer3 observer allocation failure preserved
+
+[Actual40415950220](tests/results/packaging/wasm-layer3-initial-observer-rejection.json)
+atbbc80ae2 completes native/WASM builds and the ordinary native pass, then
+its diagnostic capture aborts at scheduler reservation (`buffer_id >= 0`).
+No subnode or same-input projection attribution completes. The small review
+ZIP and all16 members are rehashed; raw binaries/arrays remain remote.
+
+Source inspection shows the overlay uses a metadata-only `ggml_view_tensor`
+alias with no operation/dependency edge. The bounded correction uses an explicit
+`GGML_OP_VIEW` graph edge with exact dimensions/strides, leaving production
+arithmetic/defaults unchanged. Ten source controls pass; actual hosted
+allocation, ordinary/observer neutrality and all retained anchors still gate
+any numerical conclusion. The original16 A/B numerical failures are preserved.

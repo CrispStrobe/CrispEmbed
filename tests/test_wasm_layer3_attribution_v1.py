@@ -32,6 +32,10 @@ class Layer3Tests(unittest.TestCase):
         for name in NAMES:self.assertIn('names.push_back("'+name+'")',result)
         self.assertIn('owner = owner->view_src',result)
         self.assertIn('ggml_build_forward_expand(gf, view)',result)
+        self.assertIn('ggml_view_4d(gctx, tensor,',result)
+        self.assertIn('view->op == GGML_OP_VIEW && view->src[0] == tensor',result)
+        self.assertIn('view->nb[axis] == tensor->nb[axis]',result)
+        self.assertNotIn('ggml_view_tensor(gctx, tensor)',result)
         self.assertIn('core_env::on("CRISPEMBED_LAYER3_TRACE")',result)
         self.assertNotIn('ggml_add_inplace',result[len(text):])
         with self.assertRaisesRegex(ValueError,'encoder bytes'):

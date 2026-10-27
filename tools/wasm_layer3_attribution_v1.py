@@ -128,7 +128,16 @@ def overlay_encoder(text):
     hook='''        auto layer3 = [&](const char * name, ggml_tensor * tensor) {
             if (il != 3 || !ctx->dump_layers || !core_env::on("CRISPEMBED_LAYER3_TRACE")) return;
             // Independent identity view names never rename an ordinary graph node.
-            ggml_tensor * view = ggml_view_tensor(gctx, tensor);
+            // ggml_view_tensor creates a metadata alias with no graph edge.
+            // Use GGML_OP_VIEW/src[0] so scheduling and reservation see the owner.
+            ggml_tensor * view = ggml_view_4d(gctx, tensor,
+                tensor->ne[0], tensor->ne[1], tensor->ne[2], tensor->ne[3],
+                tensor->nb[1], tensor->nb[2], tensor->nb[3], 0);
+            for (int axis = 0; axis < GGML_MAX_DIMS; ++axis) {
+                GGML_ASSERT(view->ne[axis] == tensor->ne[axis]);
+                GGML_ASSERT(view->nb[axis] == tensor->nb[axis]);
+            }
+            GGML_ASSERT(view->op == GGML_OP_VIEW && view->src[0] == tensor);
             ggml_set_name(view, (std::string("layer3_") + name).c_str());
             for (ggml_tensor * owner = view; owner; owner = owner->view_src) ggml_set_output(owner);
             ggml_build_forward_expand(gf, view);

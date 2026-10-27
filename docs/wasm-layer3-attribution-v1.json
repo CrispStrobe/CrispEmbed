@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-wasm-layer3-attribution-source-v1",
-  "status": "source-only; no new numerical result",
+  "status": "observer graph-view correction; actual replay pending",
   "qualification": false,
   "runtime_base": "580e3ae3be3671ddce5e945b0725d0583ec34110",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
@@ -78,7 +78,7 @@
     ]
   },
   "protected_sources": {
-    "tools/wasm_layer3_attribution_v1.py": "4cce096f58cc853058a8fe9176c56657b698dd18ddd107cf5efebbede52bbe0c",
+    "tools/wasm_layer3_attribution_v1.py": "3cbd347ea731fe0a4799b3f7dcfe75450ca856b8a404c1887148b709cbef9133",
     "tools/ci-heavy/wasm_layer3_attribution_v1.py": "31c865e59da362f2a115a0c53e62224901e043451ea93d8bbe27a6ffd3c3e792",
     "tests/wasm-layer3/kernel_capture.inc": "9f23f14feabefb2683db8d0930cff771d8085caa18fabd5d290db5b3a4349480",
     "tests/wasm-layer3/replay.inc": "79d47717c2ae08a5a8e66cdbb007ae101ef0bf9180ea1d2e480f0c757f9c7337",
@@ -87,5 +87,23 @@
     "tools/successor_wasm_trace_contract.py": "19467192afd73f900185e5ed4783f95449876932603d4786ebb140333d2b246a",
     "tools/ci-heavy/successor_assets.py": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
     "tools/successor_asset_manifest.py": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041"
+  },
+  "initial_observer_rejection": {
+    "run": 40415950220,
+    "source": "bbc80ae2c1e607813326d8b30f1390f6b18a00fd",
+    "phase": "native capture scheduler reservation",
+    "signal": "SIGABRT",
+    "small_artifact": {
+      "id": 12698206960,
+      "bytes": 72931,
+      "sha256": "c6f4dfd6d217f54675464405f649106cc3a858ef08cab13106fd5c6cc299d962"
+    },
+    "raw_remote_only": {
+      "id": 12698771174,
+      "bytes": 11967695,
+      "sha256": "8365d52383148384a2b409bfb38acce4a5da1cdad7b95c5a8296de7a26119fcf"
+    },
+    "ordinary_native_passed": true,
+    "numerical_attribution_completed": false
   }
 }

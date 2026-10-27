@@ -79,3 +79,20 @@ installation. Large model/array/module artifacts stay remote for90 days. Small
 reports, compiler logs and per-phase rejection records are uploaded even on failure.
 There is no production API/default/build edit, asset publication, representative
 retrieval-quality claim or qualification change in this lane.
+
+### Initial capture allocation failure and bounded correction
+
+Run40415950220 atbbc80ae2 builds the native and WASM diagnostics and completes
+the ordinary native pass, then aborts in native capture scheduler reservation:
+`ggml-alloc.c` rejects a negative buffer ID. No layer3 numerical attribution
+completes. Small review12698206960 and raw12698771174 are retained; the latter
+remains remote.
+
+The original overlay uses `ggml_view_tensor`, which creates a metadata alias
+without setting `GGML_OP_VIEW` or `src[0]`. The correction uses `ggml_view_4d`
+with exact original dimensions/strides and offset zero, asserts the view edge
+and layout, and retains output owners. This changes only the disposable
+diagnostic overlay; production source, math, runtime base, original inputs and
+all tolerances remain unchanged. Hosted replay must prove ordinary/capture
+neutrality and all retained anchors before any subnode or projection attribution
+is trusted. A successful source test is not proof that runtime capture succeeds.

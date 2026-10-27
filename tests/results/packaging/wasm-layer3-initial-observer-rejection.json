@@ -1,0 +1,97 @@
+{
+  "schema": "crispembed-wasm-layer3-initial-observer-rejection-v1",
+  "run": 40415950220,
+  "source": "bbc80ae2c1e607813326d8b30f1390f6b18a00fd",
+  "qualification": false,
+  "numerical_attribution_completed": false,
+  "review_artifact": {
+    "id": 12698206960,
+    "bytes": 72931,
+    "sha256": "c6f4dfd6d217f54675464405f649106cc3a858ef08cab13106fd5c6cc299d962",
+    "members": {
+      "diff-build.log": {
+        "bytes": 10450,
+        "sha256": "1fac40e94af3eac0ed5cc02fcf41214f3b8ff6d2e2282d6a44c8a70f821c6bdc"
+      },
+      "native-1-capture.log": {
+        "bytes": 2823,
+        "sha256": "33bed62e1f6cbf4a82e5dad42b6a2b1f356471833043bc6f0c5258e718c1fa20"
+      },
+      "native-1-ordinary.log": {
+        "bytes": 367,
+        "sha256": "abd96b6f854dcd67437897e99903b62f772a198176b1cff1de0e8f0d6c3975df"
+      },
+      "native-build.log": {
+        "bytes": 253793,
+        "sha256": "98584e42c3ec4964e4c3d2bdab96548416c4de52a47f6464bda338b44ce8a2f1"
+      },
+      "native-configure.log": {
+        "bytes": 1867,
+        "sha256": "548e9273cb0da6755da213990c61a35d3e94a0c5ef24fe9b7f8c18b8a52b836c"
+      },
+      "review/build-artifacts.json": {
+        "bytes": 456,
+        "sha256": "8a66383863536df15a17db224e0e63217f63eea75e352223ef3d75358600b98b"
+      },
+      "review/build-controls.json": {
+        "bytes": 677,
+        "sha256": "0b491a991c4a43ccd33572cb7f2bd800be25251bd7aae3ac80f01756c3c9c109"
+      },
+      "review/compile-native.json": {
+        "bytes": 321760,
+        "sha256": "b56ba7bd62a1c50c83e1645113c9475f842e46f446bfc5c7669a3c6ec56bdbcf"
+      },
+      "review/compile-wasm.json": {
+        "bytes": 261226,
+        "sha256": "0ba7209fc1523b6772fed1291183c0fb48040cfbe2c4e91586cd6b623ab90d90"
+      },
+      "review/native-1-ordinary.json": {
+        "bytes": 10060,
+        "sha256": "7c382e7e7964b31d42d5da3a82d391d1e3509cc821ccb86b8acc5afd40c31bba"
+      },
+      "review/native-symbols.txt": {
+        "bytes": 136057,
+        "sha256": "97e1fa87c513d7ac2e309a3bd40871059e50944134315b68cd4d3a9d86feac24"
+      },
+      "review/overlay.json": {
+        "bytes": 13769,
+        "sha256": "41685caa58576a151e458b3b977898caf7d755846eebd34a614341288f0a6cb6"
+      },
+      "review/prepared.json": {
+        "bytes": 24154,
+        "sha256": "5bd505f40d30f9af0dda5bebb8512daab730ce74daa281ed93b038db9b409e02"
+      },
+      "review/rejection-native.json": {
+        "bytes": 344,
+        "sha256": "adcb7cd8f16d7bc52d4d50a4c2d163d8595cb60b5167c930ecbe19128d19100a"
+      },
+      "wasm-build.log": {
+        "bytes": 15892,
+        "sha256": "a4509b343f4ca4ec8d7c9be35fbc33ccb0c135890a5cb2a9b92fcbcd4188c0ee"
+      }
+    }
+  },
+  "raw_remote_only": {
+    "id": 12698771174,
+    "bytes": 11967695,
+    "sha256": "8365d52383148384a2b409bfb38acce4a5da1cdad7b95c5a8296de7a26119fcf"
+  },
+  "failure": {
+    "phase": "native capture before comparisons",
+    "signal": "SIGABRT",
+    "assertion": "ggml-alloc.c:661 GGML_ASSERT(buffer_id >= 0)",
+    "scheduler": "ggml_backend_sched_reserve"
+  },
+  "completed": {
+    "native_build": true,
+    "wasm_build": true,
+    "native_ordinary": true
+  },
+  "native_ordinary_final_sha256": "1bfe9e0a37a5c8887eabd508ddbd0c542e7acc278d8a5a5feeae00f760136554",
+  "source_findings": "The diagnostic ggml_view_tensor alias leaves op NONE and src[0] unset. ggml_view_4d uses GGML_OP_VIEW/src[0] and can preserve exact dimensions/strides. Source correction changes only the disposable overlay; actual corrected allocation/neutrality remains unexecuted.",
+  "limits": [
+    "No model numerical defect or full-network cause established.",
+    "No production source, arithmetic, defaults, reference or budget change.",
+    "All ordinary/capture and retained stage anchors remain mandatory before attribution."
+  ]
+}
