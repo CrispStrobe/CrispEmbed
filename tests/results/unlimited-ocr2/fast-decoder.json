@@ -1,0 +1,35 @@
+{
+  "schema": "crispembed-unlimited-ocr2-fast-decoder-receipt-v1",
+  "commit": "af53ac28858289106fcc4e646cb284088574cc0c",
+  "producer": "kaggle-cpu-kernel crispembed-unlimited-ocr2-native v7",
+  "report_sha256": "32b99a94e61c26c70e0e0b61430e75a45aa3ef9f5a1363aa7470a091573ed06c",
+  "gate": "CRISPEMBED_UNLIMITED_OCR2_FAST",
+  "cases": [
+    {
+      "id": "small-untiled",
+      "fast_ids_equal_exact": true,
+      "speedup": 2.737,
+      "exact_seconds": 268.287,
+      "fast_seconds": 98.031,
+      "ids_exact_vs_reference": true
+    },
+    {
+      "id": "para-en",
+      "fast_ids_equal_exact": true,
+      "speedup": 6.819,
+      "exact_seconds": 1610.414,
+      "fast_seconds": 236.151,
+      "ids_exact_vs_reference": false
+    },
+    {
+      "id": "table",
+      "fast_ids_equal_exact": true,
+      "speedup": 6.496,
+      "exact_seconds": 1600.247,
+      "fast_seconds": 246.339,
+      "ids_exact_vs_reference": false
+    }
+  ],
+  "notes": "Fast decoder reproduces the exact decoder token-for-token on all three pages; tiled pages still differ from the reference only in box coordinates (vision preprocessing, addressed separately). Wall times include model load.",
+  "default_enabled": false
+}
