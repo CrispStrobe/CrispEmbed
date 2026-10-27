@@ -285,7 +285,7 @@
     "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb"
   },
   "owned_sha256": {
-    ".github/workflows/josev2b-composed-build.yml": "a35c59337288524ee1e97bffadd9fde8bced38d46eef7f2e4c5d702138ce1a66",
+    ".github/workflows/josev2b-composed-build.yml": "3189836184d5f82d5debe243e8f2944634051b50b49139936a9b6e01adbeafdd",
     ".github/workflows/ovisocr2-metadata.yml": "73b72aa5370faf769d85928d9923d1d25ebfeae7c02fdff40692afba2adc3b01",
     "docs/josev2b-composed-text.md": "1e678d2f92aed79ee5319499922a99b8afdbcd67ca5605afe4312c33b1fb43dc",
     "src/josev2b_answer_serializer.cpp": "b7881901333fc3498651b999a05bd4529675c621d05713c82e1aa6232b6ec94b",

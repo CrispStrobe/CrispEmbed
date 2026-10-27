@@ -11,6 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
       - name: Verify exact composed source before compilation
         run: python3 tools/josev2b_composed_contract.py
