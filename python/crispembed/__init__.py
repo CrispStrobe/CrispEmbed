@@ -14,11 +14,13 @@ from ._binding import (
     CrispRestormer, CrispScunet, CrispAdaIR, CrispInstructIR,
     CrispPix2Struct, CrispGraniteVision, CrispLightOnOCR, CrispSam2,
 )
+from ._moedern_text import CrispMoEdern
 
 from ._systemone import CrispSystemOne
 
 __all__ = [
     "CrispSystemOne",
+    "CrispMoEdern",
     "set_gpu_backend",
     "set_offline",
     "is_offline",

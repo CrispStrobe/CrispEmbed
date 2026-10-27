@@ -7,6 +7,7 @@
 //   crispembed --list-models
 
 #include "crispembed.h"
+#include "moedern_text_api.h"
 #include "core/token_utf8.h"
 #include "core/clean_exit.h"
 #include "core/gguf_loader.h"
@@ -111,6 +112,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --tokens-raw     encode unnormalized per-token encoder features\n");
     fprintf(stderr, "  --decide JSON    typed choices/scores/booleans: {state,questions,workflow?}\n");
     fprintf(stderr, "  --systemone JSON full joint-schema request: {model,state,questions,id?}\n");
+    fprintf(stderr, "  --moedern ROLE   MoEdern raw-text multivectors for TEXT, ROLE=query|document (gated)\n");
+    fprintf(stderr, "  --moedern-score  MoEdern MaxSim of raw QUERY DOCUMENT texts (gated)\n");
     fprintf(stderr, "  --fill-mask      predict [MASK] / <|mask|> tokens (LFM2 encoder)\n");
     fprintf(stderr, "  --top-k N        predictions per mask (default: 5)\n");
     fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
@@ -271,6 +274,8 @@ static int cli_main(int argc, char ** argv) {
     std::string decision_request;
     bool systemone_mode = false;
     std::string systemone_request;
+    std::string moedern_role;
+    bool moedern_score = false;
     int mask_top_k = 5;
     std::string audio_path;     // .raw float32 16 kHz mono PCM
     std::string image_raw_path; // preprocessed float32 patches, n_patches x 1536
@@ -397,6 +402,10 @@ static int cli_main(int argc, char ** argv) {
         } else if (strcmp(argv[i], "--systemone") == 0 && i + 1 < argc) {
             systemone_mode = true;
             systemone_request = argv[++i];
+        } else if (strcmp(argv[i], "--moedern") == 0 && i + 1 < argc) {
+            moedern_role = argv[++i];
+        } else if (strcmp(argv[i], "--moedern-score") == 0) {
+            moedern_score = true;
         } else if (strcmp(argv[i], "--decide") == 0 && i + 1 < argc) {
             decision_request = argv[++i];
         } else if (strcmp(argv[i], "--fill-mask") == 0) {
@@ -1232,6 +1241,7 @@ static int cli_main(int argc, char ** argv) {
     }
 
     int mode_count = (decision_request.empty() ? 0 : 1) + (systemone_mode ? 1 : 0);
+    mode_count += (moedern_role.empty() ? 0 : 1) + (moedern_score ? 1 : 0);
     mode_count += sparse_mode ? 1 : 0;
     mode_count += colbert_mode ? 1 : 0;
     mode_count += tokens_raw_mode ? 1 : 0;
@@ -1245,8 +1255,8 @@ static int cli_main(int argc, char ** argv) {
         fprintf(
             stderr,
             "error: choose only one encoding mode "
-            "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--systemone/--rerank/--biencoder/--audio/--image/"
-            "--image-raw)\n");
+            "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--systemone/--moedern/--moedern-score/--rerank/"
+            "--biencoder/--audio/--image/--image-raw)\n");
         return 1;
     }
 
@@ -2415,6 +2425,45 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "SystemOne request failed: %s\n", crispembed_systemone_error(systemone));
         crispembed_systemone_free(systemone);
         return success ? 0 : 1;
+    }
+
+    if (!moedern_role.empty() || moedern_score) {
+        // Separate MoEdern context; never pooled through generic encode paths.
+        const size_t need = moedern_score ? 2 : 1;
+        if (texts.size() != need || (!moedern_role.empty() && moedern_role != "query" && moedern_role != "document")) {
+            fprintf(stderr, "error: --moedern query|document TEXT, or --moedern-score QUERY DOCUMENT\n");
+            return 1;
+        }
+        auto * m = crispembed_moedern_init(model_path.c_str(), n_threads > 2 ? 2 : n_threads);
+        if (!m) {
+            fprintf(stderr, "MoEdern load failed: %s\n", crispembed_moedern_error(nullptr));
+            return 1;
+        }
+        bool ok = false;
+        if (moedern_score) {
+            float value = 0;
+            ok = crispembed_moedern_score(m, texts[0].c_str(), texts[1].c_str(), &value) == 1;
+            if (ok) printf("{\"score\":%.9g}\n", value);
+        } else if (const auto * r = crispembed_moedern_encode(m, texts[0].c_str(), moedern_role == "query" ? 0 : 1)) {
+            ok = true;
+            auto ints = [](const char * key, auto * v, int n) {
+                printf(",\"%s\":[", key);
+                for (int i = 0; i < n; ++i) printf(i ? ",%d" : "%d", int(v[i]));
+                printf("]");
+            };
+            printf("{\"role\":\"%s\"", moedern_role.c_str());
+            ints("ids", r->ids, r->n_tokens);
+            ints("supplied_mask", r->supplied_mask, r->n_tokens);
+            ints("effective_mask", r->effective_mask, r->n_tokens);
+            ints("scoring_mask", r->scoring_mask, r->n_tokens);
+            ints("expansion_positions", r->expansion_positions, r->expansion_count);
+            printf(",\"selected_vectors\":[");
+            for (int i = 0; i < r->n_selected * 128; ++i) printf(i ? ",%.9g" : "%.9g", r->selected_vectors[i]);
+            printf("]}\n");
+        }
+        if (!ok) fprintf(stderr, "MoEdern request failed: %s\n", crispembed_moedern_error(m));
+        crispembed_moedern_free(m);
+        return ok ? 0 : 1;
     }
 
     // Init model

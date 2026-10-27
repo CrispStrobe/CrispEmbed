@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [systemone-api-build, systemone-consumers, josev-publish, josev-packed-build, josev-composed, josev-composed-build, josev-wheel-metadata, scifact-tokenizer-diagnostic, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, final-integrated-v1, successor-apple-only, moedern-original-1p5m, wasm-layer3-attribution-v1]
+        options: [systemone-api-build, systemone-consumers, josev-publish, josev-packed-build, josev-composed, josev-composed-build, josev-wheel-metadata, scifact-tokenizer-diagnostic, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, final-integrated-v1, successor-apple-only, moedern-original-1p5m, wasm-layer3-attribution-v1, moedern-text-composed, moedern-unigram, moedern-native-v2]
         default: metadata
       native_run_id:
         type: string
@@ -620,3 +620,15 @@ jobs:
     uses: ./.github/workflows/josev-publish.yml
     secrets:
       HF_JOSEV_PUBLISH_TOKEN: ${{ secrets.HF_JOSEV_PUBLISH_TOKEN }}
+  moedern-native-v2:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-native-v2'
+    needs: controls
+    uses: ./.github/workflows/moedern-native-v2.yml
+
+  moedern-unigram:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-unigram'
+    uses: ./.github/workflows/moedern-unigram.yml
+
+  moedern-text-composed:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-text-composed'
+    uses: ./.github/workflows/moedern-text-composed.yml

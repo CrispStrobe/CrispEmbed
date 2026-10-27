@@ -36,6 +36,7 @@
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
+#include "moedern_text_api.h"
 #include "core/token_utf8.h"
 #include <algorithm>
 #include <numeric>
@@ -478,6 +479,7 @@ static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int
 int main(int argc, char ** argv) {
     std::string model_path;
     std::string systemone_model_path;
+    std::string moedern_model_path;
     std::string host = "127.0.0.1";
     std::string det_model_path;       // face detection model
     std::string rec_model_path;       // face recognition model
@@ -527,6 +529,8 @@ int main(int argc, char ** argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc)
             model_path = argv[++i];
+        else if (strcmp(argv[i], "--moedern-model") == 0 && i + 1 < argc)
+            moedern_model_path = argv[++i];
         else if (strcmp(argv[i], "--host") == 0 && i + 1 < argc)
             host = argv[++i];
         else if (strcmp(argv[i], "--systemone-model") == 0 && i + 1 < argc)
@@ -636,6 +640,7 @@ int main(int argc, char ** argv) {
         ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() &&
         ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() &&
         dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
+        moedern_model_path.empty() &&
         tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() &&
         instructir_model_path.empty() && adair_model_path.empty() && sam2_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
@@ -665,6 +670,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --pix2struct MODEL  Pix2Struct document understanding model GGUF\n");
         fprintf(stderr, "  --clip-text MODEL  CLIP text encoder GGUF\n");
         fprintf(stderr, "  --systemone-model MODEL  joint-schema decisions; enables POST /systemone\n");
+        fprintf(stderr, "  --moedern-model MODEL  MoEdern raw-text roles; POST /moedern/encode, /moedern/score\n");
         fprintf(stderr, "\nMath OCR (formula recognition):\n");
         fprintf(stderr, "  --ocr MODEL   math OCR model (PP-FormulaNet, HMER, BTTR GGUF)\n");
         fprintf(stderr, "\nLayout detection (document structure):\n");
@@ -807,6 +813,22 @@ int main(int argc, char ** argv) {
         }
     }
 
+    std::unique_ptr<crispembed_moedern_context, decltype(&crispembed_moedern_free)> moedern(nullptr,
+                                                                                            crispembed_moedern_free);
+    std::mutex moedern_mutex;
+    if (!moedern_model_path.empty()) {
+        const auto resolved = crispembed_mgr::resolve_model(moedern_model_path, true);
+        if (resolved.empty()) {
+            fprintf(stderr, "Failed to resolve MoEdern model\n");
+            return 1;
+        }
+        moedern.reset(crispembed_moedern_init(resolved.c_str(), n_threads > 2 ? 2 : n_threads));
+        if (!moedern) {
+            fprintf(stderr, "Failed to load MoEdern model: %s\n", crispembed_moedern_error(nullptr));
+            return 1;
+        }
+    }
+
     httplib::Server svr;
 
     // CORS: allow browser access from any origin
@@ -839,6 +861,61 @@ int main(int argc, char ** argv) {
             return;
         }
         res.set_content(result, "application/json");
+    });
+
+    // MoEdern raw text with explicit roles; separate from pooled /embed and /colbert.
+    auto moedern_field = [](const std::string & body, const char * key, std::string & out) {
+        const size_t pos = core_json::json_find_key_value(body, key);
+        size_t end = 0;
+        return pos != std::string::npos && core_json::json_decode_string(body, pos, out, end);
+    };
+    auto moedern_reject = [&](httplib::Response & res, int status, const std::string & why) {
+        res.status = status;
+        res.set_content("{\"error\":\"" + json_escape(why) + "\"}", "application/json");
+    };
+    svr.Post("/moedern/encode", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!moedern) return moedern_reject(res, 503, "no MoEdern model loaded");
+        std::string text, role;
+        if (req.body.size() > 200000 || !moedern_field(req.body, "text", text) || !moedern_field(req.body, "role", role) ||
+            (role != "query" && role != "document") || text.find('\0') != std::string::npos)
+            return moedern_reject(res, 400, "MoEdern requires {text, role: query|document}");
+        std::lock_guard<std::mutex> lock(moedern_mutex);
+        const auto * r = crispembed_moedern_encode(moedern.get(), text.c_str(), role == "query" ? 0 : 1);
+        if (!r) return moedern_reject(res, 400, crispembed_moedern_error(moedern.get()));
+        std::ostringstream js;
+        js << std::setprecision(9) << "{\"role\":\"" << role << "\"";
+        auto list = [&](const char * key, auto * v, int n, bool real) {
+            js << ",\"" << key << "\":[";
+            for (int i = 0; i < n; ++i) {
+                if (i) js << ",";
+                if (real) js << double(v[i]); else js << int(v[i]);
+            }
+            js << "]";
+        };
+        list("ids", r->ids, r->n_tokens, false);
+        list("supplied_mask", r->supplied_mask, r->n_tokens, false);
+        list("effective_mask", r->effective_mask, r->n_tokens, false);
+        list("scoring_mask", r->scoring_mask, r->n_tokens, false);
+        list("expansion_positions", r->expansion_positions, r->expansion_count, false);
+        list("all_vectors", r->all_vectors, r->n_tokens * 128, true);
+        list("selected_vectors", r->selected_vectors, r->n_selected * 128, true);
+        js << "}";
+        res.set_content(js.str(), "application/json");
+    });
+    svr.Post("/moedern/score", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!moedern) return moedern_reject(res, 503, "no MoEdern model loaded");
+        std::string query, document;
+        if (req.body.size() > 200000 || !moedern_field(req.body, "query", query) ||
+            !moedern_field(req.body, "document", document) || query.find('\0') != std::string::npos ||
+            document.find('\0') != std::string::npos)
+            return moedern_reject(res, 400, "MoEdern score requires {query, document}");
+        std::lock_guard<std::mutex> lock(moedern_mutex);
+        float value = 0;
+        if (crispembed_moedern_score(moedern.get(), query.c_str(), document.c_str(), &value) != 1)
+            return moedern_reject(res, 400, crispembed_moedern_error(moedern.get()));
+        std::ostringstream js;
+        js << std::setprecision(9) << "{\"score\":" << double(value) << "}";
+        res.set_content(js.str(), "application/json");
     });
 
     svr.Post("/decide", [&](const httplib::Request & req, httplib::Response & res) {
@@ -4019,6 +4096,7 @@ int main(int argc, char ** argv) {
             if (crispembed_has_colbert(ctx)) js << ", \"colbert\": true";  // POST /colbert/score
         }
         if (systemone) js << ", \"systemone\": true";
+        if (moedern) js << ", \"moedern\": true";
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
@@ -4062,6 +4140,7 @@ int main(int argc, char ** argv) {
         std::ostringstream js;
         js << "{\"status\":\"ok\",\"routes\":{";
         js << "\"systemone\":" << (systemone ? "true" : "false") << ",";
+        js << "\"moedern\":" << (moedern ? "true" : "false") << ",";
         js << "\"ocr\":" << (ocr_pipeline_ctx ? "true" : "false");
         js << ",\"ocr_pipeline\":" << (ocr_orch_ctx ? "true" : "false");
         js << ",\"layout\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
@@ -4088,7 +4167,7 @@ int main(int argc, char ** argv) {
     });
 
     svr.Get("/health/ready", [&](const httplib::Request &, httplib::Response & res) {
-        const bool ready = systemone || ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx ||
+        const bool ready = systemone || moedern || ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx ||
                            ocr_orch_ctx || layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
         res.status = ready ? 200 : 503;
         res.set_content(ready ? "{\"status\":\"ready\"}" : "{\"status\":\"not_ready\"}", "application/json");

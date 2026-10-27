@@ -1,0 +1,168 @@
+{
+  "schema": "crispembed-moedern-owned-unigram-v1",
+  "license": "CC0-1.0",
+  "cases": [
+    {
+      "id": "empty-query",
+      "role": "query",
+      "text": ""
+    },
+    {
+      "id": "empty-document",
+      "role": "document",
+      "text": ""
+    },
+    {
+      "id": "unicode-query",
+      "role": "query",
+      "text": "Café CAFÉ é Łódź İIı ΣΟΣ 𒀀𒀁 😀"
+    },
+    {
+      "id": "unicode-document",
+      "role": "document",
+      "text": "Café CAFÉ é Łódź İIı ΣΟΣ 𒀀𒀁 😀"
+    },
+    {
+      "id": "compat-query",
+      "role": "query",
+      "text": "ＦＩ ﬁﬂ ① Ⅳ ㎏ 가각 가"
+    },
+    {
+      "id": "compat-document",
+      "role": "document",
+      "text": "ＦＩ ﬁﬂ ① Ⅳ ㎏ 가각 가"
+    },
+    {
+      "id": "literal-query",
+      "role": "query",
+      "text": "[Q] [D] [MASK] [CLS] [SEP] <unk> <pad>"
+    },
+    {
+      "id": "literal-document",
+      "role": "document",
+      "text": "[Q] [D] [MASK] [CLS] [SEP] <unk> <pad>"
+    },
+    {
+      "id": "mask-start-query",
+      "role": "query",
+      "text": "[MASK] [MASK]x"
+    },
+    {
+      "id": "mask-start-document",
+      "role": "document",
+      "text": "[MASK] [MASK]x"
+    },
+    {
+      "id": "overlap-query",
+      "role": "query",
+      "text": "[q] [d] [Q]x [Q]  [D]\t[MASK]"
+    },
+    {
+      "id": "overlap-document",
+      "role": "document",
+      "text": "[q] [d] [Q]x [Q]  [D]\t[MASK]"
+    },
+    {
+      "id": "quotes-query",
+      "role": "query",
+      "text": "`` quoted '' ＇＇ ｀｀"
+    },
+    {
+      "id": "quotes-document",
+      "role": "document",
+      "text": "`` quoted '' ＇＇ ｀｀"
+    },
+    {
+      "id": "whitespace-query",
+      "role": "query",
+      "text": "\tA B C\n\rDE F\u001cG\u0000H"
+    },
+    {
+      "id": "whitespace-document",
+      "role": "document",
+      "text": "\tA B C\n\rDE F\u001cG\u0000H"
+    },
+    {
+      "id": "metaspace-query",
+      "role": "query",
+      "text": "▁▁foo▁bar ▁ baz"
+    },
+    {
+      "id": "metaspace-document",
+      "role": "document",
+      "text": "▁▁foo▁bar ▁ baz"
+    },
+    {
+      "id": "combining-query",
+      "role": "query",
+      "text": "à̕ à̕ ̧̈́ Ị̇"
+    },
+    {
+      "id": "combining-document",
+      "role": "document",
+      "text": "à̕ à̕ ̧̈́ Ị̇"
+    },
+    {
+      "id": "unknown-fusion-query",
+      "role": "query",
+      "text": "𒀀𒀁𒀂 𒀀𒀁"
+    },
+    {
+      "id": "unknown-fusion-document",
+      "role": "document",
+      "text": "𒀀𒀁𒀂 𒀀𒀁"
+    },
+    {
+      "id": "truncate-query",
+      "role": "query",
+      "text": "abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café "
+    },
+    {
+      "id": "truncate-document",
+      "role": "document",
+      "text": "abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café abc Café "
+    }
+  ],
+  "normalization_sequences": [
+    "à̕",
+    "à̕",
+    "Ị̇",
+    "̧̈́",
+    "가각가",
+    "İΣΟΣ ẞß",
+    "ＦＩ ﬁﬂ ① Ⅳ ㎏",
+    "`` '' ＇＇ ｀｀",
+    "▁▁foo▁bar",
+    "  　\t  A\nB",
+    "é\u0000\u001c😀",
+    "[Q] [q] [D]\t[MASK]",
+    "𝐀𝟎",
+    "ཱཱཱིྀུ",
+    "゙゚カ",
+    "ְֱֲ"
+  ],
+  "composition_random_seed": 20261027,
+  "composition_random_cases": 1024,
+  "negative_inputs": [
+    {
+      "id": "wrong-role",
+      "role": "invalid",
+      "hex": "61"
+    },
+    {
+      "id": "invalid-utf8",
+      "role": "query",
+      "hex": "eda080"
+    },
+    {
+      "id": "incomplete-utf8",
+      "role": "document",
+      "hex": "f09f"
+    },
+    {
+      "id": "oversize",
+      "role": "query",
+      "repeat_a": 65537
+    }
+  ]
+}

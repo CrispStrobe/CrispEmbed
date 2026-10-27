@@ -28,6 +28,9 @@ pub use crispembed_sys::CrispembedHparams;
 mod systemone;
 pub use systemone::SystemOne;
 
+pub mod moedern_text;
+pub use moedern_text::MoEdern;
+
 #[derive(Debug, Clone)]
 pub struct ModelInfo {
     pub name: String,
