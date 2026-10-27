@@ -43,3 +43,12 @@ Remaining before composition:
 
 See [source and output semantics](josev2b.md) and
 [the independent original receipt](../tests/results/josev2b/original-review.json).
+
+The checkpoint index at the exact original revision independently confirms320
+text tensor names among632 total keys and no separate `lm_head.weight`. The
+source-derived text parameter count is1,881,825,088 (7,527,300,352 F32 payload
+bytes before GGUF overhead). The source-only converter
+`tools/convert_josev2b_backbone_f32.py` authenticates the original full checkpoint
+and index, validates the complete source namespace, promotes bounded chunks to
+file-backed F32 staging, and checks every GGUF tensor shape/type/byte hash by
+bounded readback. Actual converted size/hash and model parity remain unmeasured.

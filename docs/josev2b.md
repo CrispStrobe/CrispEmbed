@@ -152,8 +152,10 @@ framework import or payload access; a P100 draw writes `conclusive:false`,
 `retry_permitted:false` and exits. Do not retry the allocation hoping for a
 different GPU. The dumper repeats the capability guard before reading payloads.
 Allow30 minutes for capture, at most2GiB array payload, and preserve failed
-outputs. The F32 backbone alone needs approximately9.1GB of parameter storage;
-this estimate is not a measured peak. A16GiB GPU is a candidate only if actual
+outputs. The complete conditional checkpoint has approximately9.1GB of F32
+parameter storage. The explicitly mapped320-tensor text component instead has
+1,881,825,088 elements, or7,527,300,352 F32 payload bytes before GGUF overhead.
+These are storage calculations, not measured peak memory. A16GiB GPU is a candidate only if actual
 preflight passes. The recipe fails on CPU or missing resources. Installation and
 download time are separate from the30-minute capture bound. Review availability
 of the pinned CUDA wheel and retain the actual driver/CUDA/package fingerprint.
