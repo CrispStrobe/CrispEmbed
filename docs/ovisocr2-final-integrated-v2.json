@@ -1,13 +1,13 @@
 {
   "schema": "crispembed-ovisocr2-final-integrated-v2",
   "qualification": false,
-  "runtime_base": "4f830552fa83794e4045aaaa20e52e3d785785bd",
+  "runtime_base": "c71cb92aa99f2b337da3696e72cd7267a934b560",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "protected_git_objects": {
     ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
     "tools/ci-heavy/successor_assets.py": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
     "tools/ci-heavy/ovisocr2_published_consumer.py": "30c33aafa5984a4914cd4d18a294bdf8f3a5b4d8",
-    "src": "a7a43f8206b602cd5187015cc8af3e040a0382a0",
+    "src": "fc4561db10687fa68f31bcc93942d26829cb2376",
     "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
     "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
     "CMakeLists.txt": "5a7154eb1ac1fd0ceb15e1e009739152d4b37ff3",
@@ -667,7 +667,7 @@
   ],
   "runtime_closure_reviewed": true,
   "auditor_source_sha256": {
-    "tools/ovisocr2_final_integrated_v2.py": "4bdaedac8e2543525943309a5b384df9978ac1e1c12f9205779cb176f7fd5b5a",
+    "tools/ovisocr2_final_integrated_v2.py": "d2d7925804e6f651642c0488966cfacf57a8417a7b3f9612dfc3dee65afae126",
     "tools/ci-heavy/ovisocr2_final_integrated_v2.py": "d01fff77bce83d78adcb78e88ed999b2962cb25310e3644f9fd269ee08bdef10",
     ".github/workflows/ovisocr2-final-integrated-v2.yml": "6dba6da679a883f9408f84b206123fbcd7fbb9fcac89af2b8fdbe80a3f2441ff",
     "tests/test_ovisocr2_final_integrated_v2.py": "84b713a565d157ec22b6585fdaf4d715c93c0e22a3d4eb14e61b67af259aee76"
