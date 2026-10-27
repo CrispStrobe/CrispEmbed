@@ -15732,7 +15732,7 @@ separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.
 atbbc80ae2 completes native/WASM builds and the ordinary native pass, then
 its diagnostic capture aborts at scheduler reservation (`buffer_id >= 0`).
 No subnode or same-input projection attribution completes. The small review
-ZIP and all16 members are rehashed; raw binaries/arrays remain remote.
+ZIP and all15 members are rehashed; raw binaries/arrays remain remote.
 
 Source inspection shows the overlay uses a metadata-only `ggml_view_tensor`
 alias with no operation/dependency edge. The bounded correction uses an explicit
