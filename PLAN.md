@@ -792,3 +792,12 @@ experimental until their own original/intermediate/final-output gates pass.
   with the dumper and crispembed-diff. Compose only after parity with an explicit
   Qwen3.5-2B hidden-only prefill profile. Keep the official no-extra-temperature
   route distinct from author-GGUF calibration. No public alias or release yet.
+
+### Independent M1 build-only check
+
+- [ ] The [smallest MoEdern handoff](docs/handover-m1-moedern-build.md) can check
+  immutable79e350a0 compilation, weight-free controls and actual Ref synthetic
+  positive/one-bad-row rejection while hosted original work queues. It downloads
+  no model/corpus/framework and authorizes no model outputs. Return the bounded
+  build/control evidence; keep machine paths and local setup notes outside Git.
+  Native original-reference guards remain closed until corrected capture review.
