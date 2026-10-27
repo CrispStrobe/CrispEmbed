@@ -1,0 +1,18 @@
+{
+  "schema": "crispembed-wasm-rounding-initial-precompile-rejection-v1",
+  "run": 40385214740,
+  "source": "24cab931fd6870ea5173453b426e8e1294895cbd",
+  "failed_job": 121791564962,
+  "service_conclusion": "failure",
+  "failed_test": "test_historical_driver_rejects_new_cache_runtime",
+  "expected_rejection": "arithmetic",
+  "actual_rejection": "Unreviewed public wrapper source changed",
+  "log": {
+    "bytes": 71568,
+    "sha256": "8a0e8e00882d0672c0762c0f14ef0a27bb35c2af230388dc10d8c60334a49d6a"
+  },
+  "operator_compilation_performed": false,
+  "model_inference_performed": false,
+  "correction": "Use historical source/wrapper fixture to exercise decoder rejection, with an independent new-header rejection. Historical source guard remains byte unchanged.",
+  "qualification": false
+}

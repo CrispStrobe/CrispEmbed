@@ -196,9 +196,14 @@ remaining acceptance work is in the executable handoff.
 The default-off `CRISPEMBED_ULTRABERT` test graph implements all24 blocks,
 per-layer masks/thetas, split-half RoPE, RMSNorm/SwiGLU, residuals and CLS.
 Unset/literal0 are checked before IO. Each case compares292 numerical stages
-and50 exact controls with `crispembed_diff::Ref`;48 original RoPE tables and
-post-RoPE Q/K are not yet compared. That prepared-ID audit added no production
-dispatch; the later PR74 public path is documented below.
+and50 exact controls with `crispembed_diff::Ref`. That initial prepared-ID audit
+excluded48 original RoPE tables and post-RoPE Q/K and added no production
+dispatch; the later PR74 public path is documented below. The separate
+[completed RoPE attribution](../tests/results/ultrabert/rope-attribution.json)
+now passes1,344 comparisons/336 bit controls across seven cases. Frozen/current
+tables and source-table-fed Q/K rotations match exactly; empty position0 cannot
+explain the earlier pre-RoPE Q or strict-replay drift. No production RoPE gate
+is justified, and the historical183/1,294 numerical failures remain.
 
 | Surface | Result | Evidence |
 | --- | --- | --- |
@@ -237,6 +242,17 @@ successful repair. Exact inputs/gold were unchanged.
 numerical attribution, production surfaces and independent quality/publication
 gates. All model/tokenizer/control claims must retain their exact source/run
 scope; no32K, GPU, latency, MTEB or quantized-quality claim follows from this panel.
+
+Canonical SciFact preparation40372423343 is independently reviewed in
+[the preparation receipt](../tests/results/ultrabert/scifact-canonical-preparation.json).
+It freezes all5,483 actual wrapper IDs/masks before any forward, including460
+documents right-truncated at512 tokens and zero dropped rows. The full
+original-first40375626336 at immutablee35cd1a0 remains pending: eight originals,
+freeze, eight native shards and aggregate under unchanged0.002/0.99999 vector
+and predeclared ranking gates. Strict-v1 author-column rejection remains
+preserved; canonical-v2 literal BEIR input selection followed exact legacy/
+Parquet provenance and an author-difference journal before model outputs.
+Preparation and partial reference shards are not retrieval qualification.
 
 ## M1 evidence and the bounded F32 output lane — 23 October2026
 
@@ -279,8 +295,10 @@ Flutter39943915528 jobs. It adds a default-off CPU/F32 backend to normal
 alias, artifact publication, release or default-model change is included.
 The backend validates the pinned architecture/source, full218-weight F32 schema,
 per-layer schedules and tokenizer contract before allocating the weight backend.
-Native context is512 tokens including attended BOS; overflow is rejected rather
-than truncated. F16/quantized, GPU, Matryoshka, inputs containing the literal `<|` prefix
+Native context is512 tokens including attended BOS; overflow is rejected by default.
+The separate [full SciFact experiment](ultrabert-scifact.md) introduces explicit
+`CRISPEMBED_ULTRABERT_TRUNCATE=1` single-text right truncation; unset/literal0
+retain rejection. Its hosted task qualification remains pending. F16/quantized, GPU, Matryoshka, inputs containing the literal `<|` prefix
 and public pair embedding remain outside this bounded profile.
 
 Ordinary public dense encoding is L2-normalized, as required by the shared ABI.

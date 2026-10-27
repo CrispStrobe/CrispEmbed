@@ -1,6 +1,10 @@
+> Current execution: [27 October wrap-up handoff](docs/handoff-2026-10-27.md).
+> Reviewed results are in HISTORY. Experimental runtime branches and running
+> workflows are not promoted by this documentation-only main update.
+
 # CrispEmbed — Active roadmap
 
-Updated 26 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 27 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -21,12 +25,14 @@ The bounded converted-weight cache experiment is complete in
 the three-pair warm median gain is only0.797%, with one slower pair and increased
 RSS. Do not repeat its successful model runs for the corrected manifest adapter.
 
-1. **Numerical attribution:** finish the frozen four-grid interpolation A/B and
-   eleven-case first-F16 quality replay. Any later precision selection needs new
+1. **Numerical attribution:** use the completed four-grid interpolation A/B and
+   eleven-case first-F16 quality replay to freeze final integration source checks.
+   Any later precision selection needs new
    development/evaluation inputs after the completed same-weight FFN isolation.
    Preserve all failed recipes, raw strict flags and the unqualified2048 path.
-2. **Next permissive implementation:** MI-GAN single-resolution still-image
-   references and native F32 prototype, or the next declared OCR source audit.
+2. **Next permissive implementation:** the MI-GAN fixed256 original/native
+   prototype is complete through PR85. Choose its separately scoped product
+   integration or the next declared OCR source audit after this closure.
    Code/checkpoint/base licensing and original blueprint come first. LaMa's
    checkpoint terms/FFT and Indra's restricted weight scope remain unresolved.
 3. **Delivery/portfolio:** UltraBERT attribution and representative/pair quality,
@@ -162,6 +168,11 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
 
 ## Text encoders and typed decisions
 
+- [ ] **Full SciFact original-first task audit:** execute the hosted `prepare` phase of
+  [the versioned contract](docs/ultrabert-scifact.md); independently review exact
+  author/BEIR mapping, data/input/gold freeze, all lengths and original-only timing
+  before the8-original→freeze→8-native panel. The explicit right-truncation gate
+  stays default-off; fixed vector/ranking budgets, all rows and old failures remain.
 - [ ] **UltraBERT native port:** follow [U1–U4](docs/next-agent-handoff.md) and
   [the architecture contract](docs/ultrabert.md). Original reference/conversions
   and8-row native tokenizer/template parity pass; the test-only native graph
@@ -180,10 +191,11 @@ scores. tau-squared-bench is an agent benchmark and adds no OCR model task.
   long-context/GPU/performance and validated quantization/publication. Base150M/
   380M masked-LM heads remain later separate ports. Original arrays are preserved through21 January2027; keep their
   original identities and use the recorded preservation run; exact acceptance is in U1–U4.
-  The claimed [frozen-input RoPE experiment](docs/ultrabert-rope-attribution.md)
-  now has a test-only target/driver and reusable`ultrabert-rope.yml` workflow.
-  Hosted compilation, all seven operator cases and independent report review
-  remain pending; no new original full-model reference or production change.
+  [Frozen-input RoPE attribution](tests/results/ultrabert/rope-attribution.json)
+  is complete and merged through PR84:1,344 comparisons/336 bit controls pass.
+  Empty position0 cannot explain the earlier pre-RoPE Q difference; no
+  production RoPE change is justified. Further attribution needs a distinct
+  hypothesis using preserved inputs and actual backend fingerprints.
 - [ ] **LFM2.5 Encoder:** CUDA F16/T4 reference audit and one-session paired
   CPU/CUDA performance review are complete (HISTORY): all15 cases run faster
   on CUDA, with9/20/649-token pooled medians27.93x/27.64x/120.11x. Next
@@ -244,9 +256,10 @@ Require affected exact-source checks again for each new implementation change.
   Cloud deployment and collaboration remain separate optional product decisions.
   Exact scopes and dependencies: [consumer handoff](docs/current-state-and-next-steps.md).
 
-- [ ] **Issue71 MI-GAN integration and product follow-up:** integrate the reviewed
-  [bounded CPU/F32 prototype](tests/results/migan/native-parity.json) after platform
-  checks. Original40330674649 and corrected native40344396533 complete the frozen
+- [ ] **Issue71 MI-GAN product integration:** the reviewed default-off
+  [bounded CPU/F32 prototype](tests/results/migan/native-parity.json) is merged
+  through PR85 after platform checks. Original40330674649 and corrected
+  native40344396533 complete the frozen
   eight-fixture/494-comparison panel; evidence and the initial stale-observer
   rejection belong in HISTORY. Keep the prototype default-off and excluded from
   ordinary runtime artifacts. Public C ABI/orchestrator/CLI/server/bindings and
@@ -386,35 +399,23 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-27 | `feat/moedern-public-text-20261027` | MoEdern1.5M public roles and metadata package | Reviewed raw-text1a053116/40455093591 passes ten cases/twenty original vector arrays/three MaxSim pairs. Add explicit query/document C ABI and bindings over production frontend/engine, byte-preserving self-contained32-tensor model with tokenizer metadata, and hosted actual public original-reference/recovery/ownership/offline controls. Keep generic dense/token interfaces unchanged; default off, no publication before consumer proof; larger variants remain separate. |
+| 2026-10-27 | `feat/moedern-public-text-20261027` | MoEdern1.5M public roles and metadata package | Reviewed raw-text1a053116/40455093591 passes ten cases/twenty original vector arrays/three MaxSim pairs. Unfinished draft a925f7e5 prepares role-aware C/Python/Rust/Dart modules and streaming32-tensor/tokenizer repack; seven stdlib/source controls pass, no compile/inference. Shared header/CMake/exports/CLI/server/registry, actual hosted packed byte proof and ten-case/twenty-vector/three-score public recovery/ownership/offline controls remain. Keep generic dense/token interfaces unchanged; default off, no publication before consumer proof; larger variants remain separate. |
 | 2026-10-27 | `feat/moedern-text-composed-20261027` | Smallest MoEdern raw-text native composition | Prepare separately versioned CPU/F32 text+role frontend→native model→selected128-vectors/MaxSim; require reviewed actual frontend before execution, preserve old250 primary+21 supplemental lineage. Compile reference observers only in test variant before public wiring; old engine algebra/gold/guards unchanged on frozen sources. Root owns shared CAPI/registry/build integration. Hosted builds/payloads only. |
-| 2026-10-27 | `feat/moedern-unigram-frontend-20261027` | Smallest MoEdern exact text/role frontend | Native-v2 actual40441341206 independently passes10 cases/177 checks/three old-primary MaxSim pairs. Dedicated default-off Unigram metadata/text frontend, exact original-first IDs and three role masks before native/public composition; no generic tokenizer changes or larger variants until own proof. Source/build/model work hosted, small reports only locally. |
 | 2026-10-27 | `feat/josev-systemone-api-20261027` | Dedicated SystemOne API and bindings | Prepare distinct opaque SystemOne C ABI/context plus Python/Rust/Dart and CLI/HTTP surfaces over packed CPU/F32 owner; keep Gemma flat JSON/768 scoring and generic embedding APIs unchanged. No model alias/publication or public parity claim before reviewed composition/packing/packed runtime; actual original four-case surfaces and failure/recovery/offline tests required. All builds/models hosted. |
 | 2026-10-27 | `feat/josev-packed-runtime-20261027` | Josev packed CPU/F32 runtime and dedicated SystemOne capability | Root: prepare one owned442-tensor context with strict borrowed320-backbone/122-head views and embedded tokenizer, preserving old component loaders/gates. Require reviewed native composition and byte-preserving packing before actual packed/public surface audit. New dedicated SystemOne C/Python/CLI/HTTP/Rust/Dart; Gemma768/scoring/flat JSON unchanged, no injected gold/promotion. Hosted builds/models only. |
 | 2026-10-27 | `feat/josev-packed-converter-20261027` | Josev self-contained442-tensor GGUF converter | Prepare bounded byte-preserving streaming repack of reviewed320F32 backbone+122F32 head+zero-tensor tokenizer metadata; validate source/shape/byte hashes and exact readback. No new checkpoint conversion, quantization or local models. Execution requires reviewed composed native proof; root owns borrowed packed runtime/public integration separately. |
-| 2026-10-27 | `feat/josev-composed-text-20261027` | Josev native raw-request composition | Root: explicit new three-component CPU/F32 source closure from reviewed backbone/head and separately audited tokenizer/answer components. Native lexical means from actual embedding rows; no frozen hidden/vector injection. Hosted original104+123-stage comparisons and complete typed responses, then dedicated public capability/packed-model work. Never bypass failing frontend/serializer gates. |
 | 2026-10-27 | `audit/ultrabert-scifact-native-v3-20261027` | Frozen-original representative retrieval after verified Unicode fix | Reviewed token-only40434717493 matches all5483 IDs/masks/full hashes with gate1 while preserving old24/25 gate-off mismatches. Build an explicit new source closure using identical candidate BPE code plus existing integration truncation gate; preserve old e35 workers/guards/8 successful originals, gold and183/1294 strict failures. New actual CAPI token preflight then8 native shards(max2) and aggregate against frozen vectors/ranking gates. No original rerun, default/pair/alias/quantization promotion; all model/corpus/build work hosted. |
 | 2026-10-27 | `feat/josev-answer-serializer-20261027` | Native original SystemOne output formatting | Separate internal JSON serializer for native F32 option probabilities and ordered encoded schema. Match exact publisher model/answers/usage, original-choice-order tie selection, noul/score/legend and Python four-decimal ties-even using exact binary64 rounding. Original pure function freezes model-free controls before C++ comparison; preserve Gemma interfaces and frozen frontend producer. No tokenizer/model weights, API/registry/default/quality claim. |
-| 2026-10-27 | `feat/josev-tokenizer-schema-20261027` | Native text/schema frontend before composition | Trace pinned publisher render/question_options/encode_record with exact Rust tokenizer; reuse shared Qwen3.5 NFC/declared-regex BPE and ordered JSON/Ryu primitives without changing existing families. Dedicated default-off metadata/component and original-first tokenizer-only CPU audit: all4 frozen IDs/masks/question-option spans, state-only clipping/schema-overflow, literal string vs compact sorted JSON, instruction fallback, lexical choice/ordinal ordering and boundary cases. No weights/model inference or serializer substitution; native output serializer/public API remains subsequent composed gate. |
 | 2026-10-27 | `audit/moedern-native-dual-reference-v2-20261027` | Primary frozen-native comparison plus supplemental missing stages | After actual SDPA40434080299 reproduces corrected CPU-flash output with1.1921e-7 deviation from old gold, retain the old250 arrays/final vectors/MaxSim as primary targets and independently pinned21 missing pipeline observations as supplemental targets. New explicit CPU/a06 protocol; old v1/strict byte-continuity rejection stays unchanged and unaccepted. Preserve32F32 native model math from79, fixed numeric/mask/vector/MaxSim gates, real Ref and earliest errors; no new gold, tolerance relaxation, public model or quality claim. |
 | 2026-10-27 | `audit/ovis-final-integrated-v2-20261027` | Explicit successor final-source validation | Separate v2 protocol/helper/workflow preserves old v1 and all historical guards. Pin reviewed Ovis8 grid/gates and reviewed negative WASM dependency, both defaults off. Final runtime/base/closure remains an explicit closed pending declaration until code decisions finish; then actual same-source frozen14/first-F16 eleven-case replay and archive/real consumers. No network/model access while declaration pending; no dynamic latest-source exception. |
-| 2026-10-27 | `feat/josev-hidden-backbone-20261027` | Explicit hidden-only Josev decoder profile | Add dedicated gated2048/6144 text-only loader/full-prefill hidden output without vocabulary projection. Preserve original1024/3584 map_small_decoder and old generation route. Strict24-layer18linear/6full tensor shapes and RMS/RoPE source profile; prove original embedding/all24layers/norm against frozen four-case arrays before head composition. Source-only preparation and hosted builds/model audit; no public API/alias or release claim. |
 | 2026-10-27 | `fix/ultrabert-unicode-pretoken-20261027` | Gated Unicode-aware UltraBERT pretokenization | Completed tokenizer40424357191 retains24 clipped/25 full mismatches; both two-row details show curly punctuation wrongly grouped as letters. Implement context-scoped default-off Unicode GPT2 byte-level pretokenization using actual original boundaries; preserve old generic/CLIP behavior. Hosted tokenizer-only A/B must retain old mismatch set and match all5483 original clipped IDs/masks/full hashes before any embeddings. Frozen original vectors and ranking/numerical budgets unchanged. |
 | 2026-10-27 | `audit/moedern-sdpa-reproducibility-20261027` | Attribute real cross-run Python SDPA drift | Corrected observer40423259251 rejects156/250 old array hashes despite exact inputs/weights and within-run neutrality; first captured divergence is SDPA0. Preserve both immutable originals and strict rejection. Hosted operator-only replay of two frozen attention inputs, actual default/math/CPU-flash kernels, layout/hardware evidence and Ref magnitudes versus both originals. No replacement gold/full-model/native qualification or tolerance changes. |
-| 2026-10-27 | `feat/josev-native-head-20261027` | Original-first Josev joint-head component | Actual original workerb2 completes four neutral/repeat cases,251 arrays and122 loaded tensors (receipt51a2e16b). Implement a separate default-off F32 GGML head following exact pre-norm source, strict shapes/order/spans and official no-extra-temperature math. Standalone CPU/optional CUDA probe plus actual Ref comparison on immutable frozen inputs; no backbone/public API/alias/release claim. All builds/payloads/inference hosted or authorized remote M1/GPU; retain raw arrays remotely. |
-| 2026-10-27 | `fix/wasm-layer3-view-20261027` | Layer3 observer allocation abort | Actual40415950220 builds native/WASM and passes ordinary native execution, then diagnostic capture aborts in scheduler reserve before numerical attribution. Replace the disconnected ggml_view_tensor alias with an explicitly connected dimension/stride-preserving graph view in the test-only overlay; require all frozen ordinary/observer anchors unchanged. Preserve failure, no production math/default/budget changes; all compilation/model work hosted. |
-| 2026-10-26 | `integration/bounded-closure-20261026` | Review-only integration of active audit/model lanes | Recoverable checkpoint7d06b016; runtime remains f3f1b9e7/a06 with both new defaults OFF. Actual Mac40399358753 compatibility is reviewed; rounding40391544739 rejects8/10 finals and layer3 attribution40415950220 is pending. SciFact40375626336 originals/freeze pass; native/ranking, remaining Ovis grids and final fresh assets/all consumers still required. New-model original capture precedes native/API qualification. Main integration, complete docs/mirror and final checks close the authorized loop. |
-| 2026-10-26 | `test/wasm-layer3-attribution-20261026` | Test-only earliest remaining WASM operator attribution | Actual580e3ae rounding A/B40391544739 rejects8/10 finals; preserve negative, old anchors and0.002/0.99999. Trace first layer3 suboperation using exact retained model/input, check observation neutrality, compare same-input conversions/dots on hosted CI. No production/default or gold changes. |
-| 2026-10-26 | `audit/moedern-observer-correction-20261026` | Smallest MoEdern missing pipeline observer coverage | Actual40412164041 preserves10 neutral final cases/250 arrays, but Mapping outputs omitted Dense/Normalize captures. Correct serializer/observer coverage in a new immutable original source; authenticate old receipt/raw remotely and require all10 old ordinary IDs/masks/vector hashes unchanged before accepting new intermediates. No native pins, tolerance/input/math change or local payload/build work. |
-| 2026-10-26 | `feat/moedern-native-1p5m-20261026` | Smallest MoEdern native token-ID/role prototype | Source preparation only until original40412164041 is reviewed. Strict32-tensor CPU/F32 graph, all query/document masks and128-vectors/MaxSim, original-module and neutral native dumps. Root owns shared API/build integration; all compilation/model work hosted. Wider variants/tokenizer/public surfaces remain separate gates. |
-| 2026-10-26 | `feat/moedern-colbert-20261026` | Requested SauerkrautLM-MoEdernColBERT family:1.5M→27M→115M and author GGUF variants | Source/license/base audit first; freeze original tokenizer, hash routing, token projection/masks/normalization and MaxSim before native outputs. Start smallest, retain original-first intermediate and task parity, then public C/Python/Rust/Dart surfaces. Hosted builds/models only; preserve existing model gates. |
-| 2026-10-26 | `feat/josev-head-schema-20261026` | Strict original-first Josev joint-head schema and F32 conversion | Derive122 tensors from the pinned original class, retain BF16/F32 source dtype and exact F32 promotion, require reviewed original loaded-head identities before conversion. Source-only preparation; no local weights/frameworks or native quality claim. Joint-head math and full Qwen3.5-2B integration remain subsequent gates. |
-| 2026-10-26 | `audit/josev-wheel-metadata-20261026` | Josev exact wheel metadata versus published sidecars | Actual corrected GPU install and pip-check pass, then installed setuptools metadata differs from the locked PEP658 hash before framework/model access. Hosted CPU audit must stream/hash all57 exact wheels, inspect archive METADATA and preserve sidecar/archive/install distinctions before any further GPU attempt. No local wheel/framework/model payload, guard weakening or blind retry. |
-| 2026-10-26 | `audit/josev2b-20261026` | Requested mayflowergmbh/Josev-2B architecture and typed-decision port | Pin Apache-tagged checkpoint/base/code/head sources; trace joint-schema inference and calibration before choosing shared Qwen3.5 or dedicated path. Original-first reference and native decision/output gates, then integration. Source audit first; all large model/GPU work remote and separately scoped. |
-| 2026-10-26 | `test/ultrabert-scifact-tokenizer-diagnostic-20261026` | Model-free diagnosis of actual SciFact native token-ID failures | Preserve e35 originals/input freeze and two executed ID failures; six later native shards cancelled before steps. Hosted tokenizer-only two-row codepoints/pieces and all5483 input-ID preflight before any new embeddings. No runtime/default/reference changes or local corpus/tokenizer/build work. |
-| 2026-10-26 | `audit/ultrabert-scifact-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Pin author dataset and BEIR equivalence before outputs; original length/throughput preflight, then8 original shards before native shards. Explicit default-off native right truncation only if matched to original512-token semantics; no dropped rows, pair API or model publication. |
-| 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Prepare source/ggml/archive/member identities and actual packaged CLI/C ABI/WASM/Apple consumers. Dispatch final source only; no tag publication or application pin change. Device execution limits remain explicit. |
-| 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Retained-vector 2048 attribution | Compare original/natural/prepared vision, layer23 and actual original RMSNorm on preserved native inputs; no reference regeneration, budget/default change or new precision recipe. Subsequent authorized lanes: MI-GAN, remote evidence preservation, UltraBERT and successor qualification. |
+| 2026-10-26 | `integration/bounded-closure-20261026` | Integrate reviewed bounded lanes and immutable consumers | DraftPR86 records completed Ovis8, WASM attribution, original preservation, SDPA and Josev head evidence. Backbone/native MoEdern/tokenizer component proofs are reviewed; frontend composition, retrieval and public surfaces remain gated; preserve frozen experiment branches. Declare final explicit source closure after code choices, then actual Ovis14/11, native/WASM assets/real consumers, main checks and app documentation mirror. App stays0.17.12. |
+| 2026-10-26 | `feat/moedern-colbert-20261026` | SauerkrautLM-MoEdernColBERT family support | All6 original/author-GGUF licenses/sources pinned; smallest original/conversion and SDPA attribution reviewed. Native-v2 actual40441341206 passes10 cases/177 checks/three MaxSim pairs. Finish exact Unigram/roles/public surfaces. Extend27M then115M including6 dilated-conv blocks, independent retrieval/quantization and qualified aliases. |
+| 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Canonical v2 preparation is reviewed after strict-v1 rejection and complete legacy/author provenance. Full40375626336 at frozene35 runs8 originals→freeze→8 native→aggregate; exact5483 rows and unchanged ranking/vector gates. No pair API or model publication. |
+| 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Initial seven-native/two-WASM producers complete; first consumers fail Windows/Apple/browser. Corrected corpus, UTF8 audit, strict cross-desktop aggregation and actual rounding A/B precede fresh final-source producers/all consumers. No tag/app pin change; device limits explicit. |
+| 2026-10-26 | `feat/wasm-q8-rounding-candidate-20261026` | Conditional WASM Q8_0 rounding candidate | Isolated ggml890-based fork a06, encoder-only per-backend opt-in and preserved legacy/Q8_1 kernels. Actual40391544739 requires numeric operator controls before ten-case model A/B; candidate stays off before reviewed strict parity/default decision. |
+| 2026-10-26 | `test/wasm-q8-rounding-ab-20261026` | Versioned conditional WASM model A/B | [Prepared v1 consumer](docs/wasm-q8-rounding-ab-v1.md) pins reviewed first trace40379523009, freezes ten owned old-native/browser controls before candidate execution, and preserves strict legacy/final/full-stage gates. Actual model A/B is numerically rejected (8/10 final cases; first remaining stage layer3). Preserve actual receipt and attribute same-input operators before a new candidate; no default promotion. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -441,8 +442,8 @@ Continue the pending bounded lanes below. Profiling and the fourth selective
 precision attempt are complete; their measurements and rejection are in HISTORY.
 The bounded default-off weight cache and first-FFN same-weight attribution are
 complete, with limits in their receipts. PR82 and all11 fresh-main workflows
-pass at`160520e8`; continue the separately scoped2048 numerical attribution,
-then MI-GAN. Any later precision selection needs a fresh development/evaluation
+pass at`160520e8`; norm/position attribution and the MI-GAN prototype are now
+complete. Finish the corrected composed interpolation panel and delivery gates. Any later precision selection needs a fresh development/evaluation
 protocol. Consumer catalogs/providers still require qualified immutable successor
 binaries. Preserve all initial failures, old recipes and
 raw strict flags. The explicit three entry gates and reviewed `both` math preset
@@ -539,18 +540,26 @@ The F32 native-vision input-embedding difference is3.92198563e-5 (norms
 209.240433/209.240448), before the final norm's0.00394558907. Preserve these
 magnitudes rather than inferring a root cause from the first threshold failure.
 
+
+[Retained norm isolation40286291355](tests/results/qwen35-ocr/ovisocr2-2048-norm-attribution.json)
+now passes all12 original anchor/identical-input controls: original anchors are
+bit exact; same-input native/original norm max3.05176e-5. Original RMSNorm on
+native hidden states reproduces composed max0.00394583/0.00438643, retaining
+calibrated ratios1.07324/1.19308. Final norm is propagating upstream error.
+The trace begins at patch3.81470e-6, position4.52995e-6 and rotary5.96046e-8;
+position helper source uses multiply-then-divide while native retains legacy
+linspace. The completed position operator audit matches original coordinates/weights/output
+exactly. Its source-order alternative remains default-off pending the composed
+four-grid replay; neither operator receipt qualifies2048 or waives budgets.
+
 - [ ] Use the byte-exact [producer reports](tests/results/qwen35-ocr/ovisocr2-larger-input-producers/)
   and retained original/native arrays; boundary raw artifact12598011436 is in
   the combined receipt. Preserve original source ac1bb9cb, all initial failures,
   calibrated budgets, pixels, gold, caps and raw strict flags. Download large
   arrays only inside hosted CI; keep shared-host work to small reports.
-- [ ] Finish the source-order interpolation alternative's actual composed A/B
-  and first-F16 replay from `audit/ovis-2048-attribution-20261026`.
-  Current composed40338087357 and quality40334662677 are pending. Literal0
-  must reproduce every retained ordinary vector and the historical failure set;
-  literal1 must pass all unchanged gates, with raw strict flags retained.
-  Local norm and position operator results are archived in HISTORY. They do not
-  qualify the2048 boundary or authorize a default change.
+The composed four-grid A/B and first-F16 replay are completed and reviewed in
+HISTORY. Gate0 preserves all old failures; gate1 passes existing calibrated gates
+with strict exceedances retained. They do not qualify2048 or a global default.
 - [ ] Before any runtime/bound/preset promotion, keep an experimental gate and
   require all original14 numerical/decoded checks at each grid, owning OCR,
   rejection/recovery and final-source frozen14/eleven-case first-F16 controls.
@@ -594,38 +603,89 @@ cap/custom-prompt rejection and fallback-stage behavior. Record the consumer
 source/artifact proof separately; do not claim it from vendor component parity.
 
 
-## Active four-lane closure — remaining execution gates
+## Active four-lane closure — actual results and remaining gates
 
-- [ ] Review the Ovis composed/first-F16 results above, integrate only reviewed
-  gated source/tooling and run final/merged-source checks. Preserve initial
-  queued cancellations and all historical numerical/quantization rejections.
-- [ ] Integrate the reviewed MI-GAN bounded prototype above after platform checks.
-  Its original/native panel and observer attribution are complete in HISTORY;
-  full issue71 product surfaces and representative/video quality remain separate.
-- [ ] Preserve later January archives before expiry; the urgent November Ovis3
-  copy is closed in HISTORY. New MI-GAN/Ultra/Ovis operator artifacts also need
-  recorded source identities and renewal dates when reviewed.
-- [ ] Review the SciFact original-only preparation on
-  `audit/ultrabert-scifact-20261026` at4469e913 (prepare40346793408), then
-  explicitly dispatch its
-  eight-original→freeze→eight-native panel with the reviewed preparation run and
-  receipt SHA. All5,183 documents/300 queries must remain present; frozen vector
-  gates and predeclared ranking tolerances stay unchanged. Preserve author gold
-  mapping differences and all applicable dataset notices. Public pairs and
-  model publication remain separate from this representative retrieval audit.
-- [ ] Finish successor actual archive consumers from
-  `chore/successor-assets-20261026` at40a82158: CPU/mobile producer40339796226,
-  unpublished WASM40339800364, then packaged consumers. WASM build completion
-  is recorded in HISTORY; executable browser consumers still require the native
-  producer. Audit helpers may advance only with exact production/build/binding
-  Git objects, producer pairing and generator provenance retained.
-  This candidate advances development manifests to0.17.14 for mobile dependency
-  packaging corrections; main remains0.17.13 until reviewed integration. Require
-  actual header/export/C/Python/CLI/cache/browser/Apple50 compatibility and mobile
-  cross-link evidence. Device execution and optional GPU assets remain explicit
-  limits. Repeat qualification on the final integrated source when runtime
-  paths differ; do not tag, publish or upgrade the immutable app0.17.12 pin.
+MI-GAN256 CPU/F32 prototype and the OvisOCR3 preservation copy are complete and
+merged through PR85/PR83. UltraBERT RoPE attribution is complete through PR84.
+Their original failures, qualified scopes and later product/quality tasks stay in
+HISTORY and the model sections above. These are not jobs to rerun.
 
+The integration branch `integration/bounded-closure-20261026` assembles the
+reviewed source changes without changing any frozen producer branch. It is
+unqualified until the actual remaining results and final-source checks below.
+Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
+
+- [ ] **Close exact final Ovis integration.** Completed four-grid and eleven-case
+  evidence is archived in HISTORY and [the combined report](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json).
+  Keep both new global defaults off and2048 unqualified. Define an explicit
+  successor source closure accounting for the newly added Josev regression
+  fixture, preserving all old protected bytes. The historical
+  [v1 guard](docs/ovisocr2-final-integrated-v1.md) must continue rejecting the
+  changed tree; do not grant a dynamic exception. Pin reviewed Ovis and WASM
+  outcomes, then execute actual final frozen14/first-F16 eleven-case replay.
+  Any later profile/default choice needs its own original-first proof.
+- [ ] **Finish canonical SciFact retrieval.** The original-first full
+  [40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
+  uses`e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`; do not modify its branch
+  during the panel. Preparation40372423343 is independently reviewed in
+  [the receipt](tests/results/ultrabert/scifact-canonical-preparation.json).
+  All5,483 wrapper inputs/masks are frozen, including460 right-truncated
+  documents. All eight original shards completed and their exact disjoint5,483-ID union
+  was independently checked. The [actual original barrier](tests/results/ultrabert/scifact-original-freeze.json)
+  completes22:37:43UTC. Native shards0/1 reject two under-512 document ID
+  streams before vector acceptance; [the negative receipt](tests/results/ultrabert/scifact-initial-native-tokenizer-rejection.json)
+  retains both exact streams. Six remaining shards are cancelled while queued
+  with zero steps. Token diagnostic40424357191 and Unicode A/B40434717493
+  are complete (HISTORY); all5,483 IDs/masks/full hashes now match with1 and
+  old unset/empty/0 mismatches remain. Reviewed explicit v3ee51e10e is dispatched
+  as40444873884; reuse all frozen original vectors unchanged. Finish its native
+  shards and aggregate only after per-shard actual ID preflight. Require all rows/IDs,0.002/0.99999 vector gates,
+  NDCG@10/MRR@10/Recall@100 degradation≤0.001 and top1 agreement≥99%.
+  V1 author-column rejection and1,055 author-abstract differences remain
+  preserved; canonical v2 uses exact legacy JSON/Parquet literal columns,
+  selected before model outputs. No gold/text normalization, row drops, public
+  pair API or model publication follows. Keep strict183/1,294 numerical debts.
+- [ ] **Repeat verified Mac compatibility on final integrated archives.**
+  [Mac-only40399358753](tests/results/packaging/successor-mac-only.json)
+  at immutable7d561149 is complete and positive for initial40 archives:
+  all50 released17.12/default/1 IDs, text, EOS and confidences are exact;
+  all200 logs verify and legacy0 retains50 original-zero outputs. Corpus
+  artifact/RGB checks and23 runtime-source objects pass. The historical7/50
+  recognition quality is unchanged. This diagnostic completion belongs in
+  HISTORY; no repeat is needed against the same40 archive. The final changed
+  runtime still needs fresh seven-native/two-WASM producers and all consumers,
+  including the same Mac50 panel. Initial failures40376735641/40354251257 stay
+  retained. Audit-only RSS unit normalization is repaired separately without
+  changing original producer JSON, image/gold/score or comparison budgets.
+- [ ] **Choose a measured WASM correction after completed layer3 attribution.**
+  [Corrected attribution40424064413](tests/results/packaging/wasm-layer3-attribution-v1.json)
+  reproduces all old anchors and twelve same-input projection replays. Input
+  differences amplify through FFN quantization/nonlinear boundaries; no
+  same-input kernel defect is established. Retain initial allocation failure,
+  full-model8/10 rejection and rounding default-off. Propose a separately scoped
+  arithmetic correction only from measured operator evidence, then rerun the
+  complete unchanged model A/B before packaged qualification/default changes.
+- [ ] **Qualify final immutable assets.** After reviewed runtime changes and
+  any justified default decision, freeze one final integrated source. Build
+  fresh seven CPU/mobile archives and both WASM bundles from that same source;
+  initial producers40339796226/40339800364 at40a82158 do not qualify changed
+  runtime objects. Run all desktop C/Python/CLI/cache, Rust/Dart, real browser,
+  released/candidate Mac50 and mobile cross-link consumers, then independent
+  aggregation. Windows UTF-8 repair still requires its actual hosted retry.
+  Pass the reviewed corpus proof through metadata`candidate_run_id`.
+  Candidate development manifests are0.17.14; main is0.17.13 before integration.
+  Device inference, optional GPU assets, broad model quality, tag publication
+  and app upgrade stay separate.
+- [ ] **Close documentation and remote integration.** Commit reviewed results,
+  move completed work to HISTORY and measurements to PERFORMANCE, refresh
+  CLAUDE/executable/shared handoffs and mirror the shared public document in
+  CrispMath. Scope every remaining task with source, acceptance and dependency.
+  Preserve exact remote January archives before their recorded expiry; the
+  urgent November Ovis3 copy is already closed. Private continuity stays ignored.
+
+Queued jobs and successful diagnostic execution are not model qualification.
+Retain every failed numerical/quality screen; never replace gold, widen budgets
+or regenerate original anchors to turn a panel green.
 
 ## Newly requested model families — original-first support
 
@@ -635,22 +695,91 @@ and [Josev-2B](https://huggingface.co/mayflowergmbh/Josev-2B).
 These extend the roadmap while the active Ovis/SciFact/immutable-consumer audits
 continue on their frozen branches. Do not alter those producer sources.
 
-- [ ] SauerkrautLM-MoEdernColBERT: audit all three base/GGUF revisions and
-  Apache-2.0 license files; trace the published custom Python model and author C
-  engine. Start1.5M, then27M/115M. Freeze exact input IDs, hash/expert routing,
-  every earliest differing stage, per-token vectors and real MaxSim/rank outputs.
-  Original Python and author-GGUF fidelity are distinct from quantization loss.
-  Reuse existing ModernBERT/ColBERT components only after matching the blueprint;
-  preserve special-token masks, padding/normalization and existing models.
-  Add pinned aliases/all bindings only after actual model/API/negative checks.
-- [ ] Josev-2B: inspect checkpoint6f0a31c8ed683aba79097eb3f48df2c9ab560afd,
-  its Qwen3.5-2B base provenance and custom joint-schema/head/calibration code.
-  Establish the real typed-decision outputs and input/format limits before
-  implementation. Original-first hosted/GPU probes precede native comparisons;
-  no multi-GB weights, framework installs, compilation or inference on the shared
-  host. Public API/model publication remain conditional on actual parity and
-  decision-quality evidence.
+Completed source/license audits, original captures, exact head conversion,
+package provenance, CPU/CUDA head parity and initial failures are archived in
+HISTORY with immutable receipts. Do not repeat those jobs or treat their old
+preparation commands as current actions.
 
-Model-card license tags are preliminary provenance, not a completed code/base
-license audit or model qualification. Keep new runtime paths value-parsed and
-experimental until their own original/intermediate/final-output gates pass.
+- [ ] **MoEdern public text and variants:** native-v2 and exact Unigram frontend
+  are completed in HISTORY. Raw-text composition1a053116/40455093591 is independently reviewed in
+  HISTORY: ten native texts, twenty original arrays and three MaxSim pairs pass.
+  Integrate the explicitly gated production engine/frontend under a new source
+  profile, preserving ordinary observer exclusion and all recovery controls.
+  Author GGUF lacks tokenizer metadata: require a pinned sidecar or byte-preserving
+  repack. Add explicit query/document roles through C/Python/CLI/HTTP/Rust/Dart;
+  never substitute pooled dense vectors or generic CLS/SEP dropping. Extend27M
+  then115M with separate originals and six dilated-conv blocks for115M. Original
+  inventories are32/32/94 tensors; narrow1.5M/27M tensors are not automatically
+  Q4_K compatible. Keep old byte-continuity rejection and every original hash.
+- [ ] **Josev packed model and interfaces:** raw-request composition40449265616
+  ated23f1ae passes all227 original stages/four typed responses (HISTORY).
+  Streaming converter9772c896 now pins that reviewed receipt; actual
+  packing/packed-owner40456235976 is running. Require the exact442 F32 tensors
+  and embedded tokenizer metadata, immutable small report and unchanged original gates. Packed runtime
+  0f0b1e59 passes model-free build40451936611; require actual packed-owner227
+  comparisons and four complete responses before publication. Preserve old
+  strict component loaders and Ovis1024/3584 shape guards.
+  Public SystemOne candidate5f639e14 implements separate C/Python/CLI/HTTP/
+  Rust/Dart paths. Initial40455424346 builds and passes native ABI controls but
+  fails a compiler-row selector; corrected40456478353 is running. Actual six-surface
+  hosted orchestrator/workflow/protocol is not written; test consumers are prepared. Review
+  compiler arithmetic, C exports/gates/errors, wrappers and CLI/server first,
+  then run all four original requests through each actual public surface with
+  missing-model/schema/order/tie/rounding/media/error/recovery/offline controls.
+  Root Qwen compiler contraction changes require final same-source OCR audit.
+  [API boundaries](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity)
+  retain Gemma flat JSON/768-vector semantics. Registry/catalog aliases and
+  publication wait for immutable self-contained model and actual consumer proof.
+- [ ] **Quality and publication:** only after the above original-first gates,
+  freeze independent licensed retrieval/decision panels, assess F16/quantization
+  while retaining critical head/norm precision and every rejected recipe, and
+  publish checksummed assets/qualified aliases per contributing. Preserve media,
+  batching/padding, long context, GPU backbone and task-quality limits explicitly.
+
+All runtime alternatives stay value-parsed opt-ins until their own original,
+intermediate and final-output gates pass. Large artifacts remain hosted.
+
+### Independent M1 build-only check
+
+- [ ] The [smallest MoEdern handoff](docs/handover-m1-moedern-build.md) can check
+  immutable79e350a0 compilation, weight-free controls and actual Ref synthetic
+  positive/one-bad-row rejection while hosted original work queues. It downloads
+  no model/corpus/framework and authorizes no model outputs. Return the bounded
+  build/control evidence; keep machine paths and local setup notes outside Git.
+  Native original-reference guards remain closed until corrected capture review.
+
+## Executable audit continuation — 27 October 2026
+
+All initial failures and original byte hashes are retained. These are execution
+gates, not completed model support or release qualification. The app remains
+on immutable0.17.12.
+
+- [ ] Integrate MoEdern public query/document roles and self-contained metadata
+  after reviewed raw-text40455093591. Then27M,115M and separately frozen
+  retrieval/quantization. See the detailed model lane above.
+- [ ] Execute/review UltraBERT native SciFact v3 after completed token A/B
+  40434717493: all5,483 IDs/masks/full lengths/hashes and14 authored cases exact.
+  Preserve unset/empty/0 historical24/25 mismatches, generic/CLIP bodies and
+  existing truncation. Assembled runtime02402a0d retains integration truncation.
+  Initial40444873884 at ee51e10e failed before all eight native forwards
+  because the long-lived Python process could not resolve the newly materialized
+  GGML dependencies. Corrected d993038e is dispatched as40452077037: mandatory
+  actual fresh-process CDLL smoke, authenticated loader environment and all
+  five exports before releasing eight matrix shards (max2 parallel); require every actual CAPI ID stream preflight before
+  embeddings; label all-attended masks as source-derived, not a CAPI getter.
+  Reuse frozen originals and fixed raw-CLS/dense/ranking gates; retain all
+  historical183/1294/M1 numerical debt. See token review in HISTORY.
+- [ ] Decide the next bounded WASM attribution from completed
+  [layer3 evidence](tests/results/packaging/wasm-layer3-attribution-v1.json).
+  All old anchors and twelve same-input kernel replays pass; composed input
+  differences amplify at FFN quantization/nonlinear boundaries. Keep the
+  initial allocation failure, rejected full panel and rounding default off.
+  A proposed correction needs measured same-input evidence or a separately
+  scoped arithmetic profile, then actual full-panel A/B; no component waiver.
+- [ ] Finish Josev packed/public qualification after completed227-stage
+  raw-request parity. Exact active branches, model-free builds and actual public
+  acceptance gates are listed above. Independent decision quality, GPU backbone,
+  media/batching/long context and quantization remain separate. No original rerun.
+- [ ] Finish final same-source Ovis, native/WASM archive producers and actual
+  consumers before main/release closure. Both experimental defaults remain off.
+  Preserve app0.17.12, no model alias/publication or application pin change.

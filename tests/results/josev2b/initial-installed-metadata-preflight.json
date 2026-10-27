@@ -1,0 +1,150 @@
+{
+  "schema": "crispembed-josev-installed-metadata-rejection-v1",
+  "qualified": false,
+  "bootstrap_source": "c9aa40b761846aa1a4a24d67d32f1c107a22ecd2",
+  "worker_source": "2133cfa12dbdd25653fd68b1a6054f69f80f7e9c",
+  "bootstrap_sha256": "a01baf706fc40d798968876335fa2e1bdca9205f99454dca454f28e34cdffa30",
+  "contract_sha256": "6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da",
+  "raw_bootstrap": {
+    "bytes": 6422,
+    "sha256": "653b29d01a24890c0eb831c01df4f263335a4fbcb7b8431edcdaa5f8941e0ae8"
+  },
+  "status": "rejected",
+  "hardware": [
+    [
+      "Tesla T4",
+      "7.5",
+      "15360",
+      "14912",
+      "580.178.04"
+    ],
+    [
+      "Tesla T4",
+      "7.5",
+      "15360",
+      "14912",
+      "580.178.04"
+    ]
+  ],
+  "python": "3.13.15 (main, Aug  6 2026, 11:06:22) [GCC 13.3.0]",
+  "environment_lock": {
+    "path": "docs/josev2b-environment-lock.json",
+    "sha256": "7d16c6560da3a9bf24f1c19f3581f1a5911b87360c0cef6484b92f8810aa8be8",
+    "requirements_path": "tools/kaggle/josev2b-original/requirements.lock",
+    "requirements_sha256": "89fa4670a29ccfe3df867660715884c0b76e45103c44bcbb54ba825a2eccc489",
+    "packages": 57,
+    "policy": "All57 exact wheel URLs/SHA256, full activeLinuxCPython3.13 Requires-Dist/extras closure; --no-deps --require-hashes install; exact installed metadata and isolated origins before model access",
+    "native_or_reference_result": false
+  },
+  "commands": [
+    {
+      "name": "git-init",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.11683041000000571,
+      "log": "git-init.log",
+      "sha256": "94e2a81b9e3b78b6c23dd22672c828282b336e6ed936955f39fa8aa1b4c27a31",
+      "bytes": 568
+    },
+    {
+      "name": "git-remote",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.023295902999990403,
+      "log": "git-remote.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "name": "git-fetch",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 3.574520514999989,
+      "log": "git-fetch.log",
+      "sha256": "7593c88625ea46b14ddee3f40b4397be8c8ad0fb7fc3e3ebb8e851e67aec5383",
+      "bytes": 123
+    },
+    {
+      "name": "git-checkout",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.6158063839999954,
+      "log": "git-checkout.log",
+      "sha256": "b09fbad44b3b3347d811d9a513fa46f08cd42ce4fcbc5749a9045ee7bcac762a",
+      "bytes": 96
+    },
+    {
+      "name": "bootstrap-isolated-pip",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 2.1195450240000184,
+      "log": "bootstrap-isolated-pip.log",
+      "sha256": "ecfd33a57d40c8dff98bd07f78481816b12f7c2b5406cfe2699d164b39ccd19e",
+      "bytes": 401
+    },
+    {
+      "name": "verify-isolated-prefix",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.11469624800000133,
+      "log": "verify-isolated-prefix.log",
+      "sha256": "8a17c8935213faf29c7110578f7ec6cf6453a1a1254ca7ecda49c27fc47e40ee",
+      "bytes": 227
+    },
+    {
+      "name": "verify-complete-lock",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.4154612410000027,
+      "log": "verify-complete-lock.log",
+      "sha256": "9bc1bcfe8926fc73424b44af13abfb65f333ffd4a52f7405f84c5fe2415050fd",
+      "bytes": 220
+    },
+    {
+      "name": "install-original",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 596.243159969,
+      "log": "install-original.log",
+      "sha256": "44a2e0ca71640ca64fd2ecf7045ce65d94a7558ffab5251b055eca191a1c212e",
+      "bytes": 27848
+    },
+    {
+      "name": "pip-check",
+      "exit_code": 0,
+      "timed_out": false,
+      "seconds": 0.3651685359999419,
+      "log": "pip-check.log",
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f",
+      "bytes": 132
+    },
+    {
+      "name": "verify-installed-environment",
+      "exit_code": 1,
+      "timed_out": false,
+      "seconds": 0.6162129819999791,
+      "log": "verify-installed-environment.log",
+      "sha256": "a76c10778ed36e0358ec00d5b8e00df333f58572223fc4b3bc24ac657ffa659a",
+      "bytes": 806
+    }
+  ],
+  "completed": {
+    "isolation": true,
+    "complete_lock_preflight": true,
+    "all57_package_install": true,
+    "pip_check": true
+  },
+  "rejection": {
+    "phase": "verify-installed-environment",
+    "package": "setuptools",
+    "message": "installed wheel METADATA bytes differ: setuptools",
+    "actual_cause_proven": false,
+    "ambiguity": "The current guard combines METADATA candidate count and SHA mismatch under one error. It may select vendored dist-info/METADATA entries; archive and installed owner metadata require independent attribution."
+  },
+  "cuda_smoke_executed": false,
+  "framework_runtime_imports_executed": false,
+  "model_tokenizer_accessed": false,
+  "next_gate": "Hosted CPU audit of exact hash-pinned wheel archive owner METADATA, vendored candidates, published sidecars and dependency semantics; review before a corrected selector/profile or another GPU run.",
+  "local_payload_downloads": false,
+  "automatic_retry": false
+}

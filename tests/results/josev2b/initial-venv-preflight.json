@@ -1,0 +1,104 @@
+{
+  "schema": "crispembed-josev-original-venv-preflight-v1",
+  "outcome": "rejected-at-ensurepip-before-framework-and-model",
+  "qualification": false,
+  "bootstrap_source": "142cc75c32ba8c90158f60f20638f8291a494db2",
+  "bootstrap_sha256": "29d454cf8feeb8dcadefd4c56932007c9a06a5a658df44649fb76621ab58a69a",
+  "worker_source": "1e723a96f8fed0ea34b0e071e88f29561a315aaa",
+  "producer_report_sha256": "3d8c027d78ae2887b2e95f01d61145391a2feb23561da79491bab814a907275a",
+  "producer_preflight": {
+    "schema": "crispembed-josev2b-bootstrap-v1",
+    "conclusive": false,
+    "status": "rejected",
+    "retry_permitted": false,
+    "worker_source": "1e723a96f8fed0ea34b0e071e88f29561a315aaa",
+    "runtime_profile": "cuda-f32-python313-v2",
+    "python_expected": "3.13",
+    "contract_sha256": "39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460",
+    "commands": [
+      {
+        "name": "git-init",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.1155031710000003,
+        "log": "git-init.log",
+        "sha256": "94e2a81b9e3b78b6c23dd22672c828282b336e6ed936955f39fa8aa1b4c27a31"
+      },
+      {
+        "name": "git-remote",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.007772143000011056,
+        "log": "git-remote.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "git-fetch",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 3.724062271999969,
+        "log": "git-fetch.log",
+        "sha256": "467ac9bf24ea9141d64a12361cbe26f25ae75c166990599efcd26e1cd59e3cc1"
+      },
+      {
+        "name": "git-checkout",
+        "exit_code": 0,
+        "timed_out": false,
+        "seconds": 0.6153713559999687,
+        "log": "git-checkout.log",
+        "sha256": "ee3452a6326cb4ede2f51ecdd43e12d34b30479a1fd3e6de8b540e0811071e0f"
+      }
+    ],
+    "model_payload_accessed": false,
+    "limits": "Original-only four owned text cases; no native or quality qualification.",
+    "bootstrap_sha256": "29d454cf8feeb8dcadefd4c56932007c9a06a5a658df44649fb76621ab58a69a",
+    "python": "3.13.15 (main, Aug  6 2026, 11:06:22) [GCC 13.3.0]",
+    "hardware": [
+      [
+        "Tesla T4",
+        "7.5",
+        "15360",
+        "14912",
+        "580.178.04"
+      ],
+      [
+        "Tesla T4",
+        "7.5",
+        "15360",
+        "14912",
+        "580.178.04"
+      ]
+    ],
+    "error": "CalledProcessError: Command '['/tmp/crispembed-josev2b-original-v1/venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.",
+    "files": {
+      "git-fetch.log": {
+        "bytes": 123,
+        "sha256": "467ac9bf24ea9141d64a12361cbe26f25ae75c166990599efcd26e1cd59e3cc1"
+      },
+      "git-init.log": {
+        "bytes": 568,
+        "sha256": "94e2a81b9e3b78b6c23dd22672c828282b336e6ed936955f39fa8aa1b4c27a31"
+      },
+      "git-remote.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "git-checkout.log": {
+        "bytes": 89,
+        "sha256": "ee3452a6326cb4ede2f51ecdd43e12d34b30479a1fd3e6de8b540e0811071e0f"
+      }
+    }
+  },
+  "independent_review": {
+    "four_git_command_logs_rehashed": true,
+    "actual_python": "3.13.15",
+    "hardware": "Two Tesla T4, capability7.5,15360MiB each; driver580.178.04",
+    "framework_installed": false,
+    "model_tokenizer_payload_accessed": false,
+    "original_reference_outputs_exist": false,
+    "underlying_ensurepip_child_diagnostic_retained": false,
+    "limits": "Child error is retained at subprocess boundary; exact ensurepip internal cause was not captured. Hardware compatibility preflight is not actual CUDA/framework/inference proof.",
+    "next": "Reuse established Ovis venv-without-ensurepip plus base pip --python isolated bootstrap; preserve arithmetic/profile/gates and no unsupported-GPU retry.",
+    "private_service_access_details_committed": false
+  }
+}

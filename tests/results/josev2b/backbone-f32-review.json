@@ -1,0 +1,34 @@
+{
+  "schema": "crispembed-josev-backbone-review-v1",
+  "completed": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40438416809",
+  "source": "ab9982779574b38ea9698667dd5dd3614208bee6",
+  "small_artifact": {
+    "id": 12705272540,
+    "bytes": 202434,
+    "sha256": "2c1dcdc24d9350407644199b0e072e0dee3b42b5c0fd6f1013bd56e41ae9f7f2"
+  },
+  "raw_artifact": {
+    "id": 12705232941,
+    "bytes": 4506964734,
+    "sha256": "c4ac07e8eaaf37e7e1ea191646ebd5cfd28afdef590696119477bb8e9ef9b9ac",
+    "downloaded": false
+  },
+  "review": {
+    "small_members": 11,
+    "stage_comparisons": 104,
+    "all_actual_ref_and_independent_metrics_pass": true,
+    "embedding_bit_exact": true,
+    "first_byte_difference": "layer0",
+    "worst_absolute_error": 0.000625908374786377,
+    "worst_case_stage": "mixed-de final_norm",
+    "minimum_row_cosine": 0.9999999984746153,
+    "minimum_row_cosine_case_stage": "null-and-options layer14",
+    "all_ordinary_repeat_exact": true,
+    "language_model_tensors": 320,
+    "excluded_vision_tensors": 297,
+    "excluded_mtp_tensors": 15
+  },
+  "full_model": false,
+  "representative_quality": false
+}

@@ -151,9 +151,9 @@ German fixtures via `tests/test_ppocrv6_graph_gold.py --require`: CPU logits
 cosine is `0.999995–0.999996`, Metal is `0.999956–0.999982`, with unchanged
 decoded text. Only the tiny single-crop lane still needs the explicit accept
 switch; small and medium are accepted by default (see above).
-Regenerated references are backed up under
-`/Volumes/backups/ai/crispembed-gguf/` and belong in the corresponding
-`cstr/PP-OCRv6_*_rec-GGUF` repositories.
+Regenerated references belong in the corresponding public
+`cstr/PP-OCRv6_*_rec-GGUF` repositories. Local backup locations are retained
+only in private environment notes.
 
 Non-CPU detector graphs use F16 resident convolution weights; the CPU graph
 stays F32 (`ppocrv6_det.cpp::graph_conv`). Set

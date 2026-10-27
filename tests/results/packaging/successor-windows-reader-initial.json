@@ -1,0 +1,90 @@
+{
+  "schema": "crispembed-successor-initial-windows-reader-rejection-v1",
+  "run": 40354251257,
+  "job": 121718563370,
+  "producer_source": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+  "audit_source": "49161f608af811154bfeb816ac38caea34224cae",
+  "small_artifact": {
+    "id": 12672395498,
+    "bytes": 2420,
+    "sha256": "cf7c3ee1748741286d8f0898d80d6bc75c8c0c85f4dbb01638d5a047d671257c"
+  },
+  "actual_archive_receipt": {
+    "schema": "crispembed-successor-fresh-consumer-v2",
+    "source_commit": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+    "consumer_source": "49161f608af811154bfeb816ac38caea34224cae",
+    "runtime_source_closure": {
+      "scope": "Exact production/build/binding Git objects; audit helpers may differ",
+      "objects": [
+        "100644 blob a3e1e2ef055065cbef4644c050bb2e56f364a847\t.gitattributes",
+        "100644 blob 308671d0aec850755b7d8cd32d90ff4d7975aee9\t.github/workflows/release-wasm.yml",
+        "100644 blob dc5a19d5fac3944cb7ce644f9115ac39ee49a07c\t.github/workflows/release.yml",
+        "100755 blob f11974f327c73b5b1879b47d735697ad4c74e328\tCMakeLists.txt",
+        "100644 blob 6f447bf1a3c2db7d2359b2e269f65d1f60000dc9\tCargo.lock",
+        "100644 blob bd6ec050511889fcec725b6c5807c686aafef368\tLICENSE",
+        "100644 blob e3c5bd56baeca3886a8ce2ae85e5174ef3501c36\tREADME.md",
+        "100644 blob 1232e031f718d2622c198f0f64a2a58e2f7f46b0\tVERSION",
+        "100755 blob dc6058ff9adc033f6fc19bb81feb65050a89aff0\tbuild-embed-wasm.sh",
+        "100755 blob cce846a6a88cd42c6d167e803aaae6711e38cb4a\tbuild-wasm.sh",
+        "040000 tree 9a76ffe127104d815de41d1da09335d2937ba50b\tcmake",
+        "040000 tree c2d42e8718ec3a82b993f2da733dea5d0a24f3b3\tcrispembed-sys",
+        "040000 tree 94c3f40dca381a69216739b603ccbd6e235c92dc\tcrispembed",
+        "040000 tree 6032e1fe0573ac31690af8fe9725efd59c94d6d7\texamples",
+        "040000 tree 11864ee434d43b107613a296c1fb49426b76a5a6\tflutter",
+        "160000 commit 890278a8342c620197c90e702e1188bcab94f510\tggml",
+        "040000 tree 271126bf6c6b5c9d66ab37d640e1964d8a94f608\tpython",
+        "100644 blob c591cace178f888e3823f9fe739aa8831ff80df5\tscripts/check-bundled-deps.py",
+        "100644 blob f61e0a405bfbdef91cf81c78e346aff9a0710947\tscripts/check-cpu-baseline.py",
+        "040000 tree e5cbd629818f0424e272bc84469e9375eee804d2\tsrc",
+        "100644 blob abc4edd78887a4091c81912953a09bbc3f8bb12b\ttools/quantize.cpp",
+        "100644 blob d5fc37cb406c5ae8fd10e3557f795ddee97c9609\ttools/successor_asset_manifest.py",
+        "040000 tree 8c13a0e3fb4460b8fd8f853b9761c515becaf770\twasm"
+      ],
+      "consumer_source": "49161f608af811154bfeb816ac38caea34224cae"
+    },
+    "ggml_gitlink": "890278a8342c620197c90e702e1188bcab94f510",
+    "generator_git_blob_sha256": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
+    "consumer_generator_file_sha256": "99a292ee6f199b95819bb41ec8560303182bab80e61d814d85b8a77514dc2d86",
+    "producer_run": 40339796226,
+    "manifest_artifact": {
+      "id": 12661454736,
+      "name": "successor-native-manifest",
+      "size_in_bytes": 5593,
+      "digest": "sha256:c5f341a4f03b0cefc80774f386430bf77e3db6f829cb8be6a8367bb85980699e"
+    },
+    "payload_artifact": {
+      "id": 12661530847,
+      "name": "windows-x86_64",
+      "size_in_bytes": 8587057,
+      "digest": "sha256:fba61c35a2f4322978f9c6af2e083dae6028075055027b2532515da477684d8a"
+    },
+    "archives": [
+      {
+        "name": "crispembed-windows-x86_64.zip",
+        "sha256": "bb58aa6b1aedc7a8aeef346040895522aaede2e53220b75df3c9301586b12f33",
+        "member_count": 36
+      }
+    ],
+    "qualification": false,
+    "limits": [
+      "Archive validation alone is not runtime/model quality qualification."
+    ]
+  },
+  "failure": {
+    "step": "Actual CLI, shipped header exports, compiled C ABI and Python vectors",
+    "type": "UnicodeDecodeError",
+    "reader_encoding": "cp1252",
+    "offending_utf8_character": "U+2581",
+    "offending_byte": "0x81",
+    "source_site": "tools/ci-heavy/successor_assets.py: header.read_text()",
+    "scope": "Archive/CLI download checks preceded the failure; Windows header/export/compiled C/Python/offline-vector panel did not complete."
+  },
+  "independent_review": {
+    "small_zip_and_members_verified": true,
+    "actual_completed_job_log_inspected": true,
+    "runtime_or_archive_bug_inferred": false,
+    "fix": "Strict UTF8 source/JSON/log reading and MSVC /utf-8; audit-only, no runtime/model/gate change.",
+    "corrected_hosted_consumer_verified": false,
+    "next_gate": "Fresh final integrated-source producer/consumer batch; do not mark current incomplete panel qualified or redo unchanged40-source jobs."
+  }
+}

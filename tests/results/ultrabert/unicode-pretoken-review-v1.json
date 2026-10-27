@@ -1,0 +1,32 @@
+{
+  "schema": "crispembed-ultrabert-unicode-pretoken-review-v1",
+  "completed": true,
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40434717493",
+  "source": "01878e807560cc6f16fdebddfbe4ddd4940cbc43",
+  "small_artifact": {
+    "id": 12705037397,
+    "bytes": 24653,
+    "sha256": "c4cd68cc5c7ee3dd659bfbb9000becbdff531bbd6af948843f1009ce148ffc1b"
+  },
+  "raw_artifact": {
+    "id": 12705167101,
+    "bytes": 61660010,
+    "sha256": "d9d42176d4993df6b483b512540153c9e0a660fe7b4d54a589cc729343d129fa",
+    "downloaded": false
+  },
+  "review": {
+    "all_5483_original_ids_masks_full_lengths_hashes_exact": true,
+    "authored_original_cases": 14,
+    "unset_empty_zero_historical_fields_exact": true,
+    "historical_clipped_full_mismatch_counts": [
+      24,
+      25
+    ],
+    "historical_jsonl_byte_identical": false,
+    "historical_projection_explanation": "New emitter adds attention_mask; all historical fields compare exactly after projection.",
+    "two_row_original_and_native_pretoken_details_reviewed": true
+  },
+  "embedding_parity": false,
+  "retrieval_quality": false,
+  "default_enabled": false
+}

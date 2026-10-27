@@ -1,3 +1,304 @@
+## 27 October 2026 — MoEdern1.5M raw-text composition
+
+[Actual40455093591](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40455093591)
+at1a053116 passes all ten raw-text cases, twenty original vector comparisons
+and three original MaxSim scores through native tokenizer and F32 inference.
+No original IDs/hidden states are injected and no original forward is repeated.
+All twenty ordinary final-vector hashes exactly match the earlier native-v2 run.
+[Small panel](tests/results/moedern-colbert/text-composed.json) and
+[independent review](tests/results/moedern-colbert/text-composed-review.json)
+retain actual Ref/NumPy agreement, all input/mask/expansion identities,550 test
+stages, ordinary observer exclusion, rejection/recovery, repeats and ownership.
+Worst final absolute error is0.0000006332994; minimum cosine0.9999999999968416.
+MaxSim errors are0.00000190735/0.00000381470/0.0000114441. Authenticated small
+reports/manifests were independently reviewed; raw vector bytes remain remote.
+This clears the bounded1.5M CPU/F32 text composition gate, before public APIs,
+representative retrieval, larger variants, quantization or release qualification.
+
+## 27 October 2026 — Josev raw-request composition and MoEdern tokenizer
+
+[Josev40449265616](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40449265616)
+at ed23f1ae passes all227 mapped original stages and all four complete typed
+responses from raw requests, without injected reference IDs, hidden states or
+lexical vectors. Actual Ref and independent numerical comparisons retain the
+fixed0.002/0.99999 gates; nine nodes are bit-exact. Worst absolute error is
+0.0006259084 at mixed-de final norm, minimum cosine0.9999999984746153, worst
+logit/probability errors0.0000168085/0.00000214577, and ordinal error0.00000351667.
+The earliest byte difference is layer0 in every case (max0.00000500679).
+Twenty-four unmapped rotary/mask/position records remain explicit.
+[Full small panel](tests/results/josev2b/composed-text-panel.json),
+[hosted receipt](tests/results/josev2b/composed-text-hosted.json) and
+[independent review and limits](tests/results/josev2b/composed-text-review.json)
+retain exact sources, compiler/archive controls, artifacts and inspection limits.
+Raw arrays remain remote; this qualifies the bounded three-component CPU/F32
+path, before packed-model, public-interface or task-quality acceptance.
+
+Initial40447333269 at8ab95372 built and authenticated the components but failed
+before inference because the frontend artifact member was assumed to be at its
+root. The corrected adapter explicitly pins
+`josev-tokenizer-schema/josev2b-tokenizer.gguf` and authenticates that small
+component before large payloads. Model math, original gold and budgets are
+unchanged. Packed runtime build40451936611 at0f0b1e59 subsequently passes real
+weight-free shape/header/ownership/gate controls; it does not load a packed model.
+
+[MoEdern40451408614](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40451408614)
+at3da7cf8e passes all34 exact original/authored token streams and role masks,
+1040 normalization checks, ten F64 Unigram DP units, six metadata negatives and
+recovery/ownership/gate controls. See [native receipt](tests/results/moedern-colbert/unigram-native.json)
+and [original receipt](tests/results/moedern-colbert/unigram-original.json).
+All34 small token rows were independently rederived; the complete1040 raw
+normalization rows remain remote and were not independently fetched.
+Initial40447670169 rejected a recorder that treated AddedToken state as JSON
+rather than its actual six-field dictionary. Corrected40449174879 then exposes
+32/34 parity: Rust0.22.2 retains the old normalized Q/D matchers after raw-special
+re-registration, even though the serialized effective descriptor loses that
+history. Explicitly retaining both normalized aliases fixes the two overlaps;
+all old ten-case gold and1040 normalization hashes remain unchanged. This is a
+text frontend proof; model composition/public APIs and larger variants follow.
+
+## 27 October 2026 — Josev native tokenizer and answer formatting
+
+[Independent component review](tests/results/josev2b/text-components-review.json)
+qualifies the bounded frontend and output formatter. Frontend40446469585 at65a6de45
+reports all18 original/authored cases passing, with all four original IDs/masks/
+question-option spans/lexical IDs directly reviewed. Five metadata negatives,
+six input rejection/recovery groups and context gates pass. The9,954,944-byte
+metadata component is pinned with its full SHA256. Full18 native rows remain
+remote; the independent small review discloses that inspection boundary.
+
+Serializer40446419257 at52595644 passes17 answers,66 binary64 rounding cases
+and24 rejection/recovery pairs. Independent reconstruction reproduces all
+reported native JSONL hashes; ordinary and tested answers are byte-identical.
+Actual arithmetic compiler flags and production helper exclusion pass. The
+CPython3.13.15 compensated-sum source is independently rehashed; the authored
+counterexample distinguishes correct0.0313 from plain-fold0.0312.
+
+Preserve initial frontend40440257882 and diagnostic40444002658: both reproduce
+four frozen original inputs, then reject a converter assumption that ByteLevel
+trim_offsets was true. Authenticated policy proves false; only that requirement
+is corrected. Initial serializer40443922195 completes publisher gold generation
+but fails compilation on a missing standalone Ryu include path. Corrected
+standalone targets add that path; runtime/gold/inputs remain unchanged.
+These are component proofs, not composed model, task-quality or release proof.
+The explicit full composition source8ab95372/40447333269 now reuses reviewed
+backbone/head/tokenizer artifacts with no original hidden-vector injection.
+
+## 27 October 2026 — Smallest MoEdern native parity reviewed
+
+[Native-v2 actual40441341206](tests/results/moedern-colbert/native-v2-review.json)
+atcec6b7f0 passes all10 cases:114 F32 actual-Ref/independent comparisons and63
+exact integer checks. Primary112 stages and21 supplemental observations stay
+separate;138 historical primary rows are not mapped natively. All final vectors
+and three MaxSim pairs compare to the old successful primary, never substitute
+the rejected supplemental gold. All ordinary/observer/repeat, six typed loader
+negatives, valid-loader, gate recovery, observer-failure and two-context ownership
+controls pass. Earliest byte differences are embedding.projection, with no
+failing stage. Worst intermediate error0.000267028809; worst final6.33299351e-7;
+MaxSim errors1.90735e-6/3.81470e-6/1.14441e-5. All fixed budgets remain.
+
+Independent small review authenticates29 included member hashes,15 lane sources,
+26 protected objects, four unchanged79e350a0 blueprint files and service lineage.
+All250 old-to-supplemental rows pass their numeric envelope, but156 changed
+hashes and false byte continuity remain rejected. Eight cases have final-vector
+references only; four native-only stages per full case remain unreferenced.
+Unigram frontend/role masks, public text APIs, representative retrieval,27M/115M,
+quantization, publication and release remain pending. Raw artifact12706701220
+stays remote through25 January2027; preserve original bytes before expiry.
+
+## 27 October 2026 — Josev backbone and UltraBERT corpus tokenizer parity
+
+[Josev backbone40438416809](tests/results/josev2b/backbone-f32-review.json)
+atab998277 passes all104 embedding/layer/final-norm comparisons using actual
+crispembed-diff Ref and independent metrics. Embeddings are bit exact; first
+byte differences occur at layer0. Worst absolute error0.000625908375 and
+minimum row cosine0.9999999984746153 pass fixed0.002/0.99999 gates.
+All four ordinary/repeat runs agree. Exact320-tensor F32 conversion/readback
+produces7,527,324,576 bytes;297 vision and15 auxiliary MTP tensors are excluded
+because the original calls only language_model. Preserve initial40433507655
+metadata-test failure, zero-step superseded40436018180 cancellation and
+40436303700 undeclared-MTP rejection. No composed output or task-quality claim.
+
+[UltraBERT Unicode40434717493](tests/results/ultrabert/unicode-pretoken-review-v1.json)
+at01878e80 matches all5,483 original token IDs/masks/full lengths/hashes and14
+additional authored Rust-tokenizer cases. Unset/empty/0 preserve every historical
+field and24 clipped/25 full mismatches. JSONL bytes differ because the new
+emitter adds an attention mask; historical projection is exact. No embeddings
+were executed. Continue explicit v3 native retrieval against frozen originals,
+preserving existing truncation and all strict numerical/ranking budgets.
+
+## 27 October 2026 — MoEdern first-attention reproducibility attributed
+
+Hosted [40434080299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40434080299)
+at6fccd863 replays only two original first-attention inputs with exact shared
+norm/Q/K/V/rotary/mask bits and loaded weights. Default and forced CPU-flash
+select the actual aten CPU-flash kernel and reproduce the corrected observer
+output bit-exactly. The old frozen SDPA outputs differ by at most1.19209290e-7;
+forced math differs by at most4.76837158e-7. All18 actual Ref comparisons agree
+with independent metrics under unchanged budgets. Repeat, Mapping observation,
+profiling, same-object layout and backend-state restoration checks pass.
+
+[Reviewed diagnostic](tests/results/moedern-colbert/sdpa-reproducibility-v1.json)
+retains actual reconstructed strides, magnitudes, kernel evidence, exact sources
+and artifact hashes. Old physical CPU/ISA/backend/strides remain unknown. This
+rules out an observation-induced difference on the measured inputs and proves
+current reproducibility, without accepting old byte continuity or qualifying a
+native model. Preserve both primary old250 targets and supplemental21 missing
+pipeline observations separately; the new explicitly versioned native experiment
+must compare old final vectors/MaxSim under unchanged gates, never replace gold.
+
+## 27 October 2026 — Josev native head passes CPU and CUDA original-first parity
+
+The separate genuine GPU task freezes workera69b3fca/bootstrap91f7e721,
+head sourced8b99a9c and ggml890278a8. All123 head stages per backend pass actual
+`crispembed_diff::Ref` and independent metrics across four cases. CPU worst
+absolute error1.14440918e-5 (field layer3), minimum row cosine
+0.9999999999999097; CUDA worst7.62939453e-6, minimum0.999999999999971.
+Final probability max errors are5.96046e-8/8.94070e-8. Every complete typed
+response matches the original exactly on both backends, including model,
+seven answers, probabilities/rounding and token usage.
+
+[Full246-stage report](tests/results/josev2b/head-cpu-cuda-panel.json) and
+[independent review](tests/results/josev2b/head-cpu-cuda-review.json) preserve
+all source/report hashes,72 independently rehashed small files, ten bootstrap
+logs, eight comparison reports, actual Ref0/1/2 controls and28 ordinary/observed/
+repeat field-output hash triplets. All eight neutrality/failure/recovery controls
+pass; observer symbols remain excluded from the plain archive. Raw arrays,
+weights and binaries stay remote. The head panel takes24.97s including comparison
+and controls in one session, with largest child RSS582,276KiB; this is not an
+end-to-end performance comparison.
+
+This closes the bounded head component from original hidden/lexical inputs.
+Native backbone and composed end-to-end typed responses, public APIs, model
+quality and release qualification remain pending. The separately staged current
+runtime uses ggmla06; do not replace it with an auditor branch's890 gitlink.
+
+## 27 October 2026 — Josev raw preservation and F32 head conversion reviewed
+
+Hosted [40429513945](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40429513945)
+at`5da7c64d` authenticates all251 original arrays and exports the four native
+input adapters, then promotes all122 head tensors losslessly and checks GGUF
+readback. Independent review checks all loaded-F32 tensor hashes/shapes,251
+ordered descriptors/manifest hashes, case order and four small report-member
+hashes. The [head component](tests/results/josev2b/head-artifact-review.json) is
+121,900,352 bytes, SHA256`5b0a4bfe769526569102e3cde115887593875124c94bb723fb9087bc40c29507`.
+The317,814,519-byte preserved original/component archive stays remote; no native
+or full-model parity follows from successful conversion.
+
+Separate [40423930364](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423930364)
+at`1f3ee040` audits all57 wheel archives/sidecars/owning metadata without
+framework imports, installation or model access. Independent review rehashes
+all114 small metadata files and matches every ordered package/version/archive/
+owner/sidecar/dependency field plus measured source. [Evidence](tests/results/josev2b/wheel-metadata-review.json)
+retains the distinction between hosted raw archive verification and local small
+metadata review. Native head/backbone and composed typed outputs remain pending.
+
+## 27 October 2026 — composed Ovis interpolation replay reviewed
+
+All eight grid/gate jobs in [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)
+at`8bb9f074` complete and receive primary/independent review. Literal0 reproduces
+each grid's1,662 old vector declarations and the six boundary failing commands
+(twelve failed norm metrics). Literal1 passes all fourteen unchanged calibrated
+arms per grid. All sixteen owning OCR outputs retain exact nine IDs, text and
+EOS. Review covers288 ZIP members,136 command logs and13,296 numeric records;
+large raw arrays remain remote.
+
+[Combined evidence](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
+retains strict flags: boundary norm max0.00363087654 F32/0.00338554382 F16 still
+exceeds0.002 while passing existing calibrated budgets. Square norm errors
+increase slightly; this is not uniform numerical improvement. Original eleven-case
+quality replay remains exact on1,841 IDs/text/EOS. The global shared interpolation
+default stays off,2048 remains unqualified, and exact final integration source
+checks remain pending. The source closure's changed-file field describes tracked
+base sources, not all newly added excluded standalone MI-GAN files.
+
+## 27 October 2026 — corrected MoEdern observer rejects real reference drift
+
+The mandatory Mapping/pipeline observer captures271 arrays, including21 missing
+pipeline leaves, in [40423259251](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251)
+at`8b153739`. The strict continuity gate rejects real drift:156 of250 historical
+array hashes and all ten ordinary/selected outputs change despite exact inputs,
+weights and recorded software. The first captured difference is SDPA0 output;
+preceding Q/K/V, rotary and mask bytes agree. Within-run observation remains
+neutral. Three MaxSim changes range from−1.90735e-6 to+7.62939e-6.
+
+[Retained rejection](tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
+records source/artifact identities and limits. CPU ISA, selected SDPA backend and
+original tensor strides were not recorded, so no host/backend explanation is
+claimed. Preserve both original receipts and unchanged strict guards. A bounded
+hosted first-attention replay, not replacement gold or native qualification,
+is the next task.
+
+## 27 October 2026 — original Josev reference independently reviewed
+
+The original worker`b2edf8c8` completes four CUDA/F32 neutral/repeat cases with
+251 arrays and122 loaded head tensors. Primary and independent review authenticate
+the source/input/environment/head receipts and all bootstrap/installer logs;
+seven typed answers match the pinned pure output function. Actual reference
+execution takes39.46s with peak CUDA allocation9,082,022,400 bytes. The
+[review](tests/results/josev2b/original-review.json) preserves payload-access
+limits. All raw arrays remain remote. Native head/backbone/API, representative
+quality and any publication are subsequent gates.
+
+## 27 October 2026 — WASM layer-three attribution completes with old anchors intact
+
+The corrected connected-view capture
+[40424064413](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424064413)
+at`dfd7bb4f` completes. Both native repeats and both WASM gate profiles reproduce
+all eight old stage hashes, ordinary/observer output and final vectors. All
+twelve same-input projection replays have identical converted activation bytes
+and scales, with maximum errors at most1.431e-6. Composed tiny input changes
+amplify in the FFN: up-projection max0.000572562, GELU0.000356972,
+down-projection0.003311038 and layer output0.002918929. The earliest named strict
+failure is down-projection, with original/candidate L2 approximately55.304512.
+[Metrics and immutable artifacts](tests/results/packaging/wasm-layer3-attribution-v1.json)
+preserve the full23-subnode magnitudes and twelve actual Ref comparisons.
+This diagnostic does not establish a same-input quantization-kernel defect or
+qualify the earlier eight-of-ten rejected full-model panel. The initial allocator
+failure, old gold, budgets, converter and default-off alternatives remain intact.
+
+## 27 October 2026 — all SciFact tokenizer rows diagnosed before new embeddings
+
+Tokenizer-only [40424357191](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424357191)
+at`c86fc007` replays all5,483 original IDs/masks/full-token hashes exactly before
+native comparison. Native ordinary/observed IDs agree, but24 clipped and25 full
+rows differ from the original; both initial executed negatives reproduce.
+[Diagnostic receipt](tests/results/ultrabert/scifact-tokenizer-diagnostic-v1.json)
+retains first differing token positions and immutable remote artifacts.
+This is a completed diagnosis, not a tokenizer correction or retrieval result.
+No new embeddings are authorized before all-row token parity; frozen original
+vectors and the six unexecuted cancelled native legs remain unchanged.
+
+## 26 October 2026 — Position replay stopped on raw/public report path redaction
+
+Composed replay [40356657327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327)
+at`ad09168e40041ef945d16fdb2e554c8433c7cffc` retains four actual structural
+failures: control-square and large-landscape, each with the interpolation gate0
+and1. Each passes bounds/recovery controls and immutable extraction, then stops
+before the fourteen-arm audit at the raw/public original-JSON comparison. The
+two frozen-control jobs complete successfully. Both queued boundary jobs are
+cancelled before any job steps after the same frozen metadata discrepancy is
+demonstrated; they are not executed numerical failures.
+
+[The negative receipt](tests/results/qwen35-ocr/ovisocr2-position-report-redaction-failure.json)
+records exact jobs, four small artifact ZIP/member hashes, complete job-log hashes,
+original JSON identities and cancellation state. Only small reports/logs are
+downloaded for this review. The retained raw `original.json` was hashed before
+the public producer writer redacted the runner prefix in its enclosing
+`original_capture.source_config._name_or_path`. A private comparison-only
+unredaction reconstructs the exact frozen original-JSON byte count/SHA for all
+three authored input sizes; no scientific field differs.
+
+The bounded harness correction rechecks the raw file's frozen byte count/SHA
+before parsing, requires the declared model/revision suffix, maps only that
+single absolute prefix to the existing public`<scratch>` marker on a comparison
+copy, and still rejects every other field difference. The raw file, original
+arrays, models, prompts, caps, gold, numerical budgets, runtime and both gated
+alternatives remain unchanged. Five dependency-free controls cover exact raw
+identity, the one permitted redaction, other config/numerical/output differences,
+wrong snapshots and invalid prefixes. Corrected hosted composed execution and
+independent numerical/decoded review remain pending; no gate is waived by this
+report comparison repair.
+
 ## 25 October 2026 — Bounded decoder weight cache audited; default remains off
 
 The per-context F32/F16 decoder weight cache is complete behind
@@ -2715,9 +3016,8 @@ LFM2.5-Embedding-350M, nomic-embed-text-v2-moe, arctic-embed-m-v2. Table +
 method in `docs/LANGUAGES.md`.
 
 **VPS work package:** E1/E2/E3/E5/E6 are all CPU-only and need no GPU — they
-are written up as a ready-to-run brief for the 8 GB VPS in
-[`docs/vps-embedding-lane-brief.md`](vps-embedding-lane-brief.md) (paths, disk
-rules, worktree requirement, acceptance). E4 is Kaggle. E7 is partly done.
+had a separate environment-specific execution brief. Machine paths and setup
+notes belong in private environment continuity. E4 is Kaggle. E7 is partly done.
 
 #### E1. Finish the JA embedder matrix — 7 shipped multilingual aliases untested [Opus] — DONE 2026-08-08
 
@@ -15567,6 +15867,25 @@ all four rejected candidates, development0.17.13 and immutable app0.17.12 remain
 unchanged; this validation tooling creates no runtime release.
 
 
+## 26 October 2026 — retained 2048 final-norm isolation
+
+[Actual40286291355](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40286291355)
+at`91292cb00b54d9e62e675d8acc6c13b0c73e37ca` consumes the byte-pinned rejected
+2048 source archive without a full model/native forward or conversion. All12
+original norm anchors reproduce bit-for-bit; original RMSNorm on identical
+native inputs differs from native by at most3.05176e-5 under unchanged local
+gates. Original RMSNorm instead reproduces upstream-amplified composed failures
+0.00394583/0.00438643, so no norm correction or budget waiver is justified.
+All37 vision boundaries and prefill decoder layers are retained in
+[the complete producer/review](tests/results/qwen35-ocr/ovisocr2-2048-norm-attribution.json).
+Patch/position/rotary first differ by3.81470e-6/4.52995e-6/5.96046e-8. The
+coordinates/weights and reduction of the original position utility are the next
+source-input probe. The initial40285243787 was cancelled during framework setup
+to inspect patch/position branches before their sum, rather than treating the
+old dictionary insertion order as computation order. Five small source/archive
+controls pass. Large vectors remain remote, the original8/14 result and all
+six failed arms unchanged;2048 remains unqualified/default1024. This is the
+completed norm-isolation stage, not completion of vision attribution.
 ## 26 October 2026 — expiring Ovis3 native vectors preserved without inference
 
 [Actual40287253703](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40287253703)
@@ -15590,6 +15909,24 @@ and future renewal remain in PLAN; this bounded November-expiry copy is done.
 `9002507f476507e40b28e7ac21c1bc47328c402e` after all13 final-source checks pass.
 Its preservation ownership row is closed. Fresh-main integration checks are
 tracked separately; no model or runtime source changed in this lane.
+
+## 26 October 2026 — source-order interpolation matches original operators
+
+[Original-input40328446801](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40328446801)
+at59603adf passes all five tested grids. Coordinates, indices, weights and final
+position vectors are bit-exact to the actual original module; original frozen
+position and patch anchors reproduce exactly. Native patch error remains
+3.814697265625e-6. Unset/literal0 preserve the old ordinary native bytes. The
+new source-order interpolation stays default-off, with composed frozen-reference
+A/B still required. The operator receipt preserves27 comparisons and exact
+source/artifact identities; it makes no decoded-quality or2048 promotion claim.
+
+Initial composed dispatch40334434703 was cancelled before its queued build
+started. Review strengthened the replay before any native execution: literal0
+now checks every retained ordinary vector SHA, context markers are required,
+and the baseline control succeeds only when its old numerical failure set is
+reproduced exactly. The six old failures stay explicit numerical failures;
+a positive baseline byte-control is separate from candidate qualification.
 
 ## 26 October 2026 — original MI-GAN256 capture and lossless conversion
 
@@ -15663,6 +16000,57 @@ The [initial receipt](tests/results/migan/initial-native-parity.json) retains
 all failed comparisons and actual artifact/source identities; qualification is
 still false until the complete corrected panel is reviewed.
 
+## 26 October 2026 — initial SciFact preparation stopped in generic controls
+
+[Preparation40340827694](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40340827694)
+at`ff030c0ae46a5147232ae3f561b308abdae6b509` failed the parent metadata
+workflow's weight-free controls before SciFact dataset access, framework setup
+or model output. The positive fixture in `tests/test_ovisocr2_ffn.py` called the
+manual historical first-FFN preflight against the current whole `src` tree; the
+unrelated, default-off UltraBERT truncation addition correctly differed from
+that old arithmetic pin. This is an initial controls-fixture failure, with no
+SciFact quality or throughput result.
+
+The generic test now uses the frozen mocked Git contract from1fb17248 and keeps
+negative changed-tree, wrong-ggml and dirty-source controls. The manual
+`tools/ci-heavy/ovisocr2_ffn.py` historical whole-source guard is unchanged.
+The SciFact protocol, input policy, sources and acceptance budgets are unchanged;
+actual preparation and independent data/length/timing review remain pending
+before the full original-first panel. The failed run stays preserved.
+
+## 26 October 2026 — SciFact canonical split adapter rejection retained
+
+Preparation40346793408/4469e913 passes parent/source controls and installs its
+pinned original environment, then fails before tokenizer/weight access or model
+outputs with duplicate author claim ID6. The author archive includes canonical
+train/dev/test plus five overlapping cross-validation partitions; the loader
+incorrectly concatenated every`claims_*` member. The pinned author README
+explicitly distinguishes these partitions. The corrected adapter selects exactly
+the canonical three files and still rejects missing files and duplicate canonical
+IDs. All unused cross-validation member hashes remain retained; no retrieval
+query, document, gold, token policy or numerical/ranking budget changes.
+[The initial receipt](tests/results/ultrabert/scifact-initial-data-rejection.json)
+preserves actual source/member identities and failure; every recorded source hash
+is independently matched to4469e913. Actual original archive SHA11c62128 is now
+pinned in addition to version ID/size/ETag. Twelve source controls pass, including
+canonical duplicates and exclusion of overlapping cross-validation copies.
+The corrected original-only preparation must complete before a full panel.
+
+## 26 October2026 — SciFact stored-column mismatch retained before model access
+
+Preparation40353858454/57aab2cf fixes the earlier cross-validation duplication
+but rejects exact author/BEIR corpus equivalence at document10068634. It stops
+before tokenizer/weights/model outputs. The initial report omits the differing
+field/codepoints, so no normalization or input-policy change is justified.
+[The retained receipt](tests/results/ultrabert/scifact-initial-corpus-rejection.json)
+binds actual report/raw service identities; independent review checks its small
+ZIP/members and every source hash against57aab2cf. Large datasets stay remote.
+Primary loader/source review finds no documented stored-column cleanup. New
+hosted diagnostics preserve all mismatch IDs/counts and eight bounded exact
+codepoint examples, plus pinned legacy-BEIR-JSONL versus Parquet comparison.
+Strict v1 equality, full row inventories, gold and numerical/ranking budgets
+remain unchanged; fifteen source controls pass. No full panel is dispatched.
+
 ## 26 October 2026 — bounded UltraBERT RoPE attribution closed
 
 [Actual40336758177](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40336758177)
@@ -15703,6 +16091,39 @@ and exact production/build/binding objects protect audit-only helper updates;
 actual producer and consumer sources are recorded separately. No release tag,
 model qualification or application0.17.12 pin changes.
 
+## 26 October 2026 — unchanged Ovis quality control and independent replay scheduling
+
+The gate0 job of40334662677/95a9ba48 completes the full first-F16 eleven-case
+control: all1,841 IDs, raw/processed text, EOS/caps, input hashes and selected
+confidences match the immutable first F16 receipt exactly. Independent review
+checks the actual1,680,184-byte ZIP,34 members,37 source hashes and15 command
+logs. Its gate1 arm is still pending; no interpolation/2048 promotion follows.
+
+Composed attempt40338087357 was cancelled while pending with no jobs, solely
+to remove an orchestration dependency on the full eleven-case workflow. Exact
+sourcead09168e is retained on`audit/ovis-position-composed-20261026` and dispatched
+as40356657327. The separate ref permits independent scheduling; all source
+bytes, frozen references,14-arm/four-grid gates and maximum two parallel jobs
+are unchanged. The earlier queued cancellation40334434703 remains retained.
+
+## 26 October 2026 — source-order interpolation first-F16 quality reviewed
+
+[Both gate arms40334662677](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40334662677)
+complete successfully at `95a9ba4841e876e5c7473bc83ab128fad87fdfb4`. Independent
+review rehashes both actual report ZIPs, every member,37 source files and15
+command logs per arm. All11 cases retain1841 IDs, raw/processed text, EOS,
+unchanged caps and input identities against the frozen first-F16 baseline.
+Gate0 confidences remain bit exact. Gate1 changes confidences in six cases,
+maximum absolute drift0.000024796 on the two-column page; no new tolerance or
+confidence-exactness claim follows. Public C ABI text/confidence and test-only
+ID/stop evidence remain separate. The source-order gate reaches actual child
+processes through the inherited environment.
+
+[Full paired receipt](tests/results/qwen35-ocr/ovisocr2-source-interpolation-quality.json)
+preserves both complete producer reports and immutable member identities. Larger-
+input composed numerical qualification remains separate and pending; default
+interpolation and1024 resolution remain unchanged.
+
 ## 26 October 2026 — MI-GAN fixed256 original/native prototype passes
 
 [Corrected native40344396533](tests/results/migan/native-parity.json) at2526fcac
@@ -15725,3 +16146,627 @@ large raw/model payloads remain remote. Both new artifacts expire24 January2027.
 The bounded original/reference/CPU prototype lane is positive. Public APIs,
 registry/model publication, real subtitle/perceptual quality and video remain
 separate PLAN tasks; issue71 stays open. No runtime release/app/default changes.
+## 26 October2026 — actual SciFact provenance distinguishes the evaluation source
+
+Data-only40364838418/bf2f9e48 verifies unchanged legacy-JSON/Parquet stored IDs,
+title/text columns for5,183 corpus rows and1,109 queries. Current author titles
+match, but1,055 joined abstracts differ. The first eight contexts show internal
+whitespace differences; no general normalization is assumed or applied. Strict
+v1 remains rejected before tokenizer/weights/outputs. Root verifies the actual
+36,042-byte report ZIP/members and all272 source hashes. Full datasets remain
+remote, and public metadata omits raw context excerpts. See
+[the retained provenance](tests/results/ultrabert/scifact-data-provenance.json).
+
+A distinct original-first canonical BEIR v2 is selected before any dataset model
+outputs: use literal pinned benchmark columns, keep all5,483 rows/canonical gold
+and every numerical/ranking budget, and journal all author differences. The
+runner verifies the exact reviewed negative v1 ZIP/member identities and fresh
+legacy/Parquet equality before data/model access. The published241-byte module
+config and actual pinned preprocessing sources are explicit; both wrapper token
+paths must match all5,483 frozen IDs/masks before any forward. The original
+strict model failures and v1 source rejection remain separate. Preparation/full
+panel are still unqualified until their actual hosted receipts pass review.
+
+## 26 October 2026 — canonical SciFact preparation reviewed
+
+[Original-only preparation40372423343](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40372423343)
+completed at `e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`. Independent review
+checks the actual small-report ZIP,276 exact source hashes, frozen input mapping,
+notices, original environment and preflight. Both actual published wrapper input
+paths match all5483 token/mask rows before any forward pass. The panel retains
+300 queries and5183 documents, including460 documents right-truncated at512 tokens;
+no query is truncated and no row is dropped. Thirteen original preflight rows
+pass hook neutrality; the conservative worst-shard projection is2840.06 seconds
+against the unchanged13200-second bound.
+
+[Preparation receipt](tests/results/ultrabert/scifact-canonical-preparation.json)
+preserves source, protocol, freeze, payload and report identities without corpus
+text. Strict-v1 failures remain separate; canonical-v2 inputs were selected before
+model outputs. [Full panel40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
+was dispatched only after this review, using the exact preparation receipt SHA.
+Its source remains frozen through all original shards, original freeze, native
+shards and aggregation. Preparation does not establish retrieval/native parity.
+## 26 October 2026 — successor archive protocol and source packaging corrections
+
+The source preparation adds exact archive/member manifests and fresh desktop,
+compiled C/Python, browser, Apple released-versus-candidate and mobile cross-link
+consumers. Eight archive/layout controls pass without local compilation or
+models. Independent source review found a doubled WASM extraction directory,
+Android's omitted shared ggml dependencies and iOS's unmerged static dependency
+closure. The candidate fixes these before execution and advances development
+manifests to0.17.14; actual artifact links/runtime checks remain required.
+Initial preliminary producers40338612955/40338616900 were cancelled with every
+build still queued. No executed mobile failure or positive runtime qualification
+is claimed, and no tag or application0.17.12 pin changes.
+
+## 26 October 2026 — packaged-consumer report layout corrected before execution
+
+Native/mobile producer40339796226 and WASM producer40339800364 both complete
+successfully at40a82158146faf0cd44de2a4ee7056e7b0c6a58c. They bind seven
+CPU/mobile archives and two WASM bundles; compiled consumer qualification remains
+separate. Consumer40352845316/cab577ab was cancelled with its controls still
+queued, before archive consumers ran. Independent source review found that the
+Apple multi-path upload preserves`apple-candidate/` and`apple-released/`, whereas
+the final reviewer expected flat JSON. The corrected reviewer consumes the real
+nested layout and additionally requires the candidate's archive/source closure.
+Four small positive/missing-platform/mixed-source/layout controls pass. No
+producer bytes, runtime path, model targets or numerical budgets change.
+
+## 26 October2026 — Windows packaged audit locale failure retained
+
+Consumer40354251257/49161f60 downloads and validates the40a82158 Windows archive
+and reaches header export inspection, then Python's default cp1252 decoding
+rejects UTF8 U+2581 in a header comment. The actual job121718563370 failure is
+an auditor decode error; no archive/runtime defect is inferred. The incomplete
+Windows panel remains negative in
+[its retained receipt](tests/results/packaging/successor-windows-reader-initial.json).
+The2,420-byte actual small ZIP/members and completed job log are independently
+reviewed. Other immutable491 consumers continue separately.
+
+Audit-only5702b1ae reads UTF8 source/metadata/logs explicitly and requests MSVC
+UTF8 for the compiled C consumer. Thirteen small controls pass, including the
+actual non-cp1252 header character under forced default cp1252, invalid UTF8,
+missing exports and unchanged Unix compile arguments. Production/build/binding
+objects and all247 parsed exports remain unchanged. The corrected Windows
+execution is still pending; qualify it with fresh final integrated-source
+producers/consumers rather than repeating every unchanged40-source panel now.
+
+## 26 October 2026 — initial packaged Apple/browser negatives preserved
+
+[Initial consumers40354251257](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40354251257)
+complete with three failed jobs. The independently reviewed [Apple receipt](tests/results/packaging/successor-apple-initial.json)
+records frozen image-byte rejection before library/model initialization; no
+released/candidate OCR output exists. Reproduce all frozen PNG identities on
+hosted Linux and preserve that verified corpus before retrying Apple. No gold
+image/hash adjustment is authorized.
+
+The [browser receipt](tests/results/packaging/successor-wasm-initial.json) retains
+the actual384-vector result, identical published model identity, archive/member
+proof and successful authored classical cleanup. Browser/native comparison fails
+maximum absolute0.00837269053 and cosine0.99864983887 against unchanged0.002/0.99999.
+There are no page errors. Trace tokenizer/intermediates and the earliest operator
+before proposing a correction; final cosine is not root-cause attribution.
+Windows' separate locale-reader negative and source-only repair remain archived.
+Linux x86/ARM, macOS desktop, Android/iOS cross-links and Rust/Dart consumers pass
+in this initial batch; the final review is skipped and overall qualification
+remains false. All small negative ZIP members and job logs were independently
+hashed; model/native/WASM payloads remain remote.
+
+## 26 October 2026 — frozen packaged WASM attribution dispatched
+
+[Source trace40378744841](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40378744841)
+uses exact `92c108ddabc1da5e0a2c85db0599094e5f1f44f9` on the separate
+`audit/successor-wasm-trace-dispatch-20261026` ref. It preserves the immutable
+40a82158 native/WASM packages, initial browser/native vectors and published
+model identity. Ordinary and observed native/browser outputs must reproduce
+those anchors exactly before all eight encoder stages are compared with
+crispembed-diff and independent magnitude/error calculations. Actual tensor
+formats, test-only Q8 conversion blocks and a same-input weight dot remain
+attribution evidence, without a production correction or qualification claim.
+Seven small parser, identity, overlay and independent reference-byte controls
+pass; the hosted result remains pending. Diagnostic source overlays and modules
+are excluded from production archives.
+
+Earlier40378614197 was cancelled pending with no jobs before any build/model
+access, to incorporate independent verification of reference quantization bytes
+and avoid the corpus workflow's per-branch scheduling lock. The replacement uses
+the same bounded sixty-minute/two-build-worker protocol. Initial production
+browser parity remains failed at0.00837269/0.99864984; no budget is widened.
+
+A second source review caught a parser-only blocker before hosted model work:
+the pinned public single-encode path logs token IDs twice, at the API and graph
+upload boundaries. Trace40378744841 was cancelled with every job showing zero
+completed steps. The corrected parser requires exactly two valid, identical
+observations and rejects missing, extra, malformed or differing lines. This
+matches the original blueprint without changing production logging or inputs.
+Seven small controls and source/JS/workflow checks pass. No executed numerical
+failure is claimed from either queued cancellation; the unchanged initial
+browser parity failure remains the model-backed negative evidence.
+
+The corrected source-reviewed trace is
+[40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
+at `f8bac049a7c143773b330cfc4c217b1f0a47ef56`, retained on
+`audit/successor-wasm-trace-dispatch-v2-20261026`. Hosted results are pending;
+source controls alone establish no output parity or production correction.
+
+## 26 October 2026 — image preservation inventory rejection retained
+
+[Linux proof40376735641](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376735641)
+atb7983104 fails before any original PNG hash or RGB check. Its helper incorrectly
+expected only a manifest and50 images; the pinned renderer also emitsNOTICE.txt.
+[Exact rejection receipt](tests/results/packaging/posformer-corpus-initial-rejection.json)
+retains the actual small ZIP, report and log identities. No corpus payload was
+published and no Linux PNG mismatch or model result follows from this failure.
+The original pinned writer hashes encoded file bytes before decoding, independently
+verified from its4932-byte source/SHA39c36a74; the existing image hashes remain
+unchanged. A corrected preservation lane must retain the exact attribution notice
+and all52 files before checking all50 frozen PNGs. Historical renderer Python
+3.11.17 ABI alignment is a reproducibility precaution, not an established cause
+of a PNG difference. No image, gold, score or inference tolerance is replaced.
+
+The notice-preserving correction passes eleven small controls. It restores the
+original Python3.11.17 renderer ABI and preserves all fifty encoded PNG hashes.
+[Corrected Linux proof40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
+is dispatched at `f284b1f67c1ae34082afb81a54301c6ab392c02a`; its actual image-byte
+result remains pending. Exact216-byte attribution notice verification applies
+on both producer and consumer; unexpected auxiliary files still reject.
+
+## 26 October 2026 — actual WASM/native error localized before candidate A/B
+
+[Source trace40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
+completes atf8bac049. The independently reviewed [full receipt](tests/results/packaging/successor-wasm-source-trace.json)
+verifies the actual small ZIP/all13 members, five source hashes, eight exact
+output anchors, both native thread counts' full-stage identities and independent
+Q8 reference-byte controls. Every original final vector remains bit exact; the
+unchanged final comparison still fails maximum0.00837269/cosine0.99864984.
+
+All12 input IDs and the complete embedding-normalization tensor are exact. The
+first captured differing stage is first attention output: max0.0833039284,
+RMS0.00581555824, reference max4.23782301 and L2 magnitudes13.05802/12.83489.
+Final encoder max reaches0.105108261. Actual first-query weights are IQ4_NL,
+with Q8_0 activations. On the identical first-token input,187 quantized bytes
+differ from the pinned independent rounding reference while all twelve FP16
+scales match. A real first-query output-channel dot shifts by0.0260053873.
+The model includes30 IQ4_NL and6 IQ4_XS matrices; its filename alone is not a
+tensor-format contract.
+
+Actual WASM mean-pool reconstruction and both native recomputed means reproduce
+their respective final L2 vectors exactly. Native pre-L2 is explicitly derived
+from the complete encoder tensor, while WASM pooling is captured by test overlay.
+The error is already upstream of pooling. These results justify a separately
+source-bound rounding experiment; one dot does not prove full-network causality.
+The conditional backend-local candidate remains default-off and unmerged until
+actual operator and full-model A/B gates complete. No reference, weight, input,
+tolerance, production archive, application pin or default is replaced. Stage
+arrays and diagnostic modules remain remote through24 January2027.
+## 26 October 2026 — conditional rounding operator precompile fixture corrected
+
+[Initial operator40385214740](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40385214740)
+at24cab931 stops in a historical larger-input unit test, before operator compilation
+or any model access. The unchanged runtime guard correctly rejects the new public
+wrapper earlier than the unit's expected decoder-arithmetic rejection. The
+[retained rejection](tests/results/packaging/wasm-rounding-initial-controls-rejection.json)
+records source, job, exact errors and log identity. The unit now uses its existing
+historical source fixture to exercise decoder rejection and separately rejects
+an added cache header. The actual historical guard and all numerical limits
+remain unchanged. Thirteen larger-input controls, five FFN controls and four
+candidate source-preservation controls pass; actual WASM operator execution
+remains pending.
+
+The corrected standalone operator dispatch40390724614 was cancelled while its
+controls were queued, before operator compilation. The same operator workflow is
+now a required predecessor of the source-bound model A/B workflow, avoiding a
+second independent queue round trip and duplicate compilation. The model job
+also verifies the completed same-source job and its actual five-record numeric
+receipt before downloading model data. This scheduling change widens no source,
+output or numerical gate. The original40385214740 fixture rejection stays retained.
+
+## 26 October 2026 — bounded MI-GAN and RoPE integration complete
+
+PR84 merged atb5c99662 after all23 checks pass; PR85 merged at1b74b12a after
+all29 checks pass. All11 fresh-main workflows at
+`1b74b12aff48f3d510a2140aa48b8221e73d3320` subsequently pass, including the
+full native/mobile/Flutter build matrix, both WASM builds, Rust packaging,
+static/model/precision controls, style/security and Pages deployment.
+[Main build40375549096](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375549096)
+and [native MI-GAN evidence](tests/results/migan/native-parity.json) remain
+separate: ordinary integration CI does not replace original/native model parity.
+The default-off fixed256 prototype and test-only RoPE attribution are integrated;
+no tag, model publication, application upgrade or broad inpainting product claim
+follows. Issue71 and the remaining numerical/task/release gates stay open.
+
+###26 October — independent desktop-vector aggregation repair
+
+The original successor aggregator checked C/CLI/Python agreement within each
+desktop but did not compare desktops. A synthetic orthogonal ARM vector could
+therefore pass while its local self-comparisons remained positive. Source repair
+5480be5c validates the shared pinned MiniLM model/text and finite nonzero384-vector
+on all four desktops, then independently recomputes Linuxx86-to-each-platform
+absolute error, RMS, cosine and norms with unchanged0.002/0.99999 gates.
+All14 small stdlib controls pass, including the previous false positive,
+independent absolute/cosine failures and the exact absolute boundary.
+
+[Retained-report reanalysis](tests/results/packaging/successor-desktop-vector-review-repair.json)
+verifies both original small artifact ZIPs and compares actual Linux ARM/x86
+vectors without inference: max0.000119589269, cosine0.999999697765.
+This is partial compatibility evidence, not a new successful consumer batch.
+Initial40354251257 remains rejected for Windows/Apple/browser failures; all
+four final-source desktop reports and the complete consumer aggregate remain
+required. No production default, archive, publication or app pin changes.
+
+###26 October — separate final integrated validation prepared
+
+Source5a843b06 prepares the [final-integrated-v1 workflow/contract](docs/ovisocr2-final-integrated-v1.md)
+for assembled runtime f3f1b9e7/ggmla06 with both interpolation and WASM rounding
+default-off. It leaves every historical guard/reference/scorer untouched and
+pins all source/build/binding objects, executed quality helpers, preparation
+receipt, six validation binaries and original first-F16 inputs/outputs.
+Actual reviewed Ovis/WASM completion plus exact artifact/report pins remain
+deliberately pending; the validator rejects before service/model access.
+
+Independent source review found and corrected missing helper/bounds-source
+coverage and a structured-failure overwrite. Per-phase/gate negatives now
+survive the always-run quality check. All13 bounded stdlib controls pass;
+workflow structural lint and independent source review are positive. The root
+also runs the new quality comparator on both retained actual40334662677 reports:
+each preserves11 cases/1,841 IDs; off confidence drift is zero and on maximum
+drift0.000024796. This is report reanalysis, not new inference or final-source
+qualification. No hosted build/model job has been dispatched for this prepared
+lane. After actual prerequisites, two frozen14 jobs precede two full eleven-case
+quality jobs, capped at two concurrent model jobs. Final assets and consumers
+remain separate gates.
+
+###26 October — exact frozen PosFormer input proof completed
+
+[Corrected40386968045](tests/results/packaging/posformer-corpus-proof.json)
+atf284b1f6 completes the Linux image-only proof. All50 original encoded PNG
+hashes, manifest, ordered IDs/dimensions and original216-byte benchmark notice
+match before preserved RGB identities are recorded. Root and independent peer
+verify the small ZIP/member/source hashes, reconstruct the frozen manifest and
+notice, check the original encoded-byte hash writer and confirm all six
+consumer-guarded objects still match integration84fe938b. The106,214-byte corpus
+artifact12686713308 remains remote through24 January2027; no images/models or
+frameworks are downloaded for this review.
+
+Initial40376735641 remains a member-coverage rejection before PNG comparison;
+its fix retains the original notice and historical Python3.11.17/Pillow12.3.0
+renderer ABI without replacing any frozen hash. This success does not assign
+the earlier Mac mismatch to zlib/Python. Actual Mac consumption must verify the
+complete53-file artifact and decoded RGB before the unchanged old-release/
+candidate50 probe. No recognition, score, library, model or release qualification
+follows from input reproduction; the original seven-of-fifty quality remains.
+
+###26 October — initial Mac-only retry dispatched after input review
+
+[40399358753](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40399358753)
+runs source7d561149 on the retained branch
+`test/successor-apple-only-20261026`. Both source reviews verify all23
+production/build/binding objects equal initial producer40 and all six corpus
+guard objects equal successful input prooff284. The four-arm/fifty-case Apple
+probe is unchanged; exact native40339796226/corpus40386968045 inputs reject
+other IDs before archive/model access. A source-review shallow-checkout blocker
+was corrected before dispatch: full history now precedes baseline-dependent
+source controls. All seven small controls and workflow lint pass.
+
+The separate single-Mac workflow repeats no Windows/Linux/WASM/mobile/binding
+jobs and always preserves diagnostic/corpus/arm reports and logs. It has no
+aggregate, release qualification or final-integrated-source claim. Its actual
+RGB/model outcomes remain pending; later final-source fresh archive and Apple
+consumer gates still apply. Initial pre-inference failures remain preserved.
+
+###26 October — actual conditional WASM operators independently positive
+
+[Operator job121835635568](tests/results/packaging/wasm-rounding-operators.json)
+inside40391544739 at580e3ae3 succeeds on fork a06. All five actual records pass:
+converter zero/fraction/ties controls and Q8_0/IQ4_NL direct/expert matmul each
+produce authored legacy158/nearest189. Two backend settings remain independent,
+disable/re-enable works, cached plans preserve their captured setting, and expert
+selection distinguishes the unused scale-two weight. Release-DNDEBUG does not
+disable checks: the test uses custom require/exit, not standard assert.
+
+Root and peer verify the actual service/source/attempt, small ZIP/all six members,
+25 compilation commands, source declaration/CPP/all eight fork hashes and exact
+runtime/result agreement. Actual WASM SIMD/pthread compilation is observed;
+there are no model weights in this test. The immutable pre-execution declaration
+stays unchanged, with actual evidence in this separate receipt. Only the operator
+job is positive: parent/model A/B remains pending, so no full-network causality,
+model qualification, default change, archive publication or app upgrade follows.
+
+## 26 October 2026 — actual WASM rounding model A/B rejected
+
+[40391544739](tests/results/packaging/wasm-rounding-ab-v1.json) at580e3ae3
+completes the operator barrier, all ten frozen cases with unset/empty/0/1 and
+ordinary/dump execution, eight full first-sentence stages and live0/1/0 contexts.
+Independent reviews recompute80 final comparisons, verify110 token-log controls,
+40 observer pairs, four live-context pairs and all64 diff log rows;
+legacy final/stage anchors remain exact. Candidate attention0 max1.19209e-7
+and layers0–2 below9.53675e-7 demonstrate a bounded improvement. The first
+remaining captured failure is layer3 max0.00291893, followed by layer4
+max0.01997251 and encoder_out0.02850568. Eight of ten candidate finals fail the
+unchanged0.002/0.99999 budgets; original final max0.00156465832/cos0.9999548495
+still fails. Pre-L2 mean max0.00808028661 is separately negative, with recomputed
+native versus captured WASM provenance retained. This is a completed numerical
+rejection, not a preflight failure. Source/fork/weights/panel/gold stay frozen;
+raw arrays remain remote. Default stays off. Next is same-input attribution of
+layer3's first differing operator, not a tolerance change or final-asset promotion.
+
+## 26 October 2026 — initial immutable Mac compatibility complete
+
+[Mac-only40399358753](tests/results/packaging/successor-mac-only.json) at7d561149
+passes actual initial40 archive/member/source verification, retained Linux-proof
+corpus hashes and decoded RGB, then released17.12 versus candidate unset/1/0.
+All200 log hashes and logged token IDs verify. Released/default/1 each retain866
+IDs,50 EOS and exactly matching text/confidences/means. Legacy0 retains911 IDs,
+50 EOS and all50 historical original-zero outputs;38 cases differ from trained
+output. The existing7/50 recognition score does not improve. This closes the
+initial Mac diagnostic only; final changed-runtime archives/all consumers remain
+pending. Original Mac/input failures stay retained. Review also identifies an
+audit-only Darwin RSS labeling bug: ru_maxrss bytes were divided by1024 but labeled
+MiB. Corrected code preserves raw/unit and divides Darwin by1024²; five model-free
+controls pass. Historical producer fields remain unchanged with explicit derived
+normalization, and no memory/speed improvement claim follows.
+
+## 26 October 2026 — requested model original-reference preparations
+
+[MoEdernColBERT](docs/moedern-colbert.md) freezes all three original/author-GGUF
+revisions, Apache licenses, weight identities, distinct masks/tokenization/routing,
+128-vector and MaxSim blueprint. Hosted original/strict F32 converter are prepared;
+source790f7b1d corrects direct backbone.forward observation after queued40411490747
+was cancelled before any step. Nine source controls pass. Corrected40412164041
+is pending; no native/model qualification is claimed.
+
+[Josev](docs/josev2b.md) freezes checkpoint6f0a31c8, permissive base/Clef source
+provenance,24-layer Qwen3.5-2B and distinct512-wide joint head, official serialization
+and no-extra-temperature semantics. Ten source controls pass. First bounded GPU
+bootstrap atb6e74739/worker89264a27 stops on Python3.11 profile versus actual
+Python3.13 before any checkpoint/tokenizer access; there are no original outputs.
+Preserve this failed preflight and declare the corrected runtime before capture.
+Official PyTorch and calibrated author-GGUF references must stay separate.
+
+## 26 October 2026 — all SciFact originals frozen before native
+
+[Original barrier40375626336](tests/results/ultrabert/scifact-original-freeze.json)
+at immutablee35cd1a0 completes22:37:43UTC after all eight original shards.
+Independent reviews rehash all276 source files/14 protected objects, eight exact
+embedded receipts and byte hashes, eight raw service lineages and24 small-report
+members. The disjoint ordered5,483-row union is exact:300 queries/5,183 documents;
+all ordinary/observed originals are neutral. The protocol/data freeze and source
+remain unchanged. Native eight-shard comparisons and full ranking aggregation
+are still pending, so this original-only barrier establishes no retrieval/model
+or release qualification. Actual original AVX512/AVX2 fingerprints are retained;
+old strict replay drift and v1 author-column rejection remain unchanged.
+
+## 26 October 2026 — supported Josev GPU setup rejection retained
+
+[Corrected-profile preflight](tests/results/josev2b/initial-venv-preflight.json)
+at142cc75c records Python3.13.15, two Tesla T4 GPUs/capability7.5,
+15360MiB each and driver580.178.04. Source fetch/checkout and all four command
+logs verify, then venv ensurepip fails before framework installation or any
+checkpoint/tokenizer access. The exact child-level cause was not captured; do not
+infer an inference or GPU failure. Setup repairf5a0ac06 reuses the previously
+established Ovis empty-venv/base-pip `--python` route with SHA-pinned pip26.2.2.
+Six source controls pass and an independent review finds no remaining concrete
+setup blocker. Worker1e723a96, contract39129e43, model/arithmetic/panel/gates are
+unchanged. Actual corrected capture remains pending; unsupported hardware still
+exits without an automatic retry.
+
+Test-only [layer3 attribution40415950220](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40415950220)
+atbbc80ae2 is dispatched after source review. It uses a disposable exact580/a06
+checkout,23 retained subnodes, actual conversion workspaces and six projection
+replays on both original and candidate inputs, with strict old anchors first.
+Browser isolation headers, exact actual SIMD/pthread flags and native export
+checks are required. Ten source controls pass; no actual model result exists yet.
+The integrated comparator receives18.1.8 formatting only with its explicit
+protected SHA refreshed; the dispatched producer branch stays unchanged.
+
+## 26 October 2026 — Josev dependency rejection and complete lock preparation
+
+[The retained install rejection](tests/results/josev2b/initial-install-preflight.json)
+at f5a0ac06 proves isolated-pip setup succeeds on the supported T4 environment,
+then pip rejects the unpublished tokenizers0.23.0 pin before framework
+installation or model/tokenizer access. All six command logs and the raw
+bootstrap receipt are rehashed. The separate missing-wrapt startup warning is
+retained; it is not the terminal failure. Framework wheels were downloaded only
+on the remote GPU worker.
+
+Worker2133cfa1 and bootstrapc9aa40b7 replace that pin with tokenizers0.22.2 and
+freeze the complete57-wheel active Linux/CPython3.13 dependency closure, URLs,
+SHA256s and wheel metadata. Metadata-only resolution downloads no wheel/model
+payload to the shared host. Thirty environment/identity/contract/bootstrap
+controls pass, including the real pinned serializer with a small byte tokenizer.
+The separate [head conversion preparation](docs/josev2b-head-conversion.md)
+adds eight standard-library controls and exact122-tensor schema/dimension/byte
+guards. Corrected original capture is submitted; conversion, native inference,
+calibration parity and model qualification remain pending.
+
+## 26 October 2026 — SciFact native token mismatch preserved
+
+[Two actual native rejections](tests/results/ultrabert/scifact-initial-native-tokenizer-rejection.json)
+at immutable e35cd1a0 stop on document input-ID parity, after successful build,
+conversion and truncation controls. Document21676556 has236 native versus235
+original tokens, first differing at234; document104143831 has192 versus190,
+first differing at93. Both are below512. These establish an input mismatch, not
+its codepoint cause or any vector/retrieval conclusion. Both small artifact
+ZIP/member hashes and job-log hashes are retained. The remaining six native
+shards are cancelled while queued with zero steps; all eight completed original
+shards and the original freeze remain unchanged. A distinct hosted tokenizer
+diagnostic and all5,483 input checks precede any corrected native embedding run.
+
+## 26 October 2026 — Smallest MoEdern original captured; observer gap retained
+
+[Original40412164041](tests/results/moedern-colbert/initial-original-review.json)
+at790f7b1d completes all10 owned CPU/F32 cases with exact ordinary/observer and
+public-slice equality,250 array declarations,32 loaded tensors, three exact
+MaxSim scores and original-first F32 conversion (5,941,568 bytes). Actual
+Tokenizer JSON confirms Unigram with NFKD/accent stripping/lowercase and
+WhitespaceSplit/Metaspace; query masks are distinct from supplied attention.
+The ordinary per-case output is `[tokens,128]`; batch-first pipeline boundaries
+are separate. These are source/owned-output results, not native retrieval quality.
+
+Independent review finds no `pipeline.*` arrays: the observer serializer skips
+Mapping objects returned by the pipeline, omitting Dense and Normalize targets.
+The initial original/converted receipts and remote raw artifact identity remain
+retained; native pins stay unset. A separately versioned Mapping-aware correction
+must authenticate all old final IDs/masks/vector hashes, capture mandatory
+pipeline stages without changing arithmetic, then undergo original-first review.
+No original arrays, model weights or tokenizer payloads are downloaded locally.
+
+## 26 October 2026 — Josev installation succeeds; metadata verifier rejects
+
+[Actual corrected environment](tests/results/josev2b/initial-installed-metadata-preflight.json)
+at bootstrapc9aa40b7/worker2133cfa1 passes isolation, full lock preflight, all57
+package installs and pip-check on the supported T4/Python3.13 profile. The next
+installed-metadata guard rejects setuptools before runtime imports, CUDA smoke
+or model/tokenizer access. All ten command logs are independently rehashed.
+Its message combines wrong candidate count and hash mismatch, so a wheel-byte
+drift is not established: the selector also accepts vendored dist-info entries.
+A separate hosted CPU owner-metadata/sidecar audit precedes a selector/profile
+correction or further GPU submission. No actual original inference or native
+parity is claimed; all previous setup failures remain retained.
+
+## 27 October 2026 — Layer3 observer allocation failure preserved
+
+[Actual40415950220](tests/results/packaging/wasm-layer3-initial-observer-rejection.json)
+atbbc80ae2 completes native/WASM builds and the ordinary native pass, then
+its diagnostic capture aborts at scheduler reservation (`buffer_id >= 0`).
+No subnode or same-input projection attribution completes. The small review
+ZIP and all15 members are rehashed; raw binaries/arrays remain remote.
+
+Source inspection shows the overlay uses a metadata-only `ggml_view_tensor`
+alias with no operation/dependency edge. The bounded correction uses an explicit
+`GGML_OP_VIEW` graph edge with exact dimensions/strides, leaving production
+arithmetic/defaults unchanged. Ten source controls pass; actual hosted
+allocation, ordinary/observer neutrality and all retained anchors still gate
+any numerical conclusion. The original16 A/B numerical failures are preserved.
+
+## 26–27 October 2026 — retained Josev pre-completion setup provenance
+
+The following staged-source notes are retained as historical records written
+before the successful original/head audits above. Statements that original
+capture or archive review was pending describe that earlier state. Current
+sources/results and executable next actions are in PLAN and docs/josev2b.md;
+do not rerun an old capture recipe or treat its initial failures as current.
+
+### Concrete private GPU bootstrap
+
+The [single-script bootstrap](../tools/kaggle/josev2b-original/bootstrap.py)
+pins its original worker commit and contract digest explicitly. The current
+prepared worker profile is `cuda-f32-python313-v3-locked`; its arithmetic, source files,
+tokenizer, four owned requests and acceptance gates are unchanged. Its own script
+version is separately recorded; pushing other repository commits
+does not update a submitted kernel. Account substitution stays in private execution
+metadata; no account, token dataset or credentials are embedded in this recipe.
+
+The initial bootstrap at[b6e74739](https://github.com/CrispStrobe/CrispEmbed/commit/b6e747395f56847a72f7f4fb9b7023374285924f)
+(SHA256 `9f3d77cfb41eda1a68ab287e0c01fb3e837d719a8a539e86e4377c92a4858ff3`)
+used worker89264a279cd589d622b60f5ca7d1605693cf52d8 and contract
+SHA7f141896f708871d5beb01760a649a38030488851026ef10b858d5f33b96027a.
+It rejected the actual Python3.13 environment because that first profile required
+Python3.11. The rejection occurred before hardware inspection, dependency
+installation, checkpoint/tokenizer access or any reference output. It was
+inconclusive and says nothing about the assigned GPU or model. The initial
+profile, source, failure and journal are retained; there is no gold recapture.
+
+Before any reference output, this revision declares Python3.13 explicitly.
+Primary [torch2.13.0 release metadata](https://pypi.org/pypi/torch/2.13.0/json)
+and [torchvision0.28.0 metadata](https://pypi.org/pypi/torchvision/0.28.0/json)
+confirm the cp313 Linux wheels and their SHA256s. NumPy2.2.6 also publishes a
+cp313 Linux wheel. Wheel payloads were not downloaded during source preparation.
+The bootstrap records the actual Python version and inspects hardware before
+checking its Python profile, so unsupported hardware is recorded immediately.
+The Python3.13 profile remains unexecuted until a reviewed bounded run occurs.
+ These wheels use CUDA13.0.3; they are not available in
+the inspected CUDA12.8 wheel index. The bootstrap therefore checks Turing or newer
+(capability7.5), driver580.65.06 or newer and14/11GiB total/free GPU RAM before
+framework installation. It requires25GiB initial scratch and3GiB output space,
+then the original worker independently checks18GiB scratch before checkpoint
+access. Unsupported hardware exits inconclusive with no automatic retry.
+
+Installation uses a new isolated environment and the complete57-wheel hashed
+lock described below. `pip check`, a tiny exact F32 CUDA matrix product, compiled GPU architecture
+reporting, contract/source controls and actual original source hashes precede
+model access. Setup/download and the30-minute capture have separate
+bounds. Only reports/logs/source notices and bounded reference arrays are retained
+as kernel outputs; checkpoints, tokenizer and environment stay in task scratch.
+Failures retain their bootstrap journal, command status/log SHA256 and partial
+reference manifest. This prepared bootstrap is not an actual reference result.
+
+The corrected Python3.13 attempt at142cc75c passes actual two-T4 capability,
+driver580.178.04 and memory preflight, then its venv `ensurepip` child fails before
+framework installation or any tokenizer/checkpoint access. Preserve that complete
+bootstrap journal and four successful Git command logs. The subsequent setup
+repair reuses the established Ovis recipe: create a fresh venv without ensurepip,
+then use base pip's `--python` option to install SHA-pinned pip26.2.2 into that
+venv. User pip configuration is disabled for this task. No global environment or
+model arithmetic changes; supported-GPU evidence is separate from original
+inference, which still has not run. Unsupported hardware still stops without retry.
+
+### Complete locked environment before the first original output
+
+The third setup attempt, using the v2 profile and bootstrapf5a0ac06, successfully
+creates isolated pip26.2.2. Installation then rejects unpublished
+`tokenizers==0.23.0` before any checkpoint/tokenizer access or reference output.
+It downloads the pinned framework wheels on the GPU service but does not complete
+framework installation. The preceding `sitecustomize` missing-`wrapt` warning is
+nonterminal; no `wrapt` package is added to hide it. Keep this failure separate
+from the earlier Python-profile and ensurepip failures.
+
+The new pre-reference profile is `cuda-f32-python313-v3-locked`, with
+`tokenizers==0.22.2`. Its cp39-abi3 Linux wheel is compatible with CPython3.13
+and the pinned Transformers5.5.0 requirement. The other eight package pins, original model/tokenizer files, four owned inputs,
+arithmetic and numerical gates are unchanged. CUDA13's capability7.5 minimum is now enforced by both the worker
+and bootstrap, preventing a standalone worker from reaching payloads on Volta.
+
+The [complete lock](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453/docs/josev2b-environment-lock.json) fixes57 distribution versions,
+exact wheel URLs, published byte counts and SHA256 values. The
+[requirements file](../tools/kaggle/josev2b-original/requirements.lock) installs
+that closure with `--no-deps --require-hashes --only-binary=:all:`; the GPU setup
+must not run an unchecked dependency resolver. It includes all CUDA-toolkit
+extras selected by Torch, with2,790,174,915 published wheel bytes in total.
+No wheel/sdist, framework, tokenizer, checkpoint or corpus was downloaded or
+imported during the local metadata-only preparation.
+
+Existing pip25.3 performed a binary-only, ignore-installed dry run for Linux
+CPython3.13 under a tested HTTP transport guard. The guard rejects every wheel,
+sdist and unrecognized URL before transport, including redirect targets; it
+permits bounded PyPI indexes/release JSON and PEP658 `.whl.metadata` only.
+The resolver completes114 metadata requests, followed by114 independent primary
+release/PEP658 checks. Every selected URL/hash matches its PyPI release file.
+An independent marker/version/extras walk verifies the entire closure for the
+resolver's Python3.13.11 and the observed GPU Python3.13.15. These are dependency
+metadata results, not installed ABI, CUDA execution or original-inference proof.
+
+Aggregate release JSON is not always the selected wheel's exact metadata:
+CUDA-toolkit uses PEP440-equivalent13.0.3/13.0.3.0 and different Windows-machine
+markers, and psutil uses underscore/hyphen spellings in a development extra.
+Those differences are retained. Actual selected-wheel metadata agrees with pip;
+Linux CPython3.13 active requirements agree with primary JSON for every provided
+extra. No active Linux dependency/version conflict is ignored.
+
+Before model access, the locked worker verifies the expected venv prefix,
+distinct base prefix, disabled user site, absence of external package paths,
+all57 installed versions and byte-exact installed wheel METADATA. The bootstrap
+also checks loaded framework versions and origins inside that venv. `pip check`,
+original Qwen source hashes, absent FLA/causal-conv extensions and the existing
+exact CUDA F32 smoke remain mandatory. Runtime CUDA/driver compatibility and the
+first original capture are still pending; no new GPU dispatch follows from
+metadata resolution alone.
+
+Immediately after the unchanged publisher loader returns, and before any forward,
+the dumper compares the loaded head state with the published small head checkpoint
+promoted to F32. Exact keys, shapes and finite F32 values are required.
+`report.weights.head_tensors[name]` records `shape`, `checkpoint_dtype`,
+`loaded_dtype`, `checkpoint_promoted_f32_sha256` and `loaded_f32_sha256`; any
+intentional loader transform fails with partial evidence rather than being
+accepted silently. BF16 checkpoint tensors and F32 scalars remain distinguishable.
+This read-only proof does not copy or rehash the full backbone a second time.
+
+The locked bootstrap targets worker
+[`2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`](https://github.com/CrispStrobe/CrispEmbed/commit/2133cfa12dbdd25653fd68b1a6054f69f80f7e9c)
+and contract SHA256
+`6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da`.
+The bootstrap's own uploaded bytes remain a separately recorded identity.
+It validates and preserves the complete lock before installation, checks isolated
+prefixes, then verifies exact installed metadata and actual loaded module versions
+before the unchanged CUDA/source barriers and original worker. This is prepared
+source only; no fourth GPU attempt is submitted by this change.

@@ -1,0 +1,33 @@
+{
+  "schema": "crispembed-josev-tokenizer-native-v1",
+  "completed": true,
+  "tokenizer_schema_parity": true,
+  "failures": [],
+  "cases": 18,
+  "original_four_exact": true,
+  "original_cases_sha256": "95b1092014f4e614ff37a9d33faaeb9f603cc76ea9a83433e0b41d24512238e2",
+  "native_rows_sha256": "e4115534043cd9a1fc3c9739c944379e489eacbe7a826b1c4ea55087495564e0",
+  "binary_sha256": "f2ce22e8a559f4adabfcee95b00f41bf7499d01709148c9d78c2bc368120034b",
+  "gate_controls": "unset/empty/0 reject; existing context immutable; reload clears",
+  "metadata_negatives": [
+    "revision",
+    "normalizer",
+    "pattern",
+    "source",
+    "flags"
+  ],
+  "input_negatives_with_before_after": [
+    "media-rejection",
+    "kind-rejection",
+    "max-length-rejection",
+    "nonfinite-number",
+    "unpaired-surrogate",
+    "empty-question-rejection"
+  ],
+  "model_weights": false,
+  "embeddings": false,
+  "full_model_parity": false,
+  "default_enabled": false,
+  "release_qualified": false,
+  "source_head": "65a6de450eede1358821a52dd0fe199c24286b16"
+}

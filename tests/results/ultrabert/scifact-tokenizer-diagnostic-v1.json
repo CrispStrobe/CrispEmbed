@@ -1,0 +1,219 @@
+{
+  "schema": "crispembed-scifact-tokenizer-diagnostic-v1",
+  "source": "c86fc007cb247708e99266f777cc2bc9cadb2266",
+  "runtime_source": "e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902",
+  "prepared_run": 40372423343,
+  "original_run": 40375626336,
+  "qualification": false,
+  "embeddings_authorized": false,
+  "new_embeddings_executed": false,
+  "original_frozen_rows": 5483,
+  "native_rows": 5483,
+  "all_original_token_replay_exact": true,
+  "native_clipped_token_preflight_pass": false,
+  "native_clipped_token_mismatches": 24,
+  "native_untruncated_mismatches": 25,
+  "first_mismatches": [
+    {
+      "id": "d:10374686",
+      "input_utf8_sha256": "d7881d96172b03a4fc4c63cf3b4a6e87a36ee06938de61e18696bebef07ec8a9",
+      "native_tokens": 512,
+      "original_tokens": 512,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 320
+    },
+    {
+      "id": "d:104143831",
+      "input_utf8_sha256": "310ce1718ecb66f684cafd44c4adefa9c99ead83470c63fac3169efc6da19a08",
+      "native_tokens": 192,
+      "original_tokens": 190,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 93
+    },
+    {
+      "id": "d:1215116",
+      "input_utf8_sha256": "071da1632ea2633633f3ff0cb3a080bd0b1cd7259c2aa0ff3b3a950102c42431",
+      "native_tokens": 281,
+      "original_tokens": 280,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 6
+    },
+    {
+      "id": "d:14474178",
+      "input_utf8_sha256": "4ae934444b0166afd6527424510c6d82caf0db15545895a874f8f9a80c7bb21b",
+      "native_tokens": 512,
+      "original_tokens": 512,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 205
+    },
+    {
+      "id": "d:17553026",
+      "input_utf8_sha256": "a49803e008a2db3ee9051af41ed23a01e49b53b516e4424f9b424624aebcfa8b",
+      "native_tokens": 294,
+      "original_tokens": 293,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 242
+    },
+    {
+      "id": "d:20725212",
+      "input_utf8_sha256": "3c474f8cec3f50730edd755cfda92a2afc2701d302fe7b8840bfcb6dc8c7253c",
+      "native_tokens": 353,
+      "original_tokens": 352,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 24
+    },
+    {
+      "id": "d:21185923",
+      "input_utf8_sha256": "44e96197080af3fc1e61b74a9ab2480a2b1dcb766e874d40367606d12ec80732",
+      "native_tokens": 241,
+      "original_tokens": 240,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 82
+    },
+    {
+      "id": "d:21676556",
+      "input_utf8_sha256": "ad7cd79b1ed5f7853558d8eec80798a9818dc08d7a28081883a4fa780e0e8e82",
+      "native_tokens": 236,
+      "original_tokens": 235,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 234
+    },
+    {
+      "id": "d:30152134",
+      "input_utf8_sha256": "fe8e514cae8931cdecf7ee3365595652f08e3a8eb8c777f587e63fde528019b1",
+      "native_tokens": 240,
+      "original_tokens": 239,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 12
+    },
+    {
+      "id": "d:3150030",
+      "input_utf8_sha256": "0b39cf14179ee43689660a1ecae77dabb8fadeee8b0fe07d3346b89f7bc2c171",
+      "native_tokens": 512,
+      "original_tokens": 512,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 183
+    },
+    {
+      "id": "d:4345315",
+      "input_utf8_sha256": "93421af515a874b7576ca07efb37d69a15e233c52d0ab726d44844dc9ff22b0b",
+      "native_tokens": 358,
+      "original_tokens": 357,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 123
+    },
+    {
+      "id": "d:4381486",
+      "input_utf8_sha256": "cf775f698204239f43efd2ba69ca62c76e403ed8802c37a7a09de9f71fbfd566",
+      "native_tokens": 385,
+      "original_tokens": 383,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 41
+    },
+    {
+      "id": "d:4399311",
+      "input_utf8_sha256": "cd5021bb2edbcd2e17d4865d2f66cad17fc34112063c0a7d1bbd5bc323b246d0",
+      "native_tokens": 236,
+      "original_tokens": 235,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 39
+    },
+    {
+      "id": "d:4421746",
+      "input_utf8_sha256": "fe2ea8b4858f1a269dffae0c89755a65d339e8a2ac788d5b08b2a26decfe3242",
+      "native_tokens": 274,
+      "original_tokens": 273,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 60
+    },
+    {
+      "id": "d:45199834",
+      "input_utf8_sha256": "84ac048221f59235d44cb4f0dadcb5a0c5ab5b379caf7872a78b04226fa6272f",
+      "native_tokens": 241,
+      "original_tokens": 240,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 62
+    },
+    {
+      "id": "d:45820464",
+      "input_utf8_sha256": "9d15a407d711b656ec58e5b9c4b3e71ed185d41424566ba7107d1f2f1a2b8ed8",
+      "native_tokens": 270,
+      "original_tokens": 269,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 91
+    },
+    {
+      "id": "d:4679264",
+      "input_utf8_sha256": "cbab1e9e444e317828548480356d8dfcaf0d2798b5c1b2755aca9cf9e029fd4c",
+      "native_tokens": 396,
+      "original_tokens": 395,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 142
+    },
+    {
+      "id": "d:4857093",
+      "input_utf8_sha256": "33e7d90a5ba4d13457619c7d800e07b81b5463eeed99e63f37639c0c14fc070d",
+      "native_tokens": 512,
+      "original_tokens": 512,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 50
+    },
+    {
+      "id": "d:6323196",
+      "input_utf8_sha256": "38f8beda36d62cf1e402e61c47b1b30dabeb41ba055bae25b67a7e9ee9185fff",
+      "native_tokens": 323,
+      "original_tokens": 321,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 229
+    },
+    {
+      "id": "d:70516463",
+      "input_utf8_sha256": "4c75866bdc53b59a26a2149e3f124d42d7fcb5c37dac9e19d89e440d380a3af1",
+      "native_tokens": 412,
+      "original_tokens": 411,
+      "clipped_ids_exact": false,
+      "untruncated_ids_exact": false,
+      "first_differing_token": 410
+    }
+  ],
+  "executed_negative_two_rows_reproduced": true,
+  "all_native_observer_ids_bit_exact": true,
+  "gate_unset_empty_zero_rejected": true,
+  "state": "completed-tokenizer-diagnosis",
+  "cause_claimed": false,
+  "next": "Review actual first differing pretoken/codepoints before any gated runtime correction; require all5483 IDs before new embeddings.",
+  "native_binary_sha256": "233cf04a09a9c114188841005204394c4f38d721740436b62674505db91fd8ab",
+  "input_packet_sha256": "a188b04ef71a5a079359c6ab0990f180bc07cb336a365f00d3ebb1c7f80eb266",
+  "native_ids_sha256": "03651994b689d30924a8f2829e511158dcbd5193b0b9a9369c8a150e81645418",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424357191",
+  "small_artifact": {
+    "id": 12701388486,
+    "bytes": 352505,
+    "sha256": "72f23b1e68a2c9420cc5a46e52ef8af300ec18ece348e017adb8a9165c9d602f"
+  },
+  "raw_artifact": {
+    "id": 12701842149,
+    "bytes": 25792830,
+    "sha256": "d17d581dde9edfdac2e5e6b74d01019d669626e0defc2e50e671755fc728ec34",
+    "downloaded": false
+  }
+}

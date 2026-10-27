@@ -1,0 +1,86 @@
+{
+  "schema": "crispembed-successor-initial-apple-failure-v1",
+  "run": 40354251257,
+  "job": 121718562877,
+  "service_conclusion": "failure",
+  "producer_source": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+  "audit_source": "49161f608af811154bfeb816ac38caea34224cae",
+  "artifact": {
+    "id": 12672568809,
+    "bytes": 1704,
+    "sha256": "56346a92b1de416cf4d1a4bf4d187dc6a6d7764a13b162e743b36ce1c59f5c7e"
+  },
+  "job_log": {
+    "bytes": 39555,
+    "sha256": "64ec3fcf5ff3204eaeef3157df21f75873c1f7e93845962e7e9ec2efd0c0ffc9"
+  },
+  "failure": "Original image bytes changed",
+  "reports": {
+    "apple-candidate/consumer.json": {
+      "bytes": 3205,
+      "sha256": "03b6b094cfb59e5f0f5f4ab55d4a4fddac7f72b5e8b370f068cab3c26e70f6e4",
+      "report": {
+        "schema": "crispembed-successor-fresh-consumer-v2",
+        "source_commit": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+        "consumer_source": "49161f608af811154bfeb816ac38caea34224cae",
+        "runtime_source_closure": {
+          "scope": "Exact production/build/binding Git objects; audit helpers may differ",
+          "objects": [
+            "100644 blob a3e1e2ef055065cbef4644c050bb2e56f364a847\t.gitattributes",
+            "100644 blob 308671d0aec850755b7d8cd32d90ff4d7975aee9\t.github/workflows/release-wasm.yml",
+            "100644 blob dc5a19d5fac3944cb7ce644f9115ac39ee49a07c\t.github/workflows/release.yml",
+            "100755 blob f11974f327c73b5b1879b47d735697ad4c74e328\tCMakeLists.txt",
+            "100644 blob 6f447bf1a3c2db7d2359b2e269f65d1f60000dc9\tCargo.lock",
+            "100644 blob bd6ec050511889fcec725b6c5807c686aafef368\tLICENSE",
+            "100644 blob e3c5bd56baeca3886a8ce2ae85e5174ef3501c36\tREADME.md",
+            "100644 blob 1232e031f718d2622c198f0f64a2a58e2f7f46b0\tVERSION",
+            "100755 blob dc6058ff9adc033f6fc19bb81feb65050a89aff0\tbuild-embed-wasm.sh",
+            "100755 blob cce846a6a88cd42c6d167e803aaae6711e38cb4a\tbuild-wasm.sh",
+            "040000 tree 9a76ffe127104d815de41d1da09335d2937ba50b\tcmake",
+            "040000 tree c2d42e8718ec3a82b993f2da733dea5d0a24f3b3\tcrispembed-sys",
+            "040000 tree 94c3f40dca381a69216739b603ccbd6e235c92dc\tcrispembed",
+            "040000 tree 6032e1fe0573ac31690af8fe9725efd59c94d6d7\texamples",
+            "040000 tree 11864ee434d43b107613a296c1fb49426b76a5a6\tflutter",
+            "160000 commit 890278a8342c620197c90e702e1188bcab94f510\tggml",
+            "040000 tree 271126bf6c6b5c9d66ab37d640e1964d8a94f608\tpython",
+            "100644 blob c591cace178f888e3823f9fe739aa8831ff80df5\tscripts/check-bundled-deps.py",
+            "100644 blob f61e0a405bfbdef91cf81c78e346aff9a0710947\tscripts/check-cpu-baseline.py",
+            "040000 tree e5cbd629818f0424e272bc84469e9375eee804d2\tsrc",
+            "100644 blob abc4edd78887a4091c81912953a09bbc3f8bb12b\ttools/quantize.cpp",
+            "100644 blob d5fc37cb406c5ae8fd10e3557f795ddee97c9609\ttools/successor_asset_manifest.py",
+            "040000 tree 8c13a0e3fb4460b8fd8f853b9761c515becaf770\twasm"
+          ],
+          "consumer_source": "49161f608af811154bfeb816ac38caea34224cae"
+        },
+        "ggml_gitlink": "890278a8342c620197c90e702e1188bcab94f510",
+        "generator_git_blob_sha256": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
+        "consumer_generator_file_sha256": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
+        "producer_run": 40339796226,
+        "manifest_artifact": {
+          "id": 12661454736,
+          "name": "successor-native-manifest",
+          "size_in_bytes": 5593,
+          "digest": "sha256:c5f341a4f03b0cefc80774f386430bf77e3db6f829cb8be6a8367bb85980699e"
+        },
+        "payload_artifact": {
+          "id": 12661056829,
+          "name": "macos-arm64",
+          "size_in_bytes": 9609304,
+          "digest": "sha256:579cc8830e5cb9dadd444dbfcfc361514079bbb592c27e8e287abb3e92d9cd4f"
+        },
+        "archives": [
+          {
+            "name": "crispembed-macos-arm64.tar.gz",
+            "sha256": "ceafaaa7d77b3ea634018eedc9e3b6b40163a3193997dfac4c795c7e1550065e",
+            "member_count": 40
+          }
+        ],
+        "qualification": false,
+        "limits": [
+          "Archive validation alone is not runtime/model quality qualification."
+        ]
+      }
+    }
+  },
+  "limits": "Frozen PNG byte verification failed before CDLL/model initialization or case inference. No released/candidate outputs exist; corpus reproduction must match all frozen PNG hashes before any retry. No gold/hash changes."
+}

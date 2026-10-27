@@ -1,3 +1,86 @@
+## 27 October 2026 — MoEdern1.5M full raw-text CPU/F32
+
+[Ten raw-text cases](tests/results/moedern-colbert/text-composed.json) pass all
+twenty original all/selected vector comparisons and three MaxSim pairs. Final
+maximum absolute error is6.332993507e-7 (q-de), RMS9.941485920e-8, minimum cosine
+0.9999999999968416 (d-unicode). q-de original absmax/L2 are0.3296401203/5.656854263.
+Score errors are1.9073486e-6/3.8146973e-6/1.1444092e-5. Final files exactly match
+prior native-v2 hashes. This authored panel is not representative retrieval
+quality or larger-variant/quantization proof; [review scope](tests/results/moedern-colbert/text-composed-review.json).
+
+## 27 October 2026 — Josev composed CPU/F32 scope
+
+The [four-case raw-request panel](tests/results/josev2b/composed-text-panel.json)
+passes227 original-stage comparisons and all complete typed responses. Worst
+absolute error0.0006259084 occurs at mixed-de final norm; minimum cosine is
+0.9999999984746153. Logit/probability maxima are0.0000168085/0.00000214577;
+lexical means differ by at most0.00000000186265. Ordinal error is below0.000003517.
+Actual ordinary/observed/repeat panel commands take111.64/110.28/111.79 seconds,
+each running all four cases, not a per-request or warmed throughput benchmark.
+No independent decision-quality, GPU backbone, packed/public or quantized
+qualification follows. Exact evidence and raw-array inspection limits are in
+[the review](tests/results/josev2b/composed-text-review.json).
+
+## 27 October 2026 — MoEdern1.5M native CPU/F32
+
+[Reviewed native-v2](tests/results/moedern-colbert/native-v2-review.json) passes
+177 checks and three MaxSim pairs. Worst intermediate d-de layer1.ffn.output:
+absolute0.000267028809, RMS6.24332e-6, original/native L2335.048329/335.048156,
+original absolute maximum147.012085. Global minimum row cosine0.999999999956525.
+Worst final-vector error6.33299351e-7; largest MaxSim error1.14440918e-5.
+No per-forward latency or peak RSS is established by this receipt. Tokenizer,
+public-text, representative retrieval and wider-model qualification are separate.
+
+## 27 October 2026 — Josev backbone component and Unicode tokenizer scope
+
+[Backbone104-stage evidence](tests/results/josev2b/backbone-f32.json) uses fixed
+absolute0.002/minimum row cosine0.99999. Worst error0.000625908375 is mixed-de
+final_norm; global minimum cosine0.9999999984746153 is null-and-options layer14.
+At the worst stage, mean error1.00358e-5, RMS1.70337e-5 and original/native L2
+2838.41061765/2838.41068105. F32 text weights occupy7.527GB decimal;
+144.924s probe time includes eight prefills, with peak Linux RSS5817.828MiB.
+This is neither end-to-end decision latency nor representative task quality.
+[Unicode token A/B](tests/results/ultrabert/unicode-pretoken-ab-v1.json) proves
+all5,483 token streams only; numerical embeddings and retrieval remain pending.
+
+## 27 October 2026 — Josev head numerical parity, CPU and CUDA
+
+[Original-first head results](tests/results/josev2b/head-cpu-cuda-review.json):
+all123 captured stages per backend pass fixed0.002/0.99999 gates. CPU/CUDA worst
+absolute errors1.14440918e-5/7.62939453e-6; minimum row cosines
+0.9999999999999097/0.999999999999971. Probability maxima5.96046e-8/8.94070e-8;
+all eight complete typed responses match exactly. These are component results
+from frozen original backbone inputs, not composed inference or task quality.
+The24.97s panel includes controls/comparators;582,276KiB is largest Linux child
+RSS, not total GPU memory. No end-to-end speedup or throughput is established.
+
+## 27 October 2026 — bounded audits, unchanged qualification limits
+
+The [eight-grid/gate Ovis review](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
+passes existing calibrated gates with exact owning IDs/text/EOS. Boundary
+F32/F16 norm max0.00363088/0.00338554 remains above strict0.002; square error
+increases slightly. Global interpolation stays off; neither2048 nor other
+shared profiles are qualified. Current four-thread original versus two-thread
+native timings are not paired speedup evidence.
+
+[WASM layer3 attribution](tests/results/packaging/wasm-layer3-attribution-v1.json)
+retains exact ordinary/observer/historical anchors. Twelve identical-input
+projections match converted activation bytes/scales and have max error≤1.431e-6.
+Composed FFN-up/GELU/down errors are0.000572562/0.000356972/0.003311038;
+layer output0.002918929. This does not qualify the rejected whole-model panel
+or identify a same-input projection-kernel defect; rounding stays off.
+
+[Josev's original](tests/results/josev2b/original-review.json) takes39.46s for
+four scoped CUDA/F32 cases, peak CUDA allocation9,082,022,400 bytes. This is
+original-only session evidence, not native performance. The122-tensor head
+contains30,472,708 scalar elements; actual converted GGUF size/native parity
+must be measured remotely before any claim.
+
+[SciFact tokenization](tests/results/ultrabert/scifact-tokenizer-diagnostic-v1.json)
+retains24 clipped and25 full mismatches among5,483 inputs. No corrected corpus
+embeddings or retrieval scores are available. [MoEdern's corrected observer](tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
+rejects cross-run original SDPA drift; no native parity/performance claim follows.
+
 ## OvisOCR2 bounded decoder cache — 25 October 2026
 
 [Reviewed actual data and preserved-vector reanalysis](tests/results/qwen35-ocr/ovisocr2-weight-cache.json)
@@ -4784,7 +4867,7 @@ Applies to all VLM OCR engines that use `image_preprocess.cpp`.
 ## Local M1 Metal OCR engine sweep (2026-07-31)
 
 Command: `python3 tests/ocr_engine_benchmark.py --repeats 1 --timeout 45
---output /tmp/crispembed-ocr-benchmark.json`.  These are cold end-to-end
+--output crispembed-ocr-benchmark.json`.  These are cold end-to-end
 process times on the local Apple M1; they include model loading and should not
 be read as steady-state service throughput.  Quality is scored only against
 the manifest's known fixture text.
@@ -5131,7 +5214,7 @@ Tesseract decoder/recoder and confidence-aggregation quality TODO, not a
 performance acceptance result; the beam path remains diagnostic.
 
 Converter smoke (2026-08-01): Miniconda converted the installed Homebrew
-`eng.traineddata` to `/tmp/crispembed-eng-dawg-smoke.gguf` successfully. The
+`eng.traineddata` to `crispembed-eng-dawg-smoke.gguf` successfully. The
 6.6 MiB GGUF contains the three available LSTM DAWG payloads
 (`lstm-punc-dawg`, `lstm-system-dawg`, and `lstm-number-dawg`), each with a
 base64 payload and SHA-256 metadata. This verifies preservation only; the
@@ -6773,3 +6856,50 @@ full-stage parity or task-quality result. Empty rotation is exact, excluding it
 as the cause of the earliest empty pre-RoPE Q drift. Preserve historical gates
 and prioritize the separately declared complete SciFact audit. See the
 [receipt](tests/results/ultrabert/rope-attribution.json).
+
+###26 October — retained successor Linux desktop cross-check
+
+Independent reanalysis of the original40354251257 packaged MiniLM vectors gives
+Linux ARM versus x86 max absolute0.00011958926916122437, RMS0.0000396754409811665,
+cosine0.9999996977649903 and norms1.00000004334/0.99999986954.
+Both use the same pinned model/text; no inference or timing run was repeated.
+[ZIP/member identities and limits](tests/results/packaging/successor-desktop-vector-review-repair.json).
+The repaired aggregator now applies the unchanged0.002/0.99999 gate across all
+four desktops. This two-platform comparison does not close the original negative
+batch, qualify a model portfolio or establish final successor release compatibility.
+
+## Actual conditional WASM rounding A/B —26 October2026
+
+[40391544739](tests/results/packaging/wasm-rounding-ab-v1.json) completes all ten
+owned cases and unchanged0.002/0.99999 comparisons against frozen native1/2.
+The experimental gate remains off. Eight of ten literal1 finals are rejected;
+legacy, observer and context controls remain exact. These are numerical controls,
+not representative retrieval quality or speed qualification.
+
+| First-sentence stage | Candidate max absolute error |
+| --- | ---: |
+| Embedding norm | 0 |
+| Attention0 | 1.1920929e-7 |
+| Layer0 | 9.5367432e-7 |
+| Layer1/2 | 5.9604645e-7 |
+| Layer3 | 0.00291892886 |
+| Layer4 | 0.01997250877 |
+| Encoder output | 0.02850568295 |
+
+First-sentence final max0.00156465832/cos0.9999548495 still fails cosine.
+Worst final is mixed scripts max0.003993667895/cos0.9997236224. Native recomputed
+versus actual captured WASM pre-L2 mean max0.00808028661, norms5.16390589456 versus
+5.16081933513. Record this provenance distinction; no captured native mean claim.
+Layer3's first differing operator needs same-input attribution before a new fix.
+
+## Initial immutable Mac compatibility —26 October2026
+
+[Mac-only40399358753](tests/results/packaging/successor-mac-only.json), initial40
+archive versus released17.12: all50 default/1 IDs/text/EOS/confidences are exact;
+legacy0 is retained. The unchanged recognition score is7/50, not a quality gain.
+An audit-tool unit bug labeled Darwin ru_maxrss/1024 as MiB; those historical
+producer fields are preserved. Correctly normalizing the underlying byte counter
+gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
+119.078125MiB literal1 and117.296875MiB legacy0. These include each full50-case
+process. No paired timing/memory improvement, portfolio, mobile-device, final
+integrated-source or successor-release qualification follows from this diagnostic.

@@ -1,0 +1,69 @@
+{
+  "schema": "crispembed-successor-desktop-vector-review-repair-v1",
+  "initial_run": 40354251257,
+  "initial_consumer_source": "49161f608af811154bfeb816ac38caea34224cae",
+  "producer_source": "40a82158146faf0cd44de2a4ee7056e7b0c6a58c",
+  "repair_source": "5480be5c9ff69b315ae9f03f2c6803d391b72d6c",
+  "discovery": "Synthetic orthogonal ARM vector was accepted by prior aggregation when per-platform self-comparisons stayed positive. No actual cross-platform failure is alleged.",
+  "repair": "Validate common pinned MiniLM model/text and finite nonzero384-vector, then independently compare all four desktops against Linuxx86 using unchanged gates.",
+  "controls": {
+    "stdlib_tests": 14,
+    "orthogonal_regression_rejected": true,
+    "independent_absolute_and_cosine_rejections": true,
+    "exact_absolute_boundary_passes": true
+  },
+  "retained_report_reanalysis": {
+    "new_inference": false,
+    "platforms": [
+      "linux-x86_64",
+      "linux-arm64"
+    ],
+    "gates": {
+      "max_abs": 0.002,
+      "cosine_min": 0.99999
+    },
+    "identities": {
+      "linux-x86_64": {
+        "artifact_id": 12670238680,
+        "artifact_bytes": 8798,
+        "artifact_sha256": "f5c57d1b88a6f412894878b0701801b3aa1dfc3aea382333cdc240b3ac2c642c",
+        "consumer_json_bytes": 23121,
+        "consumer_json_sha256": "6cdd426e0b71fcbe80000494645deeb75fa75f9d5028e06d29abcdb9ff8cf435",
+        "all_member_hashes": {
+          "cli-empty-offline.log": "60573da7bccb90b8b4ff84cc222db7508da274cf9e24ba23c4b8ca30b51f2262",
+          "cli-offline.log": "84912ca56b51ae593a8d10766643059cab8d1c565d1d7f1440251c43c6e84fb8",
+          "cli-fresh.log": "85ec504e9e973e2d53a6c879d5c8ea2281bf2b19e8cdb32383278c610dfcb02d",
+          "consumer.json": "6cdd426e0b71fcbe80000494645deeb75fa75f9d5028e06d29abcdb9ff8cf435"
+        }
+      },
+      "linux-arm64": {
+        "artifact_id": 12671905445,
+        "artifact_bytes": 8781,
+        "artifact_sha256": "ee2546fc2ba1fae00a20884a108eaeba11ab7b6c288da570d4074d2ba3840818",
+        "consumer_json_bytes": 23113,
+        "consumer_json_sha256": "2e6bad6daf4dec6ed8fc6026f419ea49761b8cc51870c27baf0b4832c8333380",
+        "all_member_hashes": {
+          "cli-empty-offline.log": "60573da7bccb90b8b4ff84cc222db7508da274cf9e24ba23c4b8ca30b51f2262",
+          "cli-fresh.log": "2f42bb74e0b9d755dce9d193d532504cd84adafa569ae164f827ad59315fd908",
+          "cli-offline.log": "84912ca56b51ae593a8d10766643059cab8d1c565d1d7f1440251c43c6e84fb8",
+          "consumer.json": "2e6bad6daf4dec6ed8fc6026f419ea49761b8cc51870c27baf0b4832c8333380"
+        }
+      }
+    },
+    "linux_arm64_vs_linux_x86_64": {
+      "max_abs": 0.00011958926916122437,
+      "mean_abs": 3.155746299015697e-05,
+      "rms": 3.9675440981166516e-05,
+      "cosine": 0.9999996977649903,
+      "reference_norm": 0.9999998695443191,
+      "native_norm": 1.000000043343657,
+      "passed": true
+    }
+  },
+  "qualification": false,
+  "limits": [
+    "Reanalysis uses only the two retained original Linux reports; final four-desktop aggregation still requires all actual final-source consumers.",
+    "Original batch40354251257 remains rejected for Windows, Apple and browser failures.",
+    "No new task-quality, runtime default, release, model publication or application pin claim."
+  ]
+}

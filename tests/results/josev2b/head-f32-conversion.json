@@ -1,0 +1,1801 @@
+{
+  "schema": "crispembed-josev-head-f32-conversion-v1",
+  "completed": true,
+  "full_model": false,
+  "native_parity": false,
+  "representative_quality": false,
+  "original_receipt_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+  "original_worker_source": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
+  "checkpoint_sha256": "8816d51356876ef9b055e51291a00dfc4a8c741189ca088b59604d039d7852c5",
+  "gguf_sha256": "5b0a4bfe769526569102e3cde115887593875124c94bb723fb9087bc40c29507",
+  "gguf_bytes": 121900352,
+  "tensor_count": 122,
+  "parameter_count": 30472708,
+  "tensors": [
+    {
+      "source": "hidden_norm.weight",
+      "target": "head.hidden_norm.weight",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a08d9f5f59693b1e09ea02584c5add1b6840eede559a7935e4c35e9994d2d88f",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "hidden_norm.bias",
+      "target": "head.hidden_norm.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "c5e0d594f865ec91ec50ef9d351c99c7499bb68adf64d96d4416e6a06384baa3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "memory_projection.weight",
+      "target": "head.memory_projection.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "580f13f0b1e854456bffcc8223341e57f4cf4cf09850b61405007a9c296094b4",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "question_projection.weight",
+      "target": "head.question_projection.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "556d960c0bef60c025e005ec578d76019c9af2c623dc5f931df0f47c4385f10f",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_question_projection.weight",
+      "target": "head.option_question_projection.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "366518cc7c7508c09c5af3ff61bb14087e5fdb606d715b020bd62550edf12886",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "global_projection.weight",
+      "target": "head.global_projection.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3efa7900a012ce1dd91793e15d25076e7d29c04241678d235b83413016b53275",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_context_projection.weight",
+      "target": "head.option_context_projection.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "971c683da609fda217a8a9aea185b2c90066ec03c5edb7e31c98f99c8ecec9fe",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_lexical_projection.weight",
+      "target": "head.option_lexical_projection.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d70eef8fd346687c49bbf7abaa4b4b24f901cf67862ba1d945505673f75d7697",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "type_embedding.weight",
+      "target": "head.type_embedding.weight",
+      "source_shape": [
+        3,
+        512
+      ],
+      "gguf_shape_numpy": [
+        3,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "71339119a3dff709d9c9dad460be102cad9cb5e7ceae37492fd9854d4f20d6a9",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.query_norm.weight",
+      "target": "head.evidence_layers.0.query_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "e0bb905a953aa77ebb08e2c0945f737d97c2ba3a7cc31f9acbe3ab4f2f5e737a",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.query_norm.bias",
+      "target": "head.evidence_layers.0.query_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "daef580c8f36f5f7a47a5888b804eaec409e36009c191a262a9a4c974205d598",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.memory_norm.weight",
+      "target": "head.evidence_layers.0.memory_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "f02b176995bfeae6acb9c04a783d5179cd28b799010657d359c6273f292f435e",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.memory_norm.bias",
+      "target": "head.evidence_layers.0.memory_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "f84b2f3b9cc40474dbb9d2d273853afd9a938aaa3d0525bfbc065b6438f5549b",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.attention.in_proj_weight",
+      "target": "head.evidence_layers.0.attention.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "4f37a019358b3b2f3647f524f814eb7a8a216cf63291cf50dc922ca0ed135786",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.attention.in_proj_bias",
+      "target": "head.evidence_layers.0.attention.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "51e456ba9b625e4574e6eba5b26276b991066c6ad3213cfc0f86f800f47d9a16",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.attention.out_proj.weight",
+      "target": "head.evidence_layers.0.attention.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3d238af6d9b1c32543e67ce4fafef79f36f79bf94a86cd6b3ca0fce5c845e1aa",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.attention.out_proj.bias",
+      "target": "head.evidence_layers.0.attention.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d436814cb50db155c29416ed76ab9a637dfc5e4f480d27728bdf69fa7af0c954",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.feedforward_norm.weight",
+      "target": "head.evidence_layers.0.feedforward_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d1312074e7caaf4a0753da7f452d8ccfad1b5ae56c926376ad4a38ddf89f1aa3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.feedforward_norm.bias",
+      "target": "head.evidence_layers.0.feedforward_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "631055fce48f3611dd44b295a90fa79864d7bc52288dc085a190ca63c0ac21e6",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.feedforward.0.weight",
+      "target": "head.evidence_layers.0.feedforward.0.weight",
+      "source_shape": [
+        2048,
+        512
+      ],
+      "gguf_shape_numpy": [
+        2048,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "5d900e927b8021b5d0f44c70f743e46878c455d3a167f7d3b5e517eabe90b68f",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.feedforward.0.bias",
+      "target": "head.evidence_layers.0.feedforward.0.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "bbc37f3a8c0efe5f860c40e359c350c0d331feeacb5d5532770b70645931356d",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.feedforward.3.weight",
+      "target": "head.evidence_layers.0.feedforward.3.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "650a0ad58c1b1d7cdd3b534f6770ab29a623ce8c8e4a44866f457c595b44ebf3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.0.feedforward.3.bias",
+      "target": "head.evidence_layers.0.feedforward.3.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3ad03b5588af08018b999e40c46d0d4d242e2d0b488e0adb2645501526735da2",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.query_norm.weight",
+      "target": "head.evidence_layers.1.query_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "14cfef3a56c5d4304cc2a989098d8605f4d58c683cd71e59e55cedfa6fc5f943",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.query_norm.bias",
+      "target": "head.evidence_layers.1.query_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d8aff1f61364ca09dfe553e72a6479776446fd4f605847a117f6c91fed663485",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.memory_norm.weight",
+      "target": "head.evidence_layers.1.memory_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "00363cb7caf4368499a9c7a863d93be066f2790c8d6650abf0090a812c7e8008",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.memory_norm.bias",
+      "target": "head.evidence_layers.1.memory_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2ffca3b7e2ad6b6f32acba0ec7511e852f1b23e2f6c877dc9e2c388201a75238",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.attention.in_proj_weight",
+      "target": "head.evidence_layers.1.attention.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "cdf91dbf14edea1ee2b9d57f0f6c15f4b05d1d267b7c7dd3e299a2c498fd0ad3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.attention.in_proj_bias",
+      "target": "head.evidence_layers.1.attention.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3808cb81a3e19bb65c8c5f887b1f2812f9228ec2d51867b976d86279fb5e40d2",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.attention.out_proj.weight",
+      "target": "head.evidence_layers.1.attention.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "6693c6b8b610906f730194eac002d12639ef4b71b0246aa8cf886715816df7ef",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.attention.out_proj.bias",
+      "target": "head.evidence_layers.1.attention.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "9ff09fa5a18720b793e1d9972e744a68eb9905fdf2c14d670a7ea52f7dc04cd1",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.feedforward_norm.weight",
+      "target": "head.evidence_layers.1.feedforward_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "42b0a30f3b611378a7648ecca97cc86b6fd9c16273fdf47dd5e6b32bf0de3459",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.feedforward_norm.bias",
+      "target": "head.evidence_layers.1.feedforward_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "4d7e0745a8e12f57620a9efe0bcc69fbfc279bb9ed5e2608ac554be08b02de3e",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.feedforward.0.weight",
+      "target": "head.evidence_layers.1.feedforward.0.weight",
+      "source_shape": [
+        2048,
+        512
+      ],
+      "gguf_shape_numpy": [
+        2048,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d43eff184ded9e4c98a5ddeec686dce8c796e6eed40d5ec89e95d2537fddadd5",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.feedforward.0.bias",
+      "target": "head.evidence_layers.1.feedforward.0.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3e7a4c57a8e4e8d0005523dc9b2c85c2dd418eae297fef20da547095b50730d3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.feedforward.3.weight",
+      "target": "head.evidence_layers.1.feedforward.3.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d7e24b06e0f898ec1502bdcc21d35b3e11d0b1892149771f58fb7b751eeaf9c1",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "evidence_layers.1.feedforward.3.bias",
+      "target": "head.evidence_layers.1.feedforward.3.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "bf8b7dbc7dff5859d43008c17ab1f2ecb83bbdc19d67da490cfb62681fe35a3a",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_summary_norm.weight",
+      "target": "head.option_summary_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "c65fd118b71793b8f634e6ac6f632aaf8f6d711e27340744068cd04a78c386f8",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_summary_norm.bias",
+      "target": "head.option_summary_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2906a0fc7020bb890d37310a1e20035e16293f752f5d537b9b262ceaa3c3c48e",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.self_attn.in_proj_weight",
+      "target": "head.layers.0.self_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "0064eea13272d3a15260eec24618834b687fc060a6c2c2ee5996bf300da8055c",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.self_attn.in_proj_bias",
+      "target": "head.layers.0.self_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2a32c4cca214f3e36d333133e75c91867e55dace3953284f7af7030ee9a3ec24",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.self_attn.out_proj.weight",
+      "target": "head.layers.0.self_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "e8252a626f9479272e768d55e8db0b29c5c8b4520b679cbf345c5941e80a31b5",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.self_attn.out_proj.bias",
+      "target": "head.layers.0.self_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "51d7687a0695467d96d21236f93601927c99b04a3766a63583eddd702d3dbe44",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.multihead_attn.in_proj_weight",
+      "target": "head.layers.0.multihead_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "8e9589e31ba523ebac21d3f4f20ec9764dc97e813347a0df5f7faae6b57d6450",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.multihead_attn.in_proj_bias",
+      "target": "head.layers.0.multihead_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "81cc3670f27e3bf01c5eff5c21aae9fb53f5449d42c2d8252bf9e7a1dd7502cb",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.multihead_attn.out_proj.weight",
+      "target": "head.layers.0.multihead_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "9a1aa77dfdb90270dc40588a78bfef744246798d031d9ce49aee866bb86bf280",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.multihead_attn.out_proj.bias",
+      "target": "head.layers.0.multihead_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "1c41de7352699d897c66581300771f9c45af28dd9312cbefd5a29bb5fa584159",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.linear1.weight",
+      "target": "head.layers.0.linear1.weight",
+      "source_shape": [
+        2048,
+        512
+      ],
+      "gguf_shape_numpy": [
+        2048,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "b19461b83aeb2888c52f461108af5874510f320bd2810576085c805738f3f4d2",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.linear1.bias",
+      "target": "head.layers.0.linear1.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a0a739c85aedb1cc56e83d3e111760569a833532a86e7913d0b423ed814ecd9f",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.linear2.weight",
+      "target": "head.layers.0.linear2.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "cad271a3a08cbb92e93be6dfe161026c1e22c3b08a7637fdf63d3092c4283177",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.linear2.bias",
+      "target": "head.layers.0.linear2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "5efe44e86d847465065a2b7991bb185325b52dc8d9389700b80ca85655450f13",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.norm1.weight",
+      "target": "head.layers.0.norm1.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2ea501a3f5366231494b03927b9f7aa4133f0ba12bb9ed94b47cf58698d62ef5",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.norm1.bias",
+      "target": "head.layers.0.norm1.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "b92419b83c537fb61d69988967871b597c6194d4c22d8e006505d827c40a6df3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.norm2.weight",
+      "target": "head.layers.0.norm2.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "955c2e01c1825994b799290299eb176b35d1d8f652893ccdf59fc2ad40bbc134",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.norm2.bias",
+      "target": "head.layers.0.norm2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "60a379e43e322a24b3aa015faf93117d2ed65ae4b9d5663b63657b583543b0a3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.norm3.weight",
+      "target": "head.layers.0.norm3.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "31794a076df1782e42d80c54adbf53983e61e40e3ea463240e161ba7b0ed3c10",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.0.norm3.bias",
+      "target": "head.layers.0.norm3.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "07c4932e61236ff4a8b34f35d4c4f1ff6a12d663634e6cd7c7618d392d3565f9",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.self_attn.in_proj_weight",
+      "target": "head.layers.1.self_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "356fe272b2bc0a97e72c13622db9748e4bd24d0ec3f6052463c4951867099344",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.self_attn.in_proj_bias",
+      "target": "head.layers.1.self_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "5fbec93ce79395bb50703d26d52849db68226fee9e1f79c087f1131e6d5dbdce",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.self_attn.out_proj.weight",
+      "target": "head.layers.1.self_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "8a6d59fbef681d8848e66d4b4977382413ee3e4031f0a413245ac069adc27c85",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.self_attn.out_proj.bias",
+      "target": "head.layers.1.self_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "025127cd33c8e199e80a7fcb6d586030a6b9bc9aca73aa23b08b03003684b702",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.multihead_attn.in_proj_weight",
+      "target": "head.layers.1.multihead_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2e05bb5f3fce33277f067675d2d481c0dce47ce67dd8cc64381c47a2466ea07c",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.multihead_attn.in_proj_bias",
+      "target": "head.layers.1.multihead_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "874b3893ec1a2532b2b4ee68ae2975f86749a8ea4c20437578132098a3dcc339",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.multihead_attn.out_proj.weight",
+      "target": "head.layers.1.multihead_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a18c8ba09c36c306d3ba0f7eadb513d48d34cb90e177b90b1c3b97f1b3c35cc1",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.multihead_attn.out_proj.bias",
+      "target": "head.layers.1.multihead_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a8fe9470d202cd743c221ede557e67a3dd6da7f2abbdb1ed36ee3ce2704363cd",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.linear1.weight",
+      "target": "head.layers.1.linear1.weight",
+      "source_shape": [
+        2048,
+        512
+      ],
+      "gguf_shape_numpy": [
+        2048,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "685facef93e4ac9019367a9ab1b9dd60538a6f3db15e9556da2e4e0e8024bc75",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.linear1.bias",
+      "target": "head.layers.1.linear1.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "bcd2f024500478c333f6a659b9bd2192b238f69b89bd2b86ca08b272aa022ff7",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.linear2.weight",
+      "target": "head.layers.1.linear2.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "298298003dfb9d3c9b87466dfdf43c896e33bb8b3f5ed989636baeda0bbbf0f5",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.linear2.bias",
+      "target": "head.layers.1.linear2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "24fc7a29b6bf1a50fe4b2fd046108ce29d401bcbeb25036a51b9c11077f37d5a",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.norm1.weight",
+      "target": "head.layers.1.norm1.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "8fc40ded15af89256a776bb56dc5d21e6f48d13fac938a7f47bdebf9254b24c0",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.norm1.bias",
+      "target": "head.layers.1.norm1.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "6994ec50ce6ca205b741acceb8e780e2ea572ea4193605620e78dd29c3ad0678",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.norm2.weight",
+      "target": "head.layers.1.norm2.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "4261be01c6745885a83833dfa1cde25b21b1848b84608e39fca9d6cbde75212f",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.norm2.bias",
+      "target": "head.layers.1.norm2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2db89b416793993a37382e96572584b8f7474ad9b49829f7b2cf3708cd82509b",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.norm3.weight",
+      "target": "head.layers.1.norm3.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "cbf5904f0763819e956abba3576861f8a7696e556bee0d3d5f4dae0f790c3deb",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.1.norm3.bias",
+      "target": "head.layers.1.norm3.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "1d4331efca63043fc3c70212e4482ed9a79222d5c82ac730fdf668372cdbbbc0",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.self_attn.in_proj_weight",
+      "target": "head.layers.2.self_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "386d970aefec41148e952a13c6b9888f5b2358d16e793d9d7cbe4889d19bc627",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.self_attn.in_proj_bias",
+      "target": "head.layers.2.self_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2afcce37484685232c93df86a4d46966d060da25c033e6403ae4d2b691c36404",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.self_attn.out_proj.weight",
+      "target": "head.layers.2.self_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "62d476d5b8ff9a10efd4154caa5c8652735698bbcd3cc85137d027c6a8a422f3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.self_attn.out_proj.bias",
+      "target": "head.layers.2.self_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "0722a0b438fbb3fb97c0fe8fef36fa9274e8a9b306aeaa70debf1f61fcdcd98e",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.multihead_attn.in_proj_weight",
+      "target": "head.layers.2.multihead_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "399d0726ddf5ade5345aea9dc45a9ccc5996435e245741cbe822893dcb5c1741",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.multihead_attn.in_proj_bias",
+      "target": "head.layers.2.multihead_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "61f3274d81e2d3a2c80c594c6bbfcdbc13f88b5791c77794e9ffd381e674de3d",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.multihead_attn.out_proj.weight",
+      "target": "head.layers.2.multihead_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3c30e791e8af4537f2b6621168f103f4b62120a7ba37e6690d994deefde90031",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.multihead_attn.out_proj.bias",
+      "target": "head.layers.2.multihead_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "7656e95b6eec9f4556e51ea99147d4bb9f87330886a4241037f78a93e5d510b4",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.linear1.weight",
+      "target": "head.layers.2.linear1.weight",
+      "source_shape": [
+        2048,
+        512
+      ],
+      "gguf_shape_numpy": [
+        2048,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3074ebbe573ede58c168b2cc9ceabb79a3b39e5b29a26d06c965c76020055711",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.linear1.bias",
+      "target": "head.layers.2.linear1.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "9f31088a3432b897c658ecab37fa861beceb0b96a16ec672ad90434fa1380f46",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.linear2.weight",
+      "target": "head.layers.2.linear2.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "ee3754a8b9bb32bdba0e697fee6ff8e9360e76b6fedb729e3f317b34e58578e3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.linear2.bias",
+      "target": "head.layers.2.linear2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "4cbf93f65a02883b8f3131509cccb44f4d8e4c62298e851c4b84f47a70f97a5a",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.norm1.weight",
+      "target": "head.layers.2.norm1.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "18596d1ea1dc5b1d21f1ab4efccf9aa3c8d06e937c7969d5a8555813dfdf75d6",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.norm1.bias",
+      "target": "head.layers.2.norm1.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "0286d49d2a2f22930c5b9ba26e32ee62ab8cafb10a62070e2c1a6272d30b2de7",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.norm2.weight",
+      "target": "head.layers.2.norm2.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d6fd0e5ede12e7a245f79cc7ebba0740f0553e79acbbaa9df777ebe8eba83ac8",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.norm2.bias",
+      "target": "head.layers.2.norm2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "7aa9e795df8d0a7b9d19700f256e252d9295cfa020a3a459e49c87ec08663979",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.norm3.weight",
+      "target": "head.layers.2.norm3.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "05951c2e82463940c35de2c42febad8f2202a86fff9f27d7ed4e62a3f71e2d59",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.2.norm3.bias",
+      "target": "head.layers.2.norm3.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "8ac1ed301e68c44ee41dddfcde72d8f252a82c85ac26c2e61ba72dc85081a4bc",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.self_attn.in_proj_weight",
+      "target": "head.layers.3.self_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "ae06fee936c79178b4e7d9476b1ccabf39677ddaa5f9efbd63efa0c361295644",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.self_attn.in_proj_bias",
+      "target": "head.layers.3.self_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a5456e9d6a15b4d25d84a3a3c93fa3b7de94ca5cdc441d650c3cf9ea8e6a3696",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.self_attn.out_proj.weight",
+      "target": "head.layers.3.self_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "de12530a4ec9e937a25477e53400dc103566d9e5aa77369761c7d295c20a3794",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.self_attn.out_proj.bias",
+      "target": "head.layers.3.self_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "ef3b81378a3dc50ff73c9fcf808aaeead96d34f34a4d6321b8056eb396da7859",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.multihead_attn.in_proj_weight",
+      "target": "head.layers.3.multihead_attn.in_proj_weight",
+      "source_shape": [
+        1536,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1536,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "db320f5a1c9fcafb6bc68764638b1de1128d89932546915b69e4569b1e0c33b4",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.multihead_attn.in_proj_bias",
+      "target": "head.layers.3.multihead_attn.in_proj_bias",
+      "source_shape": [
+        1536
+      ],
+      "gguf_shape_numpy": [
+        1536
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "4b57e13eca89728eee7e173c08f4ecb712c6d916246c0c06965dd6b8d0c6f0d7",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.multihead_attn.out_proj.weight",
+      "target": "head.layers.3.multihead_attn.out_proj.weight",
+      "source_shape": [
+        512,
+        512
+      ],
+      "gguf_shape_numpy": [
+        512,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "6de7cbdb4b4edac1c8f9eb3a6101cab85f06ed3035cc4393644680c31fc37a58",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.multihead_attn.out_proj.bias",
+      "target": "head.layers.3.multihead_attn.out_proj.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "3565935f1d3e98ba89df354049e1391b60030da57c0db0cd825aae05c4711652",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.linear1.weight",
+      "target": "head.layers.3.linear1.weight",
+      "source_shape": [
+        2048,
+        512
+      ],
+      "gguf_shape_numpy": [
+        2048,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a48c84fd9a901e4f541794584b9fa0815525063109cb8238045a4ca359143496",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.linear1.bias",
+      "target": "head.layers.3.linear1.bias",
+      "source_shape": [
+        2048
+      ],
+      "gguf_shape_numpy": [
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "14e7eef3850ec653d73b23b72d840fb043dea4fde72432143827e0e16b9b33c0",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.linear2.weight",
+      "target": "head.layers.3.linear2.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "b963fe1f5c126ed73a0b96915f757a107f9e68b7ce3cf7e4874f0838852dd487",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.linear2.bias",
+      "target": "head.layers.3.linear2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "482c53929d501f95d7d4b4999a8e8c49a1e2e5421f45d36629e2b4c333ed31fe",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.norm1.weight",
+      "target": "head.layers.3.norm1.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "9653165086fffbbff8c15c5a908023898b983a778f2307229b3e23c286345d8a",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.norm1.bias",
+      "target": "head.layers.3.norm1.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "6ca41bcdb5c9578f6e64391381341cc41551a8c23a957fb74ac609848da78b78",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.norm2.weight",
+      "target": "head.layers.3.norm2.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "0378eb2020d4e78e70a4ab0a12426db9ad40dcd6699f920d7d22c4436bcb5213",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.norm2.bias",
+      "target": "head.layers.3.norm2.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d694e18bbf196f9cf5941e295f1ac3d7977383e5d150330ba62d115c684eda97",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.norm3.weight",
+      "target": "head.layers.3.norm3.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "2ec97575ea4ea2a906b0ed22de2ea1d726ffbab0954b97aeffc539a91910d54e",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "layers.3.norm3.bias",
+      "target": "head.layers.3.norm3.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "09b4fe5352ead794a9e143936aaa91aea2cc39a3307a2b0e51bd2eed08884cc3",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "field_norm.weight",
+      "target": "head.field_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "5cce7c13575ce2cecc42ffa59320a711b95545325f798c300e73d6e9f4a1786b",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "field_norm.bias",
+      "target": "head.field_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "723db56bddadfba3a4fb98acbb8e8373331771e5c031cefdcac886bd1ca23338",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_norm.weight",
+      "target": "head.option_norm.weight",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "d5429bf0c83225c4e466f263912e33c158155083e15afead8ca4e8c1dcf94edd",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "option_norm.bias",
+      "target": "head.option_norm.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "37acfc3fec6eabcdaf65ca62d23575fbc1ae913f8f01023d15066daed3feb33f",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "residual_scorer.0.weight",
+      "target": "head.residual_scorer.0.weight",
+      "source_shape": [
+        512,
+        2048
+      ],
+      "gguf_shape_numpy": [
+        512,
+        2048
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "735a2083c4f02efcc37f97e6e1cbc4285c4deb97d16438b3126c04df66005ede",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "residual_scorer.0.bias",
+      "target": "head.residual_scorer.0.bias",
+      "source_shape": [
+        512
+      ],
+      "gguf_shape_numpy": [
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "6cbeec9c58c9169262f673447650230d47d212294c723b4e81a8eece8173dadc",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "residual_scorer.3.weight",
+      "target": "head.residual_scorer.3.weight",
+      "source_shape": [
+        1,
+        512
+      ],
+      "gguf_shape_numpy": [
+        1,
+        512
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "e729a9eaebc65f404a08a56960857272d65b255a796fa7bc4bd69b7fe55d326a",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "residual_scorer.3.bias",
+      "target": "head.residual_scorer.3.bias",
+      "source_shape": [
+        1
+      ],
+      "gguf_shape_numpy": [
+        1
+      ],
+      "source_dtype": "BF16",
+      "f32_sha256": "a8a70f058da9f96f9dfaca6a36e23835e9657817d373f7b3d0e43e88d34c01e4",
+      "transformation": "exact BF16 promotion",
+      "scalar_adapter": null
+    },
+    {
+      "source": "prior_logit_scale",
+      "target": "head.prior_logit_scale",
+      "source_shape": [],
+      "gguf_shape_numpy": [
+        1
+      ],
+      "source_dtype": "F32",
+      "f32_sha256": "ba63e2870c407e0f86d262590f0dfa54c2a769af840121ad6115b59f95527766",
+      "transformation": "identity",
+      "scalar_adapter": "rank-zero to one-element vector"
+    },
+    {
+      "source": "joint_logit_scale",
+      "target": "head.joint_logit_scale",
+      "source_shape": [],
+      "gguf_shape_numpy": [
+        1
+      ],
+      "source_dtype": "F32",
+      "f32_sha256": "9edb761db6e6e75009cb00fd7af8954af3264de3bd7826d0d106b972acfe7011",
+      "transformation": "identity",
+      "scalar_adapter": "rank-zero to one-element vector"
+    },
+    {
+      "source": "residual_gate",
+      "target": "head.residual_gate",
+      "source_shape": [],
+      "gguf_shape_numpy": [
+        1
+      ],
+      "source_dtype": "F32",
+      "f32_sha256": "a752c409977eccc60212ef4d12d277c84e2ff82b407f21810283ce000eae8c92",
+      "transformation": "identity",
+      "scalar_adapter": "rank-zero to one-element vector"
+    }
+  ],
+  "limits": "Head-only F32 byte preservation, not native head/backbone/inference or calibration parity."
+}

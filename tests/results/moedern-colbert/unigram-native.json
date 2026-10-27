@@ -1,0 +1,54 @@
+{
+  "schema": "crispembed-moedern-unigram-native-v1",
+  "completed": true,
+  "tokenizer_parity": true,
+  "failures": [],
+  "cases": 34,
+  "frozen_ten_exact": true,
+  "normalization_sequences": 1040,
+  "negative_cases": 4,
+  "metadata_negatives": [
+    "revision",
+    "flags",
+    "matcher-id",
+    "matcher-content",
+    "score-type",
+    "score-nonfinite"
+  ],
+  "unigram_unit_cases": 10,
+  "ordinary_test_neutrality": true,
+  "ordinary_excludes_diagnostics": true,
+  "source": "3da7cf8e9a4fcd6342fc9a6ac00d07de42b7c324",
+  "default_enabled": false,
+  "model_weights": false,
+  "native_text_model_composed": false,
+  "public_api": false,
+  "retrieval_quality": false,
+  "release_qualified": false,
+  "files": {
+    "tokenizer.gguf": {
+      "sha256": "3ce7c3fa8b10249c5b704026566d183adb3de7b1879e7174e4654cdfd54ac4b1",
+      "bytes": 1095840
+    },
+    "ordinary.jsonl": {
+      "sha256": "ce0bab3680702671b8a4a8a8780b9c5411300bd7b9443085222f3136d1024e39",
+      "bytes": 23025
+    },
+    "tested.jsonl": {
+      "sha256": "ce0bab3680702671b8a4a8a8780b9c5411300bd7b9443085222f3136d1024e39",
+      "bytes": 23025
+    },
+    "normalize.jsonl": {
+      "sha256": "50ea32256cc716f5a6e8a9d30f0cbee2c9a5d22435fc393c3dc2d0f4ab92743f",
+      "bytes": 172008
+    },
+    "moedern-text-plain-probe": {
+      "sha256": "986ae7e6cfac5318b826a61bf9be7cfc5fb34511a9423758fe50fee91bac219a",
+      "bytes": 936480
+    },
+    "moedern-text-tested-probe": {
+      "sha256": "70b8f0a1f04365e9d06022c9903715236d2d08f5fa8d279ab8bd524e1bc937be",
+      "bytes": 937448
+    }
+  }
+}
