@@ -10,6 +10,7 @@
     "flutter/crispembed/lib/crispembed.dart": "b6713d6cb0b8e2f2270a1c19d136caf6efc8de2593fbaf91594f57e1da301ee2",
     "python/crispembed/__init__.py": "5d48096fc8611b62171099363d08da62ccf6197cabfa7092beaf2610bb20fd8d",
     "tools/moedern-public/root_contract.py": "bacc142ac858c93f427967e8e6bc629c6aa913833508dd01da86d0047751b4df",
-    "tools/ci-heavy/moedern_public_root.sh": "eb25d188dd807f3b8d2f9138c1800db7431a780b92f0182400eab257b0e8c94f"
+    "tools/ci-heavy/moedern_public_root.sh": "2a65e29bafc15f79bc9142332e29792a9c40882def3d222fbaf62b2f56294a55",
+    "tests/test_moedern_public_root.py": "85da5b5a8cb43b8fd27d1760b835e1d3cb1a128e04e42c51e3565635bdc50675"
   }
 }

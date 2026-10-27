@@ -6,7 +6,7 @@ set -euo pipefail
 git fetch -q --unshallow origin 2>/dev/null || true
 R="$HEAVY_OUT"; B="$HEAVY_SCRATCH/root"; mkdir -p "$R"
 python tools/moedern-public/root_contract.py | tee "$R/source.json"
-python tests/test_moedern_public_text.py -v 2>&1 | tee "$R/stdlib.txt"
+python tests/test_moedern_public_root.py -v 2>&1 | tee "$R/stdlib.txt"
 cmake -S . -B "$B" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DBUILD_SHARED_LIBS=OFF \
   -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF \
   -DGGML_LLAMAFILE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > "$R/configure.txt"
