@@ -31,6 +31,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/out" "$RUNNER_TEMP/scratch"
           export HEAVY_OUT="$RUNNER_TEMP/out" HEAVY_SCRATCH="$RUNNER_TEMP/scratch" DART="$(command -v dart)"
+          python -m pip install -q numpy==2.2.6
           python tests/test_moedern_public_root.py -v
           python -I tools/ci-heavy/moedern_public_consumers.py
       - uses: actions/upload-artifact@v4

@@ -28,6 +28,7 @@ P
 # Same plain-C ABI controls, now linked against the actual root library.
 cc -O2 -I src tests/moedern-public/controls.c -L "$B" -lcrispembed -Wl,-rpath,"$B" -o "$HEAVY_SCRATCH/controls"
 "$HEAVY_SCRATCH/controls" | tee "$R/controls.txt"
+python -m pip install -q numpy==2.2.6
 ( cd python && CRISPEMBED_LIB_PATH="$B/libcrispembed.so" python -c "import crispembed; print('python export', crispembed.CrispMoEdern.__name__)" ) | tee "$R/python.txt"
 CRISPEMBED_SYS_LIB_DIR="$B" cargo check --workspace 2>&1 | tee "$R/rust.txt"
 curl -sSLo "$HEAVY_SCRATCH/dart.zip" https://storage.googleapis.com/dart-archive/channels/stable/release/3.13.5/sdk/dartsdk-linux-x64-release.zip
