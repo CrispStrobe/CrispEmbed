@@ -1,5 +1,6 @@
 """Hosted-only build-once SciFact native-v3, against frozen original-v2 arrays."""
 import argparse
+import hashlib
 import importlib.util
 import inspect
 import importlib.metadata
@@ -28,7 +29,8 @@ write, load, inventory = old.write, old.load, old.inventory
 REPO = 'CrispStrobe/CrispEmbed'
 OWN = (CONTRACT, 'tools/ultrabert_scifact_native_v3.py', 'tools/ci-heavy/ultrabert_scifact_native_v3.py',
        'tests/test_ultrabert_scifact_native_v3.py', '.github/workflows/ultrabert-scifact-native-v3.yml',
-       '.github/workflows/ovisocr2-metadata.yml', 'docs/ultrabert-scifact-native-v3.md')
+       '.github/workflows/ovisocr2-metadata.yml', 'docs/ultrabert-scifact-native-v3.md',
+       'tests/results/ultrabert/initial-scifact-native-v3-loader-failure.json')
 
 
 def git(*args):
@@ -102,16 +104,12 @@ def receipt(target, expected_sha=None):
     return r
 
 
-def references(scratch):
+def materialized_references(scratch):
     p = protocol(); token = p['token_proof']; original = p['original']; prep = p['prepared']
-    proof = fetch_artifact(token['run'], token['source'], token['artifact'], scratch / 'token-proof')
     path = scratch / 'token-proof/ab.json'
     if sha(path) != token['report_sha256']:
         raise ValueError('Reviewed token-only report bytes differ')
     check_token_proof(load(path))
-    meta = run_identity(original['run'], original['source'], complete=False)
-    states = check_jobs(meta, api('actions/runs/' + str(original['run']) + '/jobs?per_page=100'))
-    fetch_artifact(original['run'], original['source'], original['freeze_artifact'], scratch / 'freeze', complete=False, job='freeze-original')
     frozen_path = scratch / 'freeze/original-freeze.json'
     if sha(frozen_path) != original['freeze_report_sha256']:
         raise ValueError('Frozen original8 receipt changed')
@@ -122,7 +120,6 @@ def references(scratch):
             or frozen['status'] != 'all8 original shards frozen before native'
             or frozen['protocol_sha256'] != p['frozen_protocol_sha256']):
         raise ValueError('Frozen original completion/lineage differs')
-    prep_proof = fetch_artifact(prep['run'], prep['source'], prep['artifact'], scratch / 'prepared')
     prepared = scratch / 'prepared'; r = receipt(prepared, prep['receipt_sha256'])
     f = load(prepared / 'data-freeze.json')
     if (r['source']['head'] != prep['source'] or r['schema'] != 'crispembed-scifact-preparation-v2'
@@ -134,7 +131,18 @@ def references(scratch):
             or frozen['data_freeze_sha256'] != prep['data_freeze_sha256']):
         raise ValueError('Frozen preparation/input/gold/protocol differs')
     data = load(prepared / 'dataset.json'); tokens = check_rows(data, load(prepared / 'lengths.json'))
-    return prepared, data, tokens, frozen, dict(token_proof=proof, preparation=prep_proof, old_jobs=states)
+    return prepared, data, tokens, frozen
+
+
+
+def references(scratch):
+    p = protocol(); token = p['token_proof']; original = p['original']; prep = p['prepared']
+    proof = fetch_artifact(token['run'], token['source'], token['artifact'], scratch / 'token-proof')
+    meta = run_identity(original['run'], original['source'], complete=False)
+    states = check_jobs(meta, api('actions/runs/' + str(original['run']) + '/jobs?per_page=100'))
+    frozen_proof = fetch_artifact(original['run'], original['source'], original['freeze_artifact'], scratch / 'freeze', complete=False, job='freeze-original')
+    prep_proof = fetch_artifact(prep['run'], prep['source'], prep['artifact'], scratch / 'prepared')
+    return (*materialized_references(scratch), dict(token_proof=proof, original_freeze=frozen_proof, preparation=prep_proof, old_jobs=states))
 
 
 def command(argv, log, *, env=None, timeout=3600):
@@ -200,20 +208,112 @@ def current_payload(name, job, target, closure):
     return r, proof
 
 
+def checked_bundle(bundle, closure):
+    b = receipt(bundle)
+    if (b.get('schema') != 'crispembed-scifact-native-build-v3' or b['source'] != closure
+            or b['model_sha256'] != protocol()['native_model_sha256']
+            or sha(bundle / 'native-f32.gguf') != protocol()['native_model_sha256']
+            or b['library_sha256'] != sha(bundle / 'lib/libcrispembed.so')):
+        raise ValueError('Authenticated build model/library/source identity differs')
+    return b
+
+
+def check_cached_artifact(proof, target, *, complete=True, job=None):
+    """Reauthenticate service identity and retained ZIP, without downloading again."""
+    run_identity(proof['run'], proof['source'], complete=complete)
+    a = api('actions/artifacts/' + str(proof['artifact_id']))
+    if (a['workflow_run']['id'] != proof['run'] or a['workflow_run']['head_sha'] != proof['source']
+            or a['name'] != proof['name'] or a['size_in_bytes'] != proof['bytes'] or a['expired']
+            or a.get('digest') != 'sha256:' + proof['sha256']):
+        raise ValueError('Cached artifact service proof differs')
+    if job:
+        jobs = api('actions/runs/' + str(proof['run']) + '/jobs?per_page=100')
+        found = [r for r in jobs['jobs'] if r['name'].split(' / ')[-1] == job]
+        if jobs['total_count'] > 100 or len(found) != 1 or found[0]['status'] != 'completed' or found[0]['conclusion'] != 'success':
+            raise ValueError('Cached producer job proof differs')
+    archive = target.parent / (target.name + '.zip')
+    if archive.is_symlink() or archive.stat().st_size != proof['bytes'] or sha(archive) != proof['sha256']:
+        raise ValueError('Cached authenticated archive bytes differ')
+    with zipfile.ZipFile(archive) as z:
+        safe_zip(z)
+        if (target / 'receipt.json').is_file():
+            if hashlib.sha256(z.read('receipt.json')).hexdigest() != sha(target / 'receipt.json'):
+                raise ValueError('Cached receipt is not the authenticated archive member')
+
+
+def check_pinned_proof(proof, pin, run, head):
+    expected = dict(run=run, source=head, artifact_id=pin['id'], name=pin['name'], bytes=pin['bytes'], sha256=pin['sha256'])
+    if any(proof.get(k) != v for k, v in expected.items()):
+        raise ValueError('Staged immutable reference proof differs')
+
+
+def validate_stage(path, expected_sha, index, scratch, closure):
+    if path.resolve() != (scratch / 'native-stage.json').resolve() or path.is_symlink() or path.stat().st_size > 4*1024**2 or sha(path) != expected_sha:
+        raise ValueError('Native child stage path/bytes/hash differs')
+    stage = load(path)
+    if (stage.get('schema') != 'crispembed-scifact-native-child-stage-v1' or stage.get('shard') != index
+            or stage.get('source') != closure or set(stage.get('directories', {})) != {'token-proof','freeze','prepared','bundle'}):
+        raise ValueError('Native child stage source/shard/scope differs')
+    for name, files in stage['directories'].items():
+        if inventory(scratch / name) != files:
+            raise ValueError('Staged materialized bytes differ: ' + name)
+    p = protocol(); lineage = stage['lineage']
+    for label, group, proof_key in [('token-proof',p['token_proof'],'token_proof'),('freeze',p['original'],'original_freeze'),('prepared',p['prepared'],'preparation')]:
+        pin = group['freeze_artifact'] if label == 'freeze' else group['artifact']
+        check_pinned_proof(lineage[proof_key], pin, group['run'], group['source'])
+        check_cached_artifact(lineage[proof_key], scratch / label, complete=label != 'freeze', job='freeze-original' if label == 'freeze' else None)
+    old_meta = run_identity(p['original']['run'], p['original']['source'], complete=False)
+    if check_jobs(old_meta, api('actions/runs/' + str(p['original']['run']) + '/jobs?per_page=100')) != lineage['old_jobs']:
+        raise ValueError('Retained cancelled original parent/job proof differs')
+    bp = stage['build']
+    if bp['run'] != int(os.environ['GITHUB_RUN_ID']) or bp['source'] != closure['head'] or bp['name'] != 'ultrabert-scifact-native-v3-build':
+        raise ValueError('Staged same-run build proof differs')
+    check_cached_artifact(bp, scratch / 'bundle', complete=False, job='build')
+    prepared, data, tokens, frozen = materialized_references(scratch)
+    b = checked_bundle(scratch / 'bundle', closure)
+    return prepared, data, tokens, frozen, lineage, b, bp
+
+
+def launch_plan(index, scratch, stage_sha):
+    library_directory = (scratch / 'bundle/lib').resolve()
+    if not library_directory.is_dir() or ':' in str(library_directory):
+        raise ValueError('Fresh child requires an already materialized exact library directory')
+    env = {k:v for k,v in os.environ.items() if not k.startswith('CRISPEMBED_') and k not in ('LD_PRELOAD','LD_AUDIT')}
+    env.update(protocol()['gates'])
+    env['LD_LIBRARY_PATH'] = str(library_directory)
+    argv = [sys.executable, str(ROOT / 'tools/ci-heavy/ultrabert_scifact_native_v3.py'), '--phase', 'native-child',
+            '--shard', str(index), '--stage', str(scratch / 'native-stage.json'), '--stage-sha', stage_sha]
+    return argv, env
+
+
 def native(index, out, scratch, closure):
-    import numpy as np
+    # Materialize and authenticate first. No NumPy/binding/ctypes import here.
     prepared, data, tokens, frozen, lineage = references(scratch)
     bundle = scratch / 'bundle'
     b, bp = current_payload('ultrabert-scifact-native-v3-build', 'build', bundle, closure)
-    if b['model_sha256'] != protocol()['native_model_sha256'] or b['library_sha256'] != sha(bundle / 'lib/libcrispembed.so'):
-        raise ValueError('Build model/library identity differs')
+    checked_bundle(bundle, closure)
+    stage = scratch / 'native-stage.json'
+    if stage.exists():raise ValueError('Fresh native child stage required')
+    write(stage, dict(schema='crispembed-scifact-native-child-stage-v1', shard=index, source=closure,
+                     lineage=lineage, build=bp, directories={name:inventory(scratch / name) for name in ('token-proof','freeze','prepared','bundle')}))
+    stage_sha = sha(stage)
+    argv, env = launch_plan(index, scratch, stage_sha)
+    write(out / 'native-child-launch.json', dict(fresh_python_process=True, stage_sha256=stage_sha,
+          exact_existing_library_directory=True, inherited_preload=False, downloads_in_child=False))
+    command(argv, out / 'native-child.log', env=env, timeout=protocol()['execution']['shard_deadline_seconds']+300)
+    return 0
+
+
+def native_child(index, out, scratch, closure, stage, stage_sha):
+    prepared, data, tokens, frozen, lineage, b, bp = validate_stage(stage, stage_sha, index, scratch, closure)
+    bundle = scratch / 'bundle'
     env = protocol()['gates']
-    for key in list(os.environ):
-        if key.startswith('CRISPEMBED_'):del os.environ[key]
-    os.environ.update(env)
-    os.environ['LD_LIBRARY_PATH'] = str(bundle / 'lib') + ':' + os.environ.get('LD_LIBRARY_PATH','')
+    if (os.environ.get('LD_LIBRARY_PATH') != str((bundle / 'lib').resolve())
+            or any(os.environ.get(k) != v for k,v in env.items()) or os.environ.get('LD_PRELOAD') or os.environ.get('LD_AUDIT')):
+        raise ValueError('Fresh native child loader/gate environment differs')
+    import numpy as np
     dependency_check(bundle / 'lib/libcrispembed.so', out / 'ldd.log', os.environ.copy())
-    # Workflow sets bundle path before process start; dynamic linker must see it initially.
+    # Bundle existed when this fresh child started; never mutate loader paths here.
     sys.path.insert(0, str(ROOT / 'python'))
     from crispembed import CrispEmbed
     model = CrispEmbed(str(bundle / 'native-f32.gguf'), n_threads=2, lib_path=str(bundle / 'lib/libcrispembed.so'), offline=True)
@@ -260,7 +360,8 @@ def native(index, out, scratch, closure):
            rows=[r['id'] for r in rows], data_freeze_sha256=protocol()['prepared']['data_freeze_sha256'],
            frozen_protocol_sha256=protocol()['frozen_protocol_sha256'], original_freeze_sha256=protocol()['original']['freeze_report_sha256'],
            all_actual_ids_preflight_exact=True, mask_contract=protocol()['mask_contract'],gates=env,
-           model_sha256=b['model_sha256'],library_sha256=b['library_sha256'],build=bp,lineage=lineage,files=inventory(payload))
+           model_sha256=b['model_sha256'],library_sha256=b['library_sha256'],build=bp,lineage=lineage,
+           loader_child=dict(stage_sha256=stage_sha, fresh_python_process=True, authenticated_materialized_inputs=True),files=inventory(payload))
     write(payload / 'receipt.json',r);write(out / ('native-'+str(index)+'.json'),r)
     return 0
 
@@ -319,7 +420,7 @@ def aggregate(out,scratch,closure):
 
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--phase',choices=('build','native','aggregate','preflight'),required=True);parser.add_argument('--shard',type=int,choices=range(8));args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--phase',choices=('build','native','native-child','aggregate','preflight'),required=True);parser.add_argument('--shard',type=int,choices=range(8));parser.add_argument('--stage',type=Path);parser.add_argument('--stage-sha');args=parser.parse_args()
     out=Path(os.environ['HEAVY_OUT']);scratch=Path(os.environ['HEAVY_SCRATCH']);out.mkdir(parents=True,exist_ok=True);scratch.mkdir(parents=True,exist_ok=True)
     report=dict(phase=args.phase,status='started',source=None)
     try:
@@ -330,14 +431,14 @@ def main():
             raise ValueError('Pinned native dependency versions differ')
         write(out/'environment.json',dict(python=sys.version,platform=platform.platform(),packages=packages,threads=2))
         if args.phase=='preflight':return 0
-        code={'build':lambda:build(out,scratch,closure),'native':lambda:native(args.shard,out,scratch,closure),'aggregate':lambda:aggregate(out,scratch,closure)}[args.phase]()
+        code={'build':lambda:build(out,scratch,closure),'native':lambda:native(args.shard,out,scratch,closure),'native-child':lambda:native_child(args.shard,out,scratch,closure,args.stage,args.stage_sha),'aggregate':lambda:aggregate(out,scratch,closure)}[args.phase]()
         report.update(status='completed' if code==0 else 'retained numerical/quality rejection',exit_code=code);return code
     except Exception as error:
         message=str(error)
         for value,label in ((str(ROOT),'<source>'),(str(scratch),'<scratch>'),(str(out),'<out>'),(os.environ.get('HF_HOME',''),'<hf-cache>')):
             if value:message=message.replace(value,label)
         report.update(status='structural rejection',error=message);return 1
-    finally:write(out/'phase.json',report)
+    finally:write(out/('phase-native-child.json' if args.phase=='native-child' else 'phase.json'),report)
 
 
 if __name__=='__main__':sys.exit(main())

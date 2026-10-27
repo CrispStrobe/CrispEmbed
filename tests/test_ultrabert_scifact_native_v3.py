@@ -6,6 +6,8 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import os
+import tempfile
 import sys
 import unittest
 from unittest.mock import patch
@@ -117,6 +119,65 @@ class Controls(unittest.TestCase):
         before=rank_scores(['d:2','d:10'],[.5,.5],['d:10']);self.assertEqual(before['top1'],'d:10')
         changed=rank_scores(['d:2','d:10'],[.6,.5],['d:10'])
         self.assertFalse(quality([before],[changed])['passed'])
+
+    def test_fresh_python_launch_has_only_existing_exact_bundle_loader_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);scratch=root/'scratch';lib=scratch/'bundle/lib'
+            with self.assertRaisesRegex(ValueError,'already materialized'):
+                driver.launch_plan(2,scratch,'a'*64)
+            lib.mkdir(parents=True)
+            script=root/'tools/ci-heavy/ultrabert_scifact_native_v3.py';script.parent.mkdir(parents=True)
+            script.write_text("import json,os,sys\nprint(json.dumps(dict(pid=os.getpid(),ppid=os.getppid(),ld=os.environ.get('LD_LIBRARY_PATH'),exists=os.path.isdir(os.environ['LD_LIBRARY_PATH']),preload=os.environ.get('LD_PRELOAD'),audit=os.environ.get('LD_AUDIT'),gates={k:v for k,v in os.environ.items() if k.startswith('CRISPEMBED_')},argv=sys.argv[1:])))\n")
+            with patch.object(driver,'ROOT',root),patch.dict(os.environ,{'LD_LIBRARY_PATH':'/untrusted','LD_PRELOAD':'untrusted.so','LD_AUDIT':'untrusted.so','CRISPEMBED_UNRELATED':'1'}):
+                argv,env=driver.launch_plan(2,scratch,'a'*64)
+                result=json.loads(subprocess.check_output(argv,env=env,text=True))
+            self.assertNotEqual(result['pid'],os.getpid());self.assertEqual(result['ppid'],os.getpid())
+            self.assertEqual(result['ld'],str(lib.resolve()));self.assertTrue(result['exists'])
+            self.assertIsNone(result['preload']);self.assertIsNone(result['audit']);self.assertEqual(result['gates'],contract.protocol()['gates'])
+            self.assertEqual(result['argv'],['--phase','native-child','--shard','2','--stage',str(scratch/'native-stage.json'),'--stage-sha','a'*64])
+
+    def test_stage_hash_shard_source_and_materialized_tampering_reject_before_api(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scratch=Path(tmp);stage=scratch/'native-stage.json';closure={'head':'a'*40}
+            dirs={}
+            for name in ('token-proof','freeze','prepared','bundle'):
+                path=scratch/name;path.mkdir();(path/'small.txt').write_text(name);dirs[name]=driver.inventory(path)
+            value=dict(schema='crispembed-scifact-native-child-stage-v1',shard=0,source=closure,directories=dirs)
+            driver.write(stage,value);good_sha=contract.sha(stage)
+            with patch.object(driver,'api') as api,patch.object(driver,'fetch_artifact') as download:
+                with self.assertRaisesRegex(ValueError,'hash'):
+                    driver.validate_stage(stage,'0'*64,0,scratch,closure)
+                with self.assertRaisesRegex(ValueError,'source/shard'):
+                    driver.validate_stage(stage,good_sha,1,scratch,closure)
+                with self.assertRaisesRegex(ValueError,'source/shard'):
+                    driver.validate_stage(stage,good_sha,0,scratch,{'head':'b'*40})
+                (scratch/'prepared/small.txt').write_text('tampered')
+                with self.assertRaisesRegex(ValueError,'materialized'):
+                    driver.validate_stage(stage,good_sha,0,scratch,closure)
+                api.assert_not_called();download.assert_not_called()
+
+    def test_cached_archive_receipt_binds_materialized_payload_without_redownload(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            scratch=Path(tmp);target=scratch/'bundle';target.mkdir();driver.write(target/'receipt.json',{'source':'small fixture'})
+            archive=scratch/'bundle.zip'
+            with zipfile.ZipFile(archive,'w') as z:z.writestr('receipt.json',(target/'receipt.json').read_bytes())
+            proof=dict(run=1,source='a'*40,artifact_id=2,name='bundle',bytes=archive.stat().st_size,sha256=contract.sha(archive))
+            meta=dict(head_sha='a'*40,path='.github/workflows/ovisocr2-metadata.yml',event='workflow_dispatch',run_attempt=1,status='completed',conclusion='success')
+            artifact=dict(workflow_run=dict(id=1,head_sha='a'*40),name='bundle',size_in_bytes=proof['bytes'],expired=False,digest='sha256:'+proof['sha256'])
+            with patch.object(driver,'api',side_effect=[meta,artifact]),patch.object(driver.subprocess,'run')as download:
+                driver.check_cached_artifact(proof,target);download.assert_not_called()
+            driver.write(target/'receipt.json',{'source':'substituted fixture'})
+            with patch.object(driver,'api',side_effect=[meta,artifact]),patch.object(driver.subprocess,'run')as download:
+                with self.assertRaisesRegex(ValueError,'archive member'):driver.check_cached_artifact(proof,target)
+                download.assert_not_called()
+
+    def test_initial_all8_loader_failures_remain_structural_and_before_vectors(self):
+        report=json.loads((ROOT/'tests/results/ultrabert/initial-scifact-native-v3-loader-failure.json').read_text())
+        self.assertEqual(len(report['rows']),8);self.assertEqual([r['shard']for r in report['rows']],list(range(8)))
+        for row in report['rows']:
+            self.assertEqual(row['producer']['source']['head'],'ee51e10e94a923a56f01b336ae2159a652c2c0da')
+            self.assertEqual(row['producer']['error'],'libggml.so.0: cannot open shared object file: No such file or directory')
+        self.assertFalse(report['numerical_qualified']);self.assertFalse(report['native_embeddings_executed'])
 
     def test_workflow_barrier_and_no_historical_guard_injection(self):
         text=(ROOT/'.github/workflows/ultrabert-scifact-native-v3.yml').read_text()

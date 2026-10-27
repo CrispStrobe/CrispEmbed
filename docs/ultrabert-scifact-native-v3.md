@@ -1,6 +1,7 @@
 # UltraBERT frozen SciFact native v3
 
-This is source preparation for a distinct CPU/F32 experiment. No job has run and no
+This is source preparation for a distinct CPU/F32 experiment. The initial hosted
+run rejected library loading before embeddings; no
 representative retrieval, default, release, public pair API or app qualification is
 claimed. Both Unicode pretokenization and right truncation remain default off.
 
@@ -47,3 +48,24 @@ After source review, dispatch the registered `ovisocr2-metadata.yml` phase
 `ultrabert-scifact-native-v3` at an immutable reviewed branch. No extra inputs or
 original jobs are needed. All builds, downloads and inference run on hosted CPU CI;
 no Torch, Transformers or SentenceTransformers import is needed by the native lane.
+
+
+The initial [40444873884](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40444873884)
+at `ee51e10e` built successfully; all eight native shards rejected at ctypes load
+with `libggml.so.0` unavailable. Their exact small producer receipts, archive
+identities and member hashes are retained in
+[`initial-scifact-native-v3-loader-failure.json`](../tests/results/ultrabert/initial-scifact-native-v3-loader-failure.json).
+No native embeddings or numerical judgments were produced. `ldd` resolved the
+bundled GGML libraries; changing a running Python process's loader environment
+was insufficient. Exact glibc cache behavior was not independently measured.
+
+The corrected caller authenticates/materializes references and the bundle first,
+then launches a fresh Python child with `LD_LIBRARY_PATH` set to the exact existing
+`bundle/lib` directory, with no appended paths or inherited preloads. Before
+ctypes or embedding access, the child rechecks its committed source, SHA-bound
+stage manifest, every staged file, immutable receipt hashes, dataset/gold/token
+identities, model/library hashes, retained ZIP hashes, ZIP-bound build receipt,
+service artifact identities and completed producer jobs. Cached archives are
+reused; the child downloads no payload. Both parent and child phase receipts and
+the child log are retained. Runtime base02402a0d, ggmla06, original frozen arrays,
+inputs, source policies, masks and numerical/ranking budgets remain unchanged.

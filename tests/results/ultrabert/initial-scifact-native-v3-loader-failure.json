@@ -1,0 +1,737 @@
+{
+  "run": 40444873884,
+  "source": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+  "rows": [
+    {
+      "shard": 0,
+      "artifact": {
+        "id": 12708199334,
+        "name": "ultrabert-scifact-native-v3-review-0",
+        "size_in_bytes": 5385,
+        "digest": "sha256:95d7244e71f63b82929adad47c33c5223a2168cecfdbe8c5e8c7ffff009bbbfd",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "58044464341d41417f98b3d2b7cd25d9d31f7dbdf53901d3f487053c8aecd8d7"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 1,
+      "artifact": {
+        "id": 12708407834,
+        "name": "ultrabert-scifact-native-v3-review-1",
+        "size_in_bytes": 5387,
+        "digest": "sha256:1acfbf8752e1ab99ffdae12dd695861dce6471d045153fcec4eff6286bfe40f2",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "197010f89732419e10f21c723b889279dda4ce82e51337578a193cebc85f6cd8"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 2,
+      "artifact": {
+        "id": 12709136025,
+        "name": "ultrabert-scifact-native-v3-review-2",
+        "size_in_bytes": 5386,
+        "digest": "sha256:b0044e9aa4baf1157a5053e9523f7c1ec8083b26f001b27878875ee6d777c550",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "025a30eafce9cc6aee3c50ec1b44fb8cbf3b3a1ed6e568aeb795e17c7eeba7bd"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 3,
+      "artifact": {
+        "id": 12709350576,
+        "name": "ultrabert-scifact-native-v3-review-3",
+        "size_in_bytes": 5387,
+        "digest": "sha256:f5e68fa4c986624ddc59d79ea6dfa0847039e1da5fddce762dea1a6f8bdbc748",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "6e81be45019199f98e5ba465b81f3a7581c54775d988e9de6b7fef31e2418952"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 4,
+      "artifact": {
+        "id": 12708828357,
+        "name": "ultrabert-scifact-native-v3-review-4",
+        "size_in_bytes": 5386,
+        "digest": "sha256:1d23975e9be0b7d5c0e4d7f20905afd1b1bfecc48944f6798ad9e4d768d925eb",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "f0b2f1b8af753e0918fb4617cbc9857a57f7b6c93a7929ebac40e0194e81362a"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 5,
+      "artifact": {
+        "id": 12708648802,
+        "name": "ultrabert-scifact-native-v3-review-5",
+        "size_in_bytes": 5387,
+        "digest": "sha256:cc7137e8d5be32c363edce70412820c3f1c73d3cc198a8d461ccd6ff8c22c9e1",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "df1428505b823e8fa21f5b1ef9bcbf2354faee66112697b2647bee6406f9b72c"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 6,
+      "artifact": {
+        "id": 12708783630,
+        "name": "ultrabert-scifact-native-v3-review-6",
+        "size_in_bytes": 5389,
+        "digest": "sha256:ac9c944c6a796a35052a3c004aa9f73889cfe1198e2c10f2391a345e6b58a6af",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "04870b1735e74c06d102faebbe0a3755ee350142213c1c682f9f1ba1b046a0b2"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    },
+    {
+      "shard": 7,
+      "artifact": {
+        "id": 12709063386,
+        "name": "ultrabert-scifact-native-v3-review-7",
+        "size_in_bytes": 5388,
+        "digest": "sha256:56992b23cadc86bce24caed5896445ebd720bdde7ba4eaadaf8c83d0003abe9a",
+        "expires_at": "2027-01-25T03:34:01Z"
+      },
+      "producer": {
+        "phase": "native",
+        "status": "structural rejection",
+        "source": {
+          "head": "ee51e10e94a923a56f01b336ae2159a652c2c0da",
+          "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "runtime_base": "02402a0d086a7335280d907392c4f4667e27ce28",
+          "runtime_git_objects": {
+            "src": "d6b9eb0ff3c65882959bedc23ee742a218ce0425",
+            "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+            "CMakeLists.txt": "b90724405f248350abcf52e435db15ee5ce06692",
+            "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+            "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+            "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+            "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+            ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+            "python": "271126bf6c6b5c9d66ab37d640e1964d8a94f608",
+            "flutter": "11864ee434d43b107613a296c1fb49426b76a5a6",
+            "crispembed": "94c3f40dca381a69216739b603ccbd6e235c92dc",
+            "crispembed-sys": "c2d42e8718ec3a82b993f2da733dea5d0a24f3b3",
+            "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+            "examples": "6032e1fe0573ac31690af8fe9725efd59c94d6d7",
+            "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+            "tools/quantize.cpp": "abc4edd78887a4091c81912953a09bbc3f8bb12b",
+            "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+            "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+            "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+            "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5"
+          },
+          "files": {
+            "tests/regression/ultrabert/scifact-native-protocol-v3.json": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e",
+            "tools/ultrabert_scifact_native_v3.py": "1d30a2849ea3362123e1b641b97ec924db6682bf9c4eae4a5a83e725430edc56",
+            "tools/ci-heavy/ultrabert_scifact_native_v3.py": "ec47f4cce6ceba4c13142c316aeda36c1da122e093d79a02b80bae7280853bf7",
+            "tests/test_ultrabert_scifact_native_v3.py": "842811cbbb496a9a7a459d19c129bfa2b1435abac74562582069acec65caac96",
+            ".github/workflows/ultrabert-scifact-native-v3.yml": "127bf95d53b7e435376f8c2210d94c964ca635e19cf8d5cd8347feaff2d1c7ab",
+            ".github/workflows/ovisocr2-metadata.yml": "eb675ef3ac0be32ad63cdc8ce84790b8cea9a65179106fa9598facbd1a10ad8d",
+            "docs/ultrabert-scifact-native-v3.md": "9476377301d039b568d9bb3fd7e77fc60964ecfa0af988bb6d97dc1cf280b902",
+            "tools/ci-heavy/ultrabert_scifact.py": "667c71d49cbe90ed0ebf3dde536d2a4055a96d991a323479213a4a263bef43b6",
+            "tools/ultrabert_scifact.py": "e944ae2458a0293a2390972ed1bb464c6ec36c54d8e664bad873f965cfeda249",
+            "tools/ultrabert_scifact_canonical.py": "bdb46c1e981dd3b8b174177973d0df11f95474dff8c12b5d0c74f61e2f954082",
+            "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+            "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+            "models/convert-ultrabert-to-gguf.py": "90d30b6207e7b7dbfa0e7d0e9aa9d23f6dee02fbf006786fbb2b3bff1bdfe532",
+            "tests/test_ultrabert_truncation.cpp": "daa9a2309f7aefe9cb6ace5bdde9eb038e1cfbc0b44c4003b6917ac943f29d4f",
+            "tests/regression/ultrabert/scifact-protocol-v1.json": "b2e9ab1b0cbb2d910e6b6eba971f2babab7a943fd195f0dfc1344eaee6d05ccb",
+            "tests/regression/ultrabert/scifact-protocol-v2.json": "9efad942c987f9db417fc616b318ee632238ca99faad4c24388930dc536ef7ac",
+            "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715",
+            "tests/results/ultrabert/source-audit.json": "582c99998d5f20bd1f05b22493325e1f74e8e9f9d8b3dbba0aab83bfa09ab50b",
+            "tests/results/ultrabert/embed-weight-schema.json": "91ee35692669f99998b1933fceff997cd64e72e4248845374ed9627d578f5367",
+            "tests/results/ultrabert/reference-audit.json": "a3c16863b1a78ebaebcc2d50e24555b696e691d3309ee17b75075c0051032a36",
+            "tests/results/ultrabert/public-f32-api.json": "97a54afa7cde1a46386805652ef6cd578c6971b1df6152076fad68e59081bc68",
+            "tests/results/ultrabert/retrieval-smoke.json": "add393025718dc140ad370b750b168d13d66ca6ad240779e2a1a1a87506ef39b",
+            "tests/results/ultrabert/initial-native-parity.json": "3db56f2af1abc5cb34e662b18e50e8edb752ae0c3cffa85bb38ac7c4c150a477",
+            "tests/results/ultrabert/local-operator-audit.json": "a1ccd4ad359ca94f74ea9e710b1ff0575cca826e955b219d3ab57a2288da6a4c",
+            "tests/results/ultrabert/initial-linear-capture-failure.json": "e910d51a230c63435670a3ac630fe68a7f9303fc10df1a22d03e75a37a21ead7",
+            "tests/results/ultrabert/full-forward-capture-failure.json": "74be8372319979bcd9fc5b7a820334592f8f5c3ca21e8b44bfb1f3516508e8e8",
+            "tests/results/ultrabert/m1-validation.json": "94cf1bcd7e5ddfcd0aad21de6b251466fb31b559b3fea8dd3a512c28e59a7370"
+          },
+          "contract_sha256": "4a7a54f1ea9d3e40a51cb7bd86b0def08c520b859a5545537ba11c712a45606e"
+        },
+        "error": "libggml.so.0: cannot open shared object file: No such file or directory"
+      },
+      "members": {
+        "environment.json": {
+          "bytes": 190,
+          "sha256": "a04fd8d4144d8e8d32bac1d8d1ea3aa138c031f8f1cc9981ced7f0112d323ead"
+        },
+        "ldd.log": {
+          "bytes": 704,
+          "sha256": "fb00a2e693bc57c37db840ace097db9cbd84f5b20e6c829f4453111fca09287e"
+        },
+        "phase.json": {
+          "bytes": 5046,
+          "sha256": "27709414b4ec0214b984d2323f1d10a50c883ea17c29b5faa4930f6c0e829c1b"
+        },
+        "source.json": {
+          "bytes": 4775,
+          "sha256": "8438d7327c0e7cf03364964c6b403f9affac6b9ed02b186f486ac96bcb30f71a"
+        }
+      }
+    }
+  ],
+  "schema": "crispembed-scifact-native-v3-initial-loader-failure-v1",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40444873884",
+  "status": "retained structural loader rejection",
+  "native_embeddings_executed": false,
+  "numerical_qualified": false,
+  "release_qualified": false,
+  "review": {
+    "downloaded": "Only eight small review ZIPs; no model, libraries or vectors",
+    "attribution": "Build succeeded; ldd resolved bundled GGML. All8 Python ctypes loads rejected before embeddings. Existing process changed LD_LIBRARY_PATH after materialization; corrected caller starts a fresh process after bundle exists. Exact glibc cache behavior was not separately measured.",
+    "initial_producers_unchanged": true
+  }
+}
