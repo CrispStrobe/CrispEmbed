@@ -45,6 +45,12 @@ while IFS= read -r hit; do
         continue
     fi
 
+    # dtolnay/rust-toolchain selects the toolchain by its ref: `@1.90.0` installs
+    # exactly 1.90.0 (unlike `@stable`/`@master`), so an exact-version ref is a pin.
+    if printf '%s\n' "$line" | grep -Eq 'dtolnay/rust-toolchain@[0-9]+\.[0-9]+(\.[0-9]+)?([[:space:]]|$)'; then
+        continue
+    fi
+
     # A pin must appear in this step's `with:` block — i.e. after the `uses:`
     # line and before the next step (a line starting with "- " at any indent).
     # NOTE: awk runs END even on `exit`, and an exit status set there WINS — so
