@@ -1,0 +1,405 @@
+{
+  "schema": "crispembed-moedern-native-v2-small-review-v1",
+  "run": 40441341206,
+  "source": "cec6b7f0dd3ea78bfefb8587b3638c8ab23f462f",
+  "artifact": {
+    "id": 12706681339,
+    "bytes": 179826,
+    "sha256": "f6e44abcc4aa0fb96ea6ee6d570b688007cce7f55d05d114c11765f04e0337f8"
+  },
+  "raw_not_downloaded": {
+    "id": 12706701220,
+    "bytes": 25538513,
+    "sha256": "18bd1d9672cbae5863c91e42ddaf5cb196b4483ff155e4fc3bf3ee280bfc0d20",
+    "expires_at": "2027-01-25T02:56:38Z"
+  },
+  "report_sha256": "74ce48da604c46a2fba77f00d4187d5e8917d881e1185538fe8ac55df4b6f668",
+  "drift_report_sha256": "5263a0f55113fd6eb0484f7b12a277a335376296f7d508d131edc8aa1dabddd8",
+  "verified_small_member_hashes": 29,
+  "verified_lane_source_hashes": 15,
+  "verified_protected_git_objects": 26,
+  "actual_service_lineage_verified": true,
+  "copied_79_blueprint_files_exact": 4,
+  "actual_declared_shared_delta": [
+    "ggml",
+    "src/moedern_colbert.cpp",
+    "src/moedern_colbert.h"
+  ],
+  "cases": 10,
+  "observed_stages_each": 55,
+  "f32_native_comparisons": 114,
+  "exact_integer_checks": 63,
+  "all_checks": 177,
+  "actual_ref_native_rows": 114,
+  "primary_checks": 112,
+  "primary_f32": 108,
+  "primary_router_indices": 4,
+  "supplemental_checks": 21,
+  "supplemental_f32": 6,
+  "supplemental_metadata": 15,
+  "direct_input_mask_checks": 44,
+  "unmapped_primary_arrays": 138,
+  "old_to_supplemental_shared_rows": 250,
+  "old_to_supplemental_f32_rows": 198,
+  "old_to_supplemental_integer_rows": 52,
+  "old_to_supplemental_changed_byte_sha": 156,
+  "worst_native": {
+    "case": "d-de",
+    "stage": "primary.layer.1.ffn.output",
+    "max_absolute": 0.00026702880859375,
+    "mean_absolute": 1.4602631251494e-06,
+    "rms": 6.243319624586491e-06,
+    "min_row_cosine": 0.9999999999984355,
+    "original_l2": 335.04832866272653,
+    "native_l2": 335.0481557074592,
+    "original_abs_max": 147.0120849609375,
+    "native_abs_max": 147.01211547851562
+  },
+  "worst_cosine_native": {
+    "case": "q-de",
+    "stage": "primary.layer.1.ffn.shared_down",
+    "max_absolute": 6.4849853515625e-05,
+    "mean_absolute": 4.0072838558558033e-07,
+    "rms": 1.5236665077700921e-06,
+    "min_row_cosine": 0.9999999999565247,
+    "original_l2": 33.89286850607717,
+    "native_l2": 33.89291591142032,
+    "original_abs_max": 16.768186569213867,
+    "native_abs_max": 16.768251419067383
+  },
+  "worst_final": {
+    "case": "q-de",
+    "stage": "primary.all_vectors",
+    "max_absolute": 6.332993507385254e-07,
+    "mean_absolute": 7.414082947576617e-08,
+    "rms": 9.941485920464094e-08,
+    "min_row_cosine": 0.9999999999976117,
+    "original_l2": 5.656854263111893,
+    "native_l2": 5.656854445090761,
+    "original_abs_max": 0.32964012026786804,
+    "native_abs_max": 0.3296401798725128
+  },
+  "earliest_native_difference": [
+    {
+      "case": "q-de",
+      "first": {
+        "stage": "primary.embedding.projection",
+        "shape": [
+          1,
+          32,
+          128
+        ],
+        "elements": 4096,
+        "max_absolute": 2.9802322387695312e-08,
+        "min_row_cosine": 0.9999999999999966,
+        "mean_absolute": 3.558287886562539e-09,
+        "mean_error": 3.134381643121742e-10,
+        "rms": 5.739165128375301e-09,
+        "original_l2": 5.240565768907616,
+        "native_l2": 5.240565733566414,
+        "passed": true,
+        "original_min": -0.36073970794677734,
+        "original_max": 0.36981746554374695,
+        "original_abs_min": 0.00012974483252037317,
+        "original_abs_max": 0.36981746554374695,
+        "native_min": -0.36073967814445496,
+        "native_max": 0.36981746554374695,
+        "native_abs_min": 0.0001297425478696823,
+        "native_abs_max": 0.36981746554374695,
+        "reference_kind": "primary",
+        "bit_exact": false,
+        "numpy_passed": true,
+        "cpp_ref": {
+          "name": "primary.embedding.projection",
+          "ggml_shape": [
+            128,
+            32,
+            1
+          ],
+          "row_axis": 0,
+          "found": true,
+          "elements": 4096,
+          "passed": true,
+          "max_absolute": 2.9802322387695312e-08,
+          "mean_absolute": 3.558287886562539e-09,
+          "rms": 5.7391651431260016e-09,
+          "mean_error": 3.134381643121742e-10,
+          "min_row_cosine": 1,
+          "original_l2": 5.240565776824951,
+          "native_l2": 5.240565776824951,
+          "original_min": -0.36073970794677734,
+          "original_max": 0.36981746554374695,
+          "original_abs_min": 0.00012974483252037317,
+          "original_abs_max": 0.36981746554374695,
+          "native_min": -0.36073967814445496,
+          "native_max": 0.36981746554374695,
+          "native_abs_min": 0.0001297425478696823,
+          "native_abs_max": 0.36981746554374695
+        },
+        "metric_agreement": {
+          "max_absolute": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "mean_absolute": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "mean_error": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "rms": {
+            "absolute_difference": 1.4750700754893704e-17,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "min_row_cosine": {
+            "absolute_difference": 3.4416913763379853e-15,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_l2": {
+            "absolute_difference": 7.917335231866218e-09,
+            "limit": 1.0481131553649902e-06,
+            "passed": true
+          },
+          "native_l2": {
+            "absolute_difference": 4.3258537196777525e-08,
+            "limit": 1.0481131553649902e-06,
+            "passed": true
+          },
+          "original_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_abs_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_abs_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_abs_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_abs_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          }
+        }
+      }
+    },
+    {
+      "case": "d-de",
+      "first": {
+        "stage": "primary.embedding.projection",
+        "shape": [
+          1,
+          28,
+          128
+        ],
+        "elements": 3584,
+        "max_absolute": 4.470348358154297e-08,
+        "min_row_cosine": 0.9999999999999963,
+        "mean_absolute": 3.885575036325203e-09,
+        "mean_error": 3.845609545091325e-11,
+        "rms": 6.383021035133604e-09,
+        "original_l2": 5.160810884001713,
+        "native_l2": 5.1608109004226135,
+        "passed": true,
+        "original_min": -0.35067978501319885,
+        "original_max": 0.4438106119632721,
+        "original_abs_min": 2.4061364456429146e-05,
+        "original_abs_max": 0.4438106119632721,
+        "native_min": -0.35067981481552124,
+        "native_max": 0.4438106119632721,
+        "native_abs_min": 2.4061650037765503e-05,
+        "native_abs_max": 0.4438106119632721,
+        "reference_kind": "primary",
+        "bit_exact": false,
+        "numpy_passed": true,
+        "cpp_ref": {
+          "name": "primary.embedding.projection",
+          "ggml_shape": [
+            128,
+            28,
+            1
+          ],
+          "row_axis": 0,
+          "found": true,
+          "elements": 3584,
+          "passed": true,
+          "max_absolute": 4.470348358154297e-08,
+          "mean_absolute": 3.885574972883887e-09,
+          "rms": 6.383021222688967e-09,
+          "mean_error": 3.845609545091325e-11,
+          "min_row_cosine": 1,
+          "original_l2": 5.160810947418213,
+          "native_l2": 5.160810947418213,
+          "original_min": -0.35067978501319885,
+          "original_max": 0.4438106119632721,
+          "original_abs_min": 2.4061364456429146e-05,
+          "original_abs_max": 0.4438106119632721,
+          "native_min": -0.35067981481552124,
+          "native_max": 0.4438106119632721,
+          "native_abs_min": 2.4061650037765503e-05,
+          "native_abs_max": 0.4438106119632721
+        },
+        "metric_agreement": {
+          "max_absolute": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "mean_absolute": {
+            "absolute_difference": 6.344131604737206e-17,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "mean_error": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "rms": {
+            "absolute_difference": 1.8755536305137264e-16,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "min_row_cosine": {
+            "absolute_difference": 3.6637359812630166e-15,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_l2": {
+            "absolute_difference": 6.341649960717177e-08,
+            "limit": 1.0321621894836425e-06,
+            "passed": true
+          },
+          "native_l2": {
+            "absolute_difference": 4.6995599412014144e-08,
+            "limit": 1.0321621894836425e-06,
+            "passed": true
+          },
+          "original_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_abs_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "original_abs_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_abs_min": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          },
+          "native_abs_max": {
+            "absolute_difference": 0.0,
+            "limit": 2e-07,
+            "passed": true
+          }
+        }
+      }
+    }
+  ],
+  "first_failing_stage": null,
+  "scores": [
+    {
+      "query": "q-de",
+      "document": "d-de",
+      "primary_original": 10.41862964630127,
+      "passed": true,
+      "native": 10.418631553649902,
+      "independent": 10.418630599975586,
+      "absolute_primary_difference": 1.9073486328125e-06,
+      "absolute_independent_difference": 9.5367431640625e-07
+    },
+    {
+      "query": "q-empty",
+      "document": "d-one",
+      "primary_original": 16.088022232055664,
+      "passed": true,
+      "native": 16.0880184173584,
+      "independent": 16.0880184173584,
+      "absolute_primary_difference": 3.814697265625e-06,
+      "absolute_independent_difference": 0.0
+    },
+    {
+      "query": "q-markers",
+      "document": "d-unicode",
+      "primary_original": 19.041074752807617,
+      "passed": true,
+      "native": 19.041086196899414,
+      "independent": 19.04108428955078,
+      "absolute_primary_difference": 1.1444091796875e-05,
+      "absolute_independent_difference": 1.9073486328125e-06
+    }
+  ],
+  "controls": [
+    "actual Ref exact control rc0",
+    "actual Ref orthogonal-last-row control rc1/max1/cos0",
+    "weightfree default-off/role/masks/scoring/MaxSim",
+    "six typed loader negatives plus valid loader",
+    "ordinary/observer/repeat bytes all10",
+    "observer failure/gate0 recovery all10",
+    "two-context destruction/ownership all10"
+  ],
+  "conclusion": "PASS bounded 1.5M CPU F32 native-v2 experiment; no failed native comparison found",
+  "limits": [
+    "Only small ZIP/logs/source inspected locally; no raw/model/binary downloaded or local compilation/inference.",
+    "138 original rows are original-to-original only; four native-only stages per full case lack independent original targets; eight cases have only primary final-vector references.",
+    "Old supplemental producer failure/156 SHA changes and false original byte-continuity remain preserved. Primary250 never replaced.",
+    "Tokenizer/public APIs, representative retrieval,27M/115M, quantization, release/default promotion remain unqualified.",
+    "No per-forward timing or peak RSS in this small receipt; no performance claim."
+  ],
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40441341206"
+}

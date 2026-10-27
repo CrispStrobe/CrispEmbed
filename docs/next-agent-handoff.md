@@ -674,21 +674,18 @@ producer unchanged while its outputs are reviewed; no new gold or budget waiver.
   Complete these, then compose native raw requests through lexical means/head
   and full typed answers without captured-hidden injection. No task quality,
   public interfaces, quantization or release qualification yet.
-- **MoEdern:** [corrected observer rejection](../tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
-  changes156/250 historical array hashes with first difference at SDPA0, despite
-  identical recorded inputs/weights/software and within-run neutrality.
-  `audit/moedern-sdpa-reproducibility-20261027` at6fccd863 and hosted40434080299
-  compare default/math/CPU-flash first attention on the exact same reconstructed
-  tensor objects against both frozen outputs, with actual hardware/strides/kernel
-  evidence and actual Ref magnitudes. Old ISA/backend/strides are unknown; do not
-  infer them retrospectively. Native79e350a0 stays blocked. After attribution,
-  explicitly update its reviewed source/five-driver contract and execute the
-  smallest original-first panel before Unigram/public roles or27M/115M.
+- **MoEdern:** [native-v2 actual40441341206](../tests/results/moedern-colbert/native-v2-review.json)
+  atcec6b7f0 is independently reviewed: all10 cases/177 checks/three old-primary
+  MaxSim pairs pass. Preserve112 mapped versus138 unmapped primary arrays,
+  separate21 supplemental leaves and rejected156 historical byte changes.
+  Next `feat/moedern-unigram-frontend-20261027` implements exact original-first
+  dedicated tokenizer/role metadata with query32 expansion and three masks.
+  Native text composition/public APIs follow;27M/115M require separate originals.
 - **UltraBERT:** reviewed [Unicode A/B40434717493](../tests/results/ultrabert/unicode-pretoken-review-v1.json)
   at01878e80 passes all5,483 original ID/mask/full-length/hash rows and14 authored
   cases; unset/empty/0 retain historical24/25 mismatches. Next native-v3 uses
   explicit assembled source02402a0d preserving integration truncation; review
-  its source contract before dispatch. Every CAPI ID preflight precedes new
+  its source contract. Reviewedee51e10e is dispatched in40444873884; every CAPI ID preflight precedes accepted
   embeddings; all-attended masks are source-derived, not observed getter values.
   Reuse frozen originals, unchanged numerical/ranking gates and strict debt;
   no original forward repeat or default promotion.

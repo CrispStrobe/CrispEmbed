@@ -1,3 +1,13 @@
+## 27 October 2026 — MoEdern1.5M native CPU/F32
+
+[Reviewed native-v2](tests/results/moedern-colbert/native-v2-review.json) passes
+177 checks and three MaxSim pairs. Worst intermediate d-de layer1.ffn.output:
+absolute0.000267028809, RMS6.24332e-6, original/native L2335.048329/335.048156,
+original absolute maximum147.012085. Global minimum row cosine0.999999999956525.
+Worst final-vector error6.33299351e-7; largest MaxSim error1.14440918e-5.
+No per-forward latency or peak RSS is established by this receipt. Tokenizer,
+public-text, representative retrieval and wider-model qualification are separate.
+
 ## 27 October 2026 — Josev backbone component and Unicode tokenizer scope
 
 [Backbone104-stage evidence](tests/results/josev2b/backbone-f32.json) uses fixed

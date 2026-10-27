@@ -709,12 +709,9 @@ package provenance, CPU/CUDA head parity and initial failures are archived in
 HISTORY with immutable receipts. Do not repeat those jobs or treat their old
 preparation commands as current actions.
 
-- [ ] **MoEdern1.5M native:** execute/review the distinct dual-reference v2
-  protocol after source/mapping review. Keep old250 primary arrays/final vectors/
-  three MaxSim pairs and21 supplemental missing pipeline observations separate.
-  Retain old byte-continuity failure; fixed numeric/vector/mask/MaxSim budgets
-  and actual Ref remain. Explicitly disclose mapped versus retained stage counts.
-- [ ] **MoEdern public text and variants:** implement exact pinned Unigram
+- [ ] **MoEdern public text and variants:** native-v2 passes10 cases/177 checks/
+  three old-primary MaxSim pairs (HISTORY). `feat/moedern-unigram-frontend-20261027`
+  owns the dedicated original-first tokenizer component. Implement exact pinned Unigram
   NFKD/strip-accent/lowercase/WhitespaceSplit/Metaspace and added-token behavior,
   query32 expansion/attention, document truncation/punctuation scoring masks,
   native vectors/MaxSim and C/Python/CLI/HTTP/Rust/Dart paths. Author GGUF lacks
@@ -729,7 +726,10 @@ preparation commands as current actions.
   retain the rejection, then require all4 original and14 authored cases exact.
   Answer formatting source5452632d runs separately in40443922195, with original
   publisher answers before native, ties/even rounding and CPython summation.
-- [ ] **Josev composition and interfaces:** combine native backbone, native
+- [ ] **Josev composition and interfaces:** source5c20497c is committed; hosted
+  build-only40444830535 checks actual ordinary/observed compilation and archive
+  probe exclusion. Initial queued40444535106 was cancelled before execution
+  after source review found missing historical checkout depth. Combine native backbone, native
   lexical means and verified512-wide joint head without original hidden/vector
   injection. Compare actual full requests/logits/probabilities/all typed answers.
   Preserve the Ovis1024/3584 guard and original no-extra-temperature semantics.
@@ -774,7 +774,8 @@ on immutable0.17.12.
   40434717493: all5,483 IDs/masks/full lengths/hashes and14 authored cases exact.
   Preserve unset/empty/0 historical24/25 mismatches, generic/CLIP bodies and
   existing truncation. Assembled runtime02402a0d retains integration truncation.
-  New explicit v3 source must preflight every actual CAPI ID stream before
+  Reviewed v3 sourceee51e10e is dispatched as40444873884 (build once,8 shards,
+  max2 parallel); require every actual CAPI ID stream preflight before
   embeddings; label all-attended masks as source-derived, not a CAPI getter.
   Reuse frozen originals and fixed raw-CLS/dense/ranking gates; retain all
   historical183/1294/M1 numerical debt. See token review in HISTORY.

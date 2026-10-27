@@ -1,3 +1,25 @@
+## 27 October 2026 — Smallest MoEdern native parity reviewed
+
+[Native-v2 actual40441341206](tests/results/moedern-colbert/native-v2-review.json)
+atcec6b7f0 passes all10 cases:114 F32 actual-Ref/independent comparisons and63
+exact integer checks. Primary112 stages and21 supplemental observations stay
+separate;138 historical primary rows are not mapped natively. All final vectors
+and three MaxSim pairs compare to the old successful primary, never substitute
+the rejected supplemental gold. All ordinary/observer/repeat, six typed loader
+negatives, valid-loader, gate recovery, observer-failure and two-context ownership
+controls pass. Earliest byte differences are embedding.projection, with no
+failing stage. Worst intermediate error0.000267028809; worst final6.33299351e-7;
+MaxSim errors1.90735e-6/3.81470e-6/1.14441e-5. All fixed budgets remain.
+
+Independent small review authenticates29 included member hashes,15 lane sources,
+26 protected objects, four unchanged79e350a0 blueprint files and service lineage.
+All250 old-to-supplemental rows pass their numeric envelope, but156 changed
+hashes and false byte continuity remain rejected. Eight cases have final-vector
+references only; four native-only stages per full case remain unreferenced.
+Unigram frontend/role masks, public text APIs, representative retrieval,27M/115M,
+quantization, publication and release remain pending. Raw artifact12706701220
+stays remote through25 January2027; preserve original bytes before expiry.
+
 ## 27 October 2026 — Josev backbone and UltraBERT corpus tokenizer parity
 
 [Josev backbone40438416809](tests/results/josev2b/backbone-f32-review.json)
