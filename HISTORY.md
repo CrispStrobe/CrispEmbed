@@ -1,3 +1,20 @@
+## 27 October 2026 — MoEdern1.5M raw-text composition
+
+[Actual40455093591](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40455093591)
+at1a053116 passes all ten raw-text cases, twenty original vector comparisons
+and three original MaxSim scores through native tokenizer and F32 inference.
+No original IDs/hidden states are injected and no original forward is repeated.
+All twenty ordinary final-vector hashes exactly match the earlier native-v2 run.
+[Small panel](tests/results/moedern-colbert/text-composed.json) and
+[independent review](tests/results/moedern-colbert/text-composed-review.json)
+retain actual Ref/NumPy agreement, all input/mask/expansion identities,550 test
+stages, ordinary observer exclusion, rejection/recovery, repeats and ownership.
+Worst final absolute error is0.0000006332994; minimum cosine0.9999999999968416.
+MaxSim errors are0.00000190735/0.00000381470/0.0000114441. Authenticated small
+reports/manifests were independently reviewed; raw vector bytes remain remote.
+This clears the bounded1.5M CPU/F32 text composition gate, before public APIs,
+representative retrieval, larger variants, quantization or release qualification.
+
 ## 27 October 2026 — Josev raw-request composition and MoEdern tokenizer
 
 [Josev40449265616](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40449265616)

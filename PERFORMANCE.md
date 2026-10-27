@@ -1,3 +1,13 @@
+## 27 October 2026 — MoEdern1.5M full raw-text CPU/F32
+
+[Ten raw-text cases](tests/results/moedern-colbert/text-composed.json) pass all
+twenty original all/selected vector comparisons and three MaxSim pairs. Final
+maximum absolute error is6.332993507e-7 (q-de), RMS9.941485920e-8, minimum cosine
+0.9999999999968416 (d-unicode). q-de original absmax/L2 are0.3296401203/5.656854263.
+Score errors are1.9073486e-6/3.8146973e-6/1.1444092e-5. Final files exactly match
+prior native-v2 hashes. This authored panel is not representative retrieval
+quality or larger-variant/quantization proof; [review scope](tests/results/moedern-colbert/text-composed-review.json).
+
 ## 27 October 2026 — Josev composed CPU/F32 scope
 
 The [four-case raw-request panel](tests/results/josev2b/composed-text-panel.json)

@@ -685,11 +685,10 @@ producer unchanged while its outputs are reviewed; no new gold or budget waiver.
   separate21 supplemental leaves and rejected156 historical byte changes.
   Exact frontend3da7cf8e/40451408614 passes34 token/mask streams and1040
   normalization checks. Retained Rust normalized Q/D matcher history corrects
-  the initial32/34 overlap failure; original gold is unchanged. Raw-text model
-  composition1a053116/40455093591 requires independent small-report review:
-  ten raw inputs/twenty old final arrays/three MaxSim pairs plus actual Ref,
-  production observer exclusion, output/repeat/recovery/ownership controls.
-  Then self-contained tokenizer metadata and explicit public query/document roles;
+  the initial32/34 overlap failure; original gold is unchanged. Reviewed [raw-text model composition](../tests/results/moedern-colbert/text-composed-review.json)
+  1a053116/40455093591 passes ten raw inputs/twenty original arrays/three scores,
+  actual Ref and ordinary/test/repeat/recovery/ownership controls. Next: integrate
+  self-contained tokenizer metadata and explicit public query/document roles;
   27M/115M require separately frozen originals and115M dilated-conv implementation.
 - **UltraBERT:** reviewed [Unicode A/B40434717493](../tests/results/ultrabert/unicode-pretoken-review-v1.json)
   at01878e80 passes all5,483 original ID/mask/full-length/hash rows and14 authored

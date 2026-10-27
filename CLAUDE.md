@@ -278,7 +278,8 @@ These component proofs do not establish public model/task/release qualification.
 
 Josev raw requests now pass227 original stages/four complete typed responses;
 MoEdern exact Unigram/roles pass34 cases and1040 normalization checks (HISTORY).
-Next: review actual MoEdern raw-text model composition, execute Josev byte-preserving
+MoEdern raw-text model composition now passes ten cases/twenty vectors/three
+MaxSim pairs. Next: public query/document roles and repack, Josev byte-preserving
 packing/packed-owner/public APIs, corrected fresh-process UltraBERT retrieval,
 and final same-source Ovis/archive/real consumers. Preserve every initial
 numerical/quality/input/loader failure, all old producer bytes, rejected byte
