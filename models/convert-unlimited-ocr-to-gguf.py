@@ -248,6 +248,22 @@ def main():
     writer.add_string("general.license", args.license)
     writer.add_string("general.source", args.source)
     ids = lambda v: [int(x) for x in v.split(",") if x.strip()]
+    # Unlimited-OCR-2 (sparse_attention_config present): the trained single-page layout
+    # is "[BOS] <PAGE> <image...> Multi page parsing." with no n-gram ban (spec §1, §5).
+    if (cfg.get("sparse_attention_config") or {}).get("use_sparse_attention"):
+        from tokenizers import Tokenizer
+        tk = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+        page = tk.encode("<PAGE>", add_special_tokens=False).ids
+        if page != [128827]:
+            raise ValueError(f"<PAGE> must be the single token 128827, got {page}")
+        if args.prompt_prefix_ids is None:
+            args.prompt_prefix_ids = "0,128827"
+        if args.prompt_instr_ids is None:
+            args.prompt_instr_ids = ",".join(map(str, tk.encode("Multi page parsing.", add_special_tokens=False).ids))
+        if args.no_repeat_ngram is None:
+            args.no_repeat_ngram = 0
+        if args.source == "https://huggingface.co/baidu/Unlimited-OCR":
+            args.source = "https://huggingface.co/baidu/Unlimited-OCR-2"
     if args.prompt_prefix_ids is not None:
         writer.add_array("unlimited_ocr.prompt_prefix_ids", ids(args.prompt_prefix_ids))
     if args.prompt_instr_ids is not None:
