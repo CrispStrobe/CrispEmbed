@@ -478,6 +478,7 @@ const char * backend_name(const context * ctx) {
     return ctx ? ctx->name.c_str() : "";
 }
 bool run(context * ctx, const input & values, output & result, std::string & error) {
+    result = {};
     error.clear();
     if (!gate(error)) return false;
     if (!ctx) return fail(error, "Null head context");
@@ -494,6 +495,7 @@ bool run(context * ctx, const input & values, output & result, std::string & err
 namespace test {
 bool run_observed(context * ctx, const input & values, output & result, const observer & callback,
                   std::string & error) {
+    result = {};
     error.clear();
     if (!gate(error)) return false;
     if (!ctx || !callback) return fail(error, "Observer/context required");
@@ -502,7 +504,8 @@ bool run_observed(context * ctx, const input & values, output & result, const ob
         graph_builder graph(*ctx, values);
         graph.observe = true;
         graph.build();
-        if (!graph.compute(result, error)) return false;
+        output pending;
+        if (!graph.compute(pending, error)) return false;
         for (const auto & event : graph.stages) {
             stage out;
             out.label = event.label;
@@ -513,6 +516,7 @@ bool run_observed(context * ctx, const input & values, output & result, const ob
             for (float value : out.values) require(std::isfinite(value), "Nonfinite observed head stage");
             callback(out);
         }
+        result = std::move(pending);
         return true;
     } catch (const std::exception & e) {
         return fail(error, e.what());

@@ -69,6 +69,18 @@ class Controls(unittest.TestCase):
         self.assertIn('ggml_gelu_erf',src);self.assertIn('norm(name+".norm1",fields)',src);self.assertIn('norm(name+".norm2",x)',src);self.assertIn('norm(name+".norm3",y)',src)
         self.assertIn('ggml_dup(ctx,w(name))',src);self.assertIn('1e-12f',src);self.assertIn('1e-8f',src)
         self.assertIn('core_env::on("CRISPEMBED_JOSEV_HEAD")',src);self.assertNotIn('ggml_backend_init_best',src)
+    def test_failure_outputs_clear_before_gates_and_observer_publishes_last(self):
+        src=(ROOT/'src/josev2b_head.cpp').read_text()
+        ordinary=src[src.index('bool run(context *'):src.index('#ifdef CRISPEMBED_JOSEV_HEAD_TESTING',src.index('bool run(context *'))]
+        observed=src[src.index('bool run_observed('):src.index('bool metadata_controls(')]
+        for body in (ordinary,observed):self.assertLess(body.index('result = {};'),body.index('if (!gate(error))'))
+        self.assertIn('graph.compute(pending, error)',observed)
+        self.assertLess(observed.index('callback(out);'),observed.index('result = std::move(pending);'))
+        probe=(ROOT/'tests/test_josev2b_head_probe.cpp').read_text()
+        self.assertIn('Observer exception published a computed result',probe)
+        self.assertIn('exact(ordinary, recovered)',probe)
+        self.assertIn('gate_failure_output_empty',probe)
+
     def test_probe_requires_exact_neutrality_and_clean_exit(self):
         src=(ROOT/'tests/test_josev2b_head_probe.cpp').read_text()
         self.assertIn('exact(ordinary,observed)&&exact(ordinary,repeat)',re.sub(r'\s+','',src));self.assertIn('core_util::clean_exit',src)

@@ -178,6 +178,15 @@ bool exact(const josev2b_head::output & a, const josev2b_head::output & b) {
     }
     return true;
 }
+bool empty_output(const josev2b_head::output & out) {
+    return out.fields.empty() && out.backend.empty();
+}
+josev2b_head::output stale_output() {
+    josev2b_head::output out;
+    out.backend = "stale-backend";
+    out.fields.push_back({ "stale-field", { 1.0f }, { 1.0f } });
+    return out;
+}
 void set_gate(const char * value) {
 #ifdef _WIN32
     _putenv_s("CRISPEMBED_JOSEV_HEAD", value ? value : "");
@@ -284,14 +293,20 @@ static int crispembed_test_main(int argc, char ** argv) {
             for (const char * flag : { static_cast<const char *>(nullptr), "", "0" }) {
                 set_gate(flag);
                 std::string error;
-                josev2b_head::output out;
+                auto out = stale_output();
                 auto * ctx = josev2b_head::init("absent.gguf", nullptr, nullptr, "cpu", 2, error);
                 require(!ctx && error == "Josev head requires CRISPEMBED_JOSEV_HEAD=1", "Init gate rejected too late");
                 require(!josev2b_head::run(nullptr, {}, out, error) &&
                             error == "Josev head requires CRISPEMBED_JOSEV_HEAD=1",
                         "Run gate rejected too late");
+                require(empty_output(out), "Run gate failure retained stale output");
+                out = stale_output();
+                require(!josev2b_head::test::run_observed(
+                            nullptr, {}, out, [](const auto &) {}, error) &&
+                            error == "Josev head requires CRISPEMBED_JOSEV_HEAD=1" && empty_output(out),
+                        "Observer gate failure retained stale output");
             }
-            std::printf("{\"unset_empty_zero_rejected_before_load\":true}\n");
+            std::printf("{\"unset_empty_zero_rejected_before_load\":true,\"gate_failure_output_empty\":true}\n");
             return 0;
         }
         if (argc == 5 && std::string(argv[1]) == "--reject") {
@@ -338,10 +353,36 @@ static int crispembed_test_main(int argc, char ** argv) {
         const auto observed_end = std::chrono::steady_clock::now();
         require(josev2b_head::run(model.get(), values, repeat, error), error);
         require(exact(ordinary, observed) && exact(ordinary, repeat), "Ordinary/observer/repeat output bits differ");
+        // Seed valid previous outputs and reject before publication on every failure.
+        auto invalid = values;
+        invalid.hidden.pop_back();
+        auto rejected = ordinary;
+        require(!josev2b_head::run(model.get(), invalid, rejected, error) && empty_output(rejected),
+                "Run input failure retained previous valid output");
+        rejected = ordinary;
+        require(!josev2b_head::test::run_observed(
+                    model.get(), invalid, rejected, [](const auto &) {}, error) &&
+                    empty_output(rejected),
+                "Observer input failure retained previous valid output");
+        rejected = ordinary;
+        size_t rejected_callbacks = 0;
+        require(!josev2b_head::test::run_observed(
+                    model.get(), values, rejected,
+                    [&](const auto &) {
+                        ++rejected_callbacks;
+                        throw std::runtime_error("owned observer rejection control");
+                    },
+                    error) &&
+                    rejected_callbacks == 1 && error == "owned observer rejection control" && empty_output(rejected),
+                "Observer exception published a computed result");
+        josev2b_head::output recovered;
+        require(josev2b_head::run(model.get(), values, recovered, error) && exact(ordinary, recovered),
+                "Ordinary output changed after input/observer failures");
         std::ofstream proof(out / "probe.json");
         proof << "{\"completed\":true,\"full_model\":false,\"qualification\":false,\"backend\":\""
               << core_json::json_escape_strict(ordinary.backend) << "\",\"stages\":" << sequence
-              << ",\"observer_bit_exact\":true,\"repeat_bit_exact\":true,\"ordinary_seconds\":"
+              << ",\"observer_bit_exact\":true,\"repeat_bit_exact\":true,\"input_failure_output_empty\":true,"
+                 "\"observer_failure_output_empty\":true,\"post_failure_recovery_bit_exact\":true,\"ordinary_seconds\":"
               << std::chrono::duration<double>(ordinary_end - begin).count()
               << ",\"observed_seconds\":" << std::chrono::duration<double>(observed_end - ordinary_end).count()
               << ",\"fields\":[";
