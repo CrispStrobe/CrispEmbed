@@ -1,0 +1,59 @@
+name: UltraBERT Unicode pretokenizer retained A/B
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-unicode-pretoken-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  token-only-ab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bounded source/stdlib A/B controls before payload access
+        run: python tests/test_ultrabert_unicode_pretoken.py -v
+      - name: Exact original tokenizer backend only
+        run: |
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from scifact_tokenizer_diagnostic import TOKENIZER_WHEEL, TOKENIZER_WHEEL_SHA
+          Path('unicode-token-requirements.txt').write_text(TOKENIZER_WHEEL + ' --hash=sha256:' + TOKENIZER_WHEEL_SHA + '\n')
+          PY
+          python -m pip install --no-deps --only-binary=:all: --require-hashes --disable-pip-version-check -r unicode-token-requirements.txt
+      - name: Actual original replay then gate0 controls and all5483 gate1 rows
+        run: python tools/ci-heavy/ultrabert_unicode_pretoken.py --output "$RUNNER_TEMP/ultrabert-unicode-pretoken"
+      - name: Preserve small metrics and every rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ultrabert-unicode-pretoken-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/ultrabert-unicode-pretoken/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve tokenizer metadata and all A/B rows remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ultrabert-unicode-pretoken-metadata-${{ github.run_id }}
+          path: ${{ runner.temp }}/ultrabert-unicode-pretoken/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn

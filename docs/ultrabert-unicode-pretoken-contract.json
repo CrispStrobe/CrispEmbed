@@ -1,0 +1,43 @@
+{
+  "schema": "crispembed-ultrabert-unicode-pretoken-source-v1",
+  "gate": "CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN",
+  "default": false,
+  "embeddings_authorized": false,
+  "original_vectors_unchanged": true,
+  "required_rows": 5483,
+  "legacy_clipped_mismatches": 24,
+  "legacy_full_mismatches": 25,
+  "unicode_categories": "Existing core_unicode UCD14 L/N/White_Space; broader Unicode-version parity unqualified",
+  "candidate_sources": {
+    "src/tokenizer.h": "2322b4779ca0dc6ba6562d4f9c3bbbdf036c31fe1e8393a93742583a5f1599e3",
+    "src/tokenizer_bpe.cpp": "e91854dd1843101daf96a3061c7c16cc9630b44a71eeeb7b382d651fb15bcd69",
+    "src/ultrabert_profile.h": "efa3fdecc1dd2e3109c651c61f794c27652d315959cc1aa12b29039fb87ff2a4",
+    "src/ultrabert_tokenizer_mode.h": "e099e80526eda2ea2a533033ea24ff33896758bc94fb8b93bca7d223aa2f9fbd",
+    "tests/test_ultrabert_unicode_pretoken.cpp": "99524288626f4359f9c80c16461a4fe332e005387d28bdc3ecb8c024875a8824",
+    "tools/ultrabert_unicode_pretoken.py": "93ae3b8127ef4716b396f992d87693dbbb50780f974601b2b47cd102d160d901",
+    "tools/ci-heavy/ultrabert_unicode_pretoken.py": "37725870413615e7e5d731b1b2740a5e8353922f57ce64ffe48c5e25b29dc0fc",
+    "tests/test_ultrabert_unicode_pretoken.py": "046ce8d5d527717c19cbe819f97fe26d33206e1d2fbe1a5c778b8bfed2e5567f",
+    ".github/workflows/ultrabert-unicode-pretoken.yml": "34710390e1e1ef5c2023faec640ce8f7f81c3aa6365001e316cbeac76d136b05",
+    "docs/ultrabert-unicode-pretoken-baseline.json": "c65bf2f95961a17de2aff307ac0663ad9d2a303888c15f7040b4a48ec23169d3",
+    "docs/ultrabert-unicode-pretoken-cases.json": "dacb8cb088d81d8ada46c549120d6141f2daab04eff2ff61b41547dd4d493b47"
+  },
+  "frozen_sources": {
+    ".github/workflows/scifact-tokenizer-diagnostic.yml": "52e15d0fdc785e55fcea62bac3898a5807483c4a4ffb0cc9e0dc4001d992c9cc",
+    "tests/test_scifact_tokenizer_diagnostic.cpp": "7820f561ec32dd513f966a550f3c8cf2afc566fafb6bfcfadaf14683d4b3d3da",
+    "tests/test_scifact_tokenizer_diagnostic.py": "66ca289a9e430c43ead7eb4111ca25e8a778c459179101b6e2ade2cd9f78a2d0",
+    "tools/ci-heavy/scifact_tokenizer_diagnostic.py": "8c17bab61b9561e1d988663471cdb4e060100c30f7f56fa4dab20e137326a0eb",
+    "tools/scifact_tokenizer_diagnostic.py": "8f46da0ba92902e954e1b4702a5e3613e794140a962bce2689810fc3c458438c",
+    "tools/ultrabert_contract.py": "16b7f9c93017f4be97b367fa5aec33877a8ff053dfdc12771ec71109a311c9d8",
+    "LICENSE": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+    "src/core/bpe.h": "5edbadf3010d765720fa853bbf90fc8e2094a223d51c4bd6f2842bc197ca27c6",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/env_gate.h": "ad79d73c333f34ed9f971ae80136e410f0c44bc048439fcee9d4ac3ead63b9ec",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/unicode_categ.h": "32015ee5940c48e8fa4f727c7adbc89fbba8564c74700733fabd70d9d5183553",
+    "src/core/unicode_class.h": "4f35f5216cbf1817909616d81f2b81f6b304a70dbbed4f18204d9f5adb4a5be1",
+    "docs/scifact-tokenizer-diagnostic.json": "7e92984267fa430da1547fbae7b604aa199d088638926142acda10a3788ebe5d"
+  },
+  "historical_only": {
+    "docs/ultrabert-scifact-notices.md": "4bdfbdf5dba35320265102bf4f2ee7601e98edeb0e7e40d64e5073cfdefde715"
+  }
+}

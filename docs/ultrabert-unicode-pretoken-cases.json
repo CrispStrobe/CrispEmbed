@@ -1,0 +1,137 @@
+[
+  {
+    "id": "curly-single",
+    "text": "a ‘stem cells’ in",
+    "pretokens": [
+      "a",
+      " ‘",
+      "stem",
+      " cells",
+      "’",
+      " in"
+    ]
+  },
+  {
+    "id": "curly-double",
+    "text": "a (“caustic”) text",
+    "pretokens": [
+      "a",
+      " (“",
+      "caustic",
+      "”)",
+      " text"
+    ]
+  },
+  {
+    "id": "marks-symbols",
+    "text": "café €42²",
+    "pretokens": [
+      "cafe",
+      "́",
+      " €",
+      "42²"
+    ]
+  },
+  {
+    "id": "ascii-whitespace",
+    "text": "x \t\n y",
+    "pretokens": [
+      "x",
+      " \t\n",
+      " y"
+    ]
+  },
+  {
+    "id": "unicode-whitespace",
+    "text": "x \t y  ",
+    "pretokens": [
+      "x",
+      " \t",
+      " ",
+      "y",
+      "  "
+    ]
+  },
+  {
+    "id": "case-contractions",
+    "text": "I'm I'M they've WE'RE",
+    "pretokens": [
+      "I",
+      "'m",
+      " I",
+      "'",
+      "M",
+      " they",
+      "'ve",
+      " WE",
+      "'",
+      "RE"
+    ]
+  },
+  {
+    "id": "emoji-format",
+    "text": "x👩‍🔬y",
+    "pretokens": [
+      "x",
+      "👩‍🔬",
+      "y"
+    ]
+  },
+  {
+    "id": "unicode-numbers",
+    "text": "αβ ١٢Ⅳ 3.14",
+    "pretokens": [
+      "αβ",
+      " ١٢Ⅳ",
+      " 3",
+      ".",
+      "14"
+    ]
+  },
+  {
+    "id": "space-prefix",
+    "text": "x é",
+    "pretokens": [
+      "x",
+      " ",
+      "é"
+    ]
+  },
+  {
+    "id": "unassigned",
+    "text": "͸x",
+    "pretokens": [
+      "͸",
+      "x"
+    ]
+  },
+  {
+    "id": "mark-separate",
+    "text": "क्",
+    "pretokens": [
+      "क",
+      "्"
+    ]
+  },
+  {
+    "id": "ascii-not-white-space",
+    "text": "x\u001cy",
+    "pretokens": [
+      "x",
+      "\u001c",
+      "y"
+    ]
+  },
+  {
+    "id": "trailing",
+    "text": " \t\n",
+    "pretokens": [
+      " \t\n"
+    ]
+  },
+  {
+    "id": "empty",
+    "text": "",
+    "pretokens": []
+  }
+]
