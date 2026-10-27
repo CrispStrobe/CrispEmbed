@@ -1,0 +1,25 @@
+{
+  "schema": "crispembed-unlimited-ocr2-native-receipt-v1",
+  "commit": "5a98264c5723d32c3c752c79505ce9942c8cd926",
+  "producer": {
+    "service": "kaggle-cpu-kernel",
+    "kernel": "crispembed-unlimited-ocr2-native",
+    "kernel_version": 5
+  },
+  "report_sha256": "4a7018e58719fce51b6318bf1a700a5c50dd11e27157cbf2667cc01cf8ee778d",
+  "case": "small-untiled",
+  "ids_exact": true,
+  "tokens": 65,
+  "native_text": "text[60, 114, 410, 172]Unlimited OCR 2\ntext[60, 284, 476, 348]Small page, no tiles.\ntext[60, 450, 410, 506]Total: 42.00 EUR",
+  "reference_text": "<PAGE><BLOCK>text[60, 114, 410, 172]<FORK>Unlimited OCR 2\n<BLOCK>text[60, 284, 476, 348]<FORK>Small page, no tiles.\n<BLOCK>text[60, 450, 410, 506]<FORK>Total: 42.00 EUR",
+  "address_sanitizer": "clean (RelWithDebInfo + ASan build)",
+  "model": "lossless F32 conversion of baidu/Unlimited-OCR-2@04647c7a; gate CRISPEMBED_UNLIMITED_OCR2",
+  "initial_failures": [
+    "v1: SIGSEGV in MoE expert view",
+    "v3: malloc invalid size during init",
+    "v4: ASan heap-buffer-overflow in load_tensors — root cause: same-named structs across unlimited_ocr.cpp/deepseek_ocr2.cpp/lfm2_vl_ocr.cpp (ODR), fixed with internal linkage"
+  ],
+  "limits": "One untiled 640x480 page, greedy CPU F32, Linux x64. Tiled (gundam) pages, quantized weights, GPU and long multi-page documents not yet validated.",
+  "default_enabled": false,
+  "published": false
+}
