@@ -101,12 +101,25 @@ class EnvironmentTests(unittest.TestCase):
                 with patch.object(site,'ENABLE_USER_SITE',True):
                     with self.assertRaisesRegex(ValueError,'prefix/user'):environment.isolated_prefix(prefix)
 
+    def test_owner_metadata_selection_rejects_missing_duplicate_or_vendor_fallback(self):
+        own=Path('demo_pkg-1.dist-info/METADATA')
+        vendor=Path('demo_pkg/_vendor/demo_pkg-1.dist-info/METADATA')
+        dist=types.SimpleNamespace(files=[vendor,own,Path('demo_pkg/__init__.py')])
+        self.assertEqual(environment.owner_metadata_file(dist,'demo-pkg','1'),own)
+        for files in [[vendor], [own,own], [Path('different-1.dist-info/METADATA')],
+                      [Path('demo_pkg-2.dist-info/METADATA')], [Path('/demo_pkg-1.dist-info/METADATA')]]:
+            dist.files=files
+            with self.assertRaisesRegex(ValueError,'owning METADATA file missing/ambiguous'):
+                environment.owner_metadata_file(dist,'demo-pkg','1')
+
     def test_installed_metadata_unlocked_package_and_loaded_origin_controls(self):
         with tempfile.TemporaryDirectory() as d:
             prefix=Path(d);file=prefix/'demo-1.dist-info/METADATA';file.parent.mkdir();file.write_bytes(b'demo metadata')
+            vendor=prefix/'demo/_vendor/vendor-1.dist-info/METADATA'
+            vendor.parent.mkdir(parents=True);vendor.write_bytes(b'vendored metadata')
             class Dist:
                 def __init__(self,name,version):self.metadata={'Name':name};self.version=version
-                files=[Path('demo-1.dist-info/METADATA')]
+                files=[Path('demo-1.dist-info/METADATA'),Path('demo/_vendor/vendor-1.dist-info/METADATA')]
                 def locate_file(self,f):return prefix/f
             demo,pip=Dist('demo','1'),Dist('pip','26.2.2')
             row={'name':'demo','version':'1','core_metadata_sha256':sha(file.read_bytes())}
@@ -116,9 +129,15 @@ class EnvironmentTests(unittest.TestCase):
                  patch.object(environment,'locked_files',return_value={'packages':[row]}), \
                  patch.object(importlib.metadata,'distributions',return_value=[demo,pip]):
                 self.assertTrue(environment.verify_installed(cfg,prefix)['all_wheel_metadata_hashes_exact'])
+                with patch.object(demo,'locate_file',side_effect=lambda f: prefix if str(f)=='' else prefix.parent/'outside-METADATA'):
+                    with self.assertRaisesRegex(ValueError,'owning METADATA origin outside'):
+                        environment.verify_installed(cfg,prefix)
                 with patch.object(importlib.metadata,'distributions',return_value=[demo,pip,Dist('wrapt','1')]):
                     with self.assertRaisesRegex(ValueError,'unlocked'):environment.verify_installed(cfg,prefix)
                 file.write_bytes(b'altered')
+                # A vendor with the expected bytes cannot substitute for a
+                # corrupted owning distribution's metadata.
+                vendor.write_bytes(b'demo metadata')
                 with self.assertRaisesRegex(ValueError,'METADATA'):environment.verify_installed(cfg,prefix)
                 file.write_bytes(b'demo metadata')
                 with patch('importlib.import_module',return_value=types.SimpleNamespace(__version__='2.13.0',__file__='/ambient/torch.py')):
