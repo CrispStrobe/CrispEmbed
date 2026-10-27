@@ -309,9 +309,9 @@
     "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
     "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
     "tests/josev-composed/diff.cpp": "267ef2117f358aa77a26abf2efddd7f07851ef29c76dc79ee18f82151ba0e286",
-    "tests/test_josev2b_composed_panel.py": "4c5c9e53186ececf0d06d154188fdb4a21f34dd9486dea84765584abafc60d1a",
-    "docs/josev2b-composed-dependencies.json": "a84cc629d6ce8e5ecfa9b9825324bcda958a2630a02fbb2ade1f5ba408bc0760",
-    "tools/ci-heavy/josev2b_composed.py": "102c7bef4e82125bffddb058613d900f56d8478e1b2cb956ae26228c0183ea16",
+    "tests/test_josev2b_composed_panel.py": "4fa4a9e004c16398665aa587ba67cbb1f4392539e17582c1a4285fa10a351ac5",
+    "docs/josev2b-composed-dependencies.json": "d651c8f27bdafbf224df7e0ca65ad93404dd618da339f02a21418734dcb55758",
+    "tools/ci-heavy/josev2b_composed.py": "2d96dd17edb34ce34745d2a6d3bfc0695127c2f822e44e9d0e8b9e50f5e8bd1f",
     ".github/workflows/josev2b-composed.yml": "29fe6182525bb3e43e85c931a6af2f1bab021fbeb2b3c3c0104493dfffba4bd8"
   }
 }

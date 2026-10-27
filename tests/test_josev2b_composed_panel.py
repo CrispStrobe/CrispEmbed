@@ -63,4 +63,31 @@ class DependencyBarrier(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,'dependency review pending'):hosted.policy()
             remote.assert_not_called()
 
+class ArtifactMembers(unittest.TestCase):
+    def test_real_selective_extractor_uses_explicit_producer_member(self):
+        import io,zipfile,tempfile,hashlib,types
+        spec=importlib.util.spec_from_file_location('composed_extract',ROOT/'tools/ci-heavy/josev2b_composed.py')
+        hosted=importlib.util.module_from_spec(spec);spec.loader.exec_module(hosted)
+        stream=io.BytesIO()
+        with zipfile.ZipFile(stream,'w') as z:
+            z.writestr('producer/component.gguf',b'owned-test-only-bytes')
+            z.writestr('other/probe',b'never-extract-this-test-only-binary')
+        payload=stream.getvalue();digest=hashlib.sha256(payload).hexdigest()
+        pin=dict(run=1,source='a'*40,id=2,name='test-owned',bytes=len(payload),sha256=digest)
+        run=dict(head_sha='a'*40,event='workflow_dispatch',run_attempt=1,status='completed',conclusion='success',path='.github/workflows/ovisocr2-metadata.yml')
+        artifact=dict(workflow_run={'id':1,'head_sha':'a'*40},name='test-owned',size_in_bytes=len(payload),expired=False,digest='sha256:'+digest,id=2,expires_at='test-owned')
+        def download(*args,**kwargs):
+            kwargs['stdout'].write(payload)
+            return types.SimpleNamespace(returncode=0)
+        for member,accepted in [('component.gguf',False),('producer/component.gguf',True)]:
+            with tempfile.TemporaryDirectory() as temp, mock.patch.object(hosted,'api',side_effect=[run,artifact]), \
+                 mock.patch.object(hosted.subprocess,'run',side_effect=download):
+                if not accepted:
+                    with self.assertRaisesRegex(ValueError,'declared artifact member absent'):
+                        hosted.fetch(pin,Path(temp),{member})
+                else:
+                    out,_=hosted.fetch(pin,Path(temp),{member})
+                    self.assertEqual((out/member).read_bytes(),b'owned-test-only-bytes')
+                    self.assertFalse((out/'other/probe').exists())
+
 if __name__=='__main__':unittest.main()

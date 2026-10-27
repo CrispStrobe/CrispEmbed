@@ -20,7 +20,8 @@
     },
     "native_report_sha256": "7ed2fb12f8c8c31608921e5fc8b78d008af8b04da2a5abce9f87e6951eff8a85",
     "component_bytes": 9954944,
-    "component_sha256": "6fe488e538b172d2f3f831e7422714b7158602d9d9f2d34f336db389363c9562"
+    "component_sha256": "6fe488e538b172d2f3f831e7422714b7158602d9d9f2d34f336db389363c9562",
+    "component_member": "josev-tokenizer-schema/josev2b-tokenizer.gguf"
   },
   "answer": {
     "run": 40446419257,

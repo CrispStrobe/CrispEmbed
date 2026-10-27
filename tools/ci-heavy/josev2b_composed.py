@@ -70,6 +70,7 @@ def fetch(pin,scratch,include=None):
         entries=archive.infolist();names=[e.filename for e in entries]
         require(len(entries)<=8192 and len(set(names))==len(names) and sum(e.file_size for e in entries)<=20*2**30,
                 'artifact ZIP extent/duplicate member differs')
+        require(include is None or set(include)<=set(names),'declared artifact member absent; no basename fallback')
         for row in entries:
             name=row.filename;p=PurePosixPath(name)
             require(not p.is_absolute() and '..' not in p.parts and '\\' not in name and
@@ -140,6 +141,13 @@ def run(out,scratch,build):
     write(out/'hosted.json',report)
     ref_controls(build/'josev-composed-diff',out/'ref-controls')
     report['dependencies']=barrier(deps,scratch);write(out/'hosted.json',report)
+    front=deps['frontend']; member=front['component_member']
+    require(PurePosixPath(member).as_posix()==member and not PurePosixPath(member).is_absolute() and
+            '..' not in PurePosixPath(member).parts,'unsafe explicit tokenizer component member')
+    token,tp=fetch(dict(front['artifacts']['raw'],run=front['run'],source=front['source']),scratch,{member})
+    tokenizer=token/member
+    require(tokenizer.stat().st_size==front['component_bytes'] and sha(tokenizer)==front['component_sha256'],
+            'reviewed tokenizer component bytes differ')
     pins=deps['fixed']
     backbone,bp=fetch(pins['backbone'],scratch,{'raw/backbone-f32.gguf','raw/backbone-f32.conversion.json'})
     model=backbone/'raw/backbone-f32.gguf'
@@ -160,11 +168,6 @@ def run(out,scratch,build):
     require((reference/'reference.json').read_bytes()==(ROOT/'tests/results/josev2b/original-reference.json').read_bytes(),
             'frozen reference/public source differs')
     frozen=json.loads((reference/'input-freeze.json').read_text());gold=json.loads((reference/'reference.json').read_text())
-    front=deps['frontend'];token,tp=fetch(dict(front['artifacts']['raw'],run=front['run'],source=front['source']),scratch,
-                                        {'josev2b-tokenizer.gguf'})
-    tokenizer=token/'josev2b-tokenizer.gguf'
-    require(tokenizer.stat().st_size==front['component_bytes'] and sha(tokenizer)==front['component_sha256'],
-            'reviewed tokenizer component bytes differ')
     report['payloads']={'backbone':bp,'head':hp,'tokenizer':tp};write(out/'hosted.json',report)
     requests=out/'requests.json'
     write(requests,[dict(id=r['id'],request_json=json.dumps(r['request'],ensure_ascii=False,allow_nan=False,separators=(',',':')))
