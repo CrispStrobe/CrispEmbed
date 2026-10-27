@@ -179,6 +179,73 @@ class Controls(unittest.TestCase):
             self.assertEqual(row['producer']['error'],'libggml.so.0: cannot open shared object file: No such file or directory')
         self.assertFalse(report['numerical_qualified']);self.assertFalse(report['native_embeddings_executed'])
 
+    def test_loader_manifest_exact_files_and_bytes_without_any_library_load(self):
+        with tempfile.TemporaryDirectory()as tmp:
+            root=Path(tmp);directory=root/'lib';directory.mkdir();(directory/'libcrispembed.so').write_bytes(b'owned fake library')
+            manifest=root/'libraries.json';files={p.name:dict(bytes=p.stat().st_size,sha256=contract.sha(p))for p in directory.iterdir()}
+            driver.write(manifest,files);digest=contract.sha(manifest)
+            self.assertEqual(driver.loader.checked_manifest(directory,manifest,digest),files)
+            (directory/'libcrispembed.so').write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError,'bytes'):driver.loader.checked_manifest(directory,manifest,digest)
+            (directory/'extra.so').write_bytes(b'x')
+            with self.assertRaisesRegex(ValueError,'coverage'):driver.loader.checked_manifest(directory,manifest,digest)
+
+    def test_python_library_path_is_derived_verified_and_never_inherited(self):
+        with tempfile.TemporaryDirectory()as tmp:
+            root=Path(tmp);directory=root/'bundle/lib';directory.mkdir(parents=True)
+            runtime=dict(directory=str(root/'python/lib'),library='libpython3.12.so.1.0',bytes=123,sha256='a'*64,version='owned fixture')
+            policy=dict(mode='bundle-and-python-lib',python_library=driver.loader.fingerprint(runtime))
+            with patch.object(driver.loader,'python_library',return_value=runtime),patch.dict(os.environ,{'LD_LIBRARY_PATH':'/untrusted','LD_PRELOAD':'bad.so'}):
+                env=driver.smoke_environment(directory,policy)
+                self.assertEqual(env['LD_LIBRARY_PATH'],str(directory.resolve())+':'+runtime['directory']);self.assertNotIn('LD_PRELOAD',env)
+                changed=dict(policy,python_library=dict(policy['python_library'],sha256='b'*64))
+                with self.assertRaisesRegex(ValueError,'differs'):driver.smoke_environment(directory,changed)
+            self.assertEqual(driver.loader.loader_path(directory,dict(mode='bundle-only')),str(directory.resolve()))
+
+    def test_actual_smoke_retry_only_for_interpreter_startup_not_ggml(self):
+        with tempfile.TemporaryDirectory()as tmp:
+            root=Path(tmp);payload=root/'payload';directory=payload/'lib';directory.mkdir(parents=True);(directory/'libcrispembed.so').write_bytes(b'owned fake')
+            out=root/'out';out.mkdir()
+            runtime=dict(directory=str(root/'python/lib'),library='libpython3.12.so.1.0',bytes=123,sha256='a'*64,version='owned fixture')
+            calls=[]
+            def run(argv,**kwargs):
+                calls.append((argv,kwargs['env']))
+                if len(calls)==1:
+                    kwargs['stdout'].write('python: error while loading shared libraries: libpython3.12.so.1.0: missing\n')
+                    return type('Result',(),{'returncode':127})()
+                manifest=payload/'loader-libraries.json'
+                result=dict(schema='crispembed-scifact-native-loader-smoke-v1',completed=True,mode='bundle-and-python-lib',
+                    python_library=driver.loader.fingerprint(runtime),library_manifest_sha256=contract.sha(manifest),
+                    library_sha256=contract.sha(directory/'libcrispembed.so'),symbols=list(driver.loader.SYMBOLS),
+                    all_ggml_mappings_in_bundle=True,model_files_accessed=False,framework_imported=False,forward_called=False)
+                driver.write(payload/'loader-smoke.json',result)
+                return type('Result',(),{'returncode':0})()
+            with patch.object(driver.subprocess,'run',side_effect=run),patch.object(driver.loader,'python_library',return_value=runtime):
+                result=driver.library_smoke(payload,out)
+            self.assertEqual(result['mode'],'bundle-and-python-lib');self.assertEqual(len(calls),2)
+            self.assertEqual(calls[0][1]['LD_LIBRARY_PATH'],str(directory.resolve()))
+            self.assertEqual(calls[1][1]['LD_LIBRARY_PATH'],str(directory.resolve())+':'+runtime['directory'])
+            (payload/'loader-smoke.json').unlink();calls.clear()
+            def ggml_failure(argv,**kwargs):
+                calls.append(argv);kwargs['stdout'].write('python: error while loading shared libraries: libggml.so.0: missing\n')
+                return type('Result',(),{'returncode':127})()
+            with patch.object(driver.subprocess,'run',side_effect=ggml_failure),patch.object(driver.loader,'python_library',return_value=runtime):
+                with self.assertRaisesRegex(ValueError,'not Python'):driver.library_smoke(payload,out)
+            self.assertEqual(len(calls),1)
+
+    def test_build_smoke_is_mandatory_before_bundle_release_and_native_matrix(self):
+        text=(ROOT/'tools/ci-heavy/ultrabert_scifact_native_v3.py').read_text();tree=ast.parse(text)
+        build=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name=='build')
+        body=ast.get_source_segment(text,build)
+        self.assertLess(body.index('smoke=library_smoke(payload,out)'),body.index("write(payload / 'receipt.json'"))
+        self.assertIn('loader_smoke=smoke',body)
+        workflow=(ROOT/'.github/workflows/ultrabert-scifact-native-v3.yml').read_text()
+        self.assertIn('Build bundle and pass actual fresh-Python C API loader smoke',workflow)
+        self.assertIn('needs: build',workflow)
+        helper=(ROOT/'tools/scifact_native_loader_smoke.py').read_text()
+        self.assertIn('ctypes.CDLL',helper);self.assertIn('os.RTLD_NOW|os.RTLD_LOCAL',helper)
+        self.assertNotIn('.gguf',helper);self.assertNotIn('CrispEmbed(',helper)
+
     def test_workflow_barrier_and_no_historical_guard_injection(self):
         text=(ROOT/'.github/workflows/ultrabert-scifact-native-v3.yml').read_text()
         self.assertIn('needs: build',text);self.assertIn('max-parallel: 2',text);self.assertIn('fail-fast: false',text)

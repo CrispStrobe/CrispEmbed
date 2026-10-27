@@ -35,7 +35,8 @@ jobs:
           } >> "$GITHUB_ENV"
       - run: python tests/test_ultrabert_scifact_native_v3.py -v
       - run: python -m pip install numpy==2.2.6 gguf==0.19.0 huggingface-hub==1.33.0 safetensors==0.8.0
-      - run: python tools/ci-heavy/ultrabert_scifact_native_v3.py --phase build
+      - name: Build bundle and pass actual fresh-Python C API loader smoke
+        run: python tools/ci-heavy/ultrabert_scifact_native_v3.py --phase build
       - uses: actions/upload-artifact@v4
         if: always()
         with:

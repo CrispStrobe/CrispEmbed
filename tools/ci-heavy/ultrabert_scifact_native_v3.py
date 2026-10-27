@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from ultrabert_scifact_native_v3 import CONTRACT, protocol, sha, safe_zip, check_token_proof, check_rows, check_actual_ids, check_shard
 from ultrabert_scifact import shard_rows, rank_scores, quality
+import scifact_native_loader_smoke as loader
 from scifact_tokenizer_diagnostic import check_jobs
 
 spec = importlib.util.spec_from_file_location('scifact_v2_lowlevel', ROOT / 'tools/ci-heavy/ultrabert_scifact.py')
@@ -30,7 +31,8 @@ REPO = 'CrispStrobe/CrispEmbed'
 OWN = (CONTRACT, 'tools/ultrabert_scifact_native_v3.py', 'tools/ci-heavy/ultrabert_scifact_native_v3.py',
        'tests/test_ultrabert_scifact_native_v3.py', '.github/workflows/ultrabert-scifact-native-v3.yml',
        '.github/workflows/ovisocr2-metadata.yml', 'docs/ultrabert-scifact-native-v3.md',
-       'tests/results/ultrabert/initial-scifact-native-v3-loader-failure.json')
+       'tests/results/ultrabert/initial-scifact-native-v3-loader-failure.json',
+       'tools/scifact_native_loader_smoke.py')
 
 
 def git(*args):
@@ -161,6 +163,48 @@ def dependency_check(library, log, env):
                 raise ValueError('Bundled ggml dependency resolves outside exact payload')
 
 
+def smoke_environment(directory, policy):
+    env={k:v for k,v in os.environ.items()if not k.startswith('CRISPEMBED_')and k not in ('LD_PRELOAD','LD_AUDIT')}
+    env['LD_LIBRARY_PATH']=loader.loader_path(directory,policy)
+    return env
+
+
+def library_smoke(payload,out):
+    directory=payload/'lib';manifest=payload/'loader-libraries.json';result_path=payload/'loader-smoke.json'
+    write(manifest,{p.name:dict(bytes=p.stat().st_size,sha256=sha(p))for p in sorted(directory.iterdir())})
+    attempts=[];policy=dict(mode='bundle-only')
+    argv=[sys.executable,str(ROOT/'tools/scifact_native_loader_smoke.py'),'--directory',str(directory),
+          '--manifest',str(manifest),'--manifest-sha',sha(manifest),'--output',str(result_path)]
+    for i in range(2):
+        log=out/('loader-smoke-'+str(i)+'.log')
+        with log.open('w')as stream:
+            r=subprocess.run([*argv,'--mode',policy['mode']],cwd=ROOT,env=smoke_environment(directory,policy),
+                             stdout=stream,stderr=subprocess.STDOUT,timeout=60)
+        attempts.append(dict(mode=policy['mode'],exit=r.returncode,log_sha256=sha(log)))
+        write(out/'loader-smoke-attempts.json',attempts)
+        if r.returncode==0:
+            result=load(result_path)
+            if (result.get('completed')is not True or result.get('schema')!='crispembed-scifact-native-loader-smoke-v1'
+                    or result.get('mode')!=policy['mode'] or result.get('python_library')!=policy.get('python_library')
+                    or result.get('library_manifest_sha256')!=sha(manifest)
+                    or result.get('library_sha256')!=sha(directory/'libcrispembed.so')
+                    or result.get('symbols')!=list(loader.SYMBOLS)or result.get('all_ggml_mappings_in_bundle')is not True
+                    or any(result.get(k)is not False for k in ('model_files_accessed','framework_imported','forward_called'))):
+                raise ValueError('Actual fresh-loader smoke receipt differs')
+            write(out/'loader-smoke.json',result)
+            return result
+        # A missing GGML/CrispEmbed library never permits a different search path.
+        # Only the dynamic loader's interpreter-startup libpython rejection may
+        # add the exact currently mapped sys.base_prefix/lib runtime directory.
+        if i or r.returncode!=127 or result_path.exists():
+            raise ValueError('Actual fresh Python/C API loader smoke failed')
+        runtime=loader.python_library();message=log.read_text()
+        if 'error while loading shared libraries: '+runtime['library']+':' not in message:
+            raise ValueError('Fresh loader failure is not Python interpreter startup')
+        policy=dict(mode='bundle-and-python-lib',python_library=loader.fingerprint(runtime))
+    raise ValueError('Actual loader smoke did not complete')
+
+
 def build(out, scratch, closure):
     references(scratch)  # All reviewed identity barriers before any weight download.
     if shutil.disk_usage(scratch).free < 10 * 1024**3:
@@ -194,9 +238,10 @@ def build(out, scratch, closure):
     env.update(protocol()['gates']); env['LD_LIBRARY_PATH'] = str(payload / 'lib')
     command([build_dir / 'test-ultrabert-truncation', payload / 'native-f32.gguf'], out / 'truncation.log', env=env, timeout=120)
     dependency_check(library, out / 'ldd.log', env)
+    smoke=library_smoke(payload,out)
     shutil.copyfile(build_dir / 'compile_commands.json', out / 'compile_commands.json')
     r = dict(schema='crispembed-scifact-native-build-v3', source=closure, model_sha256=sha(payload / 'native-f32.gguf'),
-             library_sha256=sha(library), files=inventory(payload), logs={p.name:sha(p) for p in out.glob('*.log')})
+             library_sha256=sha(library), loader_smoke=smoke, files=inventory(payload), logs={p.name:sha(p) for p in out.glob('*.log')})
     write(payload / 'receipt.json', r); write(out / 'build.json', r)
     return 0
 
@@ -215,6 +260,14 @@ def checked_bundle(bundle, closure):
             or sha(bundle / 'native-f32.gguf') != protocol()['native_model_sha256']
             or b['library_sha256'] != sha(bundle / 'lib/libcrispembed.so')):
         raise ValueError('Authenticated build model/library/source identity differs')
+    smoke=load(bundle/'loader-smoke.json')
+    if (b.get('loader_smoke')!=smoke or smoke.get('schema')!='crispembed-scifact-native-loader-smoke-v1'
+            or smoke.get('mode')not in loader.MODES or smoke.get('completed')is not True or smoke.get('all_ggml_mappings_in_bundle')is not True
+            or smoke.get('library_sha256')!=b['library_sha256'] or smoke.get('symbols')!=list(loader.SYMBOLS)
+            or any(smoke.get(k)is not False for k in ('model_files_accessed','framework_imported','forward_called'))):
+        raise ValueError('Build fresh-Python loader smoke proof differs')
+    loader.checked_manifest(bundle/'lib',bundle/'loader-libraries.json',smoke['library_manifest_sha256'])
+    loader.loader_path(bundle/'lib',smoke)
     return b
 
 
@@ -274,13 +327,12 @@ def validate_stage(path, expected_sha, index, scratch, closure):
     return prepared, data, tokens, frozen, lineage, b, bp
 
 
-def launch_plan(index, scratch, stage_sha):
+def launch_plan(index, scratch, stage_sha, smoke_policy=None):
     library_directory = (scratch / 'bundle/lib').resolve()
     if not library_directory.is_dir() or ':' in str(library_directory):
         raise ValueError('Fresh child requires an already materialized exact library directory')
-    env = {k:v for k,v in os.environ.items() if not k.startswith('CRISPEMBED_') and k not in ('LD_PRELOAD','LD_AUDIT')}
+    env = smoke_environment(library_directory,smoke_policy or dict(mode='bundle-only'))
     env.update(protocol()['gates'])
-    env['LD_LIBRARY_PATH'] = str(library_directory)
     argv = [sys.executable, str(ROOT / 'tools/ci-heavy/ultrabert_scifact_native_v3.py'), '--phase', 'native-child',
             '--shard', str(index), '--stage', str(scratch / 'native-stage.json'), '--stage-sha', stage_sha]
     return argv, env
@@ -297,9 +349,9 @@ def native(index, out, scratch, closure):
     write(stage, dict(schema='crispembed-scifact-native-child-stage-v1', shard=index, source=closure,
                      lineage=lineage, build=bp, directories={name:inventory(scratch / name) for name in ('token-proof','freeze','prepared','bundle')}))
     stage_sha = sha(stage)
-    argv, env = launch_plan(index, scratch, stage_sha)
+    argv, env = launch_plan(index, scratch, stage_sha, b['loader_smoke'])
     write(out / 'native-child-launch.json', dict(fresh_python_process=True, stage_sha256=stage_sha,
-          exact_existing_library_directory=True, inherited_preload=False, downloads_in_child=False))
+          exact_existing_library_directory=True, loader_mode=b['loader_smoke']['mode'], inherited_preload=False, downloads_in_child=False))
     command(argv, out / 'native-child.log', env=env, timeout=protocol()['execution']['shard_deadline_seconds']+300)
     return 0
 
@@ -308,7 +360,7 @@ def native_child(index, out, scratch, closure, stage, stage_sha):
     prepared, data, tokens, frozen, lineage, b, bp = validate_stage(stage, stage_sha, index, scratch, closure)
     bundle = scratch / 'bundle'
     env = protocol()['gates']
-    if (os.environ.get('LD_LIBRARY_PATH') != str((bundle / 'lib').resolve())
+    if (os.environ.get('LD_LIBRARY_PATH') != loader.loader_path(bundle / 'lib',b['loader_smoke'])
             or any(os.environ.get(k) != v for k,v in env.items()) or os.environ.get('LD_PRELOAD') or os.environ.get('LD_AUDIT')):
         raise ValueError('Fresh native child loader/gate environment differs')
     import numpy as np
@@ -361,7 +413,8 @@ def native_child(index, out, scratch, closure, stage, stage_sha):
            frozen_protocol_sha256=protocol()['frozen_protocol_sha256'], original_freeze_sha256=protocol()['original']['freeze_report_sha256'],
            all_actual_ids_preflight_exact=True, mask_contract=protocol()['mask_contract'],gates=env,
            model_sha256=b['model_sha256'],library_sha256=b['library_sha256'],build=bp,lineage=lineage,
-           loader_child=dict(stage_sha256=stage_sha, fresh_python_process=True, authenticated_materialized_inputs=True),files=inventory(payload))
+           loader_child=dict(stage_sha256=stage_sha, fresh_python_process=True, authenticated_materialized_inputs=True,
+                             loader_mode=b['loader_smoke']['mode'], loader_smoke_sha256=sha(bundle/'loader-smoke.json')),files=inventory(payload))
     write(payload / 'receipt.json',r);write(out / ('native-'+str(index)+'.json'),r)
     return 0
 

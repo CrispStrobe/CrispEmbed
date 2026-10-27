@@ -61,7 +61,9 @@ was insufficient. Exact glibc cache behavior was not independently measured.
 
 The corrected caller authenticates/materializes references and the bundle first,
 then launches a fresh Python child with `LD_LIBRARY_PATH` set to the exact existing
-`bundle/lib` directory, with no appended paths or inherited preloads. Before
+`bundle/lib` directory, with no inherited paths or preloads. The sole optional
+second search directory is the verified interpreter's own base-prefix library
+directory, selected only by the actual build smoke described below. Before
 ctypes or embedding access, the child rechecks its committed source, SHA-bound
 stage manifest, every staged file, immutable receipt hashes, dataset/gold/token
 identities, model/library hashes, retained ZIP hashes, ZIP-bound build receipt,
@@ -69,3 +71,23 @@ service artifact identities and completed producer jobs. Cached archives are
 reused; the child downloads no payload. Both parent and child phase receipts and
 the child log are retained. Runtime base02402a0d, ggmla06, original frozen arrays,
 inputs, source policies, masks and numerical/ranking budgets remain unchanged.
+
+
+Before the build job can succeed and release any of the eight native jobs, it now
+runs an actual fresh-Python ctypes smoke using the complete existing bundle. The
+source-owned stdlib helper receives only the library directory and a SHA-bound
+library manifest; it receives no model, reference or GGUF input and invokes no
+model functions. It loads the exact `libcrispembed.so`, requires five nonnull C API
+exports, and verifies every actual GGML/CrispEmbed mapping and hash belongs to the
+bundle. Its manifest, result and all attempt logs remain in artifacts.
+
+The first smoke uses only the bundle directory. A dynamic-loader startup rejection
+for the interpreter's exact `libpython` can admit one second attempt with only
+`sys.base_prefix/lib` after the bundle. That directory must equal Python's own
+configured LIBDIR and contain its currently mapped runtime library; its bytes,
+SHA, filename and exact Python version are recorded. No other smoke failure,
+including a missing GGML library, permits that attempt. Native parent/child stages
+reuse the successful smoke's exact policy and independently verify the current
+interpreter fingerprint if that second directory was necessary. This tests the
+actual hosted interpreter startup and library layout without embedding inference;
+source controls alone do not claim the hosted smoke has passed.
