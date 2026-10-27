@@ -1,3 +1,36 @@
+## 27 October 2026 (late) — MoEdern 27M/115M public, fast path, 1.5M SciFact
+
+| Scope | Cases | Worst abs | Receipt |
+| --- | --- | --- | --- |
+| 27M C/C-repeat/Python/CLI | 10 | 4.474878e-7 | [public-27m](tests/results/moedern-colbert/public-consumers-27m.json) |
+| 115M C/C-repeat/Python/CLI | 10 | 2.831221e-7 | [public-115m](tests/results/moedern-colbert/public-consumers-115m.json) |
+
+Fast path `CRISPEMBED_MOEDERN_FAST` (default off), unchanged gates: 27M 4.7x at 2
+threads/5.5x at 4, 115M 3.1x/3.6x. 27M author-runtime compare (2 threads, portable,
+F32): CrispEmbed C default 2.0 docs/s, fast 10.3 docs/s, author wrapper default 9.1
+docs/s ([compare](tests/results/moedern-colbert/vago-runtime-compare-27m.md)); the
+default path rejects 4 threads. The [115M compare](tests/results/moedern-colbert/vago-runtime-compare-115m.md)
+predates the fast path; rerun pending. Author arms have equal IDs on 9/10 cases vs the
+original. Diagnostic only.
+
+1.5M SciFact (300 queries/5,183 docs, published GGUF): NDCG@10 0.6973, MRR@10 0.6664,
+Recall@100 0.911 ([receipt](tests/results/moedern-colbert/scifact-quality-1p5m.json)).
+No original ranking; evidence only, no gate.
+
+## 27 October 2026 (late) — Unlimited-OCR-2 native CPU/F32
+
+| Case | Tiled | IDs exact | Text exact | Max box diff | Fast IDs = exact | Fast speedup |
+| --- | --- | --- | --- | --- | --- | --- |
+| small-untiled | no | yes | yes | 0 | yes | 2.737x |
+| para-en | yes | no (first diff 7) | yes | 3/999 | yes | 6.819x |
+| table | yes | no (first diff 4) | yes | 3/999 | yes | 6.496x |
+
+Receipts: [untiled](tests/results/unlimited-ocr2/native-untiled.json),
+[tiled](tests/results/unlimited-ocr2/native-tiled.json),
+[fast](tests/results/unlimited-ocr2/fast-decoder.json). Wall times include model
+load (table exact/fast 1600.247/246.339 s). Greedy, Linux x64. No quantized, GPU or
+multi-page numbers; merged tiling fixes are unvalidated.
+
 ## 27 October 2026 — UltraBERT SciFact native-v3 retrieval
 
 [Full frozen SciFact](tests/results/ultrabert/scifact-native-v3.json), run 40452077037:

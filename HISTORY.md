@@ -1,3 +1,47 @@
+## 27 October 2026 (late) — MoEdern 27M/115M public and published, fast path; Unlimited-OCR-2 native untiled exact
+
+**MoEdern 27M/115M public consumers** (Kaggle CPU kernels, source 0b7f7095): C, C
+repeat, Python and CLI pass ten frozen cases/three pairs, typed exact, float32-identical
+across consumers, repeat byte-identical, gate-off rejected (all and family). Worst
+absolute [27M](tests/results/moedern-colbert/public-consumers-27m.json) 4.474878e-7,
+[115M](tests/results/moedern-colbert/public-consumers-115m.json) 2.831221e-7.
+Rust/Dart/HTTP were not in these kernels. Packed GGUFs (no tensor math) are published
+and re-verified: [27M](tests/results/moedern-colbert/publication-27m.json)
+`cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF@351adfad` (109,596,000 bytes,
+run 40502127177) and [115M](tests/results/moedern-colbert/publication-115m.json)
+`cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF@9c5bcf77` (459,890,432 bytes,
+run 40490085368). Initial 115M publication attempts failed before upload (Kaggle
+publisher token 403 on repo creation; GitHub run 40485780758, kaggle 1.7.4.5 ignored
+token auth before any download); both are kept in the receipt. Default off; not
+release-qualified.
+
+**MoEdern 1.5M SciFact** ([receipt](tests/results/moedern-colbert/scifact-quality-1p5m.json),
+run 40483998529) from the published `@6f3b3514` GGUF in a fresh cache: NDCG@10
+0.6973488924629391, MRR@10 0.6663637566137566, Recall@100 0.911 over 300 queries/5,183
+documents. Quality evidence only, no gate; no original-model SciFact ranking exists
+for this model, so no comparison is claimed.
+
+**MoEdern fast path** `CRISPEMBED_MOEDERN_FAST` (default off) merged to main
+(3d54667f): passes the unchanged frozen-original gates; 27M 4.7x (2 threads)/5.5x
+(4), 115M 3.1x/3.6x faster. Author-runtime comparisons are diagnostic:
+[27M](tests/results/moedern-colbert/vago-runtime-compare-27m.md) includes fast arms;
+the [115M](tests/results/moedern-colbert/vago-runtime-compare-115m.md) compare ran at
+cd653779, **before** the fast path, and a rerun is pending. In both, every author-runtime
+arm (F32/F16/Q8_0/Q4_0) has equal IDs on 9/10 cases versus the frozen original;
+CrispEmbed arms have 10/10.
+
+**Unlimited-OCR-2 native** after the ODR fix: [untiled](tests/results/unlimited-ocr2/native-untiled.json)
+small page (kernel v5, 5a98264c) matches all 65 reference token IDs exactly; ASan
+clean. [Tiled](tests/results/unlimited-ocr2/native-tiled.json) (kernel v6, 7f4202c3,
+`CRISPEMBED_UNLIMITED_OCR2_TILES`): para-en/table recognized text equal, box
+coordinates differ by at most 3 on the 0-999 scale, so token IDs are not exact
+(first difference at token 7/4). [Fast decoder](tests/results/unlimited-ocr2/fast-decoder.json)
+`CRISPEMBED_UNLIMITED_OCR2_FAST` (default off, kernel v7, af53ac28) reproduces the
+exact decoder's IDs on all three pages: 2.737x untiled, 6.819x para-en, 6.496x table
+(wall times include model load). Reference-exact tiling preprocessing (929f97db) and
+a vision dump/diff kernel are merged but **not yet validated**. The precision sweep
+kernel is merged; no sweep result and no HF publication exist.
+
 ## 27 October 2026 — Final candidate assembled; Unlimited-OCR-2 native decoder not yet validated
 
 Branch `integration/final-candidate-20261027` assembles PR86, SystemOne, MoEdern,

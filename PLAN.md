@@ -816,3 +816,21 @@ and 115M frozen-ID native parity pass. Remaining owned gates:
   wasm-q8-rounding-ab-v1, wasm-layer3-attribution-v1, weight-cache,
   ovisocr3-public-diagnostic) out of the dispatcher unless a reference slot is
   freed (GitHub's 50 reusable-workflow limit); their workflow files are kept.
+
+### Late 27 October — status update
+
+Completed (see HISTORY): MoEdern 27M/115M public consumers (C/Python/CLI) pass and
+both GGUFs are published (`@351adfad`, `@9c5bcf77`); MoEdern fast path merged
+(default off); MoEdern 1.5M SciFact recorded (no gate); Unlimited-OCR-2 untiled
+native IDs exact, tiled text exact with boxes within 3/999, fast decoder IDs
+identical to the exact decoder. Remaining (see [handoff](docs/handoff-2026-10-28.md)):
+
+- [ ] Unlimited-OCR-2: validate the merged reference-exact tiling preprocessing with
+  the vision dump/diff kernel, then require exact tiled IDs.
+- [ ] Unlimited-OCR-2: run the precision sweep (F32/F16/Q8_0/Q4_K/mixed vs frozen
+  reference), choose the published precision, then HF publication.
+- [ ] MoEdern quantized Q8_0/Q4_0 (in progress) under the unchanged gates.
+- [ ] Rerun the MoEdern 115M author-runtime compare with fast arms.
+- [ ] MoEdern 27M/115M: Rust/Dart/HTTP consumers and retrieval quality.
+- [ ] Run Ovis final-integrated v2 and successor-assets v2 on hosted CI at the
+  re-declared base (6a61759d) and review before any closure claim.
