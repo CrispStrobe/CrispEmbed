@@ -10,7 +10,8 @@ def sh(*a): print('+', *a, flush=True); subprocess.run(list(a), check=True)
 sh('git', 'clone', '-q', '--filter=blob:none', 'https://github.com/CrispStrobe/CrispEmbed.git', '/kaggle/temp/ce')
 os.chdir('/kaggle/temp/ce'); sh('git', 'checkout', '-q', COMMIT)
 # Clean venv: Kaggle's preinstalled stack conflicts with the pinned runtime.
-sh(sys.executable, '-m', 'venv', '/kaggle/temp/venv'); PY = '/kaggle/temp/venv/bin/python'
+sh(sys.executable, '-m', 'pip', 'install', '-q', 'uv==0.8.17')  # Kaggle python lacks ensurepip
+sh(sys.executable, '-m', 'uv', 'venv', '-q', '--python', '3.12', '--seed', '/kaggle/temp/venv'); PY = '/kaggle/temp/venv/bin/python'
 sh(PY, 'tests/test_moedern_colbert_contract.py')
 sh(PY, '-m', 'pip', 'install', '-q', 'torch==2.8.0', '--index-url', 'https://download.pytorch.org/whl/cpu')
 sh(PY, '-m', 'pip', 'install', '-q', 'numpy==2.2.6', 'transformers==5.3.0',
