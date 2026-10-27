@@ -798,15 +798,15 @@ All initial failures and original byte hashes are retained. These are execution
 gates, not completed model support or release qualification. The app remains
 on immutable0.17.12.
 
-- [ ] Attribute MoEdern's real cross-run original SDPA drift. Corrected
-  40423259251 at8b153739 is rejected, with156/250 old arrays changed and exact
-  inputs/weights; [retained evidence](tests/results/moedern-colbert/corrected-observer-continuity-rejection.json).
-  `audit/moedern-sdpa-reproducibility-20261027` owns the hosted operator-only
-  default/math/CPU-flash first-attention replay, actual layout/backend/hardware
-  evidence and Ref magnitudes versus both frozen outputs. Preserve strict
-  continuity and old gold. Native79e350a0 remains blocked; after attribution,
-  explicitly version its base and five-driver identities and run the original
-  Ref/vector/MaxSim panel before tokenizer/public surfaces or27M/115M.
+- [ ] Execute and review the separately versioned MoEdern smallest native
+  experiment. Completed [SDPA attribution](tests/results/moedern-colbert/sdpa-reproducibility-v1.json)
+  reproduces the corrected observer with CPU-flash; old SDPA deviation is
+  1.1921e-7 and historical byte continuity stays rejected. The native-v2 lane
+  keeps old250 arrays/ordinary/selected vectors/three MaxSim pairs as primary
+  targets, separately pins21 supplemental pipeline-only observations, and uses
+  fixed actual Ref/vector/mask/MaxSim gates with an explicit CPU/a06 source
+  closure. No new gold, tolerance changes or old v1 guard modification. Only
+  after actual smallest parity proceed to Unigram/public roles and27M/115M.
 - [ ] Correct the scoped UltraBERT Unicode tokenizer. Completed diagnostic
   40424357191 atc86fc007 replays all5,483 originals and retains24 clipped/25
   full native mismatches; both examined first pretokens wrongly group curly
@@ -821,18 +821,18 @@ on immutable0.17.12.
   initial allocation failure, rejected full panel and rounding default off.
   A proposed correction needs measured same-input evidence or a separately
   scoped arithmetic profile, then actual full-panel A/B; no component waiver.
-- [ ] Review actual Josev CPU/CUDA head audit from worker
-  a69b3fcac4389b52d56cd4bb7560bfe3ae75dbad/bootstrap91f7e721. The independent
-  original review is complete:251 arrays,122 head tensors and four typed cases.
-  The separate genuine GPU task must authenticate/preserve all raw bytes,
-  convert exact F32 head and pass all123 stages plus full answers on both
-  backends using actual Ref and independent metrics. See [GPU protocol](docs/josev2b-head-gpu.md).
-  Preserve numeric failures. Original51a2e16b and sourceb2 remain immutable.
-  CPU artifact40429513945 and metadata40423930364 are completed and reviewed
-  in HISTORY; preserve their immutable remote artifacts rather than rerunning.
-  Native hidden-only2048/6144 Qwen3.5-2B backbone, tokenizer/schema composition,
-  C/Python/CLI/Rust/Dart/registry and representative decision quality remain
-  separate gates; existing Gemma decision API semantics differ.
+- [ ] Finish Josev native backbone and composition. CPU/CUDA head parity is
+  completed in HISTORY:246 stage comparisons and eight exact full typed
+  responses from frozen original hidden/lexical inputs. Native backbone
+  40436303700 freezes9c16091f, with explicit closed base7e70d353/ggmla06;
+  require exact320-tensor conversion, all104 original stages and ordinary/repeat
+  proof before composing native backbone/head outputs. Initial build40433507655
+  compiled but rejected a test that wrongly treated string `false` as off;
+  runtime gate semantics were correct and unchanged. Superseded40436018180 was
+  cancelled with its sole controls job queued/zero steps before payload work.
+  Preserve original51a2e16b/b2, exact head receipts and all initial failures.
+  Public tokenization/schema/C/Python/CLI/Rust/Dart/registry and independent
+  decision quality remain separate original-first gates; Gemma semantics differ.
 - [ ] Finish final same-source Ovis, native/WASM archive producers and actual
   consumers before main/release closure. Both experimental defaults remain off.
   Preserve app0.17.12, no model alias/publication or application pin change.

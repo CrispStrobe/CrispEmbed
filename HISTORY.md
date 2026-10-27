@@ -1,3 +1,23 @@
+## 27 October 2026 — MoEdern first-attention reproducibility attributed
+
+Hosted [40434080299](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40434080299)
+at6fccd863 replays only two original first-attention inputs with exact shared
+norm/Q/K/V/rotary/mask bits and loaded weights. Default and forced CPU-flash
+select the actual aten CPU-flash kernel and reproduce the corrected observer
+output bit-exactly. The old frozen SDPA outputs differ by at most1.19209290e-7;
+forced math differs by at most4.76837158e-7. All18 actual Ref comparisons agree
+with independent metrics under unchanged budgets. Repeat, Mapping observation,
+profiling, same-object layout and backend-state restoration checks pass.
+
+[Reviewed diagnostic](tests/results/moedern-colbert/sdpa-reproducibility-v1.json)
+retains actual reconstructed strides, magnitudes, kernel evidence, exact sources
+and artifact hashes. Old physical CPU/ISA/backend/strides remain unknown. This
+rules out an observation-induced difference on the measured inputs and proves
+current reproducibility, without accepting old byte continuity or qualifying a
+native model. Preserve both primary old250 targets and supplemental21 missing
+pipeline observations separately; the new explicitly versioned native experiment
+must compare old final vectors/MaxSim under unchanged gates, never replace gold.
+
 ## 27 October 2026 — Josev native head passes CPU and CUDA original-first parity
 
 The separate genuine GPU task freezes workera69b3fca/bootstrap91f7e721,
@@ -16623,4 +16643,3 @@ It validates and preserves the complete lock before installation, checks isolate
 prefixes, then verifies exact installed metadata and actual loaded module versions
 before the unchanged CUDA/source barriers and original worker. This is prepared
 source only; no fourth GPU attempt is submitted by this change.
-
