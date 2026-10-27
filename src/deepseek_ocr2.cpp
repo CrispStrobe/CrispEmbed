@@ -2698,7 +2698,7 @@ static std::string decode_tokens(const ds_ocr2_ctx & ctx, const int32_t * ids, i
 // C ABI wrappers
 // ---------------------------------------------------------------------------
 
-} // namespace (internal engine types and helpers)
+} // namespace
 
 struct deepseek_ocr2_context {
     ds_ocr2_ctx inner;
@@ -2830,7 +2830,6 @@ static void free_ds_kv_cache(ds_ocr2_ctx & c) {
     c.kvc.allocated = false;
     c.kvc.n_past = 0;
 }
-} // namespace
 
 static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
     auto & kv = c.kvc;
@@ -2874,6 +2873,7 @@ static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
             kt == GGML_TYPE_F16 ? "f16" : "f32", (float)bytes / 1024 / 1024);
     return true;
 }
+} // namespace
 
 void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (!ctx) return;

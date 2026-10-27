@@ -2818,7 +2818,7 @@ static std::string decode_tokens(const uocr_ctx & ctx, const int32_t * ids, int 
 // C ABI wrappers
 // ---------------------------------------------------------------------------
 
-} // namespace (internal engine types and helpers)
+} // namespace
 
 struct unlimited_ocr_context {
     uocr_ctx inner;
