@@ -1,0 +1,15 @@
+{
+  "status": "published and re-verified",
+  "variant": "115M",
+  "repo": "cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF",
+  "commit": "9c5bcf770287026b8e2a0b5e0f5187282b60711b",
+  "sha256": "4150412f66caaa058c90ad0ed6cc4e318a0ea146f4ce9e59de62f83975903766",
+  "bytes": 459890432,
+  "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF/resolve/9c5bcf770287026b8e2a0b5e0f5187282b60711b/moedern-115m-text-f32.gguf",
+  "source": "758653da22f6fa198f7ce5d4b04d29ca0f444185",
+  "run": 40490085368,
+  "initial_failures": [
+    "Kaggle publisher: dataset token cannot create repos under cstr (403) after the repack matched",
+    "GitHub run 40485780758: kaggle 1.7.4.5 ignored token auth, before any download"
+  ]
+}
