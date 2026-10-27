@@ -543,41 +543,31 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   model alias or publication. Preserve unchanged prompts/gold/caps/scorers.
   [Original quality evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/qwen35-ocr/ovisocr3-original-quality.json).
 
-## Requested model additions — 26 October 2026
+## Current audit continuation — 27 October 2026
 
-SauerkrautLM-MoEdernColBERT (1.5M,27M,115M) and Josev-2B are added to
-[PLAN](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md), restricted
-to the audited permissive sources. Neither has a public CrispEmbed model alias,
-release or native-parity qualification.
+The application remains pinned to immutable0.17.12. Vendor work is staged in
+[draft PR86](https://github.com/CrispStrobe/CrispEmbed/pull/86), with separate
+immutable experiment branches. No requested model is published or qualified by
+source preparation, component cosine or a queued job. Use
+[PLAN's executable continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md#executable-audit-continuation--27-october-2026)
+and [the next-agent handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md)
+for current sources and acceptance gates.
 
-The smallest MoEdern original
-[40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
-completes10 neutral owned cases and original-first F32 conversion.
-[Review](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/moedern-colbert/initial-original-review.json)
-finds missing Dense/Normalize intermediate observations because their Mapping
-outputs were skipped. Corrected original-only
-[40423259251](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251)
-at8b153739 must preserve all250 old array hashes and capture mandatory pipeline
-stages before the prepared native graph/diff experiment can run. Continue
-27M and115M only after smallest-model parity and public role/tokenizer support.
+| Front | Completed evidence | Remaining gate |
+| --- | --- | --- |
+| Ovis interpolation | All8 grid/gate replays complete; gate0 reproduces old vectors/six boundary failing commands, gate1 passes all14 calibrated arms; all16 owning outputs exact. Boundary F32/F16 max0.00363088/0.00338554 remains above strict0.002 | Global default stays off and2048 unqualified; exact final integration frozen14/eleven-case replay, actual successor producers/consumers and main closure |
+| WASM attribution | Corrected layer3 capture preserves old ordinary/observer/final anchors. All12 same-input projections have exact quantized bytes/scales and max≤1.431e-6 | Composed FFN-down error0.00331104 and prior full-panel rejection remain; no same-input kernel defect proved, default stays off |
+| UltraBERT SciFact | All5,483 original token streams replay; actual diagnosis retains24 clipped/25 full native mismatches, with curly punctuation wrongly grouped as letters | Scoped default-off Unicode correction and hosted all5,483 token A/B before any embeddings; preserve original vectors/ranking budgets |
+| MoEdernColBERT | All3 original/author-GGUF sources are permissively licensed and pinned. Smallest original10 cases/F32 conversion retained; corrected observer captures missing pipeline leaves but rejects real cross-run SDPA drift | Hosted first-attention same-input/backend/layout attribution against both original outputs before native parity; then exact Unigram roles/public surfaces and27M/115M |
+| Josev-2B | Original4-case CUDA/F32 capture,57-package provenance,251-array preservation and122-tensor head conversion reviewed; head GGUF121,900,352 bytes | Actual CPU/CUDA head parity, explicit hidden-only2048/6144 backbone, composed complete typed answers, public interfaces and independent decision quality |
 
-Josev source/head schema and exact F32 conversion guards are prepared. The
-corrected GPU environment installs all57 locked packages and passes pip-check,
-then its installed-metadata selector/hash guard rejects setuptools before
-framework imports, CUDA smoke or original-model inference.
-[The retained receipt](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/josev2b/initial-installed-metadata-preflight.json)
-distinguishes that failure from a proved wheel-byte mismatch. Audit exact owner
-and vendored metadata on hosted CPU before another GPU attempt; then finish
-the four-case original capture, native head and explicit Qwen3.5-2B hidden-only
-prefill with typed-answer parity.
+Public detailed evidence is in [HISTORY](https://github.com/CrispStrobe/CrispEmbed/blob/main/HISTORY.md)
+and [PERFORMANCE](https://github.com/CrispStrobe/CrispEmbed/blob/main/PERFORMANCE.md).
+Josev package metadata and original preflight failures are retained; neither is
+an unresolved license blocker or a native inference result. The MoEdern strict
+original continuity rejection remains active; do not regenerate gold or waive it.
 
-SciFact's eight original shards and freeze are complete. Two actual native
-shards reject under512 document token streams before vector acceptance; the
-remaining six are cancelled with zero steps. A frozen-input token-only
-diagnostic and all5,483 ID/mask checks precede corrected embeddings. All old
-strict replay failures and unchanged vector/ranking gates remain.
-
-The runtime snapshot still has interpolation and WASM rounding off. Final
-release/consumer closure must explicitly account for new source or regression
-fixtures; the old frozen v1 guard is preserved rather than bypassed. The app
-continues to use immutable0.17.12.
+Large artifacts stay hosted. Any new source/default choice requires an explicit
+closed source contract; the historical final-v1 guard must keep rejecting the
+added regression tree. Runtime assets, real C/Python/CLI/Rust/Dart/browser/Apple
+consumers and the application pin remain separate release gates.

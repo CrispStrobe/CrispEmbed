@@ -1,4 +1,4 @@
-# Executable handoff — updated 26 October 2026
+# Executable handoff — updated 27 October 2026
 
 Read this file, [PLAN](../PLAN.md), [the model contract](ultrabert.md),
 [contributing](contributing.md) and [the shared consumer handoff](current-state-and-next-steps.md).
@@ -657,31 +657,54 @@ only small reports are needed for independent review. GitHub push/dispatch
 HTTP500 errors were observed during SciFact registration; retry exact commits,
 check remote refs and actual service run identities, and avoid duplicate panels.
 
-## Newly requested permissive models
+## Requested permissive models and current execution — 27 October
 
-See [MoEdernColBERT](moedern-colbert.md) and [Josev](josev2b.md), their pinned
-contracts and PLAN for exact staged acceptance. Smallest MoEdern original
-40412164041 uses source790f7b1d; no native result yet. The corrected neutral
-observer handles ST's direct backbone.forward. Josev first GPU preflight atb6e74739
-rejected Python3.11 versus actual3.13 before payload access; preserve that attempt
-and now has explicit Python3.13 worker1e723a96/bootstrap142cc75c; review its
-actual outcome before original/native qualification. Keep public Python versus
-calibrated author-GGUF profiles distinct. Native/API/alias/retrieval/decision
-quality and quantization remain explicit follow-ups, with no local heavy work.
+Read [PLAN's executable continuation](../PLAN.md#executable-audit-continuation--27-october-2026)
+for current ownership and actual sources. The full result history, initial
+failures and strict limits are in HISTORY/PERFORMANCE. Keep each frozen
+producer unchanged while its outputs are reviewed; no new gold or budget waiver.
 
-## 27 October continuation: new execution barriers
+- **Josev:** [original review](../tests/results/josev2b/original-review.json),
+  [exact head conversion](../tests/results/josev2b/head-f32-conversion.json),
+  [preservation](../tests/results/josev2b/head-artifact-review.json) and
+  [57-package provenance](../tests/results/josev2b/wheel-metadata-review.json)
+  are complete. Original sourceb2/receipt51a2e16b and all251 arrays stay frozen.
+  The separate genuine CPU/CUDA head task freezes workera69b3fca/bootstrap91f7e721;
+  review all123 stages and complete four-case typed answers, not merely job
+  completion. The explicit hidden-only backbone branch
+  `feat/josev-hidden-backbone-20261027` preserves the old1024 mapper, accepts
+  exactly320 F32 text tensors and avoids vocabulary projection. Build-only
+  40433507655 atd0dc56a1 remains pending; later source75a5e7fc fixes full-checkpoint
+  header bounds and nonfinite hidden-output rejection. Exact new-source hosted
+  conversion/all104 backbone stage comparisons, composed outputs and old Ovis/
+  LightOn preservation must precede integration or API/model publication.
+- **MoEdern:** [corrected observer rejection](../tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
+  changes156/250 historical array hashes with first difference at SDPA0, despite
+  identical recorded inputs/weights/software and within-run neutrality.
+  `audit/moedern-sdpa-reproducibility-20261027` at6fccd863 and hosted40434080299
+  compare default/math/CPU-flash first attention on the exact same reconstructed
+  tensor objects against both frozen outputs, with actual hardware/strides/kernel
+  evidence and actual Ref magnitudes. Old ISA/backend/strides are unknown; do not
+  infer them retrospectively. Native79e350a0 stays blocked. After attribution,
+  explicitly update its reviewed source/five-driver contract and execute the
+  smallest original-first panel before Unigram/public roles or27M/115M.
+- **UltraBERT:** [token diagnostic](../tests/results/ultrabert/scifact-tokenizer-diagnostic-v1.json)
+  replays all5,483 originals and retains24 clipped/25 full mismatches. Two actual
+  first pretokens show curly punctuation grouped with letters. The context-scoped
+  default-off Unicode lane must reproduce every old unset/empty/0 row and match
+  all5,483 original IDs/masks/full hashes with1. Keep generic GPT2/CLIP bodies,
+  original vectors and fixed ranking/strict numerical budgets. Only then run
+  remaining native retrieval legs; no original forward repeat is needed.
+- **Ovis/WASM:** [all8 replay outcomes](../tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
+  and [layer3 attribution](../tests/results/packaging/wasm-layer3-attribution-v1.json)
+  are reviewed. Strict exceedances and full-model WASM negatives remain. Both
+  global defaults stay off. Final-v1 deliberately rejects the added Josev fixture;
+  declare a new explicit source closure after final code decisions, preserve all
+  historical bytes, then run final frozen14/first-F16 eleven cases and actual
+  native/WASM archives/consumers before main/release closure.
 
-Use the final [executable PLAN section](../PLAN.md#executable-audit-continuation--27-october-2026)
-for exact corrected sources and active run IDs. Preserve each dispatched source
-branch until its actual artifacts are reviewed. All large work stays hosted;
-fetch only small reports. The smallest MoEdern original final outputs are
-retained, but its missing Mapping intermediates block native qualification.
-SciFact now needs tokenization attribution before more embeddings. The layer3
-observer allocation repair is distinct from a model numerical fix. Josev's
-archive/installed-owner setup barriers precede any model claim.
-
-The [optional M1 build-only handoff](handover-m1-moedern-build.md) checks exact
-immutable native source and synthetic controls without model/framework payloads.
-It does not bypass the model experiment's original-reference gate. Final
-source closure, release producers/consumers, public model surfaces and main/app
-reconciliation remain explicit pending tasks.
+The [M1 build-only handoff](handover-m1-moedern-build.md) remains optional,
+weight-free evidence. Builds, corpus/tokenizer/model/browser batches stay on
+hosted resources. Fetch only small reports locally, retain all large artifacts
+remotely, and keep machine/access information outside public Git. No new model
+alias, runtime tag or app0.17.12 pin change follows from these experiments.

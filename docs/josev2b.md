@@ -1,10 +1,14 @@
 # Josev-2B source audit and prepared reference lane
 
-This is source preparation for requested Josev support. No original capture,
-native port, task-quality measurement, model publication or release qualification
-has run. The existing Gemma decision API does not yet load Josev. The source and
-owned inputs are frozen in [the versioned contract](josev2b-source-contract.json)
-and [four authored text cases](../tests/regression/josev2b/text-v1.json).
+The original four-case CUDA/F32 capture, package provenance audit, all251-array
+preservation and exact122-tensor F32 head conversion are completed and reviewed.
+[Original evidence](../tests/results/josev2b/original-review.json) and
+[component conversion](../tests/results/josev2b/head-artifact-review.json) preserve
+source identities and limits. Native CPU/CUDA head parity, text backbone,
+composed typed outputs, task quality and release qualification remain pending.
+The existing Gemma decision API does not load Josev. The source and owned inputs
+are frozen in [the versioned contract](josev2b-source-contract.json) and
+[four authored text cases](../tests/regression/josev2b/text-v1.json).
 
 ## Source, license and provenance
 
