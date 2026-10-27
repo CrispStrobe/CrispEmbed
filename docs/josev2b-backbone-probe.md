@@ -1,7 +1,7 @@
 # Prepared original-first Josev text backbone panel
 
 This separately bounded CPU lane tests the explicit hidden-only implementation
-at `7e70d35324162b6f4379d7550a5f0f18c3d0fc98` with exact ggml
+at `70876fb51da1e2d772bb348d66924f2b67cb2e5a` with exact ggml
 `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. Its source guard rejects any
 change to that `src` tree, dependency, converter, original receipt/input freeze
 or directly reused preservation/schema helpers. The new standalone probe,
@@ -86,3 +86,11 @@ as on, with runtime code unchanged. The superseded full audit40436018180 was
 cancelled while its sole controls job was queued with zero steps, before payload
 or model work. The new explicit source base includes the corrected metadata
 control; all runtime and converter objects remain identical to75a5e7fc.
+
+Full-checkpoint audit40436303700 at9c16091f passes compiled metadata, exact input
+packet negatives and actual Ref controls, then stops before GGUF conversion or
+native model inference on an undeclared auxiliary MTP namespace. The corrected
+explicit base70876fb5 declares the exact15 original top-level MTP names as unused
+by `model.language_model`, alongside297 unused vision tensors, while retaining
+all320 selected text tensors and the complete source checkpoint/index SHA pins.
+No original arrays, model revision, native arithmetic or numeric gates change.
