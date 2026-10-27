@@ -109,7 +109,17 @@ static int run(int argc, char ** argv) {
             std::string output = "stale";
             check(!context->decide("{", output, error) && output.empty() && !error.empty(),
                   "malformed request did not clear stale response");
-            const bool ok = context->decide(row.get("request_json").text, output, error);
+            josev2b::composed_result detailed;
+            const bool ok = context->decide(row.get("request_json").text, detailed, error);
+            output = detailed.response_json;
+            if (ok) {
+                for (size_t f = 0; f < detailed.native_fields.fields.size(); ++f) {
+                    const auto & field = detailed.native_fields.fields[f];
+                    raw("result/logits/" + std::to_string(f), 0, { int64_t(field.logits.size()) }, field.logits);
+                    raw("result/probabilities/" + std::to_string(f), 0, { int64_t(field.probabilities.size()) },
+                        field.probabilities);
+                }
+            }
             stages.close();
             report << "{\"id\":" << q(row.get("id").text) << ",\"completed\":" << (ok ? "true" : "false")
                    << ",\"error\":" << q(error) << ",\"response\":" << q(output) << "}\n";

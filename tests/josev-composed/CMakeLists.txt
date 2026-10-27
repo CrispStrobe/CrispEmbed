@@ -43,3 +43,6 @@ foreach(variant plain observed)
 endforeach()
 target_compile_definitions(josev-composed-observed PRIVATE CRISPEMBED_JOSEV_COMPOSED_TESTING CRISPEMBED_JOSEV_HEAD_TESTING)
 target_compile_definitions(josev-composed-observed-probe PRIVATE CRISPEMBED_JOSEV_COMPOSED_TESTING)
+
+add_executable(josev-composed-diff diff.cpp)
+target_include_directories(josev-composed-diff PRIVATE "${CRISPEMBED_ROOT}/src")

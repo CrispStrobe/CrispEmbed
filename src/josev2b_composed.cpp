@@ -86,6 +86,13 @@ std::unique_ptr<composed_context> composed_context::load(const char * backbone, 
 }
 bool composed_context::decide(const std::string & request, std::string & response, std::string & error) {
     response.clear();
+    composed_result result;
+    if (!decide(request, result, error)) return false;
+    response = std::move(result.response_json);
+    return true;
+}
+bool composed_context::decide(const std::string & request, composed_result & result, std::string & error) {
+    result = {};
     error.clear();
     try {
         require(enabled(), "Josev composed component gates are off");
@@ -147,7 +154,8 @@ bool composed_context::decide(const std::string & request, std::string & respons
         require(qwen35_ocr::embed_cpu(p.weights.embedding, ids, embedding), "Observed embedding failed");
         composed_test::observe(encoded, embedding, backbone, input, output, candidate);
 #endif
-        response = std::move(candidate);
+        result.response_json = std::move(candidate);
+        result.native_fields = std::move(output);
         return true;
     } catch (const std::exception & e) {
         if (error.empty()) error = e.what();

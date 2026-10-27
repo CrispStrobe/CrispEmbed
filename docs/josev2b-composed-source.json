@@ -285,26 +285,30 @@
     "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb"
   },
   "owned_sha256": {
-    ".github/workflows/josev2b-composed-build.yml": "3189836184d5f82d5debe243e8f2944634051b50b49139936a9b6e01adbeafdd",
+    ".github/workflows/josev2b-composed-build.yml": "01166920770dc5f559b976bd3fa03369c4ee54d64eb986bc2795cc77a390ae3e",
     ".github/workflows/ovisocr2-metadata.yml": "73b72aa5370faf769d85928d9923d1d25ebfeae7c02fdff40692afba2adc3b01",
-    "docs/josev2b-composed-text.md": "1e678d2f92aed79ee5319499922a99b8afdbcd67ca5605afe4312c33b1fb43dc",
+    "docs/josev2b-composed-text.md": "43035d0f882752dd90a7f8e6fa439408c26291e572df9c6a62151b9b615fc578",
     "src/josev2b_answer_serializer.cpp": "b7881901333fc3498651b999a05bd4529675c621d05713c82e1aa6232b6ec94b",
     "src/josev2b_answer_serializer.h": "f853594c3912dfbb40ab659d9e75578e30b748800fd2dcc9e23cb69e388358e9",
     "src/josev2b_backbone.cpp": "d02931531b40da619cd6deb27d283d0e0dadb0c0451585e210d2a99eab273b89",
     "src/josev2b_backbone.h": "8b6d0afb1337677562c22d5d437678673643581ec54ceee700e5217fcfb0eaee",
-    "src/josev2b_composed.cpp": "2b869c18ba4a16311c99fd3e9212f21f35bb5c06fb606c110e9ebba02aa8d1be",
-    "src/josev2b_composed.h": "3745284be7ce742a948275e924d026ec2b579979d8b245fe56b86e5a1ab4af19",
+    "src/josev2b_composed.cpp": "3a96d34af9787c4fe2f6af3e0d2351b3cfdce0d792abae6be792eb145cf29659",
+    "src/josev2b_composed.h": "c62807dc1c730e42e071565cd6033d184df35ad44d4e8eb90b0620bc5afaba24",
     "src/josev2b_head.cpp": "7309d304f4cfa230579c9d01f098b04550a9964e50eab58641101f7c9e88dabb",
     "src/josev2b_head.h": "dcac67f74135986393149139cdb7dd99a372f47a7615589de46a29889187e74e",
     "src/josev2b_text_frontend.cpp": "41c3f0e3fb98a26d9c88566c4f22daca6aacb4ec635e4ab9b3d56f3e01273114",
     "src/josev2b_text_frontend.h": "bd7a70230d5ad57097f759f9f0e9d8771c9704ed415d5632a0db29565cf00b17",
     "src/qwen35_decoder.cpp": "5eee685f2941a9b3b9ec99ceb55ff0fbe76afc2ccd4a1a0d4fd7e84266f26980",
     "src/qwen35_decoder.h": "1365edca86fd5b343cc5a60560d6567c80200d47d37512120605fd2d2b9c650b",
-    "tests/josev-composed/CMakeLists.txt": "29b97b081a6f75936c1d6dacea2b4ceba291b02e8000f96db6fe9372ac0ff5ec",
+    "tests/josev-composed/CMakeLists.txt": "21b7c8ec9fef8d76a4df58a85a330342348974d230f23d8f842f3132f15f9b8a",
     "tests/josev-composed/json.h": "98dc6049948fd25e753e9a1ed591d76eec6a375c7ed39d39cbef166499531b74",
-    "tests/josev-composed/probe.cpp": "3a4b368f19fd0e135288b0895ce430eb9e43a2650ab5b994c6dcde8089ea431a",
+    "tests/josev-composed/probe.cpp": "92f3d139b0a003f32a71d46395c8e49cfbc5b6e355facf2627ce981f4d9c881e",
     "tests/josev2b_composed_observer.h": "712a6765bc76116b46b0a50065030f6a24864b8eaba5377e37020f28c560ea0b",
     "tests/josev2b_head_observer.h": "73344939629670619cc454331369a1c28019a1e566ba9bcf1b83638e445cc5cd",
-    "tools/josev2b_composed_contract.py": "d478425fab70a32ee549811697424ef8b23a4de9ffb0379a916fe0c07923303c"
+    "tools/josev2b_composed_contract.py": "d478425fab70a32ee549811697424ef8b23a4de9ffb0379a916fe0c07923303c",
+    "tools/josev2b_composed_panel.py": "9f05faf1d5908dd1a18512ea254a13018b1a421ab2b1eedb8d33eace0f09481a",
+    "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
+    "tests/josev-composed/diff.cpp": "267ef2117f358aa77a26abf2efddd7f07851ef29c76dc79ee18f82151ba0e286",
+    "tests/test_josev2b_composed_panel.py": "93531fe331762a4dfb0dc54050baaa4d87209241c57e4fee8fed220c0ce5cbc0"
   }
 }
