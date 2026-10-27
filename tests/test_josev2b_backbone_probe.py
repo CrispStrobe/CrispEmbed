@@ -106,7 +106,7 @@ class Controls(unittest.TestCase):
     def test_historical_source_guard_and_dispatcher_union(self):
         current=subprocess.check_output(['git','diff','--name-only',c.BASE,'HEAD','--',*c.PROTECTED],cwd=ROOT,text=True)
         self.assertEqual(current,'')
-        old=subprocess.check_output(['git','show',c.BASE+':.github/workflows/ovisocr2-metadata.yml'],cwd=ROOT,text=True)
+        old=subprocess.check_output(['git','show','75a5e7fca0daedfe98b695f7814d8bed202a27fb:.github/workflows/ovisocr2-metadata.yml'],cwd=ROOT,text=True)
         now=(ROOT/'.github/workflows/ovisocr2-metadata.yml').read_text()
         old_options=old.split('options: [',1)[1].split(']',1)[0].split(', ')
         now_options=now.split('options: [',1)[1].split(']',1)[0].split(', ')

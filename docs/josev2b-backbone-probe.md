@@ -1,7 +1,7 @@
 # Prepared original-first Josev text backbone panel
 
 This separately bounded CPU lane tests the explicit hidden-only implementation
-at `75a5e7fca0daedfe98b695f7814d8bed202a27fb` with exact ggml
+at `7e70d35324162b6f4379d7550a5f0f18c3d0fc98` with exact ggml
 `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. Its source guard rejects any
 change to that `src` tree, dependency, converter, original receipt/input freeze
 or directly reused preservation/schema helpers. The new standalone probe,
@@ -77,3 +77,12 @@ representative quality, larger context/images and runtime integration remain
 separate. Existing Ovis/LightOn numerical and decoded preservation gates on the
 modified decoder source are still required before integration. No default,
 release, application upgrade or model-publication claim follows from this lane.
+
+Initial build40433507655 atd0dc56a1 compiles, then rejects a metadata test that
+incorrectly treated the nonempty string `false` as disabled. Shared
+`core_env::on` intentionally treats every nonempty string except literal `0`
+as enabled. The corrected controls exercise unset/empty/`0` as off and `false`
+as on, with runtime code unchanged. The superseded full audit40436018180 was
+cancelled while its sole controls job was queued with zero steps, before payload
+or model work. The new explicit source base includes the corrected metadata
+control; all runtime and converter objects remain identical to75a5e7fc.
