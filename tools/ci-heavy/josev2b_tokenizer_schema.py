@@ -75,6 +75,12 @@ def original(out, cfg):
     require(all(row['expectation_matched'] for row in rows), 'authored original expectation differs; actual gold retained')
     descriptor = json.loads((source_dir / 'tokenizer.json').read_text())
     config = json.loads((source_dir / 'tokenizer_config.json').read_text())
+    # Preserve authenticated descriptor semantics even when strict metadata conversion rejects.
+    write(out / 'review/tokenizer-policy.json', {
+          'tokenizer_sha256': TOKENIZER_SHA, 'config_sha256': CONFIG_SHA,
+          'normalizer': descriptor['normalizer'], 'pre_tokenizer': descriptor['pre_tokenizer'],
+          'pretokenize_regex': config.get('pretokenize_regex'),
+          'post_processor': descriptor['post_processor'], 'decoder': descriptor['decoder']})
     metadata = component_metadata(descriptor, config)
     component = out / 'josev2b-tokenizer.gguf'
     component.write_bytes(gguf_bytes(metadata))

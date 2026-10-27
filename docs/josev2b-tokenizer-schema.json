@@ -300,7 +300,7 @@
     "tests/josev-text/CMakeLists.txt": "dd7ff53b8723b068d16c621120634b56672ea9ae084a5e323fb15d13d8e07a5c",
     "tests/test_josev2b_text.cpp": "bce52027ff5c93be5f7f98f86fad67451890b296d72589d53761f9c70b71be2e",
     "tests/test_josev2b_tokenizer_schema.py": "c0e95862fe7fcc4640f681364e03f03d41799b05e5de34b70cb25c7fb215f7a2",
-    "tools/ci-heavy/josev2b_tokenizer_schema.py": "af845a3e9907a6a166f9f1eaeb3c8ea56475331043f992fc98c57fdc9646afbc",
+    "tools/ci-heavy/josev2b_tokenizer_schema.py": "6865c43a6c2eb40b076e8b4a12c50ac45bbb6fd22213eec6b98b56a1a8fc2edf",
     "tools/josev2b_tokenizer_schema.py": "69d6dc72ce25c6154d8feb4e7709f4d23584bd392039a19aa5d18e3de1883e70"
   },
   "hosted_result": null,
