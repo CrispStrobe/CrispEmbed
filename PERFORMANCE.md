@@ -1,3 +1,30 @@
+## 27 October 2026 — bounded audits, unchanged qualification limits
+
+The [eight-grid/gate Ovis review](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
+passes existing calibrated gates with exact owning IDs/text/EOS. Boundary
+F32/F16 norm max0.00363088/0.00338554 remains above strict0.002; square error
+increases slightly. Global interpolation stays off; neither2048 nor other
+shared profiles are qualified. Current four-thread original versus two-thread
+native timings are not paired speedup evidence.
+
+[WASM layer3 attribution](tests/results/packaging/wasm-layer3-attribution-v1.json)
+retains exact ordinary/observer/historical anchors. Twelve identical-input
+projections match converted activation bytes/scales and have max error≤1.431e-6.
+Composed FFN-up/GELU/down errors are0.000572562/0.000356972/0.003311038;
+layer output0.002918929. This does not qualify the rejected whole-model panel
+or identify a same-input projection-kernel defect; rounding stays off.
+
+[Josev's original](tests/results/josev2b/original-review.json) takes39.46s for
+four scoped CUDA/F32 cases, peak CUDA allocation9,082,022,400 bytes. This is
+original-only session evidence, not native performance. The122-tensor head
+contains30,472,708 scalar elements; actual converted GGUF size/native parity
+must be measured remotely before any claim.
+
+[SciFact tokenization](tests/results/ultrabert/scifact-tokenizer-diagnostic-v1.json)
+retains24 clipped and25 full mismatches among5,483 inputs. No corrected corpus
+embeddings or retrieval scores are available. [MoEdern's corrected observer](tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
+rejects cross-run original SDPA drift; no native parity/performance claim follows.
+
 ## OvisOCR2 bounded decoder cache — 25 October 2026
 
 [Reviewed actual data and preserved-vector reanalysis](tests/results/qwen35-ocr/ovisocr2-weight-cache.json)

@@ -1,0 +1,2698 @@
+{
+  "schema": "crispembed-ovisocr2-four-grid-interpolation-review-v1",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009",
+  "source": "8bb9f074d1ca6fa2cb2be6a892fc2fd116202912",
+  "completed": true,
+  "global_default_qualified": false,
+  "input_2048_qualified": false,
+  "grids": [
+    {
+      "grid": "frozen-control",
+      "gates": [
+        {
+          "gate": 0,
+          "small_artifact": {
+            "id": 12685991098,
+            "bytes": 213698,
+            "sha256": "c0a55928c7c9f8423424faa24197796cc6d5a237f6c0d087a3ad2b391ef96fa3"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1901,
+              "sha256": "a12c710be6dd19d5a59bd6787b234476cc7df278bbc37ed31e55135e106115c7"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53623,
+              "sha256": "ba406922e71a7351fda704bfe8ba8eb789e856ab940f91c018b28b64bd0e8aa9"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49532,
+              "sha256": "23340dbb849fb5f979954090a83896b082c74877701479c95d7b6842b6c8fefc"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48592,
+              "sha256": "c452e8e097d63ba3c9d4751ca64bd30e776e4d6c90c0fccdbd3233d36069f406"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47874,
+              "sha256": "a5f88ea5e20491a5235541ab3fd67443e26ab7d25e87565e0b5791b6b59ef88b"
+            },
+            "f16-delta.log": {
+              "bytes": 1976,
+              "sha256": "51c80b39d1832b6cf887078a551793a51dcc429121b4b8287365df377a4a718e"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 353,
+              "sha256": "79afd165cacfe2e16623fb8350defa74e6e40ea849b28cb9f788ce00c5beaaf7"
+            },
+            "f16-vision.log": {
+              "bytes": 10282,
+              "sha256": "8ef58bdaa52afa35d5fff40ea9c2240ce89d8d214c63d1d8e3ac983b16f1d0cb"
+            },
+            "f32-context.log": {
+              "bytes": 1359,
+              "sha256": "105c35ce1c884a549fe18451cac81f86e4d79a5fdd0cf4c9d7654f1caf99d04e"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53639,
+              "sha256": "d7e89862167fabcdaaf53888c254a4928a487a75ff94540d3efab9b169632363"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49547,
+              "sha256": "c3055502a29ee635fbdd090c140d3025da426f9a4ce6716e110c6c83df0255a6"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48607,
+              "sha256": "daf1e7e3aa49ca788dbc398da127159b4bc31f9f8955819eaacd47f91b1fd984"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47886,
+              "sha256": "fc1db86ad076de2e1a0df42eb0276c4a95d4384e30bbfac10850eafd07245b58"
+            },
+            "f32-delta.log": {
+              "bytes": 1976,
+              "sha256": "51c80b39d1832b6cf887078a551793a51dcc429121b4b8287365df377a4a718e"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "580607b684b5eebfc567c2c8cc6ae17b2c3b430cef787ca6b36881588616a0a6"
+            },
+            "f32-vision.log": {
+              "bytes": 10283,
+              "sha256": "af3e035e003cf94af6c1440b4d7327440517ba243ee30f3a407be877d76c4d31"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999955237,
+                0.999885082,
+                0.958664775,
+                0.999999523,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990165
+              ],
+              "mean_confidence": 0.995388269,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 53.5072248,
+              "init_seconds": 0.428747744
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999955237,
+                0.999885082,
+                0.958664656,
+                0.999999523,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990165
+              ],
+              "mean_confidence": 0.995388269,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 47.2781526,
+              "init_seconds": 1.22070076
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00183558464,
+              "mean_abs": 1.64633821e-05,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00183558464,
+              "mean_abs": 1.64633821e-05,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00183558464,
+              "mean_abs": 1.64633821e-05,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000202178955,
+              "mean_abs": 7.78837602e-06,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.0016772747,
+              "mean_abs": 1.61531934e-05,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.0016772747,
+              "mean_abs": 1.61531934e-05,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.0016772747,
+              "mean_abs": 1.61531934e-05,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000190734863,
+              "mean_abs": 7.59796148e-06,
+              "native_l2": 2314.92456,
+              "reference_l2": 2314.92432
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.674870285
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.604654851
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.604654851
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.677061422
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.656245618
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.59350343
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.59350343
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.657341186
+            }
+          ],
+          "failures": []
+        },
+        {
+          "gate": 1,
+          "small_artifact": {
+            "id": 12684738414,
+            "bytes": 211226,
+            "sha256": "dde919a5fc35958d637660f335c149b9f0f4fce86f7c70bce32a27d2f6dbc44c"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1901,
+              "sha256": "16ee5fd1c0cdebcfec84b7f21f2cb38e395ae8aa97a162b6af22e72097b94923"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53673,
+              "sha256": "dcc72901714778315d869614b44bf260567d4ea4a3c052e728c9ee18826d3206"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49581,
+              "sha256": "ac0883ae74e431cffc671747647b51047066c1911219c5c95da54f9111684dd0"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48641,
+              "sha256": "1b9f3aa005b930d4460e7248eea5e981e56d4485a45489d536c6e50bcf2db5c5"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47874,
+              "sha256": "a5f88ea5e20491a5235541ab3fd67443e26ab7d25e87565e0b5791b6b59ef88b"
+            },
+            "f16-delta.log": {
+              "bytes": 1976,
+              "sha256": "51c80b39d1832b6cf887078a551793a51dcc429121b4b8287365df377a4a718e"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 353,
+              "sha256": "c76cedb482d9bd4099458c15ff10339726a627335cd743b20b0859d27929fa0a"
+            },
+            "f16-vision.log": {
+              "bytes": 10288,
+              "sha256": "88feaadfe3fb3657bde670fbeae472b9848a329b4b3cb428cee098939fa3b350"
+            },
+            "f32-context.log": {
+              "bytes": 1359,
+              "sha256": "631b4f2600f4a87a27416251f284ce65177adbbeb9df0fc134ffbef81029a549"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53641,
+              "sha256": "dca0ea42fa41354696a52d641558987fbbddef940e3821315af463e67928313e"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49549,
+              "sha256": "81cb1cb2a0c25e881abf6d8a0695e9d8c42481eec4349dc6535ff19606c8eee2"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48609,
+              "sha256": "3c94a08e72ae2dba3caf1356e7b417b71f0b548671f7ee4a754db47198c26463"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47886,
+              "sha256": "fc1db86ad076de2e1a0df42eb0276c4a95d4384e30bbfac10850eafd07245b58"
+            },
+            "f32-delta.log": {
+              "bytes": 1976,
+              "sha256": "51c80b39d1832b6cf887078a551793a51dcc429121b4b8287365df377a4a718e"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "92f119f98b457277fc04d98964eb58d2bc8fa64ca8b9b58af2588516e77fdbd1"
+            },
+            "f32-vision.log": {
+              "bytes": 10245,
+              "sha256": "a975afebcb1fd2a7bf121e508f0c6bbf6975df4aa3c363a63b50d6336aabe16f"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999955237,
+                0.999885082,
+                0.958664477,
+                0.999999523,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990165
+              ],
+              "mean_confidence": 0.995388269,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 51.6480758,
+              "init_seconds": 0.725898104
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999955237,
+                0.999885082,
+                0.958664536,
+                0.999999523,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990165
+              ],
+              "mean_confidence": 0.995388269,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 48.5559281,
+              "init_seconds": 1.18189104
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000990867615,
+              "mean_abs": 1.43003026e-05,
+              "native_l2": 2314.92407,
+              "reference_l2": 2314.92432
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000990867615,
+              "mean_abs": 1.43003026e-05,
+              "native_l2": 2314.92407,
+              "reference_l2": 2314.92432
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000990867615,
+              "mean_abs": 1.43003026e-05,
+              "native_l2": 2314.92407,
+              "reference_l2": 2314.92432
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000202178955,
+              "mean_abs": 7.78837602e-06,
+              "native_l2": 2314.92432,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00108242035,
+              "mean_abs": 1.50070327e-05,
+              "native_l2": 2314.92407,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00108242035,
+              "mean_abs": 1.50070327e-05,
+              "native_l2": 2314.92407,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00108242035,
+              "mean_abs": 1.50070327e-05,
+              "native_l2": 2314.92407,
+              "reference_l2": 2314.92432
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000190734863,
+              "mean_abs": 7.59796148e-06,
+              "native_l2": 2314.92456,
+              "reference_l2": 2314.92432
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.698972795
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.622001507
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.622001507
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.701163932
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.707737344
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.631294358
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0051574707,
+              "max_ratio": 0.631294358
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0268554688,
+              "max_ratio": 0.708832913
+            }
+          ],
+          "failures": []
+        }
+      ]
+    },
+    {
+      "grid": "control-square",
+      "gates": [
+        {
+          "gate": 0,
+          "small_artifact": {
+            "id": 12691215895,
+            "bytes": 213206,
+            "sha256": "caf96f888e96acf271811f41ae374746e1a578a40af2363183ad8f3aa2ad3a03"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1901,
+              "sha256": "f4869ddd8d66dc6a76013ffb33898b3b42e988427cf5bd0dc25675e305127f2b"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53620,
+              "sha256": "b564421b78836c7f8d1e0f00970522fd9a597990d11079854c9720ad47282274"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49534,
+              "sha256": "62dc9bc05d31f93f5fa2bfadd8a2d176ac7cfc6a5f68007d5b73ca60ce45f303"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48594,
+              "sha256": "325bc350115f2fe95386f72d9a9737f48b7e5d9bdf072ae8de634dcc2360b0f4"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47890,
+              "sha256": "760c5cb7b3307ef753fdc717e5400eaae9c4cd202a89061112e35fea495ae12e"
+            },
+            "f16-delta.log": {
+              "bytes": 1976,
+              "sha256": "862d9e8b1cc820ba7020864d614c33dce1b0b8815fb956168ebf5fbccb4e213c"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 351,
+              "sha256": "2d0f951136b04ab7a75aac96c2e86a10943e812ba259282173a1f9c0c8d2a4fd"
+            },
+            "f16-vision.log": {
+              "bytes": 10262,
+              "sha256": "ee773dbeb5c5d69079a7c715af8324612e3dc4ef6a896232d17f0f912389b1d8"
+            },
+            "f32-context.log": {
+              "bytes": 1359,
+              "sha256": "f8e8950caafa2c294a54c2b5db234b6921b17ea808e944c8c96695a50fcecd35"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53646,
+              "sha256": "a5fea52bf1c10dcdaa88b45df146346f17f1afd73a48770e35e4c4b9b362b8d2"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49561,
+              "sha256": "08de00f5792e270fe60f4a96ffe07d1272d726ed039c4230eb911fb7b7c29e37"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48621,
+              "sha256": "bfb5c0257cea217f5381f6e9dc90a7d1b6fdb11193f53046fd4d46ad1741c442"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47904,
+              "sha256": "81c31e6eea010f1bdea25fb9243b9932f2c80ab564cdba7f57ef6d407cddb620"
+            },
+            "f32-delta.log": {
+              "bytes": 1976,
+              "sha256": "862d9e8b1cc820ba7020864d614c33dce1b0b8815fb956168ebf5fbccb4e213c"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "c1ab9496badceb80d63a4e6f863d7b1610f9ea08d9ef3f677a2c35acff67f7e4"
+            },
+            "f32-vision.log": {
+              "bytes": 10270,
+              "sha256": "97fcd9a891be957f3bf325b60e36dfc2d065bdb06a2d0ce8ce992cc28609fd83"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999860525,
+                0.999679208,
+                0.979291916,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990582
+              ],
+              "mean_confidence": 0.997646868,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 78.61514,
+              "init_seconds": 0.402044353
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999860525,
+                0.999679148,
+                0.979291677,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990582
+              ],
+              "mean_confidence": 0.997646809,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 75.9319231,
+              "init_seconds": 1.53267283
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00146269798,
+              "mean_abs": 1.73608878e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00146269798,
+              "mean_abs": 1.73608878e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00146269798,
+              "mean_abs": 1.73608878e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000173568726,
+              "mean_abs": 7.41168515e-06,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00151348114,
+              "mean_abs": 1.76564918e-05,
+              "native_l2": 2498.97437,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00151348114,
+              "mean_abs": 1.76564918e-05,
+              "native_l2": 2498.97437,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00151348114,
+              "mean_abs": 1.76564918e-05,
+              "native_l2": 2498.97437,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000201702118,
+              "mean_abs": 7.33127354e-06,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.786822076
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00126351416,
+              "max_ratio": 0.648734633
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.684444018
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.684444018
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.788816556
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.751918689
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00126351416,
+              "max_ratio": 0.502218985
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.683898209
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.683898209
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.753913168
+            }
+          ],
+          "failures": []
+        },
+        {
+          "gate": 1,
+          "small_artifact": {
+            "id": 12689767857,
+            "bytes": 212333,
+            "sha256": "868e99f14abb58104bf2faaba344b4c99f26871278181250e4bdc00e4d2784e7"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1901,
+              "sha256": "05e5fcd8c62bcdc937a2ef57911b5beea86f5dba94e03e00f39b06b688df83a9"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53651,
+              "sha256": "0902a2d1d58b2b50b1321c9181f8659170f5cc8bf446a0c3c594e4ada7f03d4f"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49565,
+              "sha256": "c7901dd8ebd0f5e67ae27ebe4f8f0470d503324575a7d8b81a2caebab5dc7022"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48625,
+              "sha256": "887204e09cf809bd860d04aec08bc299f554ab05a66b06439d619c3ea24e86e7"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47890,
+              "sha256": "760c5cb7b3307ef753fdc717e5400eaae9c4cd202a89061112e35fea495ae12e"
+            },
+            "f16-delta.log": {
+              "bytes": 1976,
+              "sha256": "862d9e8b1cc820ba7020864d614c33dce1b0b8815fb956168ebf5fbccb4e213c"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 353,
+              "sha256": "6a335f964c7952f92719be9b5cf0ea2af0aa3c159f5973e2519039e6e278b25f"
+            },
+            "f16-vision.log": {
+              "bytes": 10280,
+              "sha256": "26b3d4b5b5a719bf45d9593fa083ed5dbed4f89a1b8c398d1f1d2990039df669"
+            },
+            "f32-context.log": {
+              "bytes": 1359,
+              "sha256": "f8e8950caafa2c294a54c2b5db234b6921b17ea808e944c8c96695a50fcecd35"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53603,
+              "sha256": "d485238000455646ae4df532dbc6aa4aec99d6e274ae837ea287e19b1ea67f95"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49520,
+              "sha256": "ce9a51f281fa5e7a810992a8c02594728f8db55ef565cb95693f60106fcaceba"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48580,
+              "sha256": "ecd2c9901b66493cc189fa469287eab85dab018b3f60b98b2ac63c0805913bcc"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47904,
+              "sha256": "81c31e6eea010f1bdea25fb9243b9932f2c80ab564cdba7f57ef6d407cddb620"
+            },
+            "f32-delta.log": {
+              "bytes": 1976,
+              "sha256": "862d9e8b1cc820ba7020864d614c33dce1b0b8815fb956168ebf5fbccb4e213c"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 353,
+              "sha256": "a2f0de12ddcd10486663c5e3360caa5acb529711f4eedb8f11bb952120eb8d05"
+            },
+            "f32-vision.log": {
+              "bytes": 10229,
+              "sha256": "a6cc3cfe15435019dd531775b67ed9779fc1683ba71bbb69e6b1ff35cb7d4907"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999860525,
+                0.999679148,
+                0.979291737,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990582
+              ],
+              "mean_confidence": 0.997646809,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 81.3599131,
+              "init_seconds": 0.525551642
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999860525,
+                0.999679148,
+                0.979291677,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999990582
+              ],
+              "mean_confidence": 0.997646809,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 76.6019417,
+              "init_seconds": 0.758222306
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00191402435,
+              "mean_abs": 1.76924332e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00191402435,
+              "mean_abs": 1.76924332e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00191402435,
+              "mean_abs": 1.76924332e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000173568726,
+              "mean_abs": 7.41168515e-06,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00186157227,
+              "mean_abs": 1.7174103e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00186157227,
+              "mean_abs": 1.7174103e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00186157227,
+              "mean_abs": 1.7174103e-05,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000201702118,
+              "mean_abs": 7.33127354e-06,
+              "native_l2": 2498.97412,
+              "reference_l2": 2498.97412
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.760893846
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.652787117
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.652787117
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.763885565
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.80377515
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00126351416,
+              "max_ratio": 0.560414453
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.751578479
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00598907471,
+              "max_ratio": 0.751578479
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0296020508,
+              "max_ratio": 0.80576963
+            }
+          ],
+          "failures": []
+        }
+      ]
+    },
+    {
+      "grid": "large-landscape",
+      "gates": [
+        {
+          "gate": 0,
+          "small_artifact": {
+            "id": 12696211386,
+            "bytes": 212207,
+            "sha256": "ea961f77dc534471227f1a88a296705a1efba0b7150b9287e8f32b55823e8afb"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1902,
+              "sha256": "f88bf0187afafc7cf39801d9adadf4bc82a03745c24d5196054d7041a965deac"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53630,
+              "sha256": "9231950382af2fd8aee2d9469a8fcaf23ab6ec24076bc8d28d6711a7949c199e"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49542,
+              "sha256": "204a1eff8469d07632f7c6de129033fd427269a53e73ee4daf7fd71d2acd6320"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48602,
+              "sha256": "690917ad6f2275ed2b5ae67b93f96ee511115bf2d9dd9b96fb72adca5668f6e6"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47886,
+              "sha256": "5b8d70e5f8ab1463530caa7ba20fb9961b103e83022c530282bcf458190e6169"
+            },
+            "f16-delta.log": {
+              "bytes": 1977,
+              "sha256": "7f15b6b8e184a3fc8e9431e8d2fdb6687406737261786f931fb5d3487d07afe6"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "b6d1e8e43b092a1ea3b433c80f05352ad16346c32c74977ffb1c49f8cae7523e"
+            },
+            "f16-vision.log": {
+              "bytes": 10288,
+              "sha256": "8118d106eb9b4c9b0271e63516350c6448c9735190dacdb2f8264aa0d6437cf7"
+            },
+            "f32-context.log": {
+              "bytes": 1360,
+              "sha256": "7d5635d1087463b327dbb9587cb2fff497527c5558b42cb9301d7dbc51a6881a"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53627,
+              "sha256": "ef22c112c64688dbbacfb6952161e6f5462b333768f2be3644936f47b929c648"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49541,
+              "sha256": "ee173bb391e7015b51ac027ccb0d2e7e216adb495062ec364fcdcd0d61f624b1"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48601,
+              "sha256": "41ede2bd42351d93c3881f4cadae8754083cad3984a8b95135121c4f4f5566e0"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47890,
+              "sha256": "580ee0e35215451cddbdeac2cf7aac501a98b39d26a88e26b442317c2c7a99cc"
+            },
+            "f32-delta.log": {
+              "bytes": 1977,
+              "sha256": "7f15b6b8e184a3fc8e9431e8d2fdb6687406737261786f931fb5d3487d07afe6"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "64653b8eda9d91638c5545d0c860f78788b42ee858d2d78cefe8f3216661c3a6"
+            },
+            "f32-vision.log": {
+              "bytes": 10281,
+              "sha256": "3488db58a6478b80dc2d5e0ab39dd88af1f41ebd8d80d44bab601d15cfc08cb3"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999864221,
+                0.999704242,
+                0.980363429,
+                0.999999583,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999994457
+              ],
+              "mean_confidence": 0.997769535,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 119.712212,
+              "init_seconds": 2.43549973
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999864221,
+                0.999704242,
+                0.980363488,
+                0.999999583,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999994457
+              ],
+              "mean_confidence": 0.997769535,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 100.691463,
+              "init_seconds": 2.63428018
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00114488602,
+              "mean_abs": 2.16792687e-05,
+              "native_l2": 2622.13721,
+              "reference_l2": 2622.13672
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00114488602,
+              "mean_abs": 2.16792687e-05,
+              "native_l2": 2622.13721,
+              "reference_l2": 2622.13672
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00114488602,
+              "mean_abs": 2.16792687e-05,
+              "native_l2": 2622.13721,
+              "reference_l2": 2622.13672
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000145792961,
+              "mean_abs": 7.43334931e-06,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00107192993,
+              "mean_abs": 2.15541113e-05,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00107192993,
+              "mean_abs": 2.15541113e-05,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00107192993,
+              "mean_abs": 2.15541113e-05,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000143051147,
+              "mean_abs": 7.4597765e-06,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.57720464
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00225925446,
+              "max_ratio": 0.306942699
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.533808316
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.533808316
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.57837782
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.527931073
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00225925446,
+              "max_ratio": 0.34351833
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.48596378
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.48596378
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.529104253
+            }
+          ],
+          "failures": []
+        },
+        {
+          "gate": 1,
+          "small_artifact": {
+            "id": 12694389232,
+            "bytes": 212723,
+            "sha256": "d74a1150e511c74ba0c0183265b0e1ec6ac38343414e32ee36345e514b86f3a5"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1902,
+              "sha256": "7bfa54be216138d5d42c78f0683fcb8a8048d9552053f77786d8c8ede2291c29"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53635,
+              "sha256": "b46bd7fe7d8178fd51b5a79ef9bf7e2ddab9c63e9e880ce868565c99acca8153"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49545,
+              "sha256": "560a7b5a62d57a2bedcd9827a6d4a5eee64fa09edf732770569f30fe759a3d69"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48605,
+              "sha256": "bc8ef8a99093128345f21414de4e0ce359ca7ff1227701b5dd3f42cfcc2f3390"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47886,
+              "sha256": "5b8d70e5f8ab1463530caa7ba20fb9961b103e83022c530282bcf458190e6169"
+            },
+            "f16-delta.log": {
+              "bytes": 1977,
+              "sha256": "7f15b6b8e184a3fc8e9431e8d2fdb6687406737261786f931fb5d3487d07afe6"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "0f02034afaf6d9ac73f54a182ace9409ebf16adb451f58b7d03e23001c112648"
+            },
+            "f16-vision.log": {
+              "bytes": 10291,
+              "sha256": "717d17423d10342aa005dff0c6d08bcd8d4646d7f802592e022c353d486f4e86"
+            },
+            "f32-context.log": {
+              "bytes": 1360,
+              "sha256": "3a38338e56d149ecb8a4138c7bc9a5821a30bd9fd5780da4048194efab1c2592"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53644,
+              "sha256": "75e900f67d49c76e13459f5b77540b64b96bad190836838d2678af3b22188b9f"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49550,
+              "sha256": "56ed7f0ae9fa640081a7842b0bb6afa1ce6137cded5d8c695689c51e476c1a21"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48610,
+              "sha256": "4b182d5e63f1e48a450c8904a6cc66f638a695ff6deb8cd92ce5772e939bce3a"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47890,
+              "sha256": "580ee0e35215451cddbdeac2cf7aac501a98b39d26a88e26b442317c2c7a99cc"
+            },
+            "f32-delta.log": {
+              "bytes": 1977,
+              "sha256": "7f15b6b8e184a3fc8e9431e8d2fdb6687406737261786f931fb5d3487d07afe6"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "e9bf826af73dc689e5aa6afb06f3a91df6eb3f0ed5a399ca92d35a7bd2d4c1c1"
+            },
+            "f32-vision.log": {
+              "bytes": 10261,
+              "sha256": "a37238d4b98ff453cc7c55b1b7af1ee9aab99f1530e8781c3eb018aece700cf0"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999864221,
+                0.999704242,
+                0.980363607,
+                0.999999583,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999994457
+              ],
+              "mean_confidence": 0.997769535,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 72.5639006,
+              "init_seconds": 2.30044824
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999864221,
+                0.999704242,
+                0.980363369,
+                0.999999583,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999994457
+              ],
+              "mean_confidence": 0.997769535,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 67.4198293,
+              "init_seconds": 2.36147543
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.001080513,
+              "mean_abs": 2.12782579e-05,
+              "native_l2": 2622.13721,
+              "reference_l2": 2622.13672
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.001080513,
+              "mean_abs": 2.12782579e-05,
+              "native_l2": 2622.13721,
+              "reference_l2": 2622.13672
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.001080513,
+              "mean_abs": 2.12782579e-05,
+              "native_l2": 2622.13721,
+              "reference_l2": 2622.13672
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000145792961,
+              "mean_abs": 7.43334931e-06,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000991106033,
+              "mean_abs": 2.15714517e-05,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000991106033,
+              "mean_abs": 2.15714517e-05,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000991106033,
+              "mean_abs": 2.15714517e-05,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000143051147,
+              "mean_abs": 7.4597765e-06,
+              "native_l2": 2622.13696,
+              "reference_l2": 2622.13672
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.452847543
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.414880471
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.414880471
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.452847543
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.453434133
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.413513484
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0101623535,
+              "max_ratio": 0.413513484
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0510253906,
+              "max_ratio": 0.454020723
+            }
+          ],
+          "failures": []
+        }
+      ]
+    },
+    {
+      "grid": "large-boundary",
+      "gates": [
+        {
+          "gate": 0,
+          "small_artifact": {
+            "id": 12700327633,
+            "bytes": 214356,
+            "sha256": "1c819aa60e8e991c9805367cee99ab787fd807ff92b1a95eb48fb6b8a80add69"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1901,
+              "sha256": "0274998f3316788a091580777d5e19aa9dbdf00fc996d047ca918c9de3ef0a74"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53598,
+              "sha256": "44b9db860db4593fb957a625e90c235bdd902799349856d2dbd03df50f92c843"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49521,
+              "sha256": "d2872cb82943509e0ecbeddd728f56274cf3ec5dec7d29a2a1848e74e713d936"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48581,
+              "sha256": "0f304973970a94c39f055417c9feb35cea6415455cfe318a82a5a65e406a4fd5"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47897,
+              "sha256": "526fedf6f6e909def03015cb29005a167ef9113f87261c0fc320a22394cae86b"
+            },
+            "f16-delta.log": {
+              "bytes": 1972,
+              "sha256": "c655cc6d94e77da0619e10f8bc7155cd5bef3429f46f9a7464015f5b88b7f2c4"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 353,
+              "sha256": "c6b2a45bfc5f16ce4ce2637631cc4f9f3708452877dae84e88fcb77ada624f73"
+            },
+            "f16-vision.log": {
+              "bytes": 10265,
+              "sha256": "ba89d6107ff0ef97a4485d76cab312543cbe5024edc10d1147eb2322cca0d124"
+            },
+            "f32-context.log": {
+              "bytes": 1359,
+              "sha256": "01effb2c278505515c2a816cbb1700add4c9537ab3efd0a56da1c7256bf9033f"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53619,
+              "sha256": "ae83481c0755cdf13acf53375b41fea73de2d051767bbec8d4c535f7efa056ad"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49533,
+              "sha256": "e577de70ed1e34729952d66b88e14ecc4ebbc225167a7cfed95469a24e050a1d"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48593,
+              "sha256": "03f23c818f3a02fa81892fda937ec9abe6bb25ae3c713ab3d467437c8fd0bbfa"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47897,
+              "sha256": "44b43f43ea51c4bc6c16e6e4538f4cee0a231a03bfedd467e8f77b97538ff91f"
+            },
+            "f32-delta.log": {
+              "bytes": 1972,
+              "sha256": "c655cc6d94e77da0619e10f8bc7155cd5bef3429f46f9a7464015f5b88b7f2c4"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "9ff98e254e5091a42b352f3aa8d850168ca62c1cb8c16c72b3102da04e3929de"
+            },
+            "f32-vision.log": {
+              "bytes": 10261,
+              "sha256": "06ad0abc0da603319be3597cd8c99c1936d6c79638a2c5e55741f4f87f240f02"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999917209,
+                0.999629676,
+                0.978205621,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999997139
+              ],
+              "mean_confidence": 0.997527659,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 135.086307,
+              "init_seconds": 0.343260946
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999917209,
+                0.999629676,
+                0.978205621,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999997139
+              ],
+              "mean_confidence": 0.997527659,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 132.768982,
+              "init_seconds": 3.43313852
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "FAIL",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00438690186,
+              "mean_abs": 3.03123634e-05,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f16-decoder-native-positions": {
+              "state": "FAIL",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00438690186,
+              "mean_abs": 3.03123634e-05,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f16-decoder-native-vision": {
+              "state": "FAIL",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00438690186,
+              "mean_abs": 3.03123634e-05,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000239372253,
+              "mean_abs": 7.38371637e-06,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-native-frontend": {
+              "state": "FAIL",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00394558907,
+              "mean_abs": 2.86253216e-05,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-native-positions": {
+              "state": "FAIL",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00394558907,
+              "mean_abs": 2.86253216e-05,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-native-vision": {
+              "state": "FAIL",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00394558907,
+              "mean_abs": 2.86253216e-05,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000289916992,
+              "mean_abs": 7.28057285e-06,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-decoder-native-frontend.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.19320846
+            },
+            {
+              "log": "f16-decoder-native-frontend.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.19320846
+            },
+            {
+              "log": "f16-decoder-native-positions.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.19320846
+            },
+            {
+              "log": "f16-decoder-native-positions.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.19320846
+            },
+            {
+              "log": "f16-decoder-native-vision.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.19320846
+            },
+            {
+              "log": "f16-decoder-native-vision.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.19320846
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0581054688,
+              "max_ratio": 0.665025444
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00176048279,
+              "max_ratio": 0.772479285
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.653647352
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.653647352
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0583496094,
+              "max_ratio": 0.664346596
+            },
+            {
+              "log": "f32-decoder-native-frontend.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.07317429
+            },
+            {
+              "log": "f32-decoder-native-frontend.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.07317429
+            },
+            {
+              "log": "f32-decoder-native-positions.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.07317429
+            },
+            {
+              "log": "f32-decoder-native-positions.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.07317429
+            },
+            {
+              "log": "f32-decoder-native-vision.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.07317429
+            },
+            {
+              "log": "f32-decoder-native-vision.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 1.07317429
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0581054688,
+              "max_ratio": 0.665025444
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00176048279,
+              "max_ratio": 0.734477174
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.634163633
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.634163633
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0583496094,
+              "max_ratio": 0.663318195
+            }
+          ],
+          "failures": [
+            {
+              "log": "f16-decoder-native-frontend.log",
+              "stage": "prefill.decoder.norm"
+            },
+            {
+              "log": "f16-decoder-native-frontend.log",
+              "stage": "full_prefix.decoder.norm"
+            },
+            {
+              "log": "f16-decoder-native-positions.log",
+              "stage": "prefill.decoder.norm"
+            },
+            {
+              "log": "f16-decoder-native-positions.log",
+              "stage": "full_prefix.decoder.norm"
+            },
+            {
+              "log": "f16-decoder-native-vision.log",
+              "stage": "prefill.decoder.norm"
+            },
+            {
+              "log": "f16-decoder-native-vision.log",
+              "stage": "full_prefix.decoder.norm"
+            },
+            {
+              "log": "f32-decoder-native-frontend.log",
+              "stage": "prefill.decoder.norm"
+            },
+            {
+              "log": "f32-decoder-native-frontend.log",
+              "stage": "full_prefix.decoder.norm"
+            },
+            {
+              "log": "f32-decoder-native-positions.log",
+              "stage": "prefill.decoder.norm"
+            },
+            {
+              "log": "f32-decoder-native-positions.log",
+              "stage": "full_prefix.decoder.norm"
+            },
+            {
+              "log": "f32-decoder-native-vision.log",
+              "stage": "prefill.decoder.norm"
+            },
+            {
+              "log": "f32-decoder-native-vision.log",
+              "stage": "full_prefix.decoder.norm"
+            }
+          ]
+        },
+        {
+          "gate": 1,
+          "small_artifact": {
+            "id": 12701063627,
+            "bytes": 213393,
+            "sha256": "861943dcc607b82520afa79e6b6f773d6261187d3c6ceb964a7a72710567946e"
+          },
+          "logs": {
+            "bounds-controls.log": {
+              "bytes": 100,
+              "sha256": "73e3e04671539d17d328c648b223385a198f1fd5d638f1bb6c29946d3b36035e"
+            },
+            "f16-context.log": {
+              "bytes": 1901,
+              "sha256": "c4bec9e9cdab8bbf42442560b6a21baef17418071a6b8c312faae2fdb8a39a7b"
+            },
+            "f16-decoder-native-frontend.log": {
+              "bytes": 53641,
+              "sha256": "50ce06ffaab1a1765c758af5121fe1e664640c968efdbdc855a3051decb1458f"
+            },
+            "f16-decoder-native-positions.log": {
+              "bytes": 49551,
+              "sha256": "16bdee1b7868727b2c92baceaa6e4f229ea98aa196ab9954a6f15fa0eda5f3da"
+            },
+            "f16-decoder-native-vision.log": {
+              "bytes": 48611,
+              "sha256": "8987571b112c98862b23c15705fb1d992f3c7954b82f7423ab656d227c2c8b9c"
+            },
+            "f16-decoder-prepared.log": {
+              "bytes": 47897,
+              "sha256": "526fedf6f6e909def03015cb29005a167ef9113f87261c0fc320a22394cae86b"
+            },
+            "f16-delta.log": {
+              "bytes": 1972,
+              "sha256": "c655cc6d94e77da0619e10f8bc7155cd5bef3429f46f9a7464015f5b88b7f2c4"
+            },
+            "f16-owning-ocr.log": {
+              "bytes": 353,
+              "sha256": "c14d5c6ad671c2b4503d7b19a9b89413c7917d29bef379106ae2927ffed672bf"
+            },
+            "f16-vision.log": {
+              "bytes": 10276,
+              "sha256": "023469a7f668e8aae3ccea8a1b942f057a452138d3088191a4a4f3b6474eb1fd"
+            },
+            "f32-context.log": {
+              "bytes": 1359,
+              "sha256": "01effb2c278505515c2a816cbb1700add4c9537ab3efd0a56da1c7256bf9033f"
+            },
+            "f32-decoder-native-frontend.log": {
+              "bytes": 53639,
+              "sha256": "20fe406079dff8933f6935f7c89cb02902f59410d1618845d3e824cc1ac262ae"
+            },
+            "f32-decoder-native-positions.log": {
+              "bytes": 49550,
+              "sha256": "8edc247c9ec174e71cd6c3c5cc547f6b45351b1039d8b825f9b7062e33fcb122"
+            },
+            "f32-decoder-native-vision.log": {
+              "bytes": 48610,
+              "sha256": "c45ce5494a2dc01ac87fd85a0a0fef7280d02faf4d612fa7d920eb3c3341a6ea"
+            },
+            "f32-decoder-prepared.log": {
+              "bytes": 47897,
+              "sha256": "44b43f43ea51c4bc6c16e6e4538f4cee0a231a03bfedd467e8f77b97538ff91f"
+            },
+            "f32-delta.log": {
+              "bytes": 1972,
+              "sha256": "c655cc6d94e77da0619e10f8bc7155cd5bef3429f46f9a7464015f5b88b7f2c4"
+            },
+            "f32-owning-ocr.log": {
+              "bytes": 352,
+              "sha256": "205bd8b5be03c1614cd9a279e7a80933ebf8381aceeaa32204e92c09ebbb5461"
+            },
+            "f32-vision.log": {
+              "bytes": 10248,
+              "sha256": "5dee6064b543f3c99e8ce870e162b2c87c01432ed4b58cac3cfc0af1d06b0d7c"
+            }
+          },
+          "owning": {
+            "f16-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999917209,
+                0.999629676,
+                0.978205562,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999997139
+              ],
+              "mean_confidence": 0.997527659,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 136.286928,
+              "init_seconds": 0.772346445
+            },
+            "f32-owning-ocr": {
+              "raw_text_utf8_hex": "48656c6c6f204f43520a0a3132333435",
+              "token_ids": [
+                9419,
+                77796,
+                271,
+                16,
+                17,
+                18,
+                19,
+                20,
+                248046
+              ],
+              "confidences": [
+                0.999917209,
+                0.999629676,
+                0.978205621,
+                0.999999642,
+                0.99999994,
+                0.99999994,
+                1,
+                1,
+                0.999997139
+              ],
+              "mean_confidence": 0.997527659,
+              "stop_kind": 1,
+              "stop_id": 248046,
+              "cap": 32,
+              "wall_seconds": 135.760599,
+              "init_seconds": 2.62626087
+            }
+          },
+          "metrics": {
+            "f16-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00338554382,
+              "mean_abs": 2.66822481e-05,
+              "native_l2": 3187.82227,
+              "reference_l2": 3187.82251
+            },
+            "f16-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00338554382,
+              "mean_abs": 2.66822481e-05,
+              "native_l2": 3187.82227,
+              "reference_l2": 3187.82251
+            },
+            "f16-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00338554382,
+              "mean_abs": 2.66822481e-05,
+              "native_l2": 3187.82227,
+              "reference_l2": 3187.82251
+            },
+            "f16-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000239372253,
+              "mean_abs": 7.38371637e-06,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-native-frontend": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00363087654,
+              "mean_abs": 2.69037555e-05,
+              "native_l2": 3187.82227,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-native-positions": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00363087654,
+              "mean_abs": 2.69037555e-05,
+              "native_l2": 3187.82227,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-native-vision": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.00363087654,
+              "mean_abs": 2.69037555e-05,
+              "native_l2": 3187.82227,
+              "reference_l2": 3187.82251
+            },
+            "f32-decoder-prepared": {
+              "state": "PASS",
+              "stage": "prefill.decoder.norm",
+              "cos_min": 1.0,
+              "cos_global": 1.0,
+              "max_abs": 0.000289916992,
+              "mean_abs": 7.28057285e-06,
+              "native_l2": 3187.82251,
+              "reference_l2": 3187.82251
+            }
+          },
+          "budget_exceedances": [
+            {
+              "log": "f16-decoder-native-frontend.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.920845663
+            },
+            {
+              "log": "f16-decoder-native-frontend.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.920845663
+            },
+            {
+              "log": "f16-decoder-native-positions.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.920845663
+            },
+            {
+              "log": "f16-decoder-native-positions.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.920845663
+            },
+            {
+              "log": "f16-decoder-native-vision.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.920845663
+            },
+            {
+              "log": "f16-decoder-native-vision.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.920845663
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0581054688,
+              "max_ratio": 0.704266076
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00176048279,
+              "max_ratio": 0.832591716
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.70141389
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.70141389
+            },
+            {
+              "log": "f16-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0583496094,
+              "max_ratio": 0.703425807
+            },
+            {
+              "log": "f32-decoder-native-frontend.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.98757455
+            },
+            {
+              "log": "f32-decoder-native-frontend.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.98757455
+            },
+            {
+              "log": "f32-decoder-native-positions.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.98757455
+            },
+            {
+              "log": "f32-decoder-native-positions.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.98757455
+            },
+            {
+              "log": "f32-decoder-native-vision.log",
+              "stage": "prefill.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.98757455
+            },
+            {
+              "log": "f32-decoder-native-vision.log",
+              "stage": "full_prefix.decoder.norm",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00217819214,
+              "max_ratio": 0.98757455
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.layer.11",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0581054688,
+              "max_ratio": 0.637143943
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.norm2",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.00176048279,
+              "max_ratio": 0.635671684
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.up",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.602109773
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.activation",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.011138916,
+              "max_ratio": 0.602109773
+            },
+            {
+              "log": "f32-vision.log",
+              "stage": "prefill.vision.probe.11.down",
+              "strict_absolute_pass": false,
+              "calibrated": true,
+              "self_max_abs": 0.0583496094,
+              "max_ratio": 0.638636588
+            }
+          ],
+          "failures": []
+        }
+      ]
+    }
+  ],
+  "review": {
+    "independent_peer": true,
+    "small_members": 288,
+    "resource_log_hashes": 136,
+    "old_gate0_vector_declarations_exact_per_grid": 1662,
+    "all_gate1_14_arms_pass": true,
+    "old_gate0_failing_command_counts": [
+      0,
+      0,
+      0,
+      6
+    ],
+    "old_gate0_failing_metric_counts": [
+      0,
+      0,
+      0,
+      12
+    ],
+    "raw_payload_downloaded": false
+  },
+  "limits": [
+    "Gate0 retained old vectors and old failure set exactly; allgate1 calibrated gates pass, but strict0.002 exceedances remain.",
+    "Boundary native-vision norm gate1 maximum0.00363087654 F32/0.00338554382 F16; square errors worsen slightly while passing. No universal numerical improvement.",
+    "All16 owning outputs retain exact IDs/text/EOS; this authored panel is not representative recognition quality.",
+    "The source closure changed_files entry covers tracked base sources only:8bb also adds excluded standalone MI-GAN/CMake/test files. Ovis linked sources and flags unchanged.",
+    "Source interpolation remains globally off; unmeasured shared Qwen/LightOn/Ovis3 profiles and final integrated source/release require separate proof."
+  ]
+}

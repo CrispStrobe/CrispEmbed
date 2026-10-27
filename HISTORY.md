@@ -1,3 +1,79 @@
+## 27 October 2026 — composed Ovis interpolation replay reviewed
+
+All eight grid/gate jobs in [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)
+at`8bb9f074` complete and receive primary/independent review. Literal0 reproduces
+each grid's1,662 old vector declarations and the six boundary failing commands
+(twelve failed norm metrics). Literal1 passes all fourteen unchanged calibrated
+arms per grid. All sixteen owning OCR outputs retain exact nine IDs, text and
+EOS. Review covers288 ZIP members,136 command logs and13,296 numeric records;
+large raw arrays remain remote.
+
+[Combined evidence](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
+retains strict flags: boundary norm max0.00363087654 F32/0.00338554382 F16 still
+exceeds0.002 while passing existing calibrated budgets. Square norm errors
+increase slightly; this is not uniform numerical improvement. Original eleven-case
+quality replay remains exact on1,841 IDs/text/EOS. The global shared interpolation
+default stays off,2048 remains unqualified, and exact final integration source
+checks remain pending. The source closure's changed-file field describes tracked
+base sources, not all newly added excluded standalone MI-GAN files.
+
+## 27 October 2026 — corrected MoEdern observer rejects real reference drift
+
+The mandatory Mapping/pipeline observer captures271 arrays, including21 missing
+pipeline leaves, in [40423259251](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251)
+at`8b153739`. The strict continuity gate rejects real drift:156 of250 historical
+array hashes and all ten ordinary/selected outputs change despite exact inputs,
+weights and recorded software. The first captured difference is SDPA0 output;
+preceding Q/K/V, rotary and mask bytes agree. Within-run observation remains
+neutral. Three MaxSim changes range from−1.90735e-6 to+7.62939e-6.
+
+[Retained rejection](tests/results/moedern-colbert/corrected-observer-continuity-rejection.json)
+records source/artifact identities and limits. CPU ISA, selected SDPA backend and
+original tensor strides were not recorded, so no host/backend explanation is
+claimed. Preserve both original receipts and unchanged strict guards. A bounded
+hosted first-attention replay, not replacement gold or native qualification,
+is the next task.
+
+## 27 October 2026 — original Josev reference independently reviewed
+
+The original worker`b2edf8c8` completes four CUDA/F32 neutral/repeat cases with
+251 arrays and122 loaded head tensors. Primary and independent review authenticate
+the source/input/environment/head receipts and all bootstrap/installer logs;
+seven typed answers match the pinned pure output function. Actual reference
+execution takes39.46s with peak CUDA allocation9,082,022,400 bytes. The
+[review](tests/results/josev2b/original-review.json) preserves payload-access
+limits. All raw arrays remain remote. Native head/backbone/API, representative
+quality and any publication are subsequent gates.
+
+## 27 October 2026 — WASM layer-three attribution completes with old anchors intact
+
+The corrected connected-view capture
+[40424064413](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424064413)
+at`dfd7bb4f` completes. Both native repeats and both WASM gate profiles reproduce
+all eight old stage hashes, ordinary/observer output and final vectors. All
+twelve same-input projection replays have identical converted activation bytes
+and scales, with maximum errors at most1.431e-6. Composed tiny input changes
+amplify in the FFN: up-projection max0.000572562, GELU0.000356972,
+down-projection0.003311038 and layer output0.002918929. The earliest named strict
+failure is down-projection, with original/candidate L2 approximately55.304512.
+[Metrics and immutable artifacts](tests/results/packaging/wasm-layer3-attribution-v1.json)
+preserve the full23-subnode magnitudes and twelve actual Ref comparisons.
+This diagnostic does not establish a same-input quantization-kernel defect or
+qualify the earlier eight-of-ten rejected full-model panel. The initial allocator
+failure, old gold, budgets, converter and default-off alternatives remain intact.
+
+## 27 October 2026 — all SciFact tokenizer rows diagnosed before new embeddings
+
+Tokenizer-only [40424357191](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424357191)
+at`c86fc007` replays all5,483 original IDs/masks/full-token hashes exactly before
+native comparison. Native ordinary/observed IDs agree, but24 clipped and25 full
+rows differ from the original; both initial executed negatives reproduce.
+[Diagnostic receipt](tests/results/ultrabert/scifact-tokenizer-diagnostic-v1.json)
+retains first differing token positions and immutable remote artifacts.
+This is a completed diagnosis, not a tokenizer correction or retrieval result.
+No new embeddings are authorized before all-row token parity; frozen original
+vectors and the six unexecuted cancelled native legs remain unchanged.
+
 ## 26 October 2026 — Position replay stopped on raw/public report path redaction
 
 Composed replay [40356657327](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40356657327)

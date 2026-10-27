@@ -1,0 +1,40 @@
+{
+  "schema": "crispembed-moedern-observer-continuity-rejection-v1",
+  "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251",
+  "source": "8b153739503d6d817c7271a5ce319358eadaaab3",
+  "completed": false,
+  "error": "Prior original continuity differs: scores",
+  "small_artifact": {
+    "id": 12702111257,
+    "bytes": 23153,
+    "sha256": "bdf16722d5ebff929efd730267b978786db503763a8579b49061695aed4521c6"
+  },
+  "raw_artifact": {
+    "id": 12701673171,
+    "bytes": 9617601,
+    "sha256": "7e4ab02c139937ece8f95b485719b2d1d83e2a9c1e849aed67a4ba7a8ee1a0ca",
+    "downloaded": false
+  },
+  "review": {
+    "original_arrays": 250,
+    "new_arrays": 271,
+    "old_array_hashes_changed": 156,
+    "ordinary_and_selected_cases_changed": 10,
+    "all_requests_ids_masks_weights_recorded_versions_exact": true,
+    "within_run_observer_neutral": true,
+    "earliest_captured_divergence": "actual.sdpa.0.output",
+    "preceding_qkv_rotary_mask_exact": true,
+    "maxsim_new_minus_old": [
+      -9.5367431640625e-07,
+      -1.9073486328125e-06,
+      7.62939453125e-06
+    ]
+  },
+  "limits": [
+    "No captured CPU model/ISA, exact selected SDPA backend or original tensor strides; old hardware cannot be reconstructed honestly.",
+    "Both runs use intra-op2/inter-op1, deterministic algorithms and highest matmul precision, identical recorded Python/framework package versions.",
+    "A completed capture and within-run repeat parity do not establish continuity with frozen gold.",
+    "Strict original score/hash guard remains unchanged; no native parity, replacement reference or tolerance waiver."
+  ],
+  "next": "Hosted first-attention-only same-input replay against both frozen outputs with actual backend/layout/profiler/hardware evidence and actual Ref magnitudes."
+}

@@ -21,8 +21,9 @@ The bounded converted-weight cache experiment is complete in
 the three-pair warm median gain is only0.797%, with one slower pair and increased
 RSS. Do not repeat its successful model runs for the corrected manifest adapter.
 
-1. **Numerical attribution:** finish the frozen four-grid interpolation A/B and
-   eleven-case first-F16 quality replay. Any later precision selection needs new
+1. **Numerical attribution:** use the completed four-grid interpolation A/B and
+   eleven-case first-F16 quality replay to freeze final integration source checks.
+   Any later precision selection needs new
    development/evaluation inputs after the completed same-weight FFN isolation.
    Preserve all failed recipes, raw strict flags and the unqualified2048 path.
 2. **Next permissive implementation:** the MI-GAN fixed256 original/native
@@ -551,14 +552,9 @@ four-grid replay; neither operator receipt qualifies2048 or waives budgets.
   the combined receipt. Preserve original source ac1bb9cb, all initial failures,
   calibrated budgets, pixels, gold, caps and raw strict flags. Download large
   arrays only inside hosted CI; keep shared-host work to small reports.
-- [ ] Finish the source-order interpolation alternative's actual composed A/B
-  and first-F16 replay from `audit/ovis-2048-attribution-20261026`.
-  Corrected composed40376882009 at8bb9f074 remains pending; both quality40334662677 arms
-  are reviewed in HISTORY. Literal0
-  must reproduce every retained ordinary vector and the historical failure set;
-  literal1 must pass all unchanged gates, with raw strict flags retained.
-  Local norm and position operator results are archived in HISTORY. They do not
-  qualify the2048 boundary or authorize a default change.
+The composed four-grid A/B and first-F16 replay are completed and reviewed in
+HISTORY. Gate0 preserves all old failures; gate1 passes existing calibrated gates
+with strict exceedances retained. They do not qualify2048 or a global default.
 - [ ] Before any runtime/bound/preset promotion, keep an experimental gate and
   require all original14 numerical/decoded checks at each grid, owning OCR,
   rejection/recovery and final-source frozen14/eleven-case first-F16 controls.
@@ -614,24 +610,15 @@ reviewed source changes without changing any frozen producer branch. It is
 unqualified until the actual remaining results and final-source checks below.
 Keep unrelated SAM work and the app's immutable0.17.12 pin intact.
 
-- [ ] **Finish Ovis composed interpolation.** Review
-  [40376882009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40376882009)
-  at`8bb9f074d1ca6fa2cb2be6a892fc2fd116202912`. Four grids ×literal0/1 each
-  run14 unchanged numerical arms and both owning OCR cases. Literal0 must match
-  retained vector hashes and the historical failure set; literal1 must pass all
-  existing calibrated gates. Initial40356657327 remains a pre-inference
-  raw/public-report redaction failure; the adapter checks raw bytes before a
-  single comparison-only path normalization. Both eleven-case quality arms of
-  40334662677 are reviewed: all1,841 IDs/text/EOS exact, gate0 confidence exact,
-  gate1 confidence drift at most0.000024796. Keep interpolation off and2048
-  unqualified until the full composed evidence is reviewed. Any promotion also
-  needs final-source frozen14 and first-F16 eleven-case replay via the
-  [prepared final-integrated-v1 protocol](docs/ovisocr2-final-integrated-v1.md).
-  Its pending reviewed-completion pins deliberately block dispatch/model access;
-  fill exact reviewed Ovis/WASM outcomes and artifact/report hashes first.
-  Current source closure is f3f1b9e7/a06 with both new defaults off. Any later
-  source/default choice requires an explicit new closure, never a historical
-  guard exception or dynamic latest-source allowance.
+- [ ] **Close exact final Ovis integration.** Completed four-grid and eleven-case
+  evidence is archived in HISTORY and [the combined report](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json).
+  Keep both new global defaults off and2048 unqualified. Define an explicit
+  successor source closure accounting for the newly added Josev regression
+  fixture, preserving all old protected bytes. The historical
+  [v1 guard](docs/ovisocr2-final-integrated-v1.md) must continue rejecting the
+  changed tree; do not grant a dynamic exception. Pin reviewed Ovis and WASM
+  outcomes, then execute actual final frozen14/first-F16 eleven-case replay.
+  Any later profile/default choice needs its own original-first proof.
 - [ ] **Finish canonical SciFact retrieval.** The original-first full
   [40375626336](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40375626336)
   uses`e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902`; do not modify its branch
@@ -811,43 +798,41 @@ All initial failures and original byte hashes are retained. These are execution
 gates, not completed model support or release qualification. The app remains
 on immutable0.17.12.
 
-- [ ] Review corrected MoEdern original
-  [40423259251](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423259251)
-  at8b153739503d6d817c7271a5ce319358eadaaab3. Require mandatory Mapping pipeline
-  capture and exact old250-array/ten-case/three-score/F32-GGUF continuity.
-  Then explicitly version the native contract's base/source and five original
-  driver identities; old native79e350a0 expects three and remains blocked.
-  Keep raw artifacts remote, fill actual reviewed pins and run the full native
-  intermediate/vector/mask/MaxSim Ref panel. Broaden to public roles/tokenizer
-  and27M/115M only after smallest parity.
-- [ ] Review SciFact tokenizer-only
-  [40424357191](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424357191)
-  atc86fc007: all5,483 original token streams must replay before historical
-  standalone native tokenization; both executed negative arrays must reproduce.
-  Inspect earliest actual pretoken/codepoint/piece divergence before any gated
-  correction. Require all5,483 corrected IDs/masks before embeddings; reuse the
-  original vectors and unchanged ranking/strict numerical gates.
-- [ ] Review corrected layer3 observer
-  [40424064413](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40424064413)
-  atdfd7bb4f: native allocation, two-thread ordinary/capture/repeat neutrality,
-  all prior full-stage/final anchors, then browser and same-input workspace
-  attribution. Initial40415950220 allocation abort is retained. Do not infer a
-  network correction or change the rounding default from an observer repair.
-- [ ] Review Josev archive audit
-  [40423930364](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40423930364)
-  at1f3ee040 and the submitted genuine GPU original task at bootstrap
-  5e938857368820b0d4d49bd977561e3f418ed9c0/worker
-  b2edf8c83c9aca1f8a9210198d47798ac13828b8. The GPU setup authenticates each
-  exact archive/sidecar before local installation and verifies all57 installed
-  owners before imports/CUDA/model access. Preserve all partial per-wheel proof
-  if it rejects. The model/lock/panel/math are unchanged; do not retry blindly.
-  Original four-case completion, head conversion/native-head and hidden-only
-  backbone/typed-answer parity remain pending.
-- [ ] Finish both running Ovis boundary arms at40376882009; combine all eight
-  independently reviewed grid/gate outcomes. Retain the exact historical
-  gate0 failure set. Then declare a new explicit final integration source
-  closure accounting for the new regression fixture, preserving all old
-  protected fixture bytes and both experimental defaults off. The old v1 guard
-  currently rejects this integration's changed regression tree as intended.
-  Complete final same-source Ovis, archive producers and real consumers before
-  any release, model alias/publication, application pin change or final main closure.
+- [ ] Attribute MoEdern's real cross-run original SDPA drift. Corrected
+  40423259251 at8b153739 is rejected, with156/250 old arrays changed and exact
+  inputs/weights; [retained evidence](tests/results/moedern-colbert/corrected-observer-continuity-rejection.json).
+  `audit/moedern-sdpa-reproducibility-20261027` owns the hosted operator-only
+  default/math/CPU-flash first-attention replay, actual layout/backend/hardware
+  evidence and Ref magnitudes versus both frozen outputs. Preserve strict
+  continuity and old gold. Native79e350a0 remains blocked; after attribution,
+  explicitly version its base and five-driver identities and run the original
+  Ref/vector/MaxSim panel before tokenizer/public surfaces or27M/115M.
+- [ ] Correct the scoped UltraBERT Unicode tokenizer. Completed diagnostic
+  40424357191 atc86fc007 replays all5,483 originals and retains24 clipped/25
+  full native mismatches; both examined first pretokens wrongly group curly
+  punctuation with letters. `fix/ultrabert-unicode-pretoken-20261027` owns a
+  default-off context-specific UnicodeGPT2 path preserving generic/CLIP behavior.
+  Require hosted gate0 reproduction and all5,483 gate1 IDs/masks/full hashes
+  before new embeddings; reuse frozen original vectors and fixed ranking gates.
+- [ ] Decide the next bounded WASM attribution from completed
+  [layer3 evidence](tests/results/packaging/wasm-layer3-attribution-v1.json).
+  All old anchors and twelve same-input kernel replays pass; composed input
+  differences amplify at FFN quantization/nonlinear boundaries. Keep the
+  initial allocation failure, rejected full panel and rounding default off.
+  A proposed correction needs measured same-input evidence or a separately
+  scoped arithmetic profile, then actual full-panel A/B; no component waiver.
+- [ ] Review actual Josev CPU/CUDA head audit from worker
+  a69b3fcac4389b52d56cd4bb7560bfe3ae75dbad/bootstrap91f7e721. The independent
+  original review is complete:251 arrays,122 head tensors and four typed cases.
+  The separate genuine GPU task must authenticate/preserve all raw bytes,
+  convert exact F32 head and pass all123 stages plus full answers on both
+  backends using actual Ref and independent metrics. See [GPU protocol](docs/josev2b-head-gpu.md).
+  Preserve numeric failures. Original51a2e16b and sourceb2 remain immutable.
+  The equivalent CPU artifact40429513945 and metadata40423930364 jobs are
+  queued; assess redundancy only after real completed preservation/audit proof.
+  Native hidden-only2048/6144 Qwen3.5-2B backbone, tokenizer/schema composition,
+  C/Python/CLI/Rust/Dart/registry and representative decision quality remain
+  separate gates; existing Gemma decision API semantics differ.
+- [ ] Finish final same-source Ovis, native/WASM archive producers and actual
+  consumers before main/release closure. Both experimental defaults remain off.
+  Preserve app0.17.12, no model alias/publication or application pin change.

@@ -25,6 +25,10 @@
     "version": 5,
     "access_details": "Private operator environment outside Git; original raw payload remains remote"
   },
-  "review": "Primary small receipts rehashed and strict original/head schema validator passed. Independent peer review pending.",
-  "next": "Preserve all251 array bytes on hosted resources; original-first F32 head conversion then native component parity before backbone/API composition."
+  "review": "Primary and independent peer review pass: seven source identities, fourteen snapshot files, four input cases, all251 descriptors,122 loaded-head identities and15 bootstrap plus57 installer logs. Seven typed responses independently match the pinned pure output function; probability softmax maximum error4.82965e-8.",
+  "next": "Preserve all251 array bytes on hosted resources; original-first F32 head conversion then native component parity before backbone/API composition.",
+  "limits": [
+    "Raw arrays, model payloads, wheels and114 metadata copies were not downloaded to the development host. Actual hosted payload rehash and native comparison remain required.",
+    "No captured preclip input ID array, primitive attention/projection proof, native backbone, representative quality or release qualification."
+  ]
 }
