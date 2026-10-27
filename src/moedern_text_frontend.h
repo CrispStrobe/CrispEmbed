@@ -28,9 +28,9 @@ private:
         int id = -1;
     };
     bool enabled_ = false;
-    std::vector<std::string> vocab_, added_content_;
+    std::vector<std::string> vocab_, added_content_, normalized_content_;
     std::vector<double> scores_;
-    std::vector<int32_t> added_ids_, added_flags_, skip_;
+    std::vector<int32_t> added_ids_, added_flags_, normalized_ids_, skip_;
     std::unordered_map<uint32_t, std::string> normalization_;
     std::vector<node> trie_;
     double unknown_score_ = 0;

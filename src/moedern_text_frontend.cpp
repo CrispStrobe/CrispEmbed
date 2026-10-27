@@ -114,9 +114,16 @@ bool text_frontend::load(const char * path, std::string & error) {
         for (size_t i = 0; i < 7; ++i) {
             const int expected = i == 4 ? 18 : i < 5 ? 16 : result.added_flags_[i];
             require(result.added_content_[i] == result.vocab_[result.added_ids_[i]] &&
-                        result.added_flags_[i] == expected && (i < 5 || expected == 8 || expected == 16),
+                        result.added_flags_[i] == expected && (i < 5 || expected == 16),
                     "unsupported effective added token flags");
         }
+        // The pinned Rust registration keeps old normalized role matchers even
+        // after the serialized reverse-map entries become raw special tokens.
+        result.normalized_ids_ = ints(g, "moedern.tokenizer.normalized_matcher_ids", 2);
+        result.normalized_content_ = strings(g, "moedern.tokenizer.normalized_matcher_content", 2);
+        require(result.normalized_ids_ == std::vector<int32_t>({ 30000, 30001 }) &&
+                    result.normalized_content_ == std::vector<std::string>({ "[Q] ", "[D] " }),
+                "normalized matcher history differs");
         result.skip_ = ints(g, "moedern.tokenizer.skip_ids", 32);
         require(!result.skip_.empty() && std::is_sorted(result.skip_.begin(), result.skip_.end()) &&
                     std::adjacent_find(result.skip_.begin(), result.skip_.end()) == result.skip_.end(),
@@ -247,19 +254,18 @@ void text_frontend::normalized(const std::string & text, std::vector<int32_t> & 
         size_t end = value.size();
         int selected = -1;
         std::string content;
-        for (size_t i = 0; i < added_ids_.size(); ++i)
-            if (added_flags_[i] & 8) {
-                const auto token = normalize(added_content_[i]);
-                const auto found = value.find(token, start);
-                if (found != std::string::npos && (found < end || (found == end && token.size() > content.size()))) {
-                    end = found;
-                    selected = int(i);
-                    content = token;
-                }
+        for (size_t i = 0; i < normalized_ids_.size(); ++i) {
+            const auto token = normalize(normalized_content_[i]);
+            const auto found = value.find(token, start);
+            if (found != std::string::npos && (found < end || (found == end && token.size() > content.size()))) {
+                end = found;
+                selected = int(i);
+                content = token;
             }
+        }
         for (const auto & segment : pretokens(value.substr(start, end - start))) unigram(segment, ids);
         if (selected < 0) break;
-        ids.push_back(added_ids_[selected]);
+        ids.push_back(normalized_ids_[selected]);
         start = end + content.size();
     }
 }

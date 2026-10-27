@@ -68,7 +68,7 @@ def original(out,cfg):
  before={p:backend.encode(p,add_special_tokens=False).tokens for p in ['[Q] ','[D] ']}
  actions=oracle.register(backend,out/'source/st_model.py',role_cfg)
  effective=json.loads(backend.to_str());skip=sorted({backend.token_to_id(x) for x in role_cfg['skiplist_words'] if backend.token_to_id(x) not in (None,1)})
- c.write(out/'review/effective-tokenizer.json',{'raw_descriptor':cfg['raw_descriptor'],'effective_added_tokens':effective['added_tokens'],'prefix_before':before,'prefix_after':{p:backend.encode(p,add_special_tokens=False).tokens for p in before},'exact_registration_actions':actions,'skip_ids':skip})
+ c.write(out/'review/effective-tokenizer.json',{'raw_descriptor':cfg['raw_descriptor'],'effective_added_tokens':effective['added_tokens'],'prefix_before':before,'prefix_after':{p:backend.encode(p,add_special_tokens=False).tokens for p in before},'exact_registration_actions':actions,'normalized_matcher_history':oracle.normalized_matchers(raw,effective),'skip_ids':skip})
  rows=[]
  for case in cfg['primary_cases']:
   value,detail=oracle.tokens(backend,case['text'],case['role'],skip)
@@ -158,11 +158,11 @@ def native(out,build,cfg):
   for actual_row,expected in zip(actual_unit,unit['cases']):c.require(actual_row['id']==expected['id'] and actual_row['segment_ids']==expected['ids'],'actual Unigram unknown-fusion/tie/F64 unit failed')
  c.write(out/'review/unigram-unit-results.json',unit_results)
  metadata=c.read_gguf(component.read_bytes());bad_metadata=[]
- mutations={'revision':('moedern.tokenizer.revision','wrong'),'flags':('moedern.tokenizer.added_flags',[0]+metadata['moedern.tokenizer.added_flags'][1:]),'score-type':('moedern.tokenizer.scores_f64',['wrong']*30000),'score-nonfinite':('moedern.tokenizer.scores_f64',('f64',[float('nan')]+metadata['moedern.tokenizer.scores_f64'][1][1:]))}
+ mutations={'revision':('moedern.tokenizer.revision','wrong'),'flags':('moedern.tokenizer.added_flags',[0]+metadata['moedern.tokenizer.added_flags'][1:]),'matcher-id':('moedern.tokenizer.normalized_matcher_ids',[30001,30000]),'matcher-content':('moedern.tokenizer.normalized_matcher_content',['[q] ','[d] ']),'score-type':('moedern.tokenizer.scores_f64',['wrong']*30000),'score-nonfinite':('moedern.tokenizer.scores_f64',('f64',[float('nan')]+metadata['moedern.tokenizer.scores_f64'][1][1:]))}
  for name,(key,value)in mutations.items():
   bad=out/('rejected-'+name+'.gguf');bad.write_bytes(c.gguf(dict(metadata,**{key:value})))
   log=out/'review'/('metadata-'+name+'.log');command([tested,bad,out/'inputs.tsv',out/('rejected-'+name+'.jsonl')],log,expected=2)
-  expected='source/profile differs'if name=='revision'else 'unsupported effective added token flags'if name=='flags'else 'array type/budget'if name=='score-type'else 'nonfinite/empty Unigram item'
+  expected='source/profile differs'if name=='revision'else 'unsupported effective added token flags'if name=='flags'else 'normalized matcher history differs'if name.startswith('matcher-')else 'array type/budget'if name=='score-type'else 'nonfinite/empty Unigram item'
   c.require(expected in log.read_text(),'metadata rejected at unrelated guard: '+name);bad_metadata.append(name)
  fixture=json.loads((ROOT/'tests/fixtures/moedern-unigram-v1.json').read_text());negative=[]
  for entry in fixture['negative_inputs']:
