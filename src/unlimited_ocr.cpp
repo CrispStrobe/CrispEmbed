@@ -33,14 +33,16 @@
 #include <unordered_map>
 #include <vector>
 
+// Internal types/helpers have internal linkage: deepseek_ocr2.cpp and lfm2_vl_ocr.cpp
+// define same-named structs (e.g. llm_layer_w), and differing layouts across TUs are an
+// ODR violation (AddressSanitizer: heap-buffer-overflow in load_tensors once v2 fields
+// were added).
+namespace {
+
 // ---------------------------------------------------------------------------
 // Hyperparameters
 // ---------------------------------------------------------------------------
 
-// Internal types/helpers have internal linkage: deepseek_ocr2.cpp and unlimited_ocr.cpp both
-// define same-named structs with different layouts (llm_layer_w, model_weights, ...), an ODR
-// violation that corrupts vector instantiations across TUs.
-namespace {
 
 struct sam_hparams {
     int depth = 12, hidden = 768, heads = 12, head_dim = 64;
@@ -196,6 +198,10 @@ struct uocr_ctx {
     int n_threads = 1, verbosity = 1;
     bool bench = false;
     std::string diff_ref_path;
+    // Set only while encoding Unlimited-OCR-2 gundam tiles (CRISPEMBED_UNLIMITED_OCR2_TILES):
+    // SAM/CLIP absolute position embeddings are resized with torch-style
+    // bicubic+antialias (the reference get_abs_pos) instead of the legacy paths.
+    bool pos_aa_bicubic = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -682,7 +688,7 @@ static bool load_tensors(uocr_ctx & ctx, const char * path) {
                 // parent's: to_f32's fast path gates on ->buffer (null on a fresh view) and would
                 // otherwise deref a raw device pointer (Metal segfault); ggml_backend_tensor_get
                 // then reads via view_src->buffer.
-                if (core_env::on("UOCR_MOE_CPU") || lhp.variant == 2) { // v2 decoder runs MoE on CPU
+                if (core_env::on("UOCR_MOE_CPU")) {
                     if (!ctx.moe_view_ctx) {
                         ggml_init_params vp = {
                             (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
@@ -945,6 +951,151 @@ static void interpolate_pos_embed_2d(const float * pos_in, float * pos_out, int 
     }
 }
 
+// ---------------------------------------------------------------------------
+// PIL / torch antialiased bicubic resampling (Unlimited-OCR-2 gundam tiling)
+// ---------------------------------------------------------------------------
+// Port of Pillow's libImaging/Resample.c `precompute_coeffs` with the BICUBIC
+// filter (a = -0.5). On downscale the filter support is widened by the scale
+// factor (antialiasing), exactly like PIL. torch F.interpolate(mode='bicubic',
+// antialias=True, align_corners=False) uses the same kernel/support/bounds, so
+// the float variant below serves the reference get_abs_pos interpolation.
+static double pil_bicubic_filter(double x) {
+    constexpr double a = -0.5;
+    if (x < 0.0) x = -x;
+    if (x < 1.0) return ((a + 2.0) * x - (a + 3.0)) * x * x + 1.0;
+    if (x < 2.0) return (((x - 5.0) * x + 8.0) * x - 4.0) * a;
+    return 0.0;
+}
+
+struct aa_coeffs {
+    int ksize = 0;
+    std::vector<int> xmin, xcnt;
+    std::vector<double> k; // [out * ksize], normalized
+};
+
+static aa_coeffs precompute_aa_coeffs(int in_size, int out_size) {
+    aa_coeffs c;
+    double scale = (double)in_size / out_size;
+    double filterscale = scale < 1.0 ? 1.0 : scale;
+    double support = 2.0 * filterscale; // bicubic support = 2
+    c.ksize = (int)ceil(support) * 2 + 1;
+    c.xmin.resize(out_size);
+    c.xcnt.resize(out_size);
+    c.k.assign((size_t)out_size * c.ksize, 0.0);
+    double ss = 1.0 / filterscale;
+    for (int xx = 0; xx < out_size; xx++) {
+        double center = (xx + 0.5) * scale;
+        int xmin = (int)(center - support + 0.5);
+        if (xmin < 0) xmin = 0;
+        int xmax = (int)(center + support + 0.5);
+        if (xmax > in_size) xmax = in_size;
+        xmax -= xmin;
+        double * k = &c.k[(size_t)xx * c.ksize];
+        double ww = 0.0;
+        for (int x = 0; x < xmax; x++) {
+            double w = pil_bicubic_filter((x + xmin - center + 0.5) * ss);
+            k[x] = w;
+            ww += w;
+        }
+        if (ww != 0.0)
+            for (int x = 0; x < xmax; x++) k[x] /= ww;
+        c.xmin[xx] = xmin;
+        c.xcnt[xx] = xmax;
+    }
+    return c;
+}
+
+// 8-bit RGB resize intended to match PIL Image.resize(..., BICUBIC) bit-exactly:
+// fixed-point coefficients (PRECISION_BITS = 22, normalize_coeffs_8bpc
+// rounding), horizontal pass first, clip8 rounding to uint8 after each pass,
+// a pass skipped when that axis is unchanged. Known deviations: (1) PIL limits
+// the first pass to the rows the second pass needs (same values, no effect);
+// (2) input channels map c -> min(c, ch-1), i.e. RGBA alpha is dropped like
+// convert('RGB') and gray replicated -- PIL's RGBA->RGB convert is identical,
+// but palette/CMYK sources are not handled. Output: interleaved RGB [oh][ow][3].
+static std::vector<uint8_t> resize_rgb_pil_bicubic(const uint8_t * px, int w, int h, int ch, int ow, int oh) {
+    constexpr int PB = 22;
+    std::vector<uint8_t> src((size_t)w * h * 3);
+    for (size_t i = 0; i < (size_t)w * h; i++)
+        for (int c = 0; c < 3; c++) src[i * 3 + c] = px[i * ch + std::min(c, ch - 1)];
+    auto to_int = [&](const aa_coeffs & c) {
+        std::vector<int32_t> ki(c.k.size());
+        for (size_t i = 0; i < c.k.size(); i++) {
+            double v = c.k[i] * (double)(1 << PB);
+            ki[i] = (int32_t)(c.k[i] < 0 ? (-0.5 + v) : (0.5 + v));
+        }
+        return ki;
+    };
+    auto clip8 = [](int64_t ss) -> uint8_t {
+        int64_t v = ss >> PB;
+        return (uint8_t)(v < 0 ? 0 : (v > 255 ? 255 : v));
+    };
+    std::vector<uint8_t> hor;
+    int cw = w;
+    if (ow != w) { // horizontal pass
+        auto c = precompute_aa_coeffs(w, ow);
+        auto ki = to_int(c);
+        hor.resize((size_t)ow * h * 3);
+        for (int y = 0; y < h; y++)
+            for (int xx = 0; xx < ow; xx++) {
+                const int32_t * k = &ki[(size_t)xx * c.ksize];
+                for (int c3 = 0; c3 < 3; c3++) {
+                    int64_t ss = (int64_t)1 << (PB - 1);
+                    for (int x = 0; x < c.xcnt[xx]; x++)
+                        ss += (int64_t)src[((size_t)y * w + x + c.xmin[xx]) * 3 + c3] * k[x];
+                    hor[((size_t)y * ow + xx) * 3 + c3] = clip8(ss);
+                }
+            }
+        cw = ow;
+    } else {
+        hor = std::move(src);
+    }
+    if (oh == h) return hor;
+    auto c = precompute_aa_coeffs(h, oh); // vertical pass
+    auto ki = to_int(c);
+    std::vector<uint8_t> out((size_t)cw * oh * 3);
+    for (int yy = 0; yy < oh; yy++) {
+        const int32_t * k = &ki[(size_t)yy * c.ksize];
+        for (int x = 0; x < cw; x++)
+            for (int c3 = 0; c3 < 3; c3++) {
+                int64_t ss = (int64_t)1 << (PB - 1);
+                for (int y = 0; y < c.xcnt[yy]; y++)
+                    ss += (int64_t)hor[((size_t)(y + c.xmin[yy]) * cw + x) * 3 + c3] * k[y];
+                out[((size_t)yy * cw + x) * 3 + c3] = clip8(ss);
+            }
+    }
+    return out;
+}
+
+// Float square-grid resize with torch F.interpolate(bicubic, antialias=True,
+// align_corners=False) semantics (separable, width first, float accumulation).
+// Deviation: torch accumulates in its own order/precision (fp32 for fp32
+// input); summation order differs, so expect ~1e-7 relative noise, not bits.
+// grid_in: [nP_in*nP_in, C] row-major; grid_out: [nP_out*nP_out, C].
+static void interpolate_pos_embed_2d_aa_bicubic(const float * grid_in, float * grid_out, int nP_in, int nP_out, int C) {
+    auto c = precompute_aa_coeffs(nP_in, nP_out);
+    std::vector<float> tmp((size_t)nP_in * nP_out * C, 0.0f); // [nP_in][nP_out][C]
+    for (int y = 0; y < nP_in; y++)
+        for (int xx = 0; xx < nP_out; xx++) {
+            float * d = &tmp[((size_t)y * nP_out + xx) * C];
+            for (int x = 0; x < c.xcnt[xx]; x++) {
+                float wgt = (float)c.k[(size_t)xx * c.ksize + x];
+                const float * sp = &grid_in[((size_t)y * nP_in + x + c.xmin[xx]) * C];
+                for (int k = 0; k < C; k++) d[k] += wgt * sp[k];
+            }
+        }
+    std::fill(grid_out, grid_out + (size_t)nP_out * nP_out * C, 0.0f);
+    for (int yy = 0; yy < nP_out; yy++)
+        for (int y = 0; y < c.xcnt[yy]; y++) {
+            float wgt = (float)c.k[(size_t)yy * c.ksize + y];
+            for (int x = 0; x < nP_out; x++) {
+                float * d = &grid_out[((size_t)yy * nP_out + x) * C];
+                const float * sp = &tmp[((size_t)(y + c.xmin[yy]) * nP_out + x) * C];
+                for (int k = 0; k < C; k++) d[k] += wgt * sp[k];
+            }
+        }
+}
+
 static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, std::vector<float> & out_features,
                        int & out_n_tokens, int & out_dim) {
     auto & s = ctx.m.shp;
@@ -969,7 +1120,10 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     std::vector<float> pos;
     if (nP != nP_orig) {
         pos.resize((size_t)N * C);
-        interpolate_pos_embed_2d(pos_orig.data(), pos.data(), nP_orig, nP, C);
+        if (ctx.pos_aa_bicubic)
+            interpolate_pos_embed_2d_aa_bicubic(pos_orig.data(), pos.data(), nP_orig, nP, C);
+        else
+            interpolate_pos_embed_2d(pos_orig.data(), pos.data(), nP_orig, nP, C);
     } else {
         pos = std::move(pos_orig);
     }
@@ -1427,6 +1581,21 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
     // Build input: CLS token + SAM features as patch embeddings + position embeddings
     auto cls = to_f32(ctx.m.cls_token);      // [1024]
     auto pos = to_f32(ctx.m.clip_pos_embed); // [257, 1024] — stored as [257 * 1024]
+    // Gundam tiles (640 input -> 10x10 patches): resize the 16x16 patch grid of the
+    // position table like the reference get_abs_pos (bicubic, antialias); CLS kept.
+    if (ctx.pos_aa_bicubic && (int)(pos.size() / D) != T) {
+        int n_pos = (int)(pos.size() / D);
+        int src_side = (int)lroundf(sqrtf((float)(n_pos - 1)));
+        int dst_side = (int)lroundf(sqrtf((float)n_patches));
+        if (src_side * src_side + 1 != n_pos || dst_side * dst_side != n_patches) {
+            fprintf(stderr, "unlimited_ocr: CLIP pos-embed grid mismatch (%d -> %d)\n", n_pos, T);
+            return false;
+        }
+        std::vector<float> np((size_t)T * D);
+        memcpy(np.data(), pos.data(), (size_t)D * sizeof(float));
+        interpolate_pos_embed_2d_aa_bicubic(pos.data() + D, np.data() + D, src_side, dst_side, D);
+        pos = std::move(np);
+    }
 
     std::vector<float> input(T * D);
     // Position 0: CLS token
@@ -2105,6 +2274,73 @@ static void moe_ffn_cpu(uocr_ctx & ctx, int li, float * hidden, int T) {
 // DASH block routing and block-sparse attention, greedy decode with the page-count
 // guard. Plain CPU/F32 reference path; v1 decoding is untouched.
 // ---------------------------------------------------------------------------
+// Dequantize expert e of a stacked [in, out, n_exp] tensor by reading its slice directly
+// (no ggml view objects), for the Unlimited-OCR-2 CPU MoE.
+static std::vector<float> uocr2_expert_f32(const ggml_tensor * st, int e) {
+    const size_t bytes = st->nb[2];
+    const int64_t n = st->ne[0] * st->ne[1];
+    std::vector<uint8_t> raw(bytes);
+    ggml_backend_tensor_get(st, raw.data(), (size_t)e * bytes, bytes);
+    std::vector<float> out((size_t)n);
+    if (st->type == GGML_TYPE_F32)
+        memcpy(out.data(), raw.data(), (size_t)n * sizeof(float));
+    else if (st->type == GGML_TYPE_F16)
+        for (int64_t i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(((const ggml_fp16_t *)raw.data())[i]);
+    else
+        ggml_get_type_traits(st->type)->to_float(raw.data(), out.data(), n);
+    return out;
+}
+
+// v1-identical MoE math (softmax gate, greedy top-k, no renorm, routed scale, shared experts,
+// residual add) reading experts from the stacked tensors.
+static void uocr2_moe_cpu(uocr_ctx & ctx, int li, float * hidden, int T) {
+    auto & lhp = ctx.m.lhp;
+    auto & ly = ctx.m.llm_layers[li];
+    const int D = lhp.hidden, n_exp = lhp.n_experts, top_k = lhp.n_experts_top;
+    const auto post_ln = to_f32(ly.post_ln_w), router = to_f32(ly.router_w);
+    const auto sg = to_f32(ly.shared_gate_w), su = to_f32(ly.shared_up_w), sd = to_f32(ly.shared_down_w);
+    std::vector<float> normed((size_t)T * D);
+    std::vector<std::vector<std::pair<int, float>>> pick(T);
+    std::vector<char> used(n_exp, 0);
+    for (int t = 0; t < T; t++) {
+        float * x = normed.data() + (size_t)t * D;
+        rmsnorm_cpu(hidden + (size_t)t * D, x, D, post_ln.data(), lhp.rms_eps);
+        std::vector<float> lg(n_exp);
+        for (int e = 0; e < n_exp; e++) {
+            float d = 0;
+            for (int i = 0; i < D; i++) d += x[i] * router[(size_t)e * D + i];
+            lg[e] = d;
+        }
+        const float mx = *std::max_element(lg.begin(), lg.end());
+        float se = 0;
+        for (float & v : lg) se += (v = expf(v - mx));
+        std::vector<std::pair<float, int>> sc(n_exp);
+        for (int e = 0; e < n_exp; e++) sc[e] = { lg[e] / se, e };
+        std::partial_sort(sc.begin(), sc.begin() + top_k, sc.end(),
+                          [](auto & a, auto & b) { return a.first > b.first; });
+        for (int k = 0; k < top_k; k++) {
+            pick[t].push_back({ sc[k].second, sc[k].first * lhp.routed_scaling_factor });
+            used[sc[k].second] = 1;
+        }
+    }
+    std::vector<std::array<std::vector<float>, 3>> W(n_exp);
+    for (int e = 0; e < n_exp; e++)
+        if (used[e])
+            W[e] = { uocr2_expert_f32(ly.gate_exps, e), uocr2_expert_f32(ly.up_exps, e),
+                     uocr2_expert_f32(ly.down_exps, e) };
+    std::vector<float> out(D), sh(D);
+    for (int t = 0; t < T; t++) {
+        const float * x = normed.data() + (size_t)t * D;
+        std::vector<float> acc(D, 0.0f);
+        for (auto [e, w] : pick[t]) {
+            swiglu_ffn_cpu(x, out.data(), D, lhp.expert_intermediate, W[e][0].data(), W[e][1].data(), W[e][2].data());
+            for (int d = 0; d < D; d++) acc[d] += w * out[d];
+        }
+        swiglu_ffn_cpu(x, sh.data(), D, lhp.shared_intermediate, sg.data(), su.data(), sd.data());
+        for (int d = 0; d < D; d++) hidden[(size_t)t * D + d] += acc[d] + sh[d];
+    }
+}
+
 struct uocr2_layer_f32 {
     std::vector<float> in_ln, q, k, v, o, rq, rk, rqn, rkn, head_cls, post_ln, fg, fu, fd;
 };
@@ -2114,10 +2350,17 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
     auto & lhp = ctx.m.lhp;
     const int D = lhp.hidden, NH = lhp.heads, NKV = lhp.kv_heads, HDm = lhp.head_dim, L = lhp.n_layers;
     const int S = (int)prompt_ids.size(), V = lhp.vocab_size, group = NH / NKV;
+    for (int li = 1; li < L; li++)
+        if (!ctx.m.llm_layers[li].gate_exps) {
+            fprintf(stderr, "unlimited_ocr2: stacked expert tensors required (layer %d)\n", li);
+            return false;
+        }
     if (HDm != uocr2::HD) {
         fprintf(stderr, "unlimited_ocr2: head_dim %d unsupported\n", HDm);
         return false;
     }
+    const bool dbg = core_env::on("UOCR_DBG");
+    if (dbg) fprintf(stderr, "  [uocr2] decoder start S=%d L=%d NH=%d NKV=%d\n", S, L, NH, NKV);
     std::vector<uocr2_layer_f32> W(L);
     for (int li = 0; li < L; li++) {
         auto & ly = ctx.m.llm_layers[li];
@@ -2131,6 +2374,7 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
             w.fg = to_f32(ly.ffn_gate_w), w.fu = to_f32(ly.ffn_up_w), w.fd = to_f32(ly.ffn_down_w);
         }
     }
+    if (dbg) fprintf(stderr, "  [uocr2] layer weights dequantized\n");
     const auto norm_w = to_f32(ctx.m.output_norm_w);
     const auto head_w = to_f32(ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens);
 
@@ -2208,6 +2452,7 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
                            nullptr);
                 for (int d = 0; d < D; d++) h[(size_t)t * D + d] += o[(size_t)t * D + d];
             }
+            if (dbg && T > 1) fprintf(stderr, "  [uocr2] prefill layer %d attention done\n", li);
             if (li == 0) {
                 std::vector<float> nrm(D), ff(D);
                 for (int t = 0; t < T; t++) {
@@ -2217,13 +2462,14 @@ static bool run_llm_decoder_v2(uocr_ctx & ctx, const float * prompt_embeds, cons
                     for (int d = 0; d < D; d++) h[(size_t)t * D + d] += ff[d];
                 }
             } else {
-                moe_ffn_cpu(ctx, li, h.data(), T); // post-norm, routed + shared experts, residual (as v1)
+                uocr2_moe_cpu(ctx, li, h.data(), T); // post-norm, routed + shared experts, residual (as v1)
             }
         }
     };
 
     std::vector<float> h(prompt_embeds, prompt_embeds + (size_t)S * D);
     forward(h, S, 0, co.tok, co.page, [&](int t, int) { return cand_prefill(t); });
+    if (dbg) fprintf(stderr, "  [uocr2] prefill done\n");
 
     std::vector<float> last(h.end() - D, h.end()), xn(D), logits(V);
     const int expected_pages = (int)std::count(prompt_ids.begin(), prompt_ids.end(), uocr2::PAGE);
@@ -3126,6 +3372,95 @@ void unlimited_ocr_free(unlimited_ocr_context * ctx) {
     delete ctx;
 }
 
+// ---------------------------------------------------------------------------
+// Unlimited-OCR-2 gundam tiling (gate CRISPEMBED_UNLIMITED_OCR2_TILES, variant 2)
+// ---------------------------------------------------------------------------
+// Reference dynamic_preprocess(min_num=2, max_num=16, image_size=640) +
+// find_closest_aspect_ratio. Candidate order: Python sorts a *set* of (i,j) by
+// i*j only, so the order among equal products is CPython set order; here equal
+// products are ordered lexicographically. That only matters for an exact float
+// tie of |ar - i/j| between two different equal-product grids (documented risk).
+static void uocr2_select_grid(int w, int h, int & wt, int & ht) {
+    const int min_num = 2, max_num = 16, isz = 640;
+    std::vector<std::pair<int, int>> cand;
+    for (int i = 1; i <= max_num; i++)
+        for (int j = 1; j <= max_num; j++)
+            if (i * j >= min_num && i * j <= max_num) cand.push_back({ i, j });
+    std::stable_sort(cand.begin(), cand.end(), [](const std::pair<int, int> & a, const std::pair<int, int> & b) {
+        return a.first * a.second < b.first * b.second;
+    });
+    double ar = (double)w / h, area = (double)w * h;
+    double best = 1e300;
+    wt = 1;
+    ht = 1;
+    for (auto & r : cand) {
+        double diff = fabs(ar - (double)r.first / r.second);
+        if (diff < best) {
+            best = diff;
+            wt = r.first;
+            ht = r.second;
+        } else if (diff == best && area > 0.5 * isz * isz * r.first * r.second) {
+            wt = r.first;
+            ht = r.second;
+        }
+    }
+}
+
+// Encodes the local 640x640 crops (row-major) and lays them out like the
+// reference: (nq*ht) rows, each (nq*wt) features + image_newline (nq = 10).
+// No view_separator here (it follows the global view).
+static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, int h, int ch, int wt, int ht,
+                                     std::vector<float> & local, int & n_local) {
+    auto & s = ctx.m.shp;
+    const int T = 640;
+    const int D = ctx.m.lhp.hidden;
+    std::vector<uint8_t> big = resize_rgb_pil_bicubic(px, w, h, ch, T * wt, T * ht);
+    const int BW = T * wt;
+    int nq = 0;
+    std::vector<std::vector<float>> tile_proj((size_t)wt * ht);
+    std::string saved_ref;
+    std::swap(saved_ref, ctx.diff_ref_path); // reference dumps describe the global view only
+    ctx.pos_aa_bicubic = true;
+    bool ok = true;
+    for (int ty = 0; ty < ht && ok; ty++)
+        for (int tx = 0; tx < wt && ok; tx++) {
+            std::vector<float> pixels((size_t)3 * T * T);
+            for (int c = 0; c < 3; c++)
+                for (int y = 0; y < T; y++)
+                    for (int x = 0; x < T; x++) {
+                        float v = big[((size_t)(ty * T + y) * BW + tx * T + x) * 3 + c] / 255.0f;
+                        pixels[(size_t)c * T * T + (size_t)y * T + x] = (v - s.image_mean[c]) / s.image_std[c];
+                    }
+            std::vector<float> sam_f, clip_f, proj;
+            int n_tok = 0, sam_dim = 0;
+            ok = encode_sam(ctx, pixels.data(), T, sam_f, n_tok, sam_dim) &&
+                 encode_clip(ctx, sam_f.data(), n_tok, sam_dim, clip_f) &&
+                 fuse_and_project(ctx, clip_f.data(), sam_f.data(), n_tok, ctx.m.chp.hidden, sam_dim, proj);
+            if (ok) {
+                int side = (int)lroundf(sqrtf((float)n_tok));
+                if (side * side != n_tok || (nq && side != nq)) ok = false;
+                nq = side;
+                tile_proj[(size_t)ty * wt + tx] = std::move(proj);
+            }
+        }
+    ctx.pos_aa_bicubic = false;
+    std::swap(saved_ref, ctx.diff_ref_path);
+    if (!ok) return false;
+    auto nl = to_f32(ctx.m.image_newline);
+    const int rows = nq * ht, cols = nq * wt;
+    n_local = rows * (cols + 1);
+    local.assign((size_t)n_local * D, 0.0f);
+    for (int r = 0; r < rows; r++) {
+        int ty = r / nq, ry = r % nq;
+        float * dst = local.data() + (size_t)r * (cols + 1) * D;
+        for (int tx = 0; tx < wt; tx++)
+            memcpy(dst + (size_t)tx * nq * D, tile_proj[(size_t)ty * wt + tx].data() + (size_t)ry * nq * D,
+                   (size_t)nq * D * sizeof(float));
+        memcpy(dst + (size_t)cols * D, nl.data(), (size_t)D * sizeof(float));
+    }
+    return true;
+}
+
 const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint8_t * px, int w, int h, int ch,
                                          int * out_len) {
     if (!ctx || !px) {
@@ -3368,6 +3703,27 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
 
         fprintf(stderr, "unlimited_ocr: stages done — sam=%d/%d clip=%d/%d proj=%d vis=%d\n", n_sam_tokens, sam_dim,
                 (int)clip_out.size() / clip_dim, clip_dim, n_sam_tokens, n_vis_total);
+
+        // 5. Unlimited-OCR-2 gundam tiling (default OFF). Variant 2 only, and only for
+        //    pages larger than 640 in either dimension; the local grid goes FIRST,
+        //    then the global view (+ view_separator) built above. Otherwise untouched.
+        if (ctx->inner.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILES") && (w > 640 || h > 640)) {
+            int wt = 1, ht = 1;
+            uocr2_select_grid(w, h, wt, ht);
+            std::vector<float> local;
+            int n_local = 0;
+            if (!uocr2_encode_local_tiles(ctx->inner, px, w, h, ch, wt, ht, local, n_local)) {
+                fprintf(stderr, "unlimited_ocr: gundam tile encoding failed\n");
+                if (out_len) *out_len = 0;
+                return "";
+            }
+            local.insert(local.end(), vis_features.begin(), vis_features.end());
+            vis_features = std::move(local);
+            n_vis_total += n_local;
+            stage_ms("gundam_tiles");
+            fprintf(stderr, "unlimited_ocr: gundam tiles %dx%d (w_t x h_t) local=%d total_vis=%d\n", wt, ht, n_local,
+                    n_vis_total);
+        }
     } // end else (real vision path)
 
     // 5. Assemble the LLM prompt embeddings

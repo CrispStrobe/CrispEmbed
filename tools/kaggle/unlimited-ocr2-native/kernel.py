@@ -2,7 +2,7 @@
 original reference (mounted read-only from the reference kernel via kernel_sources).
 
 Pinned checkpoint -> lossless F32 GGUF -> CLI build -> greedy decode on the untiled
-page -> exact token-ID and text comparison. Small JSON report only.
+page and the tiled 1024x768 pages (CRISPEMBED_UNLIMITED_OCR2_TILES=1) -> exact token-ID and text comparison. Small JSON report only.
 """
 import glob, json, os, re, subprocess, sys
 COMMIT = '@COMMIT@'
@@ -31,10 +31,15 @@ ref_json = glob.glob('/kaggle/input/**/uocr2/reference.json', recursive=True)[0]
 ref = json.load(open(ref_json)); base = os.path.dirname(ref_json)
 report = dict(schema='crispembed-unlimited-ocr2-native-v1', commit=COMMIT, reference_revision=ref['revision'], cases=[])
 for case in ref['cases']:
-    if case['id'] != 'small-untiled':
-        continue  # tiled pages need native gundam tiling (not implemented yet)
+    if case['id'] not in ('small-untiled', 'para-en', 'table'):
+        continue
+    tiled = case['id'] != 'small-untiled'  # 1024x768 pages: native gundam tiling (gated)
     img = os.path.join(base, case['id'] + '.png')
     run_env = dict(os.environ, CRISPEMBED_UNLIMITED_OCR2='1', UOCR_DBG='1', OMP_NUM_THREADS=str(os.cpu_count()))
+    if tiled:
+        run_env['CRISPEMBED_UNLIMITED_OCR2_TILES'] = '1'
+    subprocess.run(['bash', '-c', 'command -v gdb || (apt-get -qq update && apt-get -qq install -y gdb) >/dev/null 2>&1'])
+    run_env['ASAN_OPTIONS'] = 'detect_leaks=0:abort_on_error=0:halt_on_error=1'
     r = subprocess.run(['/kaggle/temp/b/crispembed', '-m', '/kaggle/temp/uocr2-f32.gguf', '--ocr', img,
                         '--ocr-max-tokens', '384', '-t', str(os.cpu_count())], env=run_env, capture_output=True, text=True)
     m = re.search(r'gen_ids \(\d+\):([^\n]*)', r.stderr)
@@ -44,9 +49,9 @@ for case in ref['cases']:
     if native_ids is not None and ref_ids is not None:
         first_diff = next((i for i, (a, b) in enumerate(zip(native_ids, ref_ids)) if a != b),
                           None if len(native_ids) == len(ref_ids) else min(len(native_ids), len(ref_ids)))
-    report['cases'].append(dict(id=case['id'], exit=r.returncode, native_text=r.stdout.strip(), reference_text=case.get('text'),
+    report['cases'].append(dict(id=case['id'], tiled=tiled, exit=r.returncode, native_text=r.stdout.strip(), reference_text=case.get('text'),
                                 native_ids=native_ids, reference_ids=ref_ids, first_id_difference=first_diff,
-                                ids_exact=native_ids is not None and native_ids == ref_ids, stderr_tail=r.stderr[-3000:]))
+                                ids_exact=native_ids is not None and native_ids == ref_ids, stderr_tail=r.stderr[-6000:]))
 os.makedirs('/kaggle/working/native', exist_ok=True)
 json.dump(report, open('/kaggle/working/native/native.json', 'w'), indent=2, ensure_ascii=False)
 print(json.dumps([{k: c[k] for k in ('id', 'exit', 'ids_exact', 'first_id_difference')} for c in report['cases']], indent=1))

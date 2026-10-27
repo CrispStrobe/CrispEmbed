@@ -68,6 +68,28 @@ untiled: [global 16x(16+newline)] [view_seperator]
 ```
 Feature = projector(cat(CLIP[:,1:], SAM.flatten.permute)) exactly as v1.
 
+### 1.5 Native tiling status
+`src/unlimited_ocr.cpp` implements §1.3/§1.4 gundam tiling behind `CRISPEMBED_UNLIMITED_OCR2_TILES=1`
+(default OFF; variant-2 GGUFs only; only when `w > 640 or h > 640`). With the gate off, or for pages
+of at most 640x640, the global-only 273-token path is unchanged. **Status: implemented, not yet
+validated against the reference** (the Kaggle native kernel now runs the tiled `para-en`/`table`
+cases with the gate on; nothing is qualified until those IDs match).
+
+Parity risks, most likely first:
+- **Tile resize.** A port of Pillow's `Resample.c` BICUBIC (a=-0.5, support widened by the
+  downscale factor, 22-bit fixed-point coefficients, horizontal pass then vertical, uint8 rounding
+  after each pass). Intended to be bit-exact with Pillow, but not yet checked; a Pillow version
+  with different rounding would show up as small pixel differences.
+- **Position-embedding resize for 640 inputs** (SAM 64→40 grid, CLIP 16→10 grid): torch-style
+  bicubic+antialias in fp32, used only for tiles. Summation order differs from torch (~1e-7). The
+  existing bilinear SAM interpolation (`UOCR_OPT_SAM_RES`) is unchanged.
+- **Grid choice ties.** The reference sorts a Python `set` by `i*j`, so the order among equal
+  products is CPython set order; native uses lexicographic order. This only matters for an exact
+  float tie between two different grids with the same product.
+- **Global view.** The tiled path reuses the existing letterbox resize (non-antialiased
+  bicubic). Downscaling to 1024 is exact for the 1024x768 fixtures but may differ from
+  `ImageOps.pad` on larger pages.
+
 ---
 
 ## 2. Main-attention positions and RoPE
