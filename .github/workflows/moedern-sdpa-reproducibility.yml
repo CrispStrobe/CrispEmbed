@@ -1,0 +1,54 @@
+name: MoEdern first-attention SDPA reproducibility diagnosis
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  operator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      TOKENIZERS_PARALLELISM: 'false'
+      HF_HUB_OFFLINE: '1'
+      TRANSFORMERS_OFFLINE: '1'
+      HF_HUB_DISABLE_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tiny source and rejection controls
+        run: python -B tests/test_moedern_sdpa_reproducibility.py -v
+      - name: Authenticate both immutable histories before framework installation
+        run: python -B tools/ci-heavy/moedern_sdpa_reproducibility.py --phase prepare --output "$RUNNER_TEMP/sdpa-output" --scratch "$RUNNER_TEMP/sdpa-scratch"
+      - name: Original CPU packages only; no new checkpoint or tokenizer download
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.2.6 transformers==5.3.0 'sentence-transformers @ git+https://github.com/huggingface/sentence-transformers.git@b0bf39968ba461c34b29372144794eff1be06f6d'
+          python -m pip freeze > "$RUNNER_TEMP/sdpa-output/review/environment.txt"
+      - name: First attention only; exact inputs, neutral profiling and actual Ref metrics
+        run: python -B tools/ci-heavy/moedern_sdpa_reproducibility.py --phase run --output "$RUNNER_TEMP/sdpa-output" --scratch "$RUNNER_TEMP/sdpa-scratch"
+      - name: Preserve all small outcomes including partial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-sdpa-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/sdpa-output/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve operator arrays and lossless comparator adapters remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-sdpa-arrays-${{ github.run_id }}
+          path: ${{ runner.temp }}/sdpa-output/raw/
+          retention-days: 90
+          if-no-files-found: warn
