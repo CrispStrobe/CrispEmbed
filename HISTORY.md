@@ -1,3 +1,29 @@
+## 27 October 2026 — Josev native head passes CPU and CUDA original-first parity
+
+The separate genuine GPU task freezes workera69b3fca/bootstrap91f7e721,
+head sourced8b99a9c and ggml890278a8. All123 head stages per backend pass actual
+`crispembed_diff::Ref` and independent metrics across four cases. CPU worst
+absolute error1.14440918e-5 (field layer3), minimum row cosine
+0.9999999999999097; CUDA worst7.62939453e-6, minimum0.999999999999971.
+Final probability max errors are5.96046e-8/8.94070e-8. Every complete typed
+response matches the original exactly on both backends, including model,
+seven answers, probabilities/rounding and token usage.
+
+[Full246-stage report](tests/results/josev2b/head-cpu-cuda-panel.json) and
+[independent review](tests/results/josev2b/head-cpu-cuda-review.json) preserve
+all source/report hashes,72 independently rehashed small files, ten bootstrap
+logs, eight comparison reports, actual Ref0/1/2 controls and28 ordinary/observed/
+repeat field-output hash triplets. All eight neutrality/failure/recovery controls
+pass; observer symbols remain excluded from the plain archive. Raw arrays,
+weights and binaries stay remote. The head panel takes24.97s including comparison
+and controls in one session, with largest child RSS582,276KiB; this is not an
+end-to-end performance comparison.
+
+This closes the bounded head component from original hidden/lexical inputs.
+Native backbone and composed end-to-end typed responses, public APIs, model
+quality and release qualification remain pending. The separately staged current
+runtime uses ggmla06; do not replace it with an auditor branch's890 gitlink.
+
 ## 27 October 2026 — Josev raw preservation and F32 head conversion reviewed
 
 Hosted [40429513945](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40429513945)

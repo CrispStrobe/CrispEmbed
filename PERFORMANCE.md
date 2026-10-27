@@ -1,3 +1,14 @@
+## 27 October 2026 — Josev head numerical parity, CPU and CUDA
+
+[Original-first head results](tests/results/josev2b/head-cpu-cuda-review.json):
+all123 captured stages per backend pass fixed0.002/0.99999 gates. CPU/CUDA worst
+absolute errors1.14440918e-5/7.62939453e-6; minimum row cosines
+0.9999999999999097/0.999999999999971. Probability maxima5.96046e-8/8.94070e-8;
+all eight complete typed responses match exactly. These are component results
+from frozen original backbone inputs, not composed inference or task quality.
+The24.97s panel includes controls/comparators;582,276KiB is largest Linux child
+RSS, not total GPU memory. No end-to-end speedup or throughput is established.
+
 ## 27 October 2026 — bounded audits, unchanged qualification limits
 
 The [eight-grid/gate Ovis review](tests/results/qwen35-ocr/ovisocr2-four-grid-interpolation.json)
