@@ -1,0 +1,116 @@
+{
+  "schema": "crispembed-unlimited-ocr2-source-v1",
+  "repository": "baidu/Unlimited-OCR-2",
+  "revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+  "license": "MIT (model card metadata; no separate LICENSE file in the repository)",
+  "code": "https://github.com/baidu/Unlimited-OCR",
+  "predecessor": {
+    "repository": "baidu/Unlimited-OCR",
+    "revision": "8249d20b2822a7d8a4c22c8d8c9069b5ac36bda3"
+  },
+  "files": {
+    ".gitattributes": {
+      "bytes": 1957,
+      "git_oid": "c0778344763173b6fe22020b7ed89a123101b6f9"
+    },
+    "README.md": {
+      "bytes": 13073,
+      "git_oid": "addf09b88832b8424dda167bc007e7b078fdbbfd"
+    },
+    "_sparse_base_impl.py": {
+      "bytes": 221755,
+      "git_oid": "3291637638c1366b7b6cd20fd53b6efafcea8a65"
+    },
+    "config.json": {
+      "bytes": 5525,
+      "git_oid": "a1ea89c4c965d5c5bd5c77b21b928aa710aa7af6"
+    },
+    "configuration_deepseek_v2.py": {
+      "bytes": 10720,
+      "git_oid": "1c28cf39e8b821ec2623d3762f08ffd77050e8f8"
+    },
+    "conversation.py": {
+      "bytes": 9253,
+      "git_oid": "65c295e81cd804080ec238b31d1922f33e1f9405"
+    },
+    "dash_attention.py": {
+      "bytes": 71465,
+      "git_oid": "891d2ff7b5f9dc282cf702f34d7d2cfd69528011"
+    },
+    "deepencoder.py": {
+      "bytes": 37939,
+      "git_oid": "6b10ea1b896cffb8e6cfb4d799d4b11479d519b8"
+    },
+    "generation_config.json": {
+      "bytes": 111,
+      "git_oid": "6f7f9313195af78c979fc889accc234edb6e0d3c"
+    },
+    "model-00001-of-00002.safetensors": {
+      "bytes": 4998430312,
+      "git_oid": "816ac22348c3176795d7c13034eadbdb71de47dc",
+      "sha256": "4c40b740f209fd7682040d4ebf19409208acde5c401ccd2dde426d0f41542f18"
+    },
+    "model-00002-of-00002.safetensors": {
+      "bytes": 1689875264,
+      "git_oid": "f33017c06fa42e3c9f4540ab253e00362b50999b",
+      "sha256": "9490b82fa47f89e5110eb5577f8ab1b6694c12121905dbc086ddb10207a4ba0c"
+    },
+    "model.safetensors.index.json": {
+      "bytes": 254054,
+      "git_oid": "bc164961600a572ed4ff5215eee526d9fe706774"
+    },
+    "modeling_deepseekv2.py": {
+      "bytes": 25572,
+      "git_oid": "6cf69a31cbfb09f8d9d54fba51af21ebffc695dc"
+    },
+    "modeling_unlimitedocr.py": {
+      "bytes": 55724,
+      "git_oid": "2a717b55c0509995978d0a1e78802a997c26660e"
+    },
+    "packing_patch.py": {
+      "bytes": 8110,
+      "git_oid": "f01b4bd31cffe43135a8b86d5436f04d3a69146b"
+    },
+    "sparse_gather_e2e_triton.py": {
+      "bytes": 18058,
+      "git_oid": "021575ce952bbded01bbfa99eb95641d271cad7d"
+    },
+    "sparse_gather_triton.py": {
+      "bytes": 23860,
+      "git_oid": "6621872e78cd318e4bb55aa70c1c8813973c78e7"
+    },
+    "special_tokens_map.json": {
+      "bytes": 549,
+      "git_oid": "ae2383ca05f494aa736e72e6a874332cd2f1c67e"
+    },
+    "tokenizer.json": {
+      "bytes": 9980278,
+      "git_oid": "d5909a7c1e63a78be90fe2bde6c8464e6e9e8540"
+    },
+    "tokenizer_config.json": {
+      "bytes": 166632,
+      "git_oid": "e97c1bb98fa1de585d85259b77e4785bf1c195a2"
+    }
+  },
+  "delta_vs_v1": {
+    "new_tensors_per_layer": [
+      "self_attn.dash_router.{head_cls,q_proj,k_proj,q_norm,k_norm}",
+      "self_attn.indexer.{q_proj,k_proj,q_norm,k_norm}"
+    ],
+    "rope": "YaRN factor4 theta500000 original32768; main attention page2d rope (resample)",
+    "attention": "DASH block-sparse prefill+decode: block32, top-k blocks 12/16, init1, local4 blocks, entmax router",
+    "vision": "unchanged except comments",
+    "tensor_count": {
+      "v1": 2710,
+      "v2": 2819
+    }
+  },
+  "reference_runtime": {
+    "note": "CPU F32; Triton paths are CUDA-only so the torch fallback runs; .cuda() calls are made identity on CPU"
+  },
+  "qualification": {
+    "native": false,
+    "default_enabled": false,
+    "published": false
+  }
+}
