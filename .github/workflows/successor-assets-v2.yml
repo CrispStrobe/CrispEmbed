@@ -1,0 +1,109 @@
+name: Successor assets v2 (final source producers then consumers)
+# Standalone on purpose: ovisocr2-metadata.yml already totals 50 reusable-workflow
+# references. workflow_dispatch only works once this file exists on main.
+on:
+  workflow_dispatch:
+    inputs:
+      native_run:
+        type: string
+        default: ''
+        description: 'Optional existing release.yml dry-run ID; empty dispatches a fresh producer'
+      wasm_run:
+        type: string
+        default: ''
+        description: 'Optional existing release-wasm.yml dry-run ID; empty dispatches a fresh producer'
+      corpus_run:
+        type: string
+        required: true
+        default: '40386968045'
+        description: 'Reviewed frozen PosFormer corpus proof run (carried v1 evidence)'
+permissions:
+  contents: read
+  actions: write
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: v2 stdlib controls (declared base, v1 unchanged, matrix complete)
+        run: |
+          python tools/successor_assets_v2.py controls
+          python tests/test_successor_assets_v2.py -v
+  producers:
+    needs: controls
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    outputs:
+      native_run: ${{ steps.runs.outputs.native_run }}
+      wasm_run: ${{ steps.runs.outputs.wasm_run }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NATIVE_RUN: ${{ inputs.native_run }}
+      WASM_RUN: ${{ inputs.wasm_run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Dispatch or adopt seven native and two WASM producers, then wait
+        id: runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          start=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          find_run() {
+            for _ in $(seq 1 30); do
+              id=$(gh run list --workflow "$1" --event workflow_dispatch --commit "$GITHUB_SHA" \
+                   --json databaseId,createdAt --jq "[.[]|select(.createdAt>=\"$start\")][0].databaseId // empty")
+              [ -n "$id" ] && { echo "$id"; return; }
+              sleep 20
+            done
+            echo "no $1 run appeared" >&2; exit 1
+          }
+          if [ -z "$NATIVE_RUN" ]; then
+            gh workflow run release.yml --ref "$GITHUB_REF_NAME" -f cpu_only=true
+            NATIVE_RUN=$(find_run release.yml)
+          fi
+          if [ -z "$WASM_RUN" ]; then
+            gh workflow run release-wasm.yml --ref "$GITHUB_REF_NAME"
+            WASM_RUN=$(find_run release-wasm.yml)
+          fi
+          for run in "$NATIVE_RUN" "$WASM_RUN"; do gh run watch "$run" --interval 60 --exit-status >/dev/null || true; done
+          echo "native_run=$NATIVE_RUN" >> "$GITHUB_OUTPUT"
+          echo "wasm_run=$WASM_RUN" >> "$GITHUB_OUTPUT"
+      - name: Producers must be runtime-equivalent to final base 7abd9bc6
+        env:
+          NATIVE_ID: ${{ steps.runs.outputs.native_run }}
+          WASM_ID: ${{ steps.runs.outputs.wasm_run }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_ID" > "$RUNNER_TEMP/native.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$WASM_ID" > "$RUNNER_TEMP/wasm.json"
+          python tools/successor_assets_v2.py producer --kind native --run-json "$RUNNER_TEMP/native.json"
+          python tools/successor_assets_v2.py producer --kind wasm --run-json "$RUNNER_TEMP/wasm.json"
+  consumers:
+    needs: producers
+    # Reuses the unchanged v1 consumer matrix (desktop/bindings/wasm/apple/mobile/review).
+    uses: ./.github/workflows/successor-assets.yml
+    with:
+      native_run: ${{ needs.producers.outputs.native_run }}
+      wasm_run: ${{ needs.producers.outputs.wasm_run }}
+      corpus_run: ${{ inputs.corpus_run }}
+  expectations:
+    needs: [producers, consumers]
+    if: always() && needs.producers.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record declared v2 expectations (browser must not be claimed)
+        run: |
+          python - <<'PYCODE'
+          import json
+          p=json.load(open('docs/successor-assets-v2.json'))
+          for k,v in sorted(p['expectations'].items()):print(f"{k:20} expected={v['expected']}")
+          assert p['expectations']['browser']['may_claim'] is False and p['qualification'] is False
+          PYCODE
+          echo "v1 consumer aggregate: ${{ needs.consumers.result }} (browser failure expected; no qualification follows)"
