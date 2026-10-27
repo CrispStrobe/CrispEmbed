@@ -1,0 +1,30 @@
+name: Josev locked wheel owner metadata audit
+on:
+  workflow_call:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Tiny archive and ownership controls without frameworks or wheels
+        run: python tests/test_josev2b_wheel_metadata.py -v
+      - name: Authenticate all57 archives one at a time without installation or import
+        run: python tools/ci-heavy/josev2b_wheel_metadata.py --output "$RUNNER_TEMP/josev-wheel-metadata"
+      - name: Retain small metadata and all rejection reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-wheel-metadata-${{ github.run_id }}
+          path: ${{ runner.temp }}/josev-wheel-metadata/
+          retention-days: 90
+          if-no-files-found: warn
