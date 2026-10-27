@@ -25,7 +25,9 @@ for n,p in c['files'].items():
 """)
 env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', TMPDIR='/kaggle/temp')
 sh(PY, 'models/convert-unlimited-ocr-to-gguf.py', '--model-dir', src, '--output', '/kaggle/temp/uocr2-f32.gguf', env=env)
-sh('cmake', '-S', '.', '-B', '/kaggle/temp/b', '-DCMAKE_BUILD_TYPE=RelWithDebInfo', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF')
+sh('cmake', '-S', '.', '-B', '/kaggle/temp/b', '-DCMAKE_BUILD_TYPE=RelWithDebInfo', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF',
+   '-DCMAKE_C_FLAGS=-fsanitize=address -fno-omit-frame-pointer', '-DCMAKE_CXX_FLAGS=-fsanitize=address -fno-omit-frame-pointer',
+   '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address', '-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address')
 sh('cmake', '--build', '/kaggle/temp/b', '--target', 'crispembed-cli', '--parallel', '4')
 ref_json = glob.glob('/kaggle/input/**/uocr2/reference.json', recursive=True)[0]
 ref = json.load(open(ref_json)); base = os.path.dirname(ref_json)
@@ -36,7 +38,8 @@ for case in ref['cases']:
     img = os.path.join(base, case['id'] + '.png')
     run_env = dict(os.environ, CRISPEMBED_UNLIMITED_OCR2='1', UOCR_DBG='1', OMP_NUM_THREADS=str(os.cpu_count()))
     subprocess.run(['bash', '-c', 'command -v gdb || (apt-get -qq update && apt-get -qq install -y gdb) >/dev/null 2>&1'])
-    r = subprocess.run(['gdb', '-q', '-batch', '-ex', 'run', '-ex', 'bt 25', '--args', '/kaggle/temp/b/crispembed', '-m', '/kaggle/temp/uocr2-f32.gguf', '--ocr', img,
+    run_env['ASAN_OPTIONS'] = 'detect_leaks=0:abort_on_error=0:halt_on_error=1'
+    r = subprocess.run(['/kaggle/temp/b/crispembed', '-m', '/kaggle/temp/uocr2-f32.gguf', '--ocr', img,
                         '--ocr-max-tokens', '384', '-t', str(os.cpu_count())], env=run_env, capture_output=True, text=True)
     m = re.search(r'gen_ids \(\d+\):([^\n]*)', r.stderr)
     native_ids = [int(x) for x in m.group(1).split()] if m else None
@@ -47,7 +50,7 @@ for case in ref['cases']:
                           None if len(native_ids) == len(ref_ids) else min(len(native_ids), len(ref_ids)))
     report['cases'].append(dict(id=case['id'], exit=r.returncode, native_text=r.stdout.strip(), reference_text=case.get('text'),
                                 native_ids=native_ids, reference_ids=ref_ids, first_id_difference=first_diff,
-                                ids_exact=native_ids is not None and native_ids == ref_ids, stderr_tail=r.stderr[-3000:]))
+                                ids_exact=native_ids is not None and native_ids == ref_ids, stderr_tail=r.stderr[-6000:]))
 os.makedirs('/kaggle/working/native', exist_ok=True)
 json.dump(report, open('/kaggle/working/native/native.json', 'w'), indent=2, ensure_ascii=False)
 print(json.dumps([{k: c[k] for k in ('id', 'exit', 'ids_exact', 'first_id_difference')} for c in report['cases']], indent=1))
