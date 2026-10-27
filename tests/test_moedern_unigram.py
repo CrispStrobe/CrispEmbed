@@ -38,6 +38,15 @@ class Controls(unittest.TestCase):
   self.assertEqual([len(r['token_ids'])for r in rows],[32,28,32,23,32,21,32,512,4,3])
   for row in rows:
    self.assertEqual(row['effective_attention_mask'],[1]*len(row['token_ids'])if row['role']=='query'else row['supplied_attention_mask'])
+ def test_actual_added_token_state_is_strict_dict_not_json(self):
+  state={'content':'[Q] ','single_word':False,'lstrip':False,'rstrip':False,'normalized':False,'special':True}
+  class Fake:
+   def __init__(self,value):self.value=value
+   def __getstate__(self):return self.value
+  captured=oracle.added_token_state(Fake(state));self.assertEqual(captured,state);self.assertIsNot(captured,state)
+  state['content']='changed';self.assertEqual(captured['content'],'[Q] ')
+  for invalid in [json.dumps(captured),json.dumps(captured).encode(),None,{'content':'[Q] '},dict(captured,special=1),dict(captured,content=''),dict(captured,other=False)]:
+   with self.assertRaisesRegex(ValueError,'AddedToken state'):oracle.added_token_state(Fake(invalid))
  def test_registration_ast_is_source_only(self):
   tree=ast.parse((ROOT/'tools/moedern-unigram/original.py').read_text());fn=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name=='register')
   self.assertTrue(any(isinstance(n,ast.Call)and isinstance(n.func,ast.Attribute)and n.func.attr=='parse' for n in ast.walk(fn)))
