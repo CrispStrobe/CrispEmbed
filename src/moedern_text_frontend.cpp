@@ -1,6 +1,7 @@
 // Independent pinned tokenizers0.22.2 Unigram/role implementation. No generic
 // SentencePiece/WordPiece behavior changes. See docs/moedern-unigram-frontend.md.
 #include "moedern_text_frontend.h"
+#include "moedern_packed_profile.h"
 #include "core/env_gate.h"
 #include "core/unicode_categ.h"
 #include "gguf.h"
@@ -70,6 +71,12 @@ void replace(std::string & text, const std::string & from, const std::string & t
 const char * marker = "\xe2\x96\x81";
 } // namespace
 bool text_frontend::load(const char * path, std::string & error) {
+    return load_file(path, false, error);
+}
+bool text_frontend::load_packed(const char * path, std::string & error) {
+    return load_file(path, true, error);
+}
+bool text_frontend::load_file(const char * path, bool packed, std::string & error) {
     *this = {};
     error.clear();
     try {
@@ -77,14 +84,21 @@ bool text_frontend::load(const char * path, std::string & error) {
                           std::numeric_limits<double>::digits == 53,
                       "exact binary64 scores required");
         require(core_env::on("CRISPEMBED_MOEDERN_TEXT_FRONTEND"), "MoEdern text frontend gate is OFF");
+        require(!packed || core_env::on("CRISPEMBED_MOEDERN_PACKED"), "MoEdern packed gate is OFF");
         require(path && *path, "empty tokenizer component path");
+        if (packed && !moedern_packed::file_bounds(path, error)) return false;
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         require(file && file.tellg() > 0 && file.tellg() <= 16 * 1024 * 1024, "bounded tokenizer component required");
         const gguf_init_params params = { true, nullptr };
         std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(path, params), gguf_free);
-        require(meta && gguf_get_n_tensors(meta.get()) == 0, "metadata-only tokenizer component required");
+        require(bool(meta), "tokenizer metadata unavailable");
+        if (packed) {
+            if (!moedern_packed::metadata_valid(meta.get(), error)) return false;
+        } else
+            require(gguf_get_n_tensors(meta.get()) == 0, "metadata-only tokenizer component required");
         auto * g = meta.get();
-        require(string(g, "general.architecture") == "moedern_unigram_tokenizer" &&
+        require(string(g, "general.architecture") ==
+                        (packed ? "modernbert_hash_moe_v10" : "moedern_unigram_tokenizer") &&
                     string(g, "moedern.tokenizer.format") == "crispembed-moedern-unigram-v1" &&
                     string(g, "moedern.tokenizer.revision") == "9d360b8b88ae11bea5784bf9012ff509fdd5c2da" &&
                     string(g, "moedern.tokenizer.source_sha256") ==

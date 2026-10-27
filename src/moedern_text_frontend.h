@@ -15,6 +15,7 @@ struct text_tokens {
 class text_frontend {
 public:
     bool load(const char * tokenizer_component, std::string & error);
+    bool load_packed(const char * packed_gguf, std::string & error);
     bool encode(const std::string & text, role task, text_tokens & output, std::string & error) const;
     bool enabled() const { return enabled_; }
 #ifdef CRISPEMBED_MOEDERN_TEXT_TESTING
@@ -23,6 +24,7 @@ public:
     std::vector<int32_t> test_unigram(const std::string & segment) const;
 #endif
 private:
+    bool load_file(const char *, bool packed, std::string & error);
     struct node {
         std::map<unsigned char, int> next;
         int id = -1;

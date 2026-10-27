@@ -20,6 +20,7 @@ struct context {
     moedern_colbert::text_frontend tokenizer;
     std::unique_ptr<detail::context, decltype(&detail::free)> engine{ nullptr, detail::free };
     std::string failure;
+    bool packed = false;
     std::mutex mutex;
 };
 context * init(const char * model, const char * tokenizer, int threads, std::string & error) {
@@ -32,6 +33,24 @@ context * init(const char * model, const char * tokenizer, int threads, std::str
         require(tokenizer_loaded, error.c_str());
         pending->engine.reset(detail::init(model, threads, error));
         require(bool(pending->engine), error.c_str());
+        return pending.release();
+    } catch (const std::exception & e) {
+        error = e.what();
+        return nullptr;
+    }
+}
+context * init_packed(const char * path, int threads, std::string & error) {
+    error.clear();
+    try {
+        gates();
+        require(core_env::on("CRISPEMBED_MOEDERN_PACKED"), "MoEdern packed gate is OFF");
+        require(threads >= 1 && threads <= 2, "bounded CPU one/two threads required");
+        auto pending = std::make_unique<context>();
+        const bool tokenizer_loaded = pending->tokenizer.load_packed(path, error);
+        require(tokenizer_loaded, error.c_str());
+        pending->engine.reset(detail::init(path, threads, error));
+        require(bool(pending->engine), error.c_str());
+        pending->packed = true;
         return pending.release();
     } catch (const std::exception & e) {
         error = e.what();
@@ -56,6 +75,7 @@ static bool encode_impl(context * ctx, const std::string & text, role task, resu
     ctx->failure.clear();
     try {
         gates();
+        require(!ctx->packed || core_env::on("CRISPEMBED_MOEDERN_PACKED"), "MoEdern packed gate is OFF");
         require(task == role::query || task == role::document, "explicit text query/document role required");
         moedern_colbert::text_tokens input;
         const bool tokenized = ctx->tokenizer.encode(

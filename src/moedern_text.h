@@ -16,6 +16,7 @@ struct context;
 // Internal raw-text API only. Requires default-off COMPOSED and existing native/
 // frontend gates. CPU/F32, 1.5M only; the tokenizer is a separate metadata GGUF.
 context * init(const char * model_gguf, const char * tokenizer_gguf, int threads, std::string & error);
+context * init_packed(const char * packed_gguf, int threads, std::string & error);
 void free(context * ctx);
 const char * error(const context * ctx);
 bool encode(context * ctx, const std::string & text, role task, result & output);
