@@ -6,10 +6,13 @@ from pathlib import Path
 import re
 import subprocess
 
-BASE = 'PENDING_REVIEWED_FINAL_RUNTIME_SOURCE'
-GGML = 'PENDING_REVIEWED_FINAL_GGML'
-DECLARED = {name: 'PENDING_REVIEWED_FINAL_SHA256' for name in
-            ('src/qwen35_vision.cpp', 'src/crispembed.cpp', 'src/ultrabert_profile.h')}
+BASE = '1a3315f03c34a7ff6b24e59f68763947fb58c8dc'
+GGML = 'a06fc0bb46b73cc10011fc90ae4054aee8438aeb'
+DECLARED = {
+             "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+             "src/crispembed.cpp": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+             "src/ultrabert_profile.h": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31"
+            }
 BINARIES = ('test-qwen35-decoder', 'test-qwen35-vision', 'test-qwen35-delta',
             'test-ovisocr2-context', 'test-ovisocr2-quality-run', 'test-ovisocr2-image-bounds')
 FIXTURE_BASE = 'f3f1b9e7d5385d900b68bdf4bd14677425a15eee'

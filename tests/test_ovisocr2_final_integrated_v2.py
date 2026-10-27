@@ -1,4 +1,4 @@
-"""Source/stdlib controls only. Final runtime declaration stays pending."""
+"""Source/stdlib controls only. The final runtime declaration is now filled; pending behaviour is simulated."""
 import ast
 import copy
 import hashlib
@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+PEND_BASE='PENDING_REVIEWED_FINAL_RUNTIME_SOURCE';PEND_GGML='PENDING_REVIEWED_FINAL_GGML';PEND_SHA='PENDING_REVIEWED_FINAL_SHA256'
 from unittest import mock
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
@@ -30,16 +31,20 @@ class FinalV2(unittest.TestCase):
     def driver(self):
         spec=importlib.util.spec_from_file_location('final_v2_driver',ROOT/'tools/ci-heavy/ovisocr2_final_integrated_v2.py')
         result=importlib.util.module_from_spec(spec);spec.loader.exec_module(result);return result
+    def pending(self):
+        value=self.protocol();value.update(runtime_base=PEND_BASE,ggml=PEND_GGML,runtime_closure_reviewed=False,
+            declared_source_sha256={k:PEND_SHA for k in c.DECLARED},protected_git_objects={k:'PENDING_REVIEWED_GIT_OBJECT' for k in c.PROTECTED_PATHS})
+        return value
+    def pending_constants(self):return mock.patch.multiple(c,BASE=PEND_BASE,GGML=PEND_GGML,DECLARED={k:PEND_SHA for k in c.DECLARED})
     def test_pending_source_blocks_before_git_network_or_model(self):
-        driver=self.driver()
-        with tempfile.TemporaryDirectory() as tmp,mock.patch.dict('os.environ',GITHUB_ACTIONS='true'),mock.patch.object(driver,'api',side_effect=AssertionError('no API')) as api,mock.patch.object(c.subprocess,'check_output',side_effect=AssertionError('no source traversal before pending')):
-            with self.assertRaisesRegex(ValueError,'pending'):driver.preflight(Path(tmp)/'out',require_submodule=False)
-            with self.assertRaisesRegex(ValueError,'pending'):c.source_guard(ROOT,self.protocol(),require_submodule=False)
-            api.assert_not_called()
-    def test_reviewed_dependencies_do_not_choose_runtime(self):
-        self.assertTrue(all(d['reviewed'] and d['panel_completed'] for d in self.value['dependencies'].values()))
-        self.assertIs(c.checked_protocol(self.value,require_closure=False),self.value)
-        with self.assertRaisesRegex(ValueError,'pending'):c.checked_protocol(self.value)
+        with self.pending_constants(),mock.patch.object(c.subprocess,'check_output',side_effect=AssertionError('no source traversal before pending')):
+            with self.assertRaisesRegex(ValueError,'pending'):c.source_guard(ROOT,self.pending(),require_submodule=False)
+            with self.assertRaisesRegex(ValueError,'pending'):c.checked_protocol(self.pending())
+    def test_committed_declaration_is_reviewed_and_matches_checkout(self):
+        self.assertTrue(self.value['runtime_closure_reviewed'])
+        self.assertIs(c.checked_protocol(self.value),self.value)
+        guard=c.source_guard(ROOT,self.value,require_submodule=False)
+        self.assertEqual(guard['runtime_base'],c.BASE);self.assertEqual(guard['ggml'],c.GGML)
     def test_exact_eight_grid_gate_zip_member_and_binary_pins(self):
         d=self.value['dependencies']['ovis_composed'];self.assertEqual(len(d['artifacts']),8)
         self.assertEqual({(p['case'],p['gate']) for p in d['artifacts']},{(case,g) for case in ('frozen-control','control-square','large-landscape','large-boundary') for g in (0,1)})
