@@ -25,9 +25,7 @@ for n,p in c['files'].items():
 """)
 env = dict(os.environ, OMP_NUM_THREADS='1', OPENBLAS_NUM_THREADS='1', TMPDIR='/kaggle/temp')
 sh(PY, 'models/convert-unlimited-ocr-to-gguf.py', '--model-dir', src, '--output', '/kaggle/temp/uocr2-f32.gguf', env=env)
-sh('cmake', '-S', '.', '-B', '/kaggle/temp/b', '-DCMAKE_BUILD_TYPE=RelWithDebInfo', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF',
-   '-DCMAKE_C_FLAGS=-fsanitize=address -fno-omit-frame-pointer', '-DCMAKE_CXX_FLAGS=-fsanitize=address -fno-omit-frame-pointer',
-   '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address', '-DCMAKE_SHARED_LINKER_FLAGS=-fsanitize=address')
+sh('cmake', '-S', '.', '-B', '/kaggle/temp/b', '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF')
 sh('cmake', '--build', '/kaggle/temp/b', '--target', 'crispembed-cli', '--parallel', '4')
 ref_json = glob.glob('/kaggle/input/**/uocr2/reference.json', recursive=True)[0]
 ref = json.load(open(ref_json)); base = os.path.dirname(ref_json)
