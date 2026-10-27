@@ -1,6 +1,7 @@
 name: SystemOne real public library model-free build
 on:
   workflow_dispatch:
+  workflow_call:
 permissions:
   contents: read
 concurrency:
