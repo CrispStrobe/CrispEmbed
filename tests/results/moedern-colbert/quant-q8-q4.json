@@ -1,0 +1,344 @@
+{
+  "schema": "crispembed-moedern-quant-v1",
+  "reps": 5,
+  "commit": "ac0d6fb066308265f882cb1595f5d2f869d23e74",
+  "variants": {
+    "115M": {
+      "revision": "66380d2ade3b5027bba83bdcdba052d0bb86dcdb",
+      "quantization": {
+        "q8_0": {
+          "input_sha256": "2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e",
+          "output_sha256": "f6d29c73e0c332b39eeaf713f04ee7992297dc44782a58c6a08bc54ea41a72ed",
+          "quantization": "q8_0",
+          "quantized": 52,
+          "kept_f32": 42,
+          "bytes": 139994560
+        },
+        "q4_0": {
+          "input_sha256": "2d87f0fe73eaf01eb4271f3d3d0f49434b31c73308dfc22b6c307ce59d4c512e",
+          "output_sha256": "403b8c17730c38393e18afd5dbd1af78297902b17ed51fc8892f1b4d982a06b9",
+          "quantization": "q4_0",
+          "quantized": 52,
+          "kept_f32": 42,
+          "bytes": 85730752
+        }
+      },
+      "arms": {
+        "f32-t2": {
+          "precision": "f32",
+          "threads": 2,
+          "completed": true,
+          "parity_gate_passed": true,
+          "all_max_absolute": 4.3213367462158203e-07,
+          "all_min_row_cosine": 0.9999999999990186,
+          "selected_max_absolute": 4.3213367462158203e-07,
+          "selected_min_row_cosine": 0.9999999999990186,
+          "maxsim_max_abs_diff": 4.05177340567775e-06,
+          "speed": {
+            "reps": [
+              1.971809,
+              1.934499,
+              1.968356,
+              1.926058,
+              1.933654
+            ],
+            "median_seconds": 1.934499,
+            "documents": 6,
+            "docs_per_second": 3.1015782380864505
+          },
+          "speedup_vs_f32_fast": 1.0
+        },
+        "f32-t4": {
+          "precision": "f32",
+          "threads": 4,
+          "completed": true,
+          "parity_gate_passed": true,
+          "all_max_absolute": 4.3213367462158203e-07,
+          "all_min_row_cosine": 0.9999999999990186,
+          "selected_max_absolute": 4.3213367462158203e-07,
+          "selected_min_row_cosine": 0.9999999999990186,
+          "maxsim_max_abs_diff": 4.05177340567775e-06,
+          "speed": {
+            "reps": [
+              2.449398,
+              2.51762,
+              2.451567,
+              2.427247,
+              2.428487
+            ],
+            "median_seconds": 2.449398,
+            "documents": 6,
+            "docs_per_second": 2.449581489002604
+          },
+          "speedup_vs_f32_fast": 1.0
+        },
+        "q8_0-t2": {
+          "precision": "q8_0",
+          "threads": 2,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.062201440799981356,
+          "all_min_row_cosine": 0.9667101060894513,
+          "selected_max_absolute": 0.062201440799981356,
+          "selected_min_row_cosine": 0.9667101060894513,
+          "maxsim_max_abs_diff": 0.3817170547687745,
+          "speed": {
+            "reps": [
+              1.475776,
+              1.478612,
+              1.507904,
+              1.493809,
+              1.541972
+            ],
+            "median_seconds": 1.493809,
+            "documents": 6,
+            "docs_per_second": 4.01657775525519
+          },
+          "speedup_vs_f32_fast": 1.2950109418272349
+        },
+        "q8_0-t4": {
+          "precision": "q8_0",
+          "threads": 4,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.062201440799981356,
+          "all_min_row_cosine": 0.9667101060894513,
+          "selected_max_absolute": 0.062201440799981356,
+          "selected_min_row_cosine": 0.9667101060894513,
+          "maxsim_max_abs_diff": 0.3817170547687745,
+          "speed": {
+            "reps": [
+              2.019193,
+              2.112232,
+              2.074278,
+              2.006058,
+              1.998353
+            ],
+            "median_seconds": 2.019193,
+            "documents": 6,
+            "docs_per_second": 2.9714841523321445
+          },
+          "speedup_vs_f32_fast": 1.2130578899590083
+        },
+        "q4_0-t2": {
+          "precision": "q4_0",
+          "threads": 2,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.09050709009170532,
+          "all_min_row_cosine": 0.946642405836457,
+          "selected_max_absolute": 0.09050709009170532,
+          "selected_min_row_cosine": 0.946642405836457,
+          "maxsim_max_abs_diff": 0.5620333696152304,
+          "speed": {
+            "reps": [
+              1.913551,
+              1.902135,
+              1.836377,
+              1.729942,
+              1.730397
+            ],
+            "median_seconds": 1.836377,
+            "documents": 6,
+            "docs_per_second": 3.267302955765619
+          },
+          "speedup_vs_f32_fast": 1.0534323834376056
+        },
+        "q4_0-t4": {
+          "precision": "q4_0",
+          "threads": 4,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.09050709009170532,
+          "all_min_row_cosine": 0.946642405836457,
+          "selected_max_absolute": 0.09050709009170532,
+          "selected_min_row_cosine": 0.946642405836457,
+          "maxsim_max_abs_diff": 0.5620333696152304,
+          "speed": {
+            "reps": [
+              2.325713,
+              2.318278,
+              2.3109,
+              2.422087,
+              2.317511
+            ],
+            "median_seconds": 2.318278,
+            "documents": 6,
+            "docs_per_second": 2.588127912183095
+          },
+          "speedup_vs_f32_fast": 1.0565592219742415
+        }
+      },
+      "passed": true
+    },
+    "27M": {
+      "revision": "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a",
+      "quantization": {
+        "q8_0": {
+          "input_sha256": "ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9",
+          "output_sha256": "ad98c4d56a5e3a7f2af1b40dedaaa9ff20c2289746736eed8369cfbde4bb7216",
+          "quantization": "q8_0",
+          "quantized": 20,
+          "kept_f32": 12,
+          "bytes": 36308000
+        },
+        "q4_0": {
+          "input_sha256": "ffbf5eb4ce1192686f3782bbb1dcfc3dfc7a7a4651660337beecd7b6208555e9",
+          "output_sha256": "1e1d9962d8f669d20766c0c961692d7e52ec23b6474e57f4b6a7c1656aa9e31b",
+          "quantization": "q4_0",
+          "quantized": 20,
+          "kept_f32": 12,
+          "bytes": 24020000
+        }
+      },
+      "arms": {
+        "f32-t2": {
+          "precision": "f32",
+          "threads": 2,
+          "completed": true,
+          "parity_gate_passed": true,
+          "all_max_absolute": 4.079192876815796e-07,
+          "all_min_row_cosine": 0.9999999999984333,
+          "selected_max_absolute": 4.079192876815796e-07,
+          "selected_min_row_cosine": 0.9999999999984333,
+          "maxsim_max_abs_diff": 1.5616397952555872e-06,
+          "speed": {
+            "reps": [
+              0.349628,
+              0.3688,
+              0.319184,
+              0.32515,
+              0.322762
+            ],
+            "median_seconds": 0.32515,
+            "documents": 6,
+            "docs_per_second": 18.453021682300477
+          },
+          "speedup_vs_f32_fast": 1.0
+        },
+        "f32-t4": {
+          "precision": "f32",
+          "threads": 4,
+          "completed": true,
+          "parity_gate_passed": true,
+          "all_max_absolute": 4.079192876815796e-07,
+          "all_min_row_cosine": 0.9999999999984333,
+          "selected_max_absolute": 4.079192876815796e-07,
+          "selected_min_row_cosine": 0.9999999999984333,
+          "maxsim_max_abs_diff": 1.5616397952555872e-06,
+          "speed": {
+            "reps": [
+              0.436394,
+              0.440042,
+              0.435807,
+              0.44128,
+              0.436602
+            ],
+            "median_seconds": 0.436602,
+            "documents": 6,
+            "docs_per_second": 13.742493163109652
+          },
+          "speedup_vs_f32_fast": 1.0
+        },
+        "q8_0-t2": {
+          "precision": "q8_0",
+          "threads": 2,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.10518388077616692,
+          "all_min_row_cosine": 0.9314886124258616,
+          "selected_max_absolute": 0.10518388077616692,
+          "selected_min_row_cosine": 0.9314886124258616,
+          "maxsim_max_abs_diff": 0.06993452673229861,
+          "speed": {
+            "reps": [
+              0.305269,
+              0.306775,
+              0.302024,
+              0.302322,
+              0.306376
+            ],
+            "median_seconds": 0.305269,
+            "documents": 6,
+            "docs_per_second": 19.65479626165775
+          },
+          "speedup_vs_f32_fast": 1.0651261674130028
+        },
+        "q8_0-t4": {
+          "precision": "q8_0",
+          "threads": 4,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.10518388077616692,
+          "all_min_row_cosine": 0.9314886124258616,
+          "selected_max_absolute": 0.10518388077616692,
+          "selected_min_row_cosine": 0.9314886124258616,
+          "maxsim_max_abs_diff": 0.06993452673229861,
+          "speed": {
+            "reps": [
+              0.402871,
+              0.391137,
+              0.395271,
+              0.424678,
+              0.449559
+            ],
+            "median_seconds": 0.402871,
+            "documents": 6,
+            "docs_per_second": 14.893104740723459
+          },
+          "speedup_vs_f32_fast": 1.0837265526682238
+        },
+        "q4_0-t2": {
+          "precision": "q4_0",
+          "threads": 2,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.11044444516301155,
+          "all_min_row_cosine": 0.9011305553787268,
+          "selected_max_absolute": 0.10150320082902908,
+          "selected_min_row_cosine": 0.9011305553787268,
+          "maxsim_max_abs_diff": 0.3583380925629669,
+          "speed": {
+            "reps": [
+              0.35005,
+              0.353531,
+              0.346694,
+              0.353404,
+              0.349973
+            ],
+            "median_seconds": 0.35005,
+            "documents": 6,
+            "docs_per_second": 17.140408513069563
+          },
+          "speedup_vs_f32_fast": 0.9288673046707614
+        },
+        "q4_0-t4": {
+          "precision": "q4_0",
+          "threads": 4,
+          "completed": true,
+          "parity_gate_passed": false,
+          "all_max_absolute": 0.11044444516301155,
+          "all_min_row_cosine": 0.9011305553787268,
+          "selected_max_absolute": 0.10150320082902908,
+          "selected_min_row_cosine": 0.9011305553787268,
+          "maxsim_max_abs_diff": 0.3583380925629669,
+          "speed": {
+            "reps": [
+              0.44607,
+              0.453886,
+              0.446379,
+              0.44444,
+              0.448559
+            ],
+            "median_seconds": 0.446379,
+            "documents": 6,
+            "docs_per_second": 13.44149254333201
+          },
+          "speedup_vs_f32_fast": 0.9780970879006404
+        }
+      },
+      "passed": true
+    }
+  },
+  "passed": true
+}
