@@ -1,6 +1,7 @@
 """Dedicated raw-text/role MoEdern1.5M multivectors; no dense-pooling API."""
 import ctypes as C
 import math
+import os
 from ._binding import _load_library, CrispEmbed, set_offline
 
 class _Result(C.Structure):
@@ -21,7 +22,8 @@ class CrispMoEdern:
     def __init__(self,model_path,n_threads=2,lib_path=None,auto_download=None,offline=None):
         self._ctx=None
         if not isinstance(model_path,str)or '\0'in model_path:raise ValueError('NUL-free model path required')
-        if type(n_threads)is not int or not 0<=n_threads<=2:raise ValueError('MoEdern threads must be0..2')
+        cap=64 if os.environ.get('CRISPEMBED_MOEDERN_FAST','') not in ('','0') else 2  # fast family path only; native re-checks
+        if type(n_threads)is not int or not 0<=n_threads<=cap:raise ValueError('MoEdern threads must be0..%d'%cap)
         lib=self._lib=_load_library(lib_path)
         if not all(hasattr(lib,'crispembed_moedern_'+n)for n in ('init','free','encode','score','error')):raise RuntimeError('Native library does not provide MoEdern text support')
         for name,args,result in [('init',[C.c_char_p,C.c_int],C.c_void_p),('free',[C.c_void_p],None),

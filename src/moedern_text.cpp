@@ -54,7 +54,9 @@ context * init_packed(const char * path, int threads, std::string & error) {
     try {
         gates();
         require(core_env::on("CRISPEMBED_MOEDERN_PACKED"), "MoEdern packed gate is OFF");
-        require(threads >= 1 && threads <= 2, "bounded CPU one/two threads required");
+        // CRISPEMBED_MOEDERN_FAST lifts the one/two-thread bound for the family fast path only.
+        const bool fast = core_env::on("CRISPEMBED_MOEDERN_FAST");
+        require(threads >= 1 && threads <= (fast ? 64 : 2), "bounded CPU one/two threads required");
         auto pending = std::make_unique<context>();
         const bool tokenizer_loaded = pending->tokenizer.load_packed(path, error);
         require(tokenizer_loaded, error.c_str());
@@ -67,10 +69,12 @@ context * init_packed(const char * path, int threads, std::string & error) {
                         (revision == "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a" ||
                          revision == "66380d2ade3b5027bba83bdcdba052d0bb86dcdb"),
                     "MoEdern family gate is OFF or revision unqualified");
+            require(threads <= 2 || core_env::on("CRISPEMBED_MOEDERN_FAST"), "bounded CPU one/two threads required");
             pending->family.reset(moedern_family::init(path, threads, error));
             require(bool(pending->family), error.c_str());
 #endif
         } else {
+            require(threads <= 2, "bounded CPU one/two threads required");
             pending->engine.reset(detail::init(path, threads, error));
             require(bool(pending->engine), error.c_str());
         }

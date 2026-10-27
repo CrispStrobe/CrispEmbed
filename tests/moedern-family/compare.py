@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Run the family probe on a frozen original panel and compare under the unchanged
-0.002 / 0.99999 vector and 0.002 MaxSim gates. Hosted only (Kaggle or Actions)."""
+0.002 / 0.99999 vector and 0.002 MaxSim gates. Hosted only (Kaggle or Actions).
+
+The path is chosen by the inherited environment (CRISPEMBED_MOEDERN_FAST=1 selects
+the fast single-graph path) and MOEDERN_PROBE_THREADS (default 2). The gates are
+identical for both paths; compare_paths.py runs every arm."""
 import glob, json, math, os, struct, subprocess, sys
 from pathlib import Path
 GATES = dict(max_absolute=0.002, min_row_cosine=0.99999, maxsim_max_absolute=0.002)
@@ -11,8 +15,15 @@ out.mkdir(parents=True, exist_ok=True); (out/'native').mkdir(exist_ok=True)
 def flag(v): return [int(x) for x in (json.loads(v.replace('True', 'true').replace('False', 'false')) if isinstance(v, str) else v)]
 (out/'cases.tsv').write_text(''.join(f"{c['id']}\t{c['role']}\t{','.join(map(str, c['token_ids']))}\t{','.join(map(str, c['supplied_attention_mask']))}\n" for c in report['cases']))
 env = dict(os.environ, CRISPEMBED_MOEDERN_FAMILY='1', CRISPEMBED_MOEDERN_COLBERT='1')
-r = subprocess.run([str(probe), str(root/'model-F32.gguf'), str(out/'cases.tsv'), str(out/'native')], env=env, capture_output=True, text=True)
+threads = int(os.environ.get('MOEDERN_PROBE_THREADS', '2'))
+fast = os.environ.get('CRISPEMBED_MOEDERN_FAST', '') not in ('', '0')
+r = subprocess.run([str(probe), str(root/'model-F32.gguf'), str(out/'cases.tsv'), str(out/'native'), str(threads)], env=env, capture_output=True, text=True)
 print(r.stdout, r.stderr)
+timing = {}
+for line in r.stdout.splitlines():
+    f = line.split()
+    if len(f) == 3 and f[0] != 'profile': timing[f[0]] = float(f[2])
+    elif len(f) == 2 and f[0] == 'total_encode_seconds': timing['total'] = float(f[1])
 def rows(path, w=128):
     b = Path(path).read_bytes(); n = len(b)//4; v = struct.unpack(f'<{n}f', b); return [v[i:i+w] for i in range(0, n, w)]
 def metrics(a, b):
@@ -25,7 +36,8 @@ def metrics(a, b):
                 passed=len(a) == len(b) and worst <= GATES['max_absolute'] and cos >= GATES['min_row_cosine'])
 arr = {(s['case'], s['stage']): root/s['path'] for s in report['stage_arrays']}
 result = dict(schema='crispembed-moedern-family-parity-v1', variant=report['variant'], revision=report['revision'],
-              probe_exit=r.returncode, gates=GATES, cases={}, scores=[])
+              probe_exit=r.returncode, gates=GATES, path='fast' if fast else 'default', threads=threads,
+              encode_seconds=timing, cases={}, scores=[])
 selected = {}
 for c in report['cases']:
     f = out/'native'/(c['id']+'.f32')
@@ -42,5 +54,5 @@ for s in report['scores']:
                                  passed=abs(native-s['original_maxsim']) <= GATES['maxsim_max_absolute']))
 result['passed'] = r.returncode == 0 and all(c['passed'] for c in result['cases'].values()) and all(s['passed'] for s in result['scores'])
 (out/'parity.json').write_text(json.dumps(result, indent=2)+'\n')
-print(json.dumps({k: result[k] for k in ('variant', 'passed', 'scores')}, indent=1))
+print(json.dumps({k: result[k] for k in ('variant', 'path', 'threads', 'passed', 'scores')}, indent=1))
 sys.exit(0 if result['passed'] else 1)

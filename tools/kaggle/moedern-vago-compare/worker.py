@@ -14,6 +14,11 @@ no gate, budget, pin or default changes follow from it.
    and ours F32 vs the frozen original and vs each other, token IDs).
 4. SPEED on an identical deterministic workload (256 documents, 256 queries),
    2 and 4 threads, warm-up excluded, 3 timed repetitions, median.
+5. "ours-fast" arms: the same CrispEmbed builds with CRISPEMBED_MOEDERN_FAST=1
+   (single-graph family path, top-2 experts only, up to 64 threads); outputs at
+   2 threads and speed at 2 and 4 threads. Its acceptance gate is the unchanged
+   0.002 / 0.99999 vector and 0.002 MaxSim gate vs the frozen originals with
+   identical token IDs; float differences from the default path are expected.
 
 Usage: worker.py VARIANT MOUNT OUT
 """
@@ -132,10 +137,11 @@ def build_ours(scratch, native, out):
     return build/'libcrispembed.so', build/'bench_ours'
 
 
-def ours_env(build_dir, threads):
+def ours_env(build_dir, threads, fast=False):
     env = {k: v for k, v in os.environ.items() if not k.startswith('CRISPEMBED_')}
     env.update({g: '1' for g in GATES}, CRISPEMBED_OFFLINE='1', OMP_NUM_THREADS=str(threads),
                CRISPEMBED_SYS_LIB_DIR=str(build_dir), LD_LIBRARY_PATH=str(build_dir))
+    if fast: env['CRISPEMBED_MOEDERN_FAST'] = '1'
     return env
 
 
@@ -281,12 +287,18 @@ def main(variant, mount, out):
             try: author_out[key] = json_run(py + [HERE/'author_runner.py', 'outputs', vago, engine, model_file(quant), tok_json, 2, scratch/'cases.json', o],
                                             out/('outputs-author-%s.log' % key), plain_env(2), o)
             except Exception as e: errors['author-' + key] = str(e)
-        for key, (so, _) in ours_builds.items():
-            o = scratch/('out-ours-%s.json' % key)
-            try: ours_out[key] = json_run(py + [HERE/'ours_runner.py', 'outputs', ROOT/'python', so, packed, 2, scratch/'cases.json', scratch/'pairs.json', o],
-                                          out/('outputs-ours-%s.log' % key), ours_env(so.parent, 2), o)
-            except Exception as e: errors['ours-' + key] = str(e)
+        for fast in (False, True):
+            for build, (so, _) in ours_builds.items():
+                key = ('fast-' if fast else '') + build
+                o = scratch/('out-ours-%s.json' % key)
+                try: ours_out[key] = json_run(py + [HERE/'ours_runner.py', 'outputs', ROOT/'python', so, packed, 2, scratch/'cases.json', scratch/'pairs.json', o],
+                                              out/('outputs-ours-%s.log' % key), ours_env(so.parent, 2, fast), o)
+                except Exception as e: errors['ours-' + key] = str(e)
         report['outputs'] = compare_outputs(original, vectors, author_out, ours_out); report['outputs']['errors'] = errors
+        report['outputs']['ours_fast_vs_default'] = {
+            b: _worst([lib.vector_metrics(lib.rows(ours_out['fast-' + b]['cases'][c['id']]['selected_vectors']),
+                                          lib.rows(ours_out[b]['cases'][c['id']]['selected_vectors'])) for c in original['cases']])
+            for b in ours_builds if b in ours_out and 'fast-' + b in ours_out}
         report['outputs']['author_skiplist_ids'] = next(iter(author_out.values()))['skiplist_ids'] if author_out else None
         write(jpath, report)
         # 4. speed
@@ -295,9 +307,10 @@ def main(variant, mount, out):
             for build in ('native', 'portable'):
                 configs.append(dict(runtime='author', build=build, model='F32', threads=t, batching='wrapper default (docs 16, queries 64)', db=0, qb=0))
                 configs.append(dict(runtime='author', build=build, model='F32', threads=t, batching='batch_size=1', db=1, qb=1))
-            for build in ('portable', 'native'):
-                configs.append(dict(runtime='ours-python', build=build, model='F32', threads=t, batching='one call per text (no batching)'))
-                configs.append(dict(runtime='ours-c', build=build, model='F32', threads=t, batching='one call per text (no batching)'))
+            for prefix in ('ours', 'ours-fast'):
+                for build in ('portable', 'native'):
+                    configs.append(dict(runtime=prefix + '-python', build=build, model='F32', threads=t, batching='one call per text (no batching)'))
+                    configs.append(dict(runtime=prefix + '-c', build=build, model='F32', threads=t, batching='one call per text (no batching)'))
         for t in THREADS:
             for q in QUANTS[1:]:
                 configs.append(dict(runtime='author', build='native', model=q, threads=t, batching='wrapper default (docs 16, queries 64)', db=0, qb=0))
@@ -310,13 +323,14 @@ def main(variant, mount, out):
                 if c['runtime'] == 'author':
                     raw = json_run(py + [HERE/'author_runner.py', 'bench', vago, engines[c['build']], model_file(c['model']), tok_json, c['threads'],
                                          scratch/'workload.json', c['db'], c['qb'], REPS, o], log, plain_env(c['threads']), o)
-                elif c['runtime'] == 'ours-python':
+                elif c['runtime'].endswith('-python'):
                     so = ours_builds[c['build']][0]
                     raw = json_run(py + [HERE/'ours_runner.py', 'bench', ROOT/'python', so, packed, c['threads'], scratch/'workload.json', REPS, o],
-                                   log, ours_env(so.parent, c['threads']), o)
+                                   log, ours_env(so.parent, c['threads'], c['runtime'].startswith('ours-fast')), o)
                 else:
                     so, exe = ours_builds[c['build']]
-                    raw = json_run([exe, packed, c['threads'], scratch/'workload.tsv', REPS], log, ours_env(so.parent, c['threads']))
+                    raw = json_run([exe, packed, c['threads'], scratch/'workload.tsv', REPS], log,
+                                   ours_env(so.parent, c['threads'], c['runtime'].startswith('ours-fast')))
                 report['speed'].append(speed_row(meta, raw))
             except Exception as e:
                 report['speed'].append(dict(meta, error=str(e)))
@@ -336,13 +350,18 @@ def summary(report, path):
              'Source `%s`, ggml `%s`, workload sha256 `%s`, %d timed repetitions (median), warm-up excluded.' % (
                  report.get('source'), GGML_COMMIT[:12], report.get('workload', {}).get('sha256', '')[:16], REPS), '',
              'Batching: the author wrapper batches (documents 16, queries 64 per engine request by default; also measured with batch_size=1). '
-             'CrispEmbed has no batch API: one encode call per text. CrispEmbed accepts 1-2 threads only, so its 4-thread rows are expected to fail.', '',
+             'CrispEmbed has no batch API: one encode call per text. CrispEmbed\'s default path accepts 1-2 threads only, so its 4-thread rows are expected to fail; '
+             'ours-fast rows (CRISPEMBED_MOEDERN_FAST=1) accept up to 64 threads under the unchanged parity gates.', '',
              '## Outputs vs frozen original', '', '| arm | IDs equal | selected max abs | min cosine | row-count mismatches | MaxSim max abs diff |', '|---|---|---|---|---|---|']
     for k, v in o.items():
         if 'selected_vs_original' in v:
             s = v['selected_vs_original']
             lines.append('| %s | %d/%d | %s | %s | %d | %.6g |' % (k, v['token_ids_equal_original'], v['cases'], s['max_absolute'], s['min_row_cosine'],
                                                                  s['row_count_mismatches'], v['maxsim_max_abs_diff_original']))
+    fast = report.get('outputs', {}).get('ours_fast_vs_default', {})
+    if fast:
+        lines += ['', '## CrispEmbed fast vs default path (same build, selected vectors)', '', '| build | max abs | min cosine |', '|---|---|---|']
+        lines += ['| %s | %s | %s |' % (k, v['max_absolute'], v['min_row_cosine']) for k, v in fast.items()]
     lines += ['', '## Author vs CrispEmbed (portable F32)', '', '| arm | IDs equal | selected max abs | min cosine | row-count mismatches |', '|---|---|---|---|---|']
     for k, v in o.items():
         if k.endswith('_vs_ours'):

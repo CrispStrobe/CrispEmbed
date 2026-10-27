@@ -2,13 +2,23 @@
 // 27M and 115M, Apache-2.0); 115M adds gated depthwise dilated-conv layers. Same mathematics as
 // moedern_text_engine.cpp, which stays byte-identical and keeps its 1.5M-only
 // contract; this path is separately gated by CRISPEMBED_MOEDERN_FAMILY.
+//
+// CRISPEMBED_MOEDERN_FAST (default OFF, read at init) selects encode_fast(): the
+// same mathematics as ONE ggml graph per encode on a persistent allocator, only
+// the top-2 routed experts (ggml_mul_mat_id), ggml RoPE/softmax/GELU/conv, and
+// up to 64 threads. Summation order differs, so outputs differ by float rounding;
+// its acceptance gate is the unchanged 0.002 / 0.99999 vector and 0.002 MaxSim
+// gate vs the frozen originals with identical token IDs/masks. The default path
+// is unchanged.
 #include "moedern_family_engine.h"
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
+#include "ggml-alloc.h"
 #include "ggml-cpu.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <limits>
@@ -178,12 +188,16 @@ floats gelu_product(const floats & gate, const floats & up) {
 
 struct context {
     ggml_backend_t backend = nullptr;
+    ggml_gallocr_t galloc = nullptr; // fast path only: persistent graph allocator
+    std::vector<uint8_t> meta;       // fast path only: graph/tensor metadata arena
+    bool fast = false;
     core_gguf::WeightLoad weights;
     profile p;
     int threads = 1;
     std::string failure;
     std::mutex mutex;
     ~context() {
+        if (galloc) ggml_gallocr_free(galloc);
         core_gguf::free_weights(weights);
         if (backend) ggml_backend_free(backend);
     }
@@ -212,6 +226,11 @@ context * init(const char * path, int threads, std::string & failure) {
                         std::equal(row.second.begin(), row.second.end(), t->ne),
                     "Loaded tensor layout differs");
         }
+        if ((c->fast = core_env::on("CRISPEMBED_MOEDERN_FAST"))) {
+            c->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->backend));
+            require(c->galloc, "Graph allocator failed");
+            ggml_backend_cpu_set_n_threads(c->backend, threads);
+        }
         return c.release();
     } catch (const std::exception & e) {
         failure = e.what();
@@ -227,6 +246,140 @@ const char * error(const context * ctx) {
 const profile * get_profile(const context * ctx) {
     return ctx ? &ctx->p : nullptr;
 }
+
+namespace {
+// CRISPEMBED_MOEDERN_FAST: one graph per encode; `mask` is the effective mask.
+floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t> & mask) {
+    const profile & p = ctx->p;
+    const int S = int(mask.size()), H = p.hidden, HEADS = p.heads, D = H / HEADS, KVH = p.kv_heads, E = p.experts,
+              TOP = p.top_k;
+    constexpr size_t NODES = 8192;
+    ctx->meta.resize(ggml_tensor_overhead() * NODES + ggml_graph_overhead_custom(NODES, false));
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> owner(ggml_init({ ctx->meta.size(), ctx->meta.data(), true }),
+                                                              ggml_free);
+    require(bool(owner), "Graph context failed");
+    ggml_context * g = owner.get();
+    auto w = [&](const std::string & n) { return ctx->get(n); };
+    auto in = [&](ggml_type type, int64_t a, int64_t b) {
+        auto * t = ggml_new_tensor_2d(g, type, a, b);
+        ggml_set_input(t);
+        return t;
+    };
+    auto * tok = in(GGML_TYPE_I32, S, 1);
+    auto * pos = in(GGML_TYPE_I32, S, 1);
+    auto * kq_mask = in(GGML_TYPE_F32, S, S);  // [key, query]: 0 or -inf
+    auto * col_mask = in(GGML_TYPE_F32, 1, S); // conv B*x masking: 1 or 0
+    auto * eps = in(GGML_TYPE_F32, 1, 1);      // router denominator epsilon
+    auto rms = [&](ggml_tensor * x, const std::string & n) { return ggml_mul(g, ggml_rms_norm(g, x, EPS), w(n)); };
+    std::vector<ggml_tensor *> router;
+    ggml_tensor * x = ggml_get_rows(g, w("token_embd.hash.weight"), ggml_reshape_1d(g, tok, S));
+    x = ggml_mul_mat(g, w("token_embd.proj.weight"), x);
+    x = ggml_add(g, ggml_mul(g, ggml_norm(g, x, EPS), w("token_embd.norm.weight")), w("token_embd.norm.bias"));
+    for (int layer = 0; layer < p.layers; ++layer) {
+        const std::string b = "blk." + std::to_string(layer) + ".";
+        if (const int dil = p.conv_dilation[layer]; dil > 0) {
+            auto * bcx = ggml_mul_mat(g, w(b + "conv_in.weight"), rms(x, b + "conv_norm.weight")); // [3H, S]
+            auto part = [&](int k) { return ggml_cont(g, ggml_view_2d(g, bcx, H, S, bcx->nb[1], size_t(k) * H * 4)); };
+            auto * bg = rms(part(0), b + "conv_gate_b_norm.weight");
+            auto * cg = rms(part(1), b + "conv_gate_c_norm.weight");
+            auto * bx = ggml_mul(g, ggml_mul(g, bg, part(2)), col_mask);
+            auto * dw = w(b + "conv_dw.weight"); // [H, KERNEL]
+            ggml_tensor * acc = nullptr;
+            for (int tap = 0; tap < KERNEL; ++tap) {
+                const int shift = (tap - (KERNEL - 1) / 2) * dil; // y[t] += w[tap] * bx[t + shift], zero padded
+                if (std::abs(shift) >= S) continue;
+                ggml_tensor * src = bx;
+                if (shift > 0)
+                    src = ggml_pad_ext(g, ggml_view_2d(g, bx, H, S - shift, bx->nb[1], size_t(shift) * bx->nb[1]), 0, 0,
+                                       0, shift, 0, 0, 0, 0);
+                else if (shift < 0)
+                    src = ggml_pad_ext(g, ggml_view_2d(g, bx, H, S + shift, bx->nb[1], 0), 0, 0, -shift, 0, 0, 0, 0, 0);
+                auto * term = ggml_mul(g, src, ggml_view_1d(g, dw, H, size_t(tap) * dw->nb[1]));
+                acc = acc ? ggml_add(g, acc, term) : term;
+            }
+            x = ggml_add(g, x, ggml_mul_mat(g, w(b + "conv_out.weight"), ggml_mul(g, cg, acc)));
+            continue;
+        }
+        auto * n = rms(x, b + "attn_norm.weight");
+        const int rope = GGML_ROPE_TYPE_NEOX; // split-half pairs (i, i + D/2), angle t / THETA^(2i/D)
+        auto * q = ggml_rope_ext(g, ggml_reshape_3d(g, ggml_mul_mat(g, w(b + "attn_q.weight"), n), D, HEADS, S), pos,
+                                 nullptr, D, rope, 0, THETA, 1.f, 0.f, 1.f, 0.f, 0.f);
+        auto * k = ggml_rope_ext(g, ggml_reshape_3d(g, ggml_mul_mat(g, w(b + "attn_k.weight"), n), D, KVH, S), pos,
+                                 nullptr, D, rope, 0, THETA, 1.f, 0.f, 1.f, 0.f, 0.f);
+        auto * v = ggml_reshape_3d(g, ggml_mul_mat(g, w(b + "attn_v.weight"), n), D, KVH, S);
+        q = ggml_permute(g, q, 0, 2, 1, 3);               // [D, S, HEADS]
+        k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3)); // [D, S, KVH]; head h reads KV head h / (HEADS / KVH)
+        auto * kq = ggml_soft_max_ext(g, ggml_mul_mat(g, k, q), kq_mask, 1.f / std::sqrt(float(D)), 0.f);
+        auto * vt = ggml_cont(g, ggml_permute(g, v, 1, 2, 0, 3));            // [S, D, KVH]
+        auto * heads = ggml_permute(g, ggml_mul_mat(g, vt, kq), 0, 2, 1, 3); // [D, HEADS, S]
+        x = ggml_add(g, x, ggml_mul_mat(g, w(b + "attn_output.weight"), ggml_cont_2d(g, heads, H, S)));
+        n = rms(x, b + "ffn_norm.weight");
+        auto * probs = ggml_soft_max(g, ggml_mul_mat(g, w(b + "ffn_gate_inp.weight"), n)); // [E, S]
+        ggml_set_output(probs);
+        router.push_back(probs);
+        auto * chosen = ggml_view_2d(g, ggml_argsort(g, probs, GGML_SORT_ORDER_DESC), TOP, S,
+                                     size_t(E) * sizeof(int32_t), 0); // [TOP, S]
+        auto * picked = ggml_reshape_2d(g, ggml_get_rows(g, ggml_reshape_3d(g, probs, 1, E, S), chosen), TOP, S);
+        auto * weight = ggml_div(g, picked, ggml_add(g, ggml_sum_rows(g, picked), eps)); // p / (sum + 1e-9)
+        auto * n3 = ggml_reshape_3d(g, n, H, 1, S);
+        auto * up = ggml_mul_mat_id(g, w(b + "ffn_up_exps.weight"), n3, chosen);     // [X, TOP, S]
+        auto * gate = ggml_mul_mat_id(g, w(b + "ffn_gate_exps.weight"), n3, chosen); // [X, TOP, S]
+        auto * act = ggml_mul(g, ggml_mul(g, ggml_gelu_erf(g, gate), up), ggml_reshape_3d(g, weight, 1, TOP, S));
+        auto * down = ggml_mul_mat_id(g, w(b + "ffn_down_exps.weight"), act, chosen); // [H, TOP, S]
+        ggml_tensor * routed = nullptr;
+        for (int i = 0; i < TOP; ++i) {
+            auto * one = ggml_view_2d(g, down, H, S, down->nb[2], size_t(i) * down->nb[1]);
+            routed = routed ? ggml_add(g, routed, one) : one;
+        }
+        auto * shared = ggml_mul(g, ggml_gelu_erf(g, ggml_mul_mat(g, w(b + "ffn_gate_shexp.weight"), n)),
+                                 ggml_mul_mat(g, w(b + "ffn_up_shexp.weight"), n));
+        x = ggml_add(g, x, ggml_add(g, routed, ggml_mul_mat(g, w(b + "ffn_down_shexp.weight"), shared)));
+    }
+    x = ggml_mul_mat(g, w("dense_head.weight"), rms(x, "output_norm.weight"));
+    x = ggml_l2_norm(g, x, 1e-12f); // x / max(||x||, 1e-12)
+    ggml_set_output(x);
+    auto * graph = ggml_new_graph_custom(g, NODES, false);
+    for (auto * t : router) ggml_build_forward_expand(graph, t); // tie-check readbacks are graph outputs
+    ggml_build_forward_expand(graph, x);
+    require(ggml_gallocr_alloc_graph(ctx->galloc, graph), "Graph allocation failed");
+    std::vector<int32_t> position(S);
+    std::iota(position.begin(), position.end(), 0);
+    floats additive(size_t(S) * S), keep(S);
+    for (int q = 0; q < S; ++q)
+        for (int j = 0; j < S; ++j)
+            additive[size_t(q) * S + j] = mask[j] ? 0.f : -std::numeric_limits<float>::infinity();
+    for (int t = 0; t < S; ++t) keep[t] = mask[t] ? 1.f : 0.f;
+    const float router_eps = ROUTER_EPS;
+    // An input unused by this profile (e.g. the conv mask on attention-only 27M) is not in
+    // the graph and has no buffer; setting it would abort, so only allocated inputs are set.
+    auto set = [](ggml_tensor * t, const void * data, size_t offset, size_t bytes) {
+        if (t->buffer) ggml_backend_tensor_set(t, data, offset, bytes);
+    };
+    set(tok, ids, 0, size_t(S) * sizeof(int32_t));
+    set(pos, position.data(), 0, position.size() * sizeof(int32_t));
+    set(kq_mask, additive.data(), 0, additive.size() * sizeof(float));
+    set(col_mask, keep.data(), 0, keep.size() * sizeof(float));
+    set(eps, &router_eps, 0, sizeof(float));
+    require(ggml_backend_graph_compute(ctx->backend, graph) == GGML_STATUS_SUCCESS, "CPU graph compute failed");
+    // Same router qualification as the default path: reject exact ties at the top-k boundary.
+    floats pr(size_t(E) * S);
+    std::vector<int> order(E);
+    for (auto * t : router) {
+        ggml_backend_tensor_get(t, pr.data(), 0, pr.size() * sizeof(float));
+        require(finite(pr), "Invalid softmax");
+        for (int s = 0; s < S; ++s) {
+            const float * row = pr.data() + size_t(s) * E;
+            std::iota(order.begin(), order.end(), 0);
+            std::stable_sort(order.begin(), order.end(), [&](int a, int c) { return row[a] > row[c]; });
+            require(row[order[TOP - 1]] > row[order[TOP]], "Exact router tie is unqualified");
+        }
+    }
+    floats out(size_t(S) * OUT);
+    ggml_backend_tensor_get(x, out.data(), 0, out.size() * sizeof(float));
+    require(finite(out), "Nonfinite graph output");
+    return out;
+}
+} // namespace
 
 bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied, size_t count, bool query,
                    std::vector<float> & vectors) {
@@ -245,6 +398,10 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
                   E = p.experts, TOP = p.top_k;
         std::vector<uint8_t> mask(supplied, supplied + count);
         if (query) std::fill(mask.begin(), mask.end(), 1); // query expansion attends to every position
+        if (ctx->fast) {
+            vectors = encode_fast(ctx, ids, mask);
+            return true;
+        }
         floats hidden;
         {
             arena a;
