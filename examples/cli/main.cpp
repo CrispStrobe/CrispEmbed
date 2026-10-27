@@ -1252,11 +1252,10 @@ static int cli_main(int argc, char ** argv) {
     mode_count += !image_raw_path.empty() ? 1 : 0;
     mode_count += !image_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(
-            stderr,
-            "error: choose only one encoding mode "
-            "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--systemone/--moedern/--moedern-score/--rerank/"
-            "--biencoder/--audio/--image/--image-raw)\n");
+        fprintf(stderr,
+                "error: choose only one encoding mode "
+                "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--systemone/--moedern/--moedern-score/--rerank/"
+                "--biencoder/--audio/--image/--image-raw)\n");
         return 1;
     }
 

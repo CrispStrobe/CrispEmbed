@@ -98,7 +98,7 @@ pages prefill_pages(const std::vector<int32_t> & ids) {
     p.bmax.assign(p.n_prefill_blocks, -1);
     for (int t = 0; t < S; ++t)
         if (p.img_page[t] >= 0) {
-            int & lo = p.bmin[t / BLOCK], & hi = p.bmax[t / BLOCK];
+            int &lo = p.bmin[t / BLOCK], &hi = p.bmax[t / BLOCK];
             lo = lo < 0 ? p.img_page[t] : std::min(lo, p.img_page[t]);
             hi = std::max(hi, p.img_page[t]);
         }
@@ -164,7 +164,8 @@ selection route(const router_keys & rk, const float * iq, const float * head_cls
     std::vector<float> score(nblk, SCORE_NEG), kb(HD);
     for (int c = 0; c < nblk; ++c) {
         if (c > qblk - LOCAL_BLOCKS) continue; // not remote
-        const float * k = c < int(rk.kbar.size() / HD) ? rk.kbar.data() + size_t(c) * HD : (rk.summary(c, head_cls, kb.data()), kb.data());
+        const float * k = c < int(rk.kbar.size() / HD) ? rk.kbar.data() + size_t(c) * HD
+                                                       : (rk.summary(c, head_cls, kb.data()), kb.data());
         float d = 0;
         for (int i = 0; i < HD; ++i) d += iq[i] * k[i];
         score[c] = std::clamp(d * scale, -1e4f, 1e4f);
@@ -175,7 +176,8 @@ selection route(const router_keys & rk, const float * iq, const float * head_cls
     if (!any)
         for (int c = 0; c < nblk; ++c) cand[c] = score[c] > -5e8f;
     std::vector<float> x(nblk);
-    for (int c = 0; c < nblk; ++c) x[c] = cand[c] && std::isfinite(score[c] * idx_scale) ? score[c] * idx_scale : ENTMAX_NEG;
+    for (int c = 0; c < nblk; ++c)
+        x[c] = cand[c] && std::isfinite(score[c] * idx_scale) ? score[c] * idx_scale : ENTMAX_NEG;
     const int M = std::min(TOPM, nblk);
     if (M == 0) return sel;
     std::vector<int> order(nblk);
@@ -188,7 +190,10 @@ selection route(const router_keys & rk, const float * iq, const float * head_cls
     double mu = 0;
     int nvalid = 0;
     for (int i = 0; i < K; ++i)
-        if (cand[order[i]]) { mu += std::log(std::max(prior[i], FLOOR)); ++nvalid; }
+        if (cand[order[i]]) {
+            mu += std::log(std::max(prior[i], FLOOR));
+            ++nvalid;
+        }
     mu /= std::max(nvalid, 1);
     for (int i = 0; i < K; ++i)
         if (cand[order[i]]) {
