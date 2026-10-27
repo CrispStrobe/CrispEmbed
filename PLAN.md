@@ -721,7 +721,9 @@ preparation commands as current actions.
   strict component loaders and Ovis1024/3584 shape guards.
   Public SystemOne candidate5f639e14 implements separate C/Python/CLI/HTTP/
   Rust/Dart paths. Initial40455424346 builds and passes native ABI controls but
-  fails a compiler-row selector; corrected40456478353 is running. Actual six-surface
+  fails a compiler-row selector; corrected40456478353 public-build job passes
+  actual root/ABI/Rust/Dart checks (parent metadata controls still queued). Hosted
+  Dart output is applied in061d9ba4. Actual six-surface
   hosted orchestrator/workflow/protocol is not written; test consumers are prepared. Review
   compiler arithmetic, C exports/gates/errors, wrappers and CLI/server first,
   then run all four original requests through each actual public surface with

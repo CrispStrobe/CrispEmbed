@@ -1,3 +1,16 @@
+## 27 October 2026 — Actual SystemOne public library build
+
+[Public build job122030886126](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40456478353/job/122030886126)
+passes at5f639e14: actual shared library/CLI/HTTP compilation, five C exports,
+null/gate/thread-bound/TLS errors,24 production compiler rows/two CLI negatives,
+Rust against the actual prebuilt, and Dart3.13.5 format/analyze with ffi2.1.4.
+[Small authenticated review](tests/results/josev2b/public-build-review.json)
+retains the exact artifact and initial selector failure separately. The hosted
+formatted Dart bytes are applied in061d9ba4. The parent workflow still has queued
+metadata controls at review; this records the completed actual public-build job.
+No model was loaded. Packed-owner/root-profile227 comparisons and actual six
+model-backed public consumers remain pending; runtime code stays on its branch.
+
 ## 27 October 2026 — MoEdern1.5M raw-text composition
 
 [Actual40455093591](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40455093591)
