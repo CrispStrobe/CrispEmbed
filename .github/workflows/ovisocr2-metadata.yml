@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [moedern-native-v2, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
+        options: [moedern-unigram, moedern-native-v2, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, ultrabert-rope, migan-native, migan-reference, preserve-evidence, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture]
         default: metadata
       native_run_id:
         type: string
@@ -519,3 +519,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-native-v2'
     needs: controls
     uses: ./.github/workflows/moedern-native-v2.yml
+
+  moedern-unigram:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'moedern-unigram'
+    uses: ./.github/workflows/moedern-unigram.yml
