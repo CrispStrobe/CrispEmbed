@@ -1,0 +1,52 @@
+{
+  "schema": "crispembed-unlimited-ocr2-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner approved HF uploads for experimentally working models with licenses preserved (2026-10-27). The precision is chosen per dispatch from the recipes below.",
+  "destination": "cstr/Unlimited-OCR-2-GGUF",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "source_contract": "docs/unlimited-ocr2-source.json",
+  "spec": "docs/unlimited-ocr2-inference-spec.md",
+  "converter": "models/convert-unlimited-ocr-to-gguf.py",
+  "quantizer": "tools/quantize.cpp (crispembed-quantize)",
+  "upstream": {
+    "repo": "baidu/Unlimited-OCR-2",
+    "revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+    "license": "mit",
+    "readme": {
+      "bytes": 13073,
+      "sha256": "3276903e26b37f30d2443ed767a86bc422bebba74fe4c64394b6d6255bd01676"
+    },
+    "license_file": {
+      "note": "The model repository declares license: mit in its card but ships no LICENSE file; the verbatim MIT text is taken from the upstream code repository at a pinned commit.",
+      "code_repo": "https://github.com/baidu/Unlimited-OCR",
+      "commit": "6e64831ab434b689ba1a28ede703b6d7d05cd714",
+      "url": "https://raw.githubusercontent.com/baidu/Unlimited-OCR/6e64831ab434b689ba1a28ede703b6d7d05cd714/LICENSE",
+      "bytes": 1061,
+      "sha256": "d985048c6d69429d685fdbe7557340aa0897c0fd8dc038299b148b9c75dc3383"
+    }
+  },
+  "default_variants": ["F16", "Q8_0"],
+  "recipes": {
+    "F32": {"filename": "unlimited-ocr-2-f32.gguf", "from": "convert", "convert_args": []},
+    "F16": {"filename": "unlimited-ocr-2-f16.gguf", "from": "convert", "convert_args": ["--fp16"]},
+    "Q8_0": {"filename": "unlimited-ocr-2-q8_0.gguf", "from": "F32", "type": "q8_0", "tensor_type": []},
+    "Q5_K": {"filename": "unlimited-ocr-2-q5_k.gguf", "from": "F32", "type": "q5_k", "tensor_type": []},
+    "Q4_K": {"filename": "unlimited-ocr-2-q4_k.gguf", "from": "F32", "type": "q4_k", "tensor_type": []}
+  },
+  "receipts": {
+    "original": "tests/results/unlimited-ocr2/original-reference.json",
+    "untiled": "tests/results/unlimited-ocr2/native-untiled.json",
+    "tiled": "tests/results/unlimited-ocr2/native-tiled.json",
+    "fast_decoder": "tests/results/unlimited-ocr2/fast-decoder.json"
+  },
+  "parity_limits": {
+    "tiled_max_box_coordinate_difference": 3,
+    "box_scale": 999
+  },
+  "qualification": {
+    "default_enabled": false,
+    "tiled_parity": "experimental",
+    "receipts_precision": "F32 lossless conversion; other precisions are covered only by the separate precision sweep",
+    "registry_alias": "follow-up after upload; real SHA256 required"
+  }
+}

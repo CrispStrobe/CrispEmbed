@@ -1665,6 +1665,12 @@ static const ModelEntry k_registry[] = {
       "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 
+    // TODO(unlimited-ocr2): add `unlimited-ocr2` (and e.g. `unlimited-ocr2-q8`) only after
+    // .github/workflows/unlimited-ocr2-publish.yml has uploaded to cstr/Unlimited-OCR-2-GGUF.
+    // Use the immutable /resolve/<hub-commit>/ URL and the SHA256 from that run's
+    // publication.json, with a matching examples/cli/model_hashes.h entry; licence "mit".
+    // Runtime stays behind CRISPEMBED_UNLIMITED_OCR2 (default-off).
+
     // jina-ocr-v1 — DeepSeek-OCR fine-tune (same engine as Unlimited-OCR); the GGUF
     // carries its own prompt layout, rope base 1e6 and plain-greedy decode.
     // CC BY-NC 4.0: flagged, needs --accept-license to auto-download.
