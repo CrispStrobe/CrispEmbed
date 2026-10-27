@@ -26,6 +26,8 @@ jobs:
           unset CRISPEMBED_JOSEV_COMPOSED CRISPEMBED_JOSEV_BACKBONE CRISPEMBED_QWEN35_OCR CRISPEMBED_JOSEV_HEAD
           "$RUNNER_TEMP/josev-composed-build/josev-composed-plain-probe" --gates
           "$RUNNER_TEMP/josev-composed-build/josev-composed-observed-probe" --gates
+      - name: Actual crispembed-diff Ref positive, row-sensitive negative and structural controls
+        run: python3 tools/josev2b_composed_panel.py --ref-controls "$RUNNER_TEMP/josev-composed-build/josev-composed-diff" --output "$RUNNER_TEMP/josev-composed-ref-controls"
       - name: Ordinary archive contains no observer symbols or stage labels
         run: |
           nm -C "$RUNNER_TEMP/josev-composed-build/libjosev-composed-plain.a" > "$RUNNER_TEMP/josev-symbols.txt"
@@ -38,4 +40,7 @@ jobs:
           path: |
             ${{ runner.temp }}/josev-composed-build/CMakeCache.txt
             ${{ runner.temp }}/josev-symbols.txt
+            ${{ runner.temp }}/josev-composed-ref-controls/*.json
+            ${{ runner.temp }}/josev-composed-ref-controls/*/diff.json
+            ${{ runner.temp }}/josev-composed-ref-controls/*/*.log
           retention-days: 90

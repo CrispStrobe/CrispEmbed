@@ -174,3 +174,49 @@ def compare(reference_dir, freeze, report, outputs, diff, out):
     result['numeric_and_complete_typed_parity']=not result['failures'] and result['compared_stages']==227
     write(out/'panel.json',result)
     return result
+
+def ref_controls(binary, out):
+    """Actual Ref success/numeric/structural controls, no optional packages."""
+    import struct
+    from josev2b_composed_diff import write_gguf
+    out.mkdir(parents=True, exist_ok=False)
+    source=out/'original.f32'; source.write_bytes(struct.pack('<6f',1,0,0,1,1,0))
+    different=out/'changed.f32'; different.write_bytes(struct.pack('<6f',1,0,0,1,0,1))
+    rows=[]
+    for label,data,code in (('same',source,0),('orthogonal-last-row',different,1)):
+        folder=out/label;folder.mkdir()
+        spec=lambda p:dict(path=p,shape=[3,2],sha256=sha(p))
+        write_pair(folder/'original.gguf',folder/'native.gguf',[
+            dict(name='control',original=spec(source),native=spec(data))])
+        with (folder/'diff.log').open('w') as log:
+            process=subprocess.run([str(binary),str(folder/'original.gguf'),str(folder/'native.gguf'),str(folder/'diff.json')],
+                                   stdout=log,stderr=subprocess.STDOUT,timeout=30)
+        require(process.returncode==code,'actual Ref control exit differs')
+        negative=code==1
+        known=dict(shape=[3,2],elements=6,max_absolute=1. if negative else 0.,mean_absolute=1/3 if negative else 0.,
+                   mean_error=0.,rms=math.sqrt(1/3) if negative else 0.,min_row_cosine=0. if negative else 1.,
+                   original_l2=math.sqrt(3),native_l2=math.sqrt(3),original_min=0.,original_max=1.,
+                   original_abs_min=0.,original_abs_max=1.,native_min=0.,native_max=1.,
+                   native_abs_min=0.,native_abs_max=1.,passed=not negative)
+        actual=collect(process.returncode,folder/'diff.json',{'control':known})
+        require(actual['all_metrics_agree'],'actual Ref control metrics disagree')
+        rows.append(dict(control=label,actual_ref=actual))
+    # The same values under another name must be a structural rejection, rc2.
+    other=out/'wrong-name.gguf'
+    write_gguf(other,[dict(name='renamed',path=source,shape=[3,2],sha256=sha(source))])
+    with (out/'structural.log').open('w') as log:
+        process=subprocess.run([str(binary),str(out/'same/original.gguf'),str(other),str(out/'structural.json')],
+                               stdout=log,stderr=subprocess.STDOUT,timeout=30)
+    require(process.returncode==2 and json.loads((out/'structural.json').read_text())['status']=='structural_rejection',
+            'actual Ref structural control did not reject')
+    rows.append(dict(control='wrong-name',exit_code=2))
+    write(out/'controls.json',dict(completed=True,controls=rows,model_payloads=False))
+    return rows
+
+if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--ref-controls',type=Path,required=True)
+    parser.add_argument('--output',type=Path,required=True)
+    args=parser.parse_args()
+    ref_controls(args.ref_controls.resolve(),args.output)

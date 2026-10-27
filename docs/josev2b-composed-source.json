@@ -285,7 +285,7 @@
     "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb"
   },
   "owned_sha256": {
-    ".github/workflows/josev2b-composed-build.yml": "01166920770dc5f559b976bd3fa03369c4ee54d64eb986bc2795cc77a390ae3e",
+    ".github/workflows/josev2b-composed-build.yml": "99e1e9be765ff28b821891368354afd1c945541ed2216fe12e05fafe31a0030a",
     ".github/workflows/ovisocr2-metadata.yml": "73b72aa5370faf769d85928d9923d1d25ebfeae7c02fdff40692afba2adc3b01",
     "docs/josev2b-composed-text.md": "43035d0f882752dd90a7f8e6fa439408c26291e572df9c6a62151b9b615fc578",
     "src/josev2b_answer_serializer.cpp": "b7881901333fc3498651b999a05bd4529675c621d05713c82e1aa6232b6ec94b",
@@ -306,7 +306,7 @@
     "tests/josev2b_composed_observer.h": "712a6765bc76116b46b0a50065030f6a24864b8eaba5377e37020f28c560ea0b",
     "tests/josev2b_head_observer.h": "73344939629670619cc454331369a1c28019a1e566ba9bcf1b83638e445cc5cd",
     "tools/josev2b_composed_contract.py": "d478425fab70a32ee549811697424ef8b23a4de9ffb0379a916fe0c07923303c",
-    "tools/josev2b_composed_panel.py": "9f05faf1d5908dd1a18512ea254a13018b1a421ab2b1eedb8d33eace0f09481a",
+    "tools/josev2b_composed_panel.py": "965b3833b1dc8c5985a03afe40f6f115210b24871f90455884d03eb8c8e0b20c",
     "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
     "tests/josev-composed/diff.cpp": "267ef2117f358aa77a26abf2efddd7f07851ef29c76dc79ee18f82151ba0e286",
     "tests/test_josev2b_composed_panel.py": "93531fe331762a4dfb0dc54050baaa4d87209241c57e4fee8fed220c0ce5cbc0"
