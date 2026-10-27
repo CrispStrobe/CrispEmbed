@@ -1,5 +1,9 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+Current vendor execution: [27 October wrap-up handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-27.md).
+Main documentation records verified branch results; experimental runtimes remain
+on their stated branches, with no new release or application pin.
+
 Consumer snapshot verified5 October2026; vendor roadmap updated26 October2026.
 For current vendor work, start with the [executable handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/next-agent-handoff.md).
 The application snapshot below keeps its original verification dates. Read the status, choose one lane, and record
@@ -559,7 +563,7 @@ for current sources and acceptance gates.
 | WASM attribution | Corrected layer3 capture preserves old ordinary/observer/final anchors. All12 same-input projections have exact quantized bytes/scales and max≤1.431e-6 | Composed FFN-down error0.00331104 and prior full-panel rejection remain; no same-input kernel defect proved, default stays off |
 | UltraBERT SciFact | Unicode A/B40434717493 passes all5,483 original IDs/masks/full hashes and14 authored cases; unset/empty/0 preserve old24/25 mismatches | Corrected fresh-process loader/native-v3 d993038e in40452077037 against frozen originals; preserve initial loader failure, truncation, numerical debt and ranking budgets |
 | MoEdernColBERT | Native-v2 passes10 cases/177 checks/three MaxSim pairs; Unigram40451408614 passes34 cases/1040 normalization checks; old byte rejection preserved | Raw-text40455093591 passes ten cases/twenty vectors/three scores; next public roles/repack,27M/115M and representative retrieval |
-| Josev-2B | Raw-request40449265616 passes227 stages/four complete typed responses; worst logit error0.0000168085. Component CPU/CUDA head and backbone proofs retained | Packed loader build passes; execute byte-preserving packing and actual packed/public parity. New SystemOne root build40455424346 is queued; independent decision quality remains open |
+| Josev-2B | Raw-request40449265616 passes227 stages/four complete typed responses; worst logit error0.0000168085. Component CPU/CUDA head and backbone proofs retained | Packed loader build passes; execute byte-preserving packing and actual packed/public parity. Corrected SystemOne public-build job40456478353 passes actual root/ABI/Rust/Dart; model-backed consumers and independent decision quality remain open |
 
 Public detailed evidence is in [HISTORY](https://github.com/CrispStrobe/CrispEmbed/blob/main/HISTORY.md)
 and [PERFORMANCE](https://github.com/CrispStrobe/CrispEmbed/blob/main/PERFORMANCE.md).

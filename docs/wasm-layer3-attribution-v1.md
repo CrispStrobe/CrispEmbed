@@ -9,7 +9,7 @@ legacy alternatives, original artifacts and all sixteen negative labels intact.
 No model or compiler execution was performed while preparing this lane.
 
 The metadata dispatcher registers phase `wasm-layer3-attribution-v1`.
-The zero-input reusable [workflow](../.github/workflows/wasm-layer3-attribution-v1.yml)
+The zero-input reusable [workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/wasm-layer3-attribution-v1.yml)
 uses the frozen `580e3ae3be3671ddce5e945b0725d0583ec34110` runtime with ggml
 `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. Its executable helpers come from the
 new claimed diagnostic branch, whose main merge also preserves unrelated work.
@@ -29,7 +29,7 @@ The original model comes only from initial fixture12671621333, with SHA256
 `77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2`.
 Actual GGUF names, types, shapes and full tensor-payload hashes select the supported
 activation converter. The filename does not establish a tensor's quantization type.
-The [machine-readable contract](wasm-layer3-attribution-v1.json) freezes these pins.
+The [machine-readable contract](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/wasm-layer3-attribution-v1.json) freezes these pins.
 
 A disposable test overlay retains23 layer3 subnodes: block input; raw and biased
 Q/K/V; actual flash-attention output; raw/biased attention output projection;

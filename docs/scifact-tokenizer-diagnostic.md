@@ -1,7 +1,7 @@
 # SciFact retained tokenizer-only diagnosis
 
 This source preparation adds a zero-input reusable workflow,
-[scifact-tokenizer-diagnostic.yml](../.github/workflows/scifact-tokenizer-diagnostic.yml).
+[scifact-tokenizer-diagnostic.yml](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/scifact-tokenizer-diagnostic.yml).
 It does not authorize new embeddings, a runtime correction, or quality qualification.
 The caller must be reviewed and registered separately.
 

@@ -6,7 +6,7 @@ The smallest native token-ID/role component now passes its original-first audit;
 public surfaces remain in progress; no representative retrieval or release claim.
 The [requested collection](https://huggingface.co/collections/VAGOsolutions/sauerkrautlm-moederncolbert)
 contains three parameter scales and several representations. The machine-readable
-[source contract](moedern-colbert-source-contract.json) freezes all three original
+[source contract](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/moedern-colbert-source-contract.json) freezes all three original
 repositories and their author GGUF repositories, source/configuration/license
 hashes, published LFS weight SHA256 values and byte counts. Model payloads are
 not distributed in this repository. CoreML tensor equivalence remains unaudited;
@@ -103,7 +103,7 @@ The parent integration owns eventual public adapters and context registration.
 
 ## Bounded original-first execution
 
-The reusable [original workflow](../.github/workflows/moedern-colbert-original.yml)
+The reusable [original workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/moedern-colbert-original.yml)
 accepts `variant` (default `1.5M`) and `convert_after_original` (default true).
 It runs two-thread CPU F32 on hosted CI only, with a 60-minute bound. The original
 remote Python code is executed only after every pinned source and payload hash
@@ -114,7 +114,7 @@ which calls this workflow with the smallest variant and conversion enabled.
 Start with 1.5M; review the
 actual original before scheduling larger configurations.
 
-The [owned panel](../tests/fixtures/moedern-colbert/panel-v1.json) freezes ten
+The [owned panel](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tests/fixtures/moedern-colbert/panel-v1.json) freezes ten
 cases before candidate inference: German query/document, empty query, punctuation
 and currency, literal markers, mixed scripts/diacritics/emoji, query/document
 truncation, one character and whitespace. Two short cases capture every actual
@@ -169,7 +169,7 @@ no original-source offset API is qualified by this lane.
 
 ### Conversion and later native validation
 
-The [F32 converter](../tools/moedern-colbert/convert_f32.py) requires a completed
+The [F32 converter](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tools/moedern-colbert/convert_f32.py) requires a completed
 original receipt and its exact SHA256, rehashes the original checkpoint and
 rejects unknown/missing tensors, incorrect dimensions, non-F32 or nonfinite
 values. The expected counts are 32 / 32 / 94, including the Dense head. It

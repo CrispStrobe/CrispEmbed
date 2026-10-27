@@ -4,14 +4,14 @@ This is a new, versioned consumer for the unmerged
 [default-off candidate](wasm-q8-rounding-candidate.md). It leaves the original890
 trace driver, its production guard and the metadata dispatcher unchanged. The
 zero-input reusable workflow is
-[wasm-q8-rounding-ab-v1.yml](../.github/workflows/wasm-q8-rounding-ab-v1.yml).
+[wasm-q8-rounding-ab-v1.yml](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/wasm-q8-rounding-ab-v1.yml).
 Actual run40391544739 at580e3ae3 completed with a numerical rejection.
 The [reviewed result](../tests/results/packaging/wasm-rounding-ab-v1.json)
 preserves the unchanged gates and all ten cases; no default or release is
 promoted. The caller must use a reviewed commit. Builds run hosted with two
 workers and a60-minute job ceiling.
 
-The [protocol](wasm-q8-rounding-ab-v1.json) pins actual successful trace
+The [protocol](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/wasm-q8-rounding-ab-v1.json) pins actual successful trace
 [40379523009](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40379523009)
 at f8bac049a7c143773b330cfc4c217b1f0a47ef56. Its reviewed small artifact is
 12681776616,47,552 bytes, SHA256

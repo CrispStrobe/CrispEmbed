@@ -14,7 +14,7 @@ pinned890278a8342c620197c90e702e1188bcab94f510. Fork branch
 `sync/upstream-v0.17` was inspected at5049ebb8472fdc965eb3fb72c1cb111260726186:
 its WASM converters and CPU plan/header files are unchanged from890. Its
 unrelated UE4M3/NVFP4 changes are not included. Exact per-file identities are in
-[the candidate source declaration](wasm-q8-rounding-candidate.json).
+[the candidate source declaration](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/wasm-q8-rounding-candidate.json).
 
 At890, the WASM SIMD Q8_0 converter truncates scaled F32 inputs toward zero.
 The x86 SIMD converter rounds nearest-even, while the scalar reference uses
@@ -80,7 +80,7 @@ or identify its earliest failing operator.
 
 
 The registered metadata phase `successor-wasm-rounding-controls` runs the separate
-[weight-free hosted workflow](../.github/workflows/successor-wasm-rounding-controls.yml).
+[weight-free hosted workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/successor-wasm-rounding-controls.yml).
 It verifies the exact declared fork/file identities before compiling only the
 operator executable with Emscripten6.0.2, processor `wasm`, two build workers and
 a25-minute ceiling. Actual Node/WASM execution must emit all five converter/

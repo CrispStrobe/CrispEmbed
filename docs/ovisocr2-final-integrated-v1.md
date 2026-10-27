@@ -2,7 +2,7 @@
 
 This lane is source preparation only. It has no dispatched build, model result,
 default decision, release qualification or app upgrade. The
-[protocol](ovisocr2-final-integrated-v1.json) deliberately contains pending
+[protocol](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/ovisocr2-final-integrated-v1.json) deliberately contains pending
 review dependencies and rejects before service/model access until those exact
 reviewed identities are supplied in a new audited commit.
 
@@ -35,7 +35,7 @@ workflow's green status. This lane always reports release qualification false.
 Any later source/default choice needs a separately reviewed source closure.
 
 The registered metadata phase is`final-integrated-v1`; it calls
-[the dedicated workflow](../.github/workflows/ovisocr2-final-integrated-v1.yml).
+[the dedicated workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/ovisocr2-final-integrated-v1.yml).
 One portable two-worker native build precedes two interpolation-gate frozen
 jobs. Both frozen jobs finish before the two quality jobs start, keeping total
 model parallelism at two. Quality observations still run after a completed

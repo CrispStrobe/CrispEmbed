@@ -1,3 +1,7 @@
+> Current execution: [27 October wrap-up handoff](docs/handoff-2026-10-27.md).
+> Reviewed results are in HISTORY. Experimental runtime branches and running
+> workflows are not promoted by this documentation-only main update.
+
 # CrispEmbed — Active roadmap
 
 Updated 27 October 2026. Completed work, measurements and dated handoffs belong in
@@ -395,13 +399,11 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-10-27 | `feat/moedern-public-text-20261027` | MoEdern1.5M public roles and metadata package | Reviewed raw-text1a053116/40455093591 passes ten cases/twenty original vector arrays/three MaxSim pairs. Add explicit query/document C ABI and bindings over production frontend/engine, byte-preserving self-contained32-tensor model with tokenizer metadata, and hosted actual public original-reference/recovery/ownership/offline controls. Keep generic dense/token interfaces unchanged; default off, no publication before consumer proof; larger variants remain separate. |
+| 2026-10-27 | `feat/moedern-public-text-20261027` | MoEdern1.5M public roles and metadata package | Reviewed raw-text1a053116/40455093591 passes ten cases/twenty original vector arrays/three MaxSim pairs. Unfinished draft a925f7e5 prepares role-aware C/Python/Rust/Dart modules and streaming32-tensor/tokenizer repack; seven stdlib/source controls pass, no compile/inference. Shared header/CMake/exports/CLI/server/registry, actual hosted packed byte proof and ten-case/twenty-vector/three-score public recovery/ownership/offline controls remain. Keep generic dense/token interfaces unchanged; default off, no publication before consumer proof; larger variants remain separate. |
 | 2026-10-27 | `feat/moedern-text-composed-20261027` | Smallest MoEdern raw-text native composition | Prepare separately versioned CPU/F32 text+role frontend→native model→selected128-vectors/MaxSim; require reviewed actual frontend before execution, preserve old250 primary+21 supplemental lineage. Compile reference observers only in test variant before public wiring; old engine algebra/gold/guards unchanged on frozen sources. Root owns shared CAPI/registry/build integration. Hosted builds/payloads only. |
-| 2026-10-27 | `feat/moedern-unigram-frontend-20261027` | Smallest MoEdern exact text/role frontend | Native-v2 actual40441341206 independently passes10 cases/177 checks/three old-primary MaxSim pairs. Dedicated default-off Unigram metadata/text frontend, exact original-first IDs and three role masks before native/public composition; no generic tokenizer changes or larger variants until own proof. Source/build/model work hosted, small reports only locally. |
 | 2026-10-27 | `feat/josev-systemone-api-20261027` | Dedicated SystemOne API and bindings | Prepare distinct opaque SystemOne C ABI/context plus Python/Rust/Dart and CLI/HTTP surfaces over packed CPU/F32 owner; keep Gemma flat JSON/768 scoring and generic embedding APIs unchanged. No model alias/publication or public parity claim before reviewed composition/packing/packed runtime; actual original four-case surfaces and failure/recovery/offline tests required. All builds/models hosted. |
 | 2026-10-27 | `feat/josev-packed-runtime-20261027` | Josev packed CPU/F32 runtime and dedicated SystemOne capability | Root: prepare one owned442-tensor context with strict borrowed320-backbone/122-head views and embedded tokenizer, preserving old component loaders/gates. Require reviewed native composition and byte-preserving packing before actual packed/public surface audit. New dedicated SystemOne C/Python/CLI/HTTP/Rust/Dart; Gemma768/scoring/flat JSON unchanged, no injected gold/promotion. Hosted builds/models only. |
 | 2026-10-27 | `feat/josev-packed-converter-20261027` | Josev self-contained442-tensor GGUF converter | Prepare bounded byte-preserving streaming repack of reviewed320F32 backbone+122F32 head+zero-tensor tokenizer metadata; validate source/shape/byte hashes and exact readback. No new checkpoint conversion, quantization or local models. Execution requires reviewed composed native proof; root owns borrowed packed runtime/public integration separately. |
-| 2026-10-27 | `feat/josev-composed-text-20261027` | Josev native raw-request composition | Root: explicit new three-component CPU/F32 source closure from reviewed backbone/head and separately audited tokenizer/answer components. Native lexical means from actual embedding rows; no frozen hidden/vector injection. Hosted original104+123-stage comparisons and complete typed responses, then dedicated public capability/packed-model work. Never bypass failing frontend/serializer gates. |
 | 2026-10-27 | `audit/ultrabert-scifact-native-v3-20261027` | Frozen-original representative retrieval after verified Unicode fix | Reviewed token-only40434717493 matches all5483 IDs/masks/full hashes with gate1 while preserving old24/25 gate-off mismatches. Build an explicit new source closure using identical candidate BPE code plus existing integration truncation gate; preserve old e35 workers/guards/8 successful originals, gold and183/1294 strict failures. New actual CAPI token preflight then8 native shards(max2) and aggregate against frozen vectors/ranking gates. No original rerun, default/pair/alias/quantization promotion; all model/corpus/build work hosted. |
 | 2026-10-27 | `feat/josev-answer-serializer-20261027` | Native original SystemOne output formatting | Separate internal JSON serializer for native F32 option probabilities and ordered encoded schema. Match exact publisher model/answers/usage, original-choice-order tie selection, noul/score/legend and Python four-decimal ties-even using exact binary64 rounding. Original pure function freezes model-free controls before C++ comparison; preserve Gemma interfaces and frozen frontend producer. No tokenizer/model weights, API/registry/default/quality claim. |
 | 2026-10-27 | `audit/moedern-native-dual-reference-v2-20261027` | Primary frozen-native comparison plus supplemental missing stages | After actual SDPA40434080299 reproduces corrected CPU-flash output with1.1921e-7 deviation from old gold, retain the old250 arrays/final vectors/MaxSim as primary targets and independently pinned21 missing pipeline observations as supplemental targets. New explicit CPU/a06 protocol; old v1/strict byte-continuity rejection stays unchanged and unaccepted. Preserve32F32 native model math from79, fixed numeric/mask/vector/MaxSim gates, real Ref and earliest errors; no new gold, tolerance relaxation, public model or quality claim. |
@@ -711,13 +713,18 @@ preparation commands as current actions.
   Q4_K compatible. Keep old byte-continuity rejection and every original hash.
 - [ ] **Josev packed model and interfaces:** raw-request composition40449265616
   ated23f1ae passes all227 original stages/four typed responses (HISTORY).
-  Streaming converter4da159f3 must first pin that reviewed receipt, then pack
-  the exact442 F32 tensors and embedded tokenizer metadata. Packed runtime
+  Streaming converter9772c896 now pins that reviewed receipt; actual
+  packing/packed-owner40456235976 is running. Require the exact442 F32 tensors
+  and embedded tokenizer metadata, immutable small report and unchanged original gates. Packed runtime
   0f0b1e59 passes model-free build40451936611; require actual packed-owner227
   comparisons and four complete responses before publication. Preserve old
   strict component loaders and Ovis1024/3584 shape guards.
-  Public SystemOne candidate73ddb5ee implements separate C/Python/CLI/HTTP/
-  Rust/Dart paths; model-free actual root build40455424346 is queued. Review
+  Public SystemOne candidate5f639e14 implements separate C/Python/CLI/HTTP/
+  Rust/Dart paths. Initial40455424346 builds and passes native ABI controls but
+  fails a compiler-row selector; corrected40456478353 public-build job passes
+  actual root/ABI/Rust/Dart checks (parent metadata controls still queued). Hosted
+  Dart output is applied in061d9ba4. Actual six-surface
+  hosted orchestrator/workflow/protocol is not written; test consumers are prepared. Review
   compiler arithmetic, C exports/gates/errors, wrappers and CLI/server first,
   then run all four original requests through each actual public surface with
   missing-model/schema/order/tie/rounding/media/error/recovery/offline controls.

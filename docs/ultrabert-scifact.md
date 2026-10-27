@@ -1,6 +1,6 @@
 # Full SciFact original-first audit contract
 
-The separately versioned [protocol](../tests/regression/ultrabert/scifact-protocol-v1.json)
+The separately versioned [protocol](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tests/regression/ultrabert/scifact-protocol-v1.json)
 freezes5,183 corpus documents and all300 BEIR test queries, prompt/CLS/L2/512-token
 semantics, exact IDs, eight shards, and acceptance before outputs. The owned
 32-row retrieval smoke remains unchanged. This is a bounded representative
@@ -8,7 +8,7 @@ SciFact task audit; publication, release, pairs and historical full-stage
 numerical qualification remain separate.
 
 Run the default `prepare` phase of
-[the hosted workflow](../.github/workflows/ultrabert-scifact.yml) first. It checks
+[the hosted workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/ultrabert-scifact.yml) first. It checks
 all author corpus IDs/title/abstract joins and all1,109 BEIR query IDs/texts,
 compares both author evidence IDs and cited document IDs to canonical test
 qrels, and retains any initial mapping difference. Canonical pinned BEIR qrels
@@ -90,7 +90,7 @@ fields, with titles unchanged. The first eight bounded contexts illustrate
 internal whitespace differences; this is not a claim that a guessed cleanup
 reconstructs every field. Strict v1 remains rejected, with no model outputs.
 
-The distinct [v2 protocol](../tests/regression/ultrabert/scifact-protocol-v2.json)
+The distinct [v2 protocol](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tests/regression/ultrabert/scifact-protocol-v2.json)
 uses the actual pinned canonical BEIR columns literally. It changes no rows,
 qrels, model precision,512-token policy or vector/ranking budget. Author-column,
 claim, evidence and citation differences are journaled rather than relabeled

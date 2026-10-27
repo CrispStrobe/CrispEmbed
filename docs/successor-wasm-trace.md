@@ -6,7 +6,7 @@ retains the actual failure. This lane traces that same immutable model, sentence
 native archive and browser archive. It changes no production source or archives.
 A successful attribution workflow still leaves qualification false.
 
-Run the reusable [successor-wasm-trace workflow](../.github/workflows/successor-wasm-trace.yml)
+Run the reusable [successor-wasm-trace workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/successor-wasm-trace.yml)
 from a reviewed source commit; it has no retargetable model/reference inputs.
 The metadata caller can register phase`successor-wasm-trace` with
 `uses: ./.github/workflows/successor-wasm-trace.yml`. The job runs on hosted Ubuntu,

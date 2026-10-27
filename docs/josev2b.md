@@ -8,8 +8,8 @@ source identities and limits. CPU/CUDA head parity is also verified in the
 [full stage/output review](../tests/results/josev2b/head-cpu-cuda-review.json).
 Native text backbone, composed outputs, task quality and release remain pending.
 The existing Gemma decision API does not load Josev. The source and owned inputs
-are frozen in [the versioned contract](josev2b-source-contract.json) and
-[four authored text cases](../tests/regression/josev2b/text-v1.json).
+are frozen in [the versioned contract](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/josev2b-source-contract.json) and
+[four authored text cases](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tests/regression/josev2b/text-v1.json).
 
 ## Source, license and provenance
 

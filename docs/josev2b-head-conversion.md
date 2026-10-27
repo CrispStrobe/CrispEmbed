@@ -1,7 +1,7 @@
 # Josev original joint-head F32 conversion preparation
 
 This prepares a component artifact, with no conversion execution or native parity
-claim. The [head schema](../tools/josev2b_head_schema.py) follows the pinned
+claim. The [head schema](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tools/josev2b_head_schema.py) follows the pinned
 [original class](https://huggingface.co/mayflowergmbh/Josev-2B/blob/6f0a31c8ed683aba79097eb3f48df2c9ab560afd/joint_schema_model.py):
 122 named tensors and 30,472,708 parameters. Hidden width is 2048; head width 512,
 two evidence-routing layers and four cross-field TransformerDecoderLayers.
@@ -9,7 +9,7 @@ The actual original loaded-head inventory must independently confirm these
 counts and every shape before conversion. No checkpoint header or payload was
 downloaded to derive the schema.
 
-The separate [converter](../tools/convert_josev2b_head_f32.py) requires an explicit
+The separate [converter](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tools/convert_josev2b_head_f32.py) requires an explicit
 reviewed original receipt SHA and full immutable original worker commit. It
 checks completed original-only status, exact source/panel/model and neutral cases,
 then actual checkpoint/loaded-head F32 identities for every tensor. Missing

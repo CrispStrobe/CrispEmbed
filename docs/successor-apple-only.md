@@ -1,6 +1,6 @@
 # Initial successor Mac-only diagnostic retry
 
-The reusable [successor-apple-only workflow](../.github/workflows/successor-apple-only.yml)
+The reusable [successor-apple-only workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/successor-apple-only.yml)
 retries the initial Apple consumer after successful
 [40386968045](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40386968045)
 reproduced the frozen fifty PNG identities. It uses only the original native

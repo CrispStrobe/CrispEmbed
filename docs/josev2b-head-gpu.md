@@ -4,7 +4,7 @@ This is a component audit of the original Josev joint head. It does not load or
 qualify the native Qwen3.5-2B backbone, expose a model alias, or change runtime
 defaults. See [the source contract](josev2b.md),
 [head conversion](josev2b-head-conversion.md) and
-[artifact preservation](josev2b-head-artifact.md).
+[artifact preservation](https://github.com/CrispStrobe/CrispEmbed/blob/6b3052fde19a959bbba4e23ce2dbafe7d4d81048/docs/josev2b-head-artifact.md).
 
 The private GPU submission uses `tools/kaggle/josev2b-head/bootstrap.py`. The
 operator attaches the already frozen original version5 output as a kernel

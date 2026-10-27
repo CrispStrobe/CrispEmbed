@@ -10,18 +10,18 @@ Its candidate predicate also admits nested vendored `.dist-info/METADATA` files.
 Whether the exact setuptools wheel contains those files remains a hosted audit
 question; no wheel or installed framework was inspected locally.
 
-The separate [protocol](josev2b-wheel-metadata-protocol-v1.json) freezes the existing
+The separate [protocol](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/docs/josev2b-wheel-metadata-protocol-v1.json) freezes the existing
 environment lock and requirements at
 [c9aa40b7](https://github.com/CrispStrobe/CrispEmbed/commit/c9aa40b7), with all 57
 original wheel URLs, byte lengths and SHA256s. Published payloads total
-2,790,174,915 bytes. The CPU-only [reusable workflow](../.github/workflows/josev2b-wheel-metadata.yml)
+2,790,174,915 bytes. The CPU-only [reusable workflow](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/.github/workflows/josev2b-wheel-metadata.yml)
 authenticates each complete wheel one at a time in temporary scratch, reads only
 metadata and RECORD from the ZIP, then deletes that wheel. It installs and
 executes no wheel and imports no framework. A 30-minute audit bound, 40-minute
 job bound and single-wheel disk check prevent an unbounded dependency exercise.
 No GPU slot or model/tokenizer payload is involved.
 
-The [driver](../tools/ci-heavy/josev2b_wheel_metadata.py) compares the one top-level
+The [driver](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453912d9793edde3f3076d636ce127a69c9/tools/ci-heavy/josev2b_wheel_metadata.py) compares the one top-level
 owning distribution's METADATA with the immutable PEP658 hash and the current
 sidecar bytes. It records all top-level and vendored candidates, their identities,
 hashes and lengths, and verifies that the ZIP candidate list matches RECORD.

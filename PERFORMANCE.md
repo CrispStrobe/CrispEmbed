@@ -4867,7 +4867,7 @@ Applies to all VLM OCR engines that use `image_preprocess.cpp`.
 ## Local M1 Metal OCR engine sweep (2026-07-31)
 
 Command: `python3 tests/ocr_engine_benchmark.py --repeats 1 --timeout 45
---output /tmp/crispembed-ocr-benchmark.json`.  These are cold end-to-end
+--output crispembed-ocr-benchmark.json`.  These are cold end-to-end
 process times on the local Apple M1; they include model loading and should not
 be read as steady-state service throughput.  Quality is scored only against
 the manifest's known fixture text.
@@ -5214,7 +5214,7 @@ Tesseract decoder/recoder and confidence-aggregation quality TODO, not a
 performance acceptance result; the beam path remains diagnostic.
 
 Converter smoke (2026-08-01): Miniconda converted the installed Homebrew
-`eng.traineddata` to `/tmp/crispembed-eng-dawg-smoke.gguf` successfully. The
+`eng.traineddata` to `crispembed-eng-dawg-smoke.gguf` successfully. The
 6.6 MiB GGUF contains the three available LSTM DAWG payloads
 (`lstm-punc-dawg`, `lstm-system-dawg`, and `lstm-number-dawg`), each with a
 base64 payload and SHA-256 metadata. This verifies preservation only; the

@@ -1,0 +1,49 @@
+{
+  "schema": "crispembed-systemone-public-build-review-v1",
+  "completed": true,
+  "model_loaded": false,
+  "public_model_qualified": false,
+  "run": 40456478353,
+  "job": 122030886126,
+  "job_conclusion": "success",
+  "parent_workflow_conclusion": "pending unrelated queued controls at review",
+  "source": "5f639e1432a2bd09d2e5d197dd108448e0e529a5",
+  "formatted_source": "061d9ba4fbfe9c660c57a7d17f3d1aeba262df2e",
+  "artifact": {
+    "id": 12713445673,
+    "bytes": 58332,
+    "sha256": "5a5193be90074892af8cb108fcf7d3bf84f6b8a86214f974cdc628966ebdea32"
+  },
+  "native_controls": {
+    "completed": true,
+    "model_loaded": false,
+    "gate_controls": [
+      {
+        "value": null,
+        "error": "Josev packed/component gates are off"
+      },
+      {
+        "value": "",
+        "error": "Josev packed/component gates are off"
+      },
+      {
+        "value": "0",
+        "error": "Josev packed/component gates are off"
+      }
+    ],
+    "null_handle": true,
+    "thread_local_errors": true,
+    "thread_bounds": true,
+    "zero_thread_default": true
+  },
+  "build_controls": {
+    "completed": true,
+    "compiler_rows": 24,
+    "exports": 5,
+    "cli_invalid_options": 2,
+    "model_loaded": false
+  },
+  "rust_cargo_check": "success against actual prebuilt",
+  "dart_format_and_analyze": "success with SDK3.13.5 and ffi2.1.4; formatter output applied byte-for-byte",
+  "limits": "Model-free Linux public build only. No packed owner or actual model-backed public consumer qualification; opt-in root-profile observers not executed."
+}
