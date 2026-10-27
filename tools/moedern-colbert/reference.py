@@ -15,6 +15,7 @@ import time
 import urllib.request
 
 from contract import CONTRACT, PANEL, ROOT, digest, read_contract, validate_checkpoint, verify_file
+from observer_continuity import PROTOCOL, capture_leaves, continuity, pipeline_coverage, validate_prior
 
 
 @contextmanager
@@ -59,7 +60,13 @@ def download(directory, declaration):
         verify_file(path, identity)
 
 
-def capture_original(variant, output):
+def capture_original(variant, output, prior_directory):
+    # Authenticate retained old outputs before framework imports or model access.
+    prior_root, prior = validate_prior(prior_directory)
+    if variant != '1.5M':
+        raise ValueError('Observer correction is bounded to the retained1.5M panel')
+    import shutil
+    shutil.copytree(prior_root/'checkpoint', output/'checkpoint')
     import numpy as np
     import torch
     import torch.nn.functional as functional
@@ -139,7 +146,10 @@ def capture_original(variant, output):
               'inventory': inventory, 'loaded_tensor_sha256': loaded_inventory, 'cases': [], 'scores': [], 'stage_arrays': [],
               'scope': 'Original CPU F32 owned controls; author GGUF/native/CoreML unexecuted; representative quality unqualified'}
     report['driver_sources'] = {str(p.relative_to(ROOT)): digest(p) for p in
-                                [Path(__file__), Path(__file__).with_name('contract.py'), Path(__file__).with_name('convert_f32.py')]}
+                                [Path(__file__), Path(__file__).with_name('contract.py'), Path(__file__).with_name('convert_f32.py'),
+                                 Path(__file__).with_name('observer_continuity.py'), PROTOCOL]}
+    report['observer_correction'] = {'protocol_sha256': digest(PROTOCOL), 'completed': False,
+                                    'prior_receipt_sha256': digest(prior_root/'review/original.json')}
     report['github_sha'] = os.environ.get('GITHUB_SHA')
     report['python'] = sys.version
     selected_by_id = {}
@@ -149,8 +159,8 @@ def capture_original(variant, output):
         (review/'original.json').write_text(json.dumps(report, indent=2, ensure_ascii=False)+'\n')
     checkpoint_report()
 
-    def save(case_id, stage, value):
-        if isinstance(value, torch.Tensor):
+    def save(case_id, stage, tree):
+        for stage, value in capture_leaves(stage, tree, lambda item: isinstance(item, torch.Tensor)):
             # Snapshot before later mutation of a feature dictionary or tensor.
             value = value.detach().clone().contiguous().cpu()
             if value.is_floating_point():
@@ -171,12 +181,6 @@ def capture_original(variant, output):
             report['stage_arrays'].append({'case': case_id, 'stage': stage, 'path': relative,
                                           'shape': list(value.shape), 'dtype': extension,
                                           'bytes': path.stat().st_size, 'sha256': digest(path)})
-        elif isinstance(value, dict):
-            for key, item in value.items():
-                save(case_id, f'{stage}.{key}', item)
-        elif isinstance(value, (list, tuple)):
-            for index, item in enumerate(value):
-                save(case_id, f'{stage}.{index}', item)
 
     def equal_features(a, b):
         if set(a) != set(b):
@@ -305,6 +309,10 @@ def capture_original(variant, output):
                                  'original_maxsim': original, 'explicit_maxsim': independent})
     import resource
     report['peak_rss_kib'] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    checkpoint_report()  # Keep all completed scores even if a final gate rejects.
+    pipeline_coverage(report, panel)
+    report['observer_correction'].update(continuity(report, prior))
+    report['observer_correction']['completed'] = True
     report['completed'] = True
     checkpoint_report()
     return review/'original.json'
@@ -315,15 +323,27 @@ def main():
     p.add_argument('--variant', choices=['1.5M', '27M', '115M'], default='1.5M')
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--convert-after-original', action='store_true')
+    p.add_argument('--prior-original', type=Path, required=True)
     args = p.parse_args()
     if os.environ.get('GITHUB_ACTIONS') != 'true':
         p.error('model access/inference is hosted-only')
     args.output.mkdir(parents=True, exist_ok=True)
     try:
-        receipt = capture_original(args.variant, args.output)
+        receipt = capture_original(args.variant, args.output, args.prior_original)
         if args.convert_after_original:
             from convert_f32 import convert
-            convert(args.output/'checkpoint', args.variant, args.output/'model-F32.gguf', receipt, digest(receipt))
+            converted = convert(args.output/'checkpoint', args.variant, args.output/'model-F32.gguf', receipt, digest(receipt))
+            prior_conversion = json.loads((args.prior_original/'raw/moedern-original/model-F32.conversion.json').read_text())
+            # Only the receipt's new source-report hash may change. Actual model
+            # bytes, tensor records and tokenizer identity must remain exact.
+            if ({k: v for k, v in converted.items() if k != 'original_report_sha256'} !=
+                    {k: v for k, v in prior_conversion.items() if k != 'original_report_sha256'}):
+                raise ValueError('Observer correction changed deterministic conversion')
+            (args.output/'review/conversion-continuity.json').write_text(json.dumps({
+                'completed': True, 'prior_conversion_receipt_sha256': digest(args.prior_original/'raw/moedern-original/model-F32.conversion.json'),
+                'current_conversion_receipt_sha256': digest(args.output/'model-F32.conversion.json'),
+                'gguf_bytes_exact': True, 'gguf_sha256': converted['gguf_sha256'],
+                'tensor_records_exact': True}, indent=2)+'\n')
     except Exception as error:
         review = args.output/'review'
         review.mkdir(exist_ok=True)

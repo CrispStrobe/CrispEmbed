@@ -1,0 +1,45 @@
+{
+  "schema": "crispembed-moedern-observer-correction-v1",
+  "scope": "Original CPU F32 observer correction only; no native or representative retrieval qualification",
+  "prior_run": 40412164041,
+  "prior_source": "790f7b1d0372c12d1807dfb2fc7fc3af20a3c445",
+  "prior_receipt_sha256": "b50ca1369f454d61b8c95583d8eb77a847c47ede29e52ed66b575784f4e4660f",
+  "prior_conversion_receipt_sha256": "a3694322b977c32afb12dfb79835eebbfb9a12126c8c535c3aaabe5981f55f48",
+  "prior_gguf_sha256": "9f9792f0ae76430496ac93951cc09a0804468ba3f22b4314b303aea85dfbe8fa",
+  "prior_review_artifact": {
+    "id": 12696834854,
+    "bytes": 23427,
+    "sha256": "18305ec57ce43a54898be374aed13a183b5d07b24c878717f49f8ac6a7fbc4eb",
+    "name": "moedern-original-review-1.5M-40412164041"
+  },
+  "prior_raw_artifact": {
+    "id": 12698665124,
+    "bytes": 15039205,
+    "sha256": "1eb3f435d57b7f0d31ba2fb3ede93b8bab0717dda2aa7d89d8faa282eefb0d44",
+    "name": "moedern-original-raw-1.5M-40412164041"
+  },
+  "original_contract_sha256": "9717685ed64ef0f9915204602c2721b0b10ad8284419f162f6bf25edf4644b8d",
+  "panel_sha256": "ea56d031d58b607b6f8735228d30c9b4f99a983b6bf3aa6be8f22c675948ba93",
+  "variant": "1.5M",
+  "prior_arrays": 250,
+  "prior_cases": 10,
+  "required_pipeline_indices": [
+    1,
+    2,
+    3
+  ],
+  "unchanged": [
+    "owned inputs and order",
+    "all original250 array payload bytes and descriptors",
+    "all10 ID and mask contracts",
+    "all3 exact MaxSim scores",
+    "all checkpoint/loaded-weight identities",
+    "F32 GGUF bytes",
+    "0.002 maximum absolute and0.99999 minimum row cosine gates"
+  ],
+  "limits": [
+    "The prior service success has incomplete intermediate coverage: no pipeline arrays.",
+    "The corrected observer must be reviewed before native dependencies are versioned.",
+    "No native model execution, new defaults, public API, release or quality qualification."
+  ]
+}
