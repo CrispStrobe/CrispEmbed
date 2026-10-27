@@ -202,6 +202,11 @@ struct uocr_ctx {
     // SAM/CLIP absolute position embeddings are resized with torch-style
     // bicubic+antialias (the reference get_abs_pos) instead of the legacy paths.
     bool pos_aa_bicubic = false;
+    // Set together with pos_aa_bicubic unless CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP=1:
+    // reference-exact tile numerics -- torch fp32 antialias coefficients for the
+    // pos-embed resize and torch linear (align_corners=False) rel-pos resize for
+    // SAM global blocks at the 40x40 tile grid.
+    bool uocr2_ref_prep = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -403,6 +408,45 @@ static std::vector<float> get_rel_pos(int q_size, int k_size, const float * rel_
         for (int ki = 0; ki < k_size; ki++) {
             int idx = std::max(0, std::min((int)(qi * qs - ki * ks + off), max_rd - 1));
             for (int c = 0; c < hd; c++) result[(qi * k_size + ki) * hd + c] = resized[idx * hd + c];
+        }
+    return result;
+}
+
+// get_rel_pos with the reference's exact resize: F.interpolate(mode="linear",
+// align_corners=False) in fp32 (torch upsample_linear1d CPU index/lambda math).
+// The legacy get_rel_pos above uses align_corners=True-style sampling, which only
+// coincides when L == 2*max(q,k)-1 (no resize) -- e.g. it differs for 640 tiles,
+// where SAM global blocks need 127 -> 79.
+static std::vector<float> get_rel_pos_torch(int q_size, int k_size, const float * rel_pos, int L, int hd) {
+    int max_rd = 2 * std::max(q_size, k_size) - 1;
+    std::vector<float> resized((size_t)hd * max_rd);
+    if (L == max_rd) {
+        memcpy(resized.data(), rel_pos, resized.size() * sizeof(float));
+    } else {
+        const float scale = (float)L / (float)max_rd;
+        for (int i = 0; i < max_rd; i++) {
+            float real = scale * ((float)i + 0.5f) - 0.5f;
+            if (real < 0.0f) real = 0.0f;
+            int lo = (int)floorf(real);
+            float lam = std::min(std::max(real - (float)lo, 0.0f), 1.0f);
+            if (lo > L - 1) lo = L - 1;
+            int hi = lo < L - 1 ? lo + 1 : lo;
+            float w0 = 1.0f - lam, w1 = lam;
+            for (int c = 0; c < hd; c++) {
+                float o = rel_pos[(size_t)lo * hd + c] * w0;
+                o += rel_pos[(size_t)hi * hd + c] * w1;
+                resized[(size_t)i * hd + c] = o;
+            }
+        }
+    }
+    std::vector<float> result((size_t)q_size * k_size * hd);
+    float qs = std::max((float)k_size / q_size, 1.0f);
+    float ks = std::max((float)q_size / k_size, 1.0f);
+    float off = (float)(k_size - 1) * qs;
+    for (int qi = 0; qi < q_size; qi++)
+        for (int ki = 0; ki < k_size; ki++) {
+            int idx = std::max(0, std::min((int)(qi * qs - ki * ks + off), max_rd - 1));
+            memcpy(&result[((size_t)qi * k_size + ki) * hd], &resized[(size_t)idx * hd], (size_t)hd * sizeof(float));
         }
     return result;
 }
@@ -1005,6 +1049,49 @@ static aa_coeffs precompute_aa_coeffs(int in_size, int out_size) {
     return c;
 }
 
+// torch fp32 variant of the antialias coefficients (UpSampleKernel.cpp
+// _compute_weights_aa / HelperInterpCubic::aa_filter for float input): scale,
+// support, center, filter and normalisation are evaluated in float (with the
+// same float/double promotions), not double like Pillow. Used for the
+// reference get_abs_pos / get_abs_pos_sam resize (fp32 model).
+static aa_coeffs precompute_aa_coeffs_torch_f32(int in_size, int out_size) {
+    aa_coeffs c;
+    const float scale = (float)in_size / (float)out_size;
+    const float support = (scale >= 1.0f) ? (float)(2.0 * (double)scale) : 2.0f;
+    const float invscale = (scale >= 1.0f) ? (float)(1.0 / (double)scale) : 1.0f;
+    c.ksize = (int)ceil((double)support) * 2 + 1;
+    c.xmin.resize(out_size);
+    c.xcnt.resize(out_size);
+    c.k.assign((size_t)out_size * c.ksize, 0.0);
+    auto filt = [](float x) -> float {
+        const float A = -0.5f;
+        if (x < 0.0f) x = -x;
+        if (x < 1.0f) return ((A + 2.0f) * x - (A + 3.0f)) * x * x + 1.0f;
+        if (x < 2.0f) return ((A * x - 5.0f * A) * x + 8.0f * A) * x - 4.0f * A;
+        return 0.0f;
+    };
+    std::vector<float> w((size_t)c.ksize);
+    for (int i = 0; i < out_size; i++) {
+        const float center = (float)((double)scale * ((double)i + 0.5));
+        int64_t xmin = std::max((int64_t)((double)(center - support) + 0.5), (int64_t)0);
+        int64_t xsize = std::min((int64_t)((double)(center + support) + 0.5), (int64_t)in_size) - xmin;
+        if (xsize > c.ksize) xsize = c.ksize;
+        float total = 0.0f;
+        for (int64_t j = 0; j < xsize; j++) {
+            float v = filt((float)(((double)((float)(j + xmin) - center) + 0.5) * (double)invscale));
+            w[(size_t)j] = v;
+            total += v;
+        }
+        for (int64_t j = 0; j < xsize; j++) {
+            float v = total != 0.0f ? w[(size_t)j] / total : w[(size_t)j];
+            c.k[(size_t)i * c.ksize + j] = (double)v; // exactly representable
+        }
+        c.xmin[i] = (int)xmin;
+        c.xcnt[i] = (int)xsize;
+    }
+    return c;
+}
+
 // 8-bit RGB resize intended to match PIL Image.resize(..., BICUBIC) bit-exactly:
 // fixed-point coefficients (PRECISION_BITS = 22, normalize_coeffs_8bpc
 // rounding), horizontal pass first, clip8 rounding to uint8 after each pass,
@@ -1072,8 +1159,9 @@ static std::vector<uint8_t> resize_rgb_pil_bicubic(const uint8_t * px, int w, in
 // Deviation: torch accumulates in its own order/precision (fp32 for fp32
 // input); summation order differs, so expect ~1e-7 relative noise, not bits.
 // grid_in: [nP_in*nP_in, C] row-major; grid_out: [nP_out*nP_out, C].
-static void interpolate_pos_embed_2d_aa_bicubic(const float * grid_in, float * grid_out, int nP_in, int nP_out, int C) {
-    auto c = precompute_aa_coeffs(nP_in, nP_out);
+static void interpolate_pos_embed_2d_aa_bicubic(const float * grid_in, float * grid_out, int nP_in, int nP_out, int C,
+                                                bool torch_f32_coeffs = false) {
+    auto c = torch_f32_coeffs ? precompute_aa_coeffs_torch_f32(nP_in, nP_out) : precompute_aa_coeffs(nP_in, nP_out);
     std::vector<float> tmp((size_t)nP_in * nP_out * C, 0.0f); // [nP_in][nP_out][C]
     for (int y = 0; y < nP_in; y++)
         for (int xx = 0; xx < nP_out; xx++) {
@@ -1121,7 +1209,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     if (nP != nP_orig) {
         pos.resize((size_t)N * C);
         if (ctx.pos_aa_bicubic)
-            interpolate_pos_embed_2d_aa_bicubic(pos_orig.data(), pos.data(), nP_orig, nP, C);
+            interpolate_pos_embed_2d_aa_bicubic(pos_orig.data(), pos.data(), nP_orig, nP, C, ctx.uocr2_ref_prep);
         else
             interpolate_pos_embed_2d(pos_orig.data(), pos.data(), nP_orig, nP, C);
     } else {
@@ -1283,8 +1371,13 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
             auto & blk2 = ctx.m.sam_blocks[li];
             auto rph = to_f32(blk2.rel_pos_h), rpw = to_f32(blk2.rel_pos_w);
             int L_h = (int)blk2.rel_pos_h->ne[1], L_w = (int)blk2.rel_pos_w->ne[1];
-            rp_h_recomp = get_rel_pos(aH, aH, rph.data(), L_h, hd);
-            rp_w_recomp = get_rel_pos(aW, aW, rpw.data(), L_w, hd);
+            if (ctx.uocr2_ref_prep) {
+                rp_h_recomp = get_rel_pos_torch(aH, aH, rph.data(), L_h, hd);
+                rp_w_recomp = get_rel_pos_torch(aW, aW, rpw.data(), L_w, hd);
+            } else {
+                rp_h_recomp = get_rel_pos(aH, aH, rph.data(), L_h, hd);
+                rp_w_recomp = get_rel_pos(aW, aW, rpw.data(), L_w, hd);
+            }
             rp_h_ggml_rc.resize((size_t)aH * aH * hd);
             rp_w_ggml_rc.resize((size_t)aW * aW * hd);
             reformat_rp_table(rp_h_recomp.data(), rp_h_ggml_rc.data(), aH, hd);
@@ -1593,7 +1686,7 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
         }
         std::vector<float> np((size_t)T * D);
         memcpy(np.data(), pos.data(), (size_t)D * sizeof(float));
-        interpolate_pos_embed_2d_aa_bicubic(pos.data() + D, np.data() + D, src_side, dst_side, D);
+        interpolate_pos_embed_2d_aa_bicubic(pos.data() + D, np.data() + D, src_side, dst_side, D, ctx.uocr2_ref_prep);
         pos = std::move(np);
     }
 
@@ -3380,6 +3473,57 @@ void unlimited_ocr_free(unlimited_ocr_context * ctx) {
 // i*j only, so the order among equal products is CPython set order; here equal
 // products are ordered lexicographically. That only matters for an exact float
 // tie of |ar - i/j| between two different equal-product grids (documented risk).
+// The reference builds every view as `transform(img).to(torch.bfloat16)` and the
+// fp32 harness casts it back (tools/unlimited-ocr2/reference.py), so the model
+// sees bf16-rounded pixels. Round-to-nearest-even, like torch's float->bf16.
+static inline float uocr2_bf16_round(float v) {
+    uint32_t b;
+    memcpy(&b, &v, sizeof(b));
+    b += 0x7FFFu + ((b >> 16) & 1u);
+    b &= 0xFFFF0000u;
+    memcpy(&v, &b, sizeof(v));
+    return v;
+}
+
+// Reference-exact tile preprocessing is the default inside the tiles gate;
+// CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP=1 restores the first tiled port
+// (no bf16 pixel rounding, legacy global letterbox, double-precision pos-embed
+// coefficients, align_corners=True rel-pos resize) for A/B.
+static bool uocr2_ref_prep_enabled() {
+    return !core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP");
+}
+
+// Global view exactly like ImageOps.pad(image, (S, S), method=BICUBIC,
+// color=(127,127,127), centering=(0.5,0.5)) (Pillow 11): the resized size and
+// offset use Python round() (half-to-even), the resize is the Pillow port above
+// (antialiased on downscale), then ToTensor/Normalize(0.5,0.5) and bf16 rounding.
+static std::vector<float> uocr2_global_view_pil(const uint8_t * px, int w, int h, int ch, int S, const float * mean,
+                                                const float * stdv) {
+    auto pyround = [](double v) { return (int)std::nearbyint(v); }; // FE_TONEAREST = half-to-even
+    double im_ratio = (double)w / h, dest_ratio = 1.0;
+    int rw = S, rh = S, ox = 0, oy = 0;
+    if (im_ratio > dest_ratio) {
+        rh = pyround((double)h / w * S);
+        oy = pyround((S - rh) * 0.5);
+    } else if (im_ratio < dest_ratio) {
+        rw = pyround((double)w / h * S);
+        ox = pyround((S - rw) * 0.5);
+    }
+    std::vector<uint8_t> rs = resize_rgb_pil_bicubic(px, w, h, ch, rw, rh);
+    std::vector<float> pixels((size_t)3 * S * S);
+    for (int c = 0; c < 3; c++) {
+        const float pad = (float)((int)(mean[c] * 255.0f)) / 255.0f;
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++) {
+                float v = pad;
+                if (x >= ox && x < ox + rw && y >= oy && y < oy + rh)
+                    v = rs[((size_t)(y - oy) * rw + (x - ox)) * 3 + c] / 255.0f;
+                pixels[(size_t)c * S * S + (size_t)y * S + x] = uocr2_bf16_round((v - mean[c]) / stdv[c]);
+            }
+    }
+    return pixels;
+}
+
 static void uocr2_select_grid(int w, int h, int & wt, int & ht) {
     const int min_num = 2, max_num = 16, isz = 640;
     std::vector<std::pair<int, int>> cand;
@@ -3421,7 +3565,12 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
     std::string saved_ref;
     std::swap(saved_ref, ctx.diff_ref_path); // reference dumps describe the global view only
     ctx.pos_aa_bicubic = true;
+    ctx.uocr2_ref_prep = uocr2_ref_prep_enabled();
+    const bool bf16_px = ctx.uocr2_ref_prep;
     bool ok = true;
+    FILE * tile_px_dump = nullptr; // diagnostics: [wt*ht, 3, 640, 640] f32, row-major tiles
+    if (const char * dv = getenv("UOCR2_DUMP_VISION"))
+        if (*dv) tile_px_dump = fopen((std::string(dv) + ".tiles.f32").c_str(), "wb");
     for (int ty = 0; ty < ht && ok; ty++)
         for (int tx = 0; tx < wt && ok; tx++) {
             std::vector<float> pixels((size_t)3 * T * T);
@@ -3429,8 +3578,10 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
                 for (int y = 0; y < T; y++)
                     for (int x = 0; x < T; x++) {
                         float v = big[((size_t)(ty * T + y) * BW + tx * T + x) * 3 + c] / 255.0f;
-                        pixels[(size_t)c * T * T + (size_t)y * T + x] = (v - s.image_mean[c]) / s.image_std[c];
+                        float nv = (v - s.image_mean[c]) / s.image_std[c];
+                        pixels[(size_t)c * T * T + (size_t)y * T + x] = bf16_px ? uocr2_bf16_round(nv) : nv;
                     }
+            if (tile_px_dump) fwrite(pixels.data(), sizeof(float), pixels.size(), tile_px_dump);
             std::vector<float> sam_f, clip_f, proj;
             int n_tok = 0, sam_dim = 0;
             ok = encode_sam(ctx, pixels.data(), T, sam_f, n_tok, sam_dim) &&
@@ -3443,7 +3594,9 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
                 tile_proj[(size_t)ty * wt + tx] = std::move(proj);
             }
         }
+    if (tile_px_dump) fclose(tile_px_dump);
     ctx.pos_aa_bicubic = false;
+    ctx.uocr2_ref_prep = false;
     std::swap(saved_ref, ctx.diff_ref_path);
     if (!ok) return false;
     auto nl = to_f32(ctx.m.image_newline);
@@ -3518,8 +3671,15 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     int ox = (imgS - rw) / 2;
     int oy = (imgS - rh) / 2;
 
+    // Tiled Unlimited-OCR-2 pages (gate on, > 640): the global view goes through
+    // the Pillow-exact ImageOps.pad port + bf16 rounding (reference-exact prep).
+    // Every other path keeps the legacy letterbox below byte-for-byte.
+    const bool uocr2_tiled =
+        ctx->inner.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILES") && (w > 640 || h > 640);
+    const bool uocr2_pil_global = uocr2_tiled && imgS == s.image_size && uocr2_ref_prep_enabled();
     std::vector<float> pixels(3 * imgS * imgS);
-    for (int c = 0; c < 3; c++) {
+    if (uocr2_pil_global) pixels = uocr2_global_view_pil(px, w, h, ch, imgS, s.image_mean, s.image_std);
+    for (int c = 0; c < 3 && !uocr2_pil_global; c++) {
         int ci = std::min(c, ch - 1);
         for (int y = 0; y < imgS; y++) {
             for (int x = 0; x < imgS; x++) {
@@ -3707,7 +3867,8 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         // 5. Unlimited-OCR-2 gundam tiling (default OFF). Variant 2 only, and only for
         //    pages larger than 640 in either dimension; the local grid goes FIRST,
         //    then the global view (+ view_separator) built above. Otherwise untouched.
-        if (ctx->inner.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILES") && (w > 640 || h > 640)) {
+        int dump_wt = 1, dump_ht = 1;
+        if (uocr2_tiled) {
             int wt = 1, ht = 1;
             uocr2_select_grid(w, h, wt, ht);
             std::vector<float> local;
@@ -3723,6 +3884,24 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
             stage_ms("gundam_tiles");
             fprintf(stderr, "unlimited_ocr: gundam tiles %dx%d (w_t x h_t) local=%d total_vis=%d\n", wt, ht, n_local,
                     n_vis_total);
+            dump_wt = wt;
+            dump_ht = ht;
+        }
+        // UOCR2_DUMP_VISION=<path> (variant 2): raw little-endian f32 [n_vis_total, D] of
+        // the assembled IMG-span features -- tiled: local grid (10*ht rows of 10*wt
+        // features + image_newline), then global (16 rows of 16 + newline), then
+        // view_separator; untiled: global + view_separator. Diagnostics only; the
+        // decode is unchanged. Tile pixels (if tiled) go to <path>.tiles.f32.
+        if (const char * dv = getenv("UOCR2_DUMP_VISION")) {
+            if (*dv && ctx->inner.m.lhp.variant == 2) {
+                if (FILE * f = fopen(dv, "wb")) {
+                    size_t nw = fwrite(vis_features.data(), sizeof(float), vis_features.size(), f);
+                    fclose(f);
+                    fprintf(stderr,
+                            "unlimited_ocr: vision dump n=%d D=%d tiled=%d wt=%d ht=%d nq=10 nqb=16 floats=%zu -> %s\n",
+                            n_vis_total, D, (int)uocr2_tiled, dump_wt, dump_ht, nw, dv);
+                }
+            }
         }
     } // end else (real vision path)
 
