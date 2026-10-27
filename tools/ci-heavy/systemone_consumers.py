@@ -146,7 +146,7 @@ def reviewed_producer(cfg, scratch, review):
 
 def original_reference(cfg, scratch):
     pin = cfg['packed_producer']['original_archive']
-    directory, service = fetch(pin, scratch, include=set(pin['members']))
+    directory, service = fetch(pin, scratch)  # all 251 original arrays
     reference = directory/pin['reference_dir']
     require(sha(reference/'reference.json') == cfg['original']['reference_sha256']
             and sha(reference/'input-freeze.json') == cfg['original']['input_freeze_sha256'], 'Frozen original bytes differ')

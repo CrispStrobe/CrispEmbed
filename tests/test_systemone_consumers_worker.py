@@ -22,12 +22,16 @@ class Controls(unittest.TestCase):
         self.assertFalse(any(self.cfg['qualification'].values()))
         self.assertEqual(len(self.cfg['gates']), 7)
 
-    def test_pending_pins_listed(self):
-        self.assertIn('packed producer not independently reviewed', w.pending(self.cfg))
+    def test_reviewed_packing_pin(self):
+        pin = self.cfg['packed_producer']; self.assertEqual(w.pending(self.cfg), [])
+        self.assertEqual((pin['run'], pin['model_bytes']), (40456235976, 7659180448))
+        self.assertEqual(pin['source'], '9772c89660f9eb4a0220ef46f5354493c2970c08')
+        unreviewed = json.loads(json.dumps(self.cfg)); unreviewed['packed_producer']['reviewed'] = False
+        self.assertIn('packed producer not independently reviewed', w.pending(unreviewed))
 
     def test_pending_rejects_before_any_service_or_payload_access(self):
         with tempfile.TemporaryDirectory() as d, \
-             mock.patch.object(w, 'policy', return_value=self.cfg), \
+             mock.patch.object(w, 'policy', return_value=dict(self.cfg, packed_producer=dict(self.cfg['packed_producer'], model_sha256=None))), \
              mock.patch.object(w, 'api', side_effect=AssertionError('service access')), \
              mock.patch.object(w, 'fetch', side_effect=AssertionError('payload access')), \
              mock.patch.object(w, 'root_build', side_effect=AssertionError('build')):

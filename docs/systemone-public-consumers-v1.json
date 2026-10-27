@@ -8,16 +8,34 @@
     "formatted_source": "061d9ba4"
   },
   "packed_producer": {
-    "reviewed": false,
-    "source": null,
-    "run": null,
-    "review_artifact": null,
-    "review_receipt_sha256": null,
-    "asset_artifact": null,
+    "reviewed": true,
+    "source": "9772c89660f9eb4a0220ef46f5354493c2970c08",
+    "run": 40456235976,
+    "review_artifact": {
+      "id": 12713077159,
+      "name": "josev-packed-review-40456235976",
+      "bytes": 133432,
+      "sha256": "a2d37463b5695b75f826db2f96fd3ee76ccd87ec8ac33c5c210d69f96557f88c"
+    },
+    "review_receipt_sha256": "a506aa1373a4343194a6388246847e20d08b67da55ac165783cc3216df784538",
+    "asset_artifact": {
+      "id": 12712893576,
+      "name": "josev-packed-f32-asset-40456235976",
+      "bytes": 3642252632,
+      "sha256": "3c29fec4f4e2b38049cf2e864c938ee088c812a00c749234d08a37b77eac7b5c"
+    },
     "model_member": "josev2b-systemone-f32.gguf",
-    "model_sha256": null,
-    "model_bytes": null,
-    "original_archive": null
+    "model_sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+    "model_bytes": 7659180448,
+    "original_archive": {
+      "run": 40429513945,
+      "source": "5da7c64d1a95df0f9a829c62938fc8d7d64f77b7",
+      "id": 12702553413,
+      "name": "josev-head-original-and-component-40429513945",
+      "bytes": 317814519,
+      "sha256": "eff25c8ec207646602cb885abc6d17f7fc646cd2b0d7e5f7ab9b27650e175708",
+      "reference_dir": "original"
+    }
   },
   "reference_source": "ed23f1aeb5f448b80a89b567592986bffb951de9",
   "reference_helpers": {
@@ -29,12 +47,27 @@
     "input_freeze_sha256": "9c85fae56186517b5721be547bc74e8f92bd8e7cdb45d38afb4340e029161fe7"
   },
   "root_profile": {
-    "cmake": ["-DCMAKE_BUILD_TYPE=Release", "-DCRISPEMBED_BUILD_SHARED=ON", "-DBUILD_SHARED_LIBS=OFF",
-              "-DGGML_NATIVE=OFF", "-DCRISPEMBED_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF",
-              "-DGGML_CUDA=OFF", "-DGGML_LLAMAFILE=ON", "-DCRISPEMBED_SYSTEMONE_AUDIT=ON",
-              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"],
-    "targets": ["crispembed-shared", "crispembed-cli", "crispembed-server",
-                "systemone-audit-plain-probe", "systemone-audit-observed-probe", "systemone-audit-diff"]
+    "cmake": [
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCRISPEMBED_BUILD_SHARED=ON",
+      "-DBUILD_SHARED_LIBS=OFF",
+      "-DGGML_NATIVE=OFF",
+      "-DCRISPEMBED_NATIVE=OFF",
+      "-DGGML_BLAS=OFF",
+      "-DGGML_METAL=OFF",
+      "-DGGML_CUDA=OFF",
+      "-DGGML_LLAMAFILE=ON",
+      "-DCRISPEMBED_SYSTEMONE_AUDIT=ON",
+      "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+    ],
+    "targets": [
+      "crispembed-shared",
+      "crispembed-cli",
+      "crispembed-server",
+      "systemone-audit-plain-probe",
+      "systemone-audit-observed-probe",
+      "systemone-audit-diff"
+    ]
   },
   "gates": {
     "CRISPEMBED_JOSEV_PACKED": "1",
@@ -48,7 +81,14 @@
   "expected": {
     "cases": 4,
     "compared_stages": 227,
-    "consumers": ["c", "python", "cli", "http", "rust", "dart"],
+    "consumers": [
+      "c",
+      "python",
+      "cli",
+      "http",
+      "rust",
+      "dart"
+    ],
     "complete_typed_responses_exact": true
   },
   "resources": {
