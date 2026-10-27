@@ -13,6 +13,7 @@ class composed_context {
 public:
     static std::unique_ptr<composed_context> load(const char * backbone, const char * head, const char * tokenizer,
                                                   int threads, std::string & error);
+    static std::unique_ptr<composed_context> load_packed(const char * packed_gguf, int threads, std::string & error);
     ~composed_context();
     composed_context(const composed_context &) = delete;
     composed_context & operator=(const composed_context &) = delete;

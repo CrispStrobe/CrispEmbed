@@ -1,6 +1,7 @@
 // Publisher schema semantics: mayflowergmbh/Josev-2B@6f0a31c8 (Apache-2.0).
 // Independent implementation; see docs/josev2b-tokenizer-schema.md.
 #include "josev2b_text_frontend.h"
+#include "josev2b_packed_profile.h"
 #include "core/bpe.h"
 #include "core/decision_schema.h"
 #include "core/env_gate.h"
@@ -128,6 +129,12 @@ const char * suffix = "\n<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\
 } // namespace
 
 bool text_frontend::load(const char * path, std::string & error) {
+    return load_file(path, false, error);
+}
+bool text_frontend::load_packed(const char * path, std::string & error) {
+    return load_file(path, true, error);
+}
+bool text_frontend::load_file(const char * path, bool packed, std::string & error) {
     *this = {};
     error.clear();
     if (!core_env::on("CRISPEMBED_JOSEV_TEXT_FRONTEND")) {
@@ -135,13 +142,21 @@ bool text_frontend::load(const char * path, std::string & error) {
         return false;
     }
     try {
+        require(!packed || core_env::on("CRISPEMBED_JOSEV_PACKED"), "Josev packed gate is off");
         require(path, "null tokenizer path");
+        if (packed) require(josev2b_packed::file_bounds(path, error), "packed file bounds rejected");
         std::ifstream file(path, std::ios::binary | std::ios::ate);
-        require(file && file.tellg() > 0 && file.tellg() <= 64 * 1024 * 1024, "tokenizer component size invalid");
+        require(file && file.tellg() > 0 &&
+                    uint64_t(file.tellg()) <= (packed ? uint64_t(8) * 1024 * 1024 * 1024 : uint64_t(64) * 1024 * 1024),
+                "tokenizer component size invalid");
         gguf_init_params params = { true, nullptr };
         std::unique_ptr<gguf_context, decltype(&gguf_free)> g(gguf_init_from_file(path, params), gguf_free);
-        require(bool(g) && gguf_get_n_tensors(g.get()) == 0, "expected metadata-only tokenizer GGUF");
-        require(str(g.get(), "general.architecture") == "josev2b_tokenizer" &&
+        require(bool(g), "cannot open tokenizer GGUF metadata");
+        if (packed)
+            require(josev2b_packed::metadata_valid(g.get(), error), "Josev packed metadata rejected");
+        else
+            require(gguf_get_n_tensors(g.get()) == 0, "expected metadata-only tokenizer GGUF");
+        require(str(g.get(), "general.architecture") == (packed ? josev2b_packed::architecture : "josev2b_tokenizer") &&
                     str(g.get(), "josev2b.tokenizer.format") == "crispembed-josev-tokenizer-v1" &&
                     str(g.get(), "general.source.huggingface.repository") == "mayflowergmbh/Josev-2B" &&
                     str(g.get(), "general.source.huggingface.revision") == "6f0a31c8ed683aba79097eb3f48df2c9ab560afd" &&

@@ -471,6 +471,61 @@ context * init(const char * path, const char * receipt, const char * worker, con
         return nullptr;
     }
 }
+bool validate_packed_shapes(const core_gguf::tensor_map & tensors, std::string & error) {
+    error.clear();
+    try {
+        const auto expected = expected_schema();
+        require(tensors.size() == expected.size() && expected.size() == 122,
+                "Borrowed head requires exactly122 tensors");
+        for (const auto & row : expected) {
+            auto found = tensors.find(row.first);
+            require(found != tensors.end(), "Missing borrowed head tensor: " + row.first);
+            auto * t = found->second;
+            require(t && t->type == GGML_TYPE_F32 && ggml_is_contiguous(t),
+                    "Packed head requires contiguous F32 metadata");
+            for (int axis = 0; axis < 4; ++axis)
+                require(t->ne[axis] == row.second[axis], "Borrowed head shape differs: " + row.first);
+        }
+        return true;
+    } catch (const std::exception & e) {
+        return fail(error, e.what());
+    }
+}
+context * init_borrowed_cpu(const core_gguf::tensor_map & tensors, int threads, std::string & error) {
+    error.clear();
+    if (!gate(error)) return nullptr;
+    if (!core_env::on("CRISPEMBED_JOSEV_PACKED")) {
+        fail(error, "Josev packed gate is off");
+        return nullptr;
+    }
+    try {
+        require(threads >= 1 && threads <= 64, "Borrowed CPU head requires1..64 threads");
+        require(validate_packed_shapes(tensors, error), "Packed head tensor schema rejected");
+        for (const auto & item : tensors)
+            require(item.second->buffer && ggml_backend_buffer_is_host(item.second->buffer),
+                    "Borrowed head requires host storage");
+        std::unique_ptr<context> model(new context);
+        model->backend = core_cpu_backend::init();
+        require(core_cpu_backend::is_cpu(model->backend), "Borrowed head CPU backend unavailable");
+        core_cpu_backend::set_n_threads(model->backend, threads);
+        model->name = ggml_backend_name(model->backend);
+        // No buf/ctx ownership: free_weights clears these borrowed pointer entries
+        // while the enclosing packed model still owns every GGML tensor/buffer.
+        model->weights.tensors = tensors;
+        std::vector<float> chunk(65536);
+        for (const auto & item : tensors)
+            for (size_t offset = 0; offset < size_t(ggml_nelements(item.second)); offset += chunk.size()) {
+                const size_t count = std::min(chunk.size(), size_t(ggml_nelements(item.second)) - offset);
+                ggml_backend_tensor_get(item.second, chunk.data(), offset * sizeof(float), count * sizeof(float));
+                for (size_t i = 0; i < count; ++i)
+                    require(std::isfinite(chunk[i]), "Nonfinite borrowed head weight: " + item.first);
+            }
+        return model.release();
+    } catch (const std::exception & e) {
+        fail(error, e.what());
+        return nullptr;
+    }
+}
 void free(context * ctx) {
     delete ctx;
 }

@@ -7,6 +7,7 @@
 #include "josev2b_answer_serializer.h"
 #include "josev2b_backbone.h"
 #include "josev2b_head.h"
+#include "josev2b_packed_profile.h"
 #include "josev2b_text_frontend.h"
 #include <cmath>
 #include <stdexcept>
@@ -47,6 +48,7 @@ struct composed_context::implementation {
     answer_serializer serializer;
     josev2b_head::context * head = nullptr;
     int threads = 0;
+    bool packed = false;
     ~implementation() {
         josev2b_head::free(head);
         core_gguf::free_weights(owner);
@@ -84,6 +86,64 @@ std::unique_ptr<composed_context> composed_context::load(const char * backbone, 
         return nullptr;
     }
 }
+std::unique_ptr<composed_context> composed_context::load_packed(const char * path, int threads, std::string & error) {
+    error.clear();
+    try {
+        require(enabled() && core_env::on("CRISPEMBED_JOSEV_PACKED"), "Josev packed/component gates are off");
+        require(path && threads >= 1 && threads <= 64, "Josev packed path/1..64 threads required");
+        auto result = std::unique_ptr<composed_context>(new composed_context);
+        auto & p = *result->impl_;
+        require(p.serializer.enabled(), "Josev answer serializer gate is off");
+        // Bounds and embedded tokenizer provenance are checked before any weight
+        // allocation. Old metadata-only frontend load() remains strict zero-tensor.
+        require(p.frontend.load_packed(path, error), "Josev embedded tokenizer rejected");
+        auto partition = [](const core_gguf::tensor_map & all, core_gguf::tensor_map & backbone,
+                            core_gguf::tensor_map & head) {
+            require(all.size() == 442, "Packed owner requires exactly442 tensors");
+            for (const auto & item : all) {
+                if (item.first.rfind("l.", 0) == 0)
+                    backbone.emplace(item);
+                else if (item.first.rfind("head.", 0) == 0)
+                    head.emplace(item);
+                else
+                    require(false, "Unknown packed tensor namespace");
+            }
+            require(backbone.size() == 320 && head.size() == 122, "Packed320/122 partition differs");
+        };
+        {
+            ggml_context * raw_tensors = nullptr;
+            const gguf_init_params params{ true, &raw_tensors };
+            auto * raw_metadata = gguf_init_from_file(path, params);
+            std::unique_ptr<ggml_context, decltype(&ggml_free)> tensors(raw_tensors, ggml_free);
+            std::unique_ptr<gguf_context, decltype(&gguf_free)> metadata(raw_metadata, gguf_free);
+            require(metadata && tensors, "Cannot read packed tensor metadata");
+            require(josev2b_packed::metadata_valid(metadata.get(), error), "Packed source/profile rejected");
+            core_gguf::tensor_map all, backbone, head;
+            for (auto * t = ggml_get_first_tensor(tensors.get()); t; t = ggml_get_next_tensor(tensors.get(), t))
+                require(all.emplace(ggml_get_name(t), t).second, "Duplicate packed GGML tensor name");
+            partition(all, backbone, head);
+            qwen35_ocr::decoder_weights validated;
+            require(josev2b_backbone::map(backbone, validated), "Packed backbone metadata schema rejected");
+            require(josev2b_head::validate_packed_shapes(head, error), "Packed head metadata schema rejected");
+        }
+        p.backend = ggml_backend_cpu_init();
+        require(p.backend, "Josev packed CPU backend unavailable");
+        ggml_backend_cpu_set_n_threads(p.backend, threads);
+        require(core_gguf::load_weights(path, p.backend, "josev-packed", p.owner, true),
+                "Packed F32 weight load failed");
+        core_gguf::tensor_map backbone, head;
+        partition(p.owner.tensors, backbone, head);
+        require(josev2b_backbone::map(backbone, p.weights), "Packed backbone tensor map rejected");
+        p.head = josev2b_head::init_borrowed_cpu(head, threads, error);
+        require(p.head != nullptr, "Packed borrowed head rejected");
+        p.threads = threads;
+        p.packed = true;
+        return result;
+    } catch (const std::exception & e) {
+        if (error.empty()) error = e.what();
+        return nullptr;
+    }
+}
 bool composed_context::decide(const std::string & request, std::string & response, std::string & error) {
     response.clear();
     composed_result result;
@@ -97,6 +157,7 @@ bool composed_context::decide(const std::string & request, composed_result & res
     try {
         require(enabled(), "Josev composed component gates are off");
         auto & p = *impl_;
+        require(!p.packed || core_env::on("CRISPEMBED_JOSEV_PACKED"), "Josev packed gate is off");
         encoded_text encoded;
         require(p.frontend.encode_record(request, encoded, error), "Josev request rejected");
         const std::vector<int> ids(encoded.input_ids.begin(), encoded.input_ids.end());

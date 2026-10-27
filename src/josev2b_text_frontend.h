@@ -27,11 +27,14 @@ struct encoded_text {
 class text_frontend {
 public:
     bool load(const char * metadata_gguf, std::string & error);
+    // New exact442-tensor profile only; does not relax metadata-only load().
+    bool load_packed(const char * packed_gguf, std::string & error);
     bool encode_record(const std::string & request_json, encoded_text & output, std::string & error,
                        int max_length = 512) const;
     bool enabled() const { return enabled_; }
 
 private:
+    bool load_file(const char * path, bool packed, std::string & error);
     bool enabled_ = false;
     std::vector<std::string> vocab_;
     std::vector<int32_t> added_;

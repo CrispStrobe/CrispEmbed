@@ -1,5 +1,6 @@
 // Experimental original-reference joint-head component; no backbone or public ABI.
 #pragma once
+#include "core/gguf_loader.h"
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -37,6 +38,10 @@ struct context;
 // No backend fallback. Both init/run require core_env::on("CRISPEMBED_JOSEV_HEAD").
 context * init(const char * path, const char * reviewed_receipt, const char * reviewed_worker, const char * backend,
                int threads, std::string & error);
+// Borrowed strict122F32 host tensors; caller owns tensor/storage lifetime until
+// after free(). New packed gate required; historical init() stays strict122GGUF.
+bool validate_packed_shapes(const core_gguf::tensor_map & tensors, std::string & error);
+context * init_borrowed_cpu(const core_gguf::tensor_map & tensors, int threads, std::string & error);
 void free(context * ctx);
 const char * backend_name(const context * ctx);
 bool validate_input(const input & values, std::string & error); // Pure bounded contract.
