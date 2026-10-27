@@ -1441,6 +1441,22 @@ CRISPEMBED_API void crispembed_table_parse_free_string(char * str);
 CRISPEMBED_API int crispembed_table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows,
                                                       int * out_n_cols);
 
+// ---------------------------------------------------------------------------
+// SystemOne joint-schema decisions — separate from Gemma flat decision/embedding
+// interfaces. CPU/F32 Josev text profile, batch1, state-only clipping to512 tokens.
+// Requires the explicitly opted-in packed/component model gates.
+// ---------------------------------------------------------------------------
+typedef struct crispembed_systemone_context crispembed_systemone_context;
+// Local packed GGUF path. n_threads=0 selects2; otherwise1..64. NULL on error.
+CRISPEMBED_API crispembed_systemone_context * crispembed_systemone_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_systemone_free(crispembed_systemone_context * ctx);
+// Full publisher request: model/state/questions and optional id. Returns full
+// model/answers/usage JSON, valid until next call/free. Failure clears old output.
+CRISPEMBED_API const char * crispembed_systemone_run_json(crispembed_systemone_context * ctx, const char * request);
+// NULL ctx returns this thread's last initialization/invalid-handle error.
+CRISPEMBED_API const char * crispembed_systemone_error(const crispembed_systemone_context * ctx);
+CRISPEMBED_API const char * crispembed_systemone_profile(const crispembed_systemone_context * ctx);
+
 #ifdef __cplusplus
 }
 #endif

@@ -25,6 +25,8 @@ use std::ffi::{c_char, CStr, CString};
 use std::path::Path;
 
 pub use crispembed_sys::CrispembedHparams;
+mod systemone;
+pub use systemone::SystemOne;
 
 #[derive(Debug, Clone)]
 pub struct ModelInfo {

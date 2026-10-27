@@ -1,0 +1,13 @@
+{
+  "schema": "crispembed-josev-publication-v1",
+  "approved_by_owner": false,
+  "destination": null,
+  "token_secret": "HF_JOSEV_PUBLISH_TOKEN",
+  "filename": "josev2b-systemone-f32.gguf",
+  "consumer_receipt": "tests/results/josev2b/public-consumers.json",
+  "consumer_run": 40463407332,
+  "notices_required": ["LICENSE", "README.md", "joint_schema_model.py", "joint_head_config.json", "config.json",
+                       "unsloth_decision_config.json", "tokenizer_config.json", "processor_config.json"],
+  "upstream": {"repo": "mayflowergmbh/Josev-2B", "revision": "6f0a31c8ed683aba79097eb3f48df2c9ab560afd", "license": "Apache-2.0"},
+  "qualification": {"default_enabled": false, "release_qualified": false, "model_quality": false}
+}

@@ -85,9 +85,9 @@ bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vecto
     }
     return std::all_of(hidden.begin(), hidden.end(), [](float x) { return std::isfinite(x); });
 }
-bool decoder_cpu(const decoder_weights & w, const attention_config & c, const float * input, const float * positions,
-                 int batch, int tokens, int threads, const decoder_cache * previous, decoder_outputs & output,
-                 converted_weight_cache * weights_cache) {
+static bool decoder_impl(const decoder_weights & w, const attention_config & c, const float * input,
+                         const float * positions, int batch, int tokens, int threads, const decoder_cache * previous,
+                         decoder_outputs & output, converted_weight_cache * weights_cache, bool hidden_only) {
     output = {};
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !input || !positions || !w.embedding || w.layers.empty() ||
         w.layers.size() > 64 || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 || threads < 1 || threads > 256 ||
@@ -95,8 +95,9 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
         return false;
     const int width = int(w.embedding->ne[0]), past = previous ? previous->tokens : 0;
     if (width < 1 || width > 8192 || size_t(batch) * tokens * width > 16 * 1024 * 1024 || past < 0 ||
-        past + tokens > 4096 || !w.head || w.head->ne[1] < 1 || w.head->ne[1] > 300000 ||
-        !shape(w.head, width, int(w.head->ne[1])))
+        past + tokens > 4096 ||
+        (!hidden_only &&
+         (!w.head || w.head->ne[1] < 1 || w.head->ne[1] > 300000 || !shape(w.head, width, int(w.head->ne[1])))))
         return false;
     if (previous && (previous->batch != batch || previous->layers.size() != w.layers.size())) return false;
     const size_t count = size_t(batch) * tokens * width;
@@ -161,6 +162,14 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
         output.cache.layers.push_back(std::move(next));
     }
     if (!rms(hidden, w.norm, width, c.eps, output.norm)) return false;
+    if (hidden_only) {
+        // The ordinary vocabulary projection rejects nonfinite inputs. This
+        // route skips that projection, so retain its failure boundary here.
+        const auto finite = [](const std::vector<float> & values) {
+            return std::all_of(values.begin(), values.end(), [](float value) { return std::isfinite(value); });
+        };
+        return finite(output.norm) && std::all_of(output.hidden.begin(), output.hidden.end(), finite);
+    }
     std::vector<float> last(size_t(batch) * width);
     for (int b = 0; b < batch; ++b)
         std::copy_n(output.norm.data() + size_t((b * tokens) + tokens - 1) * width, width,
@@ -168,6 +177,26 @@ bool decoder_cpu(const decoder_weights & w, const attention_config & c, const fl
     std::vector<std::vector<float>> logits;
     if (!project_cpu({ w.head }, last.data(), width, batch, threads, logits, weights_cache)) return false;
     output.logits = std::move(logits[0]);
+    return true;
+}
+bool decoder_cpu(const decoder_weights & w, const attention_config & c, const float * input, const float * positions,
+                 int batch, int tokens, int threads, const decoder_cache * previous, decoder_outputs & output,
+                 converted_weight_cache * weights_cache) {
+    return decoder_impl(w, c, input, positions, batch, tokens, threads, previous, output, weights_cache, false);
+}
+// Internal entry for the separately validated Josev profile. Never project the
+// unused vocabulary head; retain every final token row and all layer outputs.
+bool decoder_hidden_cpu(const decoder_weights & w, const attention_config & c, const float * input,
+                        const float * positions, int tokens, int threads, decoder_outputs & output) {
+    output = {};
+    if (!core_env::on("CRISPEMBED_JOSEV_BACKBONE") || tokens < 1 || tokens > 512 || c.query_heads != 8 ||
+        c.kv_heads != 2 || c.head_dim != 256 || c.rotary_dim != 64 || c.mrope_section[0] != 11 ||
+        c.mrope_section[1] != 11 || c.mrope_section[2] != 10 || c.theta != 10000000.0f || c.eps != 1e-6f || w.head ||
+        !shape(w.embedding, 2048, 248320) || !shape(w.norm, 2048, 1) || w.layers.size() != 24)
+        return false;
+    decoder_outputs temporary;
+    if (!decoder_impl(w, c, input, positions, 1, tokens, threads, nullptr, temporary, nullptr, true)) return false;
+    output = std::move(temporary);
     return true;
 }
 } // namespace qwen35_ocr

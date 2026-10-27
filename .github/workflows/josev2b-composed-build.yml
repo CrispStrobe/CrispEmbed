@@ -1,0 +1,46 @@
+name: Josev composed CPU build controls
+on:
+  workflow_call:
+jobs:
+  composed-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Verify exact composed source before compilation
+        run: |
+          python3 tools/josev2b_composed_contract.py
+          python3 tests/test_josev2b_composed_panel.py -v
+      - name: Configure bounded CPU-only component build
+        run: cmake -S tests/josev-composed -B "$RUNNER_TEMP/josev-composed-build" -DCMAKE_BUILD_TYPE=Release
+      - name: Compile ordinary and observed composition
+        run: cmake --build "$RUNNER_TEMP/josev-composed-build" --parallel 2
+      - name: Both archives reject gate-off before any model file access
+        run: |
+          unset CRISPEMBED_JOSEV_COMPOSED CRISPEMBED_JOSEV_BACKBONE CRISPEMBED_QWEN35_OCR CRISPEMBED_JOSEV_HEAD
+          "$RUNNER_TEMP/josev-composed-build/josev-composed-plain-probe" --gates
+          "$RUNNER_TEMP/josev-composed-build/josev-composed-observed-probe" --gates
+      - name: Actual crispembed-diff Ref positive, row-sensitive negative and structural controls
+        run: python3 tools/josev2b_composed_panel.py --ref-controls "$RUNNER_TEMP/josev-composed-build/josev-composed-diff" --output "$RUNNER_TEMP/josev-composed-ref-controls"
+      - name: Ordinary archive contains no observer symbols or stage labels
+        run: |
+          nm -C "$RUNNER_TEMP/josev-composed-build/libjosev-composed-plain.a" > "$RUNNER_TEMP/josev-symbols.txt"
+          if grep -E 'composed_test::|josev2b_head::test::|run_observed' "$RUNNER_TEMP/josev-symbols.txt"; then exit 1; fi
+          if strings "$RUNNER_TEMP/josev-composed-build/libjosev-composed-plain.a" | grep -E 'composed/lexical/|head/option_context_projection'; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-composed-build-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/josev-composed-build/CMakeCache.txt
+            ${{ runner.temp }}/josev-symbols.txt
+            ${{ runner.temp }}/josev-composed-ref-controls/*.json
+            ${{ runner.temp }}/josev-composed-ref-controls/*/diff.json
+            ${{ runner.temp }}/josev-composed-ref-controls/*/*.log
+          retention-days: 90

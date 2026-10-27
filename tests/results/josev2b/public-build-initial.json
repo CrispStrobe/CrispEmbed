@@ -1,0 +1,17 @@
+{
+  "schema": "crispembed-systemone-public-build-initial-v1",
+  "run": 40455424346,
+  "source": "73ddb5eee8a64a6f69784b027d971fcfc486c736",
+  "conclusion": "failure",
+  "root_shared_cli_server_build": "passed",
+  "actual_native_cabi_controls": "passed",
+  "failure": "Compiler-row assertion counted a separate configured Qwen delta test target alongside production static/shared targets. Corrected selector explicitly limits CMake output target directories to crispembed and crispembed-shared; expected24 actual production rows remains unchanged.",
+  "artifact": {
+    "id": 12712124896,
+    "bytes": 56319,
+    "sha256": "efb9731f5a4cffeb0fc1131b6f3fca2ea2920449f98a4133adc338a88a9a7bce"
+  },
+  "rust_dart_checks": "not reached",
+  "model_loaded": false,
+  "public_model_qualified": false
+}

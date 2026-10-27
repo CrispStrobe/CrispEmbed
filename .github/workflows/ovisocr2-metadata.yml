@@ -5,7 +5,7 @@ on:
       phase:
         type: choice
         description: 'Metadata/export/frontend, model capture/replay, vision, public, quality, publication/consumer or wrong-profile fixture'
-        options: [josev-wheel-metadata, scifact-tokenizer-diagnostic, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, final-integrated-v1, successor-apple-only, moedern-original-1p5m, wasm-layer3-attribution-v1]
+        options: [systemone-api-build, systemone-consumers, josev-publish, josev-packed-build, josev-composed, josev-composed-build, josev-wheel-metadata, scifact-tokenizer-diagnostic, metadata, export, frontend, model, replay, vision, public, quality, quant-raw, publish, consumer, profile, position-quality, position-replay, preserve-evidence, position-probe, attribution-2048, first-ffn, weight-cache, weight-cache-reanalysis, ovisocr3-metadata, ovisocr3-reference, ovisocr3-quality, ovisocr3-quality-f16, ovisocr3-public, ovisocr3-public-diagnostic, ovisocr3-native14, ovisocr3-publish, ovisocr3-consumer, current-replay, large-inputs, lighton-fixture, ultrabert-rope, migan-native, migan-reference, ultrabert-scifact-prepare, ultrabert-scifact-panel, successor-consumer, successor-corpus, successor-wasm-trace, successor-wasm-rounding-controls, wasm-q8-rounding-ab-v1, final-integrated-v1, successor-apple-only, moedern-original-1p5m, wasm-layer3-attribution-v1]
         default: metadata
       native_run_id:
         type: string
@@ -594,3 +594,29 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'scifact-tokenizer-diagnostic'
     needs: controls
     uses: ./.github/workflows/scifact-tokenizer-diagnostic.yml
+
+  josev-composed-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-composed-build'
+    uses: ./.github/workflows/josev2b-composed-build.yml
+
+  josev-composed:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-composed'
+    uses: ./.github/workflows/josev2b-composed.yml
+
+  josev-packed-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-packed-build'
+    uses: ./.github/workflows/josev2b-packed-build.yml
+
+  systemone-api-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'systemone-api-build'
+    uses: ./.github/workflows/systemone-api-build.yml
+
+  systemone-consumers:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'systemone-consumers'
+    uses: ./.github/workflows/systemone-consumers.yml
+
+  josev-publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'josev-publish'
+    uses: ./.github/workflows/josev-publish.yml
+    secrets:
+      HF_JOSEV_PUBLISH_TOKEN: ${{ secrets.HF_JOSEV_PUBLISH_TOKEN }}

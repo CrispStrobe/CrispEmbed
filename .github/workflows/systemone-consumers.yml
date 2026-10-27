@@ -1,0 +1,56 @@
+name: SystemOne actual public consumers on reviewed packed model
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: systemone-consumers-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  consumers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Model-free worker controls; pending producer pins reject here
+        run: python tests/test_systemone_consumers_worker.py -v
+      - name: Pin independent numerical comparison only
+        run: python -m pip install numpy==2.2.6
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          toolchain: 1.90.0
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Root build, 227-stage root parity, then six actual consumers
+        run: python tools/ci-heavy/systemone_consumers.py --output "$RUNNER_TEMP/systemone-consumers" --scratch "$RUNNER_TEMP/systemone-consumers-scratch"
+      - name: Preserve small reports and every rejection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: systemone-consumers-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/systemone-consumers/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Preserve root-profile traces remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: systemone-consumers-traces-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/systemone-consumers/raw/
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn

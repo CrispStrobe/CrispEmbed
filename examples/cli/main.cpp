@@ -110,6 +110,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --colbert        encode ColBERT per-token vectors\n");
     fprintf(stderr, "  --tokens-raw     encode unnormalized per-token encoder features\n");
     fprintf(stderr, "  --decide JSON    typed choices/scores/booleans: {state,questions,workflow?}\n");
+    fprintf(stderr, "  --systemone JSON full joint-schema request: {model,state,questions,id?}\n");
     fprintf(stderr, "  --fill-mask      predict [MASK] / <|mask|> tokens (LFM2 encoder)\n");
     fprintf(stderr, "  --top-k N        predictions per mask (default: 5)\n");
     fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
@@ -268,6 +269,8 @@ static int cli_main(int argc, char ** argv) {
     bool tokens_raw_mode = false;
     bool fill_mask_mode = false;
     std::string decision_request;
+    bool systemone_mode = false;
+    std::string systemone_request;
     int mask_top_k = 5;
     std::string audio_path;     // .raw float32 16 kHz mono PCM
     std::string image_raw_path; // preprocessed float32 patches, n_patches x 1536
@@ -391,6 +394,9 @@ static int cli_main(int argc, char ** argv) {
             colbert_mode = true;
         } else if (strcmp(argv[i], "--tokens-raw") == 0) {
             tokens_raw_mode = true;
+        } else if (strcmp(argv[i], "--systemone") == 0 && i + 1 < argc) {
+            systemone_mode = true;
+            systemone_request = argv[++i];
         } else if (strcmp(argv[i], "--decide") == 0 && i + 1 < argc) {
             decision_request = argv[++i];
         } else if (strcmp(argv[i], "--fill-mask") == 0) {
@@ -1225,7 +1231,7 @@ static int cli_main(int argc, char ** argv) {
         return 0;
     }
 
-    int mode_count = decision_request.empty() ? 0 : 1;
+    int mode_count = (decision_request.empty() ? 0 : 1) + (systemone_mode ? 1 : 0);
     mode_count += sparse_mode ? 1 : 0;
     mode_count += colbert_mode ? 1 : 0;
     mode_count += tokens_raw_mode ? 1 : 0;
@@ -1236,9 +1242,11 @@ static int cli_main(int argc, char ** argv) {
     mode_count += !image_raw_path.empty() ? 1 : 0;
     mode_count += !image_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(stderr, "error: choose only one encoding mode "
-                        "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--rerank/--biencoder/--audio/--image/"
-                        "--image-raw)\n");
+        fprintf(
+            stderr,
+            "error: choose only one encoding mode "
+            "(--sparse/--colbert/--tokens-raw/--fill-mask/--decide/--systemone/--rerank/--biencoder/--audio/--image/"
+            "--image-raw)\n");
         return 1;
     }
 
@@ -1640,6 +1648,12 @@ static int cli_main(int argc, char ** argv) {
 
         crispembed_ocr_free(ocr_ctx);
         return 0;
+    }
+
+    if (systemone_mode &&
+        (prefix_set || output_dim != 0 || print_dim || print_capabilities || !file_path.empty() || !texts.empty())) {
+        fprintf(stderr, "error: --systemone takes its complete request from JSON; embedding options are invalid\n");
+        return 1;
     }
 
     // Resolve model path (handles auto-download) — after OCR early exit
@@ -2386,6 +2400,22 @@ static int cli_main(int argc, char ** argv) {
     // 0.84→0.40 s, arctic-m-v2 3.05→1.01 s, f2llm-330m 2.95→1.01 s,
     // byte-identical embeddings) motivated the min(4, cores) default; it is
     // now applied for every lane right after argument parsing (issue #45).
+
+    if (systemone_mode) {
+        auto * systemone = crispembed_systemone_init(model_path.c_str(), n_threads);
+        if (!systemone) {
+            fprintf(stderr, "SystemOne load failed: %s\n", crispembed_systemone_error(nullptr));
+            return 1;
+        }
+        const char * result = crispembed_systemone_run_json(systemone, systemone_request.c_str());
+        const bool success = result != nullptr;
+        if (success)
+            printf("%s\n", result);
+        else
+            fprintf(stderr, "SystemOne request failed: %s\n", crispembed_systemone_error(systemone));
+        crispembed_systemone_free(systemone);
+        return success ? 0 : 1;
+    }
 
     // Init model
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);

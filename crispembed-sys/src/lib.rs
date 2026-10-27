@@ -8,6 +8,10 @@ use std::os::raw::c_void;
 #[repr(C)]
 pub struct CrispembedContext(c_void);
 
+/// Opaque joint-schema SystemOne context; separate from embedding/Gemma handles.
+#[repr(C)]
+pub struct CrispembedSystemoneContext(c_void);
+
 /// Read-only model hyperparameters returned by `crispembed_get_hparams`.
 #[repr(C)]
 pub struct CrispembedHparams {
@@ -169,6 +173,18 @@ pub struct CrispembedFaceResult {
 }
 
 extern "C" {
+    pub fn crispembed_systemone_init(
+        path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut CrispembedSystemoneContext;
+    pub fn crispembed_systemone_free(ctx: *mut CrispembedSystemoneContext);
+    pub fn crispembed_systemone_run_json(
+        ctx: *mut CrispembedSystemoneContext,
+        request: *const c_char,
+    ) -> *const c_char;
+    pub fn crispembed_systemone_error(ctx: *const CrispembedSystemoneContext) -> *const c_char;
+    pub fn crispembed_systemone_profile(ctx: *const CrispembedSystemoneContext) -> *const c_char;
+
     pub fn crispembed_has_decision(ctx: *const CrispembedContext) -> c_int;
     pub fn crispembed_decide_json(
         ctx: *mut CrispembedContext,

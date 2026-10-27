@@ -3,6 +3,7 @@
 // Usage: crispembed-server -m model.gguf [--port 8080] [--host 0.0.0.0]
 //
 // Endpoints:
+//   POST /systemone       — full publisher joint-schema request/response
 //   POST /decide          — calibrated typed answers for state + schema
 //   POST /tokens          — raw or normalized per-token features and IDs
 //   POST /masked-logits   — raw tied masked-LM logits and positions
@@ -476,6 +477,7 @@ static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int
 
 int main(int argc, char ** argv) {
     std::string model_path;
+    std::string systemone_model_path;
     std::string host = "127.0.0.1";
     std::string det_model_path;       // face detection model
     std::string rec_model_path;       // face recognition model
@@ -527,6 +529,8 @@ int main(int argc, char ** argv) {
             model_path = argv[++i];
         else if (strcmp(argv[i], "--host") == 0 && i + 1 < argc)
             host = argv[++i];
+        else if (strcmp(argv[i], "--systemone-model") == 0 && i + 1 < argc)
+            systemone_model_path = argv[++i];
         else if (strcmp(argv[i], "--image-root") == 0 && i + 1 < argc)
             g_image_root = argv[++i];
         else if (strcmp(argv[i], "--model-root") == 0 && i + 1 < argc)
@@ -628,10 +632,10 @@ int main(int argc, char ** argv) {
     // --ocr-rec R` is a complete standalone configuration (it was rejected
     // with the usage text before, forcing an unrelated -m just to start the
     // OCR endpoint — noticed while smoke-testing the issue-#45 thread fix).
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && ocr_model_path.empty() &&
-        ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() && ner_model_path.empty() &&
-        sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() &&
-        safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
+    if (systemone_model_path.empty() && model_path.empty() && det_model_path.empty() && vit_model_path.empty() &&
+        ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() &&
+        ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() &&
+        dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
         tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() &&
         instructir_model_path.empty() && adair_model_path.empty() && sam2_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
@@ -660,6 +664,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --vit MODEL   ViT image embedding model (SigLIP/CLIP GGUF)\n");
         fprintf(stderr, "  --pix2struct MODEL  Pix2Struct document understanding model GGUF\n");
         fprintf(stderr, "  --clip-text MODEL  CLIP text encoder GGUF\n");
+        fprintf(stderr, "  --systemone-model MODEL  joint-schema decisions; enables POST /systemone\n");
         fprintf(stderr, "\nMath OCR (formula recognition):\n");
         fprintf(stderr, "  --ocr MODEL   math OCR model (PP-FormulaNet, HMER, BTTR GGUF)\n");
         fprintf(stderr, "\nLayout detection (document structure):\n");
@@ -786,6 +791,22 @@ int main(int argc, char ** argv) {
         }
     };
 
+    std::unique_ptr<crispembed_systemone_context, decltype(&crispembed_systemone_free)> systemone(
+        nullptr, crispembed_systemone_free);
+    std::mutex systemone_mutex;
+    if (!systemone_model_path.empty()) {
+        const auto resolved = crispembed_mgr::resolve_model(systemone_model_path, true);
+        if (resolved.empty()) {
+            fprintf(stderr, "Failed to resolve SystemOne model\n");
+            return 1;
+        }
+        systemone.reset(crispembed_systemone_init(resolved.c_str(), n_threads));
+        if (!systemone) {
+            fprintf(stderr, "Failed to load SystemOne model: %s\n", crispembed_systemone_error(nullptr));
+            return 1;
+        }
+    }
+
     httplib::Server svr;
 
     // CORS: allow browser access from any origin
@@ -798,6 +819,28 @@ int main(int argc, char ** argv) {
 
     // Raw token features and tied masked-LM predictions.
     // Typed schema decisions: native rendering, encoding and calibration.
+    svr.Post("/systemone", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!systemone) {
+            res.status = 503;
+            res.set_content("{\"error\":\"no SystemOne model loaded\"}", "application/json");
+            return;
+        }
+        if (req.body.size() > 65536 || req.body.find('\0') != std::string::npos) {
+            res.status = 400;
+            res.set_content("{\"error\":\"SystemOne requires NUL-free JSON within64KiB\"}", "application/json");
+            return;
+        }
+        std::lock_guard<std::mutex> lock(systemone_mutex);
+        const auto * result = crispembed_systemone_run_json(systemone.get(), req.body.c_str());
+        if (!result) {
+            res.status = 400;
+            res.set_content("{\"error\":\"" + json_escape(crispembed_systemone_error(systemone.get())) + "\"}",
+                            "application/json");
+            return;
+        }
+        res.set_content(result, "application/json");
+    });
+
     svr.Post("/decide", [&](const httplib::Request & req, httplib::Response & res) {
         if (!ctx) {
             res.status = 503;
@@ -3975,6 +4018,7 @@ int main(int argc, char ** argv) {
             if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse
             if (crispembed_has_colbert(ctx)) js << ", \"colbert\": true";  // POST /colbert/score
         }
+        if (systemone) js << ", \"systemone\": true";
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
@@ -4017,6 +4061,7 @@ int main(int argc, char ** argv) {
         const bool have_orch_caps = ocr_orch_ctx && crispembed_ocr_pipeline_capabilities(ocr_orch_ctx, &oc);
         std::ostringstream js;
         js << "{\"status\":\"ok\",\"routes\":{";
+        js << "\"systemone\":" << (systemone ? "true" : "false") << ",";
         js << "\"ocr\":" << (ocr_pipeline_ctx ? "true" : "false");
         js << ",\"ocr_pipeline\":" << (ocr_orch_ctx ? "true" : "false");
         js << ",\"layout\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
@@ -4043,8 +4088,8 @@ int main(int argc, char ** argv) {
     });
 
     svr.Get("/health/ready", [&](const httplib::Request &, httplib::Response & res) {
-        const bool ready = ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx || ocr_orch_ctx ||
-                           layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
+        const bool ready = systemone || ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx ||
+                           ocr_orch_ctx || layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
         res.status = ready ? 200 : 503;
         res.set_content(ready ? "{\"status\":\"ready\"}" : "{\"status\":\"not_ready\"}", "application/json");
     });
