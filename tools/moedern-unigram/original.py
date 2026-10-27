@@ -7,6 +7,13 @@ import types
 from contract import ROOT,REV,REPORT,TOKENIZER,ST_SOURCE,require,sha,dump
 
 
+def added_token_state(token):
+ state=token.__getstate__()
+ require(type(state)is dict and set(state)=={'content','single_word','lstrip','rstrip','normalized','special'},'Rust0.22.2 AddedToken state schema differs')
+ require(type(state['content'])is str and state['content'] and all(type(state[k])is bool for k in ('single_word','lstrip','rstrip','normalized','special')),'Rust0.22.2 AddedToken state types differ')
+ return dict(state)
+
+
 def register(backend,source,config):
  require(sha(source.read_bytes())==ST_SOURCE,'ST source changed')
  tree=ast.parse(source.read_text())
@@ -23,7 +30,7 @@ def register(backend,source,config):
   def get_vocab(self):return backend.get_vocab()
   def tokenize(self,text):return backend.encode(text,add_special_tokens=False).tokens
   def add_special_tokens(self,value):
-   actions.extend([json.loads(x.__getstate__()) for x in value['additional_special_tokens']]);backend.add_special_tokens(value['additional_special_tokens'])
+   actions.extend([added_token_state(x) for x in value['additional_special_tokens']]);backend.add_special_tokens(value['additional_special_tokens'])
  owner=types.SimpleNamespace(tokenizer=Adapter())
  namespace['_register_prefix_tokens'](owner,{'query':config['query_prefix'],'document':config['document_prefix']})
  return actions

@@ -3669,10 +3669,10 @@
     "tests/fixtures/moedern-unigram-v1.json": "f34b5eee3acf8dd243b89e3cac272f36288197065e2197f64e2072129eb68b9c",
     "tests/moedern-unigram/CMakeLists.txt": "ef7809bdd24543d821ff972ed7cbc14c7d47f67d83ce75e4f56a1495f0c3bd78",
     "tests/moedern-unigram/probe.cpp": "9903b14efcaa22e93ad20f462794c5db0e270bbda38cffc7fa040caa0c961f68",
-    "tests/test_moedern_unigram.py": "1c7d9536327dddbe6ad8786d1ac3d3715bfc7b80bb311e7499b05be6c67306e8",
+    "tests/test_moedern_unigram.py": "2265b0eb71062638790de3068c1ef43793952ee993eeb9de415f6dc792078bfe",
     "tools/ci-heavy/moedern_unigram.py": "9b5817a1c4a567bbdb3a349050335b132d5d74d61d60daf38389e6f8e910bae7",
     "tools/moedern-unigram/contract.py": "bfcc2373d16a2a890c29f8781ee2842fc59f3ecd8f5cb4ddf1af4856f0c050a4",
-    "tools/moedern-unigram/original.py": "775a944cf79ed0d4c1b47ee8948cb657dfeb1f1bb96e269ec3fb5d1897f5e84f"
+    "tools/moedern-unigram/original.py": "34765586aaec1e16594a2d2d5bdce7b0c6f0a710b16ef53e103ea59441200a32"
   },
   "hosted_result": null,
   "qualification": {
