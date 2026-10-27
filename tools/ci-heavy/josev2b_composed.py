@@ -2,6 +2,7 @@
 """Hosted-only composed Josev audit; rejects unreviewed dependencies before API/payload access."""
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -101,6 +102,7 @@ def barrier(deps,scratch):
 
 def run(out,scratch,build):
     cfg,deps,head=policy() # Must precede even dependency API access.
+    require(importlib.metadata.version('numpy')=='2.2.6','pinned independent metric package differs')
     out.mkdir(parents=True);scratch.mkdir(parents=True)
     available=int(next(x.split()[1] for x in Path('/proc/meminfo').read_text().splitlines() if x.startswith('MemAvailable:')))*1024
     require(available>=10*2**30 and shutil.disk_usage(scratch).free>=25*2**30,'hosted10GiBRAM/25GiBdisk required')

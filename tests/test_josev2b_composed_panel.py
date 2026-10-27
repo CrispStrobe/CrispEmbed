@@ -58,6 +58,7 @@ class DependencyBarrier(unittest.TestCase):
         hosted=importlib.util.module_from_spec(spec);spec.loader.exec_module(hosted)
         head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
         with mock.patch.object(hosted,'verify',return_value={}), mock.patch.object(hosted,'api') as remote, \
+             mock.patch.object(hosted.json,'loads',return_value={'schema':'crispembed-josev-composed-dependencies-v1','reviewed':False}), \
              mock.patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_SHA':head}):
             with self.assertRaisesRegex(ValueError,'dependency review pending'):hosted.policy()
             remote.assert_not_called()
