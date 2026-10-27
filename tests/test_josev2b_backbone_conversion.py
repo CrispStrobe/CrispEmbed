@@ -41,6 +41,22 @@ class Controls(unittest.TestCase):
             self.assertFalse((p/'output.gguf').exists())
         for name in ('numpy','gguf','torch'):self.assertNotIn(name,sys.modules)
 
+    def test_actual_backbone_inventory_accepts_sparse_extent_above_head_bound(self):
+        import struct
+        # A sparse synthetic extent exercises the real header parser without
+        # allocating/readback of a model payload or importing an array package.
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'synthetic.safetensors';payload=130*1024*1024
+            # Use bounded dimensions while retaining the same total extent.
+            header=json.dumps({'synthetic':dict(shape=[130,262144],dtype='F32',data_offsets=[0,payload])}).encode()
+            with path.open('wb') as stream:
+                stream.write(struct.pack('<Q',len(header)));stream.write(header);stream.truncate(8+len(header)+payload)
+            offset,rows=m.backbone_inventory(path,path.stat().st_size)
+            self.assertEqual(offset,8+len(header));self.assertEqual(rows['synthetic']['offsets'],[0,payload])
+            from josev2b_head_schema import inventory
+            with self.assertRaises(ValueError):inventory(path)
+            with self.assertRaises(ValueError):m.backbone_inventory(path,path.stat().st_size+4)
+
     def test_help_is_framework_and_payload_free(self):
         p=subprocess.run([sys.executable,ROOT/'tools/convert_josev2b_backbone_f32.py','--help'],capture_output=True,text=True,timeout=10)
         self.assertEqual(p.returncode,0);self.assertIn('--original-sha256',p.stdout)

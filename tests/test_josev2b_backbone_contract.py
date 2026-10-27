@@ -34,7 +34,8 @@ class Controls(unittest.TestCase):
 
     def test_hidden_route_returns_all_rows_before_vocabulary_projection(self):
         text=(ROOT/'src/qwen35_decoder.cpp').read_text()
-        self.assertLess(text.index('if (hidden_only) return true;'),text.index('std::vector<float> last('))
+        self.assertLess(text.index('if (hidden_only) {'),text.index('std::vector<float> last('))
+        self.assertIn('return finite(output.norm) && std::all_of(output.hidden.begin(), output.hidden.end(), finite);',text)
         hidden=function(text,'decoder_hidden_cpu')
         self.assertIn('output = {};',hidden)
         self.assertIn('decoder_outputs temporary;',hidden)

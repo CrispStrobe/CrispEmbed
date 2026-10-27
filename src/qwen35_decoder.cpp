@@ -162,7 +162,14 @@ static bool decoder_impl(const decoder_weights & w, const attention_config & c, 
         output.cache.layers.push_back(std::move(next));
     }
     if (!rms(hidden, w.norm, width, c.eps, output.norm)) return false;
-    if (hidden_only) return true;
+    if (hidden_only) {
+        // The ordinary vocabulary projection rejects nonfinite inputs. This
+        // route skips that projection, so retain its failure boundary here.
+        const auto finite = [](const std::vector<float> & values) {
+            return std::all_of(values.begin(), values.end(), [](float value) { return std::isfinite(value); });
+        };
+        return finite(output.norm) && std::all_of(output.hidden.begin(), output.hidden.end(), finite);
+    }
     std::vector<float> last(size_t(batch) * width);
     for (int b = 0; b < batch; ++b)
         std::copy_n(output.norm.data() + size_t((b * tokens) + tokens - 1) * width, width,

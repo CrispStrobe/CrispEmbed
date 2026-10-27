@@ -6,8 +6,9 @@ import json
 import math
 from pathlib import Path
 import sys
+import struct
 import tempfile
-from josev2b_head_schema import inventory, reference, sha256
+from josev2b_head_schema import reference, sha256, unique_pairs
 
 PREFIX='model.language_model.'
 ARCH='josev2b_backbone_reference'
@@ -29,6 +30,41 @@ def schema():
                 p+'linear_attn.out_proj.weight':[2048,2048],p+'linear_attn.conv1d.weight':[6144,1,4],
                 p+'linear_attn.A_log':[16],p+'linear_attn.dt_bias':[16],p+'linear_attn.norm.weight':[128]})
     return {PREFIX+k:v for k,v in result.items()}
+
+
+def backbone_inventory(path,expected_bytes):
+    """Full-checkpoint extent, bounded header; head-only128MiB policy is separate."""
+    path=Path(path)
+    if (type(expected_bytes)is not int or not 8<expected_bytes<=8*2**30 or path.is_symlink() or
+            not path.is_file() or path.stat().st_size!=expected_bytes):
+        raise ValueError('Exact bounded regular original backbone checkpoint required')
+    with path.open('rb') as stream:
+        raw=stream.read(8)
+        if len(raw)!=8:raise ValueError('Missing original backbone header')
+        length=struct.unpack('<Q',raw)[0]
+        if not 2<=length<=1024*1024 or 8+length>=expected_bytes:
+            raise ValueError('Original backbone header bound differs')
+        header=json.loads(stream.read(length),object_pairs_hook=unique_pairs)
+    if not isinstance(header,dict):raise ValueError('Original backbone header object required')
+    entries=[]
+    for name,row in header.items():
+        if name=='__metadata__':continue
+        if (not isinstance(name,str) or not name or not isinstance(row,dict) or
+                set(row)!={'shape','dtype','data_offsets'} or not isinstance(row['shape'],list) or
+                len(row['shape'])>8 or any(type(n)is not int or not 1<=n<=1048576 for n in row['shape']) or
+                row['dtype'] not in ('BF16','F32') or not isinstance(row['data_offsets'],list) or
+                len(row['data_offsets'])!=2 or any(type(n)is not int or n<0 for n in row['data_offsets'])):
+            raise ValueError('Invalid bounded original backbone tensor descriptor')
+        entries.append((name,row))
+    result={};end=0
+    for name,row in sorted(entries,key=lambda item:item[1]['data_offsets'][0]):
+        a,b=row['data_offsets'];width=2 if row['dtype']=='BF16' else 4
+        if a!=end or b-a!=math.prod(row['shape'])*width or b>expected_bytes-8-length:
+            raise ValueError('Original backbone tensor gap/overlap/extent differs')
+        result[name]=dict(shape=row['shape'],dtype=row['dtype'],offsets=[a,b]);end=b
+    if not result or 8+length+end!=expected_bytes:
+        raise ValueError('Original backbone trailing/missing payload extent')
+    return 8+length,result
 
 
 def checked_text(rows,index,filename):
@@ -78,7 +114,7 @@ def convert(checkpoint,index_path,original_report,original_sha,original_source,o
         pin=report['snapshot'][name]
         if path.is_symlink() or path.stat().st_size!=pin['bytes'] or sha256(path)!=pin['sha256']:
             raise ValueError('Original checkpoint/index byte identity differs')
-    offset,rows=inventory(checkpoint)
+    offset,rows=backbone_inventory(checkpoint,report['snapshot'][filename]['bytes'])
     selected=checked_text(rows,json.loads(index_path.read_text()),filename)
     if report['weights']['embedding_tied'] is not True or sys.byteorder!='little':
         raise ValueError('Original tied text-only/little-endian profile required')
