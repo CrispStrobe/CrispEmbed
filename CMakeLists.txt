@@ -381,6 +381,13 @@ list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
+# MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
+set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp
+    src/moedern_text.cpp src/moedern_text_api.cpp)
+list(APPEND CRISPEMBED_SOURCES ${CRISPEMBED_MOEDERN_SOURCES})
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(${CRISPEMBED_MOEDERN_SOURCES} PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+endif()
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 # Version string for output provenance (hOCR ocr-system, ALTO
@@ -1107,7 +1114,7 @@ if(CRISPEMBED_BUILD_SHARED)
         OUTPUT_NAME   crispembed
         VERSION       ${PROJECT_VERSION}
         SOVERSION     ${CRISPEMBED_SOVERSION}
-        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h"
+        PUBLIC_HEADER "${CMAKE_CURRENT_SOURCE_DIR}/src/crispembed.h;${CMAKE_CURRENT_SOURCE_DIR}/src/moedern_text_api.h"
         # Sibling-resolved RPATH so a release tarball is self-contained.
         # Build-tree RPATH preserved so dev iteration works without install.
         BUILD_WITH_INSTALL_RPATH FALSE
