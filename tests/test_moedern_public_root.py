@@ -24,12 +24,17 @@ class Controls(unittest.TestCase):
         before = show(BASE, 'src/moedern_text_frontend.cpp').decode(); after = (ROOT/'src/moedern_text_frontend.cpp').read_text()
         self.assertEqual(before[before.index(marker):], after[after.index(marker):])
 
+    def test_cli_server_routes_are_separate_and_gated(self):
+        cli = (ROOT/'examples/cli/main.cpp').read_text(); server = (ROOT/'examples/server/server.cpp').read_text()
+        self.assertIn('--moedern-score', cli); self.assertIn('crispembed_moedern_init', cli)
+        for route in ('"/moedern/encode"', '"/moedern/score"', '--moedern-model'): self.assertIn(route, server)
+
     def test_root_additions_exact_and_default_off(self):
         cmake = (ROOT/'CMakeLists.txt').read_text()
         self.assertIn('set_source_files_properties(${CRISPEMBED_MOEDERN_SOURCES} PROPERTIES COMPILE_OPTIONS -ffp-contract=off)', cmake)
         self.assertNotIn('CRISPEMBED_MOEDERN_COMPOSED_TESTING', cmake)
         self.assertIn('core_env::on("CRISPEMBED_MOEDERN_PUBLIC_TEXT")', (ROOT/'src/moedern_text_api.cpp').read_text())
-        for path in ('src/crispembed.h', 'examples/cli/main.cpp', 'examples/server/server.cpp'):
+        for path in ('src/crispembed.h',):
             self.assertEqual((ROOT/path).read_bytes(), show(BASE, path), path)
 
 

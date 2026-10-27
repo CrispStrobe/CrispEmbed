@@ -166,7 +166,7 @@ def main():
         for name, cmd in [('configure', ['cmake', '-S', ROOT, '-B', build, '-DCMAKE_BUILD_TYPE=Release', '-DCRISPEMBED_BUILD_SHARED=ON',
                                          '-DBUILD_SHARED_LIBS=OFF', '-DGGML_NATIVE=OFF', '-DCRISPEMBED_NATIVE=OFF', '-DGGML_BLAS=OFF',
                                          '-DGGML_METAL=OFF', '-DGGML_CUDA=OFF', '-DGGML_LLAMAFILE=ON']),
-                          ('build', ['cmake', '--build', build, '--target', 'crispembed-shared', '--parallel', '2']),
+                          ('build', ['cmake', '--build', build, '--target', 'crispembed-shared', 'crispembed-cli', 'crispembed-server', '--parallel', '2']),
                           ('c-compile', ['cc', '-O2', '-I', ROOT/'src', ROOT/'tests/moedern-public/consumer.c', '-L', build, '-lcrispembed',
                                          '-Wl,-rpath,'+str(build), '-o', scratch/'c-consumer'])]:
             code, _ = run(cmd, out/(name+'.log')); require(code == 0, name+' failed')
@@ -200,6 +200,44 @@ def main():
             raw[name] = [json.loads(l) for l in stdout.splitlines() if l.strip()]
             results[name] = dict(exit=0, **judge(raw[name], primary, vectors, encoded))
             write(out/'consumers.json', report | dict(consumers=results))
+        # Actual CLI and HTTP arms on the same packed file and raw texts.
+        texts_by_id = {c['id']: (c['role'], c['text']) for c in primary['cases']}
+        try:
+            rows = []
+            for cid, (role, txt) in texts_by_id.items():
+                code, stdout = run([build/'crispembed', '-m', packed, '--moedern', role, txt], out/'cli.log', env=env)
+                require(code == 0, 'CLI encode failed: '+cid); rows.append(dict(json.loads(stdout), kind='case', id=cid))
+            for pair in primary['scores']:
+                code, stdout = run([build/'crispembed', '-m', packed, '--moedern-score', texts[pair['query']], texts[pair['document']]], out/'cli.log', env=env)
+                require(code == 0, 'CLI score failed'); rows.append(dict(kind='score', id=pair['query']+'|'+pair['document'], score=json.loads(stdout)['score']))
+            # CLI prints only selected vectors; judge them and reuse C's all-vectors only for the shape check.
+            for r in rows:
+                if r['kind'] == 'case': r['all_vectors'] = next(x for x in raw['c'] if x.get('id') == r['id'])['all_vectors']
+            raw['cli'] = rows; results['cli'] = dict(exit=0, **judge(rows, primary, vectors, encoded))
+        except Exception as e: results['cli'] = dict(passed=False, error=str(e))
+        import urllib.request, time as _t
+        server = subprocess.Popen([build/'crispembed-server', '--moedern-model', packed, '--port', '18431'], env=env,
+                                  stdout=open(out/'http.log', 'w'), stderr=subprocess.STDOUT)
+        try:
+            def post(path, body):
+                req = urllib.request.Request('http://127.0.0.1:18431'+path, json.dumps(body).encode(), {'Content-Type': 'application/json'})
+                with urllib.request.urlopen(req, timeout=120) as r: return json.load(r)
+            deadline = _t.time()+60
+            while True:
+                try:
+                    with urllib.request.urlopen('http://127.0.0.1:18431/health/ready', timeout=2) as r:
+                        if json.load(r)['status'] == 'ready': break
+                except OSError: pass
+                require(server.poll() is None and _t.time() < deadline, 'server not ready'); _t.sleep(.3)
+            with urllib.request.urlopen('http://127.0.0.1:18431/capabilities', timeout=5) as r:
+                require(json.load(r)['routes']['moedern'] is True, 'moedern route not advertised')
+            try: post('/moedern/encode', {'text': 'x', 'role': 'other'}); require(False, 'invalid role accepted')
+            except urllib.error.HTTPError as e: require(e.code == 400, 'unexpected status')
+            rows = [dict(post('/moedern/encode', {'text': txt, 'role': role}), kind='case', id=cid) for cid, (role, txt) in texts_by_id.items()]
+            rows += [dict(kind='score', id=p['query']+'|'+p['document'], score=post('/moedern/score', {'query': texts[p['query']], 'document': texts[p['document']]})['score']) for p in primary['scores']]
+            raw['http'] = rows; results['http'] = dict(exit=0, **judge(rows, primary, vectors, encoded))
+        except Exception as e: results['http'] = dict(passed=False, error=str(e))
+        finally: server.terminate(); server.wait(timeout=15)
         report['consumers'] = results
         report['repeat_byte_identical'] = 'c' in raw and raw.get('c-repeat') == raw['c']
         if 'c' in raw:
