@@ -31,7 +31,8 @@ def source_guard():
     for name,sha in cfg['historical_only'].items():
         data=subprocess.check_output(['git','show',frozen_contract.BASE+':'+name],cwd=ROOT)
         if frozen_contract.digest(data)!=sha:raise ValueError('Historical-only source differs: '+name)
-    if subprocess.check_output(['git','status','--porcelain','--',*cfg['candidate_sources'],*cfg['frozen_sources']],cwd=ROOT):raise ValueError('Dirty measured A/B source')
+    measured=[*cfg['candidate_sources'],*cfg['frozen_sources'],str(contract.CONTRACT_PATH.relative_to(ROOT))]
+    if subprocess.check_output(['git','status','--porcelain','--',*measured],cwd=ROOT):raise ValueError('Dirty measured A/B source/contract')
     return cfg,baseline,head
 
 
@@ -42,7 +43,7 @@ def execute(args,log,env,timeout=300):
 
 def run(out):
     cfg,baseline,head=source_guard();out.mkdir(parents=True,exist_ok=False);review=out/'review';review.mkdir()
-    result=dict(schema='crispembed-ultrabert-unicode-pretoken-ab-v1',source=head,completed=False,tokenizer_parity=False,
+    result=dict(schema='crispembed-ultrabert-unicode-pretoken-ab-v1',source=head,contract_sha256=frozen_contract.digest(contract.CONTRACT_PATH.read_bytes()),completed=False,tokenizer_parity=False,
         embeddings_authorized=False,new_embeddings_executed=False,model_weights_accessed=False,modes=[],errors=[])
     def save():old.write(review/'ab.json',result)
     save()

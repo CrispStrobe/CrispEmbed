@@ -36,7 +36,8 @@ Arabic/Roman numbers, nonbreaking/em spaces, format characters and an unassigned
 codepoint. Broader equivalence across Unicode versions is unqualified; full
 original tokenizer parity must be measured on the frozen corpus before embeddings.
 
-The new zero-input reusable
+The registered metadata dispatcher phase`ultrabert-unicode-pretoken` calls the
+new zero-input reusable
 [workflow](../.github/workflows/ultrabert-unicode-pretoken.yml) leaves the historical
 diagnostic workflow and its guards untouched. It authenticates the completed
 actual diagnostic service/source, review ZIP/report, and remote metadata ZIP.

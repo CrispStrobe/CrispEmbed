@@ -40,6 +40,17 @@ class Controls(unittest.TestCase):
             return rows[i][2] if i>=0 and cp<=rows[i][1] else 'CAT_LO'
         for cp,cat in [(0x2018,'CAT_P'),(0x201C,'CAT_P'),(0x301,'CAT_M'),(0x661,'CAT_N'),(0x2163,'CAT_N'),(0x2003,'CAT_WS'),(0xA0,'CAT_WS'),(0x200D,'CAT_C'),(0x378,'CAT_C')]:self.assertEqual(category(cp),cat)
         self.assertIn('cp >= 0x09 && cp <= 0x0D',text)
+    def test_registered_caller_preserves_every_old_phase_and_job(self):
+        name='.github/workflows/ovisocr2-metadata.yml'
+        previous=subprocess.check_output(['git','show','33c50803c537b679add2f68248752900a2205561:'+name],cwd=ROOT,text=True)
+        current=(ROOT/name).read_text()
+        addition="\n  ultrabert-unicode-pretoken:\n    if: github.event_name == 'workflow_dispatch' && inputs.phase == 'ultrabert-unicode-pretoken'\n    needs: controls\n    uses: ./.github/workflows/ultrabert-unicode-pretoken.yml\n"
+        self.assertEqual(current.count(addition),1)
+        self.assertEqual(current.replace(addition,'').replace('options: [ultrabert-unicode-pretoken, ','options: [',1),previous)
+        driver=(ROOT/'tools/ci-heavy/ultrabert_unicode_pretoken.py').read_text()
+        self.assertIn('str(contract.CONTRACT_PATH.relative_to(ROOT))',driver)
+        self.assertIn("*measured],cwd=ROOT)",driver)
+
     def test_owned_cases_preserve_literal_bytes_and_coverage(self):
         cases=json.loads(c.CASES_PATH.read_text());self.assertEqual(len(cases),14)
         self.assertEqual(len({x['id'] for x in cases}),14)

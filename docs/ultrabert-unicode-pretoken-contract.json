@@ -15,8 +15,8 @@
     "src/ultrabert_tokenizer_mode.h": "e099e80526eda2ea2a533033ea24ff33896758bc94fb8b93bca7d223aa2f9fbd",
     "tests/test_ultrabert_unicode_pretoken.cpp": "99524288626f4359f9c80c16461a4fe332e005387d28bdc3ecb8c024875a8824",
     "tools/ultrabert_unicode_pretoken.py": "93ae3b8127ef4716b396f992d87693dbbb50780f974601b2b47cd102d160d901",
-    "tools/ci-heavy/ultrabert_unicode_pretoken.py": "37725870413615e7e5d731b1b2740a5e8353922f57ce64ffe48c5e25b29dc0fc",
-    "tests/test_ultrabert_unicode_pretoken.py": "046ce8d5d527717c19cbe819f97fe26d33206e1d2fbe1a5c778b8bfed2e5567f",
+    "tools/ci-heavy/ultrabert_unicode_pretoken.py": "618b9a190ee39a0c653149ba9e3bed1af06729bb34dec4a24808e3a1f5d987e5",
+    "tests/test_ultrabert_unicode_pretoken.py": "c7345fb03bbd19eb468d23fae571bddba6f7f689c84faa4d6fe09f3cb0fad382",
     ".github/workflows/ultrabert-unicode-pretoken.yml": "34710390e1e1ef5c2023faec640ce8f7f81c3aa6365001e316cbeac76d136b05",
     "docs/ultrabert-unicode-pretoken-baseline.json": "c65bf2f95961a17de2aff307ac0663ad9d2a303888c15f7040b4a48ec23169d3",
     "docs/ultrabert-unicode-pretoken-cases.json": "dacb8cb088d81d8ada46c549120d6141f2daab04eff2ff61b41547dd4d493b47"
