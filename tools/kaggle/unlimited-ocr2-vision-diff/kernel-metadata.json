@@ -1,6 +1,6 @@
 {
   "id": "${KAGGLE_ACCOUNT}/crispembed-unlimited-ocr2-vision-diff",
-  "title": "CrispEmbed Unlimited-OCR-2 Vision Diff",
+  "title": "crispembed-unlimited-ocr2-vision-diff",
   "code_file": "kernel.py",
   "language": "python",
   "kernel_type": "script",
