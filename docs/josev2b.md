@@ -4,8 +4,9 @@ The original four-case CUDA/F32 capture, package provenance audit, all251-array
 preservation and exact122-tensor F32 head conversion are completed and reviewed.
 [Original evidence](../tests/results/josev2b/original-review.json) and
 [component conversion](../tests/results/josev2b/head-artifact-review.json) preserve
-source identities and limits. Native CPU/CUDA head parity, text backbone,
-composed typed outputs, task quality and release qualification remain pending.
+source identities and limits. CPU/CUDA head parity is also verified in the
+[full stage/output review](../tests/results/josev2b/head-cpu-cuda-review.json).
+Native text backbone, composed outputs, task quality and release remain pending.
 The existing Gemma decision API does not load Josev. The source and owned inputs
 are frozen in [the versioned contract](josev2b-source-contract.json) and
 [four authored text cases](../tests/regression/josev2b/text-v1.json).

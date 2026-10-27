@@ -1,6 +1,6 @@
 # CrispEmbed — Active roadmap
 
-Updated 26 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 27 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -401,23 +401,13 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 | 2026-10-27 | `feat/josev-hidden-backbone-20261027` | Explicit hidden-only Josev decoder profile | Add dedicated gated2048/6144 text-only loader/full-prefill hidden output without vocabulary projection. Preserve original1024/3584 map_small_decoder and old generation route. Strict24-layer18linear/6full tensor shapes and RMS/RoPE source profile; prove original embedding/all24layers/norm against frozen four-case arrays before head composition. Source-only preparation and hosted builds/model audit; no public API/alias or release claim. |
 | 2026-10-27 | `fix/ultrabert-unicode-pretoken-20261027` | Gated Unicode-aware UltraBERT pretokenization | Completed tokenizer40424357191 retains24 clipped/25 full mismatches; both two-row details show curly punctuation wrongly grouped as letters. Implement context-scoped default-off Unicode GPT2 byte-level pretokenization using actual original boundaries; preserve old generic/CLIP behavior. Hosted tokenizer-only A/B must retain old mismatch set and match all5483 original clipped IDs/masks/full hashes before any embeddings. Frozen original vectors and ranking/numerical budgets unchanged. |
 | 2026-10-27 | `audit/moedern-sdpa-reproducibility-20261027` | Attribute real cross-run Python SDPA drift | Corrected observer40423259251 rejects156/250 old array hashes despite exact inputs/weights and within-run neutrality; first captured divergence is SDPA0. Preserve both immutable originals and strict rejection. Hosted operator-only replay of two frozen attention inputs, actual default/math/CPU-flash kernels, layout/hardware evidence and Ref magnitudes versus both originals. No replacement gold/full-model/native qualification or tolerance changes. |
-| 2026-10-27 | `feat/josev-native-head-20261027` | Original-first Josev joint-head component | Actual original workerb2 completes four neutral/repeat cases,251 arrays and122 loaded tensors (receipt51a2e16b). Implement a separate default-off F32 GGML head following exact pre-norm source, strict shapes/order/spans and official no-extra-temperature math. Standalone CPU/optional CUDA probe plus actual Ref comparison on immutable frozen inputs; no backbone/public API/alias/release claim. All builds/payloads/inference hosted or authorized remote M1/GPU; retain raw arrays remotely. |
-| 2026-10-27 | `fix/wasm-layer3-view-20261027` | Layer3 observer allocation abort | Actual40415950220 builds native/WASM and passes ordinary native execution, then diagnostic capture aborts in scheduler reserve before numerical attribution. Replace the disconnected ggml_view_tensor alias with an explicitly connected dimension/stride-preserving graph view in the test-only overlay; require all frozen ordinary/observer anchors unchanged. Preserve failure, no production math/default/budget changes; all compilation/model work hosted. |
-| 2026-10-26 | `test/ultrabert-scifact-tokenizer-diagnostic-20261026` | Model-free diagnosis of actual SciFact native token-ID failures | Preserve e35 originals/input freeze and two executed ID failures; six later native shards cancelled before steps. Hosted tokenizer-only two-row codepoints/pieces and all5483 input-ID preflight before any new embeddings. No runtime/default/reference changes or local corpus/tokenizer/build work. |
-| 2026-10-26 | `audit/josev-wheel-metadata-20261026` | Josev exact wheel metadata versus published sidecars | Actual corrected GPU install and pip-check pass, then the installed setuptools owner-selection/hash guard rejects before framework/model access; the original error is ambiguous. Hosted CPU audit must stream/hash all57 exact wheels, inspect archive METADATA and preserve sidecar/archive/install distinctions before any further GPU attempt. No local wheel/framework/model payload, guard weakening or blind retry. |
-| 2026-10-26 | `audit/moedern-observer-correction-20261026` | Smallest MoEdern missing pipeline observer coverage | Actual40412164041 preserves10 neutral final cases/250 arrays, but Mapping outputs omitted Dense/Normalize captures. Correct serializer/observer coverage in a new immutable original source; authenticate old receipt/raw remotely and require all10 old ordinary IDs/masks/vector hashes unchanged before accepting new intermediates. No native pins, tolerance/input/math change or local payload/build work. |
-| 2026-10-26 | `integration/bounded-closure-20261026` | Review-only integration of active audit/model lanes | Recoverable checkpoint7d06b016; runtime remains f3f1b9e7/a06 with both new defaults OFF. Actual Mac40399358753 compatibility is reviewed; rounding40391544739 rejects8/10 finals and layer3 attribution40415950220 is pending. SciFact40375626336 originals/freeze pass; native/ranking, remaining Ovis grids and final fresh assets/all consumers still required. New-model original capture precedes native/API qualification. Main integration, complete docs/mirror and final checks close the authorized loop. |
-| 2026-10-26 | `test/wasm-layer3-attribution-20261026` | Test-only earliest remaining WASM operator attribution | Actual580e3ae rounding A/B40391544739 rejects8/10 finals; preserve negative, old anchors and0.002/0.99999. Trace first layer3 suboperation using exact retained model/input, check observation neutrality, compare same-input conversions/dots on hosted CI. No production/default or gold changes. |
-| 2026-10-26 | `feat/moedern-native-1p5m-20261026` | Smallest MoEdern native token-ID/role prototype | Source preparation only until original40412164041 is reviewed. Strict32-tensor CPU/F32 graph, all query/document masks and128-vectors/MaxSim, original-module and neutral native dumps. Root owns shared API/build integration; all compilation/model work hosted. Wider variants/tokenizer/public surfaces remain separate gates. |
-| 2026-10-26 | `feat/moedern-colbert-20261026` | Requested SauerkrautLM-MoEdernColBERT family:1.5M→27M→115M and author GGUF variants | Source/license/base audit first; freeze original tokenizer, hash routing, token projection/masks/normalization and MaxSim before native outputs. Start smallest, retain original-first intermediate and task parity, then public C/Python/Rust/Dart surfaces. Hosted builds/models only; preserve existing model gates. |
-| 2026-10-26 | `feat/josev-head-schema-20261026` | Strict original-first Josev joint-head schema and F32 conversion | Derive122 tensors from the pinned original class, retain BF16/F32 source dtype and exact F32 promotion, require reviewed original loaded-head identities before conversion. Source-only preparation; no local weights/frameworks or native quality claim. Joint-head math and full Qwen3.5-2B integration remain subsequent gates. |
-| 2026-10-26 | `audit/josev2b-20261026` | Requested mayflowergmbh/Josev-2B architecture and typed-decision port | Pin Apache-tagged checkpoint/base/code/head sources; trace joint-schema inference and calibration before choosing shared Qwen3.5 or dedicated path. Original-first reference and native decision/output gates, then integration. Source audit first; all large model/GPU work remote and separately scoped. |
-| 2026-10-26 | `integration/bounded-closure-20261026` | Combine frozen lane sources and final immutable consumers | Preserve producer branches; require actual pending panels, independent merge review and final same-source native/WASM producers/consumers before main integration. |
+| 2026-10-27 | `feat/josev-native-head-20261027` | Integrate verified Josev head component | Actual CPU/CUDA passes all123 stages/backend and all4 complete typed responses; see HISTORY/receipts. Frozen head d8/ggml890 remains separate until backbone/frontend composition and candidate-a06 compatibility/public surfaces are verified. Do not repeat original capture or loosen fixed budgets. |
+| 2026-10-26 | `integration/bounded-closure-20261026` | Integrate reviewed bounded lanes and immutable consumers | DraftPR86 records completed Ovis8, WASM attribution, original preservation, SDPA and Josev head evidence. Native backbone/frontend, MoEdern-v2, Unicode/retrieval and public surfaces remain gated; preserve frozen experiment branches. Declare final explicit source closure after code choices, then actual Ovis14/11, native/WASM assets/real consumers, main checks and app documentation mirror. App stays0.17.12. |
+| 2026-10-26 | `feat/moedern-colbert-20261026` | SauerkrautLM-MoEdernColBERT family support | All6 original/author-GGUF licenses/sources pinned; smallest original/conversion and SDPA attribution reviewed. Finish separately versioned native-v2 using old primary and supplemental pipeline observations, then exact Unigram/roles/public surfaces. Extend27M then115M including6 dilated-conv blocks, independent retrieval/quantization and qualified aliases. |
 | 2026-10-26 | `audit/ultrabert-scifact-canonical-integration-20261026` | Complete frozen SciFact retrieval protocol and original-first hosted audit | Canonical v2 preparation is reviewed after strict-v1 rejection and complete legacy/author provenance. Full40375626336 at frozene35 runs8 originals→freeze→8 native→aggregate; exact5483 rows and unchanged ranking/vector gates. No pair API or model publication. |
 | 2026-10-26 | `chore/successor-assets-20261026` | Immutable successor archive manifest and fresh consumer qualification | Initial seven-native/two-WASM producers complete; first consumers fail Windows/Apple/browser. Corrected corpus, UTF8 audit, strict cross-desktop aggregation and actual rounding A/B precede fresh final-source producers/all consumers. No tag/app pin change; device limits explicit. |
 | 2026-10-26 | `feat/wasm-q8-rounding-candidate-20261026` | Conditional WASM Q8_0 rounding candidate | Isolated ggml890-based fork a06, encoder-only per-backend opt-in and preserved legacy/Q8_1 kernels. Actual40391544739 requires numeric operator controls before ten-case model A/B; candidate stays off before reviewed strict parity/default decision. |
 | 2026-10-26 | `test/wasm-q8-rounding-ab-20261026` | Versioned conditional WASM model A/B | [Prepared v1 consumer](docs/wasm-q8-rounding-ab-v1.md) pins reviewed first trace40379523009, freezes ten owned old-native/browser controls before candidate execution, and preserves strict legacy/final/full-stage gates. Actual model A/B is numerically rejected (8/10 final cases; first remaining stage layer3). Preserve actual receipt and attribute same-input operators before a new candidate; no default promotion. |
-| 2026-10-26 | `audit/ovis-2048-attribution-20261026` | Four-grid composed interpolation A/B | Norm/position attribution and both first-F16 quality arms are reviewed. Corrected40376882009 at frozen8bb must retain literal0 vector hashes/failure set and apply unchanged numerical/decoded gates to literal1 on all four grids. No original recapture, budget waiver or input-bound default change. |
 | 2026-10-06 | `main` (Crisp3DS SAM work) | SAM 2.1 Hiera-tiny image segmentation (`docs/sam2.md`): engine, converter, reference dump, `test-sam2-diff`, C API, CLI `--sam2`, server `POST /sam2/segment`, Python/Rust/Dart `CrispSam2`, registry `sam2.1-hiera-tiny` (F16, default) and `sam2.1-hiera-tiny-f32`, both pinned by hand | Parity with PyTorch CPU: F32 and F16 cos >= 0.999999 at every stage, masks identical; Q8_0 below the 0.999 gate (mask IoU 0.9895 worst, not published), Q4_K not usable. Registry fetch of the F16 verified. **Note for the owner:** `tools/fetch_model_hashes.py --check` reports `model_hashes.h` stale for reasons unrelated to SAM 2 — no pin for `nomic-embed-vision-v1.5-f16` and for `jina-ocr-v1-q4_k` / `-q8_0`, and three pinned files whose upstream bytes changed. Deliberately not re-pinned here. Not yet: 73-photo end-to-end check, Metal timing |
 
 The registry warning in the SAM ownership row describes the pre-repair state;
@@ -710,85 +700,51 @@ and [Josev-2B](https://huggingface.co/mayflowergmbh/Josev-2B).
 These extend the roadmap while the active Ovis/SciFact/immutable-consumer audits
 continue on their frozen branches. Do not alter those producer sources.
 
-- [ ] SauerkrautLM-MoEdernColBERT: review actual smallest original
-  [40412164041](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40412164041)
-  at790f7b1d0372c12d1807dfb2fc7fc3af20a3c445. All six original/GGUF source,
-  weight and Apache2 license identities are frozen in
-  [the contract](docs/moedern-colbert-source-contract.json). The original job
-  succeeds:10 neutral final cases,250 stage declarations and32-tensor F32
-  conversion. [Independent review](tests/results/moedern-colbert/initial-original-review.json)
-  finds missing Dense/Normalize pipeline Mapping outputs; native stage coverage
-  is incomplete. Correct the observer in a new source and require exact old
-  final-ID/mask/vector continuity before accepting additional intermediates.
-  Native pins remain unset until that corrected capture is reviewed. Initial40411490747 was cancelled while queued after review found
-  ST directly calls backbone.forward; the corrected neutral observer has nine
-  source controls. Review actual tokenizer descriptor/IDs, three separate masks,
-  all modules/SDPA, routing,128-vectors and MaxSim before native outputs. Strict
-  F32 conversion32/32/94 tensors follows completed original only. Then add gated
-  1.5M token-ID/role graph and same-input crispembed-diff, author-GGUF graph/payload
-  audit, exact native tokenizer sidecar support, C/Python/CLI/Rust/Dart/HTTP and
-  negative-input controls. Repeat27M then115M, including six dilated convolution
-  blocks for115M; quantify retrieval quality and quantization before aliases.
-  Author GGUF lacks tokenizer metadata; a pinned sidecar or byte-preserving
-  metadata repack is required. No generic ModernBERT alias or Q4_K promise.
-- [ ] Josev-2B: original sources/license/base/Clef head and the distinct official
-  PyTorch versus calibrated author-GGUF routes are documented in
-  [the model audit](docs/josev2b.md). First GPU bootstrap atb6e74739 rejected
-  Python3.11 on actual Python3.13 before model/tokenizer access; preserve that
-  inconclusive preflight. Corrected Python3.13 worker1e723a96 and bootstrap142cc75c
-  freeze contract39129e437588ff2177a3ef491685d0a58ac3c168147cc5e98891f9ad46619460;
-  Its corrected supported-T4 preflight then rejects ensurepip before packages
-  or payload; [both initial receipts](tests/results/josev2b/initial-venv-preflight.json)
-  remain. Reviewed bootstrapf5a0ac06 reuses the established empty-venv/base-pip
-  route. It passed isolated-pip setup, then failed on the unpublished tokenizers0.23.0
-  pin before framework installation or model/tokenizer access; preserve
-  [the rejection](tests/results/josev2b/initial-install-preflight.json). Corrected
-  worker2133cfa1/bootstrapc9aa40b7 use tokenizers0.22.2 and a complete57-wheel
-  URL/SHA lock, metadata/ABI-origin controls and loaded-head identity proof. The
-  corrected GPU attempt installs all57 packages and passes pip-check, then
-  rejects the installed setuptools METADATA selector/hash guard before framework
-  import, CUDA smoke or model access. [The receipt](tests/results/josev2b/initial-installed-metadata-preflight.json)
-  preserves all ten command hashes. The error conflates candidate count with
-  digest mismatch; inspect exact top-level owner versus vendored metadata on
-  hosted CPU before another GPU attempt. Review completed original inference
-  before conversion/native comparisons; none exists yet. GPU capability/driver/memory/scratch checks remain mandatory; no
-  unsupported-hardware retry loop. Review the four original text cases≤512,
-  actual IDs/spans/masks, all24 layers and512-wide joint-head intermediates,
-  logits/probabilities/typed answers before native outputs. Port an explicit
-  Qwen3.5-2B2048/6144 hidden-only prefill profile, preserve the Ovis1024/3584
-  guard, then joint head with exact original serialization/order/calibration.
-  Add public surfaces/hash-pinned aliases only after strict stage/logit/answer
-  and negative-input checks. Follow the [public API boundary analysis](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity):
-  existing Gemma component scores use768-vectors and a different kind enum;
-  SystemOne requires model/answers/usage semantics, ordered schema rendering
-  and Python-compatible answer rounding. Preserve both public contracts. Representative licensed decision quality, media,
-  long context, batching, BF16 and quantization remain separate original-first
-  gates. No large weight/framework/build/inference work on the shared host.
+Completed source/license audits, original captures, exact head conversion,
+package provenance, CPU/CUDA head parity and initial failures are archived in
+HISTORY with immutable receipts. Do not repeat those jobs or treat their old
+preparation commands as current actions.
 
-Actual permissive source/license bytes are inspected and pinned; this source
-audit is distinct from model execution and qualification. Keep new runtime paths value-parsed and
-experimental until their own original/intermediate/final-output gates pass.
+- [ ] **MoEdern1.5M native:** execute/review the distinct dual-reference v2
+  protocol after source/mapping review. Keep old250 primary arrays/final vectors/
+  three MaxSim pairs and21 supplemental missing pipeline observations separate.
+  Retain old byte-continuity failure; fixed numeric/vector/mask/MaxSim budgets
+  and actual Ref remain. Explicitly disclose mapped versus retained stage counts.
+- [ ] **MoEdern public text and variants:** implement exact pinned Unigram
+  NFKD/strip-accent/lowercase/WhitespaceSplit/Metaspace and added-token behavior,
+  query32 expansion/attention, document truncation/punctuation scoring masks,
+  native vectors/MaxSim and C/Python/CLI/HTTP/Rust/Dart paths. Author GGUF lacks
+  tokenizer metadata: require a pinned sidecar or byte-preserving repack. Extend
+  27M then115M with separate originals and six dilated-conv blocks for115M.
+  Original conversion inventories are32/32/94 tensors; no generic ModernBERT
+  alias, Q4_K assumption or representation-equivalence claim.
+- [ ] **Josev backbone:** review corrected hosted40438416809 atab998277 with
+  explicit base70876fb5/a06. Authenticate all320 text tensors, exact F32
+  conversion/readback and104 embedding/layer/norm stages before composition.
+  Preserve original51a2e16b and completed head proofs. Initial128MiB head-reader,
+  wrong metadata-test string and undeclared15 MTP failures stay in HISTORY;
+  unused vision/MTP are explicitly excluded from the original text call.
+- [ ] **Josev text/schema:** hosted40440257882 freezes sourcef424ec52. Require
+  all4 original IDs/masks/question-option spans/lexical IDs and14 authored JSON/
+  order/float/Unicode/overflow cases, original before native. Dedicated frontend
+  and component metadata remain default-off and separate from OCR/Gemma loaders.
+  No local tokenizer payload or model/framework work.
+- [ ] **Josev composition and interfaces:** combine native backbone, native
+  lexical means and verified512-wide joint head without original hidden/vector
+  injection. Compare actual full requests/logits/probabilities/all typed answers.
+  Preserve the Ovis1024/3584 guard and original no-extra-temperature semantics.
+  Follow [public API boundaries](docs/josev2b.md#public-api-integration-boundaries-after-numerical-parity):
+  dedicated SystemOne capability/request/output and C/Python/CLI/HTTP/Rust/Dart,
+  with missing-model/schema/order/tie/rounding/media/error/recovery controls.
+  Existing Gemma flat JSON and768-vector scoring contracts stay unchanged.
+- [ ] **Quality and publication:** only after the above original-first gates,
+  freeze independent licensed retrieval/decision panels, assess F16/quantization
+  while retaining critical head/norm precision and every rejected recipe, and
+  publish checksummed assets/qualified aliases per contributing. Preserve media,
+  batching/padding, long context, GPU backbone and task-quality limits explicitly.
 
-### Josev joint-head artifact preparation (26 October 2026)
-
-- [x] Derive the exact 122-tensor / 30,472,708-parameter head schema from the
-  pinned publisher class; prepare an original-first F32 component converter and
-  eight standard-library controls. See [conversion protocol](docs/josev2b-head-conversion.md).
-  No checkpoint conversion or native inference has executed.
-- [ ] Review the completed original capture at worker
-  `2133cfa12dbdd25653fd68b1a6054f69f80f7e9c`, including all seven source hashes,
-  actual tokenizer/span freeze, four observer/repeat-neutral cases and every
-  checkpoint-promoted/loaded-head F32 hash. Corrected GPU bootstrap is
-  `c9aa40b761846aa1a4a24d67d32f1c107a22ecd2`; that environment attempt rejects
-  its installed-metadata guard before model access. The completed original
-  capture still requires a reviewed metadata correction and immutable worker.
-- [ ] Convert the separate head on hosted resources using that reviewed receipt;
-  preserve license/notices and verify exact GGUF dimensions and payload hashes.
-  Then implement the gated native head and compare actual hidden-row/lexical/span
-  inputs through projections, routing, field decoder, logits and probabilities
-  with the dumper and crispembed-diff. Compose only after parity with an explicit
-  Qwen3.5-2B hidden-only prefill profile. Keep the official no-extra-temperature
-  route distinct from author-GGUF calibration. No public alias or release yet.
+All runtime alternatives stay value-parsed opt-ins until their own original,
+intermediate and final-output gates pass. Large artifacts remain hosted.
 
 ### Independent M1 build-only check
 
@@ -831,12 +787,15 @@ on immutable0.17.12.
 - [ ] Finish Josev native backbone and composition. CPU/CUDA head parity is
   completed in HISTORY:246 stage comparisons and eight exact full typed
   responses from frozen original hidden/lexical inputs. Native backbone
-  40436303700 freezes9c16091f, with explicit closed base7e70d353/ggmla06;
+  40438416809 freezesab998277, with explicit closed base70876fb5/ggmla06;
   require exact320-tensor conversion, all104 original stages and ordinary/repeat
   proof before composing native backbone/head outputs. Initial build40433507655
   compiled but rejected a test that wrongly treated string `false` as off;
   runtime gate semantics were correct and unchanged. Superseded40436018180 was
   cancelled with its sole controls job queued/zero steps before payload work.
+  Full9c audit40436303700 then rejects only the initially undeclared auxiliary
+  MTP namespace before conversion/inference; corrected source explicitly
+  excludes its15 tensors and297 vision tensors outside language_model.
   Preserve original51a2e16b/b2, exact head receipts and all initial failures.
   Public tokenization/schema/C/Python/CLI/Rust/Dart/registry and independent
   decision quality remain separate original-first gates; Gemma semantics differ.
