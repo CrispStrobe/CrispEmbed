@@ -1101,7 +1101,7 @@ static aa_coeffs precompute_aa_coeffs_torch_f32(int in_size, int out_size) {
 // convert('RGB') and gray replicated -- PIL's RGBA->RGB convert is identical,
 // but palette/CMYK sources are not handled. Output: interleaved RGB [oh][ow][3].
 static std::vector<uint8_t> resize_rgb_pil_bicubic(const uint8_t * px, int w, int h, int ch, int ow, int oh) {
-    constexpr int PB = 22;
+    static constexpr int PB = 22;
     std::vector<uint8_t> src((size_t)w * h * 3);
     for (size_t i = 0; i < (size_t)w * h; i++)
         for (int c = 0; c < 3; c++) src[i * 3 + c] = px[i * ch + std::min(c, ch - 1)];
