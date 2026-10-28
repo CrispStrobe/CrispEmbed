@@ -43,7 +43,7 @@ class AdapterControls(unittest.TestCase):
             with self.assertRaises(ValueError):G.limits(ram,disk,cpu)
 
     def test_all_inference_functions_ast_equal_corrected_worker(self):
-        original=ast.parse((ROOT/'tools/moedern-scifact/worker_v1.py').read_text())
+        original=ast.parse(subprocess.check_output(['git','show',C.BASE+':tools/moedern-scifact/worker_v1.py'],cwd=ROOT).decode())
         updated=ast.parse((ROOT/'tools/moedern-scifact/worker_gha_v1.py').read_text())
         defs=lambda tree:{r.name:ast.dump(r,include_attributes=False)for r in tree.body if isinstance(r,ast.FunctionDef)}
         a,b=defs(original),defs(updated)
@@ -61,6 +61,17 @@ class AdapterControls(unittest.TestCase):
             old=subprocess.check_output(['git','show',C.BASE+':'+name],cwd=ROOT)
             self.assertEqual(old,(ROOT/name).read_bytes())
             self.assertEqual(hashlib.sha256(old).hexdigest(),cfg['protected_sha256'][name])
+        cmake=(ROOT/'tests/moedern-scifact/CMakeLists.txt').read_bytes()
+        self.assertEqual(cmake,subprocess.check_output(['git','show',C.BASE+':tests/moedern-scifact/CMakeLists.txt'],cwd=ROOT))
+        self.assertIn(b'find_library(GGML_CPU NAMES ggml-cpu PATHS "${ROOT_BUILD}/ggml/src"',cmake)
+
+    def test_initial_queued_cancellation_is_not_execution(self):
+        value=json.loads((ROOT/'tests/results/moedern-colbert/scifact-gha-initial-queued-cancellation.json').read_text())
+        self.assertEqual(value['service']['run'],40774208339)
+        self.assertEqual(value['service']['conclusion'],'cancelled')
+        self.assertEqual(value['jobs'][0]['executed_steps'],0)
+        self.assertIsNone(value['checked_out_source'])
+        self.assertFalse(value['payload_accessed']);self.assertFalse(value['model_execution'])
 
     def test_get_status_and_every_paginated_list_use_exact_version(self):
         calls=[];pin=dict(kernel_slug='original',version_label='v1',source='a'*40,
