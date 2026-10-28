@@ -938,3 +938,18 @@ Next: reviewed corrected 1.5M hosted retry, separately pinned 27M GHA adapter,
 then115M; reuse every frozen original and preserve all numerical/task gates.
 The initial27M GHA submission was cancelled while queued to avoid repeating
 this known setup failure. Neither result qualifies any model.
+
+### Josev NEW20 original frozen; native comparison pending
+
+[Reviewed original](tests/results/josev2b/task-quality-original-review.json) is
+positive on the predeclared accuracy floors (56/60 decisions); preserve all four
+ordering mistakes. Original source110620ea, protocol5f27e931, reference948673b0
+and input-freezef8f2032e are fixed. The actual corrected four-case Q4 run at
+9c475d0da must finish before filling the native20 prerequisite pins. Then bind
+the exact qualified runtime objects, F32/Q4 model hashes and candidate receipt,
+rehash all1,480 original arrays remotely, and run unchanged F32 strict and Q4
+new-task gates. Keep old four-case and strict Q4 numeric flags separate.
+
+The source-only real-scan RGB audit at813e1ec9 is now submitted as
+[40776499260](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40776499260).
+It is pending execution, not input parity or model-causality evidence.

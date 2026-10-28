@@ -1,0 +1,1248 @@
+{
+  "schema": "crispembed-josev-task-original-review-v1",
+  "source": "110620ea1ada0748007e6b6698e0c5babb4940ed",
+  "version_label": "v1",
+  "completed": true,
+  "original_reviewed": true,
+  "native_inference_executed": false,
+  "native_qualified": false,
+  "publication_qualified": false,
+  "report_files": {
+    "reference.json": {
+      "bytes": 648444,
+      "sha256": "948673b0307cebcc15fdde3ea70b1163ed63b0d0bf3ef33c1488d6b89450f49b"
+    },
+    "input-freeze.json": {
+      "bytes": 260911,
+      "sha256": "f8f2032ec85323379abcfa43e52ee92a981a6518f915fb72cd778f591a764f94"
+    },
+    "raw-manifest.json": {
+      "bytes": 457616,
+      "sha256": "e5433299eeed16b7a99159beebe248fdee0b00dcdbce2a216d171e3b7ba6c1d8"
+    },
+    "bootstrap.json": {
+      "bytes": 259617,
+      "sha256": "de561eb5d6e1d3028f0453f53133e50182f783501311a5cef46837a7b7e1f477"
+    },
+    "preflight.json": {
+      "bytes": 270802,
+      "sha256": "b365c7cc4bcc1690670d53d631e7b965c6d7f697075ce5b2348f0e6888b35c49"
+    }
+  },
+  "checks": {
+    "actual_reference_bootstrap_identity": true,
+    "pre_weights_token_freeze": true,
+    "source_sha256_count": 8,
+    "exact_case_order": true,
+    "unchanged_requests": true,
+    "untruncated_input_ids_and_masks": true,
+    "actual_position_mask_shapes": true,
+    "observer_repeat_bit_exact": true,
+    "full74_stages_each_case": true,
+    "unique_npy_files": 1480,
+    "declared_npy128_byte_headers": true,
+    "declared_negative_infinity_counts_all_zero": true,
+    "independent_softmax_max_absolute": 1.1437107860778895e-07,
+    "independent_public_fields_and_accuracy": true
+  },
+  "array_payload_bytes": 1750416320,
+  "array_npy_bytes": 1750605760,
+  "total_input_tokens": 7472,
+  "quality": {
+    "overall": {
+      "correct": 56,
+      "total": 60,
+      "accuracy": 0.9333333333333333
+    },
+    "per_language": {
+      "en": {
+        "correct": 29,
+        "total": 30,
+        "accuracy": 0.9666666666666667
+      },
+      "de": {
+        "correct": 27,
+        "total": 30,
+        "accuracy": 0.9
+      }
+    },
+    "per_type": {
+      "noul": {
+        "correct": 20,
+        "total": 20,
+        "accuracy": 1.0
+      },
+      "choice": {
+        "correct": 18,
+        "total": 20,
+        "accuracy": 0.9
+      },
+      "score": {
+        "correct": 18,
+        "total": 20,
+        "accuracy": 0.9
+      }
+    },
+    "floors_passed": true,
+    "request_accuracy": 0.85,
+    "misses": [
+      {
+        "case": "order-finish-en",
+        "scenario": "order-finish",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "z": 0.2933,
+          "a": 0.2502,
+          "m": 0.4565
+        },
+        "gold": "a",
+        "top_two_margin": 0.1632,
+        "correct": false
+      },
+      {
+        "case": "order-finish-de",
+        "scenario": "order-finish",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.4382,
+          "1": 0.4269,
+          "2": 0.135
+        },
+        "gold": "1",
+        "top_two_margin": 0.011299999999999977,
+        "correct": false,
+        "public_score": 0.6968,
+        "ordinal_expected_index": 0.6969,
+        "gold_index_absolute_error": 0.30310000000000004
+      },
+      {
+        "case": "order-visits-de",
+        "scenario": "order-visits",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0318,
+          "1": 0.2447,
+          "2": 0.7235
+        },
+        "gold": "1",
+        "top_two_margin": 0.4788,
+        "correct": false,
+        "public_score": 1.6917,
+        "ordinal_expected_index": 1.6917,
+        "gold_index_absolute_error": 0.6917
+      },
+      {
+        "case": "order-visits-de",
+        "scenario": "order-visits",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "m": 0.7538,
+          "z": 0.1896,
+          "a": 0.0566
+        },
+        "gold": "z",
+        "top_two_margin": 0.5642,
+        "correct": false
+      }
+    ],
+    "rows": [
+      {
+        "case": "fact-key-en",
+        "scenario": "fact-key",
+        "language": "en",
+        "stratum": "factual",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9994,
+          "false": 0.0006
+        },
+        "gold": "true",
+        "top_two_margin": 0.9987999999999999,
+        "correct": true
+      },
+      {
+        "case": "fact-key-en",
+        "scenario": "fact-key",
+        "language": "en",
+        "stratum": "factual",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "z": 0.0001,
+          "a": 0.9998,
+          "m": 0.0001
+        },
+        "gold": "a",
+        "top_two_margin": 0.9997,
+        "correct": true
+      },
+      {
+        "case": "fact-key-en",
+        "scenario": "fact-key",
+        "language": "en",
+        "stratum": "factual",
+        "field": "progress",
+        "type": "score",
+        "label": "1",
+        "probabilities": {
+          "0": 0.3078,
+          "1": 0.651,
+          "2": 0.0412
+        },
+        "gold": "1",
+        "top_two_margin": 0.3432,
+        "correct": true,
+        "public_score": 0.7334,
+        "ordinal_expected_index": 0.7334,
+        "gold_index_absolute_error": 0.26659999999999995
+      },
+      {
+        "case": "fact-key-de",
+        "scenario": "fact-key",
+        "language": "de",
+        "stratum": "factual",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "a": 0.9994,
+          "m": 0.0004,
+          "z": 0.0003
+        },
+        "gold": "a",
+        "top_two_margin": 0.999,
+        "correct": true
+      },
+      {
+        "case": "fact-key-de",
+        "scenario": "fact-key",
+        "language": "de",
+        "stratum": "factual",
+        "field": "progress",
+        "type": "score",
+        "label": "1",
+        "probabilities": {
+          "0": 0.0377,
+          "1": 0.914,
+          "2": 0.0482
+        },
+        "gold": "1",
+        "top_two_margin": 0.8658,
+        "correct": true,
+        "public_score": 1.0105,
+        "ordinal_expected_index": 1.0104,
+        "gold_index_absolute_error": 0.010399999999999965
+      },
+      {
+        "case": "fact-key-de",
+        "scenario": "fact-key",
+        "language": "de",
+        "stratum": "factual",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9983,
+          "false": 0.0017
+        },
+        "gold": "true",
+        "top_two_margin": 0.9965999999999999,
+        "correct": true
+      },
+      {
+        "case": "fact-badge-en",
+        "scenario": "fact-badge",
+        "language": "en",
+        "stratum": "factual",
+        "field": "selection",
+        "type": "choice",
+        "label": "z",
+        "probabilities": {
+          "a": 0.0002,
+          "m": 0.0001,
+          "z": 0.9997
+        },
+        "gold": "z",
+        "top_two_margin": 0.9995,
+        "correct": true
+      },
+      {
+        "case": "fact-badge-en",
+        "scenario": "fact-badge",
+        "language": "en",
+        "stratum": "factual",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.9782,
+          "1": 0.0121,
+          "2": 0.0097
+        },
+        "gold": "0",
+        "top_two_margin": 0.9661,
+        "correct": true,
+        "public_score": 0.0315,
+        "ordinal_expected_index": 0.0315,
+        "gold_index_absolute_error": 0.0315
+      },
+      {
+        "case": "fact-badge-en",
+        "scenario": "fact-badge",
+        "language": "en",
+        "stratum": "factual",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0005,
+          "false": 0.9995
+        },
+        "gold": "false",
+        "top_two_margin": 0.9990000000000001,
+        "correct": true
+      },
+      {
+        "case": "fact-badge-de",
+        "scenario": "fact-badge",
+        "language": "de",
+        "stratum": "factual",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.9795,
+          "1": 0.0095,
+          "2": 0.011
+        },
+        "gold": "0",
+        "top_two_margin": 0.9685,
+        "correct": true,
+        "public_score": 0.0315,
+        "ordinal_expected_index": 0.0315,
+        "gold_index_absolute_error": 0.0315
+      },
+      {
+        "case": "fact-badge-de",
+        "scenario": "fact-badge",
+        "language": "de",
+        "stratum": "factual",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0038,
+          "false": 0.9962
+        },
+        "gold": "false",
+        "top_two_margin": 0.9924,
+        "correct": true
+      },
+      {
+        "case": "fact-badge-de",
+        "scenario": "fact-badge",
+        "language": "de",
+        "stratum": "factual",
+        "field": "selection",
+        "type": "choice",
+        "label": "z",
+        "probabilities": {
+          "m": 0.0003,
+          "z": 0.9995,
+          "a": 0.0002
+        },
+        "gold": "z",
+        "top_two_margin": 0.9992000000000001,
+        "correct": true
+      },
+      {
+        "case": "negation-depot-en",
+        "scenario": "negation-depot",
+        "language": "en",
+        "stratum": "negation",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0022,
+          "1": 0.0045,
+          "2": 0.9933
+        },
+        "gold": "2",
+        "top_two_margin": 0.9888,
+        "correct": true,
+        "public_score": 1.9911,
+        "ordinal_expected_index": 1.9911,
+        "gold_index_absolute_error": 0.008899999999999908
+      },
+      {
+        "case": "negation-depot-en",
+        "scenario": "negation-depot",
+        "language": "en",
+        "stratum": "negation",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9988,
+          "false": 0.0012
+        },
+        "gold": "true",
+        "top_two_margin": 0.9976,
+        "correct": true
+      },
+      {
+        "case": "negation-depot-en",
+        "scenario": "negation-depot",
+        "language": "en",
+        "stratum": "negation",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "m": 0.9985,
+          "z": 0.0008,
+          "a": 0.0007
+        },
+        "gold": "m",
+        "top_two_margin": 0.9977,
+        "correct": true
+      },
+      {
+        "case": "negation-depot-de",
+        "scenario": "negation-depot",
+        "language": "de",
+        "stratum": "negation",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9992,
+          "false": 0.0008
+        },
+        "gold": "true",
+        "top_two_margin": 0.9984,
+        "correct": true
+      },
+      {
+        "case": "negation-depot-de",
+        "scenario": "negation-depot",
+        "language": "de",
+        "stratum": "negation",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "z": 0.0012,
+          "a": 0.0008,
+          "m": 0.998
+        },
+        "gold": "m",
+        "top_two_margin": 0.9968,
+        "correct": true
+      },
+      {
+        "case": "negation-depot-de",
+        "scenario": "negation-depot",
+        "language": "de",
+        "stratum": "negation",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0055,
+          "1": 0.0244,
+          "2": 0.9701
+        },
+        "gold": "2",
+        "top_two_margin": 0.9457,
+        "correct": true,
+        "public_score": 1.9646,
+        "ordinal_expected_index": 1.9646,
+        "gold_index_absolute_error": 0.0354000000000001
+      },
+      {
+        "case": "negation-letter-en",
+        "scenario": "negation-letter",
+        "language": "en",
+        "stratum": "negation",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.001,
+          "false": 0.999
+        },
+        "gold": "false",
+        "top_two_margin": 0.998,
+        "correct": true
+      },
+      {
+        "case": "negation-letter-en",
+        "scenario": "negation-letter",
+        "language": "en",
+        "stratum": "negation",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "z": 0.0002,
+          "a": 0.9996,
+          "m": 0.0002
+        },
+        "gold": "a",
+        "top_two_margin": 0.9994000000000001,
+        "correct": true
+      },
+      {
+        "case": "negation-letter-en",
+        "scenario": "negation-letter",
+        "language": "en",
+        "stratum": "negation",
+        "field": "progress",
+        "type": "score",
+        "label": "1",
+        "probabilities": {
+          "0": 0.0062,
+          "1": 0.5507,
+          "2": 0.4431
+        },
+        "gold": "1",
+        "top_two_margin": 0.10759999999999997,
+        "correct": true,
+        "public_score": 1.4369,
+        "ordinal_expected_index": 1.4369,
+        "gold_index_absolute_error": 0.43690000000000007
+      },
+      {
+        "case": "negation-letter-de",
+        "scenario": "negation-letter",
+        "language": "de",
+        "stratum": "negation",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "a": 0.9996,
+          "m": 0.0001,
+          "z": 0.0003
+        },
+        "gold": "a",
+        "top_two_margin": 0.9993000000000001,
+        "correct": true
+      },
+      {
+        "case": "negation-letter-de",
+        "scenario": "negation-letter",
+        "language": "de",
+        "stratum": "negation",
+        "field": "progress",
+        "type": "score",
+        "label": "1",
+        "probabilities": {
+          "0": 0.0343,
+          "1": 0.7785,
+          "2": 0.1871
+        },
+        "gold": "1",
+        "top_two_margin": 0.5913999999999999,
+        "correct": true,
+        "public_score": 1.1528,
+        "ordinal_expected_index": 1.1527,
+        "gold_index_absolute_error": 0.15270000000000006
+      },
+      {
+        "case": "negation-letter-de",
+        "scenario": "negation-letter",
+        "language": "de",
+        "stratum": "negation",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0012,
+          "false": 0.9988
+        },
+        "gold": "false",
+        "top_two_margin": 0.9976,
+        "correct": true
+      },
+      {
+        "case": "correction-time-en",
+        "scenario": "correction-time",
+        "language": "en",
+        "stratum": "temporal-correction",
+        "field": "selection",
+        "type": "choice",
+        "label": "z",
+        "probabilities": {
+          "a": 0.0,
+          "m": 0.0,
+          "z": 0.9999
+        },
+        "gold": "z",
+        "top_two_margin": 0.9999,
+        "correct": true
+      },
+      {
+        "case": "correction-time-en",
+        "scenario": "correction-time",
+        "language": "en",
+        "stratum": "temporal-correction",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0002,
+          "1": 0.0001,
+          "2": 0.9997
+        },
+        "gold": "2",
+        "top_two_margin": 0.9995,
+        "correct": true,
+        "public_score": 1.9996,
+        "ordinal_expected_index": 1.9995,
+        "gold_index_absolute_error": 0.0004999999999999449
+      },
+      {
+        "case": "correction-time-en",
+        "scenario": "correction-time",
+        "language": "en",
+        "stratum": "temporal-correction",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9989,
+          "false": 0.0011
+        },
+        "gold": "true",
+        "top_two_margin": 0.9978,
+        "correct": true
+      },
+      {
+        "case": "correction-time-de",
+        "scenario": "correction-time",
+        "language": "de",
+        "stratum": "temporal-correction",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0089,
+          "1": 0.0221,
+          "2": 0.969
+        },
+        "gold": "2",
+        "top_two_margin": 0.9469,
+        "correct": true,
+        "public_score": 1.9601,
+        "ordinal_expected_index": 1.9601,
+        "gold_index_absolute_error": 0.03990000000000005
+      },
+      {
+        "case": "correction-time-de",
+        "scenario": "correction-time",
+        "language": "de",
+        "stratum": "temporal-correction",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.998,
+          "false": 0.002
+        },
+        "gold": "true",
+        "top_two_margin": 0.996,
+        "correct": true
+      },
+      {
+        "case": "correction-time-de",
+        "scenario": "correction-time",
+        "language": "de",
+        "stratum": "temporal-correction",
+        "field": "selection",
+        "type": "choice",
+        "label": "z",
+        "probabilities": {
+          "m": 0.0002,
+          "z": 0.9996,
+          "a": 0.0002
+        },
+        "gold": "z",
+        "top_two_margin": 0.9994000000000001,
+        "correct": true
+      },
+      {
+        "case": "correction-shelf-en",
+        "scenario": "correction-shelf",
+        "language": "en",
+        "stratum": "temporal-correction",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.9992,
+          "1": 0.0007,
+          "2": 0.0001
+        },
+        "gold": "0",
+        "top_two_margin": 0.9984999999999999,
+        "correct": true,
+        "public_score": 0.0009,
+        "ordinal_expected_index": 0.0009,
+        "gold_index_absolute_error": 0.0009
+      },
+      {
+        "case": "correction-shelf-en",
+        "scenario": "correction-shelf",
+        "language": "en",
+        "stratum": "temporal-correction",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0038,
+          "false": 0.9962
+        },
+        "gold": "false",
+        "top_two_margin": 0.9924,
+        "correct": true
+      },
+      {
+        "case": "correction-shelf-en",
+        "scenario": "correction-shelf",
+        "language": "en",
+        "stratum": "temporal-correction",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "m": 0.9957,
+          "z": 0.0026,
+          "a": 0.0017
+        },
+        "gold": "m",
+        "top_two_margin": 0.9931,
+        "correct": true
+      },
+      {
+        "case": "correction-shelf-de",
+        "scenario": "correction-shelf",
+        "language": "de",
+        "stratum": "temporal-correction",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.1955,
+          "false": 0.8045
+        },
+        "gold": "false",
+        "top_two_margin": 0.609,
+        "correct": true
+      },
+      {
+        "case": "correction-shelf-de",
+        "scenario": "correction-shelf",
+        "language": "de",
+        "stratum": "temporal-correction",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "z": 0.0111,
+          "a": 0.011,
+          "m": 0.9779
+        },
+        "gold": "m",
+        "top_two_margin": 0.9668,
+        "correct": true
+      },
+      {
+        "case": "correction-shelf-de",
+        "scenario": "correction-shelf",
+        "language": "de",
+        "stratum": "temporal-correction",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.9503,
+          "1": 0.0301,
+          "2": 0.0196
+        },
+        "gold": "0",
+        "top_two_margin": 0.9202,
+        "correct": true,
+        "public_score": 0.0693,
+        "ordinal_expected_index": 0.0693,
+        "gold_index_absolute_error": 0.0693
+      },
+      {
+        "case": "order-finish-en",
+        "scenario": "order-finish",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9828,
+          "false": 0.0172
+        },
+        "gold": "true",
+        "top_two_margin": 0.9656,
+        "correct": true
+      },
+      {
+        "case": "order-finish-en",
+        "scenario": "order-finish",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "z": 0.2933,
+          "a": 0.2502,
+          "m": 0.4565
+        },
+        "gold": "a",
+        "top_two_margin": 0.1632,
+        "correct": false
+      },
+      {
+        "case": "order-finish-en",
+        "scenario": "order-finish",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "progress",
+        "type": "score",
+        "label": "1",
+        "probabilities": {
+          "0": 0.0163,
+          "1": 0.9613,
+          "2": 0.0224
+        },
+        "gold": "1",
+        "top_two_margin": 0.9389000000000001,
+        "correct": true,
+        "public_score": 1.0061,
+        "ordinal_expected_index": 1.0061,
+        "gold_index_absolute_error": 0.006099999999999994
+      },
+      {
+        "case": "order-finish-de",
+        "scenario": "order-finish",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "a": 0.75,
+          "m": 0.0595,
+          "z": 0.1904
+        },
+        "gold": "a",
+        "top_two_margin": 0.5596,
+        "correct": true
+      },
+      {
+        "case": "order-finish-de",
+        "scenario": "order-finish",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.4382,
+          "1": 0.4269,
+          "2": 0.135
+        },
+        "gold": "1",
+        "top_two_margin": 0.011299999999999977,
+        "correct": false,
+        "public_score": 0.6968,
+        "ordinal_expected_index": 0.6969,
+        "gold_index_absolute_error": 0.30310000000000004
+      },
+      {
+        "case": "order-finish-de",
+        "scenario": "order-finish",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.8141,
+          "false": 0.1859
+        },
+        "gold": "true",
+        "top_two_margin": 0.6282000000000001,
+        "correct": true
+      },
+      {
+        "case": "order-visits-en",
+        "scenario": "order-visits",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "selection",
+        "type": "choice",
+        "label": "z",
+        "probabilities": {
+          "a": 0.0145,
+          "m": 0.0795,
+          "z": 0.906
+        },
+        "gold": "z",
+        "top_two_margin": 0.8265,
+        "correct": true
+      },
+      {
+        "case": "order-visits-en",
+        "scenario": "order-visits",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "progress",
+        "type": "score",
+        "label": "1",
+        "probabilities": {
+          "0": 0.0211,
+          "1": 0.7624,
+          "2": 0.2164
+        },
+        "gold": "1",
+        "top_two_margin": 0.5459999999999999,
+        "correct": true,
+        "public_score": 1.1953,
+        "ordinal_expected_index": 1.1952,
+        "gold_index_absolute_error": 0.19520000000000004
+      },
+      {
+        "case": "order-visits-en",
+        "scenario": "order-visits",
+        "language": "en",
+        "stratum": "relative-order",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0246,
+          "false": 0.9754
+        },
+        "gold": "false",
+        "top_two_margin": 0.9508000000000001,
+        "correct": true
+      },
+      {
+        "case": "order-visits-de",
+        "scenario": "order-visits",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0318,
+          "1": 0.2447,
+          "2": 0.7235
+        },
+        "gold": "1",
+        "top_two_margin": 0.4788,
+        "correct": false,
+        "public_score": 1.6917,
+        "ordinal_expected_index": 1.6917,
+        "gold_index_absolute_error": 0.6917
+      },
+      {
+        "case": "order-visits-de",
+        "scenario": "order-visits",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0669,
+          "false": 0.9331
+        },
+        "gold": "false",
+        "top_two_margin": 0.8662000000000001,
+        "correct": true
+      },
+      {
+        "case": "order-visits-de",
+        "scenario": "order-visits",
+        "language": "de",
+        "stratum": "relative-order",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "m": 0.7538,
+          "z": 0.1896,
+          "a": 0.0566
+        },
+        "gold": "z",
+        "top_two_margin": 0.5642,
+        "correct": false
+      },
+      {
+        "case": "count-lamps-en",
+        "scenario": "count-lamps",
+        "language": "en",
+        "stratum": "explicit-count",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0003,
+          "1": 0.0001,
+          "2": 0.9996
+        },
+        "gold": "2",
+        "top_two_margin": 0.9993000000000001,
+        "correct": true,
+        "public_score": 1.9993,
+        "ordinal_expected_index": 1.9993,
+        "gold_index_absolute_error": 0.0006999999999999229
+      },
+      {
+        "case": "count-lamps-en",
+        "scenario": "count-lamps",
+        "language": "en",
+        "stratum": "explicit-count",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9995,
+          "false": 0.0005
+        },
+        "gold": "true",
+        "top_two_margin": 0.9990000000000001,
+        "correct": true
+      },
+      {
+        "case": "count-lamps-en",
+        "scenario": "count-lamps",
+        "language": "en",
+        "stratum": "explicit-count",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "m": 0.9953,
+          "z": 0.0029,
+          "a": 0.0018
+        },
+        "gold": "m",
+        "top_two_margin": 0.9924,
+        "correct": true
+      },
+      {
+        "case": "count-lamps-de",
+        "scenario": "count-lamps",
+        "language": "de",
+        "stratum": "explicit-count",
+        "field": "truth",
+        "type": "noul",
+        "label": "true",
+        "probabilities": {
+          "true": 0.9993,
+          "false": 0.0007
+        },
+        "gold": "true",
+        "top_two_margin": 0.9985999999999999,
+        "correct": true
+      },
+      {
+        "case": "count-lamps-de",
+        "scenario": "count-lamps",
+        "language": "de",
+        "stratum": "explicit-count",
+        "field": "selection",
+        "type": "choice",
+        "label": "m",
+        "probabilities": {
+          "z": 0.0038,
+          "a": 0.0036,
+          "m": 0.9926
+        },
+        "gold": "m",
+        "top_two_margin": 0.9888,
+        "correct": true
+      },
+      {
+        "case": "count-lamps-de",
+        "scenario": "count-lamps",
+        "language": "de",
+        "stratum": "explicit-count",
+        "field": "progress",
+        "type": "score",
+        "label": "2",
+        "probabilities": {
+          "0": 0.0007,
+          "1": 0.0021,
+          "2": 0.9972
+        },
+        "gold": "2",
+        "top_two_margin": 0.9951,
+        "correct": true,
+        "public_score": 1.9965,
+        "ordinal_expected_index": 1.9965,
+        "gold_index_absolute_error": 0.0035000000000000586
+      },
+      {
+        "case": "count-room-en",
+        "scenario": "count-room",
+        "language": "en",
+        "stratum": "explicit-count",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0025,
+          "false": 0.9975
+        },
+        "gold": "false",
+        "top_two_margin": 0.9950000000000001,
+        "correct": true
+      },
+      {
+        "case": "count-room-en",
+        "scenario": "count-room",
+        "language": "en",
+        "stratum": "explicit-count",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "z": 0.0001,
+          "a": 0.9998,
+          "m": 0.0001
+        },
+        "gold": "a",
+        "top_two_margin": 0.9997,
+        "correct": true
+      },
+      {
+        "case": "count-room-en",
+        "scenario": "count-room",
+        "language": "en",
+        "stratum": "explicit-count",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.9746,
+          "1": 0.016,
+          "2": 0.0094
+        },
+        "gold": "0",
+        "top_two_margin": 0.9586,
+        "correct": true,
+        "public_score": 0.0348,
+        "ordinal_expected_index": 0.0348,
+        "gold_index_absolute_error": 0.0348
+      },
+      {
+        "case": "count-room-de",
+        "scenario": "count-room",
+        "language": "de",
+        "stratum": "explicit-count",
+        "field": "selection",
+        "type": "choice",
+        "label": "a",
+        "probabilities": {
+          "a": 0.999,
+          "m": 0.0006,
+          "z": 0.0005
+        },
+        "gold": "a",
+        "top_two_margin": 0.9984,
+        "correct": true
+      },
+      {
+        "case": "count-room-de",
+        "scenario": "count-room",
+        "language": "de",
+        "stratum": "explicit-count",
+        "field": "progress",
+        "type": "score",
+        "label": "0",
+        "probabilities": {
+          "0": 0.9766,
+          "1": 0.0135,
+          "2": 0.0099
+        },
+        "gold": "0",
+        "top_two_margin": 0.9631000000000001,
+        "correct": true,
+        "public_score": 0.0333,
+        "ordinal_expected_index": 0.0333,
+        "gold_index_absolute_error": 0.0333
+      },
+      {
+        "case": "count-room-de",
+        "scenario": "count-room",
+        "language": "de",
+        "stratum": "explicit-count",
+        "field": "truth",
+        "type": "noul",
+        "label": "false",
+        "probabilities": {
+          "true": 0.0084,
+          "false": 0.9916
+        },
+        "gold": "false",
+        "top_two_margin": 0.9832000000000001,
+        "correct": true
+      }
+    ],
+    "confusion": {
+      "noul/true->true": 10,
+      "choice/a->a": 7,
+      "score/1->1": 6,
+      "choice/z->z": 5,
+      "score/0->0": 6,
+      "noul/false->false": 10,
+      "score/2->2": 6,
+      "choice/m->m": 6,
+      "choice/a->m": 1,
+      "score/1->0": 1,
+      "score/1->2": 1,
+      "choice/z->m": 1
+    },
+    "statistical_scope": "20 correlated requests,10 translated scenario pairs;60 field labels are not60 independent samples"
+  },
+  "raw_array_verification": "Producer manifests authenticated; coordinator has not downloaded or independently rehashed raw NPY payloads. Native hosted prerequisite must rehash all1480 before model access.",
+  "limits": [
+    "20 correlated authored requests/10 translated scenario pairs, not broad benchmark",
+    "Four original decision misses remain, all order stratum; no gold/prompt/scorer change",
+    "No current four-case Q4 result or native20 qualification inferred"
+  ]
+}

@@ -17075,3 +17075,20 @@ before inference, with no Q8 quality/publication claim. Same-job vision is about
 twice as fast in F32, without a general prefill gain. PERFORMANCE records the
 scopes, retained missing-ID limitation and cache hypothesis; the corrected graph
 experiment must establish its own output/numerical/performance result.
+
+### Josev NEW20 original reference — 28 October 2026
+
+The independently reviewed CUDA original at
+`110620ea1ada0748007e6b6698e0c5babb4940ed` completed all20 authored requests,
+7,472 untruncated tokens and1,480 declared intermediate arrays.
+[The review](tests/results/josev2b/task-quality-original-review.json) authenticates
+all five small receipt identities, eight source hashes, ordered request/token
+freeze, stage coverage and observer/repeat neutrality. Independent scalar
+softmax reconstruction differs by at most1.14371e-7. Large NPY payloads remain
+remote; the native prerequisite must independently rehash every payload.
+
+The original scores56/60 fields: English29/30, German27/30, NOUL20/20,
+choice18/20 and score18/20, passing the predeclared floors. All four misses
+are in the ordering stratum and remain unchanged. These are20 correlated
+requests/10 translated scenario pairs, not60 independent benchmark samples.
+No native20, current Q4 qualification, publication or runtime release follows.
