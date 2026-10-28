@@ -79,3 +79,21 @@ MoEdern Q4_K profiles. Final integration requires one declared source, all-platf
 builds, Ovis replays, immutable assets and actual consumers. Keep failed WASM,
 UltraBERT historical stage errors and all quality limits explicit. No release or
 application pin changes follow from source preparation or component cosine.
+
+### CPU fallback for the frozen UltraBERT panel
+
+The [Kaggle worker](../tools/kaggle/ultrabert-q4k/kernel.py) runs the same full
+5,483-row F32/control and three declared Q4_K recipes when hosted Actions remain
+queued. It records `Kaggle CPU` as its provider and authenticates the exact
+submitted source; it does not impersonate a GitHub service run. It reuses the
+original preparation/shards and exact successful producer-job identities, with
+all archive and member hashes checked before conversion. Redirected artifact
+storage requests receive no API credential. Only an admitted CPU session may
+run it; preserve the queued-run identity and cancel that run before dispatching
+a replacement, to avoid duplicate full panels.
+
+The worker also verifies all 218 tensor names/shapes and the byte identity of
+every retained F32 tensor against its lossless base. Vocabulary and norms must
+stay F32; each candidate must contain actual Q4_K storage. These source controls
+and existing model-free results do not replace the pending actual full retrieval
+comparison or authorize a published model.

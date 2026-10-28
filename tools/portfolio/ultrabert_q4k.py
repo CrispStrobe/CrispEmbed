@@ -20,6 +20,8 @@ import subprocess
 import sys
 import time
 import zipfile
+import urllib.request
+import urllib.error
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools'))
 from ultrabert_contract import MODEL, REVISION, QUERY, profile, sha256
@@ -31,8 +33,36 @@ def require(ok,why):
 def write(path,value):
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n')
+def hosted_source():
+    actual=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
+    if os.environ.get('GITHUB_ACTIONS')=='true':
+        require(actual==os.environ.get('GITHUB_SHA'),'source/service mismatch');return actual,'GitHub Actions'
+    require(Path('/kaggle/working').is_dir() and Path('/kaggle/input').is_dir() and os.environ.get('KAGGLE_KERNEL_RUN_TYPE') in ('Batch','Interactive'),'hosted qualification only')
+    require(actual==os.environ.get('CRISPEMBED_CAPTURE_SOURCE'),'Kaggle submitted source mismatch');return actual,'Kaggle CPU'
+
 @lru_cache(maxsize=32)
-def api(path): return json.loads(subprocess.check_output(['gh','api','repos/CrispStrobe/CrispEmbed/'+path],timeout=90))
+def api(path):
+    request=urllib.request.Request('https://api.github.com/repos/CrispStrobe/CrispEmbed/'+path,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'})
+    with urllib.request.urlopen(request,timeout=90)as response:
+        data=response.read(2*1024**2+1)
+    require(len(data)<=2*1024**2,'service metadata exceeds bound');return json.loads(data)
+
+def download_archive(ident,path,maximum):
+    # Do not forward an API credential to a signed artifact-storage URL.
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self,*args,**kwargs):return None
+    request=urllib.request.Request(f'https://api.github.com/repos/CrispStrobe/CrispEmbed/actions/artifacts/{ident}/zip',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+    try:
+        response=urllib.request.build_opener(NoRedirect).open(request,timeout=90)
+    except urllib.error.HTTPError as error:
+        require(error.code==302,'artifact service did not issue signed location')
+        location=error.headers['Location'];require(location.startswith('https://'),'artifact redirect must use HTTPS')
+        try:response=urllib.request.urlopen(location,timeout=180)
+        except Exception:raise ValueError('signed artifact transfer failed')from None
+    with response,path.open('xb')as stream:
+        count=0
+        while block:=response.read(1024**2):
+            count+=len(block);require(count<=maximum,'artifact archive exceeds immutable size');stream.write(block)
 # Original shards/freeze succeeded before the historical workflow's later native
 # jobs failed/cancelled. Authenticate these exact successful original jobs rather
 # than mistakenly treating the parent workflow conclusion as their conclusion.
@@ -60,7 +90,7 @@ def artifact(pin,out,selected):
     digest=pin.get('digest','sha256:'+str(pin.get('sha256')))
     require(row['workflow_run']['id']==pin['run'] and row['workflow_run']['head_sha']==source and not row['expired'] and row['name']==pin['name'] and row['size_in_bytes']==pin['bytes'] and row['digest']==digest and 0<pin['bytes']<=32*1024**2,'immutable artifact identity differs')
     archive=out.with_suffix('.zip');out.mkdir()
-    with archive.open('xb')as f:subprocess.run(['gh','api',f'repos/CrispStrobe/CrispEmbed/actions/artifacts/{ident}/zip'],stdout=f,check=True,timeout=300)
+    download_archive(ident,archive,pin['bytes'])
     require(archive.stat().st_size==pin['bytes'] and 'sha256:'+sha256(archive)==digest,'artifact ZIP SHA differs')
     with zipfile.ZipFile(archive)as z:
         names=[r.filename for r in z.infolist()]
@@ -144,14 +174,13 @@ def rankings(data,values):
     return [dict(query_id=r['id'],**rank_scores(ids,scores[i],r['relevant_document_ids']))for i,r in enumerate(data['queries'])]
 
 def run(args):
-    require(os.environ.get('GITHUB_ACTIONS')=='true','hosted qualification only')
-    require(subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==os.environ['GITHUB_SHA'],'source/service mismatch')
+    source,provider=hosted_source()
     require(not subprocess.check_output(['git','status','--porcelain','--','src','CMakeLists.txt','tools/portfolio','models/convert-ultrabert-to-gguf.py'],cwd=ROOT,text=True),'dirty runtime/worker')
     import numpy as np
     from huggingface_hub import snapshot_download
     from gguf import GGUFReader
     out=args.output;scratch=args.scratch;out.mkdir();scratch.mkdir()
-    report=dict(schema='crispembed-ultrabert-q4k-v1',source=os.environ['GITHUB_SHA'],environment=dict(system=platform.system(),machine=platform.machine(),python=platform.python_version(),cpu_count=os.cpu_count()),completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
+    report=dict(schema='crispembed-ultrabert-q4k-v1',source=source,provider=provider,environment=dict(system=platform.system(),machine=platform.machine(),python=platform.python_version(),cpu_count=os.cpu_count()),completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
     save=lambda:write(out/'review.json',report);save()
     try:
         require(shutil.disk_usage(scratch).free>=6*1024**3,'hosted6GiB free scratch required');report['environment']['scratch_free_bytes']=shutil.disk_usage(scratch).free
@@ -175,6 +204,9 @@ def run(args):
         snapshot=snapshot_download(MODEL,revision=REVISION,allow_patterns=list(profile()['inspected_file_sha256'])+['model.safetensors'])
         spec=importlib.util.spec_from_file_location('converter',ROOT/'models/convert-ultrabert-to-gguf.py');converter=importlib.util.module_from_spec(spec);spec.loader.exec_module(converter)
         f32=scratch/'ultrabert-f32.gguf';converter.convert(snapshot,f32,'f32')
+        base=GGUFReader(f32)
+        base_inventory={t.name:dict(shape=list(map(int,t.shape)),sha256=hashlib.sha256(t.data.tobytes()).hexdigest())for t in base.tensors}
+        require(len(base_inventory)==218 and all(t.tensor_type.name=='F32'for t in base.tensors),'lossless218-tensor F32 conversion required');del base
         env={k:v for k,v in os.environ.items()if not k.startswith('CRISPEMBED_')};env.update(CRISPEMBED_ULTRABERT='1',CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN='1',CRISPEMBED_ULTRABERT_TRUNCATE='1',OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2',MKL_NUM_THREADS='2')
         os.environ.clear();os.environ.update(env)
         lib=ctypes.CDLL(str(args.library.resolve()))
@@ -186,11 +218,17 @@ def run(args):
                 os.environ['CRISPEMBED_ULTRABERT_QUANT']='0';require(not lib.crispembed_init(str(model).encode(),2),'quantized model accepted without quant gate')
                 os.environ['CRISPEMBED_ULTRABERT_QUANT']='1'
             else:os.environ.pop('CRISPEMBED_ULTRABERT_QUANT',None)
-            reader=GGUFReader(model);types={}
-            for t in reader.tensors:types[t.tensor_type.name]=types.get(t.tensor_type.name,0)+1
+            reader=GGUFReader(model);types={};protected={}
+            require(len(reader.tensors)==218 and {t.name for t in reader.tensors}==set(base_inventory),'quantized tensor inventory differs')
+            for t in reader.tensors:
+                types[t.tensor_type.name]=types.get(t.tensor_type.name,0)+1
+                require(list(map(int,t.shape))==base_inventory[t.name]['shape'],'quantized tensor shape differs')
+                if t.tensor_type.name=='F32':
+                    checksum=hashlib.sha256(t.data.tobytes()).hexdigest();require(checksum==base_inventory[t.name]['sha256'],'protected F32 tensor payload changed: '+t.name);protected[t.name]=checksum
+                if t.name=='token_embd.weight'or 'norm' in t.name:require(t.tensor_type.name=='F32','critical vocabulary/norm precision changed')
             require(rules is None or types.get('Q4_K',0)>0,'mislabeled quantized model');del reader
             raw,norm,seconds=native(lib,model,rows,expected);rr=rankings(data,norm);q=quality(before,rr)
-            record=dict(model_bytes=model.stat().st_size,sha256=sha256(model),stored_types=types,raw=metrics(original_raw,raw),normalized=metrics(original_norm,norm),quality=q,elapsed_seconds=seconds,all_ids_exact=True,actual_ref=[])
+            record=dict(model_bytes=model.stat().st_size,sha256=sha256(model),stored_types=types,protected_f32_payload_sha256=protected,protected_f32_payloads_bit_exact=True,raw=metrics(original_raw,raw),normalized=metrics(original_norm,norm),quality=q,elapsed_seconds=seconds,all_ids_exact=True,actual_ref=[])
             for i in range(8):
                 folder=out/name/str(i);folder.mkdir(parents=True)
                 indices=list(range(i,5483,8));left=[];right=[]

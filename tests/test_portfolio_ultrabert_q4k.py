@@ -1,5 +1,6 @@
 """Stdlib source/negative controls; no model, NumPy or native library on this host."""
 import importlib.util
+import io
 from pathlib import Path
 import tempfile
 import unittest
@@ -26,6 +27,25 @@ class Controls(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'job'):w.producer_identity(pin,run)
         wrong=dict(run);wrong['run_attempt']=2
         with self.assertRaisesRegex(ValueError,'producer'):w.producer_identity(pin,wrong)
+    def test_hosted_source_does_not_spoof_github_on_kaggle(self):
+        source='b'*40
+        with mock.patch.object(w.subprocess,'check_output',return_value=source+'\n'),mock.patch.object(w.Path,'is_dir',return_value=True):
+            with mock.patch.dict(w.os.environ,dict(KAGGLE_KERNEL_RUN_TYPE='Batch',CRISPEMBED_CAPTURE_SOURCE=source),clear=True):
+                self.assertEqual(w.hosted_source(),(source,'Kaggle CPU'))
+                w.os.environ['CRISPEMBED_CAPTURE_SOURCE']='c'*40
+                with self.assertRaisesRegex(ValueError,'submitted source'):w.hosted_source()
+            with mock.patch.dict(w.os.environ,dict(GITHUB_ACTIONS='true',GITHUB_SHA=source),clear=True):
+                self.assertEqual(w.hosted_source(),(source,'GitHub Actions'))
+    def test_signed_storage_request_never_receives_api_credential(self):
+        redirect=w.urllib.error.HTTPError('https://api.github.com/artifact',302,'redirect',{'Location':'https://artifact.example/signed'},None)
+        opener=mock.Mock();opener.open.side_effect=redirect
+        with tempfile.TemporaryDirectory()as folder,mock.patch.dict(w.os.environ,dict(GH_TOKEN='dummy'),clear=True),mock.patch.object(w.urllib.request,'build_opener',return_value=opener),mock.patch.object(w.urllib.request,'urlopen',return_value=io.BytesIO(b'zip'))as fetch:
+            path=Path(folder)/'archive.zip';w.download_archive(1,path,3)
+            self.assertEqual(path.read_bytes(),b'zip')
+            self.assertEqual(opener.open.call_args[0][0].get_header('Authorization'),'Bearer dummy')
+            self.assertEqual(fetch.call_args[0],('https://artifact.example/signed',))
+            fetch.return_value=io.BytesIO(b'oversized')
+            with self.assertRaisesRegex(ValueError,'immutable size'):w.download_archive(1,Path(folder)/'large.zip',3)
     def test_original_profile_and_recipe_protection(self):
         self.assertEqual(w.MODEL,'dmis-lab/UltraBERT-Embed-150M')
         recipes=w.recipes();self.assertEqual(len(recipes),3)
