@@ -84,7 +84,7 @@ resizer (`src/core/torch_bicubic_u8.h`). An initial draft contained guessed
 preprocessing details; all were replaced by decisions cited from transformers 5.21.0
 (three guesses had been wrong: resize kernel, pretokenizer regex, position bucketing).
 First Kaggle parity run: 5 cases x F32/F16 input IDs, generated IDs and text exact,
-all stages ~1e-5 ([parity](tests/results/minicpm-ocr/native-parity.json)). Published F16
+with historical numerical limits ([parity](tests/results/minicpm-ocr/native-parity.json)): F32 paragraph final norm maximum0.0045424699783325195 and vision layer26 maximum0.033447265625. These exceed a strict0.002 absolute screen despite exact decoded output; the original aggregate cosine/shape flags do not establish strict stage parity. Published F16
 to `cstr/MiniCPM-OCR-1.0-GGUF@6705b065` ([publication](tests/results/minicpm-ocr/publication.json));
 initial publish failed on a torch-only safetensors read (fixed with a torch-free
 reader). Alias `minicpm-ocr`; CLI and server engine `minicpm-ocr`. llama.cpp
