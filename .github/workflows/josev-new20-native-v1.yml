@@ -1,0 +1,76 @@
+name: Retained Josev NEW20 selected-candidate native owner v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: josev-new20-heldout-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  heldout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+      PIP_USER: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Fetch only explicit public source commits
+        run: |
+          git fetch --quiet --filter=blob:none origin 110620ea1ada0748007e6b6698e0c5babb4940ed 9c475d0dac70264adc123a63b6c1827b4b7280d5 54c2b5767ae82c853d8649870abd234a2fbe7ee5
+          python - <<'PY'
+          import json,re,subprocess
+          config=json.load(open('docs/josev2b-task-quality-native-v1.json'))
+          for source in [config['selected_candidate']['checkout_source'],config['runtime_activation']['source']]:
+              if source is not None:
+                  assert re.fullmatch('[0-9a-f]{40}',source)
+                  subprocess.run(['git','fetch','--quiet','--filter=blob:none','origin',source],check=True)
+          PY
+      - name: Source and bounded stdlib controls
+        run: python tests/test_josev2b_task_quality_native_v1.py -v
+      - name: Reviewed candidate and64GiB admission BEFORE packages or payloads
+        run: python tools/ci-heavy/josev2b_task_quality_owner_v1.py admit --scratch "$RUNNER_TEMP/new20-scratch" --inputs "$RUNNER_TEMP/new20-input" --out "$RUNNER_TEMP/new20-out"
+      - name: Isolated immutable numerical and retained-read tools
+        run: |
+          python -m venv "$RUNNER_TEMP/new20-native"
+          "$RUNNER_TEMP/new20-native/bin/python" -m pip install --only-binary=:all: --no-deps --require-hashes -r tools/josev-new20-owner/requirements.lock
+          "$RUNNER_TEMP/new20-native/bin/python" -m pip check
+          python -m venv "$RUNNER_TEMP/new20-fetch"
+          "$RUNNER_TEMP/new20-fetch/bin/python" -m pip install --only-binary=:all: https://files.pythonhosted.org/packages/13/d7/ef195107ced87945b98104e783147ec17096f65ef913bff24dbaab08498a/kaggle-2.2.2-py3-none-any.whl#sha256=ebb70a5338cf8d75998668f4415da753065d8996ff315d78342091f44d2d2e71
+      - name: Exact versions and all1480 original NPYs before numerical imports/models
+        run: '"$RUNNER_TEMP/new20-fetch/bin/python" -I tools/ci-heavy/josev2b_task_quality_owner_v1.py stage --scratch "$RUNNER_TEMP/new20-scratch" --inputs "$RUNNER_TEMP/new20-input" --out "$RUNNER_TEMP/new20-out"'
+      - name: Exact runtime9c and one independently selected held-out candidate
+        run: python tools/ci-heavy/josev2b_task_quality_owner_v1.py run --scratch "$RUNNER_TEMP/new20-scratch" --inputs "$RUNNER_TEMP/new20-input" --out "$RUNNER_TEMP/new20-out" --worker-python "$RUNNER_TEMP/new20-native/bin/python"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-new20-native-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/new20-out/review/
+            ${{ runner.temp }}/new20-out/native/**/*.json
+            ${{ runner.temp }}/new20-out/native/**/*.log
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-new20-native-v1-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/new20-out/native/
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: warn

@@ -1,0 +1,164 @@
+{
+  "schema": "crispembed-josev-new20-native-owner-v1",
+  "base": "6af6865598c592b1d86ffc930c9054f643b15064",
+  "baseline_runtime_source": "9c475d0dac70264adc123a63b6c1827b4b7280d5",
+  "original_source": "110620ea1ada0748007e6b6698e0c5babb4940ed",
+  "mixed_development_protocol": {
+    "source": "54c2b5767ae82c853d8649870abd234a2fbe7ee5",
+    "path": "docs/josev2b-mixed-recipes-v1.json",
+    "sha256": "f6f7b694f5080e1cf59fefc84400abe93b76b92664187f7b251ed0b354075e12"
+  },
+  "native_child_seconds": 14400,
+  "workflow_minutes": 360,
+  "initial_free_disk_bytes": 68719476736,
+  "minimum_available_ram_bytes": 15032385536,
+  "threads": 2,
+  "publication_authorized": false,
+  "heldout_reselection_allowed": false,
+  "baseline_runtime_git_objects": {
+    "src": "1c9c09e04ee6f54171f377c79444e549f7a521af",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "CMakeLists.txt": "1da19a8737ca79f8bd99e2844a4bea5d160a0b6c",
+    "python/crispembed": "dc85f77f1472f560220dd766431ceb64389f4b07",
+    "tests": "b3532eeea41ab296e1ef4819438b2d53edf98687",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "examples": "203b05c23de8083f611106f289bba4d03621a8b9",
+    "tools": "589ff66912056b0f8f05cab45ed09b7d3be20c1d",
+    "models": "c44229e28b28d5541a961ca5ee6682e2a20983ad",
+    ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
+    "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0"
+  },
+  "f32_model": {
+    "repo": "cstr/Josev-2B-SystemOne-GGUF",
+    "revision": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+    "filename": "josev2b-systemone-f32.gguf",
+    "bytes": 7659180448,
+    "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2"
+  },
+  "selection_rule": "strictF32control+structural/criticalbytes+alloldargmax+eachpublicprobability.01+eacholdordinal.001; smallestbytes",
+  "runtime_activation": {
+    "reviewed": false,
+    "source": null,
+    "git_objects": {},
+    "delta_review_sha256": null,
+    "allowed_changed_files": {}
+  },
+  "canonicalization": {
+    "requires_followup_source_version": true,
+    "proof_reviewed": false,
+    "proof_schema": null,
+    "proof_source": null,
+    "proof_sha256": null,
+    "legacy_model_sha256": null,
+    "canonical_model_sha256": null,
+    "canonical_model_bytes": null,
+    "same_payload_control_reviewed": false,
+    "same_payload_control_source": null,
+    "same_payload_control_sha256": null
+  },
+  "original": {
+    "kernel_slug": "crispembed-josev2b-task-quality-original-v1",
+    "version_label": "v1",
+    "source": "110620ea1ada0748007e6b6698e0c5babb4940ed",
+    "submitted_script_bytes": 14843,
+    "submitted_script_sha256": "675ee0a407b230d5ccdf372c56cd2ca1a05186007e8e14ed3442db193b922381",
+    "root_member": "josev2b-task-quality-original/reference",
+    "protocol_sha256": "5f27e93159fd8359a64a319114055c95120fef0c1ffb276fd271c7f6255fedb2",
+    "reports": {
+      "reference.json": {
+        "bytes": 648444,
+        "sha256": "948673b0307cebcc15fdde3ea70b1163ed63b0d0bf3ef33c1488d6b89450f49b"
+      },
+      "input-freeze.json": {
+        "bytes": 260911,
+        "sha256": "f8f2032ec85323379abcfa43e52ee92a981a6518f915fb72cd778f591a764f94"
+      },
+      "raw-manifest.json": {
+        "bytes": 457616,
+        "sha256": "e5433299eeed16b7a99159beebe248fdee0b00dcdbce2a216d171e3b7ba6c1d8"
+      }
+    }
+  },
+  "old_four_negative": {
+    "kernel_slug": "crispembed-josev-q4k-v1",
+    "version_label": "v4",
+    "source": "9c475d0dac70264adc123a63b6c1827b4b7280d5",
+    "submitted_script_bytes": 6388,
+    "submitted_script_sha256": "ac58da259a8e9b1149d2e1e6f3e7d2acb2c323ed3f0c4a417b1cc3d254fa6eb4",
+    "report_member": "josev-q4k/result/review/hosted.json",
+    "report": {
+      "bytes": 236745,
+      "sha256": "ed499b74081a00bdea0cdc65a11dfae266f59022447b9a9e56daba4fcd02b526"
+    }
+  },
+  "selected_candidate": {
+    "reviewed": false,
+    "recipe": null,
+    "selection_rule": "strictF32control+structural/criticalbytes+alloldargmax+eachpublicprobability.01+eacholdordinal.001; smallestbytes",
+    "old_four_development_criteria_passed": false,
+    "service_source": null,
+    "checkout_source": null,
+    "protocol_sha256": null,
+    "workflow": null,
+    "run_attempt": null,
+    "report_sha256": null,
+    "report_bytes": null,
+    "model_sha256": null,
+    "model_bytes": null,
+    "review_artifact": {
+      "run": null,
+      "id": null,
+      "bytes": null,
+      "sha256": null,
+      "member": null
+    },
+    "raw_artifact": {
+      "run": null,
+      "id": null,
+      "bytes": null,
+      "sha256": null,
+      "member": null
+    }
+  },
+  "protected_sha256": {
+    "docs/josev2b-environment-lock.json": "7d16c6560da3a9bf24f1c19f3581f1a5911b87360c0cef6484b92f8810aa8be8",
+    "docs/josev2b-source-contract.json": "6fbe3efe8958b2d87f5fe42c52fa71857c2d644efe3ad363bb60d8dfa52885da",
+    "docs/josev2b-task-quality-v1.json": "5f27e93159fd8359a64a319114055c95120fef0c1ffb276fd271c7f6255fedb2",
+    "tests/josev-task-quality/CMakeLists.txt": "85a0cf06ce25aba537fd095b6b17d52287a544e0c271c479658a7b520782ccc1",
+    "tests/josev-task-quality/diff.cpp": "cd9e0b4689abe5aafdb1398b158bc05a5d9fa4dfcd6fddfd7fa692e14c8894c9",
+    "tests/josev-task-quality/probe.cpp": "daae8e70c99c6e669824a8336da110d6a9c584aa666dc076fdfcffe273379707",
+    "tests/regression/josev2b/task-quality-label-review-v1.json": "22e5eb29f3a81150cc841282a693499d8b01fbfa97b0d0350472f7046f274290",
+    "tests/regression/josev2b/task-quality-v1.json": "2b1a3c8d0c20be4a64a7f21695b80da8f5f727dd8b50a4d8fd00523aa20efb18",
+    "tests/test_josev2b_contract.py": "c3bf2f6e90d023a182c6167deda7a6028ca004d369a401b43a406bd1314a342a",
+    "tests/test_josev2b_environment.py": "0cc1e8f7f59c5fdd4be5bb8a60d46c3a377f239867cbb760de92b415b092eed1",
+    "tests/test_josev2b_head_identity.py": "e9b97c4a479984ac9220ab4eb347b09df181d252440f1c5df8f8d96b069701c3",
+    "tests/test_josev2b_task_quality_v1.py": "d91fed9a11b79a979e33535d1b7a6523a143b6425794f0820adefa5685220ce9",
+    "tools/ci-heavy/josev2b_gpu_install.py": "5f35df3ddc0a000f48f3a4545274d5323abe1a111450bd9fa1c1ae8f4adebc07",
+    "tools/ci-heavy/josev2b_task_quality_v1.py": "7710929a9ad609543180f65e25e044e10956bd7f602311d18f00645aa519eb09",
+    "tools/ci-heavy/josev2b_wheel_metadata.py": "503bcc6e9387511101897ea95fc9b2984adf531e63f482220cc6c8ed08c9b14b",
+    "tools/dump_josev2b_task_quality_v1.py": "0e113fc43e8e632634192f3996a1ae44ae0308ed650202c40962d0877ea1d7b4",
+    "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
+    "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
+    "tools/josev2b_contract.py": "38cdfc1b700349391811b2ac4b16b0e6ce78dce79f220c7cf27c41f174d895d5",
+    "tools/josev2b_environment.py": "3af292eb860a48460b6c2da2a41efbcf0cd9d30007973d2d2bde758a0f9aacc2",
+    "tools/josev2b_head_schema.py": "1462b94bb5ff7adfff42c532986256bdb8502cecb6e677fa11ad1b280ca4f220",
+    "tools/josev2b_task_quality_panel_v1.py": "77d6ca15b8aaa96f5954a017e1d8513d08617e1edb1966cdfaca95abc1c3faa1",
+    "tools/josev2b_task_quality_v1.py": "96464eb691162913e3dbb7603afab86d0986004d15c39394d4efb6c8869acac3",
+    "tools/kaggle/josev2b-original/requirements.lock": "89fa4670a29ccfe3df867660715884c0b76e45103c44bcbb54ba825a2eccc489",
+    "tools/kaggle/josev2b-task-quality/bootstrap.py": "233facc1da667e9db4a1ff4d63e6709a86bce8df6b48d266325563544bfe6e1f",
+    "tools/kaggle/josev2b-task-quality/kernel-metadata.json": "be6ed59a7ba413a31ba08d3ca1226826f72b8f6d46561098d15de7e384a6b20a",
+    "tools/kaggle/josev2b_task_quality_reference_v1.py": "d2b5bdd8da246c435810d3044069b8135c2ed2a0b9d32df6b59954bec5169cb1"
+  },
+  "owned_sha256": {
+    ".github/workflows/josev-new20-native-v1.yml": "c95da0acd34ceeddbae7931d93442e23711e0bb333a280a9bfddd59d69d2fcca",
+    "docs/josev2b-task-quality-native-v1.md": "e2bd1956c0ec408562fb86d1606e3f72aa90617ed39765ddb929a2a10c6638fb",
+    "tests/test_josev2b_task_quality_native_v1.py": "e94875d2981bb86a6e5b897a375b5411f5cceb95ce123c4561a96fdd9ebcd7c2",
+    "tools/ci-heavy/josev2b_task_quality_native_v1.py": "6e06d7d77bdda2ebd58de839d5ac4ae2ced65e7c340869e15dc461bf16c16fb2",
+    "tools/ci-heavy/josev2b_task_quality_owner_v1.py": "79d1b1cf0ec70205f79f5e59817af1e8d5ad86639c58d877b0a19114f16bbae9",
+    "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
+    "tools/josev-new20-owner/provider.py": "ea82cd18a7b3c86c9cbf6ddf33dc145ceb161ea64c89b81ddb255c8ec2341a72",
+    "tools/josev-new20-owner/requirements.lock": "e1f086b64b454999f187e5d5a45de9f00f0fd6109be87b0f72d64f25e10b2813",
+    "tools/josev2b_task_quality_native_panel_v1.py": "3430871e719aa526118ef79db53fc5b1811fda45b06c87bddab2f8eb0731d191",
+    "tools/josev2b_task_quality_native_v1.py": "9df2d8240cc08f180c4de3d4d52b771b0f41f949d49a10b99b01343fdc9152e8"
+  }
+}
