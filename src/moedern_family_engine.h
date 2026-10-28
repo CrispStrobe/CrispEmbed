@@ -13,6 +13,7 @@ struct profile {
 };
 struct context;
 context * init(const char * path, int threads, std::string & failure);
+context * init_q4k(const char * path, int threads, std::string & failure);
 void free(context *);
 const char * error(const context *);
 const profile * get_profile(const context *);

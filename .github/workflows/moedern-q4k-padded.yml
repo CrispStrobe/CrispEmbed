@@ -1,0 +1,84 @@
+name: MoEdern real padded Q4_K diagnostic
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Reviewed exact forty-hex source commit'
+        required: true
+        type: string
+      mode:
+        type: choice
+        options: ['build-only', 'panel']
+        default: 'build-only'
+        required: true
+      variant:
+        type: choice
+        options: ['1.5M', '27M', '115M']
+        default: '1.5M'
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-q4k-padded-${{ inputs.variant }}
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source and stdlib controls before packages, credentials or payloads
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: |
+          python - <<'PY'
+          import os,re,subprocess
+          source=os.environ['SOURCE_REF']
+          assert re.fullmatch('[0-9a-f]{40}',source)
+          assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==source
+          PY
+          python tests/test_moedern_q4k.py -v
+          python tools/moedern-colbert/q4k_contract.py > "$RUNNER_TEMP/source-closure.json"
+      - name: Model-free build and authored actual Q4_K controls
+        if: inputs.mode == 'build-only'
+        run: python tools/ci-heavy/moedern_q4k_padded.py --build-only --build "$RUNNER_TEMP/build" --out "$RUNNER_TEMP/out/build-review"
+      - name: Hosted model tooling only
+        if: inputs.mode == 'panel'
+        run: python -m pip install numpy==2.2.6 gguf==0.17.1 kaggle==2.2.2
+      - name: Authenticate frozen original, strict F32 control, then Q4_K raw-text panel
+        if: inputs.mode == 'panel'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+          KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+          VARIANT: ${{ inputs.variant }}
+        run: python tools/ci-heavy/moedern_q4k_padded.py --fetch-and-run --variant "$VARIANT" --build "$RUNNER_TEMP/build" --out "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-q4k-padded-review-${{ inputs.variant }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/source-closure.json
+            ${{ runner.temp }}/out/build-review/
+            ${{ runner.temp }}/out/panel/review/
+            ${{ runner.temp }}/out/source-service.json
+            ${{ runner.temp }}/out/prepare-rejection.json
+            ${{ runner.temp }}/out/authenticated-inputs/source-service.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always() && inputs.mode == 'panel'
+        with:
+          name: moedern-q4k-padded-raw-${{ inputs.variant }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/panel/raw/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn

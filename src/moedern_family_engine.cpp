@@ -19,6 +19,7 @@
 // gate any non-F32 tensor is rejected exactly as before. Quantized outputs are a
 // diagnostic speed arm and are not held to the F32 parity gate.
 #include "moedern_family_engine.h"
+#include "moedern_q4k_profile.h"
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "ggml-alloc.h"
@@ -120,7 +121,7 @@ uint32_t u32(gguf_context * g, const std::string & key) {
     require(at >= 0 && gguf_get_kv_type(g, at) == GGUF_TYPE_UINT32, "Missing metadata: " + key);
     return gguf_get_val_u32(g, at);
 }
-profile read_profile(gguf_context * g, bool allow_quant) {
+profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false) {
     const int arch = gguf_find_key(g, "general.architecture");
     require(arch >= 0 && std::string(gguf_get_val_str(g, arch)) == ARCH, "Only explicit MoEdern architecture accepted");
     const int rev = gguf_find_key(g, (std::string(ARCH) + ".source_revision").c_str());
@@ -152,14 +153,33 @@ profile read_profile(gguf_context * g, bool allow_quant) {
         for (int i = 0; i < p.layers; ++i) require(d[i] == p.conv_dilation[i], "Layer kind/dilation differs");
     }
     const auto expected = schema(p);
+    const auto declarations = padded_q4k ? moedern_q4k::declarations(g) : std::map<std::string, moedern_q4k::columns>{};
+    size_t actual_q4k = 0;
     require(gguf_get_n_tensors(g) == int64_t(expected.size()), "Exact tensor inventory required");
     for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
         const std::string name = gguf_get_tensor_name(g, i);
         const auto row = expected.find(name);
-        require(row != expected.end() && weight_type_ok(name, gguf_get_tensor_type(g, i), row->second[0], allow_quant),
-                "Unknown or non-F32 tensor");
-        require(std::equal(row->second.begin(), row->second.end(), gguf_get_tensor_ne(g, i)), "Tensor shape differs");
+        require(row != expected.end(), "Unknown or non-F32 tensor");
+        auto storage = row->second;
+        const auto type = gguf_get_tensor_type(g, i);
+        if (padded_q4k) {
+            const bool selected = quantizable(name) && moedern_q4k::compresses(storage[0]);
+            if (selected) {
+                const auto declared = declarations.find(name);
+                require(type == GGML_TYPE_Q4_K && declared != declarations.end() &&
+                            declared->second.logical == storage[0] &&
+                            declared->second.stored == moedern_q4k::storage_columns(storage[0]),
+                        "Real Q4_K/semantic columns required: " + name);
+                storage[0] = declared->second.stored;
+                ++actual_q4k;
+            } else
+                require(type == GGML_TYPE_F32 && !declarations.count(name), "Critical/narrow tensor must stay F32");
+        } else
+            require(weight_type_ok(name, type, row->second[0], allow_quant), "Unknown or non-F32 tensor");
+        require(std::equal(storage.begin(), storage.end(), gguf_get_tensor_ne(g, i)),
+                padded_q4k ? "Tensor storage shape differs" : "Tensor shape differs");
     }
+    require(!padded_q4k || (actual_q4k > 0 && actual_q4k == declarations.size()), "Q4_K declaration coverage differs");
     return p;
 }
 struct arena {
@@ -218,7 +238,8 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_gallocr_t galloc = nullptr; // fast path only: persistent graph allocator
     std::vector<uint8_t> meta;       // fast path only: graph/tensor metadata arena
-    bool fast = false;
+    bool fast = false, padded_q4k = false;
+    std::map<std::string, moedern_q4k::columns> columns;
     core_gguf::WeightLoad weights;
     profile p;
     int threads = 1;
@@ -232,12 +253,19 @@ struct context {
     ggml_tensor * get(const std::string & n) const { return weights.tensors.at(n); }
 };
 
-context * init(const char * path, int threads, std::string & failure) {
+static context * init_impl(const char * path, int threads, std::string & failure, bool padded_q4k) {
     failure.clear();
     try {
         require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") && core_env::on("CRISPEMBED_MOEDERN_COLBERT"),
                 "MoEdern family gates are OFF");
         require(path && *path && threads >= 1 && threads <= 64, "Invalid path/thread count");
+        require(!padded_q4k || (core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED") &&
+                                core_env::on("CRISPEMBED_MOEDERN_QUANT") && core_env::on("CRISPEMBED_MOEDERN_FAST")),
+                "Padded Q4_K requires explicit Q4_K/QUANT/FAST gates");
+        if (padded_q4k) {
+            const bool bounded = moedern_q4k::file_bounds(path, failure);
+            require(bounded, failure);
+        }
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         require(file && file.tellg() > 0 && file.tellg() <= 512LL * 1024 * 1024, "Bounded model file required");
         std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(core_gguf::open_metadata(path), gguf_free);
@@ -247,16 +275,40 @@ context * init(const char * path, int threads, std::string & failure) {
         const bool quant = core_env::on("CRISPEMBED_MOEDERN_QUANT");
         require(!quant || core_env::on("CRISPEMBED_MOEDERN_FAST"),
                 "CRISPEMBED_MOEDERN_QUANT requires CRISPEMBED_MOEDERN_FAST");
-        c->p = read_profile(meta.get(), quant);
+        if (padded_q4k) {
+            const auto * pin = moedern_q4k::metadata(meta.get(), failure);
+            require(pin, failure);
+            c->columns = moedern_q4k::declarations(meta.get());
+        }
+        c->p = read_profile(meta.get(), quant, padded_q4k);
+        c->padded_q4k = padded_q4k;
         c->threads = threads;
         c->backend = ggml_backend_cpu_init();
         require(c->backend && core_gguf::load_weights(path, c->backend, "moedernfamily", c->weights),
                 "F32 weight loading failed");
         for (const auto & row : schema(c->p)) {
             auto * t = c->get(row.first);
-            require(weight_type_ok(row.first, t->type, t->ne[0], quant) && ggml_is_contiguous(t) &&
-                        std::equal(row.second.begin(), row.second.end(), t->ne),
+            auto storage = row.second;
+            if (padded_q4k && c->columns.count(row.first)) storage[0] = c->columns.at(row.first).stored;
+            const auto expected_type = padded_q4k && c->columns.count(row.first) ? GGML_TYPE_Q4_K : GGML_TYPE_F32;
+            require((padded_q4k ? t->type == expected_type : weight_type_ok(row.first, t->type, t->ne[0], quant)) &&
+                        ggml_is_contiguous(t) && std::equal(storage.begin(), storage.end(), t->ne),
                     "Loaded tensor layout differs");
+            if (padded_q4k) {
+                // Bound validation scratch to one physical row, including all
+                // F32 exclusions. Reject nonfinite scales/weights before a graph.
+                const size_t row_bytes = ggml_row_size(t->type, t->ne[0]);
+                std::vector<uint8_t> encoded(row_bytes);
+                floats decoded(size_t(t->ne[0]));
+                for (int64_t i = 0; i < ggml_nrows(t); ++i) {
+                    ggml_backend_tensor_get(t, encoded.data(), size_t(i) * row_bytes, row_bytes);
+                    if (t->type == GGML_TYPE_F32)
+                        std::memcpy(decoded.data(), encoded.data(), row_bytes);
+                    else
+                        ggml_get_type_traits(t->type)->to_float(encoded.data(), decoded.data(), t->ne[0]);
+                    require(finite(decoded), "Nonfinite padded Q4_K/F32 weight: " + row.first);
+                }
+            }
         }
         if ((c->fast = core_env::on("CRISPEMBED_MOEDERN_FAST"))) {
             c->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->backend));
@@ -268,6 +320,12 @@ context * init(const char * path, int threads, std::string & failure) {
         failure = e.what();
         return nullptr;
     }
+}
+context * init(const char * path, int threads, std::string & failure) {
+    return init_impl(path, threads, failure, false);
+}
+context * init_q4k(const char * path, int threads, std::string & failure) {
+    return init_impl(path, threads, failure, true);
 }
 void free(context * ctx) {
     delete ctx;
@@ -292,6 +350,19 @@ floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t
     require(bool(owner), "Graph context failed");
     ggml_context * g = owner.get();
     auto w = [&](const std::string & n) { return ctx->get(n); };
+    auto padded_input = [&](const std::string & name, ggml_tensor * input) {
+        if (!ctx->padded_q4k || ctx->get(name)->type != GGML_TYPE_Q4_K) return input;
+        const auto & columns = ctx->columns.at(name);
+        require(input->type == GGML_TYPE_F32 && input->ne[0] == columns.logical,
+                "Q4_K logical activation width differs");
+        return moedern_q4k::pad_input(g, input, columns.logical, columns.stored);
+    };
+    auto mm = [&](const std::string & name, ggml_tensor * input) {
+        return ggml_mul_mat(g, w(name), padded_input(name, input));
+    };
+    auto mm_id = [&](const std::string & name, ggml_tensor * input, ggml_tensor * selected) {
+        return ggml_mul_mat_id(g, w(name), padded_input(name, input), selected);
+    };
     auto in = [&](ggml_type type, int64_t a, int64_t b) {
         auto * t = ggml_new_tensor_2d(g, type, a, b);
         ggml_set_input(t);
@@ -305,12 +376,12 @@ floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t
     auto rms = [&](ggml_tensor * x, const std::string & n) { return ggml_mul(g, ggml_rms_norm(g, x, EPS), w(n)); };
     std::vector<ggml_tensor *> router;
     ggml_tensor * x = ggml_get_rows(g, w("token_embd.hash.weight"), ggml_reshape_1d(g, tok, S));
-    x = ggml_mul_mat(g, w("token_embd.proj.weight"), x);
+    x = mm("token_embd.proj.weight", x);
     x = ggml_add(g, ggml_mul(g, ggml_norm(g, x, EPS), w("token_embd.norm.weight")), w("token_embd.norm.bias"));
     for (int layer = 0; layer < p.layers; ++layer) {
         const std::string b = "blk." + std::to_string(layer) + ".";
         if (const int dil = p.conv_dilation[layer]; dil > 0) {
-            auto * bcx = ggml_mul_mat(g, w(b + "conv_in.weight"), rms(x, b + "conv_norm.weight")); // [3H, S]
+            auto * bcx = mm(b + "conv_in.weight", rms(x, b + "conv_norm.weight")); // [3H, S]
             auto part = [&](int k) { return ggml_cont(g, ggml_view_2d(g, bcx, H, S, bcx->nb[1], size_t(k) * H * 4)); };
             auto * bg = rms(part(0), b + "conv_gate_b_norm.weight");
             auto * cg = rms(part(1), b + "conv_gate_c_norm.weight");
@@ -329,24 +400,24 @@ floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t
                 auto * term = ggml_mul(g, src, ggml_view_1d(g, dw, H, size_t(tap) * dw->nb[1]));
                 acc = acc ? ggml_add(g, acc, term) : term;
             }
-            x = ggml_add(g, x, ggml_mul_mat(g, w(b + "conv_out.weight"), ggml_mul(g, cg, acc)));
+            x = ggml_add(g, x, mm(b + "conv_out.weight", ggml_mul(g, cg, acc)));
             continue;
         }
         auto * n = rms(x, b + "attn_norm.weight");
         const int rope = GGML_ROPE_TYPE_NEOX; // split-half pairs (i, i + D/2), angle t / THETA^(2i/D)
-        auto * q = ggml_rope_ext(g, ggml_reshape_3d(g, ggml_mul_mat(g, w(b + "attn_q.weight"), n), D, HEADS, S), pos,
-                                 nullptr, D, rope, 0, THETA, 1.f, 0.f, 1.f, 0.f, 0.f);
-        auto * k = ggml_rope_ext(g, ggml_reshape_3d(g, ggml_mul_mat(g, w(b + "attn_k.weight"), n), D, KVH, S), pos,
-                                 nullptr, D, rope, 0, THETA, 1.f, 0.f, 1.f, 0.f, 0.f);
-        auto * v = ggml_reshape_3d(g, ggml_mul_mat(g, w(b + "attn_v.weight"), n), D, KVH, S);
+        auto * q = ggml_rope_ext(g, ggml_reshape_3d(g, mm(b + "attn_q.weight", n), D, HEADS, S), pos, nullptr, D, rope,
+                                 0, THETA, 1.f, 0.f, 1.f, 0.f, 0.f);
+        auto * k = ggml_rope_ext(g, ggml_reshape_3d(g, mm(b + "attn_k.weight", n), D, KVH, S), pos, nullptr, D, rope, 0,
+                                 THETA, 1.f, 0.f, 1.f, 0.f, 0.f);
+        auto * v = ggml_reshape_3d(g, mm(b + "attn_v.weight", n), D, KVH, S);
         q = ggml_permute(g, q, 0, 2, 1, 3);               // [D, S, HEADS]
         k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3)); // [D, S, KVH]; head h reads KV head h / (HEADS / KVH)
         auto * kq = ggml_soft_max_ext(g, ggml_mul_mat(g, k, q), kq_mask, 1.f / std::sqrt(float(D)), 0.f);
         auto * vt = ggml_cont(g, ggml_permute(g, v, 1, 2, 0, 3));            // [S, D, KVH]
         auto * heads = ggml_permute(g, ggml_mul_mat(g, vt, kq), 0, 2, 1, 3); // [D, HEADS, S]
-        x = ggml_add(g, x, ggml_mul_mat(g, w(b + "attn_output.weight"), ggml_cont_2d(g, heads, H, S)));
+        x = ggml_add(g, x, mm(b + "attn_output.weight", ggml_cont_2d(g, heads, H, S)));
         n = rms(x, b + "ffn_norm.weight");
-        auto * probs = ggml_soft_max(g, ggml_mul_mat(g, w(b + "ffn_gate_inp.weight"), n)); // [E, S]
+        auto * probs = ggml_soft_max(g, mm(b + "ffn_gate_inp.weight", n)); // [E, S]
         ggml_set_output(probs);
         router.push_back(probs);
         auto * chosen = ggml_view_2d(g, ggml_argsort(g, probs, GGML_SORT_ORDER_DESC), TOP, S,
@@ -354,20 +425,20 @@ floats encode_fast(context * ctx, const int32_t * ids, const std::vector<uint8_t
         auto * picked = ggml_reshape_2d(g, ggml_get_rows(g, ggml_reshape_3d(g, probs, 1, E, S), chosen), TOP, S);
         auto * weight = ggml_div(g, picked, ggml_add(g, ggml_sum_rows(g, picked), eps)); // p / (sum + 1e-9)
         auto * n3 = ggml_reshape_3d(g, n, H, 1, S);
-        auto * up = ggml_mul_mat_id(g, w(b + "ffn_up_exps.weight"), n3, chosen);     // [X, TOP, S]
-        auto * gate = ggml_mul_mat_id(g, w(b + "ffn_gate_exps.weight"), n3, chosen); // [X, TOP, S]
+        auto * up = mm_id(b + "ffn_up_exps.weight", n3, chosen);     // [X, TOP, S]
+        auto * gate = mm_id(b + "ffn_gate_exps.weight", n3, chosen); // [X, TOP, S]
         auto * act = ggml_mul(g, ggml_mul(g, ggml_gelu_erf(g, gate), up), ggml_reshape_3d(g, weight, 1, TOP, S));
-        auto * down = ggml_mul_mat_id(g, w(b + "ffn_down_exps.weight"), act, chosen); // [H, TOP, S]
+        auto * down = mm_id(b + "ffn_down_exps.weight", act, chosen); // [H, TOP, S]
         ggml_tensor * routed = nullptr;
         for (int i = 0; i < TOP; ++i) {
             auto * one = ggml_view_2d(g, down, H, S, down->nb[2], size_t(i) * down->nb[1]);
             routed = routed ? ggml_add(g, routed, one) : one;
         }
-        auto * shared = ggml_mul(g, ggml_gelu_erf(g, ggml_mul_mat(g, w(b + "ffn_gate_shexp.weight"), n)),
-                                 ggml_mul_mat(g, w(b + "ffn_up_shexp.weight"), n));
-        x = ggml_add(g, x, ggml_add(g, routed, ggml_mul_mat(g, w(b + "ffn_down_shexp.weight"), shared)));
+        auto * shared =
+            ggml_mul(g, ggml_gelu_erf(g, mm(b + "ffn_gate_shexp.weight", n)), mm(b + "ffn_up_shexp.weight", n));
+        x = ggml_add(g, x, ggml_add(g, routed, mm(b + "ffn_down_shexp.weight", shared)));
     }
-    x = ggml_mul_mat(g, w("dense_head.weight"), rms(x, "output_norm.weight"));
+    x = mm("dense_head.weight", rms(x, "output_norm.weight"));
     x = ggml_l2_norm(g, x, 1e-12f); // x / max(||x||, 1e-12)
     ggml_set_output(x);
     auto * graph = ggml_new_graph_custom(g, NODES, false);
@@ -422,6 +493,10 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
     try {
         require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") && core_env::on("CRISPEMBED_MOEDERN_COLBERT"),
                 "MoEdern family gates are OFF");
+        require(!ctx->padded_q4k ||
+                    (core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
+                     core_env::on("CRISPEMBED_MOEDERN_FAST")),
+                "Padded Q4_K gates are OFF");
         require(ids && supplied && count >= 3 && count <= 512 && (!query || count == 32), "Invalid input shape");
         for (size_t i = 0; i < count; ++i)
             require(ids[i] >= 0 && ids[i] < VOCAB && supplied[i] <= 1, "Invalid input id/mask");
