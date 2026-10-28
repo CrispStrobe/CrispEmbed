@@ -67,6 +67,7 @@ jobs:
           name: wasm-f32-operators-v1-raw-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/f32-operators/raw/
+            ${{ runner.temp }}/f32-operators/native-build/**/*.so*
             ${{ runner.temp }}/f32-operators/browser/packets/
             ${{ runner.temp }}/f32-operators/browser/module/
             ${{ runner.temp }}/f32-operators/control.gguf
