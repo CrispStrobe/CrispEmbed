@@ -1,5 +1,8 @@
 """Tiny stdlib adapters/source fixtures; no native execution or NumPy import."""
 import copy
+import ast
+import os
+import shutil
 import importlib.util
 import json
 from pathlib import Path
@@ -90,6 +93,8 @@ class BuildProfile(unittest.TestCase):
         kernel=(ROOT/'tools/kaggle/minicpm-ocr-graph/kernel.py').read_text()
         self.assertLess(kernel.index("profile=verify("),kernel.index("checkpoint=reference.parent.parent"))
         self.assertIn("'-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'",kernel)
+        for step in ("run(['/kaggle/temp/b/test-ultrabert-profile'])", "run(['/kaggle/temp/jq/josev-quant-controls'])"):
+            self.assertLess(kernel.index(step),kernel.index('checkpoint=reference.parent.parent'))
 
 
 class FailureEvidence(unittest.TestCase):
@@ -109,6 +114,19 @@ class FailureEvidence(unittest.TestCase):
             for key in ('ids','text','confidences'):self.assertEqual(actual[key],row[key])
             self.assertFalse(actual['passed']);self.assertIn('later projection',actual['error'])
             with self.assertRaises(ValueError):p.recover_case(folder,'tiny','f16',1,'wrong-case')
+    def test_fresh_scratch_parent_created_before_resource_observation(self):
+        source=ast.parse((ROOT/'tools/kaggle/minicpm-ocr-graph/kernel.py').read_text())
+        function=next(x for x in source.body if isinstance(x,ast.FunctionDef) and x.name=='resources')
+        module=ast.Module(body=[function],type_ignores=[]);namespace=dict(Path=Path,shutil=shutil,os=os)
+        exec(compile(ast.fix_missing_locations(module),'<isolated-resource-helper>','exec'),namespace)
+        with tempfile.TemporaryDirectory() as d:
+            folder=Path(d);scratch=folder/'new-parent'/'scratch';meminfo=folder/'meminfo'
+            meminfo.write_text('MemAvailable: 12345678 kB\n')
+            self.assertFalse(scratch.exists())
+            result=namespace['resources'](scratch,meminfo)
+            self.assertTrue(scratch.is_dir());self.assertEqual(result['mem_available'],12345678*1024)
+            self.assertGreater(result['disk_free'],0)
+
     def test_actual_timing_parser_and_error_metrics(self):
         text='  [time] minicpm_ocr.prefill 123.4ms tokens=256\n  [time] minicpm_ocr.decode steps=2 total=3.0ms mean=1.5ms p50=2.0ms max=2.0ms list=1.0,2.0\n  [time] minicpm_ocr.ids n=3 list=1,2,248046\n'
         actual=p.parse_timing(text)

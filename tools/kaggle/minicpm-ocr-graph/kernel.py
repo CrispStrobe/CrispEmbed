@@ -45,12 +45,19 @@ def run(args,timeout=1800):
     if p.returncode:raise RuntimeError('hosted command failed: '+str(number))
 
 
+def resources(scratch='/kaggle/temp', meminfo='/proc/meminfo'):
+    # A fresh Kaggle script need not have this task scratch parent yet.
+    # Creating it is reversible and must precede disk_usage/statvfs.
+    Path(scratch).mkdir(parents=True,exist_ok=True)
+    available=int(next(line.split()[1] for line in Path(meminfo).read_text().splitlines() if line.startswith('MemAvailable:')))*1024
+    return dict(mem_available=available,disk_free=shutil.disk_usage(scratch).free,cpu_count=os.cpu_count())
+
+
 try:
     assert len(COMMIT)==40 and all(c in '0123456789abcdef' for c in COMMIT),'exact source required'
-    assert shutil.disk_usage('/kaggle/temp').free >= 32*1024**3,'32GiB scratch required'
-    available=int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:')))*1024
-    assert available >= 10*1024**3,'10GiB RAM required'
-    report['resources']=dict(mem_available=available,disk_free=shutil.disk_usage('/kaggle/temp').free,cpu_count=os.cpu_count())
+    report['resources']=resources();save()
+    assert report['resources']['disk_free'] >= 32*1024**3,'32GiB scratch required'
+    assert report['resources']['mem_available'] >= 10*1024**3,'10GiB RAM required'
     refs={str(Path(p).resolve()) for p in glob.glob('/kaggle/input/**/minicpm-ocr/reference.json',recursive=True)}
     assert len(refs)==1,'one mounted original report required'
     reference=Path(refs.pop());assert sha(reference)=='aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32'
@@ -68,7 +75,13 @@ try:
     run(['/kaggle/temp/g/minicpm-graph-controls'])
     run([py,'tools/minicpm-ocr/graph_panel.py','--ref-controls','/kaggle/temp/g/minicpm-graph-diff',OUT/'ref-controls'])
     run(['cmake','-S','.','-B','/kaggle/temp/b','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON','-DCRISPEMBED_NATIVE=OFF','-DGGML_NATIVE=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF'])
-    run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','--parallel','2'],5400)
+    run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','test-ultrabert-profile','--parallel','2'],5400)
+    run(['/kaggle/temp/b/test-ultrabert-profile'])
+    # Model-free precision marker/load guards: same combined source, no extra
+    # kernel session or original/model payload, before any bulk conversion.
+    run(['cmake','-S','tests/josev-quant','-B','/kaggle/temp/jq','-DCMAKE_BUILD_TYPE=Release'])
+    run(['cmake','--build','/kaggle/temp/jq','--target','josev-quant-controls','--parallel','2'],1800)
+    run(['/kaggle/temp/jq/josev-quant-controls'])
     cli='/kaggle/temp/b/crispembed'
     symbols=subprocess.check_output(['nm','-C',cli],text=True)
     assert 'qwen35_ocr::graph_decoder::observe(' not in symbols,'production observer symbol leaked'

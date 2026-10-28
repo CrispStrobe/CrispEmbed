@@ -150,3 +150,21 @@ contraction-off, plus the actual ggml CPU C/C++ backend definitions and ISA.
 The small `build-profile.json` retains these compiler/cache observations.
 This repairs a preparation mismatch: the submodule's LLAMAFILE and OpenMP
 defaults differ from the root's. No inference result is attributed to it.
+
+
+The separate Q8 publication barrier also rejects partial, wrong-schema or
+wrong-original-revision benchmark producers. Both selected legacy Q8 arms
+(`q8_0-t4` and `q8_0-t2`) must finish all five cases with exit0, exact-ID/text
+predicates, zero original-agreement CER and correct generated/reference counts.
+That legacy producer intentionally retained predicates/counts after discarding
+the actual vectors. The publication receipt states this evidence limit instead
+of claiming an independent ID-vector rederivation. The full-ID graph panel is
+separate evidence; neither a partial initial benchmark nor a queued job can
+satisfy publication.
+
+
+The corrected shared-source worker also compiles and executes root
+`test-ultrabert-profile` and standalone `josev-quant-controls` before any
+checkpoint conversion. They are model-free precision-marker/negative-loader
+controls, not inference or qualification of those families. Their exact source
+and command logs are retained in the same run; no extra CPU session is created.
