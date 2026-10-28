@@ -971,3 +971,12 @@ the new protected source objects and auditor SHA pins, then run all14 frozen
 arms and all11 first-F16 cases on both gates, followed by actual assets and
 consumers. The current old declaration intentionally does not qualify edited
 auditors. No token/numerical/quality budget or app pin changes.
+### Frozen real-scan encoded-image audit
+
+A model-free hosted audit at source813e1ec9b813ebf0dc72c8faf5841659a024fbce
+authenticates all20 unchanged encoded inputs before comparing the exact production
+STB prefix with the original Pillow RGB decode policy. It retains pixel hashes,
+geometry, per-channel errors and codec/compiler identities. The standalone
+`ocr-rgb-input-audit-v1.yml` registration is metadata only; no pixel difference
+establishes model-error causality or quality qualification. No original model
+is rerun. Numerical attribution follows the earliest measured input boundary.
