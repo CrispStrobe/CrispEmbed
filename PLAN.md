@@ -959,3 +959,25 @@ to fill coverage. New owner corrects only nonexistent build-support path to
 actual `cmake`, and predeclares14,400-second child/6hworkflow resource bounds.
 The unchanged old worker remains historical. No new gold/cap/quality tolerance,
 original-model forward, alias or publication follows from source preparation.
+
+### GGUF standard file-type metadata — claimed correctness repair
+
+Owner `audit/gguf-standard-file-type-20261028`. The current shared writer uses
+GGML's internal file-type enum in `general.file_type`; the GGUF standard assigns
+different values for Q4_K/Q5_K/Q6_K and IQ4_NL/XS. Tensor Q4_K storage code12
+is correct and remains unchanged; standard Q4_K_S header code is14.
+Implement explicit mappings for all exposed CLI methods, retain explicit legacy
+header output only for reproduction, and admit canonical14 alongside legacy12
+only within the existing strict gated Q4 profiles. No inference arithmetic,
+weights, internal GGML enum, historical producer or default model changes.
+
+Before publication, authenticate a selected legacy model and create a fresh
+canonical copy with only the verified four-byte header change. Prove identical
+size/offsets/prefix/suffix/tensor payloads and exact old/canonical decoded/stage
+continuity on the explicitly reviewed metadata-aware runtime. Retain both whole
+SHAs and source/report lineage; never relabel an existing public immutable file.
+NEW20 activation keeps runtime/canonical model/repack proof pins closed until
+this bridge and development selection are reviewed. Actual runtime release
+versioning remains a final integration task; app0.17.12 stays pinned.
+
+[Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
