@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import time
+import types
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'tools'))
@@ -40,6 +41,82 @@ def write(path, value):
 
 def spec(path, shape):
     return dict(path=str(path), shape=list(shape), sha256=digest(path))
+
+
+def edits(a, b):
+    previous=list(range(len(b)+1))
+    for i,x in enumerate(a,1):
+        current=[i]
+        for j,y in enumerate(b,1):current.append(min(current[-1]+1,previous[j]+1,previous[j-1]+(x!=y)))
+        previous=current
+    return previous[-1]
+
+
+def first_difference(a, b):
+    return next((i for i,(x,y) in enumerate(zip(a,b)) if x!=y),None if len(a)==len(b) else min(len(a),len(b)))
+
+
+def captured(command, folder, name, env, timeout):
+    """Keep logs on timeout/termination instead of discarding capture buffers."""
+    stdout=folder/(name+'.stdout');stderr=folder/(name+'.stderr')
+    timed_out=False
+    with stdout.open('wb') as a,stderr.open('wb') as b:
+        process=subprocess.Popen(list(map(str,command)),stdout=a,stderr=b,env=env)
+        try:process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:timed_out=True;process.kill();process.wait()
+    return types.SimpleNamespace(returncode=process.returncode,stdout=stdout.read_bytes(),stderr=stderr.read_bytes(),timed_out=timed_out)
+
+TIME_RE = re.compile(r'^\s*\[time\] minicpm_ocr\.(\w+) (.*)$')
+
+
+def parse_timing(stderr):
+    t = dict(vision=[])
+    for line in stderr.splitlines():
+        m = TIME_RE.match(line)
+        if not m:
+            continue
+        name, rest = m.groups()
+        if name == 'vision':
+            kv = dict(re.findall(r'(\w+)=([\d.]+)(?:ms)?', rest))
+            size = re.search(r' (\d+)x(\d+) ', ' ' + rest + ' ')
+            t['vision'].append(dict(part=int(kv['part']), size=[int(size.group(1)), int(size.group(2))] if size else None,
+                                    patches=int(kv['patches']), tokens=int(kv['tokens']),
+                                    **{k + '_ms': float(kv[k]) for k in ('total', 'setup', 'encoder', 'projector', 'readback')}))
+        elif name == 'decode':
+            kv = dict(re.findall(r'(\w+)=([\d.]+)ms', rest))
+            steps = re.search(r'steps=(\d+)', rest)
+            lst = re.search(r'list=([\d.,]*)', rest)
+            t['decode'] = dict(steps=int(steps.group(1)), **{k + '_ms': float(v) for k, v in kv.items()},
+                               step_ms=[float(x) for x in lst.group(1).split(',') if x] if lst else [])
+        elif name == 'ids':
+            lst = re.search(r'list=([\d,]*)', rest)
+            t['ids'] = [int(x) for x in lst.group(1).split(',') if x] if lst else []
+        else:
+            ms = re.match(r'([\d.]+)ms', rest)
+            t[name + '_ms'] = float(ms.group(1)) if ms else None
+            extra = dict(re.findall(r'(\w+)=(\S+)', rest))
+            if extra:
+                t[name + '_info'] = extra
+    if t['vision']:
+        t['vision_encoder_ms'] = round(sum(v['encoder_ms'] for v in t['vision']), 3)
+        t['vision_projector_ms'] = round(sum(v['projector_ms'] for v in t['vision']), 3)
+        t['vision_total_ms'] = round(sum(v['total_ms'] for v in t['vision']), 3)
+    d = t.get('decode')
+    if d and d['step_ms']:
+        s = d['step_ms']
+        d['first_step_ms'] = s[0]
+        d['steady_mean_ms'] = round(sum(s[1:]) / max(1, len(s) - 1), 3)
+        d['step_ms_sample'] = s[:8] + (['...'] + s[-4:] if len(s) > 12 else s[8:])
+        del d['step_ms']
+    return t
+
+
+def recover_case(directory, cid, dtype, graph, error):
+    partial=Path(directory)/'partial-case.json'
+    row=json.loads(partial.read_text()) if partial.is_file() else dict(id=cid,dtype=dtype,graph=graph)
+    require((row.get('id'),row.get('dtype'),row.get('graph'))==(cid,dtype,graph),'partial case identity differs')
+    row.update(passed=False,error=str(error))
+    return row
 
 
 def source_guard(source):
@@ -138,9 +215,8 @@ def run_case(args, base, case, dtype, graph, model, output):
     for name in ['CRISPEMBED_QWEN35_IMATRIX','CRISPEMBED_QWEN35_PARALLEL_F16','CRISPEMBED_MINICPM_OCR_VISION_FLASH']:
         env.pop(name,None)
     start=time.monotonic()
-    process=subprocess.run([str(args.cli),'-m',str(model),'--ocr',str(base/(case['id']+'.png')),'--ocr-prompt',case['task'],'--ocr-max-tokens',str(MAXIMUM),'-t',str(args.threads)],capture_output=True,env=env,timeout=5400)
-    (folder/'native.stdout').write_bytes(process.stdout);(folder/'native.stderr').write_bytes(process.stderr)
-    row=dict(id=case['id'],dtype=dtype,graph=graph,exit=process.returncode,wall_seconds=time.monotonic()-start,stdout_sha256=digest(folder/'native.stdout'),stderr_sha256=digest(folder/'native.stderr'))
+    process=captured([str(args.cli),'-m',str(model),'--ocr',str(base/(case['id']+'.png')),'--ocr-prompt',case['task'],'--ocr-max-tokens',str(MAXIMUM),'-t',str(args.threads)],folder,'native',env,5400)
+    row=dict(id=case['id'],dtype=dtype,graph=graph,exit=process.returncode,wall_seconds=time.monotonic()-start,stdout_sha256=digest(folder/'native.stdout'),stderr_sha256=digest(folder/'native.stderr'),timed_out=process.timed_out,timings=parse_timing(process.stderr.decode('utf-8','replace')))
     if process.returncode:
         return dict(row,passed=False,error='native command failed before complete output')
     ids=np.load(dump/'ids.npy',allow_pickle=False).tolist()
@@ -148,9 +224,13 @@ def run_case(args, base, case, dtype, graph, model, output):
     text=process.stdout.decode('utf-8')
     if text.endswith('\n'):text=text[:-1]
     row.update(ids=ids,ids_exact=ids==case['ids'],input_ids_exact=native_input==case['input_ids'],text=text,text_exact=text==case['text'],eos=bool(ids) and ids[-1] in (248044,248046),cap_hit=len(ids)>=MAXIMUM)
+    row.update(first_input_id_difference=first_difference(native_input,case['input_ids']),first_generated_id_difference=first_difference(ids,case['ids']),characters=len(text),reference_characters=len(case['text']),cer=edits(text,case['text'])/max(1,len(case['text'])),wer=edits(text.split(),case['text'].split())/max(1,len(case['text'].split())))
+    write(folder/'partial-case.json',row)
     confidence=load_npy(dump/'confidences.npy').reshape(-1)
     require(confidence.size==len(ids) and ((confidence>=0)&(confidence<=1)).all(), 'every native confidence finite/bounded')
     row['confidences']=confidence.tolist()
+    row['mean_confidence']=float(confidence.astype('float64').mean())
+    write(folder/'partial-case.json',row)
     pairs=[]
     for i,label in enumerate([f'model.language_model.layers.{i}' for i in range(24)]+['model.language_model.norm','lm_head']):
         original=load_npy(base/case['arrays'][label]['path'])
@@ -167,12 +247,13 @@ def run_case(args, base, case, dtype, graph, model, output):
     row['prefill']=compare_pairs(pairs,args.diff,folder/'prefill')
     row['first_divergence']=next((dict(stage=i,**v) for i,v in row['prefill']['stages'].items() if not v['passed']),None)
     row['passed']=row['input_ids_exact'] and row['ids_exact'] and row['text_exact'] and row['eos']==case['eos'] and row['cap_hit']==case['cap_hit'] and row['prefill']['passed']
+    write(folder/'partial-case.json',row)
     if graph and dtype in ('f32','f16'):
         audit=folder/'projected';audit.mkdir()
         idfile=raw_spec(folder/'ids-as-exact-f32.f32',np.asarray(case['input_ids'],dtype='<f4'))
         merged=raw_spec(folder/'merged.f32',load_npy(dump/'model_merger.npy'))
         write_gguf(folder/'probe-input.gguf',[dict(name='input_ids',**idfile),dict(name='merged',**merged)])
-        probe=subprocess.run([str(args.probe),str(model),str(folder/'probe-input.gguf'),str(audit),str(args.threads)],capture_output=True,env=env,timeout=3600)
+        probe=captured([str(args.probe),str(model),str(folder/'probe-input.gguf'),str(audit),str(args.threads)],audit,'probe',env,3600)
         (audit/'probe.log').write_bytes(probe.stdout+probe.stderr)
         require(probe.returncode==0,'projected probe failed')
         journal=json.loads((audit/'projections.json').read_text());require(journal['completed'] and journal['calls']==187 and journal['ordinary_observer_repeat_exact'] and journal['cache_exact'],'projection coverage/neutrality')
@@ -188,6 +269,7 @@ def run_case(args, base, case, dtype, graph, model, output):
         row['projected']=compare_pairs(pp,args.diff,audit/'comparison')
         row['projected']['scope']=journal['sampling']
         row['projected']['stored_types']=journal['stages']
+        row['first_projected_divergence']=next((dict(weight=item['weight'],stored_type=item['stored_type'],**row['projected']['stages'][item['key']]) for item in journal['stages'] if not row['projected']['stages'][item['key']]['passed']),None)
         row['passed'] &= row['projected']['passed']
     return row
 
@@ -236,6 +318,7 @@ def main():
     try:
         report['ref_controls']=reference_controls(args.diff,args.output/'ref-controls');save()
         ref,report['original']=verify_reference(args.reference);save()
+        require(len(args.model)==4,'exact four distinct model arguments required')
         models=dict(x.split('=',1) for x in args.model)
         require(set(models)=={'f32','f16','q8_0','q4_k'},'all four fixed model arms required')
         report['models']={key:dict(bytes=Path(path).stat().st_size,sha256=digest(path),tensors=tensor_inventory(path)) for key,path in models.items()}
@@ -245,7 +328,8 @@ def main():
         for dtype,graph in [('f32',0),('f32',1),('f16',0),('f16',1),('q8_0',1),('q4_k',1)]:
             for case in ref['cases']:
                 try:row=run_case(args,args.reference,case,dtype,graph,models[dtype],args.output)
-                except Exception as error:row=dict(id=case['id'],dtype=dtype,graph=graph,passed=False,error=str(error))
+                except Exception as error:
+                    row=recover_case(args.output/f'{dtype}-graph{graph}'/case['id'],case['id'],dtype,graph,error)
                 directory=args.output/f'{dtype}-graph{graph}'/case['id']
                 directory.mkdir(parents=True,exist_ok=True)
                 inventory={str(path.relative_to(directory)):dict(bytes=path.stat().st_size,sha256=digest(path)) for path in sorted(directory.rglob('*')) if path.is_file()}

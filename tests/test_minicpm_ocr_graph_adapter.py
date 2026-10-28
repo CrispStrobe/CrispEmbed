@@ -47,6 +47,32 @@ class Adapter(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'element bound'):a.shape([248100,1024])
 
 
+class FailureEvidence(unittest.TestCase):
+    def test_timeout_preserves_real_child_output(self):
+        import os
+        with tempfile.TemporaryDirectory() as d:
+            folder=Path(d)
+            result=p.captured([sys.executable,'-c',"import sys,time;print('started',flush=True);print('before-timeout',file=sys.stderr,flush=True);time.sleep(3)"],folder,'native',os.environ,0.2)
+            self.assertTrue(result.timed_out);self.assertNotEqual(result.returncode,0)
+            self.assertIn(b'started',result.stdout);self.assertIn(b'before-timeout',result.stderr)
+            self.assertEqual(result.stdout,(folder/'native.stdout').read_bytes())
+    def test_later_structural_rejection_keeps_decoded_results(self):
+        with tempfile.TemporaryDirectory() as d:
+            folder=Path(d);row=dict(id='line',dtype='f16',graph=1,ids=[1,248046],text='kept',confidences=[.5,.8],passed=True)
+            p.write(folder/'partial-case.json',row)
+            actual=p.recover_case(folder,'line','f16',1,ValueError('later projection failure'))
+            for key in ('ids','text','confidences'):self.assertEqual(actual[key],row[key])
+            self.assertFalse(actual['passed']);self.assertIn('later projection',actual['error'])
+            with self.assertRaises(ValueError):p.recover_case(folder,'tiny','f16',1,'wrong-case')
+    def test_actual_timing_parser_and_error_metrics(self):
+        text='  [time] minicpm_ocr.prefill 123.4ms tokens=256\n  [time] minicpm_ocr.decode steps=2 total=3.0ms mean=1.5ms p50=2.0ms max=2.0ms list=1.0,2.0\n  [time] minicpm_ocr.ids n=3 list=1,2,248046\n'
+        actual=p.parse_timing(text)
+        self.assertEqual(actual['prefill_ms'],123.4);self.assertEqual(actual['ids'],[1,2,248046])
+        self.assertEqual(actual['decode']['steady_mean_ms'],2.0)
+        self.assertEqual(p.first_difference([1,2],[1,3]),1);self.assertEqual(p.first_difference([1],[1,2]),1)
+        self.assertEqual(p.edits('Grüße','Grüxe'),1);self.assertEqual(p.edits('one two'.split(),'one three'.split()),1)
+
+
 class Recipe(unittest.TestCase):
     def fixture(self):
         result={}
