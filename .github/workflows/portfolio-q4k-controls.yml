@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   precision-controls:
-    runs-on: ubuntu-24.04
+    runs-on: macos-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4

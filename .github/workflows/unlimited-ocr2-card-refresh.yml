@@ -1,0 +1,51 @@
+name: Unlimited-OCR-2 verified card-only refresh
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Reviewed exact source with committed successful four-page text verification'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: unlimited-ocr2-publish
+  cancel-in-progress: false
+jobs:
+  card-only:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stdlib controls and actual original-text gate before packages or credentials
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+        run: |
+          python - <<'PY'
+          import os, re, subprocess
+          source = os.environ['SOURCE_REF']
+          assert re.fullmatch('[0-9a-f]{40}', source), 'exact frozen source commit required'
+          assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == source
+          PY
+          python tests/test_unlimited_ocr2_publish.py -v
+          python tests/test_unlimited_ocr2_converter_tokens.py -v
+          python tools/ci-heavy/unlimited_ocr2_publish.py refresh-plan
+      - name: Metadata publication client only; no frameworks or models
+        run: python -m pip install huggingface-hub==1.33.0
+      - name: Upload exactly README and manifest, preserving old weight and notice identities
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+        run: python tools/ci-heavy/unlimited_ocr2_publish.py refresh-card "$RUNNER_TEMP/card-update"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unlimited-ocr2-card-refresh-${{ github.run_id }}
+          path: ${{ runner.temp }}/card-update/
+          retention-days: 90
+          if-no-files-found: warn
