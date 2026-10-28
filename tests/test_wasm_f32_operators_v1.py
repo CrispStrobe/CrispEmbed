@@ -164,8 +164,11 @@ class OperatorContract(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             for label in ['native', 'wasm']:
-                rows = [dict(file='/frozen/' + name, arguments=['cc', '-O3', '-fPIC', '-DGGML', '-msimd128'])
+                rows = [dict(file='/frozen/ggml-cpu/' + name, arguments=['cc', '-O3', '-fPIC', '-DGGML', '-msimd128', '-pthread'])
                         for name in ['ggml-cpu.c', 'ggml-cpu.cpp', 'vec.cpp', 'ops.cpp']]
+                if label == 'wasm':
+                    rows.append(dict(file='/frozen/ggml-cpu/arch/wasm/quants.c',
+                                     arguments=['cc', '-O3', '-fPIC', '-DGGML', '-msimd128', '-pthread']))
                 (out / ('old-' + label + '-compile.json')).write_text(json.dumps(rows))
                 (out / (label + '-build')).mkdir()
                 (out / (label + '-build/compile_commands.json')).write_text(json.dumps(rows))
@@ -176,6 +179,32 @@ class OperatorContract(unittest.TestCase):
             path.write_text(json.dumps(rows))
             with self.assertRaises(ValueError):
                 driver.compile_profile(out)
+
+    def test_frozen_wasm_selector_and_actual_architecture_controls(self):
+        source, out = Path('/frozen/source'), Path('/output')
+        wasm = driver.configuration(out, source, 'wasm')
+        native = driver.configuration(out, source, 'native')
+        self.assertEqual(wasm[0], 'emcmake')
+        self.assertIn('-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm', wasm)
+        self.assertNotIn('-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm', native)
+        with self.assertRaises(ValueError):
+            driver.configuration(out, source, 'generic')
+        rows = [dict(file='/frozen/ggml-cpu/' + name, arguments=['cc', '-O3', '-pthread', '-msimd128'])
+                for name in ['ggml-cpu.c', 'ggml-cpu.cpp', 'vec.cpp', 'ops.cpp', 'arch/wasm/quants.c']]
+        self.assertEqual(len(driver.wasm_sources(rows)), 5)
+        with self.assertRaises(ValueError):
+            driver.wasm_sources(rows[:-1])  # Actual initial build omission.
+        for flag in ['-msimd128', '-pthread']:
+            changed = copy.deepcopy(rows)
+            changed[-1]['arguments'].remove(flag)
+            with self.assertRaises(ValueError):
+                driver.wasm_sources(changed)
+        changed = copy.deepcopy(rows)
+        changed[0]['arguments'].append('-DGGML_CPU_GENERIC')
+        with self.assertRaises(ValueError):
+            driver.wasm_sources(changed)
+        with self.assertRaises(ValueError):
+            driver.wasm_sources(rows + [rows[-1]])
 
     def test_prepare_fails_before_network_outside_matching_hosted_source(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'false'}), patch.object(driver, 'api') as api:

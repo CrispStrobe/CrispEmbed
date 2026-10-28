@@ -1,0 +1,24 @@
+emcmake: cmake -S /home/runner/work/CrispEmbed/CrispEmbed/tests/wasm-f32-operators -B /home/runner/work/_temp/f32-operators/wasm-build -DCMAKE_BUILD_TYPE=Release -DFROZEN_GGML=/home/runner/work/_temp/f32-operators/source/ggml -DCMAKE_TOOLCHAIN_FILE=/home/runner/work/_temp/0ed5fae1-1390-479b-8c73-32cd22565f55/emsdk-main/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=/home/runner/work/_temp/0ed5fae1-1390-479b-8c73-32cd22565f55/emsdk-main/node/24.19.0_64bit/bin/node in directory /home/runner/work/CrispEmbed/CrispEmbed
+-- The ASM compiler identification is unknown
+-- Found assembler: /home/runner/work/_temp/0ed5fae1-1390-479b-8c73-32cd22565f55/emsdk-main/upstream/emscripten/emcc
+-- Warning: Did not find file Compiler/-ASM
+-- Setting GGML_NATIVE_DEFAULT to OFF
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: x86
+-- GGML_SYSTEM_ARCH: UNKNOWN
+-- Including CPU backend
+CMake Warning at /home/runner/work/_temp/f32-operators/source/ggml/src/ggml-cpu/CMakeLists.txt:570 (message):
+  Unknown CPU architecture.  Falling back to generic implementations.
+Call Stack (most recent call first):
+  /home/runner/work/_temp/f32-operators/source/ggml/src/CMakeLists.txt:470 (ggml_add_cpu_backend_variant_impl)
+
+
+-- Adding CPU backend variant ggml-cpu: -DGGML_CPU_GENERIC 
+-- ggml version: 0.17.0
+-- ggml commit:  a06fc0b
+-- Configuring done (3.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/runner/work/_temp/f32-operators/wasm-build

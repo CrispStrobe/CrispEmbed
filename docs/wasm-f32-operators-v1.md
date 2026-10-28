@@ -102,3 +102,30 @@ raw packets, browser module and scalar reports remain in hosted outputs.
 Prepare and review source first; check actual session capacity and cancel a
 superseded queued task before dispatch, so the same panel is not run twice.
 A changed host that cannot reproduce an own-byte anchor is a rejection.
+
+## Initial standalone build rejection
+
+The first [actual standalone run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40749050064)
+at source `52739ca5838148adf8f27f8df816ad61b7097eb2` authenticated all retained
+inputs and coefficients and completed the native build. WASM compilation
+completed, then linking rejected an undefined `quantize_row_q8_0_wasm_nearest`.
+The Emscripten configuration reported processor `x86`, so frozen GGML selected
+generic CPU sources and omitted `ggml-cpu/arch/wasm/quants.c`. No native operator,
+browser, own-byte anchor or cross-backend metric ran. This is build evidence,
+not numerical evidence.
+
+[The initial receipt](../tests/results/packaging/wasm-f32-operators-initial-build.json),
+[authenticated preparation](../tests/results/packaging/wasm-f32-operators-initial-prepared.json),
+[configure log](../tests/results/packaging/wasm-f32-operators-initial-wasm-configure.log)
+and [link log](../tests/results/packaging/wasm-f32-operators-initial-wasm-build.log)
+preserve the initial rejection and immutable small/raw artifact identities.
+The raw artifact remains remote.
+
+The bounded correction restores exactly the frozen `build-embed-wasm.sh`
+`-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm` toolchain selector. It verifies actual
+SIMD128/pthread compile records for the four CPU/operator sources and the
+architecture quantizer, rejecting omission, duplication, generic fallback or
+arithmetic-flag drift from the original compiler records. Native configuration,
+frozen GGML, all 16 operators, 64 own-byte anchors, 48 same-input comparisons
+and 0.002/0.99999 gates remain unchanged. A new hosted build and all mandatory
+anchors are still required before any numerical conclusion.

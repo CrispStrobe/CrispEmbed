@@ -1,0 +1,116 @@
+{
+  "schema": "crispembed-wasm-f32-operators-initial-build-rejection-v1",
+  "source": "52739ca5838148adf8f27f8df816ad61b7097eb2",
+  "service": {
+    "run": 40749050064,
+    "job": 123030493473,
+    "attempt": 1,
+    "path": ".github/workflows/wasm-f32-operators-v1.yml",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "review_artifact": {
+    "id": 12844328497,
+    "bytes": 16490,
+    "sha256": "efd03d27c26b024f10dd52eebc3e6254edcc09c314959063d2eb476f77146b67"
+  },
+  "raw_artifact": {
+    "id": 12845378173,
+    "bytes": 3913429,
+    "sha256": "313fe8e2dcb1210f5d5186050fc43c22fabfb3c26b4e4660e940c7cbfa460482",
+    "downloaded_for_this_review": false
+  },
+  "original_retained_input_authentication_passed": true,
+  "source_controls_passed": true,
+  "sdk_setup_passed": true,
+  "native_build_passed": true,
+  "wasm_compile_passed": true,
+  "wasm_link_passed": false,
+  "error": {
+    "stage": "wasm-build link",
+    "undefined_symbol": "quantize_row_q8_0_wasm_nearest",
+    "actual_system_processor": "x86",
+    "actual_ggml_system_arch": "UNKNOWN",
+    "actual_generic_cpu_fallback": true,
+    "missing_source": "ggml-cpu/arch/wasm/quants.c",
+    "cause": "Standalone emcmake configuration omitted frozen build-embed-wasm.sh EMSCRIPTEN_SYSTEM_PROCESSOR=wasm selector."
+  },
+  "planned_own_byte_anchors": 64,
+  "executed_own_byte_anchors": 0,
+  "planned_same_input_boundaries": 48,
+  "executed_same_input_boundaries": 0,
+  "native_operator_execution": false,
+  "browser_execution": false,
+  "numerical_conclusion": null,
+  "qualification": false,
+  "production_candidate": false,
+  "small_members": {
+    "wasm-configure.log": {
+      "bytes": 1715,
+      "sha256": "1f3ab646fac1b6c6cd434de6aa499e0b4c37aa7ff3c09a67cbf94f4c1cb22878"
+    },
+    "wasm-build.log": {
+      "bytes": 4557,
+      "sha256": "62c028d9beee7a99c161e462c2f284502be67ad160382859136db10dd76445d1"
+    },
+    "native-configure.log": {
+      "bytes": 1251,
+      "sha256": "19a4f94fca5754b69b7236d75bb7439e3f0472470511ba111949b90dcbcf77bf"
+    },
+    "native-build.log": {
+      "bytes": 13089,
+      "sha256": "af7d7a80e7504e4cfc49246e5cc3907d65ff80036268a57f96d54e06399f8059"
+    },
+    "source-submodule.log": {
+      "bytes": 349,
+      "sha256": "08fa6f0486d8866c45b413c31f08b8400615e1fa7794a4863c830a13559d1f63"
+    },
+    "source-worktree.log": {
+      "bytes": 133,
+      "sha256": "4d058d7623e5dcd0c3b3f6c9095eb1a6b79ce381b57e231903b19c6bc46f8a83"
+    },
+    "review/native-configure-command.json": {
+      "bytes": 413,
+      "sha256": "bfca7e1e395c5a78dbab1abd8f8adbdda4b098bcbfb1e4768a822239e06667e5"
+    },
+    "review/source-worktree-command.json": {
+      "bytes": 298,
+      "sha256": "ce38fc6c9f7abd8bc25a93b6574e4d56da85521947c968d22de75d381e11b4a4"
+    },
+    "review/packets.json": {
+      "bytes": 31483,
+      "sha256": "af3473cf86f3eabcc430b7b2f140192bbb3ed9fc5c280ccfa6ef4db692e69390"
+    },
+    "review/native-build-command.json": {
+      "bytes": 254,
+      "sha256": "a9a5110dc659093431e3fe40bb27db0ad0107f855666f1d54d6ab844d9020aba"
+    },
+    "review/wasm-configure-command.json": {
+      "bytes": 424,
+      "sha256": "f624f526d07d419ebc0285bb27eace964d4fee07437932da5772bf78797b92b7"
+    },
+    "review/source-submodule-command.json": {
+      "bytes": 299,
+      "sha256": "55927f8d613bbcb05ac2be67bdfaf5ff47ab2e4a3e201ea0a4c72ee850804de2"
+    },
+    "review/historical-subnodes.json": {
+      "bytes": 15881,
+      "sha256": "f7e4cb867efa8a42df438e24df7c1f47035431da3e93d2c0b33a0485940401af"
+    },
+    "review/wasm-build-command.json": {
+      "bytes": 250,
+      "sha256": "cd5f6c1a9368bc39b617b50d21d6159c3cbe13998bdd49f8f46b562abd2a9449"
+    },
+    "review/rejection-build.json": {
+      "bytes": 97,
+      "sha256": "6208f4d9d0f3d68572d19aabf9cec39cb6783932ead556e701949bada231d6fa"
+    },
+    "review/prepared.json": {
+      "bytes": 3813,
+      "sha256": "32a9f0f61246dd1e51dc3861d9017c19352cb56118ce5452e92fd184d9c74a27"
+    }
+  },
+  "correction": "Restore frozen toolchain processor selector and reject missing/duplicate architecture sources, generic fallback, SIMD/pthread changes or original compile-profile drift. No GGML/operator math or numeric gates changed.",
+  "limits": "Only 16490-byte review ZIP downloaded after service identity/size/digest checks; all original arrays, model fixture and retained native binary artifact stay remote."
+}
