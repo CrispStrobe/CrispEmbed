@@ -347,6 +347,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         src/qwen35_linear.cpp src/qwen35_delta.cpp src/qwen35_norm.cpp
         src/qwen35_positions.cpp src/qwen35_profile.cpp
         APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
+    set_property(SOURCE src/qwen35_graph_decoder.cpp APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
 endif()
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
@@ -371,7 +372,7 @@ list(APPEND CRISPEMBED_SOURCES src/lfm2_vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen35_delta.cpp src/qwen35_linear.cpp src/qwen35_attention.cpp src/qwen35_decoder.cpp src/qwen35_vision.cpp src/qwen35_norm.cpp src/qwen35_profile.cpp src/qwen35_positions.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp src/qwen35_ocr.cpp)
 # Experimental MiniCPM-OCR-1.0 (default-off: CRISPEMBED_MINICPM_OCR); reuses the qwen35 decoder.
-list(APPEND CRISPEMBED_SOURCES src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_recoder.cpp src/tesseract_dawg_score.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_dawg.cpp src/tesseract_dawg_legacy.cpp)
