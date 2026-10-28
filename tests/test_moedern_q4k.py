@@ -148,7 +148,7 @@ class Controls(unittest.TestCase):
             path.write_text(json.dumps({'stage_arrays':[]}) if url=='test-report' else 'test-model')
         cfg={'originals':{'27M':dict(kernel_slug='crispembed-moedern-27m-original',version_label='v3',
              source='f'*40,script_sha256=guard.sha(code.encode()),report_bytes=20,report_sha256='a'*64)}}
-        with tempfile.TemporaryDirectory()as directory,patch.dict(sys.modules,modules),patch.dict(m.os.environ,{'KAGGLE_ACCOUNT':'owned-test'},clear=True),patch.object(m,'hosted'),patch.object(m,'stream_file',side_effect=stream),patch.object(m,'original_inputs',side_effect=lambda *a:events.append('verified-all20')),patch.object(m.quantizer,'publication',return_value={'url':'test-model'}):
+        with tempfile.TemporaryDirectory()as directory,patch.dict(sys.modules,modules),patch.dict(m.os.environ,{'KAGGLE_ACCOUNT':'owned-test'},clear=True),patch.object(m,'hosted'),patch.object(m,'stream_file',side_effect=stream),patch.object(m,'original_inputs',side_effect=lambda *a:events.append('verified-all20')),patch.object(m.quantizer,'publication',return_value={'url':'test-model','sha256':'b'*64}):
             m.prepare('27M',Path(directory)/'inputs',cfg)
         self.assertEqual([name for name,_ in calls],['get','list','list'])
         self.assertTrue(all(request.version_label=='v3' and request.kernel_slug==cfg['originals']['27M']['kernel_slug'] for _,request in calls))

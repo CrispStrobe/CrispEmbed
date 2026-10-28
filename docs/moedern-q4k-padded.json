@@ -34,7 +34,7 @@
     "tests/moedern-q4k/controls.cpp": "3016a5bf00f27e435393220be6dfd2638cbbe14e60d65c54e049ddfcbb58be8a",
     "tests/moedern-q4k/family_control.cpp": "623e51bc8bbb17d70ed530fa28a1fc8a5dc263df6ee7612d2740422f152957eb",
     "tests/moedern-q4k/recovery.cpp": "bf9f1409c9aba4e9a34a345bd9eb8f05155f4939d0d59c7b386d7139f0ac7cae",
-    "tests/test_moedern_q4k.py": "d462b2458b2fc44ee0f8638f92ca9b1dbcd27956064dc4628fc29f9d6753865d",
+    "tests/test_moedern_q4k.py": "fda53e0d00ee0df94720666cb2a0f237c68581f19aa2564505b7201db9c47322",
     "tools/ci-heavy/moedern_q4k_padded.py": "0ec02f239f596bc676c27a897ab3ebfd56d8c02d53796e64e05d982cec6f99ec",
     "tools/moedern-colbert/q4k_contract.py": "82d307c6a3b3e60dffa2274170aaf7ed84ed28a35a772a0c66ccec3418125231",
     "tools/moedern-colbert/quantize_q4k_padded.py": "5dab1a6e98d2e0ee78e159f3dae8cbca8b79fc78b51bce217162ac7ebf546098"
