@@ -1001,3 +1001,11 @@ passing the separately declared structural/discrete/probability/old-ordinal
 development screen, then fill exact selected-model/source/report pins in the
 new held-out owner and run NEW20 once. Leave pins closed if no candidate passes;
 never tune a new precision policy after reading NEW20 native outputs.
+### MoEdern authored result receipt correction
+
+Actual27M40777203075 passes corrected archive discovery, builds and all5,483
+token-only rows; authored inference/Ref runs but duplicate `process` keyword
+assembly aborts before numerical publication. Both authored and family envelopes
+now keep separate forward/Ref child receipts and all numerical negatives.
+Next: independently reviewed corrected native/GHA closures, then model retries
+reusing exact originals; hold the unsubmitted115M source until updated.
