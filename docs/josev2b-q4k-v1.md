@@ -107,3 +107,13 @@ stdlib controls cover successful/high-and-low independent peaks, exit7, signal
 termination, process-group timeout, interruption cleanup and split stdout. No
 external timing package, model math, original output or acceptance gate changes.
 Actual corrected compilation/inference remains pending coordinator review.
+
+### Second setup rejection
+
+The [second hosted bootstrap](../tests/results/josev2b/q4k-child-controls-initial-review.json)
+passed source, isolated tooling and all eleven packer controls, then stopped
+before model access. A child-accounting test parsed the last merged log line as
+a PID; provider startup diagnostics could follow the actual PID. The corrected
+test uses one explicit PID marker and exercises noisy child stderr. It still
+checks that timeout kills the process group and reaps the measured child. No
+package is added and no model, recipe, original output or budget changes.
