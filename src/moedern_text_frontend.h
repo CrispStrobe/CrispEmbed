@@ -16,6 +16,7 @@ class text_frontend {
 public:
     bool load(const char * tokenizer_component, std::string & error);
     bool load_packed(const char * packed_gguf, std::string & error);
+    bool load_packed_q4k(const char * packed_gguf, std::string & error);
     bool encode(const std::string & text, role task, text_tokens & output, std::string & error) const;
     bool enabled() const { return enabled_; }
     // Source revision of a packed family (27M/115M) model; empty for 1.5M and
@@ -27,7 +28,7 @@ public:
     std::vector<int32_t> test_unigram(const std::string & segment) const;
 #endif
 private:
-    bool load_file(const char *, bool packed, std::string & error);
+    bool load_file(const char *, bool packed, std::string & error, bool padded_q4k = false);
     struct node {
         std::map<unsigned char, int> next;
         int id = -1;
