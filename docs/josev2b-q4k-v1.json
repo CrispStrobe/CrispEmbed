@@ -29,16 +29,21 @@
   },
   "owned_sha256": {
     "PLAN.md": "1dc3721bc0b372a1b6a610e462d0f9d108f5c73a344e19dfac04751de520e5b1",
-    "docs/josev2b-q4k-v1.md": "d69949d518260cf5f45499c81a3f588ba689da0d0e98c1878ca801df2df6751c",
+    "docs/josev2b-q4k-v1.md": "fdcdd75018730be18d94acdef9c1a9585288007c8d63aa2763ba8882e3bd6cac",
     "tests/josev-q4k/CMakeLists.txt": "e84957233668fb506f38e7d53b0cff6e22d81b10530fafbe81b5a8149040fe93",
     "tests/josev-q4k/recovery.cpp": "1afa5611fa020d3ce7446b33e4c96bf7a5d0d82eeeea6fe128e58159c83eb871",
     "tests/test_josev_q4k_packer.py": "829a2af9485fa3c4fe8ad530e02dc8f7e8026c9aa33575b088a9ba19becc3056",
     "tools/josev2b_q4k_contract.py": "26299bc2cab47436de10bf284fdfc06a6637334c21e30b616eff5dfcfd80c72c",
     "tools/kaggle/josev-q4k/kernel-metadata.json": "a9d36bc3dc32f5c6a1b3ac7cce8c99e7bf3e3295dfef941806f50021b620170b",
-    "tools/kaggle/josev-q4k/kernel.py": "bdd79a1095a821f3dddce4c53dc42a43bea90ed0fd7b10eec460767f4106df51",
+    "tools/kaggle/josev-q4k/kernel.py": "c606b2677b0bd1159ae97b3f141454f585ec400378580d01d573b5473cda0757",
     "tools/kaggle/josev-q4k/requirements.lock": "e1f086b64b454999f187e5d5a45de9f00f0fd6109be87b0f72d64f25e10b2813",
-    "tools/kaggle/josev-q4k/worker.py": "cd619c837efc0b14b7844434080cffa9022db389869154b766b76facebe766c8",
-    "tools/quantize_josev2b_q4k.py": "a8f5ca95f05f64a26049f7860317235d35a78076f3bf35da946b4c8124f9e429"
+    "tools/kaggle/josev-q4k/worker.py": "fb8480b884eb4f9fd7173f50f9587b9c77f664208b75b4af591a68329e30eada",
+    "tools/quantize_josev2b_q4k.py": "498e88957dca6139bfcf10b5ed0457b1a38f70e8c7d567425843bc4002d8df70",
+    "tests/results/josev2b/q4k-initial-setup-rejection.json": "977c3e2c9e30bc1c51e3aed2b87523d676311885b4ae4dae8c1df29fe562ef68",
+    "tests/results/josev2b/q4k-initial-bootstrap.json": "41261638bd02c1b85532ba7434a5f79c668ddd096c8268a0abe35f5129f9f31b",
+    "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
+    "tests/test_ci_process.py": "3785d7f850697682cdd2417fce2701c04c7e6f95faa6714fd4a911532274c46b",
+    "tests/results/josev2b/q4k-initial-native.json": "5e9184fbdd1f0fb6fb8a0c46b3ae924732ab38a6328cc21c9b8737520b85a8b7"
   },
   "protected_sha256": {
     ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",

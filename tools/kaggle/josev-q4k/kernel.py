@@ -39,7 +39,14 @@ def main():
             child=subprocess.Popen(list(map(str,args)),stdout=stream,stderr=subprocess.STDOUT,env=env,start_new_session=True)
             while child.poll()is None:
                 if time.monotonic()-start>timeout:
-                    os.killpg(child.pid,signal.SIGKILL);child.wait();break
+                    # Give the worker's handler time to kill/reap its own
+                    # measured child group before terminating the wrapper.
+                    try:os.killpg(child.pid,signal.SIGTERM)
+                    except ProcessLookupError:pass
+                    try:child.wait(timeout=15)
+                    except subprocess.TimeoutExpired:
+                        os.killpg(child.pid,signal.SIGKILL);child.wait()
+                    break
                 try:child.wait(timeout=30)
                 except subprocess.TimeoutExpired:print('HEARTBEAT',name,int(time.monotonic()-start),flush=True)
         report['commands'].append(dict(name=name,exit=child.returncode,seconds=time.monotonic()-start,
@@ -71,6 +78,7 @@ def main():
             '--only-binary=:all:','--require-hashes','-r',checkout/'tools/kaggle/josev-q4k/requirements.lock'],env=env)
         run('pip-check',[py,'-I','-m','pip','check'],env=env)
         run('stdlib-controls',[py,'-I',checkout/'tests/test_josev_q4k_packer.py','-v'],env=env)
+        run('child-accounting-controls',[py,'-I',checkout/'tests/test_ci_process.py','-v'],env=env)
         run('actual-model-panel',[py,'-I',checkout/'tools/kaggle/josev-q4k/worker.py','--reviewed-source',COMMIT,
             '--mount','/kaggle/input','--scratch',SCRATCH/'model','--out',OUT/'result'],timeout=4*3600,env=env)
         result=json.loads((OUT/'result/review/hosted.json').read_text())

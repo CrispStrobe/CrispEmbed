@@ -1,0 +1,88 @@
+{
+  "schema": "crispembed-josev-q4k-initial-setup-rejection-v1",
+  "source": "5234e69c75dc000b9ae1eb0f5f47c79abd50af6a",
+  "version_label": "v1",
+  "submitted_script_sha256": "f45af157c6ce6bcf1a6468ccfabd706e874a62dd44a4cb1715d371a7affd3cb1",
+  "service_status": "ERROR",
+  "earliest_failure": "worker resource preflight required absent /usr/bin/time",
+  "worker_accessed_original_arrays": false,
+  "model_payload_requested": false,
+  "native_compiled": false,
+  "inference_executed": false,
+  "numeric_conclusion": false,
+  "passed_setup_steps": [
+    "source closure",
+    "submodule checkout",
+    "SHA-locked pip and NumPy install",
+    "pip check",
+    "eleven stdlib controls"
+  ],
+  "nonterminal_warning": "sitecustomize ModuleNotFoundError wrapt; execution continued through successful setup tests",
+  "small_files": [
+    {
+      "member": "inline-version-bound-kernel.log",
+      "bytes": 2475,
+      "sha256": "db0de8a53da539cd6ea6d37eeac27ccec68ec2216d323ac1f6b1cd38afc0782c"
+    },
+    {
+      "member": "josev-q4k/actual-model-panel.log",
+      "bytes": 1038,
+      "sha256": "22623e4072cd0fed5565d99033dcccbdf29a75c53b077d0f7e25524f88266608"
+    },
+    {
+      "member": "josev-q4k/checkout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "josev-q4k/clone.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "josev-q4k/fetch-original-source.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "josev-q4k/install-locked-tools.log",
+      "bytes": 1203,
+      "sha256": "05b0c669fce3fd590457f38cacbe6672074566fe83f6a4baedf49c506c33001a"
+    },
+    {
+      "member": "josev-q4k/pip-check.log",
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    {
+      "member": "josev-q4k/result/review/hosted.json",
+      "bytes": 347,
+      "sha256": "5e9184fbdd1f0fb6fb8a0c46b3ae924732ab38a6328cc21c9b8737520b85a8b7"
+    },
+    {
+      "member": "josev-q4k/setup.json",
+      "bytes": 2490,
+      "sha256": "41261638bd02c1b85532ba7434a5f79c668ddd096c8268a0abe35f5129f9f31b"
+    },
+    {
+      "member": "josev-q4k/source-closure.log",
+      "bytes": 33497,
+      "sha256": "8d00c39ee64a09bbd2448356853a262485855eea2fb37112122f5acd6b83656b"
+    },
+    {
+      "member": "josev-q4k/stdlib-controls.log",
+      "bytes": 1624,
+      "sha256": "b2ea0c96ab9373c10d71382779a10c0070ed8e45ea39ac1bc319e2401777a8e5"
+    },
+    {
+      "member": "josev-q4k/submodule.log",
+      "bytes": 345,
+      "sha256": "3061e1e0952c06e3eef2ba9c2ce2a55164679ab4a327cc8de47cb2be32a81f29"
+    }
+  ],
+  "limits": [
+    "Only bounded JSON/log outputs were collected; no model or raw arrays were downloaded to the source host.",
+    "Original v5 and all quality/numerical gates remain unchanged.",
+    "Private access references and raw remote-log access stay in ignored operator continuity."
+  ]
+}
