@@ -28,6 +28,8 @@ items remain pending; no new release/app pin until actual final consumers qualif
 | --- | --- | --- |
 | `feat/josev-q4k-qualification-20261028` (delegated coordinator subtask) | Protected Josev packed Q4_K converter and hosted replay | Pin immutable published F32 and frozen original v5; preserve critical F32 bytes and exact442 semantic shapes, run strict227-stage/four-answer F32 control before Q4 diagnostics, keep publication false pending independent task quality. No local model/build execution or dispatch from source preparation. |
 | `test/moedern-scifact-native-q4k-20261028` (delegated coordinator subtask) | Full native/F32 and padded-Q4_K SciFact replay | Authenticate reviewed original streams/rankings before payloads; all5483 IDs/three masks/expansion, strict F32 vectors and eight Ref shards, old authored/public consumers and full300-query ranking gates. No original rerun or numeric-gate waiver; pending original variants reject before models. |
+| `audit/josev-mixed-recipes-20261028` | Three source-frozen role-based Josev mixed-precision development recipes | Strict original four-case F32 control precedes A/B/C; all attention F16, progressively protected FFN down/early gate-up, all292 critical F32 bytes exact. Preserve full150-Q4 negative; no new20 holdout outputs/selection or publication from this development panel. Source-only preparation, hosted execution after review. |
+| `feat/josev-q4k-qualification-20261028` (delegated coordinator subtask) | Protected Josev packed Q4_K converter and hosted replay | Pin immutable published F32 and frozen original v5; preserve critical F32 bytes and exact442 semantic shapes, run strict227-stage/four-answer F32 control before Q4 diagnostics, keep publication false pending independent task quality. No local model/build execution or dispatch from source preparation. |
 | `audit/wasm-q8k-cross-admission-20261028` | Test-only retained natural-input IQ4_XS/Q8_K workspace causal A/B | Freeze saved GELU/workspace/scales/output hashes before intervention; same-backend and browser anchors, actual Ref and independent magnitudes precede any production/F32-branch proposal. No model/original rerun or gate widening. |
 | `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
 | `audit/wasm-f32-operator-attribution-20261028` | New same-input norm/flash/GELU/residual/affine replay from retained layer3 arrays | Preserve frozen580/a06, all old failures and unchanged0.002/0.99999; actual native/browser own-input outputs must reproduce captured bytes before operator attribution. No repeated quantized-projection panel or production/default change. |
@@ -1030,3 +1032,19 @@ URL path when no explicit retained input is supplied. Keep prior invalid rows,
 source-qualified partial scopes and all manifest/gold/prompt/cap bytes unchanged.
 
 The separately versioned form protocol is prepared in [ocr-rgb-form-v1.json](docs/ocr-rgb-form-v1.json). Its14 source/stdlib controls preserve the original decoder/build/metric functions and pin the19 carried comparisons; no new decode or model outcome is claimed before hosted execution.
+### Retained MiniCPM analysis and form continuation registered
+
+Mini source19c3f7bdf6d452614721946adefb95f6d3cf0180 passes11 independent
+small controls and429 protected/11 owned source checks. First dispatch only
+`minicpm-graph-retained-analysis-v1.yml` with that explicitsource: retained
+vision/merger actualRef, zero model weights/forwards. Review completion before
+activating the separately registered seven-arm workflow. No23-arm recapture,
+original forward or numerical waiver. Canonical cap12GiB/reserve4GiB, atomic
+receipts and whole-file reconstruction precede adapter cleanup.
+
+Form source535c10fceac28ec04401b7f6a57a027e1be9bbc9 passes14 controls and
+25 protected/nine owned source checks. `ocr-rgb-form-v1.yml` retrieves the exact
+reviewed original form image by explicit-version service/source/member proofs,
+then decodes only that form. Carry initial19 comparisons separately; no19-image
+or original-model recapture. The native retained-input helper changes delivery
+only, never manifest, pixels, prompt, caps, scorer or inference.
