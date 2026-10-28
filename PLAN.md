@@ -914,3 +914,14 @@ Use the unchanged manifest SHA and byte count with admission before inference.
 Preserve earlier bad-image rows outside eligible denominators. Reuse the valid
 Unlimited original output; capture only the missing MiniCPM original and
 corresponding native form cases, rather than repeating all original pages.
+
+### MoEdern full retrieval: initial 1.5M build correction
+
+Original admission and root compilation passed; replay configuration failed
+before model access because the default CPU archive search used the backend
+source subdirectory instead of its actual build-target directory. The exact
+search correction is recorded in `docs/moedern-scifact-native-q4k-v1.md`.
+Next: reviewed corrected 1.5M hosted retry, separately pinned 27M GHA adapter,
+then115M; reuse every frozen original and preserve all numerical/task gates.
+The initial27M GHA submission was cancelled while queued to avoid repeating
+this known setup failure. Neither result qualifies any model.
