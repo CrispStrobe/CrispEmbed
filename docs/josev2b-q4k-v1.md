@@ -1,7 +1,7 @@
 # Protected Josev packed Q4_K experiment
 
 This is source preparation for one hosted CPU experiment. It is default-off,
-unexecuted and unqualified. The original v5 reference, all F32 loaders, public
+with model inference unexecuted and unqualified. The original v5 reference, all F32 loaders, public
 bindings and existing source guards stay unchanged. No release, app pin, model
 publication or task-quality result follows from a converted file.
 
@@ -82,3 +82,28 @@ installed. Source/stdlib tests are suitable for a constrained development host;
 all compilation, model downloads and inference belong on hosted infrastructure.
 The source template performs no submission. Check all account jobs and the
 five-session limit before any future approved dispatch.
+
+## Initial hosted setup rejection and corrected accounting
+
+The first actual v1 at source `5234e69c75dc000b9ae1eb0f5f47c79abd50af6a`
+[stopped at resource preflight](../tests/results/josev2b/q4k-initial-setup-rejection.json):
+the CPU image has no `/usr/bin/time`. Source/submodule checks, locked pip/NumPy,
+pip check and all eleven stdlib tests passed. The earlier `wrapt` sitecustomize
+warning was nonterminal. The worker had not read original arrays, compiled the
+probe, requested the published model or run inference. The exact small
+[worker receipt](../tests/results/josev2b/q4k-initial-native.json) and
+[bootstrap receipt](../tests/results/josev2b/q4k-initial-bootstrap.json) remain
+unchanged, with log identities retained separately. This supplies no numerical
+or model-quality conclusion.
+
+The correction uses [Linux per-child wait4](../tools/ci_process.py), with wall
+time measured by a monotonic clock and `ru_maxrss` converted from KiB to bytes.
+The direct child is reaped once by wait4; no Popen poll/wait or cumulative
+RUSAGE_CHILDREN peak consumes its resource record. Timeouts kill the process
+group and reap the direct child; worker termination allows cleanup before the
+outer deadline kills the wrapper. Per-child peak RSS is the largest-process
+metric, not the simultaneous memory sum of a compiler process tree. Five tiny
+stdlib controls cover successful/high-and-low independent peaks, exit7, signal
+termination, process-group timeout, interruption cleanup and split stdout. No
+external timing package, model math, original output or acceptance gate changes.
+Actual corrected compilation/inference remains pending coordinator review.

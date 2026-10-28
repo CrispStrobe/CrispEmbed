@@ -12,6 +12,7 @@ import platform
 import re
 import shutil
 import site
+import signal
 import subprocess
 import sys
 import time
@@ -22,6 +23,7 @@ sys.path.insert(0,str(ROOT/'tools'))
 import josev2b_q4k_contract as closure
 import quantize_josev2b_q4k as packer
 import josev2b_composed_panel as panel
+from ci_process import run as run_child
 
 GATES=('CRISPEMBED_JOSEV_COMPOSED','CRISPEMBED_JOSEV_BACKBONE','CRISPEMBED_QWEN35_OCR',
        'CRISPEMBED_JOSEV_HEAD','CRISPEMBED_JOSEV_TEXT_FRONTEND','CRISPEMBED_JOSEV_ANSWER_SERIALIZER',
@@ -37,7 +39,7 @@ def write(path,value):
 def resources(scratch):
     packer.hosted()
     require(platform.system()=='Linux'and platform.machine()=='x86_64','bounded Linux x64 CPU task required')
-    require(Path('/usr/bin/time').is_file(),'GNU time must be present before packages/model access')
+    require(hasattr(os,'wait4'),'Linux wait4 accounting must be present before model access')
     available=int(next(row.split()[1]for row in Path('/proc/meminfo').read_text().splitlines()if row.startswith('MemAvailable:')))*1024
     disk=shutil.disk_usage(scratch).free
     require(available>=14*2**30 and disk>=24*2**30 and os.cpu_count()>=2,'need14GiB available RAM/24GiB disk/two CPUs before model access')
@@ -45,14 +47,10 @@ def resources(scratch):
 
 
 def command(args,log,env=None,*,allowed=(0,),timeout=2400):
-    start=time.monotonic();timing=log.with_name(log.name+'.time')
-    with log.open('w')as stream:
-        child=subprocess.run(['/usr/bin/time','-f','maximum_rss_kib=%M','-o',str(timing),*map(str,args)],
-                             cwd=ROOT,env=env,stdout=stream,stderr=subprocess.STDOUT,timeout=timeout)
-    measured=re.search(r'^maximum_rss_kib=([0-9]+)$',timing.read_text(),re.M)
-    require(measured is not None,'per-process memory metric missing')
-    result=dict(exit=child.returncode,seconds=time.monotonic()-start,maximum_rss_kib=int(measured[1]),log=log.name,sha256=closure.sha(log))
-    require(child.returncode in allowed,'process/structural rejection in '+log.name)
+    result=run_child(args,log,cwd=ROOT,env=env,timeout=timeout)
+    result.update(log=log.name,sha256=closure.sha(log))
+    write(log.with_name(log.name+'.process.json'),result)
+    require(not result['timed_out']and result['exit']in allowed,'process/structural rejection in '+log.name)
     return result
 
 
@@ -227,6 +225,8 @@ def main(args):
 
 
 if __name__=='__main__':
+    def terminate(_signal,_frame):raise RuntimeError('hosted worker termination requested')
+    signal.signal(signal.SIGTERM,terminate)
     p=argparse.ArgumentParser();p.add_argument('--reviewed-source',required=True)
     for name in ('mount','scratch','out'):p.add_argument('--'+name,type=Path,required=True)
     main(p.parse_args())
