@@ -198,11 +198,29 @@ def arithmetic_flags(row):
     return sorted(arg for arg in argv if arg == '-pthread' or arg.startswith(('-D', '-m', '-f', '-O')))
 
 
+def wasm_sources(rows):
+    """Reject the actual generic-CPU omission before trusting a new build."""
+    names = ['ggml-cpu.c', 'ggml-cpu.cpp', 'vec.cpp', 'ops.cpp', 'arch/wasm/quants.c']
+    observations = {}
+    for name in names:
+        suffix = '/ggml-cpu/' + name
+        matches = [row for row in rows if row['file'].replace('\\', '/').endswith(suffix)]
+        require(len(matches) == 1, 'Exact WASM CPU source missing/duplicated: ' + name)
+        flags = arithmetic_flags(matches[0])
+        require('-pthread' in flags and '-msimd128' in flags and
+                not any(flag.startswith('-DGGML_CPU_GENERIC') for flag in flags),
+                'Actual WASM SIMD/pthread architecture differs: ' + name)
+        observations[name] = flags
+    return observations
+
+
 def compile_profile(out):
     observed = {}
     for label in ['native', 'wasm']:
         old = json.loads((out / ('old-' + label + '-compile.json')).read_text())
         new = json.loads((out / (label + '-build/compile_commands.json')).read_text())
+        if label == 'wasm':
+            require(wasm_sources(old) == wasm_sources(new), 'Exact old/new WASM SIMD/pthread profiles differ')
         rows = []
         for basename in ['ggml-cpu.c', 'ggml-cpu.cpp', 'vec.cpp', 'ops.cpp']:
             a = [r for r in old if Path(r['file']).name == basename]
@@ -211,6 +229,17 @@ def compile_profile(out):
             rows.append(dict(file=basename, old=a[0], current=b[0], arithmetic_flags=arithmetic_flags(b[0])))
         observed[label] = rows
     return observed
+
+
+def configuration(out, source, label):
+    require(label in ['native', 'wasm'], 'Explicit native/WASM build required')
+    arguments = ['cmake', '-S', ROOT / 'tests/wasm-f32-operators', '-B', out / (label + '-build'),
+                 '-DCMAKE_BUILD_TYPE=Release', '-DFROZEN_GGML=' + str(source / 'ggml')]
+    if label == 'wasm':
+        # Exact frozen580 build-embed-wasm.sh selector. Emscripten otherwise
+        # reports x86, which skips a06's arch/wasm/quants.c source list.
+        arguments = ['emcmake', *arguments, '-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm']
+    return arguments
 
 
 def build(out):
@@ -222,9 +251,7 @@ def build(out):
     require(git(source, 'rev-parse', 'HEAD') == BASE and git(source / 'ggml', 'rev-parse', 'HEAD') == GGML and
             not git(source, 'status', '--porcelain') and not git(source / 'ggml', 'status', '--porcelain'), 'Frozen source closure differs')
     for label in ['native', 'wasm']:
-        prefix = ['emcmake'] if label == 'wasm' else []
-        command(prefix + ['cmake', '-S', ROOT / 'tests/wasm-f32-operators', '-B', out / (label + '-build'),
-                         '-DCMAKE_BUILD_TYPE=Release', '-DFROZEN_GGML=' + str(source / 'ggml')], out, label + '-configure')
+        command(configuration(out, source, label), out, label + '-configure')
         command(['cmake', '--build', out / (label + '-build'), '--parallel', '2'], out, label + '-build', 1800)
     save(out / 'review/compile-profile.json', compile_profile(out))
     for label in ['native', 'wasm']:
