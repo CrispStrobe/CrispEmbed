@@ -19,7 +19,7 @@ from adapter import write_pair, write_gguf, collect
 from wasm_layer3_attribution_v1 import layer_rows
 from successor_wasm_trace_contract import (gguf, FIXTURE_ID, FIXTURE_BYTES, FIXTURE_SHA,
     INITIAL_RUN, INITIAL_SOURCE, NATIVE_REPORT_SHA)
-from successor_assets import api, artifact
+from hosted import api, artifact, identity, verify_service
 from josev2b_composed_panel import metrics
 
 SPEC = ROOT / 'docs/wasm-f32-operators-v1.json'
@@ -34,9 +34,12 @@ def git(root, *args):
     return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
 
 
+def source_identity():
+    return identity(git(ROOT, 'rev-parse', 'HEAD'))
+
+
 def hosted():
-    require(os.environ.get('GITHUB_ACTIONS') == 'true' and
-            git(ROOT, 'rev-parse', 'HEAD') == os.environ.get('GITHUB_SHA'), 'Hosted exact source required')
+    source_identity()
     spec = json.loads(SPEC.read_text())
     require(spec['base'] == BASE and spec['ggml'] == GGML and spec['trace_report_sha256'] == TRACE_REPORT and
             spec['gates'] == {'max_absolute': .002, 'minimum_row_cosine': .99999} and
@@ -76,12 +79,16 @@ def download(run, name, path, expected):
 def prepare(out):
     hosted()
     out.mkdir(parents=True, exist_ok=False)
-    proof = dict(source=os.environ['GITHUB_SHA'], protocol_sha256=digest(SPEC),
+    current_identity = source_identity()
+    proof = dict(source=current_identity['source'], protocol_sha256=digest(SPEC),
                  qualification=False, services={}, artifacts={})
-    current = api('actions/runs/' + os.environ['GITHUB_RUN_ID'])
-    require(current['head_sha'] == os.environ['GITHUB_SHA'] and current['run_attempt'] == int(os.environ['GITHUB_RUN_ATTEMPT']),
-            'Current hosted source/attempt differs')
-    proof['service'] = {k: current[k] for k in ['id', 'head_sha', 'path', 'event', 'run_attempt']}
+    if current_identity['provider'] == 'GitHub Actions':
+        current = api('actions/runs/' + os.environ['GITHUB_RUN_ID'])
+        require(current['head_sha'] == current_identity['source'] and current['run_attempt'] == int(os.environ['GITHUB_RUN_ATTEMPT']),
+                'Current hosted source/attempt differs')
+        proof['service'] = dict(provider='GitHub Actions', **{k: current[k] for k in ['id', 'head_sha', 'path', 'event', 'run_attempt']})
+    else:
+        proof['service'] = current_identity
     proof['services']['trace'] = service(TRACE_RUN, TRACE_SOURCE, 'success')
     prefix = 'wasm-layer3-attribution-v1-'
     proof['artifacts']['review'] = download(TRACE_RUN, prefix + 'review-' + str(TRACE_RUN), out / 'old-review.zip', REVIEW)
@@ -175,9 +182,9 @@ def prepare(out):
 
 def prepared(out):
     proof = json.loads((out / 'review/prepared.json').read_text())
-    require(proof['source'] == os.environ['GITHUB_SHA'] and proof['protocol_sha256'] == digest(SPEC) and
-            proof['service']['id'] == int(os.environ['GITHUB_RUN_ID']) and
-            proof['service']['run_attempt'] == int(os.environ['GITHUB_RUN_ATTEMPT']) and
+    current = source_identity()
+    verify_service(proof['service'], current)
+    require(proof['source'] == current['source'] and proof['protocol_sha256'] == digest(SPEC) and
             proof['qualification'] is False and proof['packets_sha256'] == digest(out / 'browser/packets.json') and
             digest(out / 'old-review.zip') == REVIEW['sha256'] and digest(out / 'old-raw.zip') == RAW['sha256'] and
             digest(out / 'fixture.zip') == FIXTURE_SHA, 'Authenticated preparation chain changed')
@@ -373,7 +380,7 @@ def compare(out):
     (out / 'ref.log').write_bytes(result.stdout + result.stderr)
     cpp = collect(result.returncode, out / 'review/ref.json', independent)
     save(out / 'review/operators.json', dict(schema='crispembed-wasm-f32-operators-v1',
-        state='attribution-complete', completed=True, source=os.environ['GITHUB_SHA'],
+        state='attribution-complete', completed=True, source=source_identity()['source'],
         service=json.loads((out / 'review/prepared.json').read_text())['service'], base=BASE, ggml=GGML,
         original_run=TRACE_RUN, own_anchors=anchors, compared_same_input_boundaries=len(pairs),
         cpp=cpp, independent=independent, adapters=adapters, qualification=False,

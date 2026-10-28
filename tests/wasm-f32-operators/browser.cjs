@@ -2,9 +2,14 @@
 // Real isolated browser + SIMD/pthread module. No model or complete encoder.
 const fs=require('fs'),path=require('path'),http=require('http'),crypto=require('crypto');
 const {chromium}=require('playwright');
-if(process.env.GITHUB_ACTIONS!=='true')throw new Error('Hosted browser only');
+const kaggle=fs.existsSync('/kaggle/working')&&fs.existsSync('/kaggle/input')&&
+ ['Batch','Interactive'].includes(process.env.KAGGLE_KERNEL_RUN_TYPE)&&
+ /^[0-9a-f]{40}$/.test(process.env.CRISPEMBED_CAPTURE_SOURCE||'')&&
+ /^[0-9a-f]{64}$/.test(process.env.CRISPEMBED_BOOTSTRAP_SHA||'');
+if(process.env.GITHUB_ACTIONS!=='true'&&!kaggle)throw new Error('Hosted browser only');
 const root=path.resolve(process.argv[2]),browserRoot=path.join(root,'browser');
-const report={completed:false,isolated:false,pthreads:false,page_errors:[],outputs:{}};
+const report={completed:false,provider:process.env.GITHUB_ACTIONS==='true'?'GitHub Actions':'Kaggle CPU',
+ isolated:false,pthreads:false,page_errors:[],outputs:{}};
 const save=()=>fs.writeFileSync(path.join(browserRoot,'report.json'),JSON.stringify(report,null,2)+'\n');
 const packets=JSON.parse(fs.readFileSync(path.join(browserRoot,'packets.json')));
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');

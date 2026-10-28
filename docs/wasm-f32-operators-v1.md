@@ -84,3 +84,21 @@ separately. It builds GGML only with two workers on hosted Linux, retains review
 and raw artifacts for90 days, and downloads no model framework. All source,
 operator inputs, compiler commands, commands/log hashes and new raw outputs are
 retained remotely. Download only needed small reports for review.
+
+## Genuine hosted CPU fallback
+
+`tools/kaggle/wasm-f32-operators/kernel.py` can replay the same retained
+operators when Actions is queued. Render one immutable source and attach the
+authorized artifact-read credential privately. The bootstrap checks CPU-only
+resources, reports its actual provider and script SHA, and never sets GitHub
+service variables. Frozen original service/artifact/member checks, compiler
+profiles, 64 own byte anchors and 48 cross-backend comparisons are unchanged.
+No original model forward is repeated.
+
+The fallback pins SDK 6.0.2 at
+`ca38f487f28b7c3c16f8f70cd0e012099ac4b7e2`, its dependency manifest, official
+Node 22.16.0 archive SHA, Playwright 1.56.0 and NumPy 2.2.6. Native libraries,
+raw packets, browser module and scalar reports remain in hosted outputs.
+Prepare and review source first; check actual session capacity and cancel a
+superseded queued task before dispatch, so the same panel is not run twice.
+A changed host that cannot reproduce an own-byte anchor is a rejection.

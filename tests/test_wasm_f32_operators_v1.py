@@ -1,5 +1,6 @@
 """Small source/stdlib fixtures; no vectors, model, framework or compiler."""
 import copy
+import io
 import importlib.util
 import json
 import os
@@ -10,11 +11,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import zipfile
+import urllib.error
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools/wasm-f32-operators'))
 import contract
 import adapter
+import hosted as provider
 spec = importlib.util.spec_from_file_location('f32_driver', ROOT / 'tools/ci-heavy/wasm_f32_operators_v1.py')
 driver = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(driver)
@@ -33,6 +36,50 @@ def fixtures():
 
 
 class OperatorContract(unittest.TestCase):
+    def test_preparation_rechecks_provider_source_script_and_attempt(self):
+        current=dict(provider='Kaggle CPU',source='a'*40,kernel_run_type='Batch',executed_script_sha256='b'*64)
+        provider.verify_service(dict(current),current)
+        for key in current:
+            changed=dict(current);changed[key]='changed'
+            with self.assertRaises(ValueError):provider.verify_service(changed,current)
+        gha=dict(provider='GitHub Actions',source='a'*40)
+        record=dict(provider='GitHub Actions',head_sha='a'*40,id=123,run_attempt=1)
+        with patch.dict(os.environ,dict(GITHUB_RUN_ID='123',GITHUB_RUN_ATTEMPT='1')):
+            provider.verify_service(record,gha)
+            for key,value in [('provider','Kaggle CPU'),('head_sha','c'*40),('id',124),('run_attempt',2)]:
+                changed=dict(record);changed[key]=value
+                with self.assertRaises(ValueError):provider.verify_service(changed,gha)
+
+    def test_genuine_provider_identity_without_github_impersonation(self):
+        source='a'*40
+        with patch.dict(os.environ,{},clear=True),patch.object(Path,'is_dir',return_value=True):
+            with self.assertRaises(ValueError):provider.identity(source)
+            with patch.dict(os.environ,dict(KAGGLE_KERNEL_RUN_TYPE='Batch',CRISPEMBED_CAPTURE_SOURCE=source,
+                                           CRISPEMBED_BOOTSTRAP_SHA='b'*64)):
+                self.assertEqual(provider.identity(source)['provider'],'Kaggle CPU')
+                with self.assertRaises(ValueError):provider.identity('c'*40)
+                with patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_SHA':'c'*40}):
+                    with self.assertRaises(ValueError):provider.identity(source)
+            with patch.dict(os.environ,{'GITHUB_ACTIONS':'true','GITHUB_SHA':source}):
+                self.assertEqual(provider.identity(source)['provider'],'GitHub Actions')
+
+    def test_storage_redirect_does_not_receive_api_authorization(self):
+        data=b'zip bytes';row=dict(id=5,name='frozen',expired=False,size_in_bytes=len(data),
+            digest='sha256:'+contract.sha(data),workflow_run=dict(id=7))
+        redirect=urllib.error.HTTPError('https://api.github.com/artifact',302,'redirect',
+            {'Location':'https://signed.example/artifact'},None)
+        with tempfile.TemporaryDirectory()as tmp,patch.dict(os.environ,{'GH_TOKEN':'test-only'}),\
+             patch.object(provider,'api',return_value=dict(total_count=1,artifacts=[row])),\
+             patch.object(provider.urllib.request,'build_opener')as opener,\
+             patch.object(provider.urllib.request,'urlopen',return_value=io.BytesIO(data))as storage:
+            opener.return_value.open.side_effect=redirect
+            result=provider.artifact(7,'frozen',Path(tmp)/'artifact.zip',1024)
+            self.assertEqual(result['id'],5)
+            storage.assert_called_once_with('https://signed.example/artifact',timeout=180)
+            request=opener.return_value.open.call_args.args[0]
+            self.assertEqual(request.get_header('Authorization'),'Bearer test-only')
+            self.assertIsNone(opener.call_args.args[0].redirect_request(None,None,None,None,None,None))
+
     def test_exact64_own_anchors(self):
         packets, outputs = fixtures()
         proof = contract.own_anchors(packets, outputs)
