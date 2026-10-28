@@ -16949,3 +16949,14 @@ It validates and preserves the complete lock before installation, checks isolate
 prefixes, then verifies exact installed metadata and actual loaded module versions
 before the unchanged CUDA/source barriers and original worker. This is prepared
 source only; no fourth GPU attempt is submitted by this change.
+
+### Retained-input WASM F32 operators — 28 October 2026
+
+[Actual40771950208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40771950208)
+at2f864d4be passes64 own-output byte anchors and48 actualRef/independent
+comparisons at unchanged0.002/0.99999. Worst absolute error1.90735e-6;38/48
+are bit exact. [Independent receipt](tests/results/packaging/wasm-f32-operators-v1.json)
+records30 authenticated small members, compiler/source proofs and repeat controls.
+Ten small differences can contribute to later composed drift; earlier
+whole-model failures/default-off disposition remain. Next is natural-input
+Q8_K workspace cross-admission, not a repeat of12 same-input quant projections.
