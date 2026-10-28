@@ -131,3 +131,20 @@ on all transfer errors, a1200-second retry window,600-second per-attempt limit
 and30-second connect timeout. Final complete-file size/SHA checks are unchanged;
 partial downloads supply no fallback or positive evidence. The earlier producer,
 logs, input/gold and numerical gates remain unchanged.
+
+## Exact vocabulary axes and retained decoder result
+
+The [second mixed-Q4 attempt](../tests/results/unlimited-ocr2/mixed-q4k-vocabulary-initial-review.json)
+verified the full published F16 file and completed one146-token paragraph in
+ordinary/plain/observed modes with exact original IDs/raw text. It then stopped
+before any numeric Ref comparison or Q4 candidate: a rounded129000-axis bound
+excluded the actual129280-logit head. The corrected adapter now requires the
+exact `[1,1,129280]` shape from the pinned Python blueprint; all58 stages and
+the64MiB per-stage bound remain required. No inference math or budget changes.
+
+The independent [retained decoder review](../tests/results/unlimited-ocr2/real-decoder-replay-review.json)
+is complete: all20 original raw strings, all40 independent cleanup outputs and
+all831 added tokens match. All11 eligible ID-identical pairs now have identical
+raw text;14 of19 eligible pairs have identical clean strings. Eight raw-ID
+differences and the earlier invalid image stay visible. No original forward
+was repeated, and this decoder-only result does not qualify whole-model OCR.

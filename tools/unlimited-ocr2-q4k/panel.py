@@ -79,6 +79,17 @@ def task_quality(actual, reference):
                 table_body_exact=body)
 
 
+def stage_axes(name, value):
+    # Pinned embedding/head width from the Python inference blueprint, not the
+    # smaller number of tokenizer entries or a rounded allocation estimate.
+    require(isinstance(value, list) and len(value) == 3 and
+            all(type(x) is int and 0 < x <= 129280 for x in value), 'Explicit bounded C-order axes')
+    require(math.prod(value) * 4 <= 64 * 1024**2, 'Observed stage exceeds64MiB')
+    if name == 'logits':
+        require(value == [1, 1, 129280], 'Exact published vocabulary output axes required')
+    return value
+
+
 def stage_manifest(directory):
     rows = {}
     journal = directory / 'stages.jsonl'
@@ -88,9 +99,7 @@ def stage_manifest(directory):
         name = row['name']
         require(name not in rows and re.fullmatch(r'[a-z0-9_]+', name), 'Unique safe stage key required')
         require(Path(row['file']).name == row['file'] and row['type'] in ('f32', 'i32'), 'Safe typed raw member required')
-        shape = row['shape']
-        require(len(shape) == 3 and all(type(x) is int and 0 < x <= 129000 for x in shape), 'Explicit bounded C-order axes')
-        require(math.prod(shape) * 4 <= 64 * 1024**2, 'Observed stage exceeds64MiB')
+        shape = stage_axes(name, row['shape'])
         path = directory / row['file']
         require(not path.is_symlink() and path.stat().st_size == math.prod(shape) * 4, 'Stage extent differs')
         if row['type'] == 'f32':
@@ -105,7 +114,7 @@ def stage_manifest(directory):
     require(tokens <= 2048 and all(rows[f'layer_{layer}_chunk_0']['shape'] == [tokens, 1, 1280]
                                   for layer in range(12)), 'Full12-layer prefill coverage/axes differ')
     require(rows['final_norm']['shape'] == [1, 1, 1280] and
-            rows['logits']['shape'][:2] == [1, 1] and rows['logits']['shape'][2] >= 128831,
+            rows['logits']['shape'] == [1, 1, 129280],
             'Final norm/vocabulary output axes differ')
     for layer in range(1, 12):
         key = f'layer_{layer}_chunk_0'

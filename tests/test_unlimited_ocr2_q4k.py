@@ -46,6 +46,13 @@ def candidate(source, recipe):
 
 
 class Q4Contract(unittest.TestCase):
+    def test_actual_vocabulary_width_is_not_tokenizer_size_or_rounded_bound(self):
+        self.assertEqual(panel.stage_axes('logits',[1,1,129280]),[1,1,129280])
+        self.assertEqual(panel.stage_axes('layer_0_chunk_0',[2048,1,1280]),[2048,1,1280])
+        for bad in ([1,1,129000],[1,1,128831],[1,1,129281],[129280,1,1],[1,1,True],[1,129280],[1,1,0]):
+            with self.assertRaises(ValueError):panel.stage_axes('logits',bad)
+        with self.assertRaises(ValueError):panel.stage_axes('layer_0_chunk_0',[2048,2048,1280])
+
     def test_frozen_original_ids_text_scope(self):
         refs, images = contract.references()
         self.assertEqual([len(refs[x]['ids']) for x in contract.CASES], [146, 138, 306, 164])
