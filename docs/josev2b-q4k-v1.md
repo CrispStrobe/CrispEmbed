@@ -1,0 +1,84 @@
+# Protected Josev packed Q4_K experiment
+
+This is source preparation for one hosted CPU experiment. It is default-off,
+unexecuted and unqualified. The original v5 reference, all F32 loaders, public
+bindings and existing source guards stay unchanged. No release, app pin, model
+publication or task-quality result follows from a converted file.
+
+The immutable input is
+[`cstr/Josev-2B-SystemOne-GGUF@bffe6252`](https://huggingface.co/cstr/Josev-2B-SystemOne-GGUF/tree/bffe62522f826b4c33f2e731d5b870ced5150a17),
+`josev2b-systemone-f32.gguf`, 7,659,180,448 bytes,
+SHA256 `72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2`.
+Its 442 tensors have 1,912,297,796 semantic parameters. The recipe selects 150
+backbone attention/MLP/linear-attention projection matrices for actual Q4_K.
+Every selected column width is already 2048 or 6144 and divisible by 256;
+padding, row fusion and legacy Q4_0 fallback are forbidden. The expected tensor
+payload is 2,934,531,344 bytes before GGUF metadata/alignment.
+
+All 122 `head.*` tensors, the tied token/lexical embedding, norms, convolutions,
+recurrent `A_log`/`dt_bias`, and linear-attention `in_proj_a`/`in_proj_b` remain
+F32. These comprise the 292 excluded tensors. The independent
+[packer](../tools/quantize_josev2b_q4k.py) authenticates the input and schema,
+then invokes the unchanged C++ quantizer with explicit F32 exclusions. Readback
+checks every name, semantic shape and actual type; it hashes all tensor bodies,
+requires every critical F32 byte to match the source and validates finite Q4_K
+scales. Tokenizer/provenance metadata must remain byte-identical except for the
+quantizer's declared file type/version. Only after those checks does it change
+the same-length format value `crispembed-josev-packed-f32-v1` to
+`crispembed-josev-packed-q4k-v1` in place. The final header/extents and untouched
+metadata are rechecked. Unit axes may have a shorter serialized GGUF rank from
+the upstream quantizer; the four semantic GGML axes remain exact and both ranks
+are reported.
+
+The existing runtime mixed-profile guards require both
+`CRISPEMBED_JOSEV_QUANT=1` and `CRISPEMBED_QWEN35_QUANT=1`, in addition to the
+seven existing packed/SystemOne component gates. Unset, empty and zero values
+reject. Old F32 mapping and old metadata-only tokenizer loading remain strict.
+This preparation changes no inference C++ source or public API.
+
+The new [standalone CMake harness](../tests/josev-q4k/CMakeLists.txt) uses the
+production `GGML_LLAMAFILE=ON` profile, CPU two threads, native instruction
+autodetection off and compilation with two workers. The ordinary archive has
+no observer macros; a distinct tested archive retains original named stages.
+Actual symbols/strings and positive observer symbols are checked. Existing
+model-free shape/gate/metadata controls and real `crispembed-diff::Ref`
+positive/numeric/structural controls run first.
+
+The [Kaggle CPU worker](../tools/kaggle/josev-q4k/worker.py) accepts only the
+frozen v5 report SHA256
+`51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090`,
+worker source `b2edf8c83c9aca1f8a9210198d47798ac13828b8`, the frozen four
+requests, and all 251 original NPY files (279,087,860 bytes). The coordinator
+attaches this immutable input privately; the public template carries no account
+or access reference. All payload hashes and original source hashes are checked
+before the published F32 input is requested. Originals are copied byte-for-byte
+to the remote result for preservation; no original model is executed and no
+original IDs or hidden arrays are injected into native inference.
+
+Actual F32 plain/observed/repeat execution must first pass all 227 ordered
+original stage comparisons and four complete typed answers. IDs, attention
+masks, spans, lexical IDs and field order are exact. Only then may conversion
+or quantized inference begin. Q4_K repeats the same full capture and fixed
+`Ref`/independent NumPy checks, preserving absolute/RMS/mean errors, norms,
+magnitudes, minimum row cosine and the earliest differing/failing stage. The
+original gates remain 0.002 absolute / 0.99999 row cosine; final logits 0.002,
+probabilities 0.0001 and ordinal expectation 0.001. Numerical rejections are
+collected across all four cases and are never relabeled F32 parity.
+
+Separately declared owned-task checks retain every raw JSON response, exact
+typed JSON equality, ordered discrete-option argmax identity and the unchanged
+0.001 ordinal-expectation bound. No new score tolerance is selected after an
+outcome. Six loaded-context unset/empty/zero negatives must clear outputs;
+recovery and ordinary/observed/repeat raw final bits must agree. Even a passing
+owned task result does not qualify independent task quality or publication.
+Representative labeled evaluation remains explicitly pending.
+
+The bootstrap needs a reviewed exact commit substituted for `@COMMIT@` and a
+private v5 input attachment. It rejects a GPU reservation, enforces 14 GiB
+available RAM/24 GiB disk before payloads and stops after a bounded four-hour
+model worker. It uses an isolated CPython 3.13 environment without ensurepip,
+with only SHA-pinned pip and NumPy; no Torch, tokenizer or model framework is
+installed. Source/stdlib tests are suitable for a constrained development host;
+all compilation, model downloads and inference belong on hosted infrastructure.
+The source template performs no submission. Check all account jobs and the
+five-session limit before any future approved dispatch.
