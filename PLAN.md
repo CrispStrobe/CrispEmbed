@@ -866,3 +866,16 @@ identical to the exact decoder. Remaining (see [handoff](docs/handoff-2026-10-28
 - [ ] MoEdern 27M/115M: Rust/Dart/HTTP consumers and retrieval quality.
 - [ ] Run Ovis final-integrated v2 and successor-assets v2 on hosted CI at the
   re-declared base (6a61759d) and review before any closure claim.
+
+### NEW20 retained-original native owner — source claim
+
+Owner `audit/josev-new20-native-owner-20261028`: prepare a separate GitHub-hosted
+caller for frozen110 NEW20 originals and exact runtime9c. Authenticate all1,480
+NPYs and the original input/source/head proofs before native numerical imports
+or models. Preserve the old all150 Q4 four-case negative as a reviewed dependency;
+only a development-selected A/B/C candidate may enter held-out NEW20, after its
+source/protocol and old-four service/report/model have been independently reviewed.
+All candidate provider/model/report pins begin pending and block execution.
+No original forward, NEW20 fitting, score/gold/cap change or dispatch is authorized
+by this source preparation. Freeze a14,400-second child/six-hour hosted job, actual
+C/Python calls,1,360 compared/120 unmapped original arrays and all existing gates.
