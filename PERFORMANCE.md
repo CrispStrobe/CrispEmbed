@@ -6986,3 +6986,52 @@ gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
 119.078125MiB literal1 and117.296875MiB legacy0. These include each full50-case
 process. No paired timing/memory improvement, portfolio, mobile-device, final
 integrated-source or successor-release qualification follows from this diagnostic.
+
+## MiniCPM completed scalar benchmark — 28 October 2026
+
+The unchanged [v3 producer](tests/results/minicpm-ocr/bench.json) at `c9718788`
+and [independent source/receipt review](tests/results/minicpm-ocr/bench-review.json)
+retain all five cases per arm. Both Q8 thread arms fail patch-shape loading before
+inference; this is a format failure and gives no Q8 quality or speed result.
+The subsequent quantizer repair and graph replay remain separate.
+
+| Case | F16 vision seconds | F32 vision seconds | F16/F32 vision ratio |
+| --- | ---: | ---: | ---: |
+| line | 27.700 | 14.051 | 1.97 |
+| paragraph | 137.854 | 65.875 | 2.09 |
+| table | 140.186 | 66.850 | 2.10 |
+| tall page | 260.325 | 130.493 | 1.99 |
+| tiny | 29.149 | 14.101 | 2.07 |
+
+Whole CLI totals are2,781.378s F16/no decoder cache and2,309.681s F32 at four
+threads; timing-off F16 totals2,791.370s. These are sequential same-job panels,
+not repeated alternating trials. F32/F16 timed outputs have ten producer-asserted
+exact ID/text flags; actual ID vectors were discarded by that old driver.
+Timing-off has five exact text flags and no observed ID proof. Prefill has no
+broad F32 advantage: the paragraph/tall/tiny F32 times are slightly higher.
+
+This supports a bounded future cache that promotes the *same* F16 vision values
+to F32 once, with explicit memory accounting and decoded/intermediate A/B.
+It does not establish that cache's speed or justify a default change. In the
+separate initial v2 F16 panel, cached decoding is63.4% of aggregate wall time,
+vision21.67% and prefill14.18%; the tiny case's roughly half-time vision share
+must not be generalized to the full panel. The stored-type decoder graph remains
+the first optimization to qualify.
+
+## Full original MoEdern SciFact baselines — 28 October 2026
+
+The new original-first captures use all300 queries/5,183 documents and exact
+float32-dot/float64-sum MaxSim. Source/runtime/weight authentication and13
+ordinary/observer/public-slice controls precede each full corpus. Large arrays
+remain remote and require hosted rehashing before native replay.
+
+| Original model | NDCG@10 | MRR@10 | Recall@100 |
+| --- | ---: | ---: | ---: |
+| [1.5M](tests/results/moedern-colbert/scifact-original-1p5m-review.json) | 0.6973488925 | 0.6663637566 | 0.9110000000 |
+| [27M](tests/results/moedern-colbert/scifact-original-27m-review.json) | 0.7273556949 | 0.6967632275 | 0.9353333333 |
+
+The1.5M aggregates exactly equal the earlier native quality-only measurement;
+this does not establish all-vector/token/ranking parity on the integrated source.
+The115M original and full native/Q4 comparisons remain separate pending work.
+Six author-score checks per completed model differ from the ranking reduction
+by at most4.918e-7. No quantized or cross-client retrieval verdict follows yet.

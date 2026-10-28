@@ -16998,3 +16998,19 @@ The queued hosted publisher was cancelled before execution; the same reviewed
 publisher ran through the installed metadata client with immutable readback and
 no model download/build/inference. Preserve the previous card receipt. This
 changes no real-scan, Q4, release or app qualification.
+
+### 28 October: larger original retrieval and completed MiniCPM benchmark
+
+The [27M full original SciFact capture](tests/results/moedern-colbert/scifact-original-27m-review.json)
+completes all5,483 rows with the same canonical data/gold hashes as1.5M,13
+neutral/public-slice controls and six actual author-score checks (max4.918e-7).
+Its original NDCG@10/MRR@10/Recall@100 are0.7273556949/0.6967632275/0.9353333333.
+These are original baselines; native and Q4 full retrieval remain pending.
+
+The completed [MiniCPM benchmark v3](tests/results/minicpm-ocr/bench-review.json)
+retains all25 requested rows. Ten F16/F32 timed rows have producer-asserted exact
+IDs/text; timing-off has text-only proof. Both Q8 thread arms fail patch loading
+before inference, with no Q8 quality/publication claim. Same-job vision is about
+twice as fast in F32, without a general prefill gain. PERFORMANCE records the
+scopes, retained missing-ID limitation and cache hypothesis; the corrected graph
+experiment must establish its own output/numerical/performance result.
