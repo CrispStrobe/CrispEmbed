@@ -915,3 +915,14 @@ Use the unchanged manifest SHA and byte count with admission before inference.
 Preserve earlier bad-image rows outside eligible denominators. Reuse the valid
 Unlimited original output; capture only the missing MiniCPM original and
 corresponding native form cases, rather than repeating all original pages.
+### Frozen full-SciFact hosted provider continuation
+
+The standalone `moedern-scifact-gha-adapter-v1.yml` workflow accepts the exact
+reviewed source and27M only. The current source is
+`fc4d84293fb0ee4115636d4f241d02854b41405d`. It authenticates the full original v1
+and older authored v3 before model access; every request/page binds its version.
+Inference, numerical and retrieval gates remain the corrected3c worker's.
+The standard runner must pass the unchanged14GiB available RAM and24GiB disk
+preflight; otherwise retain an admission rejection and use another authorized
+resource. Healthy1.5M Kaggle work is not repeated by this workflow.
+Registration is metadata only and establishes no new runtime/model result.
