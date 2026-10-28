@@ -55,7 +55,7 @@ def evaluate(model,original,arrays,binaries,out,command,env):
         require(math.isfinite(value)and abs(value-protocol)<=.002,'authored C MaxSim differs from F32dot/F64sum')
         scores.append(dict(id=native['id'],native=value,protocol=protocol,original=target['original_maxsim'],
                            max_absolute=abs(value-target['original_maxsim']),passed=abs(value-target['original_maxsim'])<=.002))
-    return dict(process=process,typed_cases=10,vectors=measurements,scores=scores,**actual,
+    return dict(forward_process=process,typed_cases=10,vectors=measurements,scores=scores,**actual,
                 strict_numeric_passed=all(v['passed']for v in measurements.values())and all(s['passed']for s in scores)),rows
 
 
@@ -71,4 +71,4 @@ def family_control(model,original,arrays,rows,binaries,out,command,env):
         require(a.size==b.size,'family control vector extent differs');name=cid.replace('-','_')
         measurements[name]=reference.compare(a,b.reshape(a.shape));specs.append(dict(name=name,original=left,native=dict(path=path,shape=left['shape'],sha256=sha(path))))
     actual=ref(binaries/'replay-authored-diff',out,measurements,specs,command,env)
-    return dict(process=process,native_frontend_ids_only=True,strict_numeric_passed=all(v['passed']for v in measurements.values()),vectors=measurements,**actual)
+    return dict(forward_process=process,native_frontend_ids_only=True,strict_numeric_passed=all(v['passed']for v in measurements.values()),vectors=measurements,**actual)

@@ -925,3 +925,12 @@ Next: reviewed corrected 1.5M hosted retry, separately pinned 27M GHA adapter,
 then115M; reuse every frozen original and preserve all numerical/task gates.
 The initial27M GHA submission was cancelled while queued to avoid repeating
 this known setup failure. Neither result qualifies any model.
+
+### MoEdern authored result receipt correction
+
+Actual27M40777203075 passes corrected archive discovery, builds and all5,483
+token-only rows; authored inference/Ref runs but duplicate `process` keyword
+assembly aborts before numerical publication. Both authored and family envelopes
+now keep separate forward/Ref child receipts and all numerical negatives.
+Next: independently reviewed corrected native/GHA closures, then model retries
+reusing exact originals; hold the unsubmitted115M source until updated.
