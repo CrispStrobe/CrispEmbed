@@ -16971,3 +16971,17 @@ this source before the independently verified decoder repair. Eight first-token
 differences, both fixed-cap receipt completions and all original failures remain;
 no new full-panel parity or quantized qualification follows. Admission now
 rejects changed inputs before future inference and retains encoded images remotely.
+
+### 28 October: original-first full MoEdern 1.5M retrieval capture
+
+The new [unchanged original report](tests/results/moedern-colbert/scifact-original-1p5m.json)
+and [source/coverage review](tests/results/moedern-colbert/scifact-original-1p5m-review.json)
+complete all 300 canonical queries and 5,183 documents at `2a872f9fe`, using the
+exact original CPU F32 role pipeline. Thirteen ordinary/observer/public-slice
+controls pass; six actual author-score checks differ from the full ranking
+protocol by at most 4.7684e-7. NDCG@10 is0.6973488924629391, MRR@10 is
+0.6663637566137566 and Recall@100 is0.911, exactly the earlier native quality-only
+aggregates. This is new original coverage, not a replacement for the frozen
+small-panel references. Large vectors and the row journal remain remote; their
+hashes must be authenticated before a corresponding native/Q4 retrieval replay.
+No full integrated-source vector/ranking or quantized qualification is claimed.
