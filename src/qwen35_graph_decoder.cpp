@@ -24,11 +24,18 @@ struct context_free {
 struct allocation_free {
     void operator()(ggml_gallocr * p) const { ggml_gallocr_free(p); }
 };
-bool stored_project(ggml_backend_t backend, const std::vector<ggml_tensor *> & matrices, const float * hidden,
+struct graph_execution {
+    ggml_backend_t backend = nullptr;
+#ifdef CRISPEMBED_MINICPM_GRAPH_AUDIT
+    graph_decoder::observer callback = nullptr;
+    void * user = nullptr;
+#endif
+};
+bool stored_project(graph_execution & backend, const std::vector<ggml_tensor *> & matrices, const float * hidden,
                     int width, int tokens, int threads, std::vector<std::vector<float>> & output) {
     output.clear();
-    if (!enabled() || !backend || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 || width > 32768 ||
-        tokens < 1 || tokens > 4096 || threads < 1 || threads > 256)
+    if (!enabled() || !backend.backend || !hidden || matrices.empty() || matrices.size() > 4 || width < 1 ||
+        width > 32768 || tokens < 1 || tokens > 4096 || threads < 1 || threads > 256)
         return false;
     size_t elements = size_t(width) * tokens;
     if (!std::all_of(hidden, hidden + elements, [](float v) { return std::isfinite(v); })) return false;
@@ -59,8 +66,8 @@ bool stored_project(ggml_backend_t backend, const std::vector<ggml_tensor *> & m
     std::unique_ptr<ggml_gallocr, allocation_free> alloc(ggml_gallocr_new(ggml_backend_cpu_buffer_type()));
     if (!alloc || !ggml_gallocr_alloc_graph(alloc.get(), graph)) return false;
     ggml_backend_tensor_set(input, hidden, size_t(0), size_t(width) * tokens * sizeof(float));
-    ggml_backend_cpu_set_n_threads(backend, threads);
-    if (ggml_backend_graph_compute(backend, graph) != GGML_STATUS_SUCCESS) return false;
+    ggml_backend_cpu_set_n_threads(backend.backend, threads);
+    if (ggml_backend_graph_compute(backend.backend, graph) != GGML_STATUS_SUCCESS) return false;
     std::vector<std::vector<float>> pending;
     for (auto * result : results) {
         pending.emplace_back(size_t(ggml_nelements(result)));
@@ -68,6 +75,11 @@ bool stored_project(ggml_backend_t backend, const std::vector<ggml_tensor *> & m
         ggml_backend_tensor_get(result, values.data(), 0, values.size() * sizeof(float));
         if (!std::all_of(values.begin(), values.end(), [](float v) { return std::isfinite(v); })) return false;
     }
+#ifdef CRISPEMBED_MINICPM_GRAPH_AUDIT
+    if (backend.callback)
+        for (size_t i = 0; i < matrices.size(); ++i)
+            if (!backend.callback(matrices[i], hidden, pending[i].data(), tokens, threads, backend.user)) return false;
+#endif
     output = std::move(pending);
     return true;
 }
@@ -109,7 +121,7 @@ static void rotate(float * x, const attention_config & c, const float * position
         x[i + half] = right * cosine + left * sine;
     }
 }
-bool graph_attention(ggml_backend_t backend, const attention_weights & w, const attention_config & c,
+bool graph_attention(graph_execution & backend, const attention_weights & w, const attention_config & c,
                      const float * hidden, const float * positions, int batch, int tokens, int threads,
                      const attention_cache * previous, attention_outputs & output) {
     output = {};
@@ -214,8 +226,9 @@ bool graph_attention(ggml_backend_t backend, const attention_weights & w, const 
     output.attention = std::move(projected[0]);
     return finite(output.attention) && finite(cache.keys) && finite(cache.values);
 }
-bool graph_linear(ggml_backend_t backend, const linear_weights & weights, const float * hidden, int batch, int tokens,
-                  int threads, const float * conv_history, const float * state, projected_linear_outputs & output) {
+bool graph_linear(graph_execution & backend, const linear_weights & weights, const float * hidden, int batch,
+                  int tokens, int threads, const float * conv_history, const float * state,
+                  projected_linear_outputs & output) {
     output = {};
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !hidden || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 ||
         threads < 1 || threads > 256 || !weights.a_log || !weights.norm || !weights.qkv || !weights.conv)
@@ -259,7 +272,7 @@ bool graph_linear(ggml_backend_t backend, const linear_weights & weights, const 
     output.attention = std::move(projections[0]);
     return true;
 }
-bool graph_run(ggml_backend_t backend, const decoder_weights & w, const attention_config & c, const float * input,
+bool graph_run(graph_execution & backend, const decoder_weights & w, const attention_config & c, const float * input,
                const float * positions, int batch, int tokens, int threads, const decoder_cache * previous,
                decoder_outputs & output) {
     output = {};
@@ -344,8 +357,8 @@ bool graph_run(ggml_backend_t backend, const decoder_weights & w, const attentio
     return true;
 }
 } // namespace
-struct graph_decoder::implementation {
-    ggml_backend_t backend = ggml_backend_cpu_init();
+struct graph_decoder::implementation : graph_execution {
+    implementation() { backend = ggml_backend_cpu_init(); }
     ~implementation() {
         if (backend) ggml_backend_free(backend);
     }
@@ -355,13 +368,20 @@ graph_decoder::~graph_decoder() = default;
 void graph_decoder::clear() {
     impl_.reset();
 }
+#ifdef CRISPEMBED_MINICPM_GRAPH_AUDIT
+void graph_decoder::observe(observer callback, void * user) {
+    if (!impl_) impl_ = std::make_unique<implementation>();
+    impl_->callback = callback;
+    impl_->user = user;
+}
+#endif
 bool graph_decoder::project(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens,
                             int threads, std::vector<std::vector<float>> & output) {
     output.clear();
     if (!enabled()) return false;
     try {
         if (!impl_) impl_ = std::make_unique<implementation>();
-        return stored_project(impl_->backend, matrices, hidden, width, tokens, threads, output);
+        return stored_project(*impl_, matrices, hidden, width, tokens, threads, output);
     } catch (...) {
         output.clear();
         return false;
@@ -389,7 +409,11 @@ bool graph_decoder::run(const decoder_weights & w, const attention_config & c, c
         if (!impl_) impl_ = std::make_unique<implementation>();
         if (!impl_->backend) return false;
         decoder_outputs pending;
-        if (!graph_run(impl_->backend, w, c, input, positions, 1, tokens, threads, previous, pending)) return false;
+        if (!graph_run(*impl_, w, c, input, positions, 1, tokens, threads, previous, pending)) return false;
+        const auto finite = [](const std::vector<float> & values) {
+            return std::all_of(values.begin(), values.end(), [](float v) { return std::isfinite(v); });
+        };
+        if (!finite(pending.norm) || !std::all_of(pending.hidden.begin(), pending.hidden.end(), finite)) return false;
         output = std::move(pending);
         return true;
     } catch (...) {

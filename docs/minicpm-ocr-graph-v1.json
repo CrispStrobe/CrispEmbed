@@ -1,0 +1,25 @@
+{
+  "schema": "crispembed-minicpm-stored-graph-v1",
+  "status": "source-preparation-no-execution",
+  "source_rule": "Explicit immutable caller commit; clean tracked checkout and exact ggml gitlink; every runtime/build/helper source hash in receipt. No latest fallback.",
+  "upstream_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+  "original_report": {"bytes": 220355, "sha256": "aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32", "driver_sha256": "845638b2104a806f2cd56059ae0a1ee51575bda9b12b9a32ff239fb2fe4d6628", "contract_sha256": "5a7c77736a67f3bcf12f9e0d6d86538090bb92721f1d6d5b7420f87fc01f2855"},
+  "original_python_blueprint": {
+    "package": "transformers==5.21.0",
+    "qwen3_5": {"path": "src/transformers/models/qwen3_5/modeling_qwen3_5.py", "bytes": 87748, "sha256": "af05d0acfe79fff8aea1c75f93516a6a72bc80f6f901329a73e66a3866fe1e7c", "semantics": "536-650 linear projections/conv/recurrent state;763-810 gated full attention/cache;822-901 SwiGLU/zero-centered norms/residual order"},
+    "minicpm_ocr": {"path": "src/transformers/models/minicpm_ocr/modeling_minicpm_ocr.py", "bytes": 37602, "sha256": "45d60914094cdc51fab67dc8edcf85a36a4db61a770eaca891cc820675fcf352"}
+  },
+  "cases": ["line", "para-en", "table", "tall", "tiny"],
+  "input_lengths": [256, 1290, 1290, 2372, 274],
+  "output_counts": [19, 63, 56, 279, 3],
+  "max_new_tokens": 1024,
+  "arms": [["f32",0],["f32",1],["f16",0],["f16",1],["q8_0",1],["q4_k",1]],
+  "graph_gate": "CRISPEMBED_MINICPM_OCR_GRAPH",
+  "default_enabled": false,
+  "comparison": {"full_prefill_stages_per_case":26, "same_input_projected_calls_per_case":187, "projected_scope":"first16-plus-last16-token-rows", "max_absolute":0.002, "minimum_row_cosine":0.99999, "actual_ref_required":true, "independent_metrics_required":true, "all_generated_ids_text_eos_caps_exact":true, "paired_all_confidence_max_absolute":0.002, "original_full_confidences_available":false},
+  "q8_0": {"from":"same-run-F32", "args":["q8_0","--tensor-type","v.emb.patch_embedding.weight=f16"]},
+  "q4_k": {"from":"same-run-F16", "args":["q4_k","--tensor-type","v.*=f16","--tensor-type","m.*=f16","--tensor-type","l.embed_tokens.weight=f16"], "selected_decoder_projection_matrices":186, "all_selected_actual_type":"Q4_K", "protected_tensors":593, "all_protected_type_shape_payload_sha256_exact":true},
+  "execution": {"hosted_cpu_only":true,"free_ram_gib":10,"free_scratch_gib":32,"build_parallel":2,"threads":4,"outer_budget_hours":11.2},
+  "publication_authorized_by_this_experiment": false,
+  "limits": ["Projection graphs with retained CPU scalar attention/norm/recurrence; no whole-network fusion claim", "Existing F32 KV/conv/recurrent state retained, growing KV copies remain", "Five synthetic frozen cases, no broad real-scan quality/GPU/batched/long-context proof", "No default flip, release, app upgrade or model publication from source preparation"]
+}

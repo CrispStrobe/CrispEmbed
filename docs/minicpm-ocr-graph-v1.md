@@ -92,3 +92,61 @@ convolution and all small vectors. Only decoder2-D projection matrices may
 be selected. Validate every actual stored type and unchanged protected bytes,
 then run the identical five-case decoded and metric gates before publication.
 No Q4 model has been produced or qualified by this preparation.
+
+The follow-up hosted recipe is `tools/kaggle/minicpm-ocr-graph`. It requires
+an explicitly rendered immutable source commit, the existing mounted original
+capture,32GiB scratch and10GiB free RAM. It builds root CLI/quantizer and a
+separate observed probe, with no upstream framework installation or recapture.
+The exact original report is220355B, SHA256
+`aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32`.
+The source contract/driver in that completed original report match the frozen
+repository files; input lengths are256/1290/1290/2372/274 and generated counts
+19/63/56/279/3. Full original row/array SHA verification is hosted only.
+
+`CRISPEMBED_MINICPM_GRAPH_AUDIT` compiles an observer only into
+`minicpm-graph-probe`. The recipe checks its symbol absent from the real CLI
+and present in the separate observed executable. The probe requires exactly187
+projection calls. It records **only first16 plus last16 token rows** at each
+projection boundary, compares those actual graph outputs against the retained
+same-input F32-materialized control, and publishes the original stored type,
+selected row indices, full token count and weight name. This is a bounded
+operator attribution, not full projected-tensor coverage. The full26
+prefill outputs are separately required byte-identical to the real root CLI.
+Ordinary/observed/repeat prefill outputs and all cache values must be exact.
+
+The new MiniCPM-specific test adapter preserves raw F32 bits, singleton batch1
+alignment is explicitly declared, and the actual Ref comparator exits0/1/2
+for passed/numerically rejected/structurally rejected. Row-sensitive positive
+and negative controls run before model conversion. Every full prefill stage
+uses fixed0.002 maximum absolute and0.99999 minimum row cosine, independent
+NumPy metrics, RMS/mean error, both L2 norms and min/max magnitudes. Adapter
+shape bounds are versioned separately; historical adapters/guards are unchanged.
+
+The frozen panel runs all five cases under F32 off/on, F16 off/on, Q8_0 on,
+and protected Q4_K on, retaining all30 case-arm outcomes even if numerics fail.
+First-stage divergence and detailed per-case Ref records are retained. Existing
+native dump mode also records all generated confidences; they must be finite,
+bounded and complete, and paired F32/F16 off/on confidences are checked at0.002.
+The original capture has no full generated confidence vector: no original
+full-confidence identity is claimed.
+
+The protected Q4_K input is the exact same-run F16 export. Only the186 declared
+decoder2-D projection matrices may become actual Q4_K. The other593 tensors
+must retain exact type, shape and payload SHA256, including the tied head,
+vision, patch embedding, projector, norms, convolution and scalar/vector state
+parameters. `graph_panel.py` authenticates this **before any forward**. Its
+candidate quality decisions do not reuse a quantized-only permissive cosine.
+A rejected quantized arm stays rejected even if it is faster or decodes the
+small panel correctly. No automatic publication is implemented by this kernel.
+
+
+Both builds explicitly use the root's fixed CPU profile: GGML_LLAMAFILE=ON,
+GGML_OPENMP=OFF, GGML_NATIVE=OFF and CRISPEMBED_NATIVE=OFF. The standalone
+copies the exact root CPU ISA selection helper, including its platform guards;
+it does not invent a second ISA policy. Both actual configured caches and
+actual compiler argument rows must agree before model conversion. The guard
+checks all six shared Qwen implementation TUs for the same fixed ISA and
+contraction-off, plus the actual ggml CPU C/C++ backend definitions and ISA.
+The small `build-profile.json` retains these compiler/cache observations.
+This repairs a preparation mismatch: the submodule's LLAMAFILE and OpenMP
+defaults differ from the root's. No inference result is attributed to it.
