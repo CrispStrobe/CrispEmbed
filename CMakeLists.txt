@@ -529,6 +529,8 @@ target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 add_executable(test-unlimited-ocr2-tiles tests/test_unlimited_ocr2_tiles.cpp)
 target_include_directories(test-unlimited-ocr2-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_executable(test-unlimited-ocr2-text tests/test_unlimited_ocr2_text.cpp)
+target_include_directories(test-unlimited-ocr2-text PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/tests)
 add_executable(test-minicpm-ocr-tiles tests/test_minicpm_ocr_tiles.cpp)
 target_include_directories(test-minicpm-ocr-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
 

@@ -187,6 +187,13 @@ conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants 
   pages (4x3 tiles, 1503 vision tokens), from CrispEmbed commit `{t['commit'][:8]}` on. Earlier runtimes
   emitted 256 instead of 100 vision tokens per 640px tile and matched the text only; the weights were never affected.
 - The opt-in fast decoder reproduces the exact decoder token-for-token on all {parity['fast_decoder']['cases']} pages.
+- **Published files, user-style trial** (Kaggle CPU, receipt `tests/results/unlimited-ocr2/trial.json`
+  in CrispEmbed; four tiled pages compared with the original): **F16 is token-ID exact on all 4**
+  (paragraphs, table, receipt, German), with the fast decoder equal to the exact decoder everywhere.
+  **Q8_0 is exact on the untiled panel page but diverges on 2 of the 4 tiled trial pages** (table at
+  generated token 7, receipt at tokens 131 and 258). Each divergence is one bounding-box coordinate
+  token off by 1-3 (for example `102` vs `99`); sequence length and recognized text are unchanged.
+  **Use F16 when exact agreement with the original matters**; Q8_0 is smaller and faster.
 - Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
 
 ## Usage
@@ -195,7 +202,10 @@ Unlimited-OCR-2 support is default-off in CrispEmbed and is enabled with an envi
 
 ```bash
 CRISPEMBED_UNLIMITED_OCR2=1 crispembed -m unlimited-ocr-2-f16.gguf --ocr page.png
-# tiling of large pages: CRISPEMBED_UNLIMITED_OCR2_TILES=1
+# pages larger than 640 px are tiled like the original (crop_mode=None);
+# CRISPEMBED_UNLIMITED_OCR2_TILES=0 forces the faster untiled view.
+# Output is the original's raw decode (layout markup kept);
+# CRISPEMBED_UNLIMITED_OCR2_OUTPUT=clean strips <PAGE>/<BLOCK>label[box]<FORK> and keeps tables.
 ```
 """
 
