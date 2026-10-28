@@ -52,7 +52,10 @@ QUANT = next(p for p in glob.glob('/kaggle/temp/b/**/crispembed-quantize', recur
 for dt in ('f32', 'f16'):
     extra = [] if src == ckpt or dt == 'f16' else ['--download']
     sh(PY, 'models/convert-minicpm-ocr-to-gguf.py', src, f'/kaggle/temp/minicpm-{dt}.gguf', '--dtype', dt, *extra, env=env)
-q8 = subprocess.run([QUANT, '/kaggle/temp/minicpm-f32.gguf', '/kaggle/temp/minicpm-q8_0.gguf', 'q8_0'],
+# The 4-D patch-embedding conv weight (14x14x3x1152) must keep a float type: the runtime binds it
+# by its [14,14,3,1152] shape, which a q8_0 block layout does not preserve.
+q8 = subprocess.run([QUANT, '/kaggle/temp/minicpm-f32.gguf', '/kaggle/temp/minicpm-q8_0.gguf', 'q8_0',
+                     '--tensor-type', 'v.emb.patch_embedding.weight=f16'],
                     capture_output=True, text=True)
 print(q8.stdout[-3000:], q8.stderr[-3000:], flush=True)
 GGUF = {dt: f'/kaggle/temp/minicpm-{dt}.gguf' for dt in ('f32', 'f16', 'q8_0')}
@@ -144,6 +147,10 @@ ARMS = [
     ('f16-t4-no-timing', 'f16', 4, {}, False),
 ]
 CASES = ref['cases']
+# Optional subset (comma-separated arm names) for a follow-up run; empty = every arm.
+ONLY = [a for a in os.environ.get('MINICPM_BENCH_ARMS', '@ARMS@').split(',') if a and a != '@ARMS@']
+if ONLY:
+    ARMS = [a for a in ARMS if a[0] in ONLY]
 report = dict(schema='crispembed-minicpm-ocr-bench-v1', commit=COMMIT, reference_revision=ref['revision'],
               reference_versions=ref.get('versions'), max_new_tokens=MAX_NEW, cpu_count=os.cpu_count(),
               cpu_model=next((l.split(':', 1)[1].strip() for l in open('/proc/cpuinfo') if l.startswith('model name')), None),
@@ -163,7 +170,7 @@ def run_native(name, dtype, threads, extra, timing):
     arm = dict(name=name, dtype=dtype, threads=threads, env=extra, timing=timing, cases=[])
     report['arms'].append(arm)
     for case in CASES:
-        run_env = dict(os.environ, **BASE_ENV, **extra, OMP_NUM_THREADS=str(threads))
+        run_env = {**os.environ, **BASE_ENV, **extra, 'OMP_NUM_THREADS': str(threads)}
         if timing:
             run_env['CRISPEMBED_MINICPM_OCR_TIMING'] = '1'
         t0 = time.monotonic()
