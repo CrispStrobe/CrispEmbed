@@ -111,3 +111,17 @@ and `REQUIRED` retained. No alternate system library or inference change is
 permitted. The initial configure failure remains an execution negative; no
 model forward or numerical/retrieval result was produced. Retry this corrected
 source only after review and fresh hosted capacity admission.
+
+## Authored result packaging: separate process receipts
+
+Actual27M run40777203075 completed source/resource/original admission, root and
+replay builds, actualRef controls and all5,483 token-only rows with zero
+mismatches. The authored F32 forward and Ref then executed, but result assembly
+raised `TypeError` because both the consumer envelope and nested Ref metadata
+used `process`. No published authored numerical or full-retrieval result follows.
+The same collision existed in the following family-control envelope. Both now
+retain the forward as `forward_process` and preserve Ref's existing `process`,
+without changing inference, comparison inputs, thresholds or negative flags.
+A model-free regression evaluates both actual result expressions with distinct
+child receipts and a numerical negative. Preserve the initial execution report
+and bind corrected source explicitly before retry; do not replay originals.

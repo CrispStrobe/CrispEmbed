@@ -1,3 +1,4 @@
+import ast
 """Bounded stdlib-only replay admission, byte-adapter and collection controls."""
 import copy
 import hashlib
@@ -19,6 +20,23 @@ import compare_v1
 
 
 class Controls(unittest.TestCase):
+    def test_authored_receipts_keep_forward_and_ref_processes_distinct(self):
+        # Exercise each actual result expression without importing a model or
+        # NumPy. The captured forward and Ref child are different processes.
+        tree=ast.parse((ROOT/'tools/moedern-scifact/authored_v1.py').read_text())
+        for name in ('evaluate','family_control'):
+            function=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name==name)
+            returned=next(n for n in reversed(function.body)if isinstance(n,ast.Return))
+            forward=dict(exit=0,log='consumer.log');judge=dict(exit=1,log='ref.log')
+            scope=dict(process=forward,actual=dict(process=judge,actual_ref=dict(all_metrics_agree=True)),
+                       measurements={'retained_numeric_negative':dict(passed=False)},scores=[],rows=[])
+            result=eval(compile(ast.Expression(returned.value),'<actual-authored-return>','eval'),{},scope)
+            result=result[0]if isinstance(result,tuple)else result
+            self.assertIs(result['forward_process'],forward)
+            self.assertIs(result['process'],judge)
+            self.assertTrue(result['actual_ref']['all_metrics_agree'])
+            self.assertFalse(result['strict_numeric_passed'])
+
     def test_actual_isolated_entrypoint_imports_without_payload_packages(self):
         # A fresh process matters: imports performed by this test file or old
         # helpers must not accidentally supply the missing sibling path.
