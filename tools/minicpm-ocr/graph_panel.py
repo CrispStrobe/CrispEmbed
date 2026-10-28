@@ -11,6 +11,7 @@ import subprocess
 import sys
 import time
 import types
+import signal
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'tools'))
@@ -61,9 +62,13 @@ def captured(command, folder, name, env, timeout):
     stdout=folder/(name+'.stdout');stderr=folder/(name+'.stderr')
     timed_out=False
     with stdout.open('wb') as a,stderr.open('wb') as b:
-        process=subprocess.Popen(list(map(str,command)),stdout=a,stderr=b,env=env)
+        process=subprocess.Popen(list(map(str,command)),stdout=a,stderr=b,env=env,start_new_session=(os.name!='nt'))
         try:process.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:timed_out=True;process.kill();process.wait()
+        except subprocess.TimeoutExpired:
+            timed_out=True
+            if os.name=='nt':process.kill()
+            else:os.killpg(process.pid,signal.SIGKILL)
+            process.wait()
     return types.SimpleNamespace(returncode=process.returncode,stdout=stdout.read_bytes(),stderr=stderr.read_bytes(),timed_out=timed_out)
 
 TIME_RE = re.compile(r'^\s*\[time\] minicpm_ocr\.(\w+) (.*)$')

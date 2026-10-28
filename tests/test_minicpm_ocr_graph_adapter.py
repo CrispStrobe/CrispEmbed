@@ -52,7 +52,7 @@ class FailureEvidence(unittest.TestCase):
         import os
         with tempfile.TemporaryDirectory() as d:
             folder=Path(d)
-            result=p.captured([sys.executable,'-c',"import sys,time;print('started',flush=True);print('before-timeout',file=sys.stderr,flush=True);time.sleep(3)"],folder,'native',os.environ,0.2)
+            result=p.captured([sys.executable,'-S','-c',"import sys,time;print('started',flush=True);print('before-timeout',file=sys.stderr,flush=True);time.sleep(3)"],folder,'native',os.environ,1.0)
             self.assertTrue(result.timed_out);self.assertNotEqual(result.returncode,0)
             self.assertIn(b'started',result.stdout);self.assertIn(b'before-timeout',result.stderr)
             self.assertEqual(result.stdout,(folder/'native.stdout').read_bytes())
