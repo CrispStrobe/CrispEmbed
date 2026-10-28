@@ -132,7 +132,7 @@ def source_guard(source):
     link = subprocess.check_output(['git','ls-tree','HEAD','ggml'],cwd=ROOT,text=True).split()[2]
     checkout = subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT/'ggml',text=True).strip()
     require(link == checkout, 'ggml gitlink/checkout mismatch')
-    paths = subprocess.check_output(['git','ls-files','src','CMakeLists.txt','tools/minicpm-ocr','tests/minicpm-graph','models/convert-minicpm-ocr-to-gguf.py','docs/minicpm-ocr-graph-v1.json','tools/josev2b_composed_panel.py','tools/josev2b_composed_diff.py','tests/results/minicpm-ocr/native-parity.json','docs/minicpm-ocr-source.json','models/convert-qwen35-ocr-to-gguf.py','tools/kaggle/minicpm-ocr-graph','tests/test_ultrabert_profile.cpp','tests/josev-quant','tests/josev-packed'],cwd=ROOT,text=True).splitlines()
+    paths = subprocess.check_output(['git','ls-files','src','CMakeLists.txt','tools/minicpm-ocr','tests/minicpm-graph','models/convert-minicpm-ocr-to-gguf.py','docs/minicpm-ocr-graph-v1.json','tools/josev2b_composed_panel.py','tools/josev2b_composed_diff.py','tests/results/minicpm-ocr/native-parity.json','docs/minicpm-ocr-source.json','models/convert-qwen35-ocr-to-gguf.py','tools/quantize.cpp','tests/test_quantize_patch_float.py','tools/kaggle/minicpm-ocr-graph','tests/test_ultrabert_profile.cpp','tests/josev-quant','tests/josev-packed'],cwd=ROOT,text=True).splitlines()
     return dict(source=source, ggml=link, files={p:digest(ROOT/p) for p in paths})
 
 
@@ -179,6 +179,14 @@ def protected_q4(control, candidate):
             require(row == other, 'protected tensor bytes/type differ: '+name)
     require(len(selected) == 186, 'exact186 decoder projection matrices required')
     return dict(selected=sorted(selected), protected=593, all_protected_byte_exact=True)
+
+
+def protected_q8_patch(control, candidate):
+    name='v.emb.patch_embedding.weight'
+    expected=control[name]
+    require(expected['type']==1 and len(expected['shape'])==4,'F16 source patch profile differs')
+    require(candidate[name]==expected,'Q8 patch must retain exact F16 type, four axes and payload SHA')
+    return dict(name=name,**expected,exact_f16_source=True)
 
 
 def load_npy(path, shape=None):
@@ -329,7 +337,7 @@ def main():
         require(set(models)=={'f32','f16','q8_0','q4_k'},'all four fixed model arms required')
         report['models']={key:dict(bytes=Path(path).stat().st_size,sha256=digest(path),tensors=tensor_inventory(path)) for key,path in models.items()}
         report['q4_protection']=protected_q4(report['models']['f16']['tensors'],report['models']['q4_k']['tensors'])
-        require(report['models']['q8_0']['tensors']['v.emb.patch_embedding.weight']['type']==1,'Q8 patch must be actual F16')
+        report['q8_patch_protection']=protected_q8_patch(report['models']['f16']['tensors'],report['models']['q8_0']['tensors'])
         report['binary_sha256']={key:digest(getattr(args,key)) for key in ('cli','probe','diff')};save()
         for case in ref['cases']:
             for dtype,graph in [('f32',0),('f32',1),('f16',0),('f16',1),('q8_0',1),('q4_k',1)]:

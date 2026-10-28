@@ -68,7 +68,7 @@ try:
     py='/kaggle/temp/venv/bin/python'
     run([py,'-m','pip','install','-q','numpy==2.2.6','gguf==0.17.1','huggingface-hub==1.33.0'])
     run([py,'-m','pip','freeze'])
-    for script in ['tests/test_minicpm_ocr_graph_source.py','tests/test_minicpm_ocr_graph_adapter.py','tests/test_minicpm_ocr_publish.py']:
+    for script in ['tests/test_minicpm_ocr_graph_source.py','tests/test_minicpm_ocr_graph_adapter.py','tests/test_minicpm_ocr_publish.py','tests/test_quantize_patch_float.py']:
         run([py,script])
     run(['cmake','-S','tests/minicpm-graph','-B','/kaggle/temp/g','-DCMAKE_BUILD_TYPE=Release','-DGGML_METAL=OFF','-DGGML_VULKAN=OFF'])
     run(['cmake','--build','/kaggle/temp/g','--parallel','2'],3600)
@@ -77,6 +77,7 @@ try:
     run(['cmake','-S','.','-B','/kaggle/temp/b','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON','-DCRISPEMBED_NATIVE=OFF','-DGGML_NATIVE=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF'])
     run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','test-ultrabert-profile','--parallel','2'],5400)
     run(['/kaggle/temp/b/test-ultrabert-profile'])
+    run([py,'tests/test_quantize_patch_float.py','--quantizer','/kaggle/temp/b/crispembed-quantize','--output',OUT/'patch-quantizer-controls.json'])
     # Model-free precision marker/load guards: same combined source, no extra
     # kernel session or original/model payload, before any bulk conversion.
     run(['cmake','-S','tests/josev-quant','-B','/kaggle/temp/jq','-DCMAKE_BUILD_TYPE=Release'])

@@ -176,3 +176,23 @@ F16 off/on, Q8 on, protected Q4_K on. This exposes the first quantized-case
 diagnostics early while retaining exactly the same30 case-arms, inputs,
 metrics and final all-case qualification. Numerical rejection never drops
 later rows. The initial v1 scratch failure produced no model outputs.
+
+
+Actual version2 compiled the root and observed targets and passed stored-type,
+Ref, Ultra profile and Josev quant model-free controls. Before any inference,
+it rejected Q8's patch artifact: the generic quantizer had flattened the F32
+patch to `[588,1152]` before its protected-patch copy branch, ignoring the
+literal F16 override. Q4's186/593 stored-type/protected-byte checks passed
+separately; zero model cases ran. The original version2 producer is retained
+unchanged. Neither artifact typing nor component controls qualify the model.
+
+The bounded quantizer correction applies only to an **exact-name** `=f16`
+request on a safe F32 four-dimensional patch weight, before the old flattening
+step. It preserves all axes and streams finite FP16 rounding in fixed chunks.
+Norm/bias/LoRA and host-only kernel names, PP-OCRv6 and Tesseract keep existing
+critical rules; wildcard and block-quant overrides keep the old behavior.
+No-override behavior is unchanged. The hosted actual C++ quantizer fixture
+checks dtype, all axes, half-precision tie-even values and unchanged default,
+F32 exclusions and protected rules before bulk conversion. The model preflight
+now requires Q8's patch dtype, shape and payload SHA to equal the same-run
+F16 source exactly. No original inputs or numeric budgets change.
