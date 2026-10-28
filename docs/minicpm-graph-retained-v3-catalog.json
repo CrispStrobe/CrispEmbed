@@ -1,0 +1,1125 @@
+{
+  "schema": "crispembed-minicpm-retained-v3-catalog-v1",
+  "service": {
+    "kernel_slug": "crispembed-minicpm-ocr-graph",
+    "version_label": "v3",
+    "status": "ERROR",
+    "source": "83eac856cc684808e417ebfed7db7c2f677dc09f",
+    "submitted_script_sha256": "70747e07d29740a401dff8599aff0d9e951cac3ba9278cf9043353389f822d55"
+  },
+  "panel": {
+    "bytes": 953920,
+    "sha256": "aa1a91b6e9fbcfb8168a9148b7b24845f0bd93e395adac651dabaef8ddfb6666"
+  },
+  "cases": [
+    {
+      "id": "line",
+      "dtype": "f32",
+      "graph": 0,
+      "case_report": "f32-graph0/line/case-report.json",
+      "report": {
+        "bytes": 92171,
+        "sha256": "50bcee508305a4dc6faba6e36e439c560730daea9336f214115f7e9bf0228d64"
+      },
+      "files_manifest": {
+        "bytes": 12789,
+        "sha256": "483bda85d3a595a026535419fa6618f5650f6ac7c250f886983774aacbfcd5bb"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "line",
+      "dtype": "f32",
+      "graph": 1,
+      "case_report": "f32-graph1/line/case-report.json",
+      "report": {
+        "bytes": 800332,
+        "sha256": "953c180f5cbdb772d4d8a8e29565580419638a717a8d964a15de0ed762522c1b"
+      },
+      "files_manifest": {
+        "bytes": 71452,
+        "sha256": "75f34d9aaead25288e4a9eec5a4ce0354840acfe54e0971205c3d86c5a6f3f35"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "line",
+      "dtype": "f16",
+      "graph": 0,
+      "case_report": "f16-graph0/line/case-report.json",
+      "report": {
+        "bytes": 92145,
+        "sha256": "428ba48d0480a1d6bfc52976cb0e3634810fecef45ae5185f486e74c46b7ddfa"
+      },
+      "files_manifest": {
+        "bytes": 12789,
+        "sha256": "6010a23c32cd6a3466114664b473f10e6bcf8439fc0e6d6e50b510382e42ef13"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "line",
+      "dtype": "f16",
+      "graph": 1,
+      "case_report": "f16-graph1/line/case-report.json",
+      "report": {
+        "bytes": 833629,
+        "sha256": "3038bb900d95cf8649e50b4fe3942bfa9dd22e2c371f27f807264c830d900a47"
+      },
+      "files_manifest": {
+        "bytes": 71452,
+        "sha256": "77695080cdcee3cebfd2becc88320dbbc9e9f1295337dc740478b951ff1a706a"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "line",
+      "dtype": "q8_0",
+      "graph": 1,
+      "case_report": "q8_0-graph1/line/case-report.json",
+      "report": {
+        "bytes": 95759,
+        "sha256": "18c16c2f5e05f09a51a1efcb93ef3777dd910851e615450776585a886dea22ba"
+      },
+      "files_manifest": {
+        "bytes": 12789,
+        "sha256": "c21c07b279df4b0432ae3701110e359895a1f593d41b27d9e0e4bb677955db81"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "line",
+      "dtype": "q4_k",
+      "graph": 1,
+      "case_report": "q4_k-graph1/line/case-report.json",
+      "report": {
+        "bytes": 95763,
+        "sha256": "f25a6f6d9499f3107be19ebcfeb6ed005e39815c9f94b014791f712a5b6fabcc"
+      },
+      "files_manifest": {
+        "bytes": 12789,
+        "sha256": "05cddc37e5ec957434f944032881c52d12f95a35988fc9ce5590022f92985e3c"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "para-en",
+      "dtype": "f32",
+      "graph": 0,
+      "case_report": "f32-graph0/para-en/case-report.json",
+      "report": {
+        "bytes": 97839,
+        "sha256": "1426da1bf39ab0231a29ef9713039ee75944048f5aa4a991da34b7e796c93ffa"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "9fb7ce6f350a0358774378589135f8569b9c05b75294d6124bdb63f691885322"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "para-en",
+      "dtype": "f32",
+      "graph": 1,
+      "case_report": "f32-graph1/para-en/case-report.json",
+      "report": {
+        "bytes": 809334,
+        "sha256": "42a3963c2339fc52193ad97ff106bcb9c634e9aa4f7ae4bb3b45193d956e2a81"
+      },
+      "files_manifest": {
+        "bytes": 72001,
+        "sha256": "642ee7525749d1ee0588666bad627b1242e79b9191b21f2cc1fd2d7cd4533181"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "para-en",
+      "dtype": "f16",
+      "graph": 0,
+      "case_report": "f16-graph0/para-en/case-report.json",
+      "report": {
+        "bytes": 97776,
+        "sha256": "79c8d5685342517f3bce68cf4f6f28c58c0709c72da45a0ed6ea1eecdecb5d5d"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "18fbede0cfc4e6e4d90debd73b2aa1dc738a1aa77a422511215b702eed4a3be7"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "para-en",
+      "dtype": "f16",
+      "graph": 1,
+      "case_report": "f16-graph1/para-en/case-report.json",
+      "report": {
+        "bytes": 842466,
+        "sha256": "048fc0e6211fad473d0eb4705679abc0abd0d34d25abd8be77ec2c51fc4a49a5"
+      },
+      "files_manifest": {
+        "bytes": 72001,
+        "sha256": "70d3085c4cae441209f711742b4469ec0df80b4246d6d056595b2fb2403f3875"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "para-en",
+      "dtype": "q8_0",
+      "graph": 1,
+      "case_report": "q8_0-graph1/para-en/case-report.json",
+      "report": {
+        "bytes": 98389,
+        "sha256": "4ef98616358bb110dd31c670247876773a23b38124023b541b6ddace23828d32"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "8e991a346258c843e4e9b555ee1cd44899d48d27004f4a9116e6800a4efbfff7"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "para-en",
+      "dtype": "q4_k",
+      "graph": 1,
+      "case_report": "q4_k-graph1/para-en/case-report.json",
+      "report": {
+        "bytes": 98260,
+        "sha256": "fc49ad6278e6651c8b0f2474220093aa84a894a797cd2f212f5929040647db70"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "8a1aa786bbed8b006491e8b43375466697dccee490cf46f9c666eb1c87a6a7e4"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "table",
+      "dtype": "f32",
+      "graph": 0,
+      "case_report": "f32-graph0/table/case-report.json",
+      "report": {
+        "bytes": 97488,
+        "sha256": "f72d26f8a0919749f1cec6dec44e056fee90936a691aa7aeafdbd8c06c59495c"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "104c0e1497aae657cd9cd2eb784aea96c8c62a057b36e43c9a948db99a405a77"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "table",
+      "dtype": "f32",
+      "graph": 1,
+      "case_report": "f32-graph1/table/case-report.json",
+      "report": {
+        "bytes": 808539,
+        "sha256": "2ca373089801db3e09b15d2215d136ba1e0f6a0ebd4ac56363f101c1947c4b60"
+      },
+      "files_manifest": {
+        "bytes": 72001,
+        "sha256": "597b0ef3df8bc7541ea37303eb34d414f795fe48d30da58725470cb6ea86f893"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "table",
+      "dtype": "f16",
+      "graph": 0,
+      "case_report": "f16-graph0/table/case-report.json",
+      "report": {
+        "bytes": 97464,
+        "sha256": "ac7bdfb2b1a671639fefab113a4fcc4c07c5d8f7bf032b9fa491f275e087a0fc"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "aa3eba79f4db3ce99faaf9660ab9ac49479b64c8d053876fbdb5d570cc1552ca"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "table",
+      "dtype": "f16",
+      "graph": 1,
+      "case_report": "f16-graph1/table/case-report.json",
+      "report": {
+        "bytes": 842113,
+        "sha256": "d086b675c4311fe2a7585d07f6b88784b232b70d1b5ea1397fb41d56a4ffef66"
+      },
+      "files_manifest": {
+        "bytes": 72001,
+        "sha256": "2624cb893616d212beb884a805865f9c86e30e5e413708ee8bf6b4b40481f1ae"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "table",
+      "dtype": "q8_0",
+      "graph": 1,
+      "case_report": "q8_0-graph1/table/case-report.json",
+      "report": {
+        "bytes": 98128,
+        "sha256": "d2c15e83c0e0e12810986c21eb29b4d5fd53ef39ccf0c965d84a1441bda0e460"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "57d76cc3a76b0fe48c3ca8d954d1c39c58fb12166565053a62f53cca4d70d675"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "table",
+      "dtype": "q4_k",
+      "graph": 1,
+      "case_report": "q4_k-graph1/table/case-report.json",
+      "report": {
+        "bytes": 98092,
+        "sha256": "14a3020525bb8de0e8c72af3ba91779d44fc461be7b91f3040d3d2ec26b85426"
+      },
+      "files_manifest": {
+        "bytes": 13336,
+        "sha256": "eae8f5777b2ead701ce10c63ebc6174917775f0a7d607135a43b0300e88cf8fb"
+      },
+      "strict_passed": false
+    },
+    {
+      "id": "tall",
+      "dtype": "f32",
+      "graph": 0,
+      "case_report": "f32-graph0/tall/case-report.json",
+      "report": {
+        "bytes": 101303,
+        "sha256": "11473b89c96b8123f2787a46c866a9d3067dda740fd114ed9b7e04c547929b6d"
+      },
+      "files_manifest": {
+        "bytes": 13875,
+        "sha256": "a76e94d911b4b9020c7fae0b37ac3446607349d46973444afb22e7197fcbf24c"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "tall",
+      "dtype": "f32",
+      "graph": 1,
+      "case_report": "f32-graph1/tall/case-report.json",
+      "report": {
+        "bytes": 812328,
+        "sha256": "cff0ca36532b1b1b371f7f4c466a32961ff62c04d5140f90e158ee847dbbf57a"
+      },
+      "files_manifest": {
+        "bytes": 72540,
+        "sha256": "dc95e1b679d26467adee35fe656ae5b0be7bc394e22d6a0e956fcce81b6211d3"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "tall",
+      "dtype": "f16",
+      "graph": 0,
+      "case_report": "f16-graph0/tall/case-report.json",
+      "report": {
+        "bytes": 101245,
+        "sha256": "36295ee95b02578fb42a1a6feb2a7eb73d58472745308b129aa070d8f86d95ab"
+      },
+      "files_manifest": {
+        "bytes": 13875,
+        "sha256": "94c12d68a8c66303060c14722dbf41a8019eb85dbbb7eb13364948bee654b564"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "tall",
+      "dtype": "f16",
+      "graph": 1,
+      "case_report": "f16-graph1/tall/case-report.json",
+      "report": {
+        "bytes": 845691,
+        "sha256": "46f36ecc631b1245c20a8b4f7e73bbf01ac69961975b903a66952f8e441ba20d"
+      },
+      "files_manifest": {
+        "bytes": 72540,
+        "sha256": "21e2a4015305ec6220734141f720f1c23d0390b80f2602b39d3fa5702122b0c8"
+      },
+      "strict_passed": true
+    },
+    {
+      "id": "tall",
+      "dtype": "q8_0",
+      "graph": 1,
+      "case_report": "q8_0-graph1/tall/case-report.json",
+      "report": {
+        "bytes": 105054,
+        "sha256": "af0a93b257dc72b51a1298798dede6c9b0543f5ff77af6aa747132cef2d41584"
+      },
+      "files_manifest": {
+        "bytes": 13875,
+        "sha256": "66790bc805b9b27c35e1024143abe6ae5f457438ac2edfee839eb3b985eecdac"
+      },
+      "strict_passed": false
+    }
+  ],
+  "initial_files": {
+    "minicpm-graph/setup.json": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/build-profile.json": {
+      "bytes": 12842,
+      "sha256": "0d97e923a51b52c72f679bc45563bddff62f9915848dd76658e28e9aafab26e9"
+    },
+    "minicpm-graph/command-27.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-0.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-1.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-10.log": {
+      "bytes": 101,
+      "sha256": "edb4e2159c923ea45a32656078835cdf531c3d7b414c670dd786978875cb0678"
+    },
+    "minicpm-graph/command-11.log": {
+      "bytes": 1215,
+      "sha256": "29b341362511536a142f47af197d9614b000b0923056661f0784b65a645d7357"
+    },
+    "minicpm-graph/command-12.log": {
+      "bytes": 25277,
+      "sha256": "369056f9d9d817031ff189b1f609248d336198e2d4c7f3c525d65e2ce1789934"
+    },
+    "minicpm-graph/command-13.log": {
+      "bytes": 81,
+      "sha256": "a200d7ce6a4bd1f60067100a0d2a3a530f7aa5e22ba5237c02a5e505c3a6d908"
+    },
+    "minicpm-graph/command-14.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-15.log": {
+      "bytes": 1743,
+      "sha256": "2346570646a3bc640665e01154f74a34b5962bb6c273f9f9356975cded33e02b"
+    },
+    "minicpm-graph/command-16.log": {
+      "bytes": 237269,
+      "sha256": "1f5069a817630526fb9947b819e5ead97874aa95bd0817e7362472a9508c5a68"
+    },
+    "minicpm-graph/command-17.log": {
+      "bytes": 91,
+      "sha256": "134346fec644a79fdeb3bcadce3b26f91869c6459b0124f8caf29ac5f0c43cd1"
+    },
+    "minicpm-graph/command-18.log": {
+      "bytes": 206,
+      "sha256": "f19e932ea71c6834d883191e2aab92153a244070d2f53caedf9496a97149add5"
+    },
+    "minicpm-graph/command-19.log": {
+      "bytes": 149,
+      "sha256": "35b05ceb4010f0574e836dd237598317830a1c4e6cffc351154c2f2749e78b30"
+    },
+    "minicpm-graph/command-2.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-20.log": {
+      "bytes": 1362,
+      "sha256": "5f5f38faf8ed5f43e89afbf59d3ff4c3b5b5f1d1313e04adfef42150aa76c3d0"
+    },
+    "minicpm-graph/command-21.log": {
+      "bytes": 5424,
+      "sha256": "3165151e980b4dc03a16027ecf9cfe7bb7fd219ec792b9834f6feb13cf05a7a7"
+    },
+    "minicpm-graph/command-22.log": {
+      "bytes": 97,
+      "sha256": "ab470ad78e8c14326f74297dfcc82b3851b44ed6ea8753fefd6318db0c211821"
+    },
+    "minicpm-graph/command-23.log": {
+      "bytes": 208,
+      "sha256": "002699db1296168928a0f8d4853492478bf6150bd43f7c9374d601b7e942264e"
+    },
+    "minicpm-graph/command-24.log": {
+      "bytes": 208,
+      "sha256": "405ca3326b5f906466f202ba7778e1c3d99fccbb35afb75be91a621c88008559"
+    },
+    "minicpm-graph/command-25.log": {
+      "bytes": 71497,
+      "sha256": "9f515b2779aae5571834b6b53d5259070ec2abb3a09a440f62d65ef7ddd96555"
+    },
+    "minicpm-graph/command-26.log": {
+      "bytes": 69339,
+      "sha256": "8a24789fd2ee54f98226ed6693d3662a0bb9579ad474d559458a9eff6a5d08bf"
+    },
+    "minicpm-graph/command-3.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-4.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-5.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "minicpm-graph/command-6.log": {
+      "bytes": 266,
+      "sha256": "fdd70b33eb1e2ee595a348b3ceb17ecd2adc87804fa392cc8ca48eba3d2ea4b0"
+    },
+    "minicpm-graph/command-7.log": {
+      "bytes": 103,
+      "sha256": "baf49b59538192f3e136ca0404cac516ecb8dd2fe5ba1416604056f3080fa49c"
+    },
+    "minicpm-graph/command-8.log": {
+      "bytes": 115,
+      "sha256": "734ba75ec2f19aeb87e9bf88d335dcc64fe7e7aa740aff590e2ce82eee72aafa"
+    },
+    "minicpm-graph/command-9.log": {
+      "bytes": 111,
+      "sha256": "ca21ce9a144913ae08bf064ce2d018604261a64045a08f74c69979536108acfc"
+    },
+    "minicpm-graph/patch-quantizer-controls.json": {
+      "bytes": 20246,
+      "sha256": "8c15e44007c4c854c64fbb79c3e0ab9b07f76eca76168b77da0e2831c75d7688"
+    },
+    "minicpm-graph/ref-controls/bad-row/diff.json": {
+      "bytes": 688,
+      "sha256": "547645a2e3695f0e164b5e0f7a64472db31a8bae35e5d45f6a02c73cee9f71ea"
+    },
+    "minicpm-graph/ref-controls/bad-row/diff.log": {
+      "bytes": 335,
+      "sha256": "60848ee1de37292e36e6cbf8947239a746ef2aa4ca7cf41a2ab465f6b8b6920c"
+    },
+    "minicpm-graph/ref-controls/controls.json": {
+      "bytes": 692,
+      "sha256": "90c672f4da5b5a2a27f57bd9ba8d8bbd57d7d5db87403a899e4383fb4e0f681d"
+    },
+    "minicpm-graph/ref-controls/positive/diff.json": {
+      "bytes": 589,
+      "sha256": "cc7b47ae43f0a5fdb97a027a5d7a6c76d1ffc7934746e2729c4345907876c88f"
+    },
+    "minicpm-graph/ref-controls/positive/diff.log": {
+      "bytes": 297,
+      "sha256": "70df137301668fa1fe4cf8adacd8cfffb2f4242eee81dc7e255be81d9bcac8ca"
+    },
+    "minicpm-graph/ref-controls/wrong-shape/diff.json": {
+      "bytes": 83,
+      "sha256": "6b6cf8ec8efcbf0a44fef7ee0d40add7002e4479a265900d0ba4b6ff6e63425f"
+    },
+    "minicpm-graph/ref-controls/wrong-shape/diff.log": {
+      "bytes": 279,
+      "sha256": "3a43255c025c913d4f88d38820847024e1ff7c292b18be038fa24143f0447873"
+    }
+  },
+  "original_service": {
+    "kernel_slug": "crispembed-minicpm-ocr-reference",
+    "version_label": "v1",
+    "status": "COMPLETE",
+    "source": "3d2bcb8e23352f31971bad08a24a1c97606ae895",
+    "submitted_script_sha256": "ec0d9b5f20ca8de8a73425f91a938097acc8b4c97e18188c38d18685d205a342"
+  },
+  "original_report": {
+    "bytes": 220355,
+    "sha256": "aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32"
+  },
+  "models": {
+    "f32": {
+      "bytes": 5211736576,
+      "sha256": "2e57bc1fd0bf64e8a4dea7a45ca07ba1b2a4a52de73e0087f297df6013330f77"
+    },
+    "f16": {
+      "bytes": 2612763136,
+      "sha256": "e024db8b1312116f68be6318b42203a1f99db6ddcb60fb1fce672f5e8f1f0362"
+    },
+    "q8_0": {
+      "bytes": 1804958912,
+      "sha256": "e01d32bc1735ff0d8f3d0af3dec74b5d5556aaf6304abc8af2e3f92ad4e63e8a"
+    },
+    "q4_k": {
+      "bytes": 1897441856,
+      "sha256": "e483709ae70e84115d20b145aa6b76c85555e7a2d87bffa4b215577b37902f14"
+    }
+  },
+  "build_profile": {
+    "passed": true,
+    "cache": {
+      "GGML_NATIVE": "OFF",
+      "CRISPEMBED_NATIVE": "OFF",
+      "GGML_LLAMAFILE": "ON",
+      "GGML_CUDA": "OFF",
+      "GGML_BLAS": "OFF",
+      "GGML_OPENMP": "OFF",
+      "GGML_BACKEND_DL": "OFF",
+      "GGML_CPU_REPACK": "ON",
+      "GGML_CPU_ALL_VARIANTS": "OFF",
+      "GGML_AVX": "ON",
+      "GGML_AVX2": "ON",
+      "GGML_AVX512": "OFF",
+      "GGML_FMA": "ON",
+      "GGML_F16C": "ON"
+    },
+    "implementation": [
+      {
+        "file": "qwen35_graph_decoder.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_VERSION_STR=\"0.17.14\"",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/include",
+          "-I/kaggle/temp/ce/examples/cli",
+          "-I/kaggle/temp/ce/src/core",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-ffp-contract=off",
+          "-o",
+          "CMakeFiles/crispembed.dir/src/qwen35_graph_decoder.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_graph_decoder.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_MINICPM_GRAPH_AUDIT=1",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-ffp-contract=off",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-o",
+          "CMakeFiles/minicpm-graph-probe.dir/kaggle/temp/ce/src/qwen35_graph_decoder.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_graph_decoder.cpp"
+        ],
+        "isa": [
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "contraction": "off"
+      },
+      {
+        "file": "qwen35_decoder.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_VERSION_STR=\"0.17.14\"",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/include",
+          "-I/kaggle/temp/ce/examples/cli",
+          "-I/kaggle/temp/ce/src/core",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-ffp-contract=off",
+          "-o",
+          "CMakeFiles/crispembed.dir/src/qwen35_decoder.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_decoder.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_MINICPM_GRAPH_AUDIT=1",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-ffp-contract=off",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-o",
+          "CMakeFiles/minicpm-graph-probe.dir/kaggle/temp/ce/src/qwen35_decoder.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_decoder.cpp"
+        ],
+        "isa": [
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "contraction": "off"
+      },
+      {
+        "file": "qwen35_attention.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_VERSION_STR=\"0.17.14\"",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/include",
+          "-I/kaggle/temp/ce/examples/cli",
+          "-I/kaggle/temp/ce/src/core",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-ffp-contract=off",
+          "-o",
+          "CMakeFiles/crispembed.dir/src/qwen35_attention.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_attention.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_MINICPM_GRAPH_AUDIT=1",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-ffp-contract=off",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-o",
+          "CMakeFiles/minicpm-graph-probe.dir/kaggle/temp/ce/src/qwen35_attention.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_attention.cpp"
+        ],
+        "isa": [
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "contraction": "off"
+      },
+      {
+        "file": "qwen35_linear.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_VERSION_STR=\"0.17.14\"",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/include",
+          "-I/kaggle/temp/ce/examples/cli",
+          "-I/kaggle/temp/ce/src/core",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-ffp-contract=off",
+          "-o",
+          "CMakeFiles/crispembed.dir/src/qwen35_linear.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_linear.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_MINICPM_GRAPH_AUDIT=1",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-ffp-contract=off",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-o",
+          "CMakeFiles/minicpm-graph-probe.dir/kaggle/temp/ce/src/qwen35_linear.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_linear.cpp"
+        ],
+        "isa": [
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "contraction": "off"
+      },
+      {
+        "file": "qwen35_delta.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_VERSION_STR=\"0.17.14\"",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/include",
+          "-I/kaggle/temp/ce/examples/cli",
+          "-I/kaggle/temp/ce/src/core",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-ffp-contract=off",
+          "-o",
+          "CMakeFiles/crispembed.dir/src/qwen35_delta.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_delta.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_MINICPM_GRAPH_AUDIT=1",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-ffp-contract=off",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-o",
+          "CMakeFiles/minicpm-graph-probe.dir/kaggle/temp/ce/src/qwen35_delta.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_delta.cpp"
+        ],
+        "isa": [
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "contraction": "off"
+      },
+      {
+        "file": "qwen35_profile.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_VERSION_STR=\"0.17.14\"",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/include",
+          "-I/kaggle/temp/ce/examples/cli",
+          "-I/kaggle/temp/ce/src/core",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-ffp-contract=off",
+          "-o",
+          "CMakeFiles/crispembed.dir/src/qwen35_profile.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_profile.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DCRISPEMBED_MINICPM_GRAPH_AUDIT=1",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_SHARED",
+          "-DGGML_USE_CPU",
+          "-I/kaggle/temp/ce/src",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-ffp-contract=off",
+          "-mavx2",
+          "-mfma",
+          "-mf16c",
+          "-o",
+          "CMakeFiles/minicpm-graph-probe.dir/kaggle/temp/ce/src/qwen35_profile.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/src/qwen35_profile.cpp"
+        ],
+        "isa": [
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "contraction": "off"
+      }
+    ],
+    "backend": [
+      {
+        "file": "ggml-cpu.c",
+        "root_argv": [
+          "/usr/bin/cc",
+          "-DGGML_AVX",
+          "-DGGML_AVX2",
+          "-DGGML_BACKEND_BUILD",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_BMI2",
+          "-DGGML_F16C",
+          "-DGGML_FMA",
+          "-DGGML_SCHED_MAX_COPIES=4",
+          "-DGGML_SHARED",
+          "-DGGML_SSE42",
+          "-DGGML_USE_CPU_REPACK",
+          "-DGGML_USE_LLAMAFILE",
+          "-D_GNU_SOURCE",
+          "-D_XOPEN_SOURCE=600",
+          "-Dggml_cpu_EXPORTS",
+          "-I/kaggle/temp/ce/ggml/src/..",
+          "-I/kaggle/temp/ce/ggml/src/.",
+          "-I/kaggle/temp/ce/ggml/src/ggml-cpu",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu11",
+          "-fPIC",
+          "-Wshadow",
+          "-Wstrict-prototypes",
+          "-Wpointer-arith",
+          "-Wmissing-prototypes",
+          "-Werror=implicit-int",
+          "-Werror=implicit-function-declaration",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wcast-qual",
+          "-Wno-unused-function",
+          "-Wdouble-promotion",
+          "-msse4.2",
+          "-mf16c",
+          "-mfma",
+          "-mbmi2",
+          "-mavx",
+          "-mavx2",
+          "-o",
+          "CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o",
+          "-c",
+          "/kaggle/temp/ce/ggml/src/ggml-cpu/ggml-cpu.c"
+        ],
+        "standalone_argv": [
+          "/usr/bin/cc",
+          "-DGGML_AVX",
+          "-DGGML_AVX2",
+          "-DGGML_BACKEND_BUILD",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_BMI2",
+          "-DGGML_F16C",
+          "-DGGML_FMA",
+          "-DGGML_SCHED_MAX_COPIES=4",
+          "-DGGML_SHARED",
+          "-DGGML_SSE42",
+          "-DGGML_USE_CPU_REPACK",
+          "-DGGML_USE_LLAMAFILE",
+          "-D_GNU_SOURCE",
+          "-D_XOPEN_SOURCE=600",
+          "-Dggml_cpu_EXPORTS",
+          "-I/kaggle/temp/ce/ggml/src/..",
+          "-I/kaggle/temp/ce/ggml/src/.",
+          "-I/kaggle/temp/ce/ggml/src/ggml-cpu",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu11",
+          "-fPIC",
+          "-Wshadow",
+          "-Wstrict-prototypes",
+          "-Wpointer-arith",
+          "-Wmissing-prototypes",
+          "-Werror=implicit-int",
+          "-Werror=implicit-function-declaration",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wcast-qual",
+          "-Wno-unused-function",
+          "-Wdouble-promotion",
+          "-msse4.2",
+          "-mf16c",
+          "-mfma",
+          "-mbmi2",
+          "-mavx",
+          "-mavx2",
+          "-o",
+          "CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o",
+          "-c",
+          "/kaggle/temp/ce/ggml/src/ggml-cpu/ggml-cpu.c"
+        ],
+        "isa": [
+          "-mavx",
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "definitions": [
+          "-DGGML_AVX",
+          "-DGGML_AVX2",
+          "-DGGML_BACKEND_BUILD",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_BMI2",
+          "-DGGML_F16C",
+          "-DGGML_FMA",
+          "-DGGML_SCHED_MAX_COPIES=4",
+          "-DGGML_SHARED",
+          "-DGGML_SSE42",
+          "-DGGML_USE_CPU_REPACK",
+          "-DGGML_USE_LLAMAFILE"
+        ]
+      },
+      {
+        "file": "ggml-cpu.cpp",
+        "root_argv": [
+          "/usr/bin/c++",
+          "-DGGML_AVX",
+          "-DGGML_AVX2",
+          "-DGGML_BACKEND_BUILD",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_BMI2",
+          "-DGGML_F16C",
+          "-DGGML_FMA",
+          "-DGGML_SCHED_MAX_COPIES=4",
+          "-DGGML_SHARED",
+          "-DGGML_SSE42",
+          "-DGGML_USE_CPU_REPACK",
+          "-DGGML_USE_LLAMAFILE",
+          "-D_GNU_SOURCE",
+          "-D_XOPEN_SOURCE=600",
+          "-Dggml_cpu_EXPORTS",
+          "-I/kaggle/temp/ce/ggml/src/..",
+          "-I/kaggle/temp/ce/ggml/src/.",
+          "-I/kaggle/temp/ce/ggml/src/ggml-cpu",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-Wmissing-declarations",
+          "-Wmissing-noreturn",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wcast-qual",
+          "-Wno-unused-function",
+          "-Wno-array-bounds",
+          "-Wextra-semi",
+          "-msse4.2",
+          "-mf16c",
+          "-mfma",
+          "-mbmi2",
+          "-mavx",
+          "-mavx2",
+          "-o",
+          "CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/ggml/src/ggml-cpu/ggml-cpu.cpp"
+        ],
+        "standalone_argv": [
+          "/usr/bin/c++",
+          "-DGGML_AVX",
+          "-DGGML_AVX2",
+          "-DGGML_BACKEND_BUILD",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_BMI2",
+          "-DGGML_F16C",
+          "-DGGML_FMA",
+          "-DGGML_SCHED_MAX_COPIES=4",
+          "-DGGML_SHARED",
+          "-DGGML_SSE42",
+          "-DGGML_USE_CPU_REPACK",
+          "-DGGML_USE_LLAMAFILE",
+          "-D_GNU_SOURCE",
+          "-D_XOPEN_SOURCE=600",
+          "-Dggml_cpu_EXPORTS",
+          "-I/kaggle/temp/ce/ggml/src/..",
+          "-I/kaggle/temp/ce/ggml/src/.",
+          "-I/kaggle/temp/ce/ggml/src/ggml-cpu",
+          "-I/kaggle/temp/ce/ggml/src/../include",
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-Wmissing-declarations",
+          "-Wmissing-noreturn",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wcast-qual",
+          "-Wno-unused-function",
+          "-Wno-array-bounds",
+          "-Wextra-semi",
+          "-msse4.2",
+          "-mf16c",
+          "-mfma",
+          "-mbmi2",
+          "-mavx",
+          "-mavx2",
+          "-o",
+          "CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o",
+          "-c",
+          "/kaggle/temp/ce/ggml/src/ggml-cpu/ggml-cpu.cpp"
+        ],
+        "isa": [
+          "-mavx",
+          "-mavx2",
+          "-mf16c",
+          "-mfma"
+        ],
+        "definitions": [
+          "-DGGML_AVX",
+          "-DGGML_AVX2",
+          "-DGGML_BACKEND_BUILD",
+          "-DGGML_BACKEND_SHARED",
+          "-DGGML_BMI2",
+          "-DGGML_F16C",
+          "-DGGML_FMA",
+          "-DGGML_SCHED_MAX_COPIES=4",
+          "-DGGML_SHARED",
+          "-DGGML_SSE42",
+          "-DGGML_USE_CPU_REPACK",
+          "-DGGML_USE_LLAMAFILE"
+        ]
+      }
+    ]
+  },
+  "old_binary_sha256": {
+    "cli": "5c2dac6adbe89c92883a95da4a97cd500335409cf298499fb5c0042659795743",
+    "probe": "e3d21df655da02b8c3f8df6fc1afcd7b4d5f4edd6da94660b9d1e16c6bda3de7",
+    "diff": "285c9f8e6ccd752809db3c4643daad83ff7cd0577f4bfc57b20df4f1c8e6433e"
+  },
+  "canonical_retained_bytes": 6804636987,
+  "duplicate_bytes": 13912044352,
+  "raw_arrays_downloaded_locally": false
+}
