@@ -69,11 +69,18 @@ untiled: [global 16x(16+newline)] [view_seperator]
 Feature = projector(cat(CLIP[:,1:], SAM.flatten.permute)) exactly as v1.
 
 ### 1.5 Native tiling status
-`src/unlimited_ocr.cpp` implements §1.3/§1.4 gundam tiling behind `CRISPEMBED_UNLIMITED_OCR2_TILES=1`
-(default OFF; variant-2 GGUFs only; only when `w > 640 or h > 640`). With the gate off, or for pages
-of at most 640x640, the global-only 273-token path is unchanged. **Status: implemented, not yet
-validated against the reference** (the Kaggle native kernel now runs the tiled `para-en`/`table`
-cases with the gate on; nothing is qualified until those IDs match).
+**Default since 2026-10-28: tile like the original.** The original's `infer()` defaults to
+`crop_mode=None` (modeling_unlimitedocr.py:1040); `_uocr_build_inputs` turns that into
+`cropping = (n_img == 1)` (:541), and a page is tiled iff it is larger than `image_size=640` in
+either dimension (`if w <= 640 and h <= 640: ratio=(1,1)` else `dynamic_preprocess(min_num=2,
+max_num=16)`, :554-558). `src/unlimited_ocr.cpp` now follows that rule by default for variant-2
+GGUFs (one page per call, so `cropping` is always true). `CRISPEMBED_UNLIMITED_OCR2_TILES=0`
+forces the global-only 273-token view (the original's `crop_mode=False`, 2-4x faster on CPU);
+`=1` is accepted as before. The engine itself stays behind `CRISPEMBED_UNLIMITED_OCR2=1`.
+Pages of at most 640x640 are never tiled (same as the original). The Kaggle trial found that the
+old untiled default diverged from the original's IDs within the first ~7 tokens on every
+1024x768 page (`tests/results/unlimited-ocr2/trial.json`), while tiled F16 was exact on all four
+compared pages.
 
 Parity risks, most likely first:
 - **Tile resize.** A port of Pillow's `Resample.c` BICUBIC (a=-0.5, support widened by the
@@ -391,6 +398,26 @@ So for one page: EOS is banned until the model emits `<PAGE>`; after a 2nd `<PAG
 page longer than 20000 tokens is force-terminated. Post-processing for `save_results` only (MU:1207-1228):
 split on `<PAGE>`, strip, `<|ref|>/<|det|>` handling, coordinates /999 — same as v1.
 
+### 5.1 Output text (native, since 2026-10-28)
+The returned text is `tokenizer.decode(gen, skip_special_tokens=False)` (MU:1201) with EOS never in
+`gen`. The tokenizer is `LlamaTokenizerFast` with `clean_up_tokenization_spaces=false`
+(tokenizer_config.json) and a ByteLevel decoder (tokenizer.json), so every generated id is
+emitted, including the added layout/table tokens `<PAGE>`(128827) `<BLOCK>`(128828)
+`<FORK>`(128829) `<CHILD>`(128830) and `<td>`/`</td>`/`<tr>`/`</tr>` (128821-128824, marked
+`special` but kept because `skip_special_tokens=False`). The `tokenizers` ByteLevel decode maps each
+token's chars through the GPT-2 byte table, falling back to the token's raw UTF-8 for the whole
+token if any char is unmapped, then applies `from_utf8_lossy`. `src/unlimited_ocr2_text.h`
+reproduces this byte-exactly (`tests/test_unlimited_ocr2_text.cpp` replays the trial's original
+IDs and texts). The earlier native decode dropped every `<...>` piece, which lost the table's
+row/cell structure and the block markers. A page decodes as
+`<PAGE><BLOCK>label[<LEVELn>][x1, y1, x2, y2]<FORK>text\n<BLOCK>...`, with tables as
+`<table><tr><td>..</td></tr></table>`.
+
+`CRISPEMBED_UNLIMITED_OCR2_OUTPUT` selects the rendering: unset/`raw` gives the original decode
+(default); `clean` (alias `markdown`) drops `<PAGE>`, each `<BLOCK>label[box]<FORK>` header and
+stray `<FORK>`/`<CHILD>`, keeping block text, newlines and table HTML (pages are joined by a
+blank line); `legacy` gives the old marker-dropping text (A/B only). Variant 1 is unchanged.
+
 ---
 
 ## 6. Other numerically relevant points
@@ -481,7 +508,9 @@ default and is the exact reference. The fast path keeps the same semantics:
 - DASH block scoring, 1.5-entmax top16->12 routing and bias stay on CPU with the same `uocr2::` helpers
   and become an additive F32 mask (0 inside the local 128 window, the block bias for selected blocks,
   -inf otherwise) for `ggml_soft_max_ext`;
-- graph B (per query chunk of `UOCR2_FAST_CHUNK` rows, default 256): masked attention (GQA by
+- graph B (per query chunk of `UOCR2_FAST_CHUNK` rows; default 2048 since 2026-10-28, was 256. Every op
+  is row-wise, so the chunking cannot change a row's result, and one chunk reads each layer's
+  expert weights once per prompt): masked attention (GQA by
   broadcast), o_proj, residual, then the dense FFN (layer 0) or the v1 MoE (`ggml_mul_mat_id`, softmax
   gate, top-6, no renormalisation, routed scaling, shared experts);
 - final norm + lm_head as a ggml graph; the page-count guard, first-max argmax and confidence are the

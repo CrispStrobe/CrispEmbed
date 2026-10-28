@@ -133,6 +133,18 @@ def card(cfg, files, parity, source_commit):
     rows = "\n".join(f"| `{f['filename']}` | {f['variant']} | {f['bytes']:,} | `{f['sha256']}` |" for f in files)
     lf = up["license_file"]
     t = parity["tiled"]
+    text_proof = parity.get("trial_text")
+    text_status = ""
+    if text_proof:
+        text_status = f"""
+- **Raw decoded output:** original IDs and complete raw UTF-8 text are byte-exact on all four
+  synthetic tiled F16 pages at runtime `{text_proof['source'][:8]}`. Default tiling was used.
+  Published GGUFs contain only the128000 base pieces; this runtime supplies the pinned831
+  missing added pieces, including `<PAGE>`, `<BLOCK>`, `<FORK>` and table `<tr>/<td>` markup.
+  The converter now writes added-token metadata for future conversions; these published weights
+  are unchanged and continue to require that runtime fallback. `OUTPUT=legacy` preserves the old
+  marker-dropping output; `OUTPUT=clean` is a separate layout-stripped rendering retaining table HTML.
+"""
     return f"""---
 license: mit
 license_link: LICENSE
@@ -187,7 +199,14 @@ conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants 
   pages (4x3 tiles, 1503 vision tokens), from CrispEmbed commit `{t['commit'][:8]}` on. Earlier runtimes
   emitted 256 instead of 100 vision tokens per 640px tile and matched the text only; the weights were never affected.
 - The opt-in fast decoder reproduces the exact decoder token-for-token on all {parity['fast_decoder']['cases']} pages.
-- Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
+- **Published files, user-style trial** (Kaggle CPU, receipt `tests/results/unlimited-ocr2/trial.json`
+  in CrispEmbed; four tiled pages compared with the original): **F16 is token-ID exact on all 4**
+  (paragraphs, table, receipt, German), with the fast decoder equal to the exact decoder everywhere.
+  **Q8_0 is exact on the untiled panel page but diverges on 2 of the 4 tiled trial pages** (table at
+  generated token 7, receipt at tokens 131 and 258). Each divergence is one bounding-box coordinate
+  token off by 1-3 (for example `102` vs `99`); sequence length and recognized text are unchanged.
+  **Use F16 when exact agreement with the original matters**; Q8_0 is smaller and faster.
+{text_status}- Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
 
 ## Usage
 
@@ -195,7 +214,10 @@ Unlimited-OCR-2 support is default-off in CrispEmbed and is enabled with an envi
 
 ```bash
 CRISPEMBED_UNLIMITED_OCR2=1 crispembed -m unlimited-ocr-2-f16.gguf --ocr page.png
-# tiling of large pages: CRISPEMBED_UNLIMITED_OCR2_TILES=1
+# pages larger than 640 px are tiled like the original (crop_mode=None);
+# CRISPEMBED_UNLIMITED_OCR2_TILES=0 forces the faster untiled view.
+# Output is the original's raw decode (layout markup kept);
+# CRISPEMBED_UNLIMITED_OCR2_OUTPUT=clean strips <PAGE>/<BLOCK>label[box]<FORK> and keeps tables.
 ```
 """
 
@@ -206,6 +228,113 @@ def manifest(cfg, files, parity, source_commit, card_sha):
             "recipes": {f["variant"]: cfg["recipes"][f["variant"]] for f in files},
             "files": files, "readme_sha256": card_sha, "parity": parity,
             "protocol_sha256": digest(ROOT / PROTOCOL)}
+
+
+
+def trial_text_receipt(root=ROOT):
+    """Original bytes/IDs, not self-reported parity flags; runs before Hub access."""
+    path = root / "tests/results/unlimited-ocr2/verify-text-v2.json"
+    verified = json.loads(path.read_text())
+    trial = json.loads((root / "tests/results/unlimited-ocr2/trial.json").read_text())
+    expected_source = "8ca9d3de2a8160e6f5235156d3550c9719583744"
+    require(verified.get("schema") == "crispembed-unlimited-ocr2-verify-v1" and
+            verified.get("commit") == expected_source and verified.get("scope") == "text",
+            "reviewed exact text verification source/scope required")
+    require(set(verified["tests"]) == {"test-unlimited-ocr2-text", "test-unlimited-ocr2-tiles"} and
+            all(row["exit"] == 0 for row in verified["tests"].values()), "compiled text/tiling controls failed")
+    require(verified["page_sha_matches_trial"] and all(verified["page_sha_matches_trial"].values()),
+            "verification page bytes differ from original trial")
+    references = {row["id"]: row for row in trial["reference"]["cases"]}
+    cases = [row for row in verified["runs"] if row["tag"] == "after" and row["alias"] == "unlimited-ocr2"]
+    names = {"table", "receipt", "paragraphs", "german"}
+    require(len(cases) == 4 and {row["page"] for row in cases} == names, "complete four-page text verification required")
+    for row in cases:
+        original = references[row["page"]]
+        ids = original["ids"] if isinstance(original["ids"], list) else json.loads(original["ids"])
+        require(row["exit"] == 0 and row["ids"] == ids and
+                row["text"].encode("utf-8") == original["text"].encode("utf-8") and
+                "CRISPEMBED_UNLIMITED_OCR2_TILES" not in row["env"] and
+                "CRISPEMBED_UNLIMITED_OCR2_OUTPUT" not in row["env"],
+                "default F16 original IDs/raw text differ: " + row["page"])
+    return {"source": expected_source, "scope": "four synthetic tiled pages, published F16",
+            "default_ids_exact": True, "raw_text_bytes_exact": True,
+            "cases": sorted(names), "receipt": str(path.relative_to(root)), "receipt_sha256": digest(path),
+            "published_tokenizer_uses_runtime_added_token_fallback": True}
+
+
+def refresh_payload(cfg, previous, parity, verification):
+    """Pure card-only render. Weight identities and producing source stay frozen."""
+    require(previous.get("schema") == "crispembed-unlimited-ocr2-publication-manifest-v1" and
+            previous.get("destination") == cfg["destination"], "previous manifest schema/destination differs")
+    files, original_source = previous["files"], previous["source_commit"]
+    require(re.fullmatch("[0-9a-f]{40}", original_source or ""), "previous producing source malformed")
+    require(files and all(f["variant"] in cfg["recipes"] and f["filename"] == cfg["recipes"][f["variant"]]["filename"] and
+                         type(f["bytes"]) is int and f["bytes"] > 10**9 and re.fullmatch("[0-9a-f]{64}", f["sha256"])
+                         for f in files), "previous weight identities malformed")
+    updated = dict(parity, trial_text=verification)
+    readme = card(cfg, files, updated, original_source).encode("utf-8")
+    data = manifest(cfg, files, updated, original_source, hashlib.sha256(readme).hexdigest())
+    require(data["files"] == previous["files"] and data["source_commit"] == previous["source_commit"],
+            "card refresh changed weight/source identities")
+    return {"README.md": readme, "manifest.json": (json.dumps(data, indent=2) + "\n").encode()}
+
+
+def refresh_card(cfg, out, root=ROOT):
+    verification = trial_text_receipt(root)  # BEFORE credentials, client import or any network.
+    publication = json.loads((root / "tests/results/unlimited-ocr2/publication.json").read_text())
+    old = publication["card_update"]
+    parent = old["hub_commit"]
+    require(re.fullmatch("[0-9a-f]{40}", parent), "exact existing Hub parent required")
+    def small(name, revision, expected=None):
+        url = f"https://huggingface.co/{cfg['destination']}/resolve/{revision}/{name}"
+        with urllib.request.urlopen(url, timeout=60) as response:
+            data = response.read(1024 * 1024 + 1)
+        require(len(data) <= 1024 * 1024, "card/notice metadata exceeds1MiB")
+        if expected: require(hashlib.sha256(data).hexdigest() == expected, "immutable small file SHA differs: " + name)
+        return data
+    previous_bytes = small("manifest.json", parent, old["manifest.json"])
+    previous = json.loads(previous_bytes)
+    require(previous["files"] == publication["remote"]["files"], "previous manifest/weight receipt differs")
+    small("README.md", parent, old["README.md"])
+    notices = {"LICENSE": cfg["upstream"]["license_file"]["sha256"],
+               "UPSTREAM_README.md": cfg["upstream"]["readme"]["sha256"]}
+    for name, expected in notices.items(): small(name, parent, expected)
+    payload = refresh_payload(cfg, previous, receipts(cfg, root), verification)
+    out = Path(out); out.mkdir(parents=True, exist_ok=True)
+    for name, data in payload.items(): (out / name).write_bytes(data)
+    state = {"status": "prepared", "previous_hub_commit": parent, "verification": verification,
+             "changed_files": sorted(payload), "weights_unchanged": True}
+    def save_state():
+        (out / "card-refresh-state.json").write_text(json.dumps(state, indent=2) + "\n")
+    save_state()
+    from huggingface_hub import CommitOperationAdd, HfApi
+    require(os.environ.get("HF_TOKEN"), "card publication credential unavailable")
+    api = HfApi(token=os.environ["HF_TOKEN"])
+    current = api.model_info(cfg["destination"], revision="main", files_metadata=True)
+    require(current.sha == parent, "Hub parent advanced; review before a new card refresh")
+    def weights(info):
+        remote = {row.rfilename: row for row in info.siblings}
+        for row in previous["files"]:
+            actual = remote[row["filename"]]
+            require(actual.size == row["bytes"] and actual.lfs and actual.lfs.sha256 == row["sha256"],
+                    "weight identity changed during card-only refresh")
+    weights(current)
+    operations = [CommitOperationAdd(path_in_repo=name, path_or_fileobj=data) for name, data in payload.items()]
+    require(len(operations) == 2 and set(payload) == {"README.md", "manifest.json"}, "only card/manifest may change")
+    commit = api.create_commit(repo_id=cfg["destination"], operations=operations,
+                               parent_commit=parent, commit_message="Clarify original raw decode, tiling and F16/Q8 trial limits")
+    state.update(status="uploaded; immutable readback pending", hub_commit=commit.oid)
+    save_state()
+    weights(api.model_info(cfg["destination"], revision=commit.oid, files_metadata=True))
+    result = {"hub_commit": commit.oid, "previous_hub_commit": parent, "changed_files": sorted(payload),
+              "weights_unchanged": True, "notices_unchanged": True, "source_commit": previous["source_commit"],
+              "verification": verification}
+    for name, data in payload.items():
+        expected = hashlib.sha256(data).hexdigest(); small(name, commit.oid, expected); result[name] = expected
+    for name, expected in notices.items(): small(name, commit.oid, expected)
+    state.update(status="uploaded and immutable readback verified", notices_unchanged=True)
+    save_state()
+    return result
 
 
 def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
@@ -278,6 +407,21 @@ def main(argv):
         return
     if cmd == "notices":
         notices(cfg, argv[2])
+        return
+    if cmd == "refresh-plan":
+        require(len(argv) == 2, "usage: refresh-plan")
+        print(json.dumps(trial_text_receipt(), indent=2))
+        return
+    if cmd == "refresh-card":
+        require(len(argv) == 3, "usage: refresh-card OUT")
+        out = Path(argv[2]); out.mkdir(parents=True, exist_ok=True)
+        try:
+            result = refresh_card(cfg, out)
+            (out / "card-update.json").write_text(json.dumps(result, indent=2) + "\n")
+        except BaseException as error:
+            (out / "card-update.json").write_text(json.dumps({"status": "failed or rejected",
+                "error": f"{type(error).__name__}: {error}"}, indent=2) + "\n")
+            raise
         return
     require(cmd == "publish" and len(argv) == 6, "usage: plan VARIANTS | notices DIR | publish VARIANTS GGUF_DIR NOTICES_DIR OUT")
     out = Path(argv[5])
