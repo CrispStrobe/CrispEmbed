@@ -1048,3 +1048,23 @@ reviewed original form image by explicit-version service/source/member proofs,
 then decodes only that form. Carry initial19 comparisons separately; no19-image
 or original-model recapture. The native retained-input helper changes delivery
 only, never manifest, pixels, prompt, caps, scorer or inference.
+
+### Real-scan MiniCPM continuation after complete native20
+
+Completed native20 and valid original pairing are in HISTORY. Preserve the one
+strict ID difference (`en-2col-eb1911-v04-246`, index124, native34449/motto versus
+original1656/mott,842 IDs). Do not repeat the native form: its frozen image and
+627-ID result already match the separate corrected original. Unlimited's missing
+native form remains separate. Native/original text cleanup policies differ and
+raw-stdout parity is unproved; retain all stored/stripped/scorer comparisons.
+
+After retained Mini graph analysis/seven-arm completion, scope an actual plain
+cache/residency/thread-matched benchmark. If diagnosing the single real-page
+difference, predeclare native STB-encoded versus identical-STB-raw API neutrality
+before a retained Pillow-RGB intervention, using the authenticated decode-only
+source813 case pixels. Keep encoded image/model/prompt/cap/gold fixed; measure
+actual IDs/logits and earliest vision/prefill differences. No original model
+rerun is needed for this first pixel-boundary intervention. Historical original
+Pillow binary identity was not frozen, so contemporary Pillow pixel equality
+is a bounded policy test rather than proof of the old binary's bytes. A smaller
+CER is not reference parity, and a pixel delta alone is not model-error causality.

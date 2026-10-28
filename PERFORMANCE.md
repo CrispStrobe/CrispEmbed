@@ -7063,3 +7063,15 @@ the candidate: five discrete decisions match but ordinal errors0.0472567 and
 [the complete result](tests/results/josev2b/q4k-v4-review.json) before using size
 or latency as a reason to promote it. A/B/C sizes remain predictions until
 actual quantizer readback and task review.
+
+MiniCPM's completed real-scan nativev2 reports median1,209.31s/page and summed
+31,724.57s across20 pages; original comparisons median204.2s. The median paired
+wall ratio5.73764 is descriptive across different CPU models (EPYC7B12 versus
+Xeon) and different residency (fresh native CLI/context per page versus a
+resident original model). It is not a controlled backend speed ratio. Native
+per-child RSS is5,049.1–5,145.4MiB; original RSS is cumulative and cannot support
+a memory-win claim. Native mean CER0.05147 versus original0.051485, with19/20
+ID sequences exact. See [all scopes and limits](tests/results/ocr-real-scans/minicpm-initial-native-v2-review.json).
+A controlled plain graph/scalar benchmark remains pending after the seven-arm
+continuation; exclude dumps/projection-capture overhead and match model hashes,
+threads, hardware and residency before judging production speed.

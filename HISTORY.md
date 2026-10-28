@@ -17071,3 +17071,22 @@ minimum row cosine and all original gates. All five discrete decisions agree,
 but both ordinal errors0.04725674/0.01106670 exceed0.001. No publication follows.
 Source54c2b5767 freezes A/B/C role-based higher-precision development recipes
 before any NEW20 native output; original references and every negative remain.
+
+### MiniCPM native real-scan panel — 28 October 2026
+
+[Exact nativev2 at2acee0b1](tests/results/ocr-real-scans/minicpm-initial-native-v2-review.json)
+completes all20 pages with valid frozen image hashes, exit0, EOS248046 and no
+caps/errors/skips. Pair19 valid original20 rows plus the separately corrected
+form original:19/20 token sequences and stored strings match, with11,157 IDs
+on each side. The sole difference is token124 on`en-2col-eb1911-v04-246`: native
+`motto` versus original`mott`, same842-token count. CER is0.1318 versus0.1321;
+this slightly better ground-truth score does not erase the strict ID mismatch.
+
+The native form used exact frozen4d6 image bytes and matches the corrected
+original627 IDs. No new native MiniCPM form forward is needed; the earlier
+invalid original form row remains excluded. Native stdout is stripped whereas
+original decoded text is stored unstripped; separate stored/stripped/scorer
+comparisons are retained, not called raw-stdout byte proof. No confidence or
+intermediate vectors are exposed by this producer. All large payloads stay
+remote; [the exact producer](tests/results/ocr-real-scans/minicpm-initial-native-v2.json)
+and independent source/service/log identities are preserved.
