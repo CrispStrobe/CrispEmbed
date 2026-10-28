@@ -1,0 +1,160 @@
+{
+  "schema": "crispembed-minicpm-ocr-source-v1",
+  "repository": "openbmb/MiniCPM-OCR-1.0",
+  "revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+  "created_at": "2026-10-21T15:51:40.000Z",
+  "audited_at": "2026-10-28",
+  "license": "Apache-2.0 (model card metadata `license: apache-2.0`; card: weights, code and documentation released under Apache-2.0; LICENSE text lives in the OpenBMB/MiniCPM-OCR code repository, not on the Hub)",
+  "license_notes": "No MiniCPM Model License / commercial-registration clause on this checkpoint (unlike older MiniCPM-V releases). Converted GGUF redistribution is permitted under Apache-2.0: include the license text, keep attribution, state modifications (format conversion / quantization). Publisher already redistributes GGUF/AWQ/GPTQ under Apache-2.0.",
+  "code": "https://github.com/OpenBMB/MiniCPM-OCR",
+  "base_model": "openbmb/MiniCPM-V-4.6 (SigLIP vision + Qwen3.5 text)",
+  "reference_runtime": {
+    "package": "transformers",
+    "version": "5.21.0",
+    "model_type": "minicpm_ocr",
+    "note": "native Transformers model (no remote code on the Hub); config.json transformers_version=5.21.0"
+  },
+  "parameters": {
+    "total": 1300434160,
+    "dtype": "BF16",
+    "tensors": 779
+  },
+  "safetensors_header": {
+    "bytes": 101488,
+    "sha256": "fd946d2912ec3a3d118e21af7787c51a4f7209be4cd2477fe0160be851132270",
+    "note": "JSON header obtained by HTTP range read; no weights downloaded"
+  },
+  "files": {
+    ".gitattributes": {
+      "bytes": 2213,
+      "git_oid": "6e5b931515842cfaa2c774e9117266bb19a23372"
+    },
+    "README.md": {
+      "bytes": 12641,
+      "git_oid": "1e0b6e7e8813071fe3dd3e12cea95ac84a6b4ddb",
+      "sha256": "a62051d6a7c4cf3bcf6576a6028a12030c9c601f569d9d09ab7bb49502c5294a"
+    },
+    "chat_template.jinja": {
+      "bytes": 7344,
+      "git_oid": "1007f10aa61d9b53080cbd51a17fd62ac3cd84ad",
+      "sha256": "c6a5f1387c6baa0befecc39e36f293e44baba865a9c7809ac93fae1604b2c210"
+    },
+    "config.json": {
+      "bytes": 2275,
+      "git_oid": "ff74250b1dafe17e1ca80aa1aad030a1b6179017",
+      "sha256": "762025491b206967a3c29c3e36ff2cccd8af6a8c750360b61dc91882b573f759"
+    },
+    "generation_config.json": {
+      "bytes": 133,
+      "git_oid": "62d610769736ebba81097087638409542f79455d",
+      "sha256": "7cecf81e246f8db6bcc4c14f22313dd7decf2d6a70dd1b45c4d237a2e6927405"
+    },
+    "model.safetensors": {
+      "bytes": 2600969816,
+      "git_oid": "73ff59a4fa83d511eb228840a7c6d487c891a76c",
+      "sha256": "83f4e433b044fd23f9ea7eb3acbc7d59e4fe11a1fdf3c3129b7021d0ab4f8fd4"
+    },
+    "preprocessor_config.json": {
+      "bytes": 340,
+      "git_oid": "5589d6677b152eea769cd7ba9b029c39a4224d2c",
+      "sha256": "7b46cf09f350fa1cd3bfd4d20fe8b8532e76dcc5d892a0052660f803c8ad532b"
+    },
+    "processor_config.json": {
+      "bytes": 46,
+      "git_oid": "22fa44c2ae8ad539b43c8a2d181ee96fb0e65c42",
+      "sha256": "b71fbc3e22a7dbe04622e1a2641e8553375bc1434875ac438066c58a88b974b1"
+    },
+    "tokenizer.json": {
+      "bytes": 19993565,
+      "git_oid": "b79f27c7a333e226a639156752449665ee8ab44d",
+      "sha256": "6269eb38f25c20c0f2ba676577f2e5603f79eab3be573dfdaa727ca6eeb5522d"
+    },
+    "tokenizer_config.json": {
+      "bytes": 1463,
+      "git_oid": "ad0047e43e5ef7d9b3eb10fc3fb9a60e0ad160b7",
+      "sha256": "74f51078120066292803d9dfe5437f67b778c5ef6d16eb04dbc6a3f7a13e5826"
+    }
+  },
+  "upstream_gguf": {
+    "repository": "openbmb/MiniCPM-OCR-1.0-gguf",
+    "revision": "674e62bf4ef7560ba502fe9b366a2780028aef20",
+    "license": "apache-2.0",
+    "note": "Publisher llama.cpp export (text GGUF + 4x mmproj). Not CrispEmbed format; independent cross-check only.",
+    "files": {
+      ".gitattributes": {
+        "bytes": 2470,
+        "git_oid": "5d407318eaf1dad7bb3bac2f1d9b6248b4a9c5f6"
+      },
+      "MiniCPM-OCR-1_0-F16.gguf": {
+        "bytes": 1516288352,
+        "git_oid": "b9163e88948e5131eb414a66a8a613860d759416",
+        "sha256": "49d08e4dfb3310df2873828257f23fec53d3defad1782ae1fc78cae76dda1859"
+      },
+      "MiniCPM-OCR-1_0-Q4_0.gguf": {
+        "bytes": 501262208,
+        "git_oid": "30d4bd1826c8092b10c5d6ab35b38160fe5ebe93",
+        "sha256": "9c193d8e51755a52d759f6c6c8ec4793243226b2c9e7ee0650cd990627aae87c"
+      },
+      "MiniCPM-OCR-1_0-Q4_1.gguf": {
+        "bytes": 532363136,
+        "git_oid": "8ddefa7296c5a304305831812b3d568e0c2e6a40",
+        "sha256": "79a53427f8a2561f640a84743b9963e577277c681454550ff53a56bf3efd0643"
+      },
+      "MiniCPM-OCR-1_0-Q4_K_M.gguf": {
+        "bytes": 529106816,
+        "git_oid": "4ed38c1fb5dba8d67737d5c2e8f83264e2fb0b24",
+        "sha256": "c80a703400633f298cc2fddf6d493a541be36918c0801c0b1bf3f14c5703ce49"
+      },
+      "MiniCPM-OCR-1_0-Q4_K_S.gguf": {
+        "bytes": 505063296,
+        "git_oid": "002593f068be99ca8fe78e64ab7d483f5f614821",
+        "sha256": "5f76f7c3c88a920cf74055a8f06c8efa2f37f6832db1613c7cd8100cfd51a728"
+      },
+      "MiniCPM-OCR-1_0-Q5_0.gguf": {
+        "bytes": 563464064,
+        "git_oid": "4b7238e77cd7b41a600c5c93d9cb56477269cd29",
+        "sha256": "9cbb4f0f7b4cd371c40655420705de0ae1f3bced6a4e89d6d423c30bce8d5bea"
+      },
+      "MiniCPM-OCR-1_0-Q5_1.gguf": {
+        "bytes": 594564992,
+        "git_oid": "7fea1e2ded88202504dcfe1391fbb86e1a649ea2",
+        "sha256": "51c4ba0f41bf91f9bcae5eac1e0f3d99f8cf2f8f4aa7a227d0ec67b792e75049"
+      },
+      "MiniCPM-OCR-1_0-Q5_K_M.gguf": {
+        "bytes": 577808256,
+        "git_oid": "40d695e6d59c2c9c29a7bcba76602afae8dce74a",
+        "sha256": "34aa54a4cd9871f1a4bbd2686a6c6b27a3a01cb5b7f1812463cc7b885343f16f"
+      },
+      "MiniCPM-OCR-1_0-Q5_K_S.gguf": {
+        "bytes": 563464064,
+        "git_oid": "3ab3dd4dc5a7e491f7c70c05aa984a573ac8d7ef",
+        "sha256": "cdd2d8fb50410cf1d5770e7a1c6f68bb64d1c2be6a691cc6e09708545637437a"
+      },
+      "MiniCPM-OCR-1_0-Q6_K.gguf": {
+        "bytes": 629553536,
+        "git_oid": "fd00fbfe63fe4cc53534d34037d174006c270ee0",
+        "sha256": "97cd603be2ab488b82c06584e8e531e67dd0e5515167cff305735c48d0f1aabc"
+      },
+      "MiniCPM-OCR-1_0-Q8_0.gguf": {
+        "bytes": 811598432,
+        "git_oid": "10431a69ffbd749db2dc855e71fecf5b6018e749",
+        "sha256": "791486a476bdacb48acb3f31aa3a18dbb5be87e723a4074bcd13a37d61c852e2"
+      },
+      "README.md": {
+        "bytes": 5575,
+        "git_oid": "e1c4e856445d5c6c581e39c8970a02165dacb253"
+      },
+      "mmproj-model-f16-4x.gguf": {
+        "bytes": 901017536,
+        "git_oid": "d26a2f79448f9b8861a5e16c44515ceae80808cf",
+        "sha256": "ceed82261b3b1380c3165f8b37c10117a50093be1362cbfeeb692fa036444682"
+      }
+    }
+  },
+  "out_of_scope": [
+    "openbmb/MiniCPM-OCR-1.0-DSpark (speculative draft)",
+    "openbmb/MiniCPM-OCR-Jev (quality estimator)",
+    "openbmb/MiniCPM-OCR-1.0-AWQ",
+    "openbmb/MiniCPM-OCR-1.0-GPTQ"
+  ]
+}
