@@ -1665,6 +1665,11 @@ static const ModelEntry k_registry[] = {
       "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 
+    { "minicpm-ocr", "minicpm-ocr-1.0-f16.gguf",
+      "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/"
+      "6705b0652744a880e79c8ec856fac73ce56e1105/minicpm-ocr-1.0-f16.gguf",
+      "MiniCPM-OCR-1.0 (OpenBMB; SigLIP + Qwen3.5 decoder, F16; gated CRISPEMBED_MINICPM_OCR + CRISPEMBED_QWEN35_OCR)",
+      "2.6 GB", "apache-2.0", "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF" },
     { "unlimited-ocr2", "unlimited-ocr-2-f16.gguf",
       "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/"
       "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-f16.gguf",
