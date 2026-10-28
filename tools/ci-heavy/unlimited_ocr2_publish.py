@@ -179,13 +179,16 @@ All credit for the model belongs to the original authors; these files only chang
 
 ## Parity status (CrispEmbed native vs. the original PyTorch model, CPU, greedy)
 
-Receipts were measured on the **F32** conversion; other precisions are not covered by these receipts.
+Receipts were measured on the **F32** conversion. A CPU precision sweep (receipt
+`tests/results/unlimited-ocr2/precision-sweep.json` in CrispEmbed) found the **F16 and Q8_0**
+conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants were not, and are not published.
 
 - **Untiled pages:** generated token IDs are exactly identical to the original
   ({parity['untiled']['tokens']} tokens on `{parity['untiled']['case']}`).
-- **Tiled pages (experimental):** recognized text is exactly identical; layout box coordinates differ by at
-  most {t['max_box_coordinate_difference']} on the 0-{t['box_scale']} scale, so token IDs are not exact
-  ({len(t['cases'])} pages). Treat tiled output as experimental.
+- **Tiled pages (not validated):** the CrispEmbed runtime tiling path had a vision-token-count bug
+  (256 instead of 100 tokens per 640px tile). Earlier tiled runs matched the recognized text only, not
+  token IDs. A runtime fix is under verification; until it lands, do not rely on tiled output. This is a
+  runtime issue: the weights in this repository are unaffected.
 - The opt-in fast decoder reproduces the exact decoder token-for-token on all {parity['fast_decoder']['cases']} pages.
 - Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
 
@@ -195,7 +198,7 @@ Unlimited-OCR-2 support is default-off in CrispEmbed and is enabled with an envi
 
 ```bash
 CRISPEMBED_UNLIMITED_OCR2=1 crispembed -m unlimited-ocr-2-f16.gguf --ocr page.png
-# experimental tiling of large pages: CRISPEMBED_UNLIMITED_OCR2_TILES=1
+# tiling of large pages (CRISPEMBED_UNLIMITED_OCR2_TILES=1) is not validated yet
 ```
 """
 

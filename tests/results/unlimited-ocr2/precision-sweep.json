@@ -1,0 +1,498 @@
+{
+  "schema": "crispembed-unlimited-ocr2-precision-v1",
+  "commit": "d6fd934a16018489c54a727ce7121e18cde55515",
+  "steps": {
+    "download_s": 51.9,
+    "convert_f32_s": 172.3,
+    "convert_f16_s": 105.0,
+    "build_s": 273.6
+  },
+  "precisions": [
+    {
+      "precision": "f32",
+      "quant_type": null,
+      "overrides": [],
+      "cases": [
+        {
+          "id": "small-untiled",
+          "tiled": false,
+          "exit": 0,
+          "n_ids": 65,
+          "n_ref_ids": 65,
+          "ids_exact": true,
+          "first_id_difference": null,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 0.0,
+          "cer": 0.267857,
+          "cer_ignoring_boxes": 0.365854,
+          "wall_s": 440.15,
+          "peak_rss_mb": 21055,
+          "text": "text[60, 114, 410, 172]Unlimited OCR 2\ntext[60, 284, 476, 348]Small page, no tiles.\ntext[60, 450, 410, 506]Total: 42.00 EUR",
+          "stderr_tail": ""
+        },
+        {
+          "id": "para-en",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 117,
+          "n_ref_ids": 117,
+          "ids_exact": false,
+          "first_id_difference": 7,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.216393,
+          "cer_ignoring_boxes": 0.235772,
+          "wall_s": 2701.87,
+          "peak_rss_mb": 21051,
+          "text": "text[37, 71, 470, 115]Unlimited OCR 2 reference page.\ntext[37, 174, 631, 219]The quick brown fox jumps over the lazy dog.\ntext[37, 279, 546, 320]Invoice 2026-10-27: total 1,234.56 EUR\ntext[37, 383, 556, 425]Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+          "stderr_tail": ""
+        },
+        {
+          "id": "table",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 97,
+          "n_ref_ids": 97,
+          "ids_exact": false,
+          "first_id_difference": 4,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.3,
+          "cer_ignoring_boxes": 0.360248,
+          "wall_s": 2678.74,
+          "peak_rss_mb": 21086,
+          "text": "text[34, 69, 253, 117]Item | Qty | Price\ntext[34, 172, 233, 222]Apple | 3 | 1.20\ntext[34, 276, 231, 325]Pear | 12 | 0.85\ntext[34, 380, 253, 428]Total | 15 | 13.80",
+          "stderr_tail": ""
+        }
+      ],
+      "file_bytes": 13380634144,
+      "census": {
+        "type_counts": {
+          "F32": 739
+        },
+        "layer1_dash": {
+          "l.blk.1.attn_dash.head_cls": "F32",
+          "l.blk.1.attn_dash.k_norm.weight": "F32",
+          "l.blk.1.attn_dash.k_proj.weight": "F32",
+          "l.blk.1.attn_dash.q_norm.weight": "F32",
+          "l.blk.1.attn_dash.q_proj.weight": "F32"
+        }
+      }
+    },
+    {
+      "precision": "f16",
+      "quant_type": null,
+      "overrides": [],
+      "cases": [
+        {
+          "id": "small-untiled",
+          "tiled": false,
+          "exit": 0,
+          "n_ids": 65,
+          "n_ref_ids": 65,
+          "ids_exact": true,
+          "first_id_difference": null,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 0.0,
+          "cer": 0.267857,
+          "cer_ignoring_boxes": 0.365854,
+          "wall_s": 498.4,
+          "peak_rss_mb": 12821,
+          "text": "text[60, 114, 410, 172]Unlimited OCR 2\ntext[60, 284, 476, 348]Small page, no tiles.\ntext[60, 450, 410, 506]Total: 42.00 EUR",
+          "stderr_tail": ""
+        },
+        {
+          "id": "para-en",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 117,
+          "n_ref_ids": 117,
+          "ids_exact": false,
+          "first_id_difference": 7,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.216393,
+          "cer_ignoring_boxes": 0.235772,
+          "wall_s": 2849.54,
+          "peak_rss_mb": 12821,
+          "text": "text[37, 71, 470, 115]Unlimited OCR 2 reference page.\ntext[37, 174, 631, 219]The quick brown fox jumps over the lazy dog.\ntext[37, 279, 546, 320]Invoice 2026-10-27: total 1,234.56 EUR\ntext[37, 383, 556, 425]Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+          "stderr_tail": ""
+        },
+        {
+          "id": "table",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 97,
+          "n_ref_ids": 97,
+          "ids_exact": false,
+          "first_id_difference": 4,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.3,
+          "cer_ignoring_boxes": 0.360248,
+          "wall_s": 2762.05,
+          "peak_rss_mb": 11853,
+          "text": "text[34, 69, 253, 117]Item | Qty | Price\ntext[34, 172, 233, 222]Apple | 3 | 1.20\ntext[34, 276, 231, 325]Pear | 12 | 0.85\ntext[34, 380, 253, 428]Total | 15 | 13.80",
+          "stderr_tail": ""
+        }
+      ],
+      "file_bytes": 6692677664,
+      "census": {
+        "type_counts": {
+          "F16": 739
+        },
+        "layer1_dash": {
+          "l.blk.1.attn_dash.head_cls": "F16",
+          "l.blk.1.attn_dash.k_norm.weight": "F16",
+          "l.blk.1.attn_dash.k_proj.weight": "F16",
+          "l.blk.1.attn_dash.q_norm.weight": "F16",
+          "l.blk.1.attn_dash.q_proj.weight": "F16"
+        }
+      }
+    },
+    {
+      "precision": "q8_0",
+      "quant_type": "q8_0",
+      "overrides": [],
+      "cases": [
+        {
+          "id": "small-untiled",
+          "tiled": false,
+          "exit": 0,
+          "n_ids": 65,
+          "n_ref_ids": 65,
+          "ids_exact": true,
+          "first_id_difference": null,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 0.0,
+          "cer": 0.267857,
+          "cer_ignoring_boxes": 0.365854,
+          "wall_s": 350.33,
+          "peak_rss_mb": 7084,
+          "text": "text[60, 114, 410, 172]Unlimited OCR 2\ntext[60, 284, 476, 348]Small page, no tiles.\ntext[60, 450, 410, 506]Total: 42.00 EUR",
+          "stderr_tail": ""
+        },
+        {
+          "id": "para-en",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 117,
+          "n_ref_ids": 117,
+          "ids_exact": false,
+          "first_id_difference": 7,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 1.0,
+          "cer": 0.209836,
+          "cer_ignoring_boxes": 0.235772,
+          "wall_s": 2571.35,
+          "peak_rss_mb": 7625,
+          "text": "text[37, 71, 470, 117]Unlimited OCR 2 reference page.\ntext[37, 174, 631, 222]The quick brown fox jumps over the lazy dog.\ntext[37, 279, 546, 321]Invoice 2026-10-27: total 1,234.56 EUR\ntext[37, 383, 556, 428]Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+          "stderr_tail": ""
+        },
+        {
+          "id": "table",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 97,
+          "n_ref_ids": 97,
+          "ids_exact": false,
+          "first_id_difference": 4,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.3,
+          "cer_ignoring_boxes": 0.360248,
+          "wall_s": 2520.31,
+          "peak_rss_mb": 7625,
+          "text": "text[34, 69, 253, 117]Item | Qty | Price\ntext[34, 172, 233, 222]Apple | 3 | 1.20\ntext[34, 276, 231, 325]Pear | 12 | 0.85\ntext[34, 380, 253, 428]Total | 15 | 13.80",
+          "stderr_tail": ""
+        }
+      ],
+      "quantize_exit": 0,
+      "quantize_s": 97.8,
+      "quantize_peak_rss_mb": 1412,
+      "quantize_stderr_tail": "",
+      "file_bytes": 3571872960,
+      "census": {
+        "type_counts": {
+          "Q8_0": 352,
+          "F32": 387
+        },
+        "layer1_dash": {
+          "l.blk.1.attn_dash.head_cls": "F32",
+          "l.blk.1.attn_dash.k_norm.weight": "F32",
+          "l.blk.1.attn_dash.k_proj.weight": "Q8_0",
+          "l.blk.1.attn_dash.q_norm.weight": "F32",
+          "l.blk.1.attn_dash.q_proj.weight": "Q8_0"
+        }
+      }
+    },
+    {
+      "precision": "q4_k",
+      "quant_type": "q4_k",
+      "overrides": [],
+      "cases": [
+        {
+          "id": "small-untiled",
+          "tiled": false,
+          "exit": 0,
+          "n_ids": 65,
+          "n_ref_ids": 65,
+          "ids_exact": false,
+          "first_id_difference": 7,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 5.0,
+          "cer": 0.327381,
+          "cer_ignoring_boxes": 0.365854,
+          "wall_s": 334.65,
+          "peak_rss_mb": 5835,
+          "text": "text[60, 113, 412, 177]Unlimited OCR 2\ntext[60, 281, 478, 351]Small page, no tiles.\ntext[60, 450, 412, 511]Total: 42.00 EUR",
+          "stderr_tail": ""
+        },
+        {
+          "id": "para-en",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 117,
+          "n_ref_ids": 117,
+          "ids_exact": false,
+          "first_id_difference": 4,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 5.0,
+          "cer": 0.232787,
+          "cer_ignoring_boxes": 0.235772,
+          "wall_s": 2573.93,
+          "peak_rss_mb": 6380,
+          "text": "text[35, 71, 472, 117]Unlimited OCR 2 reference page.\ntext[35, 174, 634, 222]The quick brown fox jumps over the lazy dog.\ntext[35, 278, 550, 322]Invoice 2026-10-27: total 1,234.56 EUR\ntext[35, 383, 559, 427]Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+          "stderr_tail": ""
+        },
+        {
+          "id": "table",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 97,
+          "n_ref_ids": 97,
+          "ids_exact": false,
+          "first_id_difference": 4,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 6.0,
+          "cer": 0.327273,
+          "cer_ignoring_boxes": 0.360248,
+          "wall_s": 2509.46,
+          "peak_rss_mb": 6380,
+          "text": "text[35, 69, 253, 119]Item | Qty | Price\ntext[35, 172, 234, 223]Apple | 3 | 1.20\ntext[35, 276, 234, 326]Pear | 12 | 0.85\ntext[35, 380, 256, 430]Total | 15 | 13.80",
+          "stderr_tail": ""
+        }
+      ],
+      "quantize_exit": 0,
+      "quantize_s": 310.2,
+      "quantize_peak_rss_mb": 1412,
+      "quantize_stderr_tail": "",
+      "file_bytes": 2266518720,
+      "census": {
+        "type_counts": {
+          "Q8_0": 187,
+          "F32": 387,
+          "Q4_0": 12,
+          "Q4_K": 153
+        },
+        "layer1_dash": {
+          "l.blk.1.attn_dash.head_cls": "F32",
+          "l.blk.1.attn_dash.k_norm.weight": "F32",
+          "l.blk.1.attn_dash.k_proj.weight": "Q4_K",
+          "l.blk.1.attn_dash.q_norm.weight": "F32",
+          "l.blk.1.attn_dash.q_proj.weight": "Q4_K"
+        }
+      }
+    },
+    {
+      "precision": "mix-q8attn-q4exp",
+      "quant_type": "q4_k",
+      "overrides": [
+        "l.blk.*.attn_*=q8_0",
+        "l.blk.*.shared_exp.*=q8_0",
+        "l.blk.0.ffn_*=q8_0"
+      ],
+      "cases": [
+        {
+          "id": "small-untiled",
+          "tiled": false,
+          "exit": 0,
+          "n_ids": 65,
+          "n_ref_ids": 65,
+          "ids_exact": false,
+          "first_id_difference": 10,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 5.0,
+          "cer": 0.357143,
+          "cer_ignoring_boxes": 0.365854,
+          "wall_s": 336.65,
+          "peak_rss_mb": 5929,
+          "text": "text[60, 114, 412, 177]Unlimited OCR 2\ntext[59, 282, 478, 352]Small page, no tiles.\ntext[59, 448, 413, 511]Total: 42.00 EUR",
+          "stderr_tail": ""
+        },
+        {
+          "id": "para-en",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 117,
+          "n_ref_ids": 117,
+          "ids_exact": false,
+          "first_id_difference": 13,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.213115,
+          "cer_ignoring_boxes": 0.235772,
+          "wall_s": 2582.09,
+          "peak_rss_mb": 6470,
+          "text": "text[37, 72, 470, 115]Unlimited OCR 2 reference page.\ntext[37, 174, 631, 219]The quick brown fox jumps over the lazy dog.\ntext[37, 279, 546, 320]Invoice 2026-10-27: total 1,234.56 EUR\ntext[37, 382, 556, 425]Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+          "stderr_tail": ""
+        },
+        {
+          "id": "table",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 97,
+          "n_ref_ids": 97,
+          "ids_exact": false,
+          "first_id_difference": 7,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.3,
+          "cer_ignoring_boxes": 0.360248,
+          "wall_s": 2509.98,
+          "peak_rss_mb": 6470,
+          "text": "text[37, 72, 250, 117]Item | Qty | Price\ntext[37, 174, 231, 222]Apple | 3 | 1.20\ntext[37, 279, 228, 323]Pear | 12 | 0.85\ntext[37, 382, 253, 427]Total | 15 | 13.80",
+          "stderr_tail": ""
+        }
+      ],
+      "quantize_exit": 0,
+      "quantize_s": 289.6,
+      "quantize_peak_rss_mb": 1412,
+      "quantize_stderr_tail": "",
+      "file_bytes": 2360767680,
+      "census": {
+        "type_counts": {
+          "Q8_0": 319,
+          "F32": 387,
+          "Q4_0": 11,
+          "Q4_K": 22
+        },
+        "layer1_dash": {
+          "l.blk.1.attn_dash.head_cls": "F32",
+          "l.blk.1.attn_dash.k_norm.weight": "F32",
+          "l.blk.1.attn_dash.k_proj.weight": "Q8_0",
+          "l.blk.1.attn_dash.q_norm.weight": "F32",
+          "l.blk.1.attn_dash.q_proj.weight": "Q8_0"
+        }
+      }
+    },
+    {
+      "precision": "mix-f16attn-q4exp",
+      "quant_type": "q4_k",
+      "overrides": [
+        "l.blk.*.attn_*=f16",
+        "l.blk.*.mlp_gate.weight=f16",
+        "l.blk.*.shared_exp.*=q8_0",
+        "l.blk.0.ffn_*=q8_0",
+        "l.embed_tokens.weight=f16",
+        "l.lm_head.weight=f16"
+      ],
+      "cases": [
+        {
+          "id": "small-untiled",
+          "tiled": false,
+          "exit": 0,
+          "n_ids": 65,
+          "n_ref_ids": 65,
+          "ids_exact": false,
+          "first_id_difference": 10,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 5.0,
+          "cer": 0.357143,
+          "cer_ignoring_boxes": 0.365854,
+          "wall_s": 337.51,
+          "peak_rss_mb": 6303,
+          "text": "text[60, 114, 412, 176]Unlimited OCR 2\ntext[59, 282, 478, 352]Small page, no tiles.\ntext[59, 448, 413, 511]Total: 42.00 EUR",
+          "stderr_tail": ""
+        },
+        {
+          "id": "para-en",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 117,
+          "n_ref_ids": 117,
+          "ids_exact": false,
+          "first_id_difference": 13,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.213115,
+          "cer_ignoring_boxes": 0.235772,
+          "wall_s": 2560.75,
+          "peak_rss_mb": 6844,
+          "text": "text[37, 72, 470, 115]Unlimited OCR 2 reference page.\ntext[37, 174, 631, 219]The quick brown fox jumps over the lazy dog.\ntext[37, 279, 546, 320]Invoice 2026-10-27: total 1,234.56 EUR\ntext[37, 382, 556, 425]Zeile mit Umlauten: GrXe, StraXe, Xpfel.",
+          "stderr_tail": ""
+        },
+        {
+          "id": "table",
+          "tiled": true,
+          "exit": 0,
+          "n_ids": 97,
+          "n_ref_ids": 97,
+          "ids_exact": false,
+          "first_id_difference": 7,
+          "text_exact": false,
+          "text_equal_ignoring_boxes": false,
+          "max_box_delta": 3.0,
+          "cer": 0.3,
+          "cer_ignoring_boxes": 0.360248,
+          "wall_s": 2527.78,
+          "peak_rss_mb": 6844,
+          "text": "text[37, 72, 250, 117]Item | Qty | Price\ntext[37, 174, 231, 222]Apple | 3 | 1.20\ntext[37, 279, 228, 323]Pear | 12 | 0.85\ntext[37, 382, 253, 427]Total | 15 | 13.80",
+          "stderr_tail": ""
+        }
+      ],
+      "quantize_exit": 0,
+      "quantize_s": 286.8,
+      "quantize_peak_rss_mb": 1412,
+      "quantize_stderr_tail": "",
+      "file_bytes": 2752985280,
+      "census": {
+        "type_counts": {
+          "F16": 109,
+          "F32": 387,
+          "Q8_0": 210,
+          "Q4_0": 11,
+          "Q4_K": 22
+        },
+        "layer1_dash": {
+          "l.blk.1.attn_dash.head_cls": "F32",
+          "l.blk.1.attn_dash.k_norm.weight": "F32",
+          "l.blk.1.attn_dash.k_proj.weight": "F16",
+          "l.blk.1.attn_dash.q_norm.weight": "F32",
+          "l.blk.1.attn_dash.q_proj.weight": "F16"
+        }
+      }
+    }
+  ],
+  "repository": "baidu/Unlimited-OCR-2",
+  "revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+  "reference_revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+  "total_s": 35292.5
+}

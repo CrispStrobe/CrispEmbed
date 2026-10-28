@@ -61,7 +61,7 @@ class Protocol(unittest.TestCase):
         self.assertIn("base_model: baidu/Unlimited-OCR-2\n", text)
         self.assertIn(self.cfg["upstream"]["revision"], text)
         self.assertIn("a" * 64, text)
-        self.assertIn("experimental", text)
+        self.assertIn("not validated", text)
         self.assertIn("Copyright (c) 2026 Baidu", text)
         self.assertNotIn("/home/", text)
         self.assertNotIn("/mnt/", text)
