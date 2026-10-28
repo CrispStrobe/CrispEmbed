@@ -129,3 +129,29 @@ arithmetic-flag drift from the original compiler records. Native configuration,
 frozen GGML, all 16 operators, 64 own-byte anchors, 48 same-input comparisons
 and 0.002/0.99999 gates remain unchanged. A new hosted build and all mandatory
 anchors are still required before any numerical conclusion.
+
+## Strict compiler-profile rejection after successful linking
+
+The [next actual run](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40756747682)
+at `daf6a20177ab04402164f7de0d491998d104291b` builds and links both native and
+WASM successfully. The WASM configuration now selects processor `wasm` and
+compiles the architecture quantizer. It then rejects the exact original/current
+compiler-profile comparison. No operators, browser, own-byte anchors or
+cross-backend metrics execute.
+
+[The second receipt](../tests/results/packaging/wasm-f32-operators-profile-rejection.json)
+preserves immutable service/artifact identities, all small-member hashes and
+the [exact guard rejection](../tests/results/packaging/wasm-f32-operators-profile-guard.json).
+The original compiler records contain `-fPIC` on all five checked WASM sources.
+Frozen root CMake sets `CMAKE_POSITION_INDEPENDENT_CODE ON`; the standalone
+static-WASM CMake omitted that setting. Restoring it matches the known original
+profile rather than filtering `-fPIC` out of the strict comparison.
+
+The failed producer did not retain its current compiler JSON: copying occurred
+after the guard that threw. Thus the exact actual flag difference, and whether
+PIC was its exclusive cause, are **not established**. This limitation is kept
+in the receipt. The bounded correction also copies generated compiler records
+into the small review immediately after configuration and preserves selected
+complete original/current commands plus full-record hashes before validation.
+The next hosted run must still pass every exact profile and all unchanged
+64-own/48-cross gates; no numerical outcome follows from this repair.

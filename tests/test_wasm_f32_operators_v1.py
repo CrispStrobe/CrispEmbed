@@ -179,6 +179,16 @@ class OperatorContract(unittest.TestCase):
             path.write_text(json.dumps(rows))
             with self.assertRaises(ValueError):
                 driver.compile_profile(out)
+            evidence = json.loads((out / 'review/compile-profile-inputs.json').read_text())
+            self.assertEqual(len(evidence['wasm']['original']), 5)
+            self.assertIn('-ffast-math', evidence['wasm']['actual'][-1]['arithmetic_flags'])
+            self.assertNotIn('-ffast-math', evidence['wasm']['original'][-1]['arithmetic_flags'])
+            # PIC remains part of the strict comparison, never filtered out.
+            rows = json.loads((out / 'old-wasm-compile.json').read_text())
+            rows[0]['arguments'].remove('-fPIC')
+            path.write_text(json.dumps(rows))
+            with self.assertRaises(ValueError):
+                driver.compile_profile(out)
 
     def test_frozen_wasm_selector_and_actual_architecture_controls(self):
         source, out = Path('/frozen/source'), Path('/output')
@@ -205,6 +215,15 @@ class OperatorContract(unittest.TestCase):
             driver.wasm_sources(changed)
         with self.assertRaises(ValueError):
             driver.wasm_sources(rows + [rows[-1]])
+
+    def test_frozen_pic_and_compiler_evidence_precede_rejection(self):
+        cmake = (ROOT / 'tests/wasm-f32-operators/CMakeLists.txt').read_text()
+        self.assertIn('set(CMAKE_POSITION_INDEPENDENT_CODE ON)', cmake)
+        self.assertLess(cmake.index('set(CMAKE_POSITION_INDEPENDENT_CODE ON)'), cmake.index('add_subdirectory('))
+        source = (ROOT / 'tools/ci-heavy/wasm_f32_operators_v1.py').read_text()
+        build = source[source.index('def build(out):'):source.index('def verified_build(out):')]
+        self.assertLess(build.index('shutil.copy2('), build.index("label + '-build', 1800"))
+        self.assertLess(build.index('shutil.copy2('), build.index('compile_profile(out)'))
 
     def test_prepare_fails_before_network_outside_matching_hosted_source(self):
         with patch.dict(os.environ, {'GITHUB_ACTIONS': 'false'}), patch.object(driver, 'api') as api:

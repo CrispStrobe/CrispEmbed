@@ -1,0 +1,177 @@
+{
+  "schema": "crispembed-wasm-f32-operators-profile-rejection-v1",
+  "source": "daf6a20177ab04402164f7de0d491998d104291b",
+  "service": {
+    "run": 40756747682,
+    "job": 123057599102,
+    "attempt": 1,
+    "path": ".github/workflows/wasm-f32-operators-v1.yml",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "review_artifact": {
+    "id": 12849811131,
+    "bytes": 15761,
+    "sha256": "efbebc862d5396f5ce50ddd71c6b44ef15838c4cc9becec4c64532432c6393a1"
+  },
+  "raw_artifact": {
+    "id": 12849611673,
+    "bytes": 3913429,
+    "sha256": "e34b4405c124eb39a7e2bfbc02d2623069a035af224396092233488204a08a49",
+    "downloaded_for_this_review": false
+  },
+  "native_build_passed": true,
+  "wasm_build_and_link_passed": true,
+  "wasm_processor": "wasm",
+  "architecture_quantizer_compiled": true,
+  "earliest_rejection": "Exact old/new WASM SIMD/pthread profiles differ",
+  "actual_failed_compile_records_retained": false,
+  "actual_flag_difference": null,
+  "missing_evidence_reason": "The original driver copied compile_commands.json into review only after compile_profile returned; the guard rejected first.",
+  "known_frozen_profile": {
+    "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "original_compile_member": "review/compile-wasm.json",
+    "original_compile_sha256": "050cb7a0f4347aee8706a7c06f04e0b5448da4431c25c1db71d30aebd8e3536b",
+    "original_review_artifact": {
+      "id": 12702046203,
+      "bytes": 1031136,
+      "sha256": "4847ab1b9f2f10680e9647bc19fc462bbbea212379756fffd896bba9cd122e05"
+    },
+    "arithmetic_flags": {
+      "ggml-cpu.c": [
+        "-DGGML_SCHED_MAX_COPIES=4",
+        "-DGGML_USE_CPU_REPACK",
+        "-DNDEBUG",
+        "-D_XOPEN_SOURCE=600",
+        "-O3",
+        "-fPIC",
+        "-msimd128",
+        "-pthread"
+      ],
+      "ggml-cpu.cpp": [
+        "-DGGML_SCHED_MAX_COPIES=4",
+        "-DGGML_USE_CPU_REPACK",
+        "-DNDEBUG",
+        "-D_XOPEN_SOURCE=600",
+        "-O3",
+        "-fPIC",
+        "-msimd128",
+        "-pthread"
+      ],
+      "vec.cpp": [
+        "-DGGML_SCHED_MAX_COPIES=4",
+        "-DGGML_USE_CPU_REPACK",
+        "-DNDEBUG",
+        "-D_XOPEN_SOURCE=600",
+        "-O3",
+        "-fPIC",
+        "-msimd128",
+        "-pthread"
+      ],
+      "ops.cpp": [
+        "-DGGML_SCHED_MAX_COPIES=4",
+        "-DGGML_USE_CPU_REPACK",
+        "-DNDEBUG",
+        "-D_XOPEN_SOURCE=600",
+        "-O3",
+        "-fPIC",
+        "-msimd128",
+        "-pthread"
+      ],
+      "arch/wasm/quants.c": [
+        "-DGGML_SCHED_MAX_COPIES=4",
+        "-DGGML_USE_CPU_REPACK",
+        "-DNDEBUG",
+        "-D_XOPEN_SOURCE=600",
+        "-O3",
+        "-fPIC",
+        "-msimd128",
+        "-pthread"
+      ]
+    }
+  },
+  "source_comparison": {
+    "original_root_cmake_sets_pic": true,
+    "standalone_cmake_sets_pic": false,
+    "candidate_correction": "Restore original CMAKE_POSITION_INDEPENDENT_CODE ON; preserve -fPIC in the exact comparator.",
+    "exclusive_actual_cause_established": false
+  },
+  "diagnostic_correction": "Copy actual generated compiler records before build/profile rejection, and save selected complete original/current commands and full-record hashes before validating.",
+  "native_operator_execution": false,
+  "browser_execution": false,
+  "executed_own_byte_anchors": 0,
+  "executed_cross_backend_comparisons": 0,
+  "planned_own_byte_anchors": 64,
+  "planned_cross_backend_comparisons": 48,
+  "numerical_conclusion": null,
+  "qualification": false,
+  "small_members": {
+    "wasm-configure.log": {
+      "bytes": 1420,
+      "sha256": "ff10cb94686b888a658bd6f879176e6c8475d3307ae3438297895c9aa9f98c48"
+    },
+    "wasm-build.log": {
+      "bytes": 2455,
+      "sha256": "2db0275993469a64916e567835c313648cfffd876bbe33244cb99e0b11cb5dab"
+    },
+    "native-configure.log": {
+      "bytes": 1251,
+      "sha256": "74fe746c549df69855001dbbf6528563e9b1fbfb8adbc64b8c7f00db98dda6ab"
+    },
+    "native-build.log": {
+      "bytes": 13089,
+      "sha256": "ae1c1664f199f4e3e25efbb69bb2c3a103b662a87094d0126305a1c2be725575"
+    },
+    "source-submodule.log": {
+      "bytes": 349,
+      "sha256": "08fa6f0486d8866c45b413c31f08b8400615e1fa7794a4863c830a13559d1f63"
+    },
+    "source-worktree.log": {
+      "bytes": 133,
+      "sha256": "4d058d7623e5dcd0c3b3f6c9095eb1a6b79ce381b57e231903b19c6bc46f8a83"
+    },
+    "review/native-configure-command.json": {
+      "bytes": 413,
+      "sha256": "a535cfba2c35c1ba4cd9a83e724ad2f5eb55da26f00e0e71ec32e2367e35a429"
+    },
+    "review/source-worktree-command.json": {
+      "bytes": 298,
+      "sha256": "ce38fc6c9f7abd8bc25a93b6574e4d56da85521947c968d22de75d381e11b4a4"
+    },
+    "review/packets.json": {
+      "bytes": 31483,
+      "sha256": "af3473cf86f3eabcc430b7b2f140192bbb3ed9fc5c280ccfa6ef4db692e69390"
+    },
+    "review/native-build-command.json": {
+      "bytes": 254,
+      "sha256": "ac30d6bea0c1d88e50198c2924ab4b8080c9c3d72e2af8646c3b0808d8175bf1"
+    },
+    "review/wasm-configure-command.json": {
+      "bytes": 466,
+      "sha256": "03d3dc38613dbbdaec95b7700fdd4805c836275d6d691fd9b4cb4f957ae76f91"
+    },
+    "review/source-submodule-command.json": {
+      "bytes": 299,
+      "sha256": "55927f8d613bbcb05ac2be67bdfaf5ff47ab2e4a3e201ea0a4c72ee850804de2"
+    },
+    "review/historical-subnodes.json": {
+      "bytes": 15881,
+      "sha256": "f7e4cb867efa8a42df438e24df7c1f47035431da3e93d2c0b33a0485940401af"
+    },
+    "review/wasm-build-command.json": {
+      "bytes": 250,
+      "sha256": "65ae0b56277262050b20dc39b0e634d4649eda85d9b31666b7f2aace8121c867"
+    },
+    "review/rejection-build.json": {
+      "bytes": 111,
+      "sha256": "ba1c9e36d46c84fba947b0168d6ce8fd598a025c2e219754e85a60cfeabb4ea3"
+    },
+    "review/prepared.json": {
+      "bytes": 3847,
+      "sha256": "8c5336e6c9d7647a7fb1ba7253918ed63543d01354bed07ed2f1436b718eb46c"
+    }
+  },
+  "limits": "Only immutable small review ZIP downloaded; current compiler flag difference is unavailable and is not invented. Original and retry raw artifacts remain remote. All 16 operators, frozen sources and0.002/.99999 gates remain unchanged."
+}

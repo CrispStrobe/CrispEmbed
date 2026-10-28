@@ -216,6 +216,20 @@ def wasm_sources(rows):
 
 def compile_profile(out):
     observed = {}
+    evidence = {}
+    for label in ['native', 'wasm']:
+        original = out / ('old-' + label + '-compile.json')
+        actual = out / (label + '-build/compile_commands.json')
+        before, after = json.loads(original.read_text()), json.loads(actual.read_text())
+        # Retain selected complete commands and exact full-record identities
+        # before any architecture/flag check can reject the build.
+        suffixes = ['/ggml-cpu/' + name for name in
+                    ['ggml-cpu.c', 'ggml-cpu.cpp', 'vec.cpp', 'ops.cpp', 'arch/wasm/quants.c']]
+        select = lambda rows: [dict(row, arithmetic_flags=arithmetic_flags(row)) for row in rows
+                               if any(row['file'].replace('\\', '/').endswith(s) for s in suffixes)]
+        evidence[label] = dict(original_sha256=digest(original), actual_sha256=digest(actual),
+                               original=select(before), actual=select(after))
+    save(out / 'review/compile-profile-inputs.json', evidence)
     for label in ['native', 'wasm']:
         old = json.loads((out / ('old-' + label + '-compile.json')).read_text())
         new = json.loads((out / (label + '-build/compile_commands.json')).read_text())
@@ -252,10 +266,11 @@ def build(out):
             not git(source, 'status', '--porcelain') and not git(source / 'ggml', 'status', '--porcelain'), 'Frozen source closure differs')
     for label in ['native', 'wasm']:
         command(configuration(out, source, label), out, label + '-configure')
+        # Compilation or strict-profile failure must still preserve the actual
+        # generated commands in the small review artifact.
+        shutil.copy2(out / (label + '-build/compile_commands.json'), out / 'review' / ('compile-' + label + '.json'))
         command(['cmake', '--build', out / (label + '-build'), '--parallel', '2'], out, label + '-build', 1800)
     save(out / 'review/compile-profile.json', compile_profile(out))
-    for label in ['native', 'wasm']:
-        shutil.copy2(out / (label + '-build/compile_commands.json'), out / 'review' / ('compile-' + label + '.json'))
     destination = out / 'browser/module'
     destination.mkdir()
     for path in (out / 'wasm-build').glob('wasm-f32-operators.*'):

@@ -3,6 +3,8 @@ project(crispembed_wasm_f32_operator_probe LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Match frozen580 root CMake, including its static Emscripten libraries.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if(NOT IS_DIRECTORY "${FROZEN_GGML}/include")
     message(FATAL_ERROR "Exact authenticated frozen ggml checkout required")
 endif()
