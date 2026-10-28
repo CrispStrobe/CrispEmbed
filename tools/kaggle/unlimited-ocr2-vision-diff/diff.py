@@ -82,6 +82,14 @@ def main(img_path, vis_path, gpx_path, proj_path, out):
     nq, nqb = 10, 16
     n_local = (nq * ht) * (nq * wt + 1) if tiled else 0
     rep['n_vis_expected'] = n_local + nqb * (nqb + 1) + 1
+    rep['n_vis_match'] = rep['native_n_vis'] == rep['n_vis_expected']
+    if not rep['n_vis_match']:
+        # Reference layout cannot be applied to a dump with a different token count
+        # (e.g. 256 instead of 100 tokens per 640 tile): report it, do not slice garbage.
+        rep['error'] = 'native n_vis %d != reference %d' % (rep['native_n_vis'], rep['n_vis_expected'])
+        with open(out, 'w') as f:
+            json.dump(rep, f, indent=1)
+        sys.exit(3)
     blocks = []
     if tiled:
         loc = vis[:n_local].reshape(nq * ht, nq * wt + 1, D)

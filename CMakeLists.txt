@@ -525,6 +525,9 @@ target_include_directories(test-cross-repo-sync PRIVATE src)
 add_executable(test-hparam-keys tests/test_hparam_keys.cpp)
 target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
+add_executable(test-unlimited-ocr2-tiles tests/test_unlimited_ocr2_tiles.cpp)
+target_include_directories(test-unlimited-ocr2-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
 add_executable(test-hmer tests/test_hmer.cpp)
 target_link_libraries(test-hmer PRIVATE crispembed)
 

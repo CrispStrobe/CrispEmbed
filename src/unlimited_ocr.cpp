@@ -7,6 +7,7 @@
 
 #include "unlimited_ocr.h"
 #include "unlimited_ocr2_dash.h"
+#include "unlimited_ocr2_tiles.h"
 #include <functional>
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
@@ -207,6 +208,10 @@ struct uocr_ctx {
     // pos-embed resize and torch linear (align_corners=False) rel-pos resize for
     // SAM global blocks at the 40x40 tile grid.
     bool uocr2_ref_prep = false;
+    // Set while encoding gundam tiles: keep SAM's native 10x10 grid at 640 (reference:
+    // 100 tokens/tile). Off only with CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_UPSAMPLE=1,
+    // which restores the old (wrong) bilinear 16x16 upsample = 256 tokens/tile.
+    bool sam_native_tile_grid = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -1517,7 +1522,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     // CLIP expects 256 tokens. Bilinear upsample 8×8 → 16×16.
     int target_nvis = (s.image_size / s.patch_size / 2 / 2); // = 16 for 1024
     target_nvis = target_nvis * target_nvis;                 // = 256
-    if (n_vis < target_nvis && nP != nP_orig) {
+    if (uocr2_tiles::sam_upsample_to_base(n_vis, target_nvis, nP, nP_orig, ctx.sam_native_tile_grid)) {
         int src_h = ds2_H, src_w = ds2_W;
         int dst_h = s.image_size / s.patch_size / 2 / 2;
         int dst_w = dst_h;
@@ -3900,6 +3905,7 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
     std::swap(saved_ref, ctx.diff_ref_path); // reference dumps describe the global view only
     ctx.pos_aa_bicubic = true;
     ctx.uocr2_ref_prep = uocr2_ref_prep_enabled();
+    ctx.sam_native_tile_grid = !core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_UPSAMPLE");
     const bool bf16_px = ctx.uocr2_ref_prep;
     bool ok = true;
     FILE * tile_px_dump = nullptr; // diagnostics: [wt*ht, 3, 640, 640] f32, row-major tiles
@@ -3931,6 +3937,7 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
     if (tile_px_dump) fclose(tile_px_dump);
     ctx.pos_aa_bicubic = false;
     ctx.uocr2_ref_prep = false;
+    ctx.sam_native_tile_grid = false;
     std::swap(saved_ref, ctx.diff_ref_path);
     if (!ok) return false;
     auto nl = to_f32(ctx.m.image_newline);
@@ -4201,7 +4208,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         // 5. Unlimited-OCR-2 gundam tiling (default OFF). Variant 2 only, and only for
         //    pages larger than 640 in either dimension; the local grid goes FIRST,
         //    then the global view (+ view_separator) built above. Otherwise untouched.
-        int dump_wt = 1, dump_ht = 1;
+        int dump_wt = 1, dump_ht = 1, dump_nq = 0;
         if (uocr2_tiled) {
             int wt = 1, ht = 1;
             uocr2_select_grid(w, h, wt, ht);
@@ -4220,6 +4227,11 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
                     n_vis_total);
             dump_wt = wt;
             dump_ht = ht;
+            for (int q = 1; q <= 64; q++)
+                if (q * ht * (q * wt + 1) == n_local) dump_nq = q;
+            if (n_vis_total != uocr2_tiles::n_vis(wt, ht, true))
+                fprintf(stderr, "unlimited_ocr: WARNING tiled n_vis=%d != reference %d (legacy upsample?)\n",
+                        n_vis_total, uocr2_tiles::n_vis(wt, ht, true));
         }
         // UOCR2_DUMP_VISION=<path> (variant 2): raw little-endian f32 [n_vis_total, D] of
         // the assembled IMG-span features -- tiled: local grid (10*ht rows of 10*wt
@@ -4232,8 +4244,10 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
                     size_t nw = fwrite(vis_features.data(), sizeof(float), vis_features.size(), f);
                     fclose(f);
                     fprintf(stderr,
-                            "unlimited_ocr: vision dump n=%d D=%d tiled=%d wt=%d ht=%d nq=10 nqb=16 floats=%zu -> %s\n",
-                            n_vis_total, D, (int)uocr2_tiled, dump_wt, dump_ht, nw, dv);
+                            "unlimited_ocr: vision dump n=%d D=%d tiled=%d wt=%d ht=%d nq=%d nqb=16 n_expected=%d "
+                            "floats=%zu -> %s\n",
+                            n_vis_total, D, (int)uocr2_tiled, dump_wt, dump_ht, dump_nq,
+                            uocr2_tiles::n_vis(dump_wt, dump_ht, uocr2_tiled), nw, dv);
                 }
             }
         }
