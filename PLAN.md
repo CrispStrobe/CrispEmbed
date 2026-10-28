@@ -26,6 +26,7 @@ items remain pending; no new release/app pin until actual final consumers qualif
 
 | Owner | Lane | Immediate acceptance gate |
 | --- | --- | --- |
+| `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
 | Coordinator, `work/portfolio-closure-q4k-20261028` | CI/current-source closure, real-scan review, shared quantizer, Josev/UltraBERT/MoEdern Q4_K, larger MoEdern consumers/retrieval, WASM attribution and final integration | Reuse existing jobs, compare earliest differing stages with actual Ref and final outputs, qualify assets/consumers under the final source; update HISTORY/PERFORMANCE as each lane completes. |
 | `fix/unlimited-ocr2-trial-findings-20261028` continuation | Original added-token output/default tiling, converter correction, verified card refresh | Existing8ca9d3de hosted verification must reproduce all four original full texts and IDs; retain output alternatives and frozen references. |
 | `perf/minicpm-ocr-bench-publish-20261028` continuation | Collected benchmark, stored-type ggml decoder/prefill/KV cache, protected Q8/Q4_K | Preserve old scalar path; actual five-case original IDs/text plus earliest-stage comparisons before performance/publishing claims. |
