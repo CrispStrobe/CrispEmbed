@@ -17,10 +17,12 @@
 #include "minicpm_ocr_tiles.h"
 #include "minicpm_ocr_vision.h"
 #include "qwen35_decoder.h"
+#include "qwen35_graph_decoder.h"
 #include "qwen35_frontend.h"
 #include "qwen35_weight_cache.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -79,12 +81,14 @@ struct minicpm_ocr_context {
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::attention_config attention;
     qwen35_ocr::converted_weight_cache weights_cache;
+    qwen35_ocr::graph_decoder graph_decoder;
     minicpm_ocr_tiles::config tiles;
     int threads = 1, max_tokens = 1024;
     std::string task = kDefaultTask, text, error;
     std::vector<int> ids;
     std::vector<float> confidences;
     ~minicpm_ocr_context() {
+        graph_decoder.clear();
         weights_cache.clear();
         core_gguf::free_weights(loaded);
         if (backend) ggml_backend_free(backend);
@@ -138,6 +142,26 @@ bool build_prompt(const qwen35_ocr::frontend_tokenizer & tok, const std::string 
     return ids.size() < size_t(kMaxContext);
 }
 
+// Stage wall times on stderr, CRISPEMBED_MINICPM_OCR_TIMING=1 (default off; one clock read
+// per stage when on). Lines follow the "  [time] <stage> <ms>" pattern of unlimited_ocr.cpp
+// and are parsed by tools/kaggle/minicpm-ocr-bench. No computation depends on it.
+struct stage_clock {
+    bool on = core_env::on("CRISPEMBED_MINICPM_OCR_TIMING");
+    std::chrono::steady_clock::time_point mark = std::chrono::steady_clock::now();
+    double lap() {
+        const auto now = std::chrono::steady_clock::now();
+        const double ms = std::chrono::duration<double, std::milli>(now - mark).count();
+        mark = now;
+        return ms;
+    }
+    void stage(const std::string & name, const std::string & extra = "") {
+        const double ms = lap();
+        if (on)
+            std::fprintf(stderr, "  [time] minicpm_ocr.%s %.3fms%s%s\n", name.c_str(), ms, extra.empty() ? "" : " ",
+                         extra.c_str());
+    }
+};
+
 std::vector<float> equal_axes(int start, int count) {
     std::vector<float> axes(3 * size_t(count));
     for (int a = 0; a < 3; ++a)
@@ -151,6 +175,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     if (!pixels || w < 1 || h < 1 || w > 16384 || h > 16384 || int64_t(w) * h > 16777216 ||
         (channels != 1 && channels != 3 && channels != 4))
         return c.fail("invalid image dimensions or channels");
+    stage_clock clk;
     const char * dump_env = std::getenv("CRISPEMBED_MINICPM_OCR_DUMP");
     const std::string dump = dump_env && *dump_env && std::strcmp(dump_env, "0") != 0 ? dump_env : "";
     std::vector<uint8_t> rgb;
@@ -163,6 +188,8 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     minicpm_ocr_tiles::plan plan;
     std::vector<minicpm_ocr::image_part> parts;
     if (!minicpm_ocr::preprocess(pixels, w, h, c.tiles, plan, parts)) return c.fail("preprocessing failed");
+    clk.stage("preprocess", "parts=" + std::to_string(parts.size()) + " grid=" + std::to_string(plan.grid.w) + "x" +
+                                std::to_string(plan.grid.h));
     if (!dump.empty()) {
         std::string meta =
             "{\"grid\":[" + std::to_string(plan.grid.w) + "," + std::to_string(plan.grid.h) + "],\"parts\":[";
@@ -184,13 +211,24 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     std::vector<int> ids;
     if (!build_prompt(c.tok, c.task, plan, ids)) return c.fail("prompt exceeds the native context bound");
     dump_i32(dump, "input_ids", ids);
+    clk.stage("prompt", "tokens=" + std::to_string(ids.size()));
 
     std::vector<float> merged;
     minicpm_ocr::vision_debug dbg;
     dbg.enabled = !dump.empty();
-    for (const auto & p : parts)
-        if (!minicpm_ocr::encode(c.vision, c.backend, p, c.threads, merged, &dbg))
+    for (size_t i = 0; i < parts.size(); ++i) {
+        const auto & p = parts[i];
+        minicpm_ocr::vision_timing vt;
+        if (!minicpm_ocr::encode(c.vision, c.backend, p, c.threads, merged, &dbg, clk.on ? &vt : nullptr))
             return c.fail("vision inference failed");
+        const double total = clk.lap();
+        if (clk.on)
+            std::fprintf(stderr,
+                         "  [time] minicpm_ocr.vision part=%zu %dx%d patches=%d tokens=%d total=%.3fms setup=%.3fms "
+                         "encoder=%.3fms projector=%.3fms readback=%.3fms\n",
+                         i, p.width, p.height, (p.width / 14) * (p.height / 14), p.tokens, total, vt.setup_ms,
+                         vt.encoder_ms, vt.projector_ms, vt.readback_ms);
+    }
     if (!dump.empty()) {
         const size_t D = size_t(c.vision.width);
         dump_f32(dump, "model_vision_tower_embeddings", dbg.embeddings, D);
@@ -211,6 +249,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
             ++image_token;
         }
     if (image_token * kWidth != merged.size()) return c.fail("image embedding count mismatch");
+    clk.stage("embed", "image_tokens=" + std::to_string(image_token));
 
     auto * cache_ptr = core_env::on("CRISPEMBED_QWEN35_WEIGHT_CACHE") ? &c.weights_cache : nullptr;
     // position_ids = None -> arange expanded to 4 equal rows (qwen3_5 modeling:1247-1256); with equal
@@ -218,9 +257,16 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     // over 64 of 256 dims (partial_rotary_factor 0.25), theta 1e7, rotate_half (NeoX) pairs.
     auto positions = equal_axes(0, int(ids.size()));
     qwen35_ocr::decoder_outputs current;
-    if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, int(ids.size()), c.threads,
-                                 nullptr, current, cache_ptr))
-        return c.fail("decoder prefill failed");
+    // Snapshot once for the entire request. Never silently fall back after a
+    // candidate failure, which would mix arithmetic within one decode.
+    const bool graph = core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH");
+    auto decode = [&](const float * input, const float * pos, int count, const qwen35_ocr::decoder_cache * previous) {
+        if (graph) return c.graph_decoder.run(c.decoder, c.attention, input, pos, count, c.threads, previous, current);
+        return qwen35_ocr::decoder_cpu(c.decoder, c.attention, input, pos, 1, count, c.threads, previous, current,
+                                       cache_ptr);
+    };
+    if (!decode(hidden.data(), positions.data(), int(ids.size()), nullptr)) return c.fail("decoder prefill failed");
+    clk.stage("prefill", "tokens=" + std::to_string(ids.size()));
     if (!dump.empty()) {
         for (size_t i = 0; i < current.hidden.size(); ++i)
             dump_f32(dump, "model_language_model_layers_" + std::to_string(i), current.hidden[i], size_t(kWidth));
@@ -228,6 +274,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
         dump_f32(dump, "lm_head", current.logits, current.logits.size());
     }
     const size_t vocab = size_t(c.decoder.head->ne[1]);
+    std::vector<double> step_ms;
     for (int step = 0; step < c.max_tokens; ++step) {
         if (current.logits.size() != vocab ||
             !std::all_of(current.logits.begin(), current.logits.end(), [](float x) { return std::isfinite(x); }))
@@ -243,9 +290,25 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
         auto cache = std::move(current.cache);
         if (!qwen35_ocr::embed_cpu(c.decoder.embedding, { id }, hidden)) return c.fail("embedding failed");
         positions = equal_axes(cache.tokens, 1);
-        if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, 1, c.threads, &cache,
-                                     current, cache_ptr))
-            return c.fail("cached decoder failed");
+        if (!decode(hidden.data(), positions.data(), 1, &cache)) return c.fail("cached decoder failed");
+        if (clk.on) step_ms.push_back(clk.lap()); // argmax + embed + one cached decoder step
+    }
+    if (clk.on) {
+        clk.lap();
+        double sum = 0;
+        for (double v : step_ms) sum += v;
+        auto sorted = step_ms;
+        std::sort(sorted.begin(), sorted.end());
+        std::fprintf(stderr,
+                     "  [time] minicpm_ocr.decode steps=%zu total=%.3fms mean=%.3fms p50=%.3fms max=%.3fms list=",
+                     step_ms.size(), sum, step_ms.empty() ? 0.0 : sum / double(step_ms.size()),
+                     sorted.empty() ? 0.0 : sorted[sorted.size() / 2], sorted.empty() ? 0.0 : sorted.back());
+        for (size_t i = 0; i < step_ms.size(); ++i) std::fprintf(stderr, "%s%.1f", i ? "," : "", step_ms[i]);
+        std::fprintf(stderr, "\n");
+        // Generated IDs for out-of-process exactness checks (no dump directory needed).
+        std::fprintf(stderr, "  [time] minicpm_ocr.ids n=%zu list=", c.ids.size());
+        for (size_t i = 0; i < c.ids.size(); ++i) std::fprintf(stderr, "%s%d", i ? "," : "", c.ids[i]);
+        std::fprintf(stderr, "\n");
     }
     if (!dump.empty()) {
         dump_i32(dump, "ids", c.ids);
@@ -254,6 +317,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
         std::fprintf(stderr, "\n");
     }
     if (!c.tok.decode(c.ids, c.text)) return c.fail("output decoding failed");
+    clk.stage("detokenize", "generated=" + std::to_string(c.ids.size()));
     return c.text.c_str();
 }
 
@@ -266,6 +330,7 @@ extern "C" minicpm_ocr_context * minicpm_ocr_init(const char * path, int threads
         return nullptr;
     }
     try {
+        stage_clock clk;
         auto c = std::make_unique<minicpm_ocr_context>();
         c->threads = threads;
         std::string error;
@@ -307,6 +372,7 @@ extern "C" minicpm_ocr_context * minicpm_ocr_init(const char * path, int threads
             std::fprintf(stderr, "minicpm_ocr: %s\n", error.c_str());
             return nullptr;
         }
+        clk.stage("init");
         return c.release();
     } catch (...) {
         return nullptr;

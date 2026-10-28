@@ -72,7 +72,7 @@ class Protocol(unittest.TestCase):
         steps, drop = p.plan(self.cfg, ["Q8_0", "F16"])
         self.assertEqual([(s[0], s[1]) for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q8_0")])
         self.assertEqual(steps[0][3], ["--dtype", "f32"])
-        self.assertEqual(steps[2][3], ["q8_0"])
+        self.assertEqual(steps[2][3], ["q8_0", "--tensor-type", "v.emb.patch_embedding.weight=f16"])
         self.assertTrue(drop)
 
     def test_parity_receipt(self):
