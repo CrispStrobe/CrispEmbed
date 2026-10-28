@@ -1,4 +1,19 @@
-## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
+## 28 October: portfolio preflight corrections
+
+Josev's protected Q4K replay stopped before model access in two corrected
+preflights. The [child test](tests/results/josev2b/q4k-child-controls-initial-review.json)
+now distinguishes an explicit PID record from provider stderr. The
+[array extent review](tests/results/josev2b/q4k-array-extent-initial-review.json)
+retains all 251 verified hashes and distinguishes 279,119,988 NPY file bytes
+from 279,087,860 tensor bytes. Five child controls and twelve packer/source
+controls pass; actual F32/Q4K model execution remains pending.
+
+Unlimited's [initial mixed-Q4 transfer](tests/results/unlimited-ocr2/initial-mixed-q4k-transfer-review.json)
+failed with HTTP/2 exit92 after successful source, builds, actual Ref and image
+controls. HTTP/1.1 and bounded retries preserve the complete-file SHA gate;
+the corrected hosted run is in progress. No model outcome is inferred from
+this transport repair.
+
 
 ## 28 October: all-size MoEdern originals and Q4K build controls
 
@@ -18,6 +33,8 @@ is available again with its original 709,225-byte SHA-256 identity. Earlier
 mismatched-image receipts remain invalid; no model forward or quality result
 is implied by recovering the input.
 
+
+## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of
 100 vision tokens per 640px tile (bilinear 16x16 upsample). Fixed at 595156ea; the
