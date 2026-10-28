@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import shutil
+import struct
 import subprocess
 import sys
 import time
@@ -56,6 +57,21 @@ def artifact(pin,out,selected):
             target=out/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
     archive.unlink()
     return {k:row[k]for k in ['id','name','size_in_bytes','digest','expires_at']}
+
+def reference_controls(binary,root):
+    folder=root/'ref-controls';folder.mkdir()
+    def adapter(label,values,shape):
+        raw=folder/(label+'.f32');raw.write_bytes(struct.pack('<'+'f'*len(values),*values))
+        output=folder/(label+'.gguf');write_gguf(output,[dict(name='control',path=str(raw),shape=shape,sha256=sha256(raw))]);return output
+    original=adapter('original',[1.,0.,1.,0.],[2,2])
+    variants=[('same',[1.,0.,1.,0.],[2,2],0),('bad-row',[1.,0.,0.,1.],[2,2],1),('wrong-shape',[1.,0.],[1,2],2)]
+    results={}
+    for name,values,shape,code in variants:
+        native=adapter(name,values,shape);path=folder/(name+'.json')
+        call=subprocess.run([str(binary.resolve()),str(original),str(native),str(path)],capture_output=True,text=True,timeout=30)
+        require(call.returncode==code,'actual Ref positive/row-sensitive/structural control differs')
+        results[name]=dict(exit=call.returncode,report=json.loads(path.read_text()))
+    return results
 
 def recipes():
     # Selection is declared before measuring any quantized result. Every recipe
@@ -116,6 +132,7 @@ def run(args):
     report=dict(schema='crispembed-ultrabert-q4k-v1',source=os.environ['GITHUB_SHA'],completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
     save=lambda:write(out/'review.json',report);save()
     try:
+        report['reference_controls']=reference_controls(args.diff,scratch);save()
         frozen=json.loads((ROOT/'tests/results/ultrabert/scifact-original-freeze.json').read_text())
         prep=json.loads((ROOT/'tests/results/ultrabert/scifact-canonical-preparation.json').read_text())
         needed={k:prep['files'][k]for k in ['dataset.json','lengths.json']}

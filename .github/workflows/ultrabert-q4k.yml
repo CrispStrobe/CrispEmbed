@@ -1,0 +1,67 @@
+name: UltraBERT protected Q4_K frozen-original retrieval
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-q4k-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  frozen-retrieval:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-only protected profile and original-only controls
+        run: |
+          python tests/test_ultrabert_quant_profile.py -v
+          python tests/test_portfolio_ultrabert_q4k.py -v
+      - name: Exact conversion and independent comparison tooling; no original model execution
+        run: python -m pip install numpy==2.2.6 gguf==0.17.1 huggingface-hub==0.36.0 safetensors==0.6.2
+      - name: Build actual production library, quantizer and native profile controls
+        run: |
+          cmake -S . -B "$RUNNER_TEMP/q4k-build" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=ON -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_CUDA=OFF -DGGML_METAL=OFF
+          cmake --build "$RUNNER_TEMP/q4k-build" --target crispembed-shared crispembed-quantize test-ultrabert-profile --parallel 2
+          "$RUNNER_TEMP/q4k-build/test-ultrabert-profile"
+          c++ -std=c++17 -O2 -ffp-contract=off -I src tests/moedern-native-v2/diff.cpp -o "$RUNNER_TEMP/portfolio-vector-diff"
+      - name: Frozen 5483 rows, actual IDs/Ref/magnitudes and unchanged ranking gates
+        run: python tools/portfolio/ultrabert_q4k.py --output "$RUNNER_TEMP/ultrabert-q4k" --scratch "$RUNNER_TEMP/ultrabert-q4k-scratch" --library "$RUNNER_TEMP/q4k-build/libcrispembed.so" --quantizer "$RUNNER_TEMP/q4k-build/crispembed-quantize" --diff "$RUNNER_TEMP/portfolio-vector-diff"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-q4k-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ultrabert-q4k/review.json
+            ${{ runner.temp }}/ultrabert-q4k/*-quantizer.log
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-q4k-qualified-assets-${{ github.run_id }}
+          path: ${{ runner.temp }}/ultrabert-q4k/assets/
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-q4k-vector-comparisons-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ultrabert-q4k/q4k-*/
+            ${{ runner.temp }}/ultrabert-q4k/f32/
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn
