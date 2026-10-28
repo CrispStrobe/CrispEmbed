@@ -125,7 +125,8 @@ def cabi(model, library, output):
 
 def fixture(run_id, producer, destination):
     service = assets.api('actions/runs/' + str(run_id))
-    if (service['path'] not in ('.github/workflows/successor-assets.yml', '.github/workflows/ovisocr2-metadata.yml')
+    if (service['path'] not in ('.github/workflows/successor-assets.yml', '.github/workflows/ovisocr2-metadata.yml',
+                                '.github/workflows/successor-assets-v2.yml')
             or service['event'] != 'workflow_dispatch'):
         raise ValueError('Wrong consumer fixture producer workflow/event')
     if str(run_id) != os.environ['GITHUB_RUN_ID'] and (service['status'] != 'completed' or service['conclusion'] != 'success'):

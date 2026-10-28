@@ -257,7 +257,7 @@
     "tests/test_successor_wasm_trace_contract.py": "57bdc0d2101e2e72443b273a17e98ddae05fa897",
     "tests/test_successor_wasm_trace_diff.cpp": "7471283dac9f0859ddac3e5fce9aa017f5d05d92",
     "tools/ci-heavy/successor_assets.py": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
-    "tools/ci-heavy/successor_bindings.py": "654d98e77ef7144004dc34fefc78fea7417afa08",
+    "tools/ci-heavy/successor_bindings.py": "db95357b2041c572610143bfd055a4cc4f28bd0d",
     "tools/ci-heavy/successor_mobile.py": "87a9379145d76e7d5c681bd76e51479a51fb56b9",
     "tools/ci-heavy/successor_posformer.py": "49ee260f0fbf885a257dbe62ac098b13a8170600",
     "tools/ci-heavy/successor_posformer_corpus.py": "a241de556b38c4d20ab8fa077276620776f605a6",
@@ -271,5 +271,14 @@
     "workflow": ".github/workflows/successor-assets-v2.yml",
     "reason": "ovisocr2-metadata.yml already totals 50 reusable-workflow references (nested and duplicates); adding a phase would exceed 50 and reusing the successor-consumer phase would require editing v1 files",
     "requires": "workflow file present on the default branch (main) before it can be dispatched"
+  },
+  "v1_amendments": {
+    "tools/ci-heavy/successor_bindings.py": {
+      "from_blob": "654d98e77ef7144004dc34fefc78fea7417afa08",
+      "to_blob": "db95357b2041c572610143bfd055a4cc4f28bd0d",
+      "run": "40617457588",
+      "change": "fixture producer allowlist adds .github/workflows/successor-assets-v2.yml (consumer run_id is the v2 caller when the v1 matrix is reused via workflow_call); event, success, artifact and model identity checks unchanged",
+      "initial_failure": "tests/results/successor-v2/initial-consumers.json"
+    }
   }
 }

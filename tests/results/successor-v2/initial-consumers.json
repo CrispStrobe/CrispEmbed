@@ -1,0 +1,30 @@
+{
+  "schema": "crispembed-successor-assets-v2-initial-consumers",
+  "run": "40617457588",
+  "source_commit": "ccf722851e497c2880fa03b37d86f5f8ae0d8464",
+  "corpus_run": "40386968045",
+  "producers": "succeeded (seven native, two WASM archives)",
+  "verdict": "negative",
+  "failures": {
+    "apple-released": {
+      "error": "Corpus proof source changed: tools/probe_posformer_release.py",
+      "cause": "pin drift: corpus run 40386968045 is at f284b1f6; 83cdc4cd later changed the probe (peak RSS unit record only), so the exact-blob guard correctly rejects reuse",
+      "resolution": "fresh corpus reproduction 40629090339 at b345f6ab; guard and reviewed proof 40386968045 unchanged"
+    },
+    "wasm": {
+      "error": "Packaged browser/native parity failed",
+      "cause": "known numerical negative, declared expected=fail in docs/successor-assets-v2.json",
+      "max_abs": 0.00837269052863121,
+      "cosine": 0.9986498388732901,
+      "gate": {"max_abs": 0.002, "cosine": 0.99999},
+      "page_errors": 0,
+      "note": "identical to initial 40354251257 (0.00837269/0.99864984); not a new regression; gate unchanged"
+    },
+    "bindings": {
+      "error": "Wrong consumer fixture producer workflow/event",
+      "cause": "lookup allowlist bug: reused v1 bindings job receives the v2 caller run id whose path is .github/workflows/successor-assets-v2.yml",
+      "resolution": "allowlist amendment recorded under v1_amendments in docs/successor-assets-v2.json"
+    }
+  },
+  "limits": ["Initial failure preserved; no qualification, browser claim or release follows."]
+}

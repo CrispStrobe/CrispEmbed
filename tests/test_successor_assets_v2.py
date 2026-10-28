@@ -54,6 +54,18 @@ class SuccessorAssetsV2(unittest.TestCase):
         self.assertIn('.github/workflows/successor-assets.yml', self.p['v1_read_only_blobs'])
         self.assertNotIn('.github/workflows/successor-assets-v2.yml', self.p['v1_read_only_blobs'])
 
+    def test_v1_amendments_declared_and_bounded(self):
+        """Only the declared bindings allowlist amendment differs from the original v1 pin."""
+        amend = self.p['v1_amendments']
+        self.assertEqual(list(amend), ['tools/ci-heavy/successor_bindings.py'])
+        a = amend['tools/ci-heavy/successor_bindings.py']
+        self.assertEqual(self.p['v1_read_only_blobs']['tools/ci-heavy/successor_bindings.py'], a['to_blob'])
+        self.assertNotEqual(a['from_blob'], a['to_blob'])
+        self.assertTrue((ROOT / a['initial_failure']).is_file())
+        text = (ROOT / 'tools/ci-heavy/successor_bindings.py').read_text(encoding='utf-8')
+        self.assertIn("'.github/workflows/successor-assets-v2.yml'", text)
+        self.assertIn("service['event'] != 'workflow_dispatch'", text)
+
     def test_v1_mutation_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
