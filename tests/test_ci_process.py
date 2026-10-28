@@ -40,11 +40,19 @@ class Controls(unittest.TestCase):
         self.assertFalse(killed['timed_out'])
 
     def test_timeout_kills_process_group_and_reaps_child(self):
+        descendant_code='import sys,time;print("startup diagnostic",file=sys.stderr,flush=True);time.sleep(20)'
+        parent_code=('import subprocess,sys,time; p=subprocess.Popen([sys.executable,"-I","-c",'+repr(descendant_code)+']);'
+                     'print("DESCENDANT_PID="+str(p.pid),flush=True);time.sleep(20)')
         with patch.object(m.subprocess.Popen,'poll',side_effect=AssertionError('poll reaps resources')),patch.object(m.subprocess.Popen,'wait',side_effect=AssertionError('wait reaps resources')):
-            row=self.child('import subprocess,sys,time; p=subprocess.Popen([sys.executable,"-I","-c","import time;time.sleep(20)"]);print(p.pid,flush=True);time.sleep(20)',timeout=.7,name='timeout')
+            row=self.child(parent_code,timeout=.7,name='timeout')
         self.assertTrue(row['timed_out']);self.assertEqual(row['exit'],-signal.SIGKILL)
         self.assertEqual(row['termination_signal'],signal.SIGKILL);self.assertTrue(row['reaped']);self.assertLess(row['seconds'],2)
-        descendant=int((self.root/'timeout.log').read_text().strip().splitlines()[-1])
+        # Provider sitecustomize diagnostics can arrive on the merged stream
+        # after the parent PID record. They are not a process identity.
+        lines=(self.root/'timeout.log').read_text().splitlines()
+        records=[line.removeprefix('DESCENDANT_PID=')for line in lines if line.startswith('DESCENDANT_PID=')]
+        self.assertEqual(len(records),1);descendant=int(records[0])
+        self.assertIn('startup diagnostic',lines)
         stat=Path('/proc')/str(descendant)/'stat'
         deadline=time.monotonic()+.3
         while stat.exists()and stat.read_text().split()[2]not in('Z','X')and time.monotonic()<deadline:time.sleep(.01)
