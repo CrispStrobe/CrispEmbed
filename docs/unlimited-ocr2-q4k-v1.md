@@ -1,7 +1,7 @@
 # UnlimitedOCR2 bounded mixed-Q4_K experiment v1
 
-This is prepared source, awaiting review and a separately authorized hosted CPU
-run. It qualifies no model, alias, default, release or app. Historical failed
+This is corrected source, awaiting review and a separately authorized hosted CPU
+retry. It qualifies no model, alias, default, release or app. Historical failed
 precision sweeps and their original references remain unchanged.
 
 The runtime/build/converter/quantizer closure is fixed to
@@ -100,8 +100,8 @@ against the five-job cap immediately before submission, and retain the returned
 immutable service version. Resource guards require10GiB available RAM and32GiB
 scratch; builds use two workers and the panel four CPU threads. The overall
 11.2-hour deadline includes builds/conversions. Large raw results stay remote;
-fetch only the needed small JSON/Markdown/log reports. There has been no actual
-execution of this new protocol yet.
+fetch only the needed small JSON/Markdown/log reports. There has been no completed
+model-panel execution of this new protocol yet.
 
 ### Separate retained real-scan decoder control
 
@@ -119,3 +119,15 @@ the other eight retain their raw/clean comparisons and pending model attribution
 This adds no model/original forward and cannot claim repaired whole-model
 real-scan parity. It runs before the separately scoped four-page quantized model
 panel and does not change its inputs, recipes, numerical or decoded gates.
+
+
+The initial immutable kernel v1 at `6a2be093b` ended before model verification:
+[unchanged setup and independent review](../tests/results/unlimited-ocr2/initial-mixed-q4k-transfer-review.json).
+All17 prior commands passed, including both real builds, compiler agreement,
+observer exclusion, comparator positive/negative controls and the frozen PNG
+checks. The F16 HTTP/2 transfer then exited92. No retained-ID decoder replay or
+model-panel forward ran. The bounded retry uses HTTP/1.1 with at most two retries
+on all transfer errors, a1200-second retry window,600-second per-attempt limit
+and30-second connect timeout. Final complete-file size/SHA checks are unchanged;
+partial downloads supply no fallback or positive evidence. The earlier producer,
+logs, input/gold and numerical gates remain unchanged.

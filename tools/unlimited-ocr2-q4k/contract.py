@@ -94,6 +94,18 @@ def inventory(path):
     return records
 
 
+def model_download_command(path):
+    """At most three HTTP/1.1 attempts; the caller still authenticates full bytes.
+
+    HTTP/2 exit92 is not covered by curl's default retry selection. Explicit
+    all-error retries are bounded by both a per-attempt and total retry window.
+    There is no partial-file fallback or resume; final extent/SHA are mandatory.
+    """
+    return ['curl', '--fail', '--location', '--http1.1', '--retry', '2',
+            '--retry-all-errors', '--retry-delay', '2', '--retry-max-time', '1200',
+            '--connect-timeout', '30', '--max-time', '600', F16_URL, '--output', str(path)]
+
+
 def selected(names, recipe):
     require(recipe in RECIPES, 'Unknown predeclared recipe')
     targets = {f'l.blk.{layer}.ffn_{part}_exps.weight'
