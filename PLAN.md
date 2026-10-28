@@ -887,3 +887,11 @@ geometry, per-channel errors and codec/compiler identities. The standalone
 `ocr-rgb-input-audit-v1.yml` registration is metadata only; no pixel difference
 establishes model-error causality or quality qualification. No original model
 is rerun. Numerical attribution follows the earliest measured input boundary.
+
+### Current portfolio execution snapshot
+
+The refreshed28 October handoff records exact source-qualified original evidence,
+active corrected jobs, partial MiniCPM disk-failure scope, successful bounded
+WASM operators and remaining whole-model/quantized/final-source gates. See
+`docs/handoff-2026-10-28.md`. This main change contains documentation only;
+candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
