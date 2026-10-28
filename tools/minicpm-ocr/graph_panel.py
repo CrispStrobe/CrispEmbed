@@ -132,7 +132,7 @@ def source_guard(source):
     link = subprocess.check_output(['git','ls-tree','HEAD','ggml'],cwd=ROOT,text=True).split()[2]
     checkout = subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT/'ggml',text=True).strip()
     require(link == checkout, 'ggml gitlink/checkout mismatch')
-    paths = subprocess.check_output(['git','ls-files','src','CMakeLists.txt','tools/minicpm-ocr','tests/minicpm-graph','models/convert-minicpm-ocr-to-gguf.py','docs/minicpm-ocr-graph-v1.json','tools/josev2b_composed_panel.py','tools/josev2b_composed_diff.py','tests/results/minicpm-ocr/native-parity.json','docs/minicpm-ocr-source.json','models/convert-qwen35-ocr-to-gguf.py','tools/quantize.cpp','tests/test_quantize_patch_float.py','tools/kaggle/minicpm-ocr-graph','tests/test_ultrabert_profile.cpp','tests/josev-quant','tests/josev-packed'],cwd=ROOT,text=True).splitlines()
+    paths = subprocess.check_output(['git','ls-files','src','CMakeLists.txt','tools/minicpm-ocr','tests/minicpm-graph','models/convert-minicpm-ocr-to-gguf.py','docs/minicpm-ocr-graph-v1.json','tools/josev2b_composed_panel.py','tools/josev2b_composed_diff.py','tests/results/minicpm-ocr/native-parity.json','docs/minicpm-ocr-source.json','models/convert-qwen35-ocr-to-gguf.py','tools/quantize.cpp','tests/test_quantize_patch_float.py','tests/test_quantize_tensor_overrides.py','tools/kaggle/minicpm-ocr-graph','tests/test_ultrabert_profile.cpp','tests/josev-quant','tests/josev-packed'],cwd=ROOT,text=True).splitlines()
     return dict(source=source, ggml=link, files={p:digest(ROOT/p) for p in paths})
 
 

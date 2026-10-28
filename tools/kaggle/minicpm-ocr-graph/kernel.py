@@ -78,6 +78,7 @@ try:
     run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','test-ultrabert-profile','--parallel','2'],5400)
     run(['/kaggle/temp/b/test-ultrabert-profile'])
     run([py,'tests/test_quantize_patch_float.py','--quantizer','/kaggle/temp/b/crispembed-quantize','--output',OUT/'patch-quantizer-controls.json'])
+    run([py,'tests/test_quantize_tensor_overrides.py','--quantizer','/kaggle/temp/b/crispembed-quantize'])
     # Model-free precision marker/load guards: same combined source, no extra
     # kernel session or original/model payload, before any bulk conversion.
     run(['cmake','-S','tests/josev-quant','-B','/kaggle/temp/jq','-DCMAKE_BUILD_TYPE=Release'])
