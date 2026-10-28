@@ -12,6 +12,20 @@ class Controls(unittest.TestCase):
         with mock.patch.object(w,'api',return_value=dict(head_sha='a'*40,status='completed',conclusion='failure',run_attempt=1)),mock.patch.object(w.subprocess,'run')as process:
             with self.assertRaisesRegex(ValueError,'producer'):w.artifact(pin,Path('unused'),{})
             process.assert_not_called()
+    def test_frozen_original_jobs_survive_later_native_cancellation(self):
+        pin=dict(run=w.ORIGINAL_RUN,head=w.ORIGINAL_SOURCE)
+        run=dict(head_sha=w.ORIGINAL_SOURCE,status='completed',conclusion='cancelled',run_attempt=1)
+        jobs=[dict(id=i,name=n,status='completed',conclusion='success')for i,n in w.ORIGINAL_JOBS.items()]
+        with mock.patch.object(w,'api',return_value=dict(jobs=jobs)):
+            w.producer_identity(pin,run)
+            for field,value in [('conclusion','cancelled'),('status','in_progress'),('name','unrelated')]:
+                bad=[dict(j)for j in jobs];bad[0][field]=value
+                with mock.patch.object(w,'api',return_value=dict(jobs=bad)):
+                    with self.assertRaisesRegex(ValueError,'job'):w.producer_identity(pin,run)
+            with mock.patch.object(w,'api',return_value=dict(jobs=jobs[:-1])):
+                with self.assertRaisesRegex(ValueError,'job'):w.producer_identity(pin,run)
+        wrong=dict(run);wrong['run_attempt']=2
+        with self.assertRaisesRegex(ValueError,'producer'):w.producer_identity(pin,wrong)
     def test_original_profile_and_recipe_protection(self):
         self.assertEqual(w.MODEL,'dmis-lab/UltraBERT-Embed-150M')
         recipes=w.recipes();self.assertEqual(len(recipes),3)

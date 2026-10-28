@@ -7,6 +7,7 @@ quantized vector drift is reported separately from the unchanged ranking gates.
 """
 import argparse
 import ctypes
+from functools import lru_cache
 import hashlib
 import importlib.util
 import json
@@ -30,11 +31,31 @@ def require(ok,why):
 def write(path,value):
     path.parent.mkdir(parents=True,exist_ok=True)
     path.write_text(json.dumps(value,indent=2,allow_nan=False)+'\n')
+@lru_cache(maxsize=32)
 def api(path): return json.loads(subprocess.check_output(['gh','api','repos/CrispStrobe/CrispEmbed/'+path],timeout=90))
+# Original shards/freeze succeeded before the historical workflow's later native
+# jobs failed/cancelled. Authenticate these exact successful original jobs rather
+# than mistakenly treating the parent workflow conclusion as their conclusion.
+ORIGINAL_RUN=40375626336
+ORIGINAL_SOURCE='e35cd1a0ba3c2dcac1fdfbded739f5663d0b8902'
+ORIGINAL_JOBS={121761768019:'ultrabert-scifact / original-shard-0',121761767470:'ultrabert-scifact / original-shard-1',121761767428:'ultrabert-scifact / original-shard-2',121761767536:'ultrabert-scifact / original-shard-3',121761767339:'ultrabert-scifact / original-shard-4',121761767594:'ultrabert-scifact / original-shard-5',121761767529:'ultrabert-scifact / original-shard-6',121761767688:'ultrabert-scifact / original-shard-7',121869932743:'ultrabert-scifact / freeze-original'}
+
+def producer_identity(pin,run):
+    source=pin.get('head',pin.get('source'))
+    require(run['head_sha']==source and run['status']=='completed' and run['run_attempt']==1,'original producer differs')
+    if pin['run']==ORIGINAL_RUN and source==ORIGINAL_SOURCE:
+        require(run['conclusion'] in ('success','cancelled'),'frozen parent conclusion differs')
+        jobs=api('actions/runs/'+str(ORIGINAL_RUN)+'/jobs?per_page=100')['jobs']
+        for ident,name in ORIGINAL_JOBS.items():
+            matches=[j for j in jobs if j['id']==ident]
+            require(len(matches)==1 and matches[0]['name']==name and matches[0]['status']=='completed' and matches[0]['conclusion']=='success','frozen original producer job differs')
+    else:
+        require(run['conclusion']=='success','original producer differs')
+
 def artifact(pin,out,selected):
     run=api('actions/runs/'+str(pin['run']))
     source=pin.get('head',pin.get('source'))
-    require(run['head_sha']==source and run['status']=='completed' and run['conclusion']=='success' and run['run_attempt']==1,'original producer differs')
+    producer_identity(pin,run)
     ident=pin.get('artifact_id',pin.get('id')); row=api('actions/artifacts/'+str(ident))
     digest=pin.get('digest','sha256:'+str(pin.get('sha256')))
     require(row['workflow_run']['id']==pin['run'] and row['workflow_run']['head_sha']==source and not row['expired'] and row['name']==pin['name'] and row['size_in_bytes']==pin['bytes'] and row['digest']==digest and 0<pin['bytes']<=32*1024**2,'immutable artifact identity differs')
