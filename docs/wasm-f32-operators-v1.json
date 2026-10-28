@@ -147,23 +147,26 @@
   "norm_emulation_authorized": false,
   "source_sha256": {
     ".github/workflows/wasm-f32-operators-v1.yml": "656652f82de9d782e6001660b5a86680a34ce87b4a8aeb0ed9d809c899a38d45",
-    "docs/wasm-f32-operators-v1.md": "91ef0218c199115d5ad583e852db6a60a1f4fbbd6c36f4b1a36f7c9d4b2fe36a",
+    "docs/wasm-f32-operators-v1.md": "6a930a49b009506cc85b56404d89e4992ab9b1dba686a7412e8f25794999cfee",
     "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
     "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
     "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
-    "tests/test_wasm_f32_operators_v1.py": "cdeff82d11f3d6063bb0722e60edcd731ac00432399abc40708ebb00c412fb66",
+    "tests/test_wasm_f32_operators_v1.py": "f97fb6cd681a51ba64eff1eee31fb2e910a02b56ba3c3415474f6cbab51d143b",
     "tests/wasm-f32-operators/CMakeLists.txt": "86d539caa79161b83b619c97f257ad00e97aac367c3e7572a4ee7032201d0cc3",
-    "tests/wasm-f32-operators/browser.cjs": "09c8ff6a6f00aa1acbcf4aad9d5ab2aba28b322ea72bfca5b79a281745eeffed",
+    "tests/wasm-f32-operators/browser.cjs": "264cc71216f85c2ae4796835b0f9b8d94adc1194c095eba23b561c8cde60c6f2",
     "tests/wasm-f32-operators/diff.cpp": "33290e256167ce2decf6e91dd33918bfe8808a922a2eb9136fc1d85b389f629d",
     "tests/wasm-f32-operators/operator.cpp": "67b628bf00bf182077c1ebac081ebcbb7fb1d805564ca614b0182d135ddc14c3",
     "tools/ci-heavy/successor_assets.py": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
-    "tools/ci-heavy/wasm_f32_operators_v1.py": "14d5af24a4ce0ea482d308cc039c2e78ce5b007143fd2e61903908bab1602fc7",
+    "tools/ci-heavy/wasm_f32_operators_v1.py": "833048df685d758f1f32ddd149c2db3928762b8ffc84d3aa31d746542dd03542",
     "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
     "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
     "tools/successor_asset_manifest.py": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
     "tools/successor_wasm_trace_contract.py": "19467192afd73f900185e5ed4783f95449876932603d4786ebb140333d2b246a",
     "tools/wasm-f32-operators/adapter.py": "c74278389e09c0c802370b1d82f4646286558a70ed2254bacadeda5215f39053",
     "tools/wasm-f32-operators/contract.py": "bb6a3fe80e5b5b93d48b605c8cbecd7e7f8de9e71bd1b2423df1a681e8c29194",
-    "tools/wasm_layer3_attribution_v1.py": "3cbd347ea731fe0a4799b3f7dcfe75450ca856b8a404c1887148b709cbef9133"
+    "tools/wasm_layer3_attribution_v1.py": "3cbd347ea731fe0a4799b3f7dcfe75450ca856b8a404c1887148b709cbef9133",
+    "tools/wasm-f32-operators/hosted.py": "b161e573f8525ff94bada70718002d41a0e6f8c05776acff60fa9cfccac5952d",
+    "tools/kaggle/wasm-f32-operators/kernel.py": "838345ce78f89e15eb7f2365ac7a7eea46beb46bab0edfea436e46c073f64ea0",
+    "tools/kaggle/wasm-f32-operators/kernel-metadata.json": "ba5d582fa4a55b2ecddcba8826dd8c353bb3be53c6dc7c39d3f35363c8c674ae"
   }
 }
