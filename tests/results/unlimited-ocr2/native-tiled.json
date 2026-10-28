@@ -1,47 +1,49 @@
 {
-  "schema": "crispembed-unlimited-ocr2-native-tiling-receipt-v1",
-  "commit": "7f4202c3135e5800e492c49a56f17b1052194cff",
-  "producer": {
-    "service": "kaggle-cpu-kernel",
-    "kernel": "crispembed-unlimited-ocr2-native",
-    "kernel_version": 6
+ "schema": "crispembed-unlimited-ocr2-native-tiling-receipt-v1",
+ "commit": "7f4202c3135e5800e492c49a56f17b1052194cff",
+ "producer": {
+  "service": "kaggle-cpu-kernel",
+  "kernel": "crispembed-unlimited-ocr2-native",
+  "kernel_version": 6
+ },
+ "report_sha256": "76685288bd5bb89ed8d5d3265d616e6a14020a2cdafba8403f1d805ad85ae16c",
+ "gate": "CRISPEMBED_UNLIMITED_OCR2_TILES",
+ "cases": [
+  {
+   "id": "small-untiled",
+   "tiled": false,
+   "ids_exact": true,
+   "first_id_difference": null,
+   "tokens": 65,
+   "text_without_boxes_equal": true,
+   "max_box_coordinate_difference": 0,
+   "boxes": true
   },
-  "report_sha256": "76685288bd5bb89ed8d5d3265d616e6a14020a2cdafba8403f1d805ad85ae16c",
-  "gate": "CRISPEMBED_UNLIMITED_OCR2_TILES",
-  "cases": [
-    {
-      "id": "small-untiled",
-      "tiled": false,
-      "ids_exact": true,
-      "first_id_difference": null,
-      "tokens": 65,
-      "text_without_boxes_equal": true,
-      "max_box_coordinate_difference": 0,
-      "boxes": true
-    },
-    {
-      "id": "para-en",
-      "tiled": true,
-      "ids_exact": false,
-      "first_id_difference": 7,
-      "tokens": 117,
-      "text_without_boxes_equal": true,
-      "max_box_coordinate_difference": 3,
-      "boxes": true
-    },
-    {
-      "id": "table",
-      "tiled": true,
-      "ids_exact": false,
-      "first_id_difference": 4,
-      "tokens": 97,
-      "text_without_boxes_equal": true,
-      "max_box_coordinate_difference": 3,
-      "boxes": true
-    }
-  ],
-  "verdict": "untiled exact; tiled pages: recognized text exact, layout box coordinates differ by <=3 on the 0-999 scale (token IDs not exact)",
-  "next": "localize the earliest vision divergence (Pillow-bicubic tile resize vs bicubic+antialias position-embedding resize) against the reference projector arrays",
-  "default_enabled": false,
-  "published": false
+  {
+   "id": "para-en",
+   "tiled": true,
+   "ids_exact": false,
+   "first_id_difference": 7,
+   "tokens": 117,
+   "text_without_boxes_equal": true,
+   "max_box_coordinate_difference": 3,
+   "boxes": true
+  },
+  {
+   "id": "table",
+   "tiled": true,
+   "ids_exact": false,
+   "first_id_difference": 4,
+   "tokens": 97,
+   "text_without_boxes_equal": true,
+   "max_box_coordinate_difference": 3,
+   "boxes": true
+  }
+ ],
+ "verdict": "untiled exact; tiled pages: recognized text exact, layout box coordinates differ by <=3 on the 0-999 scale (token IDs not exact)",
+ "next": "localize the earliest vision divergence (Pillow-bicubic tile resize vs bicubic+antialias position-embedding resize) against the reference projector arrays",
+ "default_enabled": false,
+ "published": false,
+ "superseded_by": "tests/results/unlimited-ocr2/native-tile-tokens.json",
+ "superseded_note": "This run fed 256 vision tokens per 640px tile (bilinear 16x16 upsample) instead of the original 100; only text matched. Fixed at 595156ea: all cases token-ID exact."
 }

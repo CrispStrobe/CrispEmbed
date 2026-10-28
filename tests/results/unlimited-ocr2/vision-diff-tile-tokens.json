@@ -1,0 +1,1462 @@
+{
+  "schema": "crispembed-unlimited-ocr2-vision-diff-v1",
+  "commit": "595156eaa2f925af6bab2cf72bca90eee053eac0",
+  "reference_revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+  "cases": [
+    {
+      "id": "small-untiled",
+      "arm": "untiled",
+      "exit": 0,
+      "reference_projector": [
+        "arrays/small-untiled/model_projector.npy"
+      ],
+      "dump_line": "unlimited_ocr: vision dump n=273 D=1280 tiled=0 wt=1 ht=1 nq=0 nqb=16 n_expected=273 floats=349440 -> /kaggle/temp/small-untiled-untiled.vis.f32",
+      "diff_exit": 0,
+      "diff": {
+        "size": [
+          640,
+          480
+        ],
+        "tiled": false,
+        "global_pixels": {
+          "max_abs": 0.1434192657470703,
+          "mean_abs": 7.98888210624682e-05,
+          "cosine": 0.9999986161245659,
+          "ref_max_abs": 1.0,
+          "exact": false,
+          "n_diff": 834768
+        },
+        "grid": [
+          1,
+          1
+        ],
+        "native_n_vis": 273,
+        "reference_projector_shape": [
+          1,
+          256,
+          1280
+        ],
+        "n_vis_expected": 273,
+        "n_vis_match": true,
+        "global_newlines_identical": true,
+        "blocks": [
+          {
+            "block": "global",
+            "max_abs": 0.017158031463623047,
+            "mean_abs": 0.0002958636677666493,
+            "cosine": 0.999990769569203,
+            "ref_max_abs": 3.131056070327759,
+            "exact": false
+          }
+        ],
+        "first_block_over_1e-3": 0,
+        "max_abs": 0.017158031463623047,
+        "min_cosine": 0.999990769569203
+      }
+    },
+    {
+      "id": "para-en",
+      "arm": "ref-prep",
+      "exit": 0,
+      "reference_projector": [
+        "arrays/para-en/model_projector.npy"
+      ],
+      "dump_line": "unlimited_ocr: vision dump n=1503 D=1280 tiled=1 wt=4 ht=3 nq=10 nqb=16 n_expected=1503 floats=1923840 -> /kaggle/temp/para-en-ref-prep.vis.f32",
+      "diff_exit": 0,
+      "diff": {
+        "size": [
+          1024,
+          768
+        ],
+        "tiled": true,
+        "global_pixels": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "cosine": 1.0,
+          "ref_max_abs": 1.0,
+          "exact": true,
+          "n_diff": 0
+        },
+        "tile_pixels": {
+          "first_differing_tile": null,
+          "max_abs": 0.0,
+          "per_tile": [
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 0,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 1,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 2,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 3,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 4,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 5,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 6,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 7,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 8,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 9,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 10,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 11,
+              "n_diff": 0
+            }
+          ]
+        },
+        "grid": [
+          4,
+          3
+        ],
+        "native_n_vis": 1503,
+        "reference_projector_shape": [
+          12,
+          100,
+          1280
+        ],
+        "n_vis_expected": 1503,
+        "n_vis_match": true,
+        "local_newlines_identical": true,
+        "global_newlines_identical": true,
+        "global_newline_equals_local_newline": true,
+        "blocks": [
+          {
+            "block": "tile",
+            "tile": 0,
+            "ty": 0,
+            "tx": 0,
+            "max_abs": 0.0009093284606933594,
+            "mean_abs": 4.2411165794419505e-05,
+            "cosine": 0.9999999092614249,
+            "ref_max_abs": 1.9143809080123901,
+            "exact": false,
+            "worst_token": 5,
+            "worst_token_rc": [
+              0,
+              5
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 1,
+            "ty": 0,
+            "tx": 1,
+            "max_abs": 0.0010718107223510742,
+            "mean_abs": 4.019205178276763e-05,
+            "cosine": 0.9999999279549093,
+            "ref_max_abs": 2.0273337364196777,
+            "exact": false,
+            "worst_token": 5,
+            "worst_token_rc": [
+              0,
+              5
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 2,
+            "ty": 0,
+            "tx": 2,
+            "max_abs": 0.0013451576232910156,
+            "mean_abs": 4.041520449098357e-05,
+            "cosine": 0.999999916543388,
+            "ref_max_abs": 1.8441898822784424,
+            "exact": false,
+            "worst_token": 7,
+            "worst_token_rc": [
+              0,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 3,
+            "ty": 0,
+            "tx": 3,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 4,
+            "ty": 1,
+            "tx": 0,
+            "max_abs": 0.0011652112007141113,
+            "mean_abs": 4.2754289342099126e-05,
+            "cosine": 0.9999999090295131,
+            "ref_max_abs": 1.8258086442947388,
+            "exact": false,
+            "worst_token": 72,
+            "worst_token_rc": [
+              7,
+              2
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 5,
+            "ty": 1,
+            "tx": 1,
+            "max_abs": 0.0009429454803466797,
+            "mean_abs": 4.746533482649795e-05,
+            "cosine": 0.9999998630919932,
+            "ref_max_abs": 1.9149531126022339,
+            "exact": false,
+            "worst_token": 62,
+            "worst_token_rc": [
+              6,
+              2
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 6,
+            "ty": 1,
+            "tx": 2,
+            "max_abs": 0.004860818386077881,
+            "mean_abs": 6.005429681175656e-05,
+            "cosine": 0.9999994745742298,
+            "ref_max_abs": 1.9196242094039917,
+            "exact": false,
+            "worst_token": 67,
+            "worst_token_rc": [
+              6,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 7,
+            "ty": 1,
+            "tx": 3,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 8,
+            "ty": 2,
+            "tx": 0,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 9,
+            "ty": 2,
+            "tx": 1,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 10,
+            "ty": 2,
+            "tx": 2,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 11,
+            "ty": 2,
+            "tx": 3,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          }
+        ],
+        "first_block_over_1e-3": 1,
+        "max_abs": 0.004860818386077881,
+        "min_cosine": 0.9999994469711245
+      }
+    },
+    {
+      "id": "para-en",
+      "arm": "legacy-prep",
+      "exit": 0,
+      "reference_projector": [
+        "arrays/para-en/model_projector.npy"
+      ],
+      "dump_line": "unlimited_ocr: vision dump n=1503 D=1280 tiled=1 wt=4 ht=3 nq=10 nqb=16 n_expected=1503 floats=1923840 -> /kaggle/temp/para-en-legacy-prep.vis.f32",
+      "diff_exit": 0,
+      "diff": {
+        "size": [
+          1024,
+          768
+        ],
+        "tiled": true,
+        "global_pixels": {
+          "max_abs": 0.0019301176071166992,
+          "mean_abs": 9.802840224892861e-06,
+          "cosine": 0.9999999955367175,
+          "ref_max_abs": 1.0,
+          "exact": false,
+          "n_diff": 815373
+        },
+        "tile_pixels": {
+          "first_differing_tile": 0,
+          "max_abs": 0.0019301176071166992,
+          "per_tile": [
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 4.308455507270992e-05,
+              "cosine": 0.999999975807736,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 0,
+              "n_diff": 94146
+            },
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 4.7998030349845064e-05,
+              "cosine": 0.9999999730110786,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 1,
+              "n_diff": 104178
+            },
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 1.2273273605387657e-05,
+              "cosine": 0.9999999932671504,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 2,
+              "n_diff": 26805
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 3,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 1.416239349055104e-05,
+              "cosine": 0.9999999920053407,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 4,
+              "n_diff": 31281
+            },
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 2.1411848429124803e-05,
+              "cosine": 0.999999988151632,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 5,
+              "n_diff": 45123
+            },
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 4.129695298615843e-06,
+              "cosine": 0.9999999977991127,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 6,
+              "n_diff": 9069
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 7,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 8,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 9,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 10,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 11,
+              "n_diff": 0
+            }
+          ]
+        },
+        "grid": [
+          4,
+          3
+        ],
+        "native_n_vis": 1503,
+        "reference_projector_shape": [
+          12,
+          100,
+          1280
+        ],
+        "n_vis_expected": 1503,
+        "n_vis_match": true,
+        "local_newlines_identical": true,
+        "global_newlines_identical": true,
+        "global_newline_equals_local_newline": true,
+        "blocks": [
+          {
+            "block": "tile",
+            "tile": 0,
+            "ty": 0,
+            "tx": 0,
+            "max_abs": 0.2507020831108093,
+            "mean_abs": 0.0027884899294288346,
+            "cosine": 0.9993381492964013,
+            "ref_max_abs": 1.9143809080123901,
+            "exact": false,
+            "worst_token": 9,
+            "worst_token_rc": [
+              0,
+              9
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 1,
+            "ty": 0,
+            "tx": 1,
+            "max_abs": 0.06399118900299072,
+            "mean_abs": 0.0026966499508082366,
+            "cosine": 0.9995613497696734,
+            "ref_max_abs": 2.0273337364196777,
+            "exact": false,
+            "worst_token": 6,
+            "worst_token_rc": [
+              0,
+              6
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 2,
+            "ty": 0,
+            "tx": 2,
+            "max_abs": 0.0696563720703125,
+            "mean_abs": 0.002324245350207974,
+            "cosine": 0.9996574896249453,
+            "ref_max_abs": 1.8441898822784424,
+            "exact": false,
+            "worst_token": 31,
+            "worst_token_rc": [
+              3,
+              1
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 3,
+            "ty": 0,
+            "tx": 3,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 4,
+            "ty": 1,
+            "tx": 0,
+            "max_abs": 0.15512621402740479,
+            "mean_abs": 0.002666561164260173,
+            "cosine": 0.9995247632237709,
+            "ref_max_abs": 1.8258086442947388,
+            "exact": false,
+            "worst_token": 5,
+            "worst_token_rc": [
+              0,
+              5
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 5,
+            "ty": 1,
+            "tx": 1,
+            "max_abs": 0.07853841781616211,
+            "mean_abs": 0.002813879114283111,
+            "cosine": 0.9995214644800637,
+            "ref_max_abs": 1.9149531126022339,
+            "exact": false,
+            "worst_token": 6,
+            "worst_token_rc": [
+              0,
+              6
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 6,
+            "ty": 1,
+            "tx": 2,
+            "max_abs": 0.17512166500091553,
+            "mean_abs": 0.003255368938218112,
+            "cosine": 0.9990221687785433,
+            "ref_max_abs": 1.9196242094039917,
+            "exact": false,
+            "worst_token": 7,
+            "worst_token_rc": [
+              0,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 7,
+            "ty": 1,
+            "tx": 3,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 8,
+            "ty": 2,
+            "tx": 0,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 9,
+            "ty": 2,
+            "tx": 1,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 10,
+            "ty": 2,
+            "tx": 2,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 11,
+            "ty": 2,
+            "tx": 3,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          }
+        ],
+        "first_block_over_1e-3": 0,
+        "max_abs": 0.2507020831108093,
+        "min_cosine": 0.9989585733313993
+      }
+    },
+    {
+      "id": "table",
+      "arm": "ref-prep",
+      "exit": 0,
+      "reference_projector": [
+        "arrays/table/model_projector.npy"
+      ],
+      "dump_line": "unlimited_ocr: vision dump n=1503 D=1280 tiled=1 wt=4 ht=3 nq=10 nqb=16 n_expected=1503 floats=1923840 -> /kaggle/temp/table-ref-prep.vis.f32",
+      "diff_exit": 0,
+      "diff": {
+        "size": [
+          1024,
+          768
+        ],
+        "tiled": true,
+        "global_pixels": {
+          "max_abs": 0.0,
+          "mean_abs": 0.0,
+          "cosine": 1.0,
+          "ref_max_abs": 1.0,
+          "exact": true,
+          "n_diff": 0
+        },
+        "tile_pixels": {
+          "first_differing_tile": null,
+          "max_abs": 0.0,
+          "per_tile": [
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0000000000000002,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 0,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 1,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 2,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 3,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 4,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 1.0,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 5,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 6,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 7,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 8,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 9,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 10,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 11,
+              "n_diff": 0
+            }
+          ]
+        },
+        "grid": [
+          4,
+          3
+        ],
+        "native_n_vis": 1503,
+        "reference_projector_shape": [
+          12,
+          100,
+          1280
+        ],
+        "n_vis_expected": 1503,
+        "n_vis_match": true,
+        "local_newlines_identical": true,
+        "global_newlines_identical": true,
+        "global_newline_equals_local_newline": true,
+        "blocks": [
+          {
+            "block": "tile",
+            "tile": 0,
+            "ty": 0,
+            "tx": 0,
+            "max_abs": 0.0011057853698730469,
+            "mean_abs": 4.065425638792419e-05,
+            "cosine": 0.9999999163361817,
+            "ref_max_abs": 1.973019003868103,
+            "exact": false,
+            "worst_token": 4,
+            "worst_token_rc": [
+              0,
+              4
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 1,
+            "ty": 0,
+            "tx": 1,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 2,
+            "ty": 0,
+            "tx": 2,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 3,
+            "ty": 0,
+            "tx": 3,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 4,
+            "ty": 1,
+            "tx": 0,
+            "max_abs": 0.0017653927206993103,
+            "mean_abs": 4.990582439785385e-05,
+            "cosine": 0.9999998391576004,
+            "ref_max_abs": 1.8927264213562012,
+            "exact": false,
+            "worst_token": 83,
+            "worst_token_rc": [
+              8,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 5,
+            "ty": 1,
+            "tx": 1,
+            "max_abs": 0.0044203996658325195,
+            "mean_abs": 6.235467167687148e-05,
+            "cosine": 0.9999995117449894,
+            "ref_max_abs": 1.7605916261672974,
+            "exact": false,
+            "worst_token": 57,
+            "worst_token_rc": [
+              5,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 6,
+            "ty": 1,
+            "tx": 2,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 7,
+            "ty": 1,
+            "tx": 3,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 8,
+            "ty": 2,
+            "tx": 0,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 9,
+            "ty": 2,
+            "tx": 1,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 10,
+            "ty": 2,
+            "tx": 2,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 11,
+            "ty": 2,
+            "tx": 3,
+            "max_abs": 0.0044381022453308105,
+            "mean_abs": 6.850426703866219e-05,
+            "cosine": 0.9999994469711245,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 37,
+            "worst_token_rc": [
+              3,
+              7
+            ]
+          }
+        ],
+        "first_block_over_1e-3": 0,
+        "max_abs": 0.0044381022453308105,
+        "min_cosine": 0.9999994469711245
+      }
+    },
+    {
+      "id": "table",
+      "arm": "legacy-prep",
+      "exit": 0,
+      "reference_projector": [
+        "arrays/table/model_projector.npy"
+      ],
+      "dump_line": "unlimited_ocr: vision dump n=1503 D=1280 tiled=1 wt=4 ht=3 nq=10 nqb=16 n_expected=1503 floats=1923840 -> /kaggle/temp/table-legacy-prep.vis.f32",
+      "diff_exit": 0,
+      "diff": {
+        "size": [
+          1024,
+          768
+        ],
+        "tiled": true,
+        "global_pixels": {
+          "max_abs": 0.0019301176071166992,
+          "mean_abs": 6.1024513229313015e-06,
+          "cosine": 0.9999999982575368,
+          "ref_max_abs": 1.0,
+          "exact": false,
+          "n_diff": 796884
+        },
+        "tile_pixels": {
+          "first_differing_tile": 0,
+          "max_abs": 0.0019301176071166992,
+          "per_tile": [
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 4.0004505717661234e-05,
+              "cosine": 0.9999999770711171,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 0,
+              "n_diff": 83979
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 1,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 2,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 3,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0019301176071166992,
+              "mean_abs": 1.4063805137993767e-05,
+              "cosine": 0.9999999916921912,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 4,
+              "n_diff": 28407
+            },
+            {
+              "max_abs": 0.0018994808197021484,
+              "mean_abs": 1.5969446394592525e-07,
+              "cosine": 0.9999999999197438,
+              "ref_max_abs": 1.0,
+              "exact": false,
+              "tile": 5,
+              "n_diff": 354
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 6,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 7,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 8,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 9,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 10,
+              "n_diff": 0
+            },
+            {
+              "max_abs": 0.0,
+              "mean_abs": 0.0,
+              "cosine": 0.9999999999999998,
+              "ref_max_abs": 1.0,
+              "exact": true,
+              "tile": 11,
+              "n_diff": 0
+            }
+          ]
+        },
+        "grid": [
+          4,
+          3
+        ],
+        "native_n_vis": 1503,
+        "reference_projector_shape": [
+          12,
+          100,
+          1280
+        ],
+        "n_vis_expected": 1503,
+        "n_vis_match": true,
+        "local_newlines_identical": true,
+        "global_newlines_identical": true,
+        "global_newline_equals_local_newline": true,
+        "blocks": [
+          {
+            "block": "tile",
+            "tile": 0,
+            "ty": 0,
+            "tx": 0,
+            "max_abs": 0.4176987409591675,
+            "mean_abs": 0.0029508685195035584,
+            "cosine": 0.9988759351736605,
+            "ref_max_abs": 1.973019003868103,
+            "exact": false,
+            "worst_token": 5,
+            "worst_token_rc": [
+              0,
+              5
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 1,
+            "ty": 0,
+            "tx": 1,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 2,
+            "ty": 0,
+            "tx": 2,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 3,
+            "ty": 0,
+            "tx": 3,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 4,
+            "ty": 1,
+            "tx": 0,
+            "max_abs": 0.11554020643234253,
+            "mean_abs": 0.0030969634952345473,
+            "cosine": 0.9992867068408673,
+            "ref_max_abs": 1.8927264213562012,
+            "exact": false,
+            "worst_token": 83,
+            "worst_token_rc": [
+              8,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 5,
+            "ty": 1,
+            "tx": 1,
+            "max_abs": 0.09378939867019653,
+            "mean_abs": 0.003303278235797336,
+            "cosine": 0.9990599037609874,
+            "ref_max_abs": 1.7605916261672974,
+            "exact": false,
+            "worst_token": 46,
+            "worst_token_rc": [
+              4,
+              6
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 6,
+            "ty": 1,
+            "tx": 2,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 7,
+            "ty": 1,
+            "tx": 3,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 8,
+            "ty": 2,
+            "tx": 0,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 9,
+            "ty": 2,
+            "tx": 1,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 10,
+            "ty": 2,
+            "tx": 2,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          },
+          {
+            "block": "tile",
+            "tile": 11,
+            "ty": 2,
+            "tx": 3,
+            "max_abs": 0.17510181665420532,
+            "mean_abs": 0.0035347060501761405,
+            "cosine": 0.9989585733313993,
+            "ref_max_abs": 1.7151949405670166,
+            "exact": false,
+            "worst_token": 33,
+            "worst_token_rc": [
+              3,
+              3
+            ]
+          }
+        ],
+        "first_block_over_1e-3": 0,
+        "max_abs": 0.4176987409591675,
+        "min_cosine": 0.9988759351736605
+      }
+    }
+  ]
+}
