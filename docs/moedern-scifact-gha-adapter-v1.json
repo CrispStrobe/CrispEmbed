@@ -2,7 +2,7 @@
   "schema": "crispembed-moedern-scifact-gha-adapter-v1",
   "base": "3c3e4c8e7f5e645855aef754250e8d6fda1321ff",
   "enabled_variants": [
-    "1.5M"
+    "27M"
   ],
   "minimum_available_ram_bytes": 15032385536,
   "minimum_free_disk_bytes": 25769803776,
@@ -467,12 +467,12 @@
     "tools/quantize.cpp": "f31d1cee819d7dbfada8179b346a5912ce842dfaa14f21cfb0e5e91f77864756"
   },
   "owned_sha256": {
-    "docs/moedern-scifact-gha-adapter-v1.md": "5115a602741de57cc91ee32ed2351cb9cf95ba72031ef7b9529c4a4ef0812bfc",
-    "tools/moedern-scifact/contract_gha_v1.py": "7abf0d8bdb0e544cd333974c5fdd954d19b07158afe9689983327d58d2d1b7cb",
+    "docs/moedern-scifact-gha-adapter-v1.md": "c0248f50b2de67b6a7a4bb715559a82f3a33a27f2be4e5890f6bef4a894d881a",
+    "tools/moedern-scifact/contract_gha_v1.py": "8d8295b8fdd642119f09ab0425d2de84f08f49aa753f2d469771d5a4e5e6219e",
     "tools/moedern-scifact/worker_gha_v1.py": "7884985b874c750e79245ebb86b462426705374b58c372dfebbb7b2f4c11b523",
-    "tools/ci-heavy/moedern_scifact_gha_v1.py": "17eff054d62ab9a6c90255ea0d7e4d75c1aed222868fa3dac27905da72b0eae6",
-    "tests/test_moedern_scifact_gha_adapter.py": "ff625e440e3719694935cf2d906bdb32ca7636afa4d7cb7044eda56fb3fe09df",
-    ".github/workflows/moedern-scifact-gha-adapter-v1.yml": "639227e2c2368e885c62c0c2f0d63983649a711d616afea37568a72bd96850fd"
+    "tools/ci-heavy/moedern_scifact_gha_v1.py": "2f9f330847339a41041d199b06892d25af6697bfba2eeb9a2649ebd642b522d4",
+    "tests/test_moedern_scifact_gha_adapter.py": "0cdda9721655863d3726a6d1af82607c7869899438fac2fee0f9fb0cf19e9a14",
+    ".github/workflows/moedern-scifact-gha-adapter-v1.yml": "c9e363e69aaf7b6fca46db0e2b93871ef7788c8e2cc0532bee6684796e63eef0"
   },
   "kaggle_sdk_wheel": {
     "version": "2.2.2",
@@ -480,5 +480,16 @@
     "bytes": 135836,
     "sha256": "ebb70a5338cf8d75998668f4415da753065d8996ff315d78342091f44d2d2e71",
     "url": "https://files.pythonhosted.org/packages/13/d7/ef195107ced87945b98104e783147ec17096f65ef913bff24dbaab08498a/kaggle-2.2.2-py3-none-any.whl"
+  },
+  "authored_service": {
+    "27M": {
+      "kernel_slug": "crispembed-moedern-27m-original",
+      "version_label": "v3",
+      "source": "100f4e99e4200ed2f6dc1d2ed3803c2fd9a6609e",
+      "submitted_script_sha256": "e2bd12e9d482e0f0e41dec0d0872904920ca747c99bb67d17deb058f637a3631",
+      "report_sha256": "00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3",
+      "report_bytes": 152706,
+      "root_member": "moedern-original"
+    }
   }
 }

@@ -90,17 +90,22 @@ def indexed_outputs(client,Get,List,Status,owner,pin):
         require(json.loads(str(obj)).get('versionLabel')==pin['version_label'],
                 'Actual SDK request serialization lost explicit version; no CLI fallback')
         return obj
-    response=client.get_kernel(request(Get));metadata=json.loads(str(response))
+    try:response=client.get_kernel(request(Get))
+    except Exception:raise ValueError('Immutable Kaggle original metadata transfer rejected')from None
+    metadata=json.loads(str(response))
     submitted=metadata['blob']['source']
     require(hashlib.sha256(submitted.encode()).hexdigest()==pin['submitted_script_sha256']and pin['source']in submitted,
             'Exact submitted original source differs')
-    status=client.get_kernel_session_status(request(Status))
+    try:status=client.get_kernel_session_status(request(Status))
+    except Exception:raise ValueError('Immutable Kaggle original status transfer rejected')from None
     require(str(status.status).split('.')[-1]=='COMPLETE','Exact-version original is not complete')
     files={};token=None;pages=0
     while True:
         q=request(List);q.page_size=100
         if token:q.page_token=token
-        page=client.list_kernel_session_output(q);pages+=1
+        try:page=client.list_kernel_session_output(q)
+        except Exception:raise ValueError('Immutable Kaggle original output index rejected')from None
+        pages+=1
         require(pages<=100,'Bounded original output pagination exceeded')
         for item in page.files or []:
             name=item.file_name
@@ -113,12 +118,41 @@ def indexed_outputs(client,Get,List,Status,owner,pin):
                       actual_sdk_serialized_version_on_get_status_and_all_pages=True)
 
 
+def authored_inputs(client,Get,List,Status,owner,pin,mount):
+    files,proof=indexed_outputs(client,Get,List,Status,owner,pin)
+    member=pin['root_member']+'/review/original.json'
+    require(member in files,'Exact authored original report missing')
+    root=Path(mount)/'authored-original';require(not root.exists(),'Fresh authored mount required')
+    target=root/'review/original.json'
+    identity=dict(bytes=pin['report_bytes'],sha256=pin['report_sha256'])
+    stream(files[member],target,identity);report=json.loads(target.read_text())
+    require(report['completed']is True and report['variant']=='27M'and len(report['cases'])==10,
+            'Exact completed authored27M panel required')
+    wanted={'ordinary.features.token_embeddings','ordinary.selected','ordinary.features.query_expansion_positions'}
+    rows=[r for r in report['stage_arrays']if r['stage']in wanted]
+    keys={(r['case'],r['stage'])for r in rows}
+    expected={(c['id'],stage)for c in report['cases']for stage in wanted
+              if stage!='ordinary.features.query_expansion_positions'or c['role']=='query'}
+    require(len(rows)==24 and len(keys)==24 and keys==expected,'All24 authored arrays (20 vectors/four query expansion) required')
+    proof['members']={member:identity}
+    for row in rows:
+        relative=PurePosixPath(row['path'])
+        require(not relative.is_absolute()and '..'not in relative.parts and '\\'not in row['path']and
+                0<row['bytes']<=512*128*4,'Unsafe/out-of-bounds authored raw member')
+        member=pin['root_member']+'/'+row['path'];require(member in files,'Authored raw member missing')
+        proof['members'][member]=stream(files[member],root/relative,row)
+    proof.update(completed=True,raw_arrays=24,all_required_sha_verified=True,original_rerun=False)
+    return proof
+
+
 def fetch(variant,mount,out):
     cfg=source(variant);pin=declaration()['original_service'][variant]
     # Tooling lives outside the isolated five-package numerical worker env.
     import importlib.metadata
     require(importlib.metadata.version('kaggle')=='2.2.2','Exact Kaggle SDK tooling version required')
-    mod=importlib.import_module('kaggle.api.kaggle_api_extended');api_client=mod.KaggleApi();api_client.authenticate()
+    mod=importlib.import_module('kaggle.api.kaggle_api_extended');api_client=mod.KaggleApi()
+    try:api_client.authenticate()
+    except Exception:raise ValueError('Existing Kaggle workflow credentials rejected')from None
     Get=mod.ApiGetKernelRequest;List=mod.ApiListKernelSessionOutputRequest;Status=mod.ApiGetKernelSessionStatusRequest
     with api_client.build_kaggle_client()as client:
         files,proof=indexed_outputs(client.kernels.kernels_api_client,Get,List,Status,os.environ['KAGGLE_ACCOUNT'],pin)
@@ -143,6 +177,9 @@ def fetch(variant,mount,out):
         require(member in files,'Original raw member missing: '+name)
         proof['members'][member]=stream(files[member],root/'raw'/name,report['arrays'][name])
         write(Path(out)/'original-service.json',proof)
+    with api_client.build_kaggle_client()as client:
+        proof['authored_original']=authored_inputs(client.kernels.kernels_api_client,Get,List,Status,
+            os.environ['KAGGLE_ACCOUNT'],declaration()['authored_service'][variant],mount)
     proof.update(completed=True,all_six_raw_sha_verified=True,original_rerun=False,model_accessed=False)
     write(Path(out)/'original-service.json',proof)
     return proof
@@ -151,7 +188,7 @@ def fetch(variant,mount,out):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('phase',choices=['admit','fetch','run'])
-    parser.add_argument('--variant',choices=['1.5M'],required=True)
+    parser.add_argument('--variant',choices=['27M'],required=True)
     parser.add_argument('--reviewed-source',required=True)
     for name in ['scratch','mount','out']:parser.add_argument('--'+name,type=Path,required=True)
     parser.add_argument('--worker-python',type=Path)
@@ -165,7 +202,8 @@ def main():
         if args.phase=='run':
             require(args.worker_python and args.worker_python.is_file(),'Isolated worker Python required')
             proof=json.loads((args.out/'original-service.json').read_text())
-            require(proof.get('completed')is True and proof.get('all_six_raw_sha_verified')is True,
+            require(proof.get('completed')is True and proof.get('all_six_raw_sha_verified')is True and
+                    proof['authored_original']['all_required_sha_verified']is True and proof['authored_original']['raw_arrays']==24,
                     'Complete authenticated original fetch receipt required before worker')
             from ci_process import run as run_child
             result=run_child([args.worker_python,'-I',ROOT/'tools/moedern-scifact/worker_gha_v1.py',

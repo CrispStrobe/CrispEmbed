@@ -19,7 +19,7 @@ OWNED={'PLAN.md','docs/moedern-scifact-gha-adapter-v1.md','docs/moedern-scifact-
 def declaration():
     cfg=json.loads(PATH.read_text())
     require(cfg['schema']=='crispembed-moedern-scifact-gha-adapter-v1'and cfg['base']==BASE and
-            cfg['enabled_variants']==['1.5M'] and cfg['minimum_available_ram_bytes']==14*2**30 and
+            cfg['enabled_variants']==['27M'] and cfg['minimum_available_ram_bytes']==14*2**30 and
             cfg['minimum_free_disk_bytes']==24*2**30 and cfg['inference_changes']is False and
             cfg['publication_qualified']is False,'Provider-only declared scope/resource limits differ')
     return cfg
@@ -43,7 +43,7 @@ def source(variant=None):
     required=(set(baseline['protected_sha256'])|set(baseline['owned_sha256'])|{str(old.PATH.relative_to(ROOT))})-{'PLAN.md'}
     require(required<=set(cfg['protected_sha256']),'Frozen worker/helper/math closure incomplete')
     if variant is not None:
-        require(variant in cfg['enabled_variants'],'Only first1.5M GHA activation declared; other variants pending review')
+        require(variant in cfg['enabled_variants'],'Only27M GHA activation declared; healthy1.5M remains on Kaggle')
         old.admit(baseline,variant)
     baseline['provider_adapter']=dict(schema=cfg['schema'],base=BASE,contract_sha256=sha(PATH),
                                      inference_changes=False,source=git('rev-parse','HEAD').decode().strip())

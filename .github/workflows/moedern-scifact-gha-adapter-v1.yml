@@ -7,10 +7,10 @@ on:
         required: true
         type: string
       variant:
-        description: 'First bounded activation only; other variants need source review'
+        description: 'Bounded27M activation; healthy1.5M remains on Kaggle'
         type: choice
-        options: ['1.5M']
-        default: '1.5M'
+        options: ['27M']
+        default: '27M'
         required: true
 permissions:
   contents: read

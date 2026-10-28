@@ -93,6 +93,44 @@ class AdapterControls(unittest.TestCase):
         pin['submitted_script_sha256']='0'*64
         with self.assertRaisesRegex(ValueError,'source differs'):G.indexed_outputs(Client(),Request,Request,Request,'private',pin)
 
+    def test_authored_v3_fetch_requires_all24_independent_raw_members(self):
+        cases=[dict(id='case'+str(i),role='query'if i<4 else'document')for i in range(10)]
+        vectors=['ordinary.features.token_embeddings','ordinary.selected']
+        arrays=[dict(case=c['id'],stage=stage,path='raw/'+c['id']+'-'+str(n)+'.f32',bytes=4,
+                     sha256=hashlib.sha256(b'bits').hexdigest())for c in cases for n,stage in enumerate(vectors)]
+        arrays += [dict(case=c['id'],stage='ordinary.features.query_expansion_positions',path='raw/'+c['id']+'-exp.u8',
+                        bytes=1,sha256=hashlib.sha256(b'1').hexdigest())for c in cases[:4]]
+        report=dict(completed=True,variant='27M',cases=cases,stage_arrays=arrays)
+        script='worker '+'a'*40
+        pin=dict(kernel_slug='original',version_label='v3',source='a'*40,
+                 submitted_script_sha256=hashlib.sha256(script.encode()).hexdigest(),root_member='moedern-original')
+        class Request:
+            def __str__(self):return json.dumps({'versionLabel':self.version_label})
+        class Client:
+            def get_kernel(self,q):return json.dumps(dict(blob=dict(source=script)))
+            def get_kernel_session_status(self,q):return types.SimpleNamespace(status='COMPLETE')
+            def list_kernel_session_output(self,q):
+                return types.SimpleNamespace(files=[types.SimpleNamespace(file_name=name,url='https://invalid/'+name)for name in payloads],next_page_token=None)
+        def transfer(url,target,identity):
+            blob=payloads[url.removeprefix('https://invalid/')]
+            self.assertEqual(len(blob),identity['bytes']);self.assertEqual(hashlib.sha256(blob).hexdigest(),identity['sha256'])
+            target=Path(target);target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(blob)
+            return dict(bytes=len(blob),sha256=hashlib.sha256(blob).hexdigest())
+        for missing in [False,True]:
+            altered=copy.deepcopy(report)
+            if missing:altered['stage_arrays'].pop()
+            data=json.dumps(altered).encode();pin.update(report_bytes=len(data),report_sha256=hashlib.sha256(data).hexdigest())
+            payloads={'moedern-original/review/original.json':data}
+            payloads.update({'moedern-original/'+r['path']:b'bits'if r['bytes']==4 else b'1'for r in altered['stage_arrays']})
+            with tempfile.TemporaryDirectory()as folder,patch.object(G,'stream',side_effect=transfer):
+                if missing:
+                    with self.assertRaisesRegex(ValueError,'24'):G.authored_inputs(Client(),Request,Request,Request,'private',pin,Path(folder))
+                else:
+                    proof=G.authored_inputs(Client(),Request,Request,Request,'private',pin,Path(folder))
+                    self.assertEqual(proof['raw_arrays'],24);self.assertEqual(len(proof['members']),25)
+                    self.assertTrue(proof['all_required_sha_verified'])
+                    self.assertNotIn('https://',json.dumps(proof));self.assertNotIn('private',json.dumps(proof))
+
     def test_bounded_stream_fullhash_and_extent_without_network(self):
         import io
         class Response(io.BytesIO):headers={'Content-Length':'8'}
@@ -106,10 +144,20 @@ class AdapterControls(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError,'transfer rejected'):G.stream('https://invalid/',Path(folder)/'extra',pin)
 
     def test_entrypoint_imports_before_any_optional_packages_or_payloads(self):
-        process=subprocess.run([sys.executable,'-I',str(ROOT/'tools/moedern-scifact/worker_gha_v1.py'),'--help'],
-            stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-        self.assertEqual(process.returncode,0,process.stderr)
-        self.assertIn('--variant',process.stdout)
+        code="""import builtins,runpy,sys
+original=builtins.__import__
+def guard(name,*args,**kwargs):
+ if name.split('.')[0]in{'numpy','torch','transformers','gguf','kaggle','requests','tqdm','yaml'}:
+  raise RuntimeError('payload package import before admission: '+name)
+ return original(name,*args,**kwargs)
+builtins.__import__=guard
+target=sys.argv[1];sys.argv=[target,'--help'];runpy.run_path(target,run_name='__main__')
+"""
+        for name in ['tools/moedern-scifact/worker_gha_v1.py','tools/ci-heavy/moedern_scifact_gha_v1.py']:
+            process=subprocess.run([sys.executable,'-I','-c',code,str(ROOT/name)],
+                stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15)
+            self.assertEqual(process.returncode,0,process.stderr)
+            self.assertIn('--variant',process.stdout)
         self.assertFalse(any(k in sys.modules for k in ['numpy','torch','kaggle']))
 
     def test_standalone_workflow_gates_before_packages_fetch_and_models(self):
@@ -120,7 +168,7 @@ class AdapterControls(unittest.TestCase):
         self.assertIn('retention-days: 90',text)
         self.assertIn('timeout-minutes: 360',text)
         self.assertIn('KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}',text)
-        self.assertEqual(C.declaration()['enabled_variants'],['1.5M'])
+        self.assertEqual(C.declaration()['enabled_variants'],['27M'])
 
 
 if __name__=='__main__':unittest.main()
