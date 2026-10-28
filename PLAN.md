@@ -29,6 +29,9 @@ items remain pending; no new release/app pin until actual final consumers qualif
 | `feat/josev-q4k-qualification-20261028` (delegated coordinator subtask) | Protected Josev packed Q4_K converter and hosted replay | Pin immutable published F32 and frozen original v5; preserve critical F32 bytes and exact442 semantic shapes, run strict227-stage/four-answer F32 control before Q4 diagnostics, keep publication false pending independent task quality. No local model/build execution or dispatch from source preparation. |
 | `test/moedern-scifact-native-q4k-20261028` (delegated coordinator subtask) | Full native/F32 and padded-Q4_K SciFact replay | Authenticate reviewed original streams/rankings before payloads; all5483 IDs/three masks/expansion, strict F32 vectors and eight Ref shards, old authored/public consumers and full300-query ranking gates. No original rerun or numeric-gate waiver; pending original variants reject before models. |
 | `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
+| `audit/wasm-f32-operator-attribution-20261028` | New same-input norm/flash/GELU/residual/affine replay from retained layer3 arrays | Preserve frozen580/a06, all old failures and unchanged0.002/0.99999; actual native/browser own-input outputs must reproduce captured bytes before operator attribution. No repeated quantized-projection panel or production/default change. |
+| `audit/unlimited-ocr2-mixed-q4k-20261028` | Published-F16 protected2/8/22-matrix Q4_K experiments with isolated intermediate probes | Strict four-page original F16 IDs/raw text first; actual Q4_K types and byte-identical exclusions, no fallback; original four-page gold contains IDs/text only, so paired intermediate attribution is labeled separately. |
+| Delegated MoEdern full retrieval continuation | Freeze all three original SciFact baselines, then original-bound full native/Q4 replay and all public clients | Authenticate all5,483 rows/vectors/masks remotely before models; unchanged F32 numerical gates and predeclared0.001 retrieval drops/0.99 top-one agreement; no original recapture or publication from component-only proof. |
 | Coordinator, `work/portfolio-closure-q4k-20261028` | CI/current-source closure, real-scan review, shared quantizer, Josev/UltraBERT/MoEdern Q4_K, larger MoEdern consumers/retrieval, WASM attribution and final integration | Reuse existing jobs, compare earliest differing stages with actual Ref and final outputs, qualify assets/consumers under the final source; update HISTORY/PERFORMANCE as each lane completes. |
 | `fix/unlimited-ocr2-trial-findings-20261028` continuation | Original added-token output/default tiling, converter correction, verified card refresh | Existing8ca9d3de hosted verification must reproduce all four original full texts and IDs; retain output alternatives and frozen references. |
 | `perf/minicpm-ocr-bench-publish-20261028` continuation | Collected benchmark, stored-type ggml decoder/prefill/KV cache, protected Q8/Q4_K | Preserve old scalar path; actual five-case original IDs/text plus earliest-stage comparisons before performance/publishing claims. |
@@ -889,3 +892,24 @@ needs exact-byte recovery or a distinct versioned original capture. Never promot
 the nineteen valid pairs, normalized metrics or four synthetic decoder cases to
 full real-scan qualification. Keep upstream dataset/transcription terms and
 attribution distinct from Apache/MIT model support.
+
+Unlimited card-only refresh is completed at Hub `e3941225` (receipt in HISTORY).
+Remaining Unlimited work is runtime/main integration, repaired real-scan decoder
+replay, meaningful remaining ID divergence attribution, and the separately
+predeclared mixed Q4_K experiment. The card update does not close those gates.
+
+### 28 October evidence update: MoEdern originals and real-scan input
+
+All three full-SciFact originals are complete; see
+[115M review](tests/results/moedern-colbert/scifact-original-115m-review.json)
+and adjacent 1.5M/27M reports. Authenticate every retained raw-array identity
+before native model access. Next: full F32 control, Q4_K all-size retrieval
+under the unchanged predeclared gates, and actual Rust/Dart/HTTP consumers.
+The [hosted Q4_K build controls](tests/results/moedern-colbert/q4k-model-free-controls.json)
+pass at `83eac856cc684808e417ebfed7db7c2f677dc09f`; they do not qualify models.
+
+For real scans, the [exact form input was recovered](tests/results/ocr-real-scans/form-input-recovery.json).
+Use the unchanged manifest SHA and byte count with admission before inference.
+Preserve earlier bad-image rows outside eligible denominators. Reuse the valid
+Unlimited original output; capture only the missing MiniCPM original and
+corresponding native form cases, rather than repeating all original pages.

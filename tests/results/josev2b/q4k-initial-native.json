@@ -1,0 +1,11 @@
+{
+  "schema": "crispembed-josev-q4k-hosted-v1",
+  "source": "5234e69c75dc000b9ae1eb0f5f47c79abd50af6a",
+  "completed": false,
+  "default_enabled": false,
+  "publication_qualified": false,
+  "independent_task_quality": false,
+  "commands": {},
+  "phase": "rejected",
+  "error": "ValueError: GNU time must be present before packages/model access"
+}

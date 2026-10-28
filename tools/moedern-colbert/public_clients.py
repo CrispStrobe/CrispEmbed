@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import struct
 import sys
 import time
 import urllib.error
@@ -44,7 +45,7 @@ def command(args,log,env=None,cwd=ROOT,timeout=1800):
 
 def parse_outputs(payload,cases,pairs):
     def invalid(value):raise ValueError('nonfinite JSON constant: '+value)
-    rows=[json.loads(line,parse_constant=invalid)for line in payload.splitlines()if line.strip()]
+    rows=[json.loads(line,parse_constant=invalid,parse_int=lambda text:-0.0 if text=='-0'else int(text))for line in payload.splitlines()if line.strip()]
     expected=[('case',i)for i in cases]+[('score',i)for i in pairs]
     require([(r.get('kind'),r.get('id'))for r in rows]==expected,'complete ordered distinct client cases/scores required')
     for r in rows:
@@ -53,6 +54,18 @@ def parse_outputs(payload,cases,pairs):
                 require(isinstance(r.get(name),list)and all(isinstance(x,(float,int))and not isinstance(x,bool)and math.isfinite(x)for x in r[name]),'finite actual client vectors required')
         else:require(isinstance(r.get('score'),(float,int))and math.isfinite(r['score']),'finite actual client score required')
     return rows
+
+def canonical_bits(outputs,*,include_all=True):
+    """Compare F32 payload bits, including signed zero, across JSON printers."""
+    keys=('kind','id','role','ids','supplied_mask','effective_mask','scoring_mask','expansion_positions')
+    result=[]
+    for row in outputs:
+        item={k:row[k]for k in keys if k in row}
+        for name in ('all_vectors','selected_vectors'):
+            if name in row and (name!='all_vectors'or include_all):item[name]=struct.pack('<'+'f'*len(row[name]),*row[name])
+        if 'score'in row:item['score']=struct.pack('<f',row['score'])
+        result.append(item)
+    return result
 
 def dart_sdk(scratch):
     # Pin both version and official archive checksum; never fetch it on the VPS.
@@ -110,6 +123,8 @@ def execute(variant,model,original_dir,build,out,*,quantized=False,dart=None):
             for c,row in zip(original['cases'],[r for r in rows if r['kind']=='case']):require(row.get('role')==c['role'],'client role label differs')
             result=old.judge(rows,original,vectors,encoded)
             report['consumers'][name]=dict(reference_parity=result,typed_exact=all(all(c['typed'].values())for c in result['cases'].values()),source='actual client process')
+            if name=='cli':
+                for case in result['cases'].values():case['all_vectors']['scope']='borrowed C output; not observed from CLI'
             raw[name]=rows;save()
         clients={
             'c':[consumer,model,cases,pairs],
@@ -147,7 +162,8 @@ def execute(variant,model,original_dir,build,out,*,quantized=False,dart=None):
                 server.terminate()
                 try:server.wait(timeout=15)
                 except subprocess.TimeoutExpired:server.kill();server.wait()
-        report['cross_client_float32_exact']={name:old.canonical(values)==old.canonical(raw['c'])for name,values in raw.items()}
+        report['cross_client_float32_exact']={name:canonical_bits(values,include_all=name!='cli')==canonical_bits(raw['c'],include_all=name!='cli')for name,values in raw.items()}
+        report['cross_client_vector_scope']={name:('actual selected vectors and score only'if name=='cli'else'actual all/selected vectors and score')for name in raw}
         report['completed']=True;report['api_conformance']=all(report['cross_client_float32_exact'].values())and all(c['typed_exact']for c in report['consumers'].values())
         report['f32_reference_parity']=all(c['reference_parity']['passed']for c in report['consumers'].values())
         require(report['api_conformance'],'cross-client/typed conformance failed')

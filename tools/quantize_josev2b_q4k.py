@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'tools'))
 SOURCE=dict(repo='cstr/Josev-2B-SystemOne-GGUF',revision='bffe62522f826b4c33f2e731d5b870ced5150a17',
             filename='josev2b-systemone-f32.gguf',bytes=7659180448,
             sha256='72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2')
@@ -188,11 +189,14 @@ def quantize(source,output,executable):
         if kind==0 and not name.startswith('head.'):args+=['--tensor-type',name+'=f32']
     env={k:v for k,v in os.environ.items()if not k.startswith('CRISPEMBED_')}
     env.update(OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2',MKL_NUM_THREADS='2')
-    with log.open('w')as stream:subprocess.run(args,stdout=stream,stderr=subprocess.STDOUT,env=env,check=True,timeout=1800)
+    from ci_process import run
+    process=run(args,log,env=env,timeout=1800)
+    log.with_name(log.name+'.process.json').write_text(json.dumps(process,indent=2)+'\n')
+    require(not process['timed_out']and process['exit']==0,'quantizer child rejected; process receipt retained')
     require('(fallback 'not in log.read_text(),'quantizer fallback rejected; not a real Q4_K recipe')
     result=verify_conversion(source,output,expected,seal=True)
     return dict(schema='crispembed-josev-q4k-conversion-v1',completed=True,source=SOURCE,
-                output_sha256=digest(output),quantizer_sha256=digest(executable),quantizer_log_sha256=digest(log),
+                output_sha256=digest(output),quantizer_sha256=digest(executable),quantizer_log_sha256=digest(log),quantizer_process=process,
                 **result,publication_qualified=False,task_quality=False)
 
 

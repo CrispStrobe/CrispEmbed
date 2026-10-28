@@ -34,9 +34,40 @@
     }
   },
   "card_update": {
-    "hub_commit": "44540403eb112d2349f47bb13933ce96f808cae1",
-    "reason": "tiled pages token-ID exact after tile-token fix 595156ea; weights unchanged (aliases pin e3af0c0c)",
-    "README.md": "1ebf03926c28bd234410c03f3606e88b254d936145530c2d3968b16002cca68a",
-    "manifest.json": "4dfcddcb9cb601194fa851bf499eea6093bf795d6a2db6560dc36b78f5374a34"
-  }
+    "hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
+    "previous_hub_commit": "44540403eb112d2349f47bb13933ce96f808cae1",
+    "changed_files": [
+      "README.md",
+      "manifest.json"
+    ],
+    "weights_unchanged": true,
+    "notices_unchanged": true,
+    "source_commit": "e165d5d1f46ab3c63ebe86bf78bd3a12bb017908",
+    "verification": {
+      "source": "8ca9d3de2a8160e6f5235156d3550c9719583744",
+      "scope": "four synthetic tiled pages, published F16",
+      "default_ids_exact": true,
+      "raw_text_bytes_exact": true,
+      "cases": [
+        "german",
+        "paragraphs",
+        "receipt",
+        "table"
+      ],
+      "receipt": "tests/results/unlimited-ocr2/verify-text-v2.json",
+      "receipt_sha256": "681a1b7ca03def1d6b676f9fce7a460183dcce45822fa41c3fd604fb0f54c66e",
+      "published_tokenizer_uses_runtime_added_token_fallback": true
+    },
+    "README.md": "e84d2c04f20c7d082a7f314a15dee49837caba221d9102826b83ceee9255fef6",
+    "manifest.json": "7b411a88afafd253b4b660fa8625b039b8343471acb2b0c38d9f3c56ff207142",
+    "reason": "Four original-F16 synthetic tiled cases match full raw token IDs/text; documented831 added-token runtime fallback; weights unchanged."
+  },
+  "card_update_history": [
+    {
+      "hub_commit": "44540403eb112d2349f47bb13933ce96f808cae1",
+      "reason": "tiled pages token-ID exact after tile-token fix 595156ea; weights unchanged (aliases pin e3af0c0c)",
+      "README.md": "1ebf03926c28bd234410c03f3606e88b254d936145530c2d3968b16002cca68a",
+      "manifest.json": "4dfcddcb9cb601194fa851bf499eea6093bf795d6a2db6560dc36b78f5374a34"
+    }
+  ]
 }

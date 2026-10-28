@@ -1,5 +1,24 @@
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
+## 28 October: all-size MoEdern originals and Q4K build controls
+
+All three full-SciFact original captures are frozen. The independently reviewed
+[115M receipt](tests/results/moedern-colbert/scifact-original-115m-review.json)
+contains all 5,483 rows, 13 observer/public-slice controls and six author MaxSim
+checks (maximum absolute difference 6.71e-7). Its nDCG@10/MRR@10/recall@100 are
+0.731308/0.703943/0.939333. Original vectors remain remote; native and Q4K full
+retrieval and client comparisons remain pending.
+
+The hosted [Q4K model-free build](tests/results/moedern-colbert/q4k-model-free-controls.json)
+at `83eac856cc684808e417ebfed7db7c2f677dc09f` passes actual authored Q4_K controls
+and independent Ref positive/negative checks. This is build evidence only.
+
+The [frozen form image](tests/results/ocr-real-scans/form-input-recovery.json)
+is available again with its original 709,225-byte SHA-256 identity. Earlier
+mismatched-image receipts remain invalid; no model forward or quality result
+is implied by recovering the input.
+
+
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of
 100 vision tokens per 640px tile (bilinear 16x16 upsample). Fixed at 595156ea; the
 3-page panel is now token-ID exact including both tiled pages (1503 vision tokens,
@@ -16985,3 +17004,32 @@ aggregates. This is new original coverage, not a replacement for the frozen
 small-panel references. Large vectors and the row journal remain remote; their
 hashes must be authenticated before a corresponding native/Q4 retrieval replay.
 No full integrated-source vector/ranking or quantized qualification is claimed.
+
+### 28 October: Unlimited raw-text card refresh completed
+
+The [card-only upload/readback](tests/results/unlimited-ocr2/card-refresh-raw-text.json)
+is complete at [Hub e3941225](https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/tree/e39412255db0fc67952c8614cd03438822cf0957).
+Only README/manifest changed. F16/Q8 weight sizes/LFS hashes, upstream notices
+and the original weight-producing source remain unchanged. The card documents
+the independently verified four synthetic tiled F16 raw-ID/text cases and the
+831-token runtime fallback required by the published base-vocabulary GGUFs.
+The queued hosted publisher was cancelled before execution; the same reviewed
+publisher ran through the installed metadata client with immutable readback and
+no model download/build/inference. Preserve the previous card receipt. This
+changes no real-scan, Q4, release or app qualification.
+
+### 28 October: larger original retrieval and completed MiniCPM benchmark
+
+The [27M full original SciFact capture](tests/results/moedern-colbert/scifact-original-27m-review.json)
+completes all5,483 rows with the same canonical data/gold hashes as1.5M,13
+neutral/public-slice controls and six actual author-score checks (max4.918e-7).
+Its original NDCG@10/MRR@10/Recall@100 are0.7273556949/0.6967632275/0.9353333333.
+These are original baselines; native and Q4 full retrieval remain pending.
+
+The completed [MiniCPM benchmark v3](tests/results/minicpm-ocr/bench-review.json)
+retains all25 requested rows. Ten F16/F32 timed rows have producer-asserted exact
+IDs/text; timing-off has text-only proof. Both Q8 thread arms fail patch loading
+before inference, with no Q8 quality/publication claim. Same-job vision is about
+twice as fast in F32, without a general prefill gain. PERFORMANCE records the
+scopes, retained missing-ID limitation and cache hypothesis; the corrected graph
+experiment must establish its own output/numerical/performance result.
