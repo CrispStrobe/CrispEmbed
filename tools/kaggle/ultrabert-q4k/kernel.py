@@ -25,7 +25,8 @@ try:
     mem=int(next(l.split()[1]for l in Path('/proc/meminfo').read_text().splitlines()if l.startswith('MemAvailable:')))*1024
     report['resources']=dict(mem_available=mem,disk_free=shutil.disk_usage(SCRATCH).free,cpu_count=os.cpu_count());save()
     assert mem>=10*1024**3 and report['resources']['disk_free']>=12*1024**3,'remote resources below bound'
-    tokens=glob.glob('/kaggle/input/**/gh_token.txt',recursive=True);assert len(tokens)==1,'one authorized original-artifact credential required'
+    tokens=sorted({str(Path(p).resolve())for p in glob.glob('/kaggle/input/**/gh_token.txt',recursive=True)});report['artifact_credential_candidates']=len(tokens);save()
+    assert len(tokens)==1,'one authorized original-artifact credential required'
     os.environ['GH_TOKEN']=Path(tokens[0]).read_text().strip()
     os.environ['CRISPEMBED_CAPTURE_SOURCE']=COMMIT
     for key in ('OMP_NUM_THREADS','OPENBLAS_NUM_THREADS','MKL_NUM_THREADS'):os.environ[key]='2'
