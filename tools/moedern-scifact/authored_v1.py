@@ -2,9 +2,13 @@
 import json
 import math
 from pathlib import Path
+import sys
 from contract_native_v1 import ROOT,require,sha
 from providers_v1 import module
 
+# The immutable helper uses sibling imports, not a Python package. Declare its
+# exact protected directory before loading it; this must also work under -I.
+sys.path.insert(0,str(ROOT/'tools/moedern-native-v2'))
 reference=module('frozen_vector_judge',ROOT/'tools/moedern-native-v2/replay.py')
 adapter=module('frozen_authored_adapters',ROOT/'tools/moedern-native-v2/diff_adapter.py')
 

@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 import struct
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -18,6 +19,23 @@ import compare_v1
 
 
 class Controls(unittest.TestCase):
+    def test_actual_isolated_entrypoint_imports_without_payload_packages(self):
+        # A fresh process matters: imports performed by this test file or old
+        # helpers must not accidentally supply the missing sibling path.
+        code='''import builtins,runpy,sys
+original=builtins.__import__
+def guard(name,*args,**kwargs):
+ if name.split('.')[0]in{'numpy','torch','transformers','gguf','kaggle','requests','tqdm','yaml'}:
+  raise RuntimeError('payload package import before CLI admission: '+name)
+ return original(name,*args,**kwargs)
+builtins.__import__=guard
+target=sys.argv[1];sys.argv=[target,'--help'];runpy.run_path(target,run_name='__main__')
+'''
+        result=subprocess.run([sys.executable,'-I','-c',code,str(ROOT/'tools/moedern-scifact/worker_v1.py')],
+                              capture_output=True,text=True,timeout=15)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('--reviewed-source',result.stdout);self.assertIn('--variant',result.stdout)
+
     def test_all_reviewed_original_pins(self):
         cfg=contract.validate(json.loads(contract.PATH.read_text()))
         for variant in('1.5M','27M','115M'):
@@ -118,6 +136,7 @@ class Controls(unittest.TestCase):
         source=(ROOT/'tools/kaggle/moedern-scifact-native-q4k/kernel.py').read_text()
         self.assertIn("VARIANT='@VARIANT@'",source);self.assertIn('timeout=9*3600',source)
         self.assertLess(source.index("run('source-closure'"),source.index("run('install-locked-tools'"))
+        self.assertLess(source.index("run('stdlib-entrypoint'"),source.index("run('install-locked-tools'"))
         lock=(ROOT/'tools/kaggle/moedern-scifact-native-q4k/requirements.lock').read_text().splitlines()
         self.assertEqual({line.split(' @ ')[0]for line in lock},{'pip','numpy','gguf','PyYAML','tqdm'})
         for line in lock:self.assertRegex(line,r'\.whl --hash=sha256:[0-9a-f]{64}$')
