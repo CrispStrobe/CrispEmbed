@@ -1,0 +1,15 @@
+{
+  "width": 1920,
+  "bytes": 709225,
+  "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+  "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/The_Economic_Journal_Volume_1.djvu/page67-1920px-The_Economic_Journal_Volume_1.djvu.jpg",
+  "schema": "crispembed-ocr-real-scan-input-recovery-v1",
+  "page": "en-form-economic-journal-67",
+  "frozen_bytes_recovered": true,
+  "fetch_date": "2026-10-28",
+  "prior_invalid_receipts_unchanged": true,
+  "model_executed": false,
+  "limits": [
+    "Recovery of the original encoded image does not qualify the earlier native or MiniCPM original runs that used different bytes. A targeted paired capture must use admitted frozen bytes."
+  ]
+}

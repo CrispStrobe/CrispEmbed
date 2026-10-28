@@ -1,0 +1,33 @@
+{
+  "schema": "crispembed-moedern-scifact-original-review-v1",
+  "variant": "115M",
+  "source": "2a872f9fe7ac5637286ff7bda2b5c19afee23cd7",
+  "completed": true,
+  "provider": "Kaggle CPU",
+  "version_label": "v1",
+  "submitted_script_sha256": "b337414ab20f91cd9bc307702b641198dfa7d2f115eb65efc8878061e5a3d3de",
+  "producer_json": {
+    "bytes": 39687,
+    "sha256": "a70757a72fae99d546dc792dd870110f0db3e8d3f74865f37ea2b003f3c49030"
+  },
+  "rows": 5483,
+  "queries": 300,
+  "documents": 5183,
+  "all_driver_source_hashes_checked": true,
+  "canonical_data_and_gold_identical_to_1p5m": true,
+  "original_only": true,
+  "preflight_observer_public_slice_checks": 13,
+  "author_maxsim_pairs": 6,
+  "author_protocol_max_absolute": 6.705522537231445e-07,
+  "metrics": {
+    "ndcg_at_10": 0.7313081462888926,
+    "mrr_at_10": 0.7039431216931217,
+    "recall_at_100": 0.9393333333333334
+  },
+  "native_qualified": false,
+  "quantized_qualified": false,
+  "limits": [
+    "Large vectors and row journal remain remote and must be rehashed before native model access.",
+    "This full-corpus original capture establishes no native, cross-client or quantized retrieval qualification."
+  ]
+}

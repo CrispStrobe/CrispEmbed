@@ -896,3 +896,19 @@ Unlimited card-only refresh is completed at Hub `e3941225` (receipt in HISTORY).
 Remaining Unlimited work is runtime/main integration, repaired real-scan decoder
 replay, meaningful remaining ID divergence attribution, and the separately
 predeclared mixed Q4_K experiment. The card update does not close those gates.
+
+### 28 October evidence update: MoEdern originals and real-scan input
+
+All three full-SciFact originals are complete; see
+[115M review](tests/results/moedern-colbert/scifact-original-115m-review.json)
+and adjacent 1.5M/27M reports. Authenticate every retained raw-array identity
+before native model access. Next: full F32 control, Q4_K all-size retrieval
+under the unchanged predeclared gates, and actual Rust/Dart/HTTP consumers.
+The [hosted Q4_K build controls](tests/results/moedern-colbert/q4k-model-free-controls.json)
+pass at `83eac856cc684808e417ebfed7db7c2f677dc09f`; they do not qualify models.
+
+For real scans, the [exact form input was recovered](tests/results/ocr-real-scans/form-input-recovery.json).
+Use the unchanged manifest SHA and byte count with admission before inference.
+Preserve earlier bad-image rows outside eligible denominators. Reuse the valid
+Unlimited original output; capture only the missing MiniCPM original and
+corresponding native form cases, rather than repeating all original pages.
