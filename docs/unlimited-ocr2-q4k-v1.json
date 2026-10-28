@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-unlimited-ocr2-mixed-q4k-v1",
-  "status": "prepared-not-dispatched",
+  "status": "retry-prepared-after-initial-transfer-failure",
   "runtime_base": "83eac856cc684808e417ebfed7db7c2f677dc09f",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "cases": [
@@ -66,5 +66,21 @@
     "matching_id_raw_pairs_required": 11,
     "new_model_forwards": 0,
     "full_model_real_scan_qualification": false
+  },
+  "initial_transport_failure": {
+    "source": "6a2be093b9415cfb61a3731804e649db3a6834f0",
+    "version_label": "v1",
+    "receipt": "tests/results/unlimited-ocr2/initial-mixed-q4k-transfer-review.json",
+    "exit_code": 92,
+    "model_forward_executed": false
+  },
+  "http_transfer": {
+    "version": "1.1",
+    "retries": 2,
+    "retry_all_errors": true,
+    "retry_max_time_seconds": 1200,
+    "max_time_seconds": 600,
+    "connect_timeout_seconds": 30,
+    "final_size_sha_required": true
   }
 }

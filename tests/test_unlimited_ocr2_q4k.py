@@ -7,6 +7,12 @@ import re
 import struct
 import sys
 import tempfile
+import http.server
+import shutil
+import socket
+import subprocess
+import threading
+from unittest.mock import patch
 import time
 import unittest
 
@@ -157,6 +163,60 @@ class Q4Contract(unittest.TestCase):
             build_profile.one([dict(file='one.cpp', arguments=['cc', '-c', 'one.cpp'])], 'ggml-cpu.cpp')
         with self.assertRaises(ValueError):
             build_profile.one([dict(file='one.cpp', arguments=['cc', '-c', 'one.cpp'])] * 2, 'one.cpp')
+
+    def test_bounded_http1_transfer_keeps_full_authentication(self):
+        args = contract.model_download_command('/hosted/task/model.gguf')
+        self.assertIn('--http1.1', args)
+        self.assertIn('--retry-all-errors', args)
+        self.assertEqual(args[args.index('--retry') + 1], '2')
+        self.assertEqual(args[args.index('--retry-max-time') + 1], '1200')
+        self.assertEqual(args[args.index('--max-time') + 1], '600')
+        self.assertEqual(args[args.index('--connect-timeout') + 1], '30')
+        self.assertNotIn('--continue-at', args)
+        self.assertIn(contract.F16_URL, args)
+        self.assertEqual(args[-2:], ['--output', '/hosted/task/model.gguf'])
+        kernel = (ROOT / 'tools/kaggle/unlimited-ocr2-q4k/kernel.py').read_text()
+        transfer = kernel.index('run(model_download_command(model), 2400)')
+        auth = kernel.index('model.stat().st_size == F16_BYTES and sha(model) == F16_SHA')
+        self.assertLess(transfer, auth)
+        self.assertLess(auth, kernel.index("'tools/unlimited-ocr2/replay_real_decode.py'"))
+        self.assertLess(auth, kernel.index("'tools/unlimited-ocr2-q4k/panel.py'"))
+
+    @unittest.skipUnless(shutil.which('curl'), 'curl unavailable')
+    def test_real_small_http_retry_replaces_incomplete_output(self):
+        payload = b'exact-small-transfer-fixture'
+        calls = []
+        class Handler(http.server.BaseHTTPRequestHandler):
+            protocol_version = 'HTTP/1.1'
+            def log_message(self, *args):
+                pass
+            def do_GET(self):
+                calls.append(self.request_version)
+                self.send_response(200)
+                self.send_header('Content-Length', str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload[:3] if len(calls) == 1 else payload)
+                self.wfile.flush()
+                if len(calls) == 1:
+                    self.close_connection = True
+                    self.connection.shutdown(socket.SHUT_RDWR)
+        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with tempfile.TemporaryDirectory() as folder:
+                destination = Path(folder) / 'bytes'
+                url = 'http://127.0.0.1:' + str(server.server_port) + '/fixture'
+                with patch.object(contract, 'F16_URL', url):
+                    result = subprocess.run(contract.model_download_command(destination),
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=12)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertEqual(destination.read_bytes(), payload)
+                self.assertEqual(calls, ['HTTP/1.1', 'HTTP/1.1'])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
     def test_deadline_rejects_before_child_launch(self):
         with tempfile.TemporaryDirectory() as temporary:

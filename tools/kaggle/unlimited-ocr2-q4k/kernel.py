@@ -64,7 +64,7 @@ try:
     run(['git', 'checkout', '-q', COMMIT])
     run(['git', 'submodule', 'update', '-q', '--init', '--depth', '1', 'ggml'])
     sys.path.insert(0, str(root / 'tools/unlimited-ocr2-q4k'))
-    from contract import guard, references, F16_SHA, F16_BYTES, F16_URL
+    from contract import guard, references, F16_SHA, F16_BYTES, model_download_command
     from overlay import transform
     report['source_hashes'] = guard()
     references()
@@ -111,7 +111,7 @@ try:
     _, images = references()
     assert all(sha(OUT / 'pages' / (case + '.png')) == expected for case, expected in images.items()), 'frozen PNG reproduction failed'
     model = Path('/kaggle/temp/unlimited-f16.gguf')
-    run(['curl', '--fail', '--location', '--retry', '2', F16_URL, '--output', model], 2400)
+    run(model_download_command(model), 2400)
     assert model.stat().st_size == F16_BYTES and sha(model) == F16_SHA, 'published F16 SHA/extent differs'
     # Actual production text decoder on retained real-scan IDs. It reuses the
     # already authenticated F16 metadata; no model/reference forward is added.

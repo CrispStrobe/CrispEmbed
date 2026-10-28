@@ -16,7 +16,7 @@ F16_URL = ('https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/'
 SELECTED = re.compile(r'l\.blk\.(\d+)\.ffn_(gate|up)_exps\.weight')
 RECIPES = {'last1': [11], 'last4': list(range(8, 12)), 'all11': list(range(1, 12))}
 PREFIXES = ['src', 'ggml', '.gitmodules', 'VERSION', 'CMakeLists.txt', 'cmake', 'examples/cli',
-            'models/convert-unlimited-ocr-to-gguf.py', 'tools/quantize.cpp',
+            'models/convert-unlimited-ocr-to-gguf.py', 'docs/unlimited-ocr2-source.json', 'tools/quantize.cpp',
             'tools/minicpm-ocr/graph_adapter.py', 'tools/josev2b_composed_panel.py',
             'tools/josev2b_composed_diff.py',
             'tools/kaggle/unlimited-ocr2-trial/trial_worker.py',
@@ -92,6 +92,18 @@ def inventory(path):
                                     bytes=len(view), sha256=h.hexdigest())
     require(records, 'Empty tensor inventory')
     return records
+
+
+def model_download_command(path):
+    """At most three HTTP/1.1 attempts; the caller still authenticates full bytes.
+
+    HTTP/2 exit92 is not covered by curl's default retry selection. Explicit
+    all-error retries are bounded by both a per-attempt and total retry window.
+    There is no partial-file fallback or resume; final extent/SHA are mandatory.
+    """
+    return ['curl', '--fail', '--location', '--http1.1', '--retry', '2',
+            '--retry-all-errors', '--retry-delay', '2', '--retry-max-time', '1200',
+            '--connect-timeout', '30', '--max-time', '600', F16_URL, '--output', str(path)]
 
 
 def selected(names, recipe):
