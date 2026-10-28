@@ -68,3 +68,16 @@ freeze original/F32 retrieval outputs and acceptance gates, evaluate each
 candidate on those same inputs and preserve failures. Component cosine and
 the ten-case owned panel alone do not qualify retrieval accuracy, a release,
 other platforms or the app's immutable runtime.
+
+### Integrated source closure, 28 October
+
+The initial prepared source at `645f51e8` remains independently recoverable.
+The coordinated portfolio closure is now based on `3586a8915f58ac6eca5cd28204abd00a2518f679`,
+including the exact proven UltraBERT Unicode tokenizer, Josev mixed loader,
+MiniCPM graph path and explicit four-dimensional F16 patch-cast repair. This
+new declaration pins every production source and the actual common quantizer;
+it does not substitute the old standalone branch's build for an integrated run.
+The MoEdern metadata boundary additionally requires actual Q4_K file type and
+quantization version, with authored missing/wrong-type/version controls.
+Historical source closures and numeric gates remain unchanged. Run the hosted
+build-only controls on this exact new closure before its full model diagnostics.
