@@ -1,0 +1,62 @@
+{
+  "schema": "crispembed-unlimited-ocr2-mixed-q4k-v1",
+  "status": "prepared-not-dispatched",
+  "runtime_base": "83eac856cc684808e417ebfed7db7c2f677dc09f",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "cases": [
+    "paragraphs",
+    "table",
+    "receipt",
+    "german"
+  ],
+  "maximum_new_tokens": 1024,
+  "fast_chunk": 2048,
+  "threads": 4,
+  "recipes": {
+    "last1": [
+      11
+    ],
+    "last4": [
+      8,
+      9,
+      10,
+      11
+    ],
+    "all11": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "actual_q4_k_counts": [
+    2,
+    8,
+    22
+  ],
+  "expert_ggml_shape": [
+    1280,
+    896,
+    64
+  ],
+  "down_precision": "unchanged source floating type, width896; Q4_0 forbidden",
+  "absolute_budget": 0.002,
+  "minimum_row_cosine": 0.99999,
+  "body_exact": true,
+  "maximum_aligned_box_delta": 3,
+  "original_intermediate_gold": false,
+  "source": "published F16, protected type/shape/payload exact; runtime831-piece fallback",
+  "original_trial_sha256": "9818063ba01dcf830fcdc2acffdbbab295b50397c1c90f71f1ac009b49636996",
+  "baseline_sha256": "487b887eddaf73e070cd98c3e10d112d21749036ca06b5e7fc103c3fb4def517",
+  "production_hooks": false,
+  "original_rerun": false,
+  "publication_authorized": false,
+  "default_promotion": false
+}
