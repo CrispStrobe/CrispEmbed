@@ -17090,3 +17090,15 @@ comparisons are retained, not called raw-stdout byte proof. No confidence or
 intermediate vectors are exposed by this producer. All large payloads stay
 remote; [the exact producer](tests/results/ocr-real-scans/minicpm-initial-native-v2.json)
 and independent source/service/log identities are preserved.
+
+### MoEdern 1.5M full-corpus F32 rejection (28 October 2026)
+
+Exact source93d27614caba00a1b4d7aece6c78968f5cd9bb7f completed all5,483 native
+rows after successful builds, actual Ref controls and authored/family F32 probes.
+All tokenizations match. Six of10,966 all/selected matrices fail unchanged
+numerical gates: documents24726600,24928817 and5849439. Worst absolute error is
+0.055745665 and minimum row cosine0.974025100. All eight actual Ref shards agree
+with independent metrics. All300 retrieval rankings retain top-one agreement1.0
+and unchanged NDCG/MRR/recall, which does not waive numerical rejection. The
+worker correctly stopped before Q4 conversion. See the [independent receipt](tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json)
+and complete small producer report; large arrays remain remotely retained.

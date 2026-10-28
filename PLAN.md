@@ -1110,3 +1110,21 @@ this bridge and development selection are reviewed. Actual runtime release
 versioning remains a final integration task; app0.17.12 stays pinned.
 
 [Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
+
+### MoEdern 1.5M three-document numerical diagnosis
+
+Full source93 replay exposes six failing all/selected matrices in documents
+24726600,24928817,5849439; tokens and retrieval gates pass, strict F32 does not.
+Freeze those exact raw-text rows, published F32 model identity, original final
+vector spans and source93 native spans before a bounded diagnostic. Reuse the
+existing `src/moedern_colbert.cpp` observer and original
+`tools/moedern-colbert/reference.py` blueprint to compare embedding, attention,
+router logits/probabilities/top-k/margins, routed/shared outputs and normalized
+vectors. A routing-boundary hypothesis is unproved. Diagnostic original final
+outputs must first match their frozen corpus anchors; check observer/plain and
+repeat neutrality before attributing any difference. Keep probes out of ordinary
+artifacts. Test any correction behind a parsed default-off gate, then replay
+all5,483 original-bound rows and unchanged numerical/retrieval gates before Q4.
+Do not rerun the original corpus or change budgets/gold. Preserve separately
+running115M and27M jobs. Source closure and final integration must be redeclared
+after any actual math change.

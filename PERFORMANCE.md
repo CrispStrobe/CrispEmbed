@@ -7075,3 +7075,10 @@ ID sequences exact. See [all scopes and limits](tests/results/ocr-real-scans/min
 A controlled plain graph/scalar benchmark remains pending after the seven-arm
 continuation; exclude dumps/projection-capture overhead and match model hashes,
 threads, hardware and residency before judging production speed.
+
+MoEdern1.5M full source93 corpus replay: all5,483 tokenizations match, but six
+of10,966 matrices fail strict F32 parity (worst absolute0.055745665,
+minimum row cosine0.974025100). NDCG@10=0.697348892463,
+MRR@10=0.666363756614, recall@100=0.911 and top-one agreement1.0 match the frozen
+original. No Q4 execution or publication qualification follows from that quality
+agreement. See [the authenticated rejection](tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json).
