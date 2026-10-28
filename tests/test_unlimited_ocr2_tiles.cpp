@@ -1,4 +1,5 @@
 // Unlimited-OCR-2 tiling token arithmetic vs the reference (modeling_unlimitedocr.py).
+#include "core/clean_exit.h"
 #include "unlimited_ocr2_tiles.h"
 
 #include <cstdio>
@@ -12,7 +13,7 @@ static int fails = 0;
         }                                                                                                              \
     } while (0)
 
-int main() {
+static int crispembed_test_main() {
     using namespace uocr2_tiles;
     CHECK(queries_per_side(640) == 10);
     CHECK(queries_per_side(1024) == 16);
@@ -26,4 +27,8 @@ int main() {
     CHECK(!sam_upsample_to_base(256, 256, 64, 64, false));
     if (!fails) printf("test-unlimited-ocr2-tiles: OK\n");
     return fails ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
