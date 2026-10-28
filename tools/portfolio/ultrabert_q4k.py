@@ -11,6 +11,7 @@ import hashlib
 import importlib.util
 import json
 import os
+import platform
 from pathlib import Path, PurePosixPath
 import shutil
 import struct
@@ -129,9 +130,10 @@ def run(args):
     from huggingface_hub import snapshot_download
     from gguf import GGUFReader
     out=args.output;scratch=args.scratch;out.mkdir();scratch.mkdir()
-    report=dict(schema='crispembed-ultrabert-q4k-v1',source=os.environ['GITHUB_SHA'],completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
+    report=dict(schema='crispembed-ultrabert-q4k-v1',source=os.environ['GITHUB_SHA'],environment=dict(system=platform.system(),machine=platform.machine(),python=platform.python_version(),cpu_count=os.cpu_count()),completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
     save=lambda:write(out/'review.json',report);save()
     try:
+        require(shutil.disk_usage(scratch).free>=6*1024**3,'hosted6GiB free scratch required');report['environment']['scratch_free_bytes']=shutil.disk_usage(scratch).free
         report['reference_controls']=reference_controls(args.diff,scratch);save()
         frozen=json.loads((ROOT/'tests/results/ultrabert/scifact-original-freeze.json').read_text())
         prep=json.loads((ROOT/'tests/results/ultrabert/scifact-canonical-preparation.json').read_text())

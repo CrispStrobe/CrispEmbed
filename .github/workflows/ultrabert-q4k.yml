@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   frozen-retrieval:
-    runs-on: ubuntu-24.04
+    runs-on: macos-latest
     timeout-minutes: 240
     env:
       GH_TOKEN: ${{ github.token }}
@@ -38,7 +38,7 @@ jobs:
           "$RUNNER_TEMP/q4k-build/test-ultrabert-profile"
           c++ -std=c++17 -O2 -ffp-contract=off -I src tests/moedern-native-v2/diff.cpp -o "$RUNNER_TEMP/portfolio-vector-diff"
       - name: Frozen 5483 rows, actual IDs/Ref/magnitudes and unchanged ranking gates
-        run: python tools/portfolio/ultrabert_q4k.py --output "$RUNNER_TEMP/ultrabert-q4k" --scratch "$RUNNER_TEMP/ultrabert-q4k-scratch" --library "$RUNNER_TEMP/q4k-build/libcrispembed.so" --quantizer "$RUNNER_TEMP/q4k-build/crispembed-quantize" --diff "$RUNNER_TEMP/portfolio-vector-diff"
+        run: python tools/portfolio/ultrabert_q4k.py --output "$RUNNER_TEMP/ultrabert-q4k" --scratch "$RUNNER_TEMP/ultrabert-q4k-scratch" --library "$RUNNER_TEMP/q4k-build/libcrispembed.dylib" --quantizer "$RUNNER_TEMP/q4k-build/crispembed-quantize" --diff "$RUNNER_TEMP/portfolio-vector-diff"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
