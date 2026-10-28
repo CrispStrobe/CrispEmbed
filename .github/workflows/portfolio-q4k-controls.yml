@@ -1,0 +1,45 @@
+name: Portfolio Q4_K model-free precision controls
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  precision-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact array tooling for authored quantizer fixtures only
+        run: python -m pip install numpy==2.2.6 gguf==0.17.1
+      - name: Configure portable root targets without models
+        run: cmake -S . -B "$RUNNER_TEMP/q4k-controls" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF
+      - name: Compile actual metadata profile and production quantizer
+        run: cmake --build "$RUNNER_TEMP/q4k-controls" --target test-ultrabert-profile crispembed-quantize --parallel 2
+      - name: Legacy F32, explicit mixed Q4_K and malformed critical-type controls
+        run: '"$RUNNER_TEMP/q4k-controls/test-ultrabert-profile"'
+      - name: Existing shared quantizer policy and override controls
+        run: |
+          python - <<'PYTEST'
+          import runpy
+          tests = runpy.run_path('tests/test_quantize_policy.py')
+          count = 0
+          for name, test in tests.items():
+              if name.startswith('test_') and callable(test):
+                  test()
+                  count += 1
+          assert count == 2
+          print('PASS: both existing Python policy controls')
+          PYTEST
+          python tests/test_quantize_tensor_overrides.py --quantizer "$RUNNER_TEMP/q4k-controls/crispembed-quantize"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portfolio-q4k-controls-${{ github.run_id }}
+          path: ${{ runner.temp }}/q4k-controls/CMakeCache.txt
+          retention-days: 90
