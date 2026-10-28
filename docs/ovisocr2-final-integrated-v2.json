@@ -1,19 +1,19 @@
 {
   "schema": "crispembed-ovisocr2-final-integrated-v2",
   "qualification": false,
-  "runtime_base": "8e6a64499c4f036768dae74e3f443ca8252e6134",
+  "runtime_base": "928284b06cc035461edc77ffff700ab29a16e5f0",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "protected_git_objects": {
     ".gitmodules": "dd8a1813f2f2272d576428d8c8ad45d9a1c0a3c6",
     "tools/ci-heavy/successor_assets.py": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
     "tools/ci-heavy/ovisocr2_published_consumer.py": "30c33aafa5984a4914cd4d18a294bdf8f3a5b4d8",
-    "src": "9ef8a38cd317ee87c748afd5adcf59eae7482700",
+    "src": "7998996bd65d3479744bdba48cc72c4b0b6b1809",
     "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
     "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
-    "CMakeLists.txt": "488acea13f423648395dca8fbd2bff451a7c3898",
+    "CMakeLists.txt": "9b8be802be5d99d6a7373585f04f610251446472",
     "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
     "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
-    "examples": "8520a79e121466b60df890e3a77628bd706b65a6",
+    "examples": "e97c64cdeafa2c991aaccde43e2bde61f148b92a",
     "python": "78daaa7413490beb089ce8800dad0257749a1d58",
     "flutter": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
     "crispembed": "ab740c359c66927579737e3f986f4785d28d711f",
@@ -71,7 +71,7 @@
   },
   "declared_source_sha256": {
     "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
-    "src/crispembed.cpp": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+    "src/crispembed.cpp": "7f390317ab17bc5c89cfefb6d2ebb737f21dd81935f6df0ae3a74761c46aa35a",
     "src/ultrabert_profile.h": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31"
   },
   "declared_defaults": {
@@ -667,7 +667,7 @@
   ],
   "runtime_closure_reviewed": true,
   "auditor_source_sha256": {
-    "tools/ovisocr2_final_integrated_v2.py": "c453541a7741fb10d98a0d6d55f5e45d35441012a22a0bc1c683311b619abf3d",
+    "tools/ovisocr2_final_integrated_v2.py": "3e44382481d794601bf8b9d3d29dadb33055435d86166f270604192faa1d5756",
     "tools/ci-heavy/ovisocr2_final_integrated_v2.py": "d01fff77bce83d78adcb78e88ed999b2962cb25310e3644f9fd269ee08bdef10",
     ".github/workflows/ovisocr2-final-integrated-v2.yml": "6dba6da679a883f9408f84b206123fbcd7fbb9fcac89af2b8fdbe80a3f2441ff",
     "tests/test_ovisocr2_final_integrated_v2.py": "84b713a565d157ec22b6585fdaf4d715c93c0e22a3d4eb14e61b67af259aee76"

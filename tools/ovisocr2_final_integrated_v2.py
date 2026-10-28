@@ -6,11 +6,11 @@ from pathlib import Path
 import re
 import subprocess
 
-BASE = '8e6a64499c4f036768dae74e3f443ca8252e6134'
+BASE = '928284b06cc035461edc77ffff700ab29a16e5f0'
 GGML = 'a06fc0bb46b73cc10011fc90ae4054aee8438aeb'
 DECLARED = {
              "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
-             "src/crispembed.cpp": "99bb8a2308021ce997e1570927322d749155c89155dd08af11fdcac6b99e7be1",
+             "src/crispembed.cpp": "7f390317ab17bc5c89cfefb6d2ebb737f21dd81935f6df0ae3a74761c46aa35a",
              "src/ultrabert_profile.h": "fc5af20f91a6b2cb6fa9c07efa875a9d42d3e7e076038b833a908019a0affc31"
             }
 BINARIES = ('test-qwen35-decoder', 'test-qwen35-vision', 'test-qwen35-delta',
