@@ -84,6 +84,7 @@ def run(args, env):
 
 def native(alias, arm, env_extra, extra_args):
     t0 = time.time()
+    sh('git', 'submodule', 'update', '-q', '--init', '--depth', '1', 'ggml')
     sh('cmake', '-S', '.', '-B', TMP + '/b', '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF')
     sh('cmake', '--build', TMP + '/b', '--target', 'crispembed-cli', '--parallel', NT)
     report['build_seconds'] = round(time.time() - t0, 1)
