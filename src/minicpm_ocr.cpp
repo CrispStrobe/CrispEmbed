@@ -312,6 +312,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     }
     if (!dump.empty()) {
         dump_i32(dump, "ids", c.ids);
+        dump_f32(dump, "confidences", c.confidences, c.confidences.size());
         std::fprintf(stderr, "minicpm_ocr gen_ids (%zu):", c.ids.size());
         for (int id : c.ids) std::fprintf(stderr, " %d", id);
         std::fprintf(stderr, "\n");

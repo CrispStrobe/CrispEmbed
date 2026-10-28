@@ -19,3 +19,19 @@ target_link_libraries(minicpm-graph-controls PRIVATE ggml ggml-cpu ggml-base Thr
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(minicpm-graph-controls PRIVATE -ffp-contract=off)
 endif()
+add_executable(minicpm-graph-probe probe.cpp
+    "${CRISPEMBED_ROOT}/src/qwen35_graph_decoder.cpp"
+    "${CRISPEMBED_ROOT}/src/qwen35_decoder.cpp"
+    "${CRISPEMBED_ROOT}/src/qwen35_attention.cpp"
+    "${CRISPEMBED_ROOT}/src/qwen35_linear.cpp"
+    "${CRISPEMBED_ROOT}/src/qwen35_delta.cpp"
+    "${CRISPEMBED_ROOT}/src/qwen35_profile.cpp"
+    "${CRISPEMBED_ROOT}/src/core/gguf_loader.cpp")
+target_include_directories(minicpm-graph-probe PRIVATE "${CRISPEMBED_ROOT}/src")
+target_compile_definitions(minicpm-graph-probe PRIVATE CRISPEMBED_MINICPM_GRAPH_AUDIT=1)
+target_link_libraries(minicpm-graph-probe PRIVATE ggml ggml-cpu ggml-base Threads::Threads)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(minicpm-graph-probe PRIVATE -ffp-contract=off)
+endif()
+add_executable(minicpm-graph-diff diff.cpp)
+target_include_directories(minicpm-graph-diff PRIVATE "${CRISPEMBED_ROOT}/src")

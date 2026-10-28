@@ -14,6 +14,11 @@ public:
     graph_decoder(const graph_decoder &) = delete;
     graph_decoder & operator=(const graph_decoder &) = delete;
     void clear();
+#ifdef CRISPEMBED_MINICPM_GRAPH_AUDIT
+    using observer = bool (*)(ggml_tensor *, const float *, const float *, int, int, void *);
+    // Test-only synchronous projected stage observer; absent from plain builds.
+    void observe(observer callback, void * user);
+#endif
     bool run(const decoder_weights & weights, const attention_config & config, const float * hidden,
              const float * positions, int tokens, int threads, const decoder_cache * previous,
              decoder_outputs & output);
