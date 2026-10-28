@@ -1,0 +1,28 @@
+{
+  "schema": "crispembed-minicpm-ocr-publication-report-v1",
+  "status": "published and re-verified",
+  "variants": [
+    "F16"
+  ],
+  "remote": {
+    "repo": "cstr/MiniCPM-OCR-1.0-GGUF",
+    "commit": "6705b0652744a880e79c8ec856fac73ce56e1105",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "minicpm-ocr-1.0-f16.gguf",
+        "bytes": 2612763136,
+        "sha256": "e024db8b1312116f68be6318b42203a1f99db6ddcb60fb1fce672f5e8f1f0362"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "ca982bf97a6df3a079d5387cd2cdb608b4d5f320d4d100ad65fd6e4285c233fa",
+      "manifest.json": "f588a0de6d6a4dd0c62ad1c03b1ceb84dd9a0b6e897a061155bf012b19e71060",
+      "LICENSE": "186c8635e1f88660ec113f4935867a612e35b3124aca5c712d97e2e33d7eb677",
+      "UPSTREAM_README.md": "a62051d6a7c4cf3bcf6576a6028a12030c9c601f569d9d09ab7bb49502c5294a"
+    },
+    "urls": {
+      "minicpm-ocr-1.0-f16.gguf": "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/6705b0652744a880e79c8ec856fac73ce56e1105/minicpm-ocr-1.0-f16.gguf"
+    }
+  }
+}

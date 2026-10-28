@@ -22,6 +22,8 @@ static bool rms(const std::vector<float> & x, ggml_tensor * norm, int width, flo
     }
     return true;
 }
+// Declared here (not only in the header) so textual includes that rename the entry points still see it.
+bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights, int vocab);
 bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights) {
     return map_small_decoder(tensors, weights, 248320);
 }

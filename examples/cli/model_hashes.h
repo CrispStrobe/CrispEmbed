@@ -492,6 +492,8 @@ static const ModelHash k_model_hashes[] = {
       "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2" },
     { "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-1.5M-CrispEmbed-GGUF/resolve/6f3b35143b3afdeeded7f77216b1ec072028fd5f/moedern-1.5m-text-f32.gguf",
       "0e2b8773abd8c78a5825280f9a73cb808b88d56f0675a8e4bb7f0509f5b6cc51" },
+    { "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/6705b0652744a880e79c8ec856fac73ce56e1105/minicpm-ocr-1.0-f16.gguf",
+      "e024db8b1312116f68be6318b42203a1f99db6ddcb60fb1fce672f5e8f1f0362" },
     { "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-f16.gguf",
       "487b887eddaf73e070cd98c3e10d112d21749036ca06b5e7fc103c3fb4def517" },
     { "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-q8_0.gguf",

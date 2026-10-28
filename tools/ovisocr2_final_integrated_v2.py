@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 
-BASE = '928284b06cc035461edc77ffff700ab29a16e5f0'
+BASE = '8245fd47de222733934d3e2783ec5aeb695d3cb0'
 GGML = 'a06fc0bb46b73cc10011fc90ae4054aee8438aeb'
 DECLARED = {
              "src/qwen35_vision.cpp": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
