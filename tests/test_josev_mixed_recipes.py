@@ -4,6 +4,7 @@ import ast
 import copy
 import importlib.util
 import json
+import io
 import math
 from pathlib import Path
 import random
@@ -15,6 +16,8 @@ from unittest.mock import patch
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 import quantize_josev2b_mixed as q
 import josev2b_mixed_contract as contract
+VECTOR_CONTROLS='--vector-controls'in sys.argv
+if VECTOR_CONTROLS:sys.argv.remove('--vector-controls')
 
 
 def fixture(path,rows,identity=None):
@@ -148,6 +151,46 @@ class Controls(unittest.TestCase):
         workflow=(ROOT/'.github/workflows/josev-mixed-recipes-v1.yml').read_text()
         self.assertLess(workflow.index('--fetch-reference'),workflow.index('--reviewed-source'))
         self.assertIn('retention-days: 90',workflow);self.assertIn('if: always()',workflow)
+
+
+@unittest.skipUnless(VECTOR_CONTROLS,'run after locked NumPy install on hosted CI')
+class VectorControls(unittest.TestCase):
+    def test_actual_vector_matches_scalar_and_struct_gold(self):
+        samples=[0,0x80000000,1,0x80000001,0x33000000,0x33000001,0x33800000,
+                 0x387fe000,0x38800000,0x3f801000,0x3f803000,0x477fe000]
+        samples += [random.Random(n).getrandbits(32)for n in range(4096)]
+        good=[]
+        for bits in samples:
+            value=struct.unpack('<f',struct.pack('<I',bits))[0]
+            try:expected=struct.pack('<e',value)
+            except OverflowError:
+                with self.assertRaisesRegex(ValueError,'overflows'):q.vector_f16(struct.pack('<I',bits))
+                continue
+            if not math.isfinite(value):
+                with self.assertRaisesRegex(ValueError,'nonfinite'):q.vector_f16(struct.pack('<I',bits))
+            else:
+                self.assertEqual(q.vector_f16(struct.pack('<I',bits)),expected)
+                self.assertEqual(q.vector_f16(struct.pack('<I',bits)),struct.pack('<H',q.f16_bits(bits)))
+                good.append(bits)
+        data=b''.join(struct.pack('<I',v)for v in good)
+        expected=b''.join(struct.pack('<H',q.f16_bits(v))for v in good)
+        self.assertEqual(q.vector_f16(data),expected)
+        for bad in (b'',b'x',bytes(4*65536+4)):
+            with self.assertRaises(ValueError):q.vector_f16(bad)
+        for bits in (0x7f800000,0xff800000,0x7fc00001,0x47800000):
+            with self.assertRaises(ValueError):q.vector_f16(struct.pack('<I',bits))
+
+    def test_actual_chunked_hash_finite_and_rounding_path(self):
+        bits=[0x80000000,0x33800000,0x3f801000,0x3f803000,0x387fe000]
+        data=b''.join(struct.pack('<I',bits[i%len(bits)])for i in range(65539))
+        half=b''.join(struct.pack('<H',q.f16_bits(bits[i%len(bits)]))for i in range(65539))
+        scalar=q.source_hash_and_half(io.BytesIO(b'1234'+data),4,len(data),io.BytesIO(b'xx'+half),2)
+        vector=q.source_hash_and_half(io.BytesIO(b'1234'+data),4,len(data),io.BytesIO(b'xx'+half),2,vector=True)
+        self.assertEqual(vector,scalar)
+        with self.assertRaisesRegex(ValueError,'rounding differs'):
+            q.source_hash_and_half(io.BytesIO(data),0,len(data),io.BytesIO(bytes(len(half))),vector=True)
+        with self.assertRaisesRegex(ValueError,'nonfinite'):
+            q.source_hash_and_half(io.BytesIO(struct.pack('<I',0x7fc00000)),0,4,vector=True)
 
 
 if __name__=='__main__':unittest.main()

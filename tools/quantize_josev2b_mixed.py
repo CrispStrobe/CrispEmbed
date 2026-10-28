@@ -68,18 +68,59 @@ def f16_bits(bits):
     return sign|(target<<10)|(quotient&1023)
 
 
-def source_hash_and_half(stream,offset,count,half_stream=None,half_offset=0):
+def vector_f32_bits(data):
+    """At most65,536 values; integer finiteness test, no float conversion."""
+    import numpy as np
+    require(0<len(data)<=4*65536 and len(data)%4==0,'bounded F32 chunk required')
+    bits=np.frombuffer(data,dtype='<u4')
+    require(bool(np.all(((bits>>23)&255)!=255)),'nonfinite source F32')
+    return bits
+
+
+def vector_f16(data):
+    """Same scalar integer IEEE oracle, vectorized with uint32/uint64 only.
+
+    No astype(float16), ggml or native half converter. Per-chunk memory is bounded;
+    returned bytes are just this ≤128KiB slice, never a materialized matrix.
+    """
+    import numpy as np
+    bits=vector_f32_bits(data)
+    sign=(bits>>16)&0x8000;exponent=(bits>>23)&255
+    unbiased=exponent.astype(np.int32)-127
+    shift=np.where(unbiased>=-14,13,-unbiased-1)
+    active=(exponent!=0)&(shift<=25)
+    safe=np.where(active,shift,13).astype(np.uint64)
+    significand=((bits&0x7fffff)|(1<<23)).astype(np.uint64)
+    divisor=np.left_shift(np.uint64(1),safe)
+    quotient=np.right_shift(significand,safe)
+    remainder=significand&(divisor-np.uint64(1));halfway=divisor>>np.uint64(1)
+    quotient+=((remainder>halfway)|((remainder==halfway)&((quotient&np.uint64(1))!=0))).astype(np.uint64)
+    target=unbiased+15+(quotient==2048).astype(np.int32)
+    normal=active&(unbiased>=-14);subnormal=active&(unbiased<-14)
+    require(bool(np.all(target[normal]<31)),'finite F32 overflows F16')
+    result=sign.copy()
+    result[subnormal]|=quotient[subnormal].astype(np.uint32)
+    result[normal]|=(target[normal].astype(np.uint32)<<10)|(quotient[normal].astype(np.uint32)&1023)
+    return result.astype('<u2').tobytes()
+
+
+def source_hash_and_half(stream,offset,count,half_stream=None,half_offset=0,*,vector=False):
     stream.seek(offset)
     if half_stream is not None:half_stream.seek(half_offset)
     h=hashlib.sha256();rounded=hashlib.sha256();left=count
     while left:
         data=stream.read(min(left,4*65536));require(data and len(data)%4==0,'truncated source F32')
         h.update(data);left-=len(data)
-        bits=list(struct.iter_unpack('<I',data))
-        require(all((x[0]>>23)&255!=255 for x in bits),'nonfinite source F32')
+        if vector:
+            if half_stream is None:vector_f32_bits(data)
+            else:expected=vector_f16(data)
+        else:
+            bits=list(struct.iter_unpack('<I',data))
+            require(all((x[0]>>23)&255!=255 for x in bits),'nonfinite source F32')
+            if half_stream is not None:
+                expected=bytearray(2*len(bits))
+                for i,(value,)in enumerate(bits):struct.pack_into('<H',expected,2*i,f16_bits(value))
         if half_stream is not None:
-            expected=bytearray(2*len(bits))
-            for i,(value,)in enumerate(bits):struct.pack_into('<H',expected,2*i,f16_bits(value))
             actual=half_stream.read(len(expected))
             require(actual==expected,'independent IEEE F16 rounding differs')
             rounded.update(expected)
@@ -141,7 +182,7 @@ def parse(path,expected):
 
 
 
-def verify_conversion(source,output,expected,identity,*,seal=False):
+def verify_conversion(source,output,expected,identity,*,seal=False,vector=False):
     require(len(expected)==442 and sum(math.prod(s)for s in expected.values())==PARAMETERS,'exact442 semantic inventory required')
     a,b=parse(source,expected),parse(output,expected);wanted=recipe(expected,identity)
     for p in (a,b):
@@ -157,7 +198,7 @@ def verify_conversion(source,output,expected,identity,*,seal=False):
         for name in expected:
             x,y=a['tensors'][name],b['tensors'][name]
             require(x['type']==0 and y['type']==wanted[name],'actual recipe type differs: '+name)
-            original,half=source_hash_and_half(left,x['data_offset'],x['bytes'],right if y['type']==1 else None,y['data_offset'])
+            original,half=source_hash_and_half(left,x['data_offset'],x['bytes'],right if y['type']==1 else None,y['data_offset'],vector=vector)
             actual=hash_range(right,y['data_offset'],y['bytes'],q4k=y['type']==12)
             require(y['type']!=0 or actual==original,'protected F32 bytes changed: '+name)
             require(y['type']!=1 or actual==half,'F16 hash differs')
@@ -200,7 +241,7 @@ def quantize(source,output,executable,identity):
     log.with_name(log.name+'.process.json').write_text(json.dumps(process,indent=2)+'\n')
     require(not process['timed_out']and process['exit']==0,'actual C quantizer rejected; logs retained')
     require('(fallback 'not in log.read_text(),'quantizer fallback forbidden')
-    result=verify_conversion(source,output,expected,identity,seal=True)
+    result=verify_conversion(source,output,expected,identity,seal=True,vector=True)
     require(result['output_bytes']==EXPECTED_BYTES[identity],'full candidate exact byte extent differs')
     return dict(schema='crispembed-josev-mixed-conversion-v1',completed=True,source=SOURCE,
                 output_sha256=digest(output),quantizer_sha256=digest(executable),quantizer_log_sha256=digest(log),

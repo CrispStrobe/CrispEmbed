@@ -26,9 +26,15 @@ All292 critical tensors (vocabulary, norms, head, a/b, convolution and other
 nonselected tensors) retain exact original F32 bytes. B/C protect down matrices
 monotonically; C never reintroduces Q4 down weights. The actual existing C
 quantizer writes candidates. A bounded parser verifies all442 semantic shapes,
-storage extents/types/counts and payload hashes. An independent integer IEEE754
+storage extents/types/counts and payload hashes. Physical storage rank may
+canonicalize unit axes (the old head residual scorer [512,1] stores as rank1);
+all semantic axes and critical bytes remain checked, with both ranks recorded. An independent integer IEEE754
 F32-to-binary16 implementation verifies every F16 value with nearest/ties-even,
-signed-zero/subnormal preservation and nonfinite/overflow rejection. No Q4_0
+signed-zero/subnormal preservation and nonfinite/overflow rejection. The production verifier vectorizes the same integer rules with NumPy uint32/
+uint64 on at most65,536 values per slice, with no float16 cast or ggml converter.
+Hosted controls compare the actual vector path against the retained scalar
+oracle and Python struct binary16 gold after installing locked NumPy. Those
+vector controls are not executed on the shared host. No Q4_0
 fallback or unreported storage substitution is accepted. Header metadata and
 embedded tokenizer are preserved; the existing same-length mixed packed-format
 marker is sealed only after verification. The recipe is bound by the external

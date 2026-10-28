@@ -417,11 +417,11 @@
     "tools/quantize_josev2b_q4k.py": "498e88957dca6139bfcf10b5ed0457b1a38f70e8c7d567425843bc4002d8df70"
   },
   "owned_sha256": {
-    "tools/quantize_josev2b_mixed.py": "663983035e425ccefa962748fbaa13c8de0a20282aa340313951f0a91f5295d8",
+    "tools/quantize_josev2b_mixed.py": "bb67b1aab0d00830e6d1f54e3df2cde7f6602e67e18b25181826f4c746a5fdf3",
     "tools/josev2b_mixed_contract.py": "d68c348af3f84906d4ca366bc44cb990a5f21f6881dbcf55c0f59370f08ae5f5",
     "tools/ci-heavy/josev2b_mixed_recipes.py": "f2fb117abb465f560d39020e5eba57f8a0932d25f89d0768ab7a9ad4d4e3d5a3",
-    "tests/test_josev_mixed_recipes.py": "69644bbc1844dabb2471efc10373073e3f37925edd0e5dd022a2447f2c66c339",
-    ".github/workflows/josev-mixed-recipes-v1.yml": "e5546ef96ba078e3a45972456a9973dc51d591f270273e7e85e0008bdf6d77d7",
-    "docs/josev2b-mixed-recipes-v1.md": "1a661064379454bfc25935da39c40c47070a9d4470c684546f4374d848e07b6f"
+    "tests/test_josev_mixed_recipes.py": "21254f8b4472b3b106a6387a509252eabad99b218d2dc171181dc8b2ecdf821e",
+    ".github/workflows/josev-mixed-recipes-v1.yml": "bc45355f6a5c40a84023a475ca81a88864c40977ad3a6a090553dfd533baf961",
+    "docs/josev2b-mixed-recipes-v1.md": "2f3b712a9a8b9822c6537ed50f90f1ef8196733124a4ca881066f4c87f743cb5"
   }
 }
