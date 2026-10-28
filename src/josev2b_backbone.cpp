@@ -10,26 +10,30 @@ namespace {
 bool enabled() {
     return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_JOSEV_BACKBONE");
 }
-bool shape(ggml_tensor * t, int x, int y = 1, int z = 1) {
-    return t && t->type == GGML_TYPE_F32 && ggml_is_contiguous(t) && t->ne[0] == x && t->ne[1] == y && t->ne[2] == z &&
-           t->ne[3] == 1;
+bool shape(ggml_tensor * t, int x, int y = 1, int z = 1, bool mixed = false) {
+    const bool type_ok =
+        t && (t->type == GGML_TYPE_F32 ||
+              (mixed && (t->type == GGML_TYPE_F16 || t->type == GGML_TYPE_Q8_0 || t->type == GGML_TYPE_Q4_K)));
+    return t && type_ok && ggml_is_contiguous(t) && t->ne[0] == x && t->ne[1] == y && t->ne[2] == z && t->ne[3] == 1;
 }
-bool valid(const qwen35_ocr::decoder_weights & w) {
+bool valid(const qwen35_ocr::decoder_weights & w, bool mixed = false) {
     if (w.head || w.layers.size() != 24 || !shape(w.embedding, 2048, 248320) || !shape(w.norm, 2048)) return false;
     for (size_t i = 0; i < w.layers.size(); ++i) {
         const auto & l = w.layers[i];
         if (l.full_attention != (i % 4 == 3) || !shape(l.input_norm, 2048) || !shape(l.post_norm, 2048) ||
-            !shape(l.gate, 2048, 6144) || !shape(l.up, 2048, 6144) || !shape(l.down, 6144, 2048))
+            !shape(l.gate, 2048, 6144, 1, mixed) || !shape(l.up, 2048, 6144, 1, mixed) ||
+            !shape(l.down, 6144, 2048, 1, mixed))
             return false;
         if (l.full_attention) {
             const auto & a = l.attention;
-            if (!shape(a.q, 2048, 4096) || !shape(a.k, 2048, 512) || !shape(a.v, 2048, 512) ||
-                !shape(a.out, 2048, 2048) || !shape(a.q_norm, 256) || !shape(a.k_norm, 256))
+            if (!shape(a.q, 2048, 4096, 1, mixed) || !shape(a.k, 2048, 512, 1, mixed) ||
+                !shape(a.v, 2048, 512, 1, mixed) || !shape(a.out, 2048, 2048, 1, mixed) || !shape(a.q_norm, 256) ||
+                !shape(a.k_norm, 256))
                 return false;
         } else {
             const auto & a = l.linear;
-            if (!shape(a.qkv, 2048, 6144) || !shape(a.z, 2048, 2048) || !shape(a.a, 2048, 16) ||
-                !shape(a.b, 2048, 16) || !shape(a.out, 2048, 2048) || !shape(a.conv, 4, 1, 6144) ||
+            if (!shape(a.qkv, 2048, 6144, 1, mixed) || !shape(a.z, 2048, 2048, 1, mixed) || !shape(a.a, 2048, 16) ||
+                !shape(a.b, 2048, 16) || !shape(a.out, 2048, 2048, 1, mixed) || !shape(a.conv, 4, 1, 6144) ||
                 !shape(a.a_log, 16) || !shape(a.dt_bias, 16) || !shape(a.norm, 128))
                 return false;
         }
@@ -37,7 +41,7 @@ bool valid(const qwen35_ocr::decoder_weights & w) {
     return true;
 }
 } // namespace
-bool map(const core_gguf::tensor_map & tensors, qwen35_ocr::decoder_weights & weights) {
+static bool map_impl(const core_gguf::tensor_map & tensors, qwen35_ocr::decoder_weights & weights, bool mixed) {
     weights = {};
     if (!enabled() || tensors.size() != 320) return false;
     std::set<std::string> consumed;
@@ -75,14 +79,15 @@ bool map(const core_gguf::tensor_map & tensors, qwen35_ocr::decoder_weights & we
         }
         w.layers.push_back(l);
     }
-    if (consumed.size() != tensors.size() || !valid(w)) return false;
+    if (consumed.size() != tensors.size() || !valid(w, mixed)) return false;
     weights = std::move(w);
     return true;
 }
-bool run(const qwen35_ocr::decoder_weights & weights, const std::vector<int> & ids, int threads,
-         qwen35_ocr::decoder_outputs & output) {
+static bool run_impl(const qwen35_ocr::decoder_weights & weights, const std::vector<int> & ids, int threads,
+                     qwen35_ocr::decoder_outputs & output, bool mixed) {
     output = {};
-    if (!enabled() || !valid(weights) || ids.empty() || ids.size() > 512 || threads < 1 || threads > 256) return false;
+    if (!enabled() || !valid(weights, mixed) || ids.empty() || ids.size() > 512 || threads < 1 || threads > 256)
+        return false;
     std::vector<float> hidden, positions(3 * ids.size());
     if (!qwen35_ocr::embed_cpu(weights.embedding, ids, hidden)) return false;
     for (size_t axis = 0; axis < 3; ++axis)
@@ -90,5 +95,23 @@ bool run(const qwen35_ocr::decoder_weights & weights, const std::vector<int> & i
     const qwen35_ocr::attention_config config{};
     return qwen35_ocr::decoder_hidden_cpu(weights, config, hidden.data(), positions.data(), int(ids.size()), threads,
                                           output);
+}
+bool map(const core_gguf::tensor_map & tensors, qwen35_ocr::decoder_weights & weights) {
+    return map_impl(tensors, weights, false);
+}
+bool map_quantized(const core_gguf::tensor_map & tensors, qwen35_ocr::decoder_weights & weights) {
+    weights = {};
+    return core_env::on("CRISPEMBED_JOSEV_QUANT") && core_env::on("CRISPEMBED_QWEN35_QUANT") &&
+           map_impl(tensors, weights, true);
+}
+bool run(const qwen35_ocr::decoder_weights & weights, const std::vector<int> & ids, int threads,
+         qwen35_ocr::decoder_outputs & output) {
+    return run_impl(weights, ids, threads, output, false);
+}
+bool run_quantized(const qwen35_ocr::decoder_weights & weights, const std::vector<int> & ids, int threads,
+                   qwen35_ocr::decoder_outputs & output) {
+    output = {};
+    return core_env::on("CRISPEMBED_JOSEV_QUANT") && core_env::on("CRISPEMBED_QWEN35_QUANT") &&
+           run_impl(weights, ids, threads, output, true);
 }
 } // namespace josev2b_backbone

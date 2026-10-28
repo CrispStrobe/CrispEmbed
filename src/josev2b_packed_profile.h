@@ -22,7 +22,21 @@ inline bool number(const gguf_context * g, const char * name, uint32_t expected)
 }
 // Inspect bounded raw header before GGUF can allocate metadata arrays. Prefetch
 // can include up to64KiB after the header; only up to31 tail bytes are checked.
-inline bool file_bounds(const char * path, std::string & error) {
+inline bool projection(const std::string & name) {
+    if (name.rfind("l.layers.", 0) != 0) return false;
+    for (const char * suffix :
+         { ".mlp.gate_proj.weight", ".mlp.up_proj.weight", ".mlp.down_proj.weight", ".self_attn.q_proj.weight",
+           ".self_attn.k_proj.weight", ".self_attn.v_proj.weight", ".self_attn.o_proj.weight",
+           ".linear_attn.in_proj_qkv.weight", ".linear_attn.in_proj_z.weight", ".linear_attn.out_proj.weight" }) {
+        const size_t n = std::strlen(suffix);
+        if (name.size() > n && name.compare(name.size() - n, n, suffix) == 0) return true;
+    }
+    return false;
+}
+inline bool quantized(const gguf_context * g) {
+    return g && text(g, "josev2b.packed.format", "crispembed-josev-packed-q4k-v1");
+}
+inline bool file_bounds(const char * path, std::string & error, bool allow_quantized = false) {
     try {
         if (!path) throw std::runtime_error("null packed path");
         struct reader {
@@ -90,6 +104,8 @@ inline bool file_bounds(const char * path, std::string & error) {
             throw std::runtime_error("packed GGUFv3/442 tensors required");
         const uint64_t count = r.integer(8);
         if (count > 4096) throw std::runtime_error("packed metadata count exceeds4096");
+        bool mixed = false;
+        uint32_t file_type = UINT32_MAX;
         std::set<std::string> keys;
         for (uint64_t i = 0; i < count; ++i) {
             const auto name = r.string();
@@ -98,9 +114,18 @@ inline bool file_bounds(const char * path, std::string & error) {
             const uint32_t kind = uint32_t(r.integer(4));
             if (name == "general.alignment") {
                 if (kind != 4 || r.integer(4) != 32) throw std::runtime_error("packed alignment must be32");
+            } else if (name == "josev2b.packed.format") {
+                if (kind != 8) throw std::runtime_error("packed format must be string");
+                mixed = r.string() == "crispembed-josev-packed-q4k-v1";
+            } else if (name == "general.file_type") {
+                if (kind != 4) throw std::runtime_error("packed file type must be uint32");
+                file_type = uint32_t(r.integer(4));
             } else
                 r.value(kind);
         }
+        if (mixed && (!allow_quantized || file_type != GGML_FTYPE_MOSTLY_Q4_K))
+            throw std::runtime_error("Josev mixed Q4_K profile gate/type rejected");
+        uint64_t actual_q4 = 0;
         std::set<std::string> names;
         std::vector<std::pair<uint64_t, uint64_t>> ranges;
         uint64_t total = 0;
@@ -110,22 +135,37 @@ inline bool file_bounds(const char * path, std::string & error) {
                 throw std::runtime_error("invalid/duplicate packed tensor name");
             const uint64_t rank = r.integer(4);
             if (rank < 1 || rank > 4) throw std::runtime_error("packed tensor rank must be1..4");
-            uint64_t elements = 1;
+            uint64_t elements = 1, width = 0;
             for (uint64_t axis = 0; axis < rank; ++axis) {
                 const auto n = r.integer(8);
                 if (!n || n > uint64_t(1) << 31 || elements > uint64_t(2) * 1024 * 1024 * 1024 / n)
                     throw std::runtime_error("packed tensor dimensions exceed bounds");
+                if (axis == 0) width = n;
                 elements *= n;
             }
-            if (r.integer(4) != 0) throw std::runtime_error("packed model requires F32 tensors");
-            const auto offset = r.integer(8), bytes = elements * 4;
+            const auto type = r.integer(4);
+            uint64_t bytes = elements * 4;
+            if (type != GGML_TYPE_F32) {
+                if (!mixed || !projection(name) || rank != 2)
+                    throw std::runtime_error("packed critical/legacy tensor requires F32");
+                if (type == GGML_TYPE_F16)
+                    bytes = elements * 2;
+                else if (type == GGML_TYPE_Q8_0 && width % 32 == 0)
+                    bytes = elements / 32 * 34;
+                else if (type == GGML_TYPE_Q4_K && width % 256 == 0) {
+                    bytes = elements / 256 * 144;
+                    ++actual_q4;
+                } else
+                    throw std::runtime_error("unsupported packed projection storage");
+            }
+            const auto offset = r.integer(8);
             if (offset % 32 || offset > r.size || bytes > r.size - offset)
                 throw std::runtime_error("packed tensor offset/extent invalid");
             ranges.emplace_back(offset, offset + bytes);
-            total += bytes;
+            total += elements;
         }
-        if (total != uint64_t(1881825088 + 30472708) * 4)
-            throw std::runtime_error("packed parameter inventory differs");
+        if (mixed && !actual_q4) throw std::runtime_error("Q4_K profile requires actual Q4_K tensors");
+        if (total != uint64_t(1881825088 + 30472708)) throw std::runtime_error("packed parameter inventory differs");
         const auto start = (r.at + 31) / 32 * 32;
         const auto padding = start - r.at;
         r.ensure(padding);
@@ -155,10 +195,11 @@ inline bool file_bounds(const char * path, std::string & error) {
         return false;
     }
 }
-inline bool metadata_valid(const gguf_context * g, std::string & error) {
+inline bool metadata_valid(const gguf_context * g, std::string & error, bool allow_quantized = false) {
     if (!g || gguf_get_n_tensors(g) != 442 || !text(g, "general.architecture", architecture) ||
         !text(g, "general.license", "apache-2.0") ||
-        !text(g, "josev2b.packed.format", "crispembed-josev-packed-f32-v1") ||
+        !(text(g, "josev2b.packed.format", "crispembed-josev-packed-f32-v1") ||
+          (allow_quantized && quantized(g) && number(g, "general.file_type", GGML_FTYPE_MOSTLY_Q4_K))) ||
         !text(g, "josev2b.packed.profile", "official-pytorch-text-batch1-512-no-extra-temperature") ||
         !text(g, "josev2b.packed.backbone_gguf_sha256",
               "8dc144a89e4b2bbf253fe395eeb9bc4d1eb7b3a27474442847535e55c79b361c") ||
