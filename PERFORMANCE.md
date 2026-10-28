@@ -1,3 +1,16 @@
+## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
+
+| engine | page | variant | seconds | note |
+| --- | --- | --- | --- | --- |
+| Unlimited-OCR-2 | paragraphs/table/german | F16 untiled, fast | 77-87 | [trial](tests/results/unlimited-ocr2/trial.json) |
+| Unlimited-OCR-2 | same | F16 tiled, fast | 297-317 | original PyTorch 112-118 s (tiled by default); speed fix pending |
+| Unlimited-OCR-2 | same | Q8_0 untiled / tiled, fast | 46-49 / 171-175 | Q8_0 tiled not exact on 2/4 pages |
+| Unlimited-OCR-2 | receipt, tiled | F16 exact vs fast decoder | 2453 vs 381 | identical IDs |
+| MiniCPM-OCR | line / para-en / table / tall / tiny | F32 | 120 / 369 / 358 / 1401 / 55 | [parity](tests/results/minicpm-ocr/native-parity.json); stage benchmark pending |
+| MiniCPM-OCR | same | F16 | 121 / 509 / 487 / 1707 / 64 | slower than F32 on this CPU |
+
+Peak RSS: Unlimited-OCR-2 Q8_0 6.9-7.4 GB, F16 10.3-12.8 GB.
+
 ## 27 October 2026 (late) — MoEdern 27M/115M public, fast path, 1.5M SciFact
 
 | Scope | Cases | Worst abs | Receipt |
