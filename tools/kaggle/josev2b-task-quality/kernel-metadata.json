@@ -1,0 +1,15 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-josev2b-task-quality-original-v1",
+  "title": "crispembed-josev2b-task-quality-original-v1",
+  "code_file": "bootstrap.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "model_sources": [],
+  "enable_tpu": "false"
+}

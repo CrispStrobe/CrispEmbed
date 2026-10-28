@@ -1,0 +1,1109 @@
+{
+  "schema": "crispembed-josev-owned-task-quality-panel-v1",
+  "license": "CC0-1.0",
+  "authorship": "New fictional texts and objective labels authored before model outputs; no external dataset or copied source text.",
+  "scope": "20 requests,10 translated scenario pairs,60 field labels; fields share a joint head and are not independent statistical samples.",
+  "label_status": "frozen-for-coordinator-review-before-original-output",
+  "cases": [
+    {
+      "id": "fact-key-en",
+      "scenario_id": "fact-key",
+      "language": "en",
+      "stratum": "factual",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Mira keeps the brass key in the blue drawer. The workshop is open. Of two required checks, identity is complete and address is not complete.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the workshop open?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Where is the brass key?",
+            "criteria": {
+              "z": "On the red shelf.",
+              "a": "In the blue drawer.",
+              "m": "In the green box."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Is the workshop open? Yes."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "In the blue drawer."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Exactly 1 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "fact-key-de",
+      "scenario_id": "fact-key",
+      "language": "de",
+      "stratum": "factual",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Mira bewahrt den Messingschlüssel in der blauen Schublade auf. Die Werkstatt ist geöffnet. Von zwei erforderlichen Prüfungen ist die Identitätsprüfung abgeschlossen; die Adressprüfung ist nicht abgeschlossen.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Wo liegt der Messingschlüssel?",
+            "criteria": {
+              "a": "In der blauen Schublade.",
+              "m": "In der grünen Kiste.",
+              "z": "Auf dem roten Regal."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Ist die Werkstatt geöffnet?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Ist die Werkstatt geöffnet? Ja."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "In der blauen Schublade."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Genau 1 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "fact-badge-en",
+      "scenario_id": "fact-badge",
+      "language": "en",
+      "stratum": "factual",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Noah has the silver badge. The gate is closed. Neither the identity check nor the address check is complete.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Who has the silver badge?",
+            "criteria": {
+              "a": "Mira.",
+              "m": "Lea.",
+              "z": "Noah."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the gate open?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Is the gate open? No."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "z",
+          "rationale": "Noah."
+        },
+        "progress": {
+          "type": "score",
+          "label": "0",
+          "rationale": "Exactly 0 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "fact-badge-de",
+      "scenario_id": "fact-badge",
+      "language": "de",
+      "stratum": "factual",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Noah hat den silbernen Ausweis. Das Tor ist geschlossen. Weder die Identitätsprüfung noch die Adressprüfung ist abgeschlossen.",
+        "questions": {
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Ist das Tor geöffnet?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Wer hat den silbernen Ausweis?",
+            "criteria": {
+              "m": "Lea.",
+              "z": "Noah.",
+              "a": "Mira."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Ist das Tor geöffnet? Nein."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "z",
+          "rationale": "Noah."
+        },
+        "progress": {
+          "type": "score",
+          "label": "0",
+          "rationale": "Genau 0 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "negation-depot-en",
+      "scenario_id": "negation-depot",
+      "language": "en",
+      "stratum": "negation",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "The red box is not sealed. The green box is sealed. The parcel must go to North Depot, not South Depot. Both required checks, identity and address, are complete.",
+        "questions": {
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the green box sealed?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Which depot is the parcel destination?",
+            "criteria": {
+              "m": "North Depot.",
+              "z": "West Depot.",
+              "a": "South Depot."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Is the green box sealed? Yes."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "m",
+          "rationale": "North Depot."
+        },
+        "progress": {
+          "type": "score",
+          "label": "2",
+          "rationale": "Exactly 2 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "negation-depot-de",
+      "scenario_id": "negation-depot",
+      "language": "de",
+      "stratum": "negation",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Die rote Kiste ist nicht versiegelt. Die grüne Kiste ist versiegelt. Das Paket soll zum Norddepot, nicht zum Süddepot. Beide erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Ist die grüne Kiste versiegelt?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Welches Depot ist das Ziel des Pakets?",
+            "criteria": {
+              "z": "Das Westdepot.",
+              "a": "Das Süddepot.",
+              "m": "Das Norddepot."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Ist die grüne Kiste versiegelt? Ja."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "m",
+          "rationale": "Das Norddepot."
+        },
+        "progress": {
+          "type": "score",
+          "label": "2",
+          "rationale": "Genau 2 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "negation-letter-en",
+      "scenario_id": "negation-letter",
+      "language": "en",
+      "stratum": "negation",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Lea has not sent the letter. She has printed the label. The letter is in the yellow tray. Identity has not been checked; address has been checked.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Has Lea sent the letter?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Where is the letter?",
+            "criteria": {
+              "z": "In the black folder.",
+              "a": "In the yellow tray.",
+              "m": "In the blue cabinet."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Has Lea sent the letter? No."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "In the yellow tray."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Exactly 1 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "negation-letter-de",
+      "scenario_id": "negation-letter",
+      "language": "de",
+      "stratum": "negation",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Lea hat den Brief nicht abgeschickt. Sie hat das Etikett gedruckt. Der Brief liegt in der gelben Ablage. Die Identität wurde nicht geprüft; die Adresse wurde geprüft.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Wo liegt der Brief?",
+            "criteria": {
+              "a": "In der gelben Ablage.",
+              "m": "Im blauen Schrank.",
+              "z": "In der schwarzen Mappe."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Hat Lea den Brief abgeschickt?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Hat Lea den Brief abgeschickt? Nein."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "In der gelben Ablage."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Genau 1 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "correction-time-en",
+      "scenario_id": "correction-time",
+      "language": "en",
+      "stratum": "temporal-correction",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "The first notice lists the meeting at 09:00. A later correction changes it to 11:00. The latest notice confirms 11:00. Both required checks, identity and address, are complete.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Which meeting time is current?",
+            "criteria": {
+              "a": "09:00.",
+              "m": "10:00.",
+              "z": "11:00."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the latest meeting time 11:00?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Is the latest meeting time 11:00? Yes."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "z",
+          "rationale": "11:00."
+        },
+        "progress": {
+          "type": "score",
+          "label": "2",
+          "rationale": "Exactly 2 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "correction-time-de",
+      "scenario_id": "correction-time",
+      "language": "de",
+      "stratum": "temporal-correction",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Die erste Mitteilung nennt 09:00 Uhr als Besprechungszeit. Eine spätere Korrektur ändert sie auf 11:00 Uhr. Die neueste Mitteilung bestätigt 11:00 Uhr. Beide erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen.",
+        "questions": {
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Ist die aktuelle Besprechungszeit 11:00 Uhr?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Welche Besprechungszeit gilt aktuell?",
+            "criteria": {
+              "m": "10:00 Uhr.",
+              "z": "11:00 Uhr.",
+              "a": "09:00 Uhr."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Ist die aktuelle Besprechungszeit 11:00 Uhr? Ja."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "z",
+          "rationale": "11:00 Uhr."
+        },
+        "progress": {
+          "type": "score",
+          "label": "2",
+          "rationale": "Genau 2 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "correction-shelf-en",
+      "scenario_id": "correction-shelf",
+      "language": "en",
+      "stratum": "temporal-correction",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Omar first puts the package on shelf A. He then moves it to shelf C. The final record confirms shelf C. Neither the identity check nor the address check is complete.",
+        "questions": {
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the package still on shelf A?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Where is the package now?",
+            "criteria": {
+              "m": "On shelf C.",
+              "z": "On shelf B.",
+              "a": "On shelf A."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Is the package still on shelf A? No."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "m",
+          "rationale": "On shelf C."
+        },
+        "progress": {
+          "type": "score",
+          "label": "0",
+          "rationale": "Exactly 0 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "correction-shelf-de",
+      "scenario_id": "correction-shelf",
+      "language": "de",
+      "stratum": "temporal-correction",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Omar legt das Paket zuerst in Regal A. Dann legt er es in Regal C. Der letzte Eintrag bestätigt Regal C. Weder die Identitätsprüfung noch die Adressprüfung ist abgeschlossen.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Liegt das Paket noch in Regal A?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Wo liegt das Paket jetzt?",
+            "criteria": {
+              "z": "In Regal B.",
+              "a": "In Regal A.",
+              "m": "In Regal C."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Liegt das Paket noch in Regal A? Nein."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "m",
+          "rationale": "In Regal C."
+        },
+        "progress": {
+          "type": "score",
+          "label": "0",
+          "rationale": "Genau 0 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "order-finish-en",
+      "scenario_id": "order-finish",
+      "language": "en",
+      "stratum": "relative-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "In the finish order, Ada is before Ben, and Ben is before Cara. The identity check is the only completed required check; the address check remains incomplete.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Did Ada finish before Cara?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Who finished between Ada and Cara?",
+            "criteria": {
+              "z": "Cara.",
+              "a": "Ben.",
+              "m": "Ada."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Did Ada finish before Cara? Yes."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "Ben."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Exactly 1 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "order-finish-de",
+      "scenario_id": "order-finish",
+      "language": "de",
+      "stratum": "relative-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "In der Zielreihenfolge kommt Ada vor Ben und Ben vor Cara. Nur die erforderliche Identitätsprüfung ist abgeschlossen; die Adressprüfung bleibt offen.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Wer kam zwischen Ada und Cara ins Ziel?",
+            "criteria": {
+              "a": "Ben.",
+              "m": "Ada.",
+              "z": "Cara."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Kam Ada vor Cara ins Ziel?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Kam Ada vor Cara ins Ziel? Ja."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "Ben."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Genau 1 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "order-visits-en",
+      "scenario_id": "order-visits",
+      "language": "en",
+      "stratum": "relative-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "The visit order is Elm, then Oak, then Pine. Pine was not visited first. The identity check is incomplete, and the address check is complete.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Which location was visited last?",
+            "criteria": {
+              "a": "Elm.",
+              "m": "Oak.",
+              "z": "Pine."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Was Pine visited before Elm?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Was Pine visited before Elm? No."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "z",
+          "rationale": "Pine."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Exactly 1 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "order-visits-de",
+      "scenario_id": "order-visits",
+      "language": "de",
+      "stratum": "relative-order",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Die Besuchsreihenfolge lautet Elm, dann Oak, dann Pine. Pine wurde nicht zuerst besucht. Die Identitätsprüfung ist offen und die Adressprüfung ist abgeschlossen.",
+        "questions": {
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Wurde Pine vor Elm besucht?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Welcher Ort wurde zuletzt besucht?",
+            "criteria": {
+              "m": "Oak.",
+              "z": "Pine.",
+              "a": "Elm."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Wurde Pine vor Elm besucht? Nein."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "z",
+          "rationale": "Pine."
+        },
+        "progress": {
+          "type": "score",
+          "label": "1",
+          "rationale": "Genau 1 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "count-lamps-en",
+      "scenario_id": "count-lamps",
+      "language": "en",
+      "stratum": "explicit-count",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "There are exactly two required checks: identity and address. Both are complete. A green lamp is on, and the blue lamp is off.",
+        "questions": {
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the blue lamp off?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Which lamp is on?",
+            "criteria": {
+              "m": "The green lamp.",
+              "z": "The red lamp.",
+              "a": "The blue lamp."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Is the blue lamp off? Yes."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "m",
+          "rationale": "The green lamp."
+        },
+        "progress": {
+          "type": "score",
+          "label": "2",
+          "rationale": "Exactly 2 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "count-lamps-de",
+      "scenario_id": "count-lamps",
+      "language": "de",
+      "stratum": "explicit-count",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Es gibt genau zwei erforderliche Prüfungen: Identität und Adresse. Beide sind abgeschlossen. Eine grüne Lampe leuchtet und die blaue Lampe ist aus.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Ist die blaue Lampe aus?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Welche Lampe leuchtet?",
+            "criteria": {
+              "z": "Die rote Lampe.",
+              "a": "Die blaue Lampe.",
+              "m": "Die grüne Lampe."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "true",
+          "rationale": "Ist die blaue Lampe aus? Ja."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "m",
+          "rationale": "Die grüne Lampe."
+        },
+        "progress": {
+          "type": "score",
+          "label": "2",
+          "rationale": "Genau 2 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    },
+    {
+      "id": "count-room-en",
+      "scenario_id": "count-room",
+      "language": "en",
+      "stratum": "explicit-count",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "There are exactly two required checks: identity and address. Neither is complete. The reserved room is Maple; Cedar and Birch are free.",
+        "questions": {
+          "truth": {
+            "type": "noul",
+            "instructions": "Is the identity check complete?",
+            "criteria": {
+              "true": "The proposition is true; the answer is yes.",
+              "false": "The proposition is false; the answer is no."
+            }
+          },
+          "selection": {
+            "type": "choice",
+            "instructions": "Which room is reserved?",
+            "criteria": {
+              "z": "Birch.",
+              "a": "Maple.",
+              "m": "Cedar."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "How many of the two required checks, identity and address, are complete?",
+            "criteria": [
+              "Neither required check is complete.",
+              "Exactly one required check is complete.",
+              "Both required checks are complete."
+            ]
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Is the identity check complete? No."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "Maple."
+        },
+        "progress": {
+          "type": "score",
+          "label": "0",
+          "rationale": "Exactly 0 of identity/address are complete."
+        }
+      }
+    },
+    {
+      "id": "count-room-de",
+      "scenario_id": "count-room",
+      "language": "de",
+      "stratum": "explicit-count",
+      "request": {
+        "model": "mayflowergmbh/Josev-2B",
+        "state": "Es gibt genau zwei erforderliche Prüfungen: Identität und Adresse. Keine ist abgeschlossen. Der reservierte Raum heißt Ahorn; Zeder und Birke sind frei.",
+        "questions": {
+          "selection": {
+            "type": "choice",
+            "instructions": "Welcher Raum ist reserviert?",
+            "criteria": {
+              "a": "Ahorn.",
+              "m": "Zeder.",
+              "z": "Birke."
+            }
+          },
+          "progress": {
+            "type": "score",
+            "instructions": "Wie viele der beiden erforderlichen Prüfungen, Identität und Adresse, sind abgeschlossen?",
+            "criteria": [
+              "Keine erforderliche Prüfung ist abgeschlossen.",
+              "Genau eine erforderliche Prüfung ist abgeschlossen.",
+              "Beide erforderlichen Prüfungen sind abgeschlossen."
+            ]
+          },
+          "truth": {
+            "type": "noul",
+            "instructions": "Ist die Identitätsprüfung abgeschlossen?",
+            "criteria": {
+              "true": "Die Aussage ist wahr; die Antwort lautet ja.",
+              "false": "Die Aussage ist falsch; die Antwort lautet nein."
+            }
+          }
+        }
+      },
+      "gold": {
+        "truth": {
+          "type": "noul",
+          "label": "false",
+          "rationale": "Ist die Identitätsprüfung abgeschlossen? Nein."
+        },
+        "selection": {
+          "type": "choice",
+          "label": "a",
+          "rationale": "Ahorn."
+        },
+        "progress": {
+          "type": "score",
+          "label": "0",
+          "rationale": "Genau 0 der Prüfungen Identität/Adresse sind abgeschlossen."
+        }
+      }
+    }
+  ]
+}
