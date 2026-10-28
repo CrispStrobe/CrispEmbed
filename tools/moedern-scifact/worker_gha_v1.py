@@ -1,4 +1,4 @@
-# Provider-only copy of worker_v1.py at3c3e4c8e. Inference functions unchanged.
+# Provider-only copy of worker_v1.py at1543475b8. Inference functions unchanged.
 # Only closure import and resources() admission differ; historical worker remains intact.
 """One variant per hosted CPU session, frozen original -> strict F32 -> Q4_K.
 
