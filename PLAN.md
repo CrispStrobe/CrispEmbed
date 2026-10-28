@@ -921,3 +921,20 @@ Add a reusable mounted-input admission helper for native form follow-ups: reject
 wrong/ambiguous candidates before decoding/inference and preserve the default
 URL path when no explicit retained input is supplied. Keep prior invalid rows,
 source-qualified partial scopes and all manifest/gold/prompt/cap bytes unchanged.
+
+### Retained MiniCPM analysis and form continuation registered
+
+Mini source19c3f7bdf6d452614721946adefb95f6d3cf0180 passes11 independent
+small controls and429 protected/11 owned source checks. First dispatch only
+`minicpm-graph-retained-analysis-v1.yml` with that explicitsource: retained
+vision/merger actualRef, zero model weights/forwards. Review completion before
+activating the separately registered seven-arm workflow. No23-arm recapture,
+original forward or numerical waiver. Canonical cap12GiB/reserve4GiB, atomic
+receipts and whole-file reconstruction precede adapter cleanup.
+
+Form source535c10fceac28ec04401b7f6a57a027e1be9bbc9 passes14 controls and
+25 protected/nine owned source checks. `ocr-rgb-form-v1.yml` retrieves the exact
+reviewed original form image by explicit-version service/source/member proofs,
+then decodes only that form. Carry initial19 comparisons separately; no19-image
+or original-model recapture. The native retained-input helper changes delivery
+only, never manifest, pixels, prompt, caps, scorer or inference.
