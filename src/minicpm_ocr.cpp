@@ -17,6 +17,7 @@
 #include "minicpm_ocr_tiles.h"
 #include "minicpm_ocr_vision.h"
 #include "qwen35_decoder.h"
+#include "qwen35_graph_decoder.h"
 #include "qwen35_frontend.h"
 #include "qwen35_weight_cache.h"
 
@@ -80,12 +81,14 @@ struct minicpm_ocr_context {
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::attention_config attention;
     qwen35_ocr::converted_weight_cache weights_cache;
+    qwen35_ocr::graph_decoder graph_decoder;
     minicpm_ocr_tiles::config tiles;
     int threads = 1, max_tokens = 1024;
     std::string task = kDefaultTask, text, error;
     std::vector<int> ids;
     std::vector<float> confidences;
     ~minicpm_ocr_context() {
+        graph_decoder.clear();
         weights_cache.clear();
         core_gguf::free_weights(loaded);
         if (backend) ggml_backend_free(backend);
@@ -254,9 +257,15 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     // over 64 of 256 dims (partial_rotary_factor 0.25), theta 1e7, rotate_half (NeoX) pairs.
     auto positions = equal_axes(0, int(ids.size()));
     qwen35_ocr::decoder_outputs current;
-    if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, int(ids.size()), c.threads,
-                                 nullptr, current, cache_ptr))
-        return c.fail("decoder prefill failed");
+    // Snapshot once for the entire request. Never silently fall back after a
+    // candidate failure, which would mix arithmetic within one decode.
+    const bool graph = core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH");
+    auto decode = [&](const float * input, const float * pos, int count, const qwen35_ocr::decoder_cache * previous) {
+        if (graph) return c.graph_decoder.run(c.decoder, c.attention, input, pos, count, c.threads, previous, current);
+        return qwen35_ocr::decoder_cpu(c.decoder, c.attention, input, pos, 1, count, c.threads, previous, current,
+                                       cache_ptr);
+    };
+    if (!decode(hidden.data(), positions.data(), int(ids.size()), nullptr)) return c.fail("decoder prefill failed");
     clk.stage("prefill", "tokens=" + std::to_string(ids.size()));
     if (!dump.empty()) {
         for (size_t i = 0; i < current.hidden.size(); ++i)
@@ -281,9 +290,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
         auto cache = std::move(current.cache);
         if (!qwen35_ocr::embed_cpu(c.decoder.embedding, { id }, hidden)) return c.fail("embedding failed");
         positions = equal_axes(cache.tokens, 1);
-        if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, 1, c.threads, &cache,
-                                     current, cache_ptr))
-            return c.fail("cached decoder failed");
+        if (!decode(hidden.data(), positions.data(), 1, &cache)) return c.fail("cached decoder failed");
         if (clk.on) step_ms.push_back(clk.lap()); // argmax + embed + one cached decoder step
     }
     if (clk.on) {
