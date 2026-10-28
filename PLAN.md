@@ -908,3 +908,16 @@ No model/original forward, F32 production branch or new quality budget is used.
 The standalone `wasm-q8k-cross-v1.yml` registration is source preparation only.
 Protocol SHA649eaad8e6b3d0e20f03ad43a9a6c51051bb5728b37aae3d86367fdc7b4443d1;
 15 small controls and34 protected/eight owned source checks pass independently.
+
+### Frozen form input continuation — claimed
+
+Owner `audit/ocr-form-retained-input-20261028`: preserve initial RGB source813
+and its20 visible rows/19 admitted comparisons. The live form URL again serves
+different bytes; the exact709,225-byte frozen form already survives in the
+reviewed original form output. Prepare separately scoped form-only decode using
+that retained input, exact-version service/source/member admission, and the
+unchanged production/Pillow codec policies. No19-image or original-model repeat.
+Add a reusable mounted-input admission helper for native form follow-ups: reject
+wrong/ambiguous candidates before decoding/inference and preserve the default
+URL path when no explicit retained input is supplied. Keep prior invalid rows,
+source-qualified partial scopes and all manifest/gold/prompt/cap bytes unchanged.
