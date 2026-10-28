@@ -12,6 +12,24 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 Start with the [executable next-agent handoff](docs/next-agent-handoff.md), which
 records exact sources, remaining work, acceptance checks and artifact expiry.
 
+## 28 October authorized closure and Q4_K
+
+The user requested completion of every ordered28 October lane and Q4_K for all
+five fronts: Josev, MoEdern1.5M/27M/115M, UltraBERT, Unlimited-OCR-2 and MiniCPM-OCR.
+A converted file is not qualification. Preserve original references, initial failed
+recipes and strict existing gates; use separately declared quantized profiles and
+full decoded outputs/retrieval metrics. Protect critical head/norm/embedding/vision
+weights where measured necessary. Q4_K block-incompatible widths require explicit
+storage/runtime support or an honestly recorded limitation, never a mislabeled file.
+All heavy work stays on hosted resources. Do not close this effort while required
+items remain pending; no new release/app pin until actual final consumers qualify.
+
+| Owner | Lane | Immediate acceptance gate |
+| --- | --- | --- |
+| Coordinator, `work/portfolio-closure-q4k-20261028` | CI/current-source closure, real-scan review, shared quantizer, Josev/UltraBERT/MoEdern Q4_K, larger MoEdern consumers/retrieval, WASM attribution and final integration | Reuse existing jobs, compare earliest differing stages with actual Ref and final outputs, qualify assets/consumers under the final source; update HISTORY/PERFORMANCE as each lane completes. |
+| `fix/unlimited-ocr2-trial-findings-20261028` continuation | Original added-token output/default tiling, converter correction, verified card refresh | Existing8ca9d3de hosted verification must reproduce all four original full texts and IDs; retain output alternatives and frozen references. |
+| `perf/minicpm-ocr-bench-publish-20261028` continuation | Collected benchmark, stored-type ggml decoder/prefill/KV cache, protected Q8/Q4_K | Preserve old scalar path; actual five-case original IDs/text plus earliest-stage comparisons before performance/publishing claims. |
+
 ## 28 October wrap-up — open lanes
 
 The scoped, ordered task list is in [the 28 October handoff](docs/handoff-2026-10-28.md#open-tasks-in-priority-order):
