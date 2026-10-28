@@ -17105,3 +17105,13 @@ selected-confidence difference is2.98e-7. Historical-receipt then timed out at
 retains the negative and exact report identities. A document-only3600-second
 F16 audit budget is prepared; fresh source declaration and actual full replay
 remain required. No new portfolio/runtime qualification follows.
+### Retained-input WASM F32 operators — 28 October 2026
+
+[Actual40771950208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40771950208)
+at2f864d4be passes64 own-output byte anchors and48 actualRef/independent
+comparisons at unchanged0.002/0.99999. Worst absolute error1.90735e-6;38/48
+are bit exact. [Independent receipt](tests/results/packaging/wasm-f32-operators-v1.json)
+records30 authenticated small members, compiler/source proofs and repeat controls.
+Ten small differences can contribute to later composed drift; earlier
+whole-model failures/default-off disposition remain. Next is natural-input
+Q8_K workspace cross-admission, not a repeat of12 same-input quant projections.

@@ -28,6 +28,7 @@ items remain pending; no new release/app pin until actual final consumers qualif
 | --- | --- | --- |
 | `feat/josev-q4k-qualification-20261028` (delegated coordinator subtask) | Protected Josev packed Q4_K converter and hosted replay | Pin immutable published F32 and frozen original v5; preserve critical F32 bytes and exact442 semantic shapes, run strict227-stage/four-answer F32 control before Q4 diagnostics, keep publication false pending independent task quality. No local model/build execution or dispatch from source preparation. |
 | `test/moedern-scifact-native-q4k-20261028` (delegated coordinator subtask) | Full native/F32 and padded-Q4_K SciFact replay | Authenticate reviewed original streams/rankings before payloads; all5483 IDs/three masks/expansion, strict F32 vectors and eight Ref shards, old authored/public consumers and full300-query ranking gates. No original rerun or numeric-gate waiver; pending original variants reject before models. |
+| `audit/wasm-q8k-cross-admission-20261028` | Test-only retained natural-input IQ4_XS/Q8_K workspace causal A/B | Freeze saved GELU/workspace/scales/output hashes before intervention; same-backend and browser anchors, actual Ref and independent magnitudes precede any production/F32-branch proposal. No model/original rerun or gate widening. |
 | `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
 | `audit/wasm-f32-operator-attribution-20261028` | New same-input norm/flash/GELU/residual/affine replay from retained layer3 arrays | Preserve frozen580/a06, all old failures and unchanged0.002/0.99999; actual native/browser own-input outputs must reproduce captured bytes before operator attribution. No repeated quantized-projection panel or production/default change. |
 | `audit/ocr-rgb-input-20261028` (delegated input-only audit) | Twenty frozen real-scan encoded bytes → production STB RGB versus Pillow11.3 RGB | Admit exact image bytes/SHA before either decoder; retain every page and exclusion, actual dimensions/RGB hashes/byte metrics and credits. No model, preprocessing, prompt/gold/cap change, causal claim or local image/build/package execution. |
@@ -980,3 +981,11 @@ geometry, per-channel errors and codec/compiler identities. The standalone
 `ocr-rgb-input-audit-v1.yml` registration is metadata only; no pixel difference
 establishes model-error causality or quality qualification. No original model
 is rerun. Numerical attribution follows the earliest measured input boundary.
+
+### Current portfolio execution snapshot
+
+The refreshed28 October handoff records exact source-qualified original evidence,
+active corrected jobs, partial MiniCPM disk-failure scope, successful bounded
+WASM operators and remaining whole-model/quantized/final-source gates. See
+`docs/handoff-2026-10-28.md`. This main change contains documentation only;
+candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
