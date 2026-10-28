@@ -1,6 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-Current vendor execution: [27 October wrap-up handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-27.md).
+Current vendor execution: [28 October portfolio continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md).
 Main documentation records verified branch results; experimental runtimes remain
 on their stated branches, with no new release or application pin.
 

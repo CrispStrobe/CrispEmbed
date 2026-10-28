@@ -1,10 +1,10 @@
-> Current execution: [27 October wrap-up handoff](docs/handoff-2026-10-27.md).
+> Current execution: [28 October portfolio continuation](docs/handoff-2026-10-28.md).
 > Reviewed results are in HISTORY. Experimental runtime branches and running
 > workflows are not promoted by this documentation-only main update.
 
 # CrispEmbed — Active roadmap
 
-Updated 27 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 28 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
