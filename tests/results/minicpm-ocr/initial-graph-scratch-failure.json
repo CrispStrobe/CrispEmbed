@@ -1,0 +1,36 @@
+{
+  "schema": "crispembed-minicpm-graph-initial-scratch-failure-v1",
+  "status": "rejected-before-script-payload-access",
+  "actual_source": "9109f8590f0777340c9fca62ea6728ddacc6ccad",
+  "service": {
+    "kernel_slug": "crispembed-minicpm-ocr-graph",
+    "version_label": "v1",
+    "status": "ERROR"
+  },
+  "unchanged_producer": {
+    "bytes": 209,
+    "sha256": "0270045f26d51d96dc5155de7c88c1446084edc738cfa41c757e41b43353be4a",
+    "utf8": "{\n \"schema\": \"crispembed-minicpm-graph-setup-v1\",\n \"completed\": false,\n \"source\": \"9109f8590f0777340c9fca62ea6728ddacc6ccad\",\n \"commands\": [],\n \"error\": \"[Errno 2] No such file or directory: '/kaggle/temp'\"\n}\n"
+  },
+  "unchanged_service_log": {
+    "bytes": 1593,
+    "sha256": "5873223c2f08928df09eed237e3df3705326ac543b2d1d85136907b5bb035b82",
+    "utf8": "[{\"stream_name\":\"stderr\",\"time\":0.982605778,\"data\":\"Traceback (most recent call last):\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":0.985184807,\"data\":\"  File \\\"/kaggle/src/script.py\\\", line 50, in \\u003cmodule\\u003e\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":0.985219051,\"data\":\"    assert shutil.disk_usage('/kaggle/temp').free \\u003e= 32*1024**3,'32GiB scratch required'\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":0.985223718,\"data\":\"           ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":0.985228614,\"data\":\"  File \\\"/usr/lib/python3.13/shutil.py\\\", line 1363, in disk_usage\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":0.985239019,\"data\":\"    st = os.statvfs(path)\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":0.985243451,\"data\":\"FileNotFoundError: [Errno 2] No such file or directory: '/kaggle/temp'\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":4.359350473,\"data\":\"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\\\|'\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":4.359387556,\"data\":\"  cells[i][c] = re.sub('\\\\\\\\\\\\\\\\\\\\|', '|', cell)\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":4.868020732,\"data\":\"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\\\_'\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":4.868052335,\"data\":\"  text = re.sub(r'_', '\\\\_', text) # Escape underscores in display text\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":6.801304425,\"data\":\"[NbConvertApp] Converting notebook __script__.ipynb to html\\n\"}\n,{\"stream_name\":\"stderr\",\"time\":8.217702946,\"data\":\"[NbConvertApp] Writing 303660 bytes to __results__.html\\n\"}\n]"
+  },
+  "independent_review": {
+    "first_failure": "shutil.disk_usage('/kaggle/temp') before scratch directory creation",
+    "commands_started": 0,
+    "reference_report_read": false,
+    "packages_installed": false,
+    "build_started": false,
+    "model_forward_started": false,
+    "numerical_result": false,
+    "disk_or_ram_threshold_failure_proven": false
+  },
+  "bounded_correction": {
+    "description": "Create task scratch before disk_usage and record resource observations before the unchanged32GiB disk/10GiB RAM guards",
+    "model_runtime_math_changed": false,
+    "reference_inputs_or_gates_changed": false,
+    "corrected_execution_status": "not-yet-dispatched"
+  }
+}

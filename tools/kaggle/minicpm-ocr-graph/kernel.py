@@ -45,12 +45,19 @@ def run(args,timeout=1800):
     if p.returncode:raise RuntimeError('hosted command failed: '+str(number))
 
 
+def resources(scratch='/kaggle/temp', meminfo='/proc/meminfo'):
+    # A fresh Kaggle script need not have this task scratch parent yet.
+    # Creating it is reversible and must precede disk_usage/statvfs.
+    Path(scratch).mkdir(parents=True,exist_ok=True)
+    available=int(next(line.split()[1] for line in Path(meminfo).read_text().splitlines() if line.startswith('MemAvailable:')))*1024
+    return dict(mem_available=available,disk_free=shutil.disk_usage(scratch).free,cpu_count=os.cpu_count())
+
+
 try:
     assert len(COMMIT)==40 and all(c in '0123456789abcdef' for c in COMMIT),'exact source required'
-    assert shutil.disk_usage('/kaggle/temp').free >= 32*1024**3,'32GiB scratch required'
-    available=int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:')))*1024
-    assert available >= 10*1024**3,'10GiB RAM required'
-    report['resources']=dict(mem_available=available,disk_free=shutil.disk_usage('/kaggle/temp').free,cpu_count=os.cpu_count())
+    report['resources']=resources();save()
+    assert report['resources']['disk_free'] >= 32*1024**3,'32GiB scratch required'
+    assert report['resources']['mem_available'] >= 10*1024**3,'10GiB RAM required'
     refs={str(Path(p).resolve()) for p in glob.glob('/kaggle/input/**/minicpm-ocr/reference.json',recursive=True)}
     assert len(refs)==1,'one mounted original report required'
     reference=Path(refs.pop());assert sha(reference)=='aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32'
