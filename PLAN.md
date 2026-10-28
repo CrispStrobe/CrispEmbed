@@ -896,3 +896,15 @@ active corrected jobs, partial MiniCPM disk-failure scope, successful bounded
 WASM operators and remaining whole-model/quantized/final-source gates. See
 `docs/handoff-2026-10-28.md`. This main change contains documentation only;
 candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
+
+### WASM natural-input workspace causal audit: source ready
+
+Exact source9991426b9e3296def3457340a989e841a46a6383 freezes two natural
+GELU inputs and their actual IQ4_XS/Q8_K workspaces from the retained trace.
+All18 normal/direct byte anchors must pass across native1/native2/browser
+before two consistent scale/integer hybrids execute.44 actualRef/independent
+comparisons retain numeric rejection separately from structural failure.
+No model/original forward, F32 production branch or new quality budget is used.
+The standalone `wasm-q8k-cross-v1.yml` registration is source preparation only.
+Protocol SHA649eaad8e6b3d0e20f03ad43a9a6c51051bb5728b37aae3d86367fdc7b4443d1;
+15 small controls and34 protected/eight owned source checks pass independently.
