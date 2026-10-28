@@ -926,3 +926,14 @@ The standard runner must pass the unchanged14GiB available RAM and24GiB disk
 preflight; otherwise retain an admission rejection and use another authorized
 resource. Healthy1.5M Kaggle work is not repeated by this workflow.
 Registration is metadata only and establishes no new runtime/model result.
+
+### MoEdern full retrieval: initial 1.5M build correction
+
+Original admission and root compilation passed; replay configuration failed
+before model access because the default CPU archive search used the backend
+source subdirectory instead of its actual build-target directory. The exact
+search correction is recorded in `docs/moedern-scifact-native-q4k-v1.md`.
+Next: reviewed corrected 1.5M hosted retry, separately pinned 27M GHA adapter,
+then115M; reuse every frozen original and preserve all numerical/task gates.
+The initial27M GHA submission was cancelled while queued to avoid repeating
+this known setup failure. Neither result qualifies any model.

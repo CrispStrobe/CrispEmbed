@@ -131,9 +131,9 @@
     }
   },
   "owned_sha256": {
-    "PLAN.md": "1d20c6915f5a77e7f52fb2719014bf4c02a9f569ee0752a4e5ed2059752dbab1",
-    "docs/moedern-scifact-native-q4k-v1.md": "aef3c93ac72dfddea7b11a67f9095b8d16f7f73bcf00dda6b4b43f7d70fa075f",
-    "tests/moedern-scifact/CMakeLists.txt": "20380997156698731ad260def82980510dd8b2cc63d7bd21f6fc44d0cd05b0f6",
+    "PLAN.md": "63ee8d37922cfa5644cc97f09d624fc71e6b25cd370fd6d82575e529251d1394",
+    "docs/moedern-scifact-native-q4k-v1.md": "5db4af45a2d32498bc1028190f616beb4cb6cdc2bda5bd99e3ace5ab02cc20d2",
+    "tests/moedern-scifact/CMakeLists.txt": "a8c4932d106ea23311a207224475a4073ec5a1f16f5c0813ab2c2e51a1de828f",
     "tests/moedern-scifact/diff.cpp": "44e9f4dd6fd0587a23fc93fb21e0febbcee85901c7853baa6e6ed0463254078a",
     "tests/moedern-scifact/tokenize.cpp": "4dc026f71296b53150d8df20715595bd6a631e5d00731c5ee5ecda6120f92fa1",
     "tests/results/moedern-colbert/scifact-native-27m-initial-bootstrap.json": "1cc0a5e6bf8afe2b626aa5065177da4a5b8795c9f735df5ae01ea016f263d4ee",

@@ -98,3 +98,16 @@ before any wheel installation. A fresh-process stdlib regression explicitly
 rejects framework/array/model package imports during that smoke check. Original
 bytes, runtime, math, panels and gates remain unchanged. No replacement is
 authorized until source review and a fresh capacity check.
+
+## First 1.5M native build: archive discovery correction
+
+The corrected-import worker completed source/original admission and the root
+CPU library build, then failed while configuring the replay executables.
+`find_library(GGML_CPU)` searched `ggml/src/ggml-cpu`; the pinned backend
+`a06fc0bb` creates its default CPU target from `ggml/src/CMakeLists.txt`,
+so the static archive is `ggml/src/libggml-cpu.a` in this build profile.
+The correction searches that exact root-build directory with `NO_DEFAULT_PATH`
+and `REQUIRED` retained. No alternate system library or inference change is
+permitted. The initial configure failure remains an execution negative; no
+model forward or numerical/retrieval result was produced. Retry this corrected
+source only after review and fresh hosted capacity admission.
