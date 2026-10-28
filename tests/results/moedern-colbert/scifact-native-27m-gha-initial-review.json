@@ -1,0 +1,98 @@
+{
+  "schema": "crispembed-moedern-scifact-gha-receipt-assembly-rejection-v1",
+  "service": {
+    "run": 40777203075,
+    "source": "82b687ae5c3a5d23ab5da765181c39cf0934696e",
+    "checkout_source": "3f82073eea0ec7f14512e7d57ace161eb688c7a9",
+    "workflow": ".github/workflows/moedern-scifact-gha-adapter-v1.yml",
+    "job": 123129471651,
+    "attempt": 1,
+    "conclusion": "failure"
+  },
+  "artifacts": {
+    "review": {
+      "id": 12855824553,
+      "bytes": 449072,
+      "sha256": "e3ecbfaf93280005c36503aed41af2feeba2c863b5738ac88f931311c4e233da",
+      "downloaded_for_review": true
+    },
+    "raw": {
+      "id": 12857356379,
+      "bytes": 11003984,
+      "sha256": "e6ab60178f1fc60d8f79bb67edde8d8a48788e9364f64980ef8c1cb09dafe833",
+      "downloaded_for_review": false
+    }
+  },
+  "files": {
+    "scifact-native-27m-gha-initial-native.json": {
+      "bytes": 12316,
+      "sha256": "bb3cd253431e5e4431ec0484b68f75ab9069bcad85b60ad79449716642fdc763"
+    },
+    "scifact-native-27m-gha-initial-worker.log": {
+      "bytes": 1103,
+      "sha256": "5437b68ad2882eb2a1225a03f38633b9d4c0ac52ada5c960049a2508e50ab89c"
+    }
+  },
+  "failed_phase": "authored-f32",
+  "error": "TypeError: dict() got multiple values for keyword argument 'process'",
+  "source": {
+    "path": "tools/moedern-scifact/authored_v1.py",
+    "line": 58
+  },
+  "process": {
+    "exit": 1,
+    "termination_signal": null,
+    "timed_out": false,
+    "seconds": 350.725207015,
+    "maximum_rss_kib": 580504,
+    "maximum_rss_bytes": 594436096,
+    "resource_accounting": "linux-wait4-per-child",
+    "direct_child_pid": 6122,
+    "reaped": true,
+    "log": "worker.log",
+    "sha256": "5437b68ad2882eb2a1225a03f38633b9d4c0ac52ada5c960049a2508e50ab89c"
+  },
+  "token_preflight": {
+    "completed": true,
+    "rows": 5483,
+    "mismatches": 0,
+    "first_mismatches": [],
+    "passed": true,
+    "process": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 1.7046053749999146,
+      "maximum_rss_kib": 272412,
+      "maximum_rss_bytes": 278949888,
+      "resource_accounting": "linux-wait4-per-child",
+      "direct_child_pid": 9108,
+      "reaped": true,
+      "log": "tokens.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "original_expansion_provenance": "Derived fixed32 pad positions from observed supplied mask; not a new captured original tensor.",
+    "journal_sha256": "3d452e23699eda44d6f3bae5ee635de6e1ae71e75b9c73d2ee6a004e94fb73ac"
+  },
+  "actual_ref_controls": [
+    {
+      "control": "same",
+      "exit": 0
+    },
+    {
+      "control": "badrow",
+      "exit": 1
+    }
+  ],
+  "build_configure_passed": true,
+  "compiled_q4k_controls_passed": true,
+  "all_original_raw_verified": true,
+  "authored_numeric_pass": null,
+  "full_f32_complete": false,
+  "q4_executed": false,
+  "retrieval_qualified": false,
+  "publication_qualified": false,
+  "original_rerun": false,
+  "correction_source": "93d27614caba00a1b4d7aece6c78968f5cd9bb7f",
+  "limits": "Consumer forward and actual Ref execute, then duplicate process kwargs reject receipt assembly. Authored vector/score metrics were not published in the small report; no numerical pass is inferred. All5483 token-only inputs passed before this failure. The separate accepted1.5M session at old154 is not an outcome of this run."
+}

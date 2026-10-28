@@ -73,6 +73,17 @@ class AdapterControls(unittest.TestCase):
         self.assertIsNone(value['checked_out_source'])
         self.assertFalse(value['payload_accessed']);self.assertFalse(value['model_execution'])
 
+    def test_actual27_rejection_preserves_exact_report_log_and_limits(self):
+        folder=ROOT/'tests/results/moedern-colbert';prefix='scifact-native-27m-gha-initial-'
+        r=json.loads((folder/(prefix+'review.json')).read_text())
+        self.assertEqual(r['service']['run'],40777203075);self.assertEqual(r['failed_phase'],'authored-f32')
+        self.assertIsNone(r['authored_numeric_pass']);self.assertFalse(r['q4_executed']);self.assertFalse(r['retrieval_qualified'])
+        self.assertEqual(r['token_preflight']['rows'],5483);self.assertEqual(r['token_preflight']['mismatches'],0)
+        for name,pin in r['files'].items():
+            raw=(folder/name).read_bytes();self.assertEqual(len(raw),pin['bytes']);self.assertEqual(hashlib.sha256(raw).hexdigest(),pin['sha256'])
+        self.assertEqual(r['files'][prefix+'native.json']['sha256'],'bb3cd253431e5e4431ec0484b68f75ab9069bcad85b60ad79449716642fdc763')
+        self.assertEqual(r['correction_source'],C.BASE)
+
     def test_get_status_and_every_paginated_list_use_exact_version(self):
         calls=[];pin=dict(kernel_slug='original',version_label='v1',source='a'*40,
                         submitted_script_sha256=hashlib.sha256(('worker '+'a'*40).encode()).hexdigest())
