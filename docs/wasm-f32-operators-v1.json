@@ -1,0 +1,169 @@
+{
+  "schema": "crispembed-wasm-f32-operators-v1",
+  "status": "prepared-not-dispatched",
+  "base": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "trace_run": 40424064413,
+  "trace_source": "dfd7bb4f35d3460f1ea67f6f5ce35cc408e2e6f6",
+  "trace_report_sha256": "da8767490c953a6dbf544fc3b1a22b8aabb058be3f46dd7527c5cd3ddde1782d",
+  "review": {
+    "id": 12702046203,
+    "bytes": 1031136,
+    "sha256": "4847ab1b9f2f10680e9647bc19fc462bbbea212379756fffd896bba9cd122e05"
+  },
+  "raw": {
+    "id": 12702610607,
+    "bytes": 24900090,
+    "sha256": "1444edaf1e3751ee7f0c6d5a05faef0af16f476b2c8fce4bd7785ec950e52721"
+  },
+  "model_sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2",
+  "operators": {
+    "q_bias": [
+      2,
+      "q_raw",
+      "w:attn_q.bias",
+      null,
+      "q"
+    ],
+    "k_bias": [
+      2,
+      "k_raw",
+      "w:attn_k.bias",
+      null,
+      "k"
+    ],
+    "v_bias": [
+      2,
+      "v_raw",
+      "w:attn_v.bias",
+      null,
+      "v"
+    ],
+    "flash": [
+      4,
+      "q",
+      "k",
+      "v",
+      "flash"
+    ],
+    "o_bias": [
+      2,
+      "o_raw",
+      "w:attn_output.bias",
+      null,
+      "o"
+    ],
+    "attention_residual": [
+      2,
+      "input",
+      "o",
+      null,
+      "attention_residual"
+    ],
+    "attention_norm": [
+      0,
+      "attention_residual",
+      null,
+      null,
+      "attention_norm"
+    ],
+    "attention_mul": [
+      1,
+      "attention_norm",
+      "w:attn_output_norm.weight",
+      null,
+      "attention_scaled"
+    ],
+    "attention_bias": [
+      2,
+      "attention_scaled",
+      "w:attn_output_norm.bias",
+      null,
+      "attention_output"
+    ],
+    "fc1_bias": [
+      2,
+      "fc1_raw",
+      "w:ffn_up.bias",
+      null,
+      "fc1"
+    ],
+    "gelu_erf": [
+      3,
+      "fc1",
+      null,
+      null,
+      "gelu"
+    ],
+    "fc2_bias": [
+      2,
+      "fc2_raw",
+      "w:ffn_down.bias",
+      null,
+      "fc2"
+    ],
+    "ffn_residual": [
+      2,
+      "attention_output",
+      "fc2",
+      null,
+      "ffn_residual"
+    ],
+    "ffn_norm": [
+      0,
+      "ffn_residual",
+      null,
+      null,
+      "ffn_norm"
+    ],
+    "ffn_mul": [
+      1,
+      "ffn_norm",
+      "w:layer_output_norm.weight",
+      null,
+      "ffn_scaled"
+    ],
+    "ffn_bias": [
+      2,
+      "ffn_scaled",
+      "w:layer_output_norm.bias",
+      null,
+      "output"
+    ]
+  },
+  "axes": [
+    "native",
+    "wasm0",
+    "wasm1"
+  ],
+  "own_byte_anchors": 64,
+  "cross_backend_comparisons": 48,
+  "gates": {
+    "max_absolute": 0.002,
+    "minimum_row_cosine": 0.99999
+  },
+  "qualification": false,
+  "production_candidate": false,
+  "norm_emulation_authorized": false,
+  "source_sha256": {
+    ".github/workflows/wasm-f32-operators-v1.yml": "bb5730f131e80ae32e3bcdc9d6300405458c9aca9a82d499cd9486a015ae7e49",
+    "docs/wasm-f32-operators-v1.md": "91ef0218c199115d5ad583e852db6a60a1f4fbbd6c36f4b1a36f7c9d4b2fe36a",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
+    "tests/test_wasm_f32_operators_v1.py": "cdeff82d11f3d6063bb0722e60edcd731ac00432399abc40708ebb00c412fb66",
+    "tests/wasm-f32-operators/CMakeLists.txt": "86d539caa79161b83b619c97f257ad00e97aac367c3e7572a4ee7032201d0cc3",
+    "tests/wasm-f32-operators/browser.cjs": "09c8ff6a6f00aa1acbcf4aad9d5ab2aba28b322ea72bfca5b79a281745eeffed",
+    "tests/wasm-f32-operators/diff.cpp": "33290e256167ce2decf6e91dd33918bfe8808a922a2eb9136fc1d85b389f629d",
+    "tests/wasm-f32-operators/operator.cpp": "67b628bf00bf182077c1ebac081ebcbb7fb1d805564ca614b0182d135ddc14c3",
+    "tools/ci-heavy/successor_assets.py": "e9698154b7381351b53ba9305b934ad2cefc8a993175c1077109a1ce4ab511d8",
+    "tools/ci-heavy/wasm_f32_operators_v1.py": "14d5af24a4ce0ea482d308cc039c2e78ce5b007143fd2e61903908bab1602fc7",
+    "tools/josev2b_composed_diff.py": "117cb1fc9710214e66a0b713348a9dbae9874f9ddf030edf09a9eefc3f154820",
+    "tools/josev2b_composed_panel.py": "68bc1c0612b86d1d8a22ac122c2f2cf159ecfebb10ed508055d1aed073733b18",
+    "tools/successor_asset_manifest.py": "b9d144185daf38a9e1e48ffe02c3d3703eb4a6c78428bdb1626f4a5f26d5a041",
+    "tools/successor_wasm_trace_contract.py": "19467192afd73f900185e5ed4783f95449876932603d4786ebb140333d2b246a",
+    "tools/wasm-f32-operators/adapter.py": "c74278389e09c0c802370b1d82f4646286558a70ed2254bacadeda5215f39053",
+    "tools/wasm-f32-operators/contract.py": "bb6a3fe80e5b5b93d48b605c8cbecd7e7f8de9e71bd1b2423df1a681e8c29194",
+    "tools/wasm_layer3_attribution_v1.py": "3cbd347ea731fe0a4799b3f7dcfe75450ca856b8a404c1887148b709cbef9133"
+  }
+}

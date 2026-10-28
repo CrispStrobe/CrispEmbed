@@ -1,0 +1,74 @@
+name: Frozen WASM F32 operator attribution v1
+on:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-f32-operators-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  operators:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Lightweight strict source and anchor-negative controls
+        run: python tests/test_wasm_f32_operators_v1.py -v
+      - name: Authenticate immutable retained inputs, outputs and model coefficients
+        run: python tools/ci-heavy/wasm_f32_operators_v1.py prepare --output "$RUNNER_TEMP/f32-operators"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Standalone exact-a06 GGML only, actual old compiler profiles and Ref controls
+        run: python tools/ci-heavy/wasm_f32_operators_v1.py build --output "$RUNNER_TEMP/f32-operators"
+      - name: Real F32 native1/2 operators on all three retained input axes
+        run: python tools/ci-heavy/wasm_f32_operators_v1.py native --output "$RUNNER_TEMP/f32-operators"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned browser engine
+        run: |
+          npm install --prefix "$RUNNER_TEMP/f32-browser" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/f32-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Recheck input/archive/binary identities before browser access
+        run: python tools/ci-heavy/wasm_f32_operators_v1.py verify --output "$RUNNER_TEMP/f32-operators"
+      - name: Actual cross-origin-isolated SIMD128/pthread WASM operators
+        run: NODE_PATH="$RUNNER_TEMP/f32-browser/node_modules" node tests/wasm-f32-operators/browser.cjs "$RUNNER_TEMP/f32-operators"
+      - name: Independent metrics package, no model framework
+        run: python -m pip install numpy==2.2.6
+      - name: All64 own byte anchors before48 cross-backend Ref and independent comparisons
+        run: python tools/ci-heavy/wasm_f32_operators_v1.py compare --output "$RUNNER_TEMP/f32-operators"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-f32-operators-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/f32-operators/review/
+            ${{ runner.temp }}/f32-operators/*.log
+            ${{ runner.temp }}/f32-operators/browser/report.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-f32-operators-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/f32-operators/raw/
+            ${{ runner.temp }}/f32-operators/browser/packets/
+            ${{ runner.temp }}/f32-operators/browser/module/
+            ${{ runner.temp }}/f32-operators/control.gguf
+            ${{ runner.temp }}/f32-operators/replay.gguf
+          retention-days: 90
+          if-no-files-found: warn
