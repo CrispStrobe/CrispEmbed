@@ -49,7 +49,11 @@ def guard():
     require(git('-C', 'ggml', 'rev-parse', 'HEAD') == git('rev-parse', BASE + ':ggml'), 'ggml gitlink differs')
     owned = ['tools/unlimited-ocr2-q4k', 'tests/unlimited-q4k',
              'tools/kaggle/unlimited-ocr2-q4k', 'docs/unlimited-ocr2-q4k-v1.json',
-             'docs/unlimited-ocr2-q4k-v1.md', 'tests/test_unlimited_ocr2_q4k.py']
+             'docs/unlimited-ocr2-q4k-v1.md', 'tests/test_unlimited_ocr2_q4k.py',
+             'tools/unlimited-ocr2/replay_real_decode.py', 'tools/unlimited-ocr2/gen_text_fixture.py',
+             'tests/unlimited-real-decode/probe.cpp', 'tests/test_unlimited_real_decode.py',
+             'tools/kaggle/ocr-real-scans/receipt.py', 'docs/ocr-real-scans-v1.json',
+             'tests/results/ocr-real-scans', 'tests/results/unlimited-ocr2/publication.json']
     require(not git('diff', '--name-only', 'HEAD', '--', *owned), 'Dirty audit files')
     require(not git('ls-files', '--others', '--exclude-standard', '--', *owned), 'Untracked audit source')
     files = [line.split('\t', 1)[1] for line in expected.splitlines() if line.startswith('100')]

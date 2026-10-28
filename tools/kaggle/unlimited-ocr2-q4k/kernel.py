@@ -69,6 +69,7 @@ try:
     report['source_hashes'] = guard()
     references()
     run([sys.executable, 'tests/test_unlimited_ocr2_q4k.py'])
+    run([sys.executable, 'tests/test_unlimited_real_decode.py'])
     run([sys.executable, '-m', 'pip', 'install', '-q', 'uv==0.8.17'])
     run([sys.executable, '-m', 'uv', 'venv', '-q', '--python', '3.12', '--seed', '/kaggle/temp/venv'])
     py = '/kaggle/temp/venv/bin/python'
@@ -112,6 +113,12 @@ try:
     model = Path('/kaggle/temp/unlimited-f16.gguf')
     run(['curl', '--fail', '--location', '--retry', '2', F16_URL, '--output', model], 2400)
     assert model.stat().st_size == F16_BYTES and sha(model) == F16_SHA, 'published F16 SHA/extent differs'
+    # Actual production text decoder on retained real-scan IDs. It reuses the
+    # already authenticated F16 metadata; no model/reference forward is added.
+    run([py, 'tools/unlimited-ocr2/replay_real_decode.py', '--model', model,
+         '--out', OUT / 'real-decoder'], 300)
+    report['real_decoder_sha256'] = sha(OUT / 'real-decoder/review.json')
+    save()
     # Numeric failure is retained as a completed negative panel, not a setup error.
     remaining = int(11.2 * 3600 - (time.monotonic() - START))
     assert remaining >= 120, 'overall deadline reached before any forward'

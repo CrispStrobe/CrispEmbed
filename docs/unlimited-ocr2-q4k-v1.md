@@ -102,3 +102,20 @@ scratch; builds use two workers and the panel four CPU threads. The overall
 11.2-hour deadline includes builds/conversions. Large raw results stay remote;
 fetch only the needed small JSON/Markdown/log reports. There has been no actual
 execution of this new protocol yet.
+
+### Separate retained real-scan decoder control
+
+The hosted worker also runs the [production text-decoder replay](../tools/unlimited-ocr2/replay_real_decode.py)
+on the twenty frozen original and twenty initial native real-scan ID streams.
+It uses the already authenticated published F16 file's 128,000 base pieces,
+checks every piece against the pinned original tokenizer, and tests every
+original831 added token through the actual runtime fallback. All twenty original
+raw strings must match their frozen bytes; C++ clean rendering must also match
+its independent Python implementation on all forty streams.
+
+One failed encoded-image proof remains ineligible and visible. All eleven
+eligible pairs with identical IDs must now have identical corrected raw text;
+the other eight retain their raw/clean comparisons and pending model attribution.
+This adds no model/original forward and cannot claim repaired whole-model
+real-scan parity. It runs before the separately scoped four-page quantized model
+panel and does not change its inputs, recipes, numerical or decoded gates.

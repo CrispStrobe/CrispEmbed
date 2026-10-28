@@ -58,5 +58,13 @@
   "production_hooks": false,
   "original_rerun": false,
   "publication_authorized": false,
-  "default_promotion": false
+  "default_promotion": false,
+  "retained_decoder_control": {
+    "original_cases": 20,
+    "initial_native_cases": 20,
+    "eligible_image_pairs": 19,
+    "matching_id_raw_pairs_required": 11,
+    "new_model_forwards": 0,
+    "full_model_real_scan_qualification": false
+  }
 }
