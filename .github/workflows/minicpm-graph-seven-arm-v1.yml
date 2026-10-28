@@ -1,0 +1,86 @@
+name: MiniCPM frozen-v3 continue source-bound audit
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Reviewed exact forty-hex retained-v3 caller source'
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: MiniCPM-minicpm-graph-seven-arm-v1
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      SOURCE_REF: ${{ inputs.source_ref }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      PIP_CONFIG_FILE: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source and independent working/scratch quota admission before payloads
+        run: |
+          python tools/minicpm-retained-v3/common.py continue --reviewed-source "$SOURCE_REF" --out "$RUNNER_TEMP/mini-out" --scratch "$RUNNER_TEMP/mini-stage"
+          python tests/test_minicpm_retained_v3.py -v
+      - name: Hosted numerical and exact-version fetch tooling; no original framework
+        run: |
+          python -m venv "$RUNNER_TEMP/mini-tools"
+          echo "$RUNNER_TEMP/mini-tools/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/mini-tools/bin/python" -m pip install --index-url https://pypi.org/simple numpy==2.2.6 gguf==0.17.1 kaggle==2.2.2
+      - name: Model-free actual Ref root/standalone target/profile
+        run: python tools/minicpm-retained-v3/build.py continue --reviewed-source "$SOURCE_REF" --build "$RUNNER_TEMP/mini-build" --stage "$RUNNER_TEMP/mini-stage" --out "$RUNNER_TEMP/mini-out"
+      - name: Authenticate exact retained failure and original success before any arrays
+        run: python tools/minicpm-retained-v3/fetch.py continue --reviewed-source "$SOURCE_REF" --stage "$RUNNER_TEMP/mini-stage" --out "$RUNNER_TEMP/mini-out"
+      - name: Only seven missing arms; preserve old23 negatives
+        run: |
+          python tools/minicpm-retained-v3/build.py models --reviewed-source "$SOURCE_REF" --build "$RUNNER_TEMP/mini-build" --stage "$RUNNER_TEMP/mini-stage" --out "$RUNNER_TEMP/mini-out"
+          python tools/minicpm-retained-v3/launch.py --timeout 14400 --receipt "$RUNNER_TEMP/mini-out/continuation-process.json" -- python tools/minicpm-retained-v3/continue.py --reviewed-source "$SOURCE_REF" --build-receipt "$RUNNER_TEMP/mini-out/build-continue.json" --retained "$RUNNER_TEMP/mini-stage/retained" --reference "$RUNNER_TEMP/mini-stage/original" --scratch "$RUNNER_TEMP/mini-work" --out "$RUNNER_TEMP/mini-out/continuation" --cli "$RUNNER_TEMP/mini-build/root/crispembed" --probe "$RUNNER_TEMP/mini-build/probe/minicpm-graph-probe" --diff "$RUNNER_TEMP/mini-build/probe/minicpm-graph-diff" --threads 4 --model "f32=$RUNNER_TEMP/mini-build/models/f32.gguf" --model "f16=$RUNNER_TEMP/mini-build/models/f16.gguf" --model "q8_0=$RUNNER_TEMP/mini-build/models/q8_0.gguf" --model "q4_k=$RUNNER_TEMP/mini-build/models/q4_k.gguf"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minicpm-graph-seven-arm-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/mini-out/*.json
+            ${{ runner.temp }}/mini-out/*.log
+            ${{ runner.temp }}/mini-out/continuation/*.json
+            ${{ runner.temp }}/mini-out/continuation/**/*.json
+            ${{ runner.temp }}/mini-out/continuation/**/*.log
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minicpm-graph-seven-arm-v1-canonical-${{ github.run_id }}
+          path: ${{ runner.temp }}/mini-out/continuation/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minicpm-v3-continue-binaries-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/mini-build/probe/minicpm-graph-diff
+            ${{ runner.temp }}/mini-build/probe/minicpm-graph-probe
+            ${{ runner.temp }}/mini-build/probe/CMakeCache.txt
+            ${{ runner.temp }}/mini-build/probe/compile_commands.json
+            ${{ runner.temp }}/mini-build/root/crispembed
+            ${{ runner.temp }}/mini-build/root/crispembed-quantize
+            ${{ runner.temp }}/mini-build/root/CMakeCache.txt
+            ${{ runner.temp }}/mini-build/root/compile_commands.json
+            ${{ runner.temp }}/mini-build/**/*.so*
+          retention-days: 90
+          if-no-files-found: warn
