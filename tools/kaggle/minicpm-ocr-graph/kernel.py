@@ -67,13 +67,18 @@ try:
     run(['cmake','--build','/kaggle/temp/g','--parallel','2'],3600)
     run(['/kaggle/temp/g/minicpm-graph-controls'])
     run([py,'tools/minicpm-ocr/graph_panel.py','--ref-controls','/kaggle/temp/g/minicpm-graph-diff',OUT/'ref-controls'])
-    run(['cmake','-S','.','-B','/kaggle/temp/b','-DCMAKE_BUILD_TYPE=Release','-DGGML_NATIVE=OFF','-DGGML_CUDA=OFF'])
+    run(['cmake','-S','.','-B','/kaggle/temp/b','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON','-DCRISPEMBED_NATIVE=OFF','-DGGML_NATIVE=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF'])
     run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','--parallel','2'],5400)
     cli='/kaggle/temp/b/crispembed'
     symbols=subprocess.check_output(['nm','-C',cli],text=True)
     assert 'qwen35_ocr::graph_decoder::observe(' not in symbols,'production observer symbol leaked'
     assert 'qwen35_ocr::graph_decoder::observe(' in subprocess.check_output(['nm','-C','/kaggle/temp/g/minicpm-graph-probe'],text=True),'positive observer archive control'
     report['production_observer_excluded']=True;save()
+    sys.path.insert(0,str(Path.cwd()/'tools/minicpm-ocr'))
+    from build_profile import verify
+    profile=verify('/kaggle/temp/b','/kaggle/temp/g')
+    (OUT/'build-profile.json').write_text(json.dumps(profile,indent=1)+'\n')
+    report['build_profile_sha256']=sha(OUT/'build-profile.json');save()
     checkpoint=reference.parent.parent/'checkpoint'
     assert (checkpoint/'model.safetensors').is_file(),'reuse frozen mounted checkpoint, no fallback capture/download'
     os.environ['OMP_NUM_THREADS']='1';os.environ['OPENBLAS_NUM_THREADS']='1'

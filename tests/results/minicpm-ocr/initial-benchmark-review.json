@@ -1,0 +1,89 @@
+{
+  "schema": "crispembed-minicpm-initial-benchmark-review-v1",
+  "status": "reviewed-partial-run-retained",
+  "producer": {
+    "file": "tests/results/minicpm-ocr/bench-run1.json",
+    "bytes": 73795,
+    "sha256": "60bad1e9a9dc1392d2596ab81b5eff9a0cd5264e06e7022578149c94d06e3ad6",
+    "source": "d40253523c28f3203f024441aa9d18f9d408a501",
+    "service": {
+      "kernel_slug": "crispembed-minicpm-ocr-bench",
+      "version_label": "v2",
+      "retrieval": "Explicit SDK list_kernel_session_output version_label=v2, selected bench/bench.json only; frozen output member"
+    }
+  },
+  "original": {
+    "revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+    "versions": {
+      "torch": "2.13.0+cpu",
+      "transformers": "5.21.0",
+      "numpy": "2.2.6"
+    },
+    "report_sha256": "aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32",
+    "parity_receipt_sha256": "c31b93596c6b292d4f120338123695e838718219c321cf8673619ebd7d28a64c"
+  },
+  "independent_review": {
+    "unchanged_producer": true,
+    "producer_completed_field_present": false,
+    "complete_f16_arms": [
+      "f16-t4",
+      "f16-t2",
+      "f16-t4-vision-flash",
+      "f16-t4-parallel-f16",
+      "f16-t4-cache-1g"
+    ],
+    "native_f16_case_rows": 25,
+    "initial_q8_load_failure_arms": [
+      "q8_0-t4"
+    ],
+    "native_q8_load_failures": 5,
+    "original_transformers_baseline_rows": 10,
+    "external_llamacpp_baseline_rows": 10,
+    "baseline_source": {
+      "repo": "https://github.com/ggml-org/llama.cpp.git",
+      "commit": "a71c00f0bb2d60a4a52837d80baa534b651ebd91",
+      "gguf_revision": "674e62bf4ef7560ba502fe9b366a2780028aef20",
+      "ok": true,
+      "error": null
+    },
+    "cpu_model": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+    "cpu_count": 4,
+    "all_stable_case_ids_exact": true,
+    "complete_f16_producer_ids_exact_flags": true,
+    "complete_f16_producer_text_exact_and_cer_zero": true,
+    "actual_generated_id_vectors_retained_in_small_producer": false,
+    "external_llamacpp_generated_ids_compared": false
+  },
+  "timings": {
+    "native_whole_cli_f16_4threads": {
+      "line": 122.356,
+      "para-en": 510.215,
+      "table": 467.023,
+      "tall": 1782.303,
+      "tiny": 58.66
+    },
+    "original_transformers_f32_4threads": {
+      "line": 14.958,
+      "para-en": 87.883,
+      "table": 71.95,
+      "tall": 178.171,
+      "tiny": 12.391
+    },
+    "external_llamacpp_f16_4threads": {
+      "line": 23.193,
+      "para-en": 83.052,
+      "table": 79.115,
+      "tall": 164.113,
+      "tiny": 17.311
+    }
+  },
+  "limits": [
+    "Initial benchmark was partial: completed is absent; no overall run success or Q8 verdict is inferred.",
+    "Native exactness flags were recomputed by the authenticated old script from actual generated IDs, which that small producer then discarded; this review independently verifies flags and coverage, not the missing native ID vectors.",
+    "llama.cpp is an external speed/text baseline on its official OpenBMB GGUF; it does not establish identical prompt IDs, hidden arithmetic or token-ID parity.",
+    "Native and llama.cpp wall times include CLI model load; Transformers wall times exclude its separately recorded model load. No uniform end-to-end speed ratio is claimed.",
+    "Five synthetic frozen cases do not establish broad OCR quality; CER0 here is agreement with the frozen original, including its errors.",
+    "Current corrected c971 benchmark v3 is a separate running experiment; its Q8 verdict remains pending.",
+    "No runtime default, model publication, app upgrade or release qualification."
+  ]
+}

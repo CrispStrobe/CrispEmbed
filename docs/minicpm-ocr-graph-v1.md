@@ -138,3 +138,15 @@ parameters. `graph_panel.py` authenticates this **before any forward**. Its
 candidate quality decisions do not reuse a quantized-only permissive cosine.
 A rejected quantized arm stays rejected even if it is faster or decodes the
 small panel correctly. No automatic publication is implemented by this kernel.
+
+
+Both builds explicitly use the root's fixed CPU profile: GGML_LLAMAFILE=ON,
+GGML_OPENMP=OFF, GGML_NATIVE=OFF and CRISPEMBED_NATIVE=OFF. The standalone
+copies the exact root CPU ISA selection helper, including its platform guards;
+it does not invent a second ISA policy. Both actual configured caches and
+actual compiler argument rows must agree before model conversion. The guard
+checks all six shared Qwen implementation TUs for the same fixed ISA and
+contraction-off, plus the actual ggml CPU C/C++ backend definitions and ISA.
+The small `build-profile.json` retains these compiler/cache observations.
+This repairs a preparation mismatch: the submodule's LLAMAFILE and OpenMP
+defaults differ from the root's. No inference result is attributed to it.

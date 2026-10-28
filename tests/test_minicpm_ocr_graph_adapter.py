@@ -12,6 +12,7 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools/minicpm-ocr'))
 import graph_adapter as a
 import graph_panel as p
+import build_profile as profile
 
 
 class Adapter(unittest.TestCase):
@@ -45,6 +46,50 @@ class Adapter(unittest.TestCase):
         self.assertEqual(a.shape([1,248100]),(1,248100))
         self.assertEqual(a.shape([2372,1024]),(2372,1024))
         with self.assertRaisesRegex(ValueError,'element bound'):a.shape([248100,1024])
+
+
+class BuildProfile(unittest.TestCase):
+    def fixture(self, directory):
+        root,other=directory/'root',directory/'probe';root.mkdir();other.mkdir()
+        values={k:'OFF' for k in profile.CACHE_KEYS}
+        values.update(GGML_LLAMAFILE='ON',GGML_CPU_REPACK='ON',GGML_AVX='ON',GGML_AVX2='ON',GGML_FMA='ON',GGML_F16C='ON')
+        for folder,target in [(root,'crispembed'),(other,'minicpm-graph-probe')]:
+            (folder/'CMakeCache.txt').write_text(''.join(f'{k}:BOOL={v}\n' for k,v in values.items()))
+            rows=[]
+            for name in profile.QWEN:
+                rows.append(dict(file='/src/'+name,arguments=['c++','-mavx2','-mfma','-mf16c','-ffp-contract=off','-o',f'CMakeFiles/{target}.dir/{name}.o']))
+            for name in ['ggml-cpu.c','ggml-cpu.cpp']:
+                rows.append(dict(file='/ggml/'+name,arguments=['cc','-mavx2','-mfma','-mf16c','-DGGML_USE_LLAMAFILE','-DGGML_USE_CPU_REPACK','-o',f'CMakeFiles/ggml-cpu.dir/{name}.o']))
+            (folder/'compile_commands.json').write_text(json.dumps(rows))
+        return root,other
+    def test_exact_actual_flags_and_backend_profile(self):
+        with tempfile.TemporaryDirectory() as d:
+            root,other=self.fixture(Path(d));result=profile.verify(root,other)
+            self.assertTrue(result['passed']);self.assertEqual(len(result['implementation']),6);self.assertEqual(len(result['backend']),2)
+    def test_backend_cache_actual_isa_and_contraction_mismatches_reject(self):
+        for kind in ['llamafile','openmp','isa','contraction','backend-definitions']:
+            with self.subTest(kind=kind),tempfile.TemporaryDirectory() as d:
+                root,other=self.fixture(Path(d))
+                if kind in ('llamafile','openmp'):
+                    path=other/'CMakeCache.txt';s=path.read_text()
+                    s=s.replace('GGML_LLAMAFILE:BOOL=ON','GGML_LLAMAFILE:BOOL=OFF') if kind=='llamafile' else s.replace('GGML_OPENMP:BOOL=OFF','GGML_OPENMP:BOOL=ON')
+                    path.write_text(s)
+                else:
+                    path=other/'compile_commands.json';rows=json.loads(path.read_text())
+                    if kind=='isa':rows[0]['arguments'].remove('-mfma')
+                    elif kind=='contraction':rows[0]['arguments'].remove('-ffp-contract=off')
+                    else:rows[-1]['arguments'].remove('-DGGML_USE_LLAMAFILE')
+                    path.write_text(json.dumps(rows))
+                with self.assertRaises(ValueError):profile.verify(root,other)
+    def test_exact_root_helper_and_profile_before_model_conversion(self):
+        root=(ROOT/'CMakeLists.txt').read_text();standalone=(ROOT/'tests/minicpm-graph/CMakeLists.txt').read_text()
+        begin=root.index('function(crispembed_apply_arch_flags target)');end=root.index('endfunction()',begin)+len('endfunction()')
+        self.assertIn(root[begin:end],standalone)
+        self.assertIn('set(GGML_LLAMAFILE ON CACHE BOOL "" FORCE)',standalone)
+        self.assertIn('set(GGML_OPENMP OFF CACHE BOOL "" FORCE)',standalone)
+        kernel=(ROOT/'tools/kaggle/minicpm-ocr-graph/kernel.py').read_text()
+        self.assertLess(kernel.index("profile=verify("),kernel.index("checkpoint=reference.parent.parent"))
+        self.assertIn("'-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'",kernel)
 
 
 class FailureEvidence(unittest.TestCase):
