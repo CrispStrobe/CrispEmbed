@@ -1,10 +1,10 @@
-> Current execution: [28 October portfolio continuation](docs/handoff-2026-10-28.md).
+> Current execution: [27 October wrap-up handoff](docs/handoff-2026-10-27.md).
 > Reviewed results are in HISTORY. Experimental runtime branches and running
 > workflows are not promoted by this documentation-only main update.
 
 # CrispEmbed — Active roadmap
 
-Updated 28 October 2026. Completed work, measurements and dated handoffs belong in
+Updated 27 October 2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -31,7 +31,6 @@ items remain pending; no new release/app pin until actual final consumers qualif
 | `audit/wasm-q8k-cross-admission-20261028` | Test-only retained natural-input IQ4_XS/Q8_K workspace causal A/B | Freeze saved GELU/workspace/scales/output hashes before intervention; same-backend and browser anchors, actual Ref and independent magnitudes precede any production/F32-branch proposal. No model/original rerun or gate widening. |
 | `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
 | `audit/wasm-f32-operator-attribution-20261028` | New same-input norm/flash/GELU/residual/affine replay from retained layer3 arrays | Preserve frozen580/a06, all old failures and unchanged0.002/0.99999; actual native/browser own-input outputs must reproduce captured bytes before operator attribution. No repeated quantized-projection panel or production/default change. |
-| `audit/ocr-rgb-input-20261028` (delegated input-only audit) | Twenty frozen real-scan encoded bytes → production STB RGB versus Pillow11.3 RGB | Admit exact image bytes/SHA before either decoder; retain every page and exclusion, actual dimensions/RGB hashes/byte metrics and credits. No model, preprocessing, prompt/gold/cap change, causal claim or local image/build/package execution. |
 | `audit/unlimited-ocr2-mixed-q4k-20261028` | Published-F16 protected2/8/22-matrix Q4_K experiments with isolated intermediate probes | Strict four-page original F16 IDs/raw text first; actual Q4_K types and byte-identical exclusions, no fallback; original four-page gold contains IDs/text only, so paired intermediate attribution is labeled separately. |
 | `audit/josev-task-quality-v1-20261028` | New independently labeled owned20-request EN/DE typed-quality panel, original CUDA first then public F32/Q4 APIs | Freeze60 authored field labels before outputs; preserve old four-case gold/gates. F32 retains strict original numerical budgets. New Q4 task gates require all discrete decisions agree, no accuracy drop by type/language,90% overall/85% group floors, per-field public probability and ordinal drift at most0.01; strict F32 flags remain separate and visible. No GPU dispatch before label/source/resource review; no broad benchmark or publication claim. |
 | `audit/moedern-scifact-gha-adapter-20261028` | Conditional GitHub-hosted adapter for the frozen per-variant full SciFact F32/Q4 worker | Preserve corrected3c inference/gates and Kaggle admission; authenticate exact-version original report/all6 raw members before models, require genuine GHA service/source plus unchanged14GiB available RAM/24GiB disk, and fail before fetch if existing secrets or resources are unavailable. GHA activation27M only with fullv1 + authoredv3/24-array authentication; healthy1.5M Kaggle remains separate. No dispatch from source preparation. |
@@ -42,6 +41,10 @@ items remain pending; no new release/app pin until actual final consumers qualif
 | `fix/unlimited-ocr2-trial-findings-20261028` continuation | Original added-token output/default tiling, converter correction, verified card refresh | Existing8ca9d3de hosted verification must reproduce all four original full texts and IDs; retain output alternatives and frozen references. |
 | `audit/minicpm-graph-v3-continuation-20261028` | Independent retained-v3 analysis and seven-arm Mini graph continuation | Preserve23 immutable arms/all historical numerical negatives; authenticate canonical raw before actualRef vision attribution without forwards; retain reconstruction manifests before duplicate-only cleanup, enforce12GiB working-output cap/4GiB reserve and atomic receipts, then run only tall/Q4 plus tiny6 under unchanged source/math/gates. No dispatch before source review. |
 | `perf/minicpm-ocr-bench-publish-20261028` continuation | Collected benchmark, stored-type ggml decoder/prefill/KV cache, protected Q8/Q4_K | Preserve old scalar path; [Python source audit](docs/minicpm-ocr-graph-source-audit.md) is complete, but actual five-case original IDs/text, projection and earliest-stage comparisons remain pending before performance/publishing claims. |
+| Delegated MoEdern full retrieval continuation | Freeze all three original SciFact baselines, then original-bound full native/Q4 replay and all public clients | Authenticate all5,483 rows/vectors/masks remotely before models; unchanged F32 numerical gates and predeclared0.001 retrieval drops/0.99 top-one agreement; no original recapture or publication from component-only proof. |
+| Coordinator, `work/portfolio-closure-q4k-20261028` | CI/current-source closure, real-scan review, shared quantizer, Josev/UltraBERT/MoEdern Q4_K, larger MoEdern consumers/retrieval, WASM attribution and final integration | Reuse existing jobs, compare earliest differing stages with actual Ref and final outputs, qualify assets/consumers under the final source; update HISTORY/PERFORMANCE as each lane completes. |
+| `fix/unlimited-ocr2-trial-findings-20261028` continuation | Original added-token output/default tiling, converter correction, verified card refresh | Existing8ca9d3de hosted verification must reproduce all four original full texts and IDs; retain output alternatives and frozen references. |
+| `perf/minicpm-ocr-bench-publish-20261028` continuation | Collected benchmark, stored-type ggml decoder/prefill/KV cache, protected Q8/Q4_K | Preserve old scalar path; actual five-case original IDs/text plus earliest-stage comparisons before performance/publishing claims. |
 
 ## 28 October wrap-up — open lanes
 
@@ -1013,3 +1016,17 @@ Next: independently reviewed corrected native/GHA closures, then model retries
 reusing exact originals; hold the unsubmitted115M source until updated.
 
 GHA27M source preparation now binds the receipt-only93 correction. Actual40777203075 passed all5,483 token-only inputs and builds, then failed authored receipt assembly; its exact report/log are retained and no numerical qualification is inferred. Forward/Ref process identities remain separate, with source/runtime/gates otherwise frozen.
+### Frozen form input continuation — source prepared, hosted result pending
+
+Owner `audit/ocr-form-retained-input-20261028`: preserve initial RGB source813
+and its20 visible rows/19 admitted comparisons. The live form URL again serves
+different bytes; the exact709,225-byte frozen form already survives in the
+reviewed original form output. Prepare separately scoped form-only decode using
+that retained input, exact-version service/source/member admission, and the
+unchanged production/Pillow codec policies. No19-image or original-model repeat.
+Add a reusable mounted-input admission helper for native form follow-ups: reject
+wrong/ambiguous candidates before decoding/inference and preserve the default
+URL path when no explicit retained input is supplied. Keep prior invalid rows,
+source-qualified partial scopes and all manifest/gold/prompt/cap bytes unchanged.
+
+The separately versioned form protocol is prepared in [ocr-rgb-form-v1.json](docs/ocr-rgb-form-v1.json). Its14 source/stdlib controls preserve the original decoder/build/metric functions and pin the19 carried comparisons; no new decode or model outcome is claimed before hosted execution.

@@ -1,0 +1,1858 @@
+{
+  "schema": "crispembed-ocr-rgb-initial-independent-review-v1",
+  "service": {
+    "run": 40776499260,
+    "source": "813e1ec9b813ebf0dc72c8faf5841659a024fbce",
+    "status": "completed",
+    "conclusion": "failure",
+    "workflow": ".github/workflows/ocr-rgb-input-audit-v1.yml",
+    "attempt": 1
+  },
+  "small_artifact": {
+    "id": 12856911644,
+    "bytes": 89401,
+    "sha256": "4e1e44dee1f5f9a691c539cd25013837e0cb1c7572e9d6ce333c64de71ce66f5"
+  },
+  "raw_artifact": {
+    "id": 12856398348,
+    "bytes": 85773516,
+    "sha256": "a1413d1cebd2d941096ac61fa0b5330d85ff3c2f4e0002c4ccc1c4f67f41e0b8",
+    "downloaded_for_review": false
+  },
+  "original_report": {
+    "member": "rgb-input-out/review/rgb-input.json",
+    "bytes": 60934,
+    "sha256": "76a168944cf3fe51ffef03c9851e42fc047863b786505380861c13b5dbe837d3"
+  },
+  "manifest_sha256": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+  "pages_visible": 20,
+  "pages_compared": 19,
+  "rgb_exact": 5,
+  "jpeg_nonidentical": 14,
+  "rows": [
+    {
+      "id": "en-prose-constitution-13",
+      "manifest_dimensions": [
+        1600,
+        2596
+      ],
+      "expected_encoded": {
+        "bytes": 330404,
+        "sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 330404,
+        "sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1280,
+          2077
+        ],
+        "bytes": 7975680,
+        "sha256": "517e949048e7eba7e228d1e42973d6212670c5b03bf0b7a0cdc4b0ab3a77e7b3",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1280,
+        "height": 2077,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 7975680,
+        "dimensions": [
+          1280,
+          2077
+        ],
+        "sha256": "c6a1c13dd69167fcc7fc746acf5354462c2f4ee96b16ac7d43ed0cf1af5df269"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 3,
+        "mean_absolute": 0.012568708874979939,
+        "rms": 0.13742511565844784,
+        "per_channel": {
+          "R": {
+            "max_absolute": 3,
+            "mean_absolute": 0.0039314516129032254,
+            "rms": 0.06727375643776669
+          },
+          "G": {
+            "max_absolute": 2,
+            "mean_absolute": 0.00925990009629273,
+            "rms": 0.09650940242722912
+          },
+          "B": {
+            "max_absolute": 3,
+            "mean_absolute": 0.024514774915743862,
+            "rms": 0.2069230875932033
+          }
+        },
+        "first_difference": {
+          "byte_offset": 181,
+          "pixel_index": 60,
+          "x": 60,
+          "y": 0,
+          "channel": "G",
+          "pillow_pixel": [
+            249,
+            240,
+            201
+          ],
+          "stb_pixel": [
+            249,
+            239,
+            201
+          ],
+          "signed_difference": -1
+        },
+        "changed_values": 75229,
+        "changed_pixels": 48186,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "de-fraktur-grimm-319",
+      "manifest_dimensions": [
+        1600,
+        2247
+      ],
+      "expected_encoded": {
+        "bytes": 281817,
+        "sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 281817,
+        "sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1280,
+          1797
+        ],
+        "bytes": 6900480,
+        "sha256": "41264eb1a7333986be63f6a5b4acb37a3021cc5f595fe6b2e60087d09816e0e5",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1280,
+        "height": 1797,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 6900480,
+        "dimensions": [
+          1280,
+          1797
+        ],
+        "sha256": "9904715d972ffe6325d25a63ba60a74f28f319534999e6a1d0eb668ee31a6cbb"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 3,
+        "mean_absolute": 0.046973398951956964,
+        "rms": 0.23077733671476755,
+        "per_channel": {
+          "R": {
+            "max_absolute": 3,
+            "mean_absolute": 0.015656736922648858,
+            "rms": 0.1531995640574051
+          },
+          "G": {
+            "max_absolute": 2,
+            "mean_absolute": 0.11131051752921536,
+            "rms": 0.33470952697188483
+          },
+          "B": {
+            "max_absolute": 3,
+            "mean_absolute": 0.013952942404006678,
+            "rms": 0.15580103834815
+          }
+        },
+        "first_difference": {
+          "byte_offset": 120,
+          "pixel_index": 40,
+          "x": 40,
+          "y": 0,
+          "channel": "R",
+          "pillow_pixel": [
+            53,
+            60,
+            53
+          ],
+          "stb_pixel": [
+            54,
+            61,
+            54
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 302520,
+        "changed_pixels": 266903,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-table-climatic-26",
+      "manifest_dimensions": [
+        1600,
+        2559
+      ],
+      "expected_encoded": {
+        "bytes": 700043,
+        "sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 700043,
+        "sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1280,
+          2047
+        ],
+        "bytes": 7860480,
+        "sha256": "9358b7f8e80d12b6e77bdf17da208d705318795af8ff721012a8b4af1b1add70",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1280,
+        "height": 2047,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 7860480,
+        "dimensions": [
+          1280,
+          2047
+        ],
+        "sha256": "4ad931a29e3b15afde449d64213a5a2d42e0cc403b558a945af28c5454358554"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 3,
+        "mean_absolute": 0.04992557706399609,
+        "rms": 0.2636573921674737,
+        "per_channel": {
+          "R": {
+            "max_absolute": 3,
+            "mean_absolute": 0.028336437469467513,
+            "rms": 0.1998507167581944
+          },
+          "G": {
+            "max_absolute": 2,
+            "mean_absolute": 0.06101841108939912,
+            "rms": 0.24814590925781427
+          },
+          "B": {
+            "max_absolute": 3,
+            "mean_absolute": 0.06042188263312164,
+            "rms": 0.32715280842980327
+          }
+        },
+        "first_difference": {
+          "byte_offset": 1725,
+          "pixel_index": 575,
+          "x": 575,
+          "y": 0,
+          "channel": "R",
+          "pillow_pixel": [
+            220,
+            206,
+            171
+          ],
+          "stb_pixel": [
+            221,
+            205,
+            171
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 315955,
+        "changed_pixels": 218483,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "de-antiqua-kafka-schloss-211",
+      "manifest_dimensions": [
+        1600,
+        2500
+      ],
+      "expected_encoded": {
+        "bytes": 117978,
+        "sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 117978,
+        "sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1277,
+          1995
+        ],
+        "bytes": 7642845,
+        "sha256": "277e76b1580ef19e65a475d179a1ad4779d6239164fafbef5529d2ec0a54ce13",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1277,
+        "height": 1995,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 7642845,
+        "dimensions": [
+          1277,
+          1995
+        ],
+        "sha256": "bfac0ff236b3d2c04bb73d19f3d93d0fdcf4e2260070bb2a32e2c493a60e1659"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.0031405844289659154,
+        "rms": 0.056040917452928225,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.0031405844289659154,
+            "rms": 0.056040917452928225
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.0031405844289659154,
+            "rms": 0.056040917452928225
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.0031405844289659154,
+            "rms": 0.056040917452928225
+          }
+        },
+        "first_difference": {
+          "byte_offset": 797715,
+          "pixel_index": 265905,
+          "x": 289,
+          "y": 208,
+          "channel": "R",
+          "pillow_pixel": [
+            250,
+            250,
+            250
+          ],
+          "stb_pixel": [
+            251,
+            251,
+            251
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 24003,
+        "changed_pixels": 8001,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-form-economic-journal-67",
+      "manifest_dimensions": [
+        1600,
+        2487
+      ],
+      "expected_encoded": {
+        "bytes": 709225,
+        "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a"
+      },
+      "input_admitted": false,
+      "pillow_decode_attempted": false,
+      "stb_decode_attempted": false,
+      "eligible_for_decode_comparison": false,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 694795,
+        "sha256": "b09f8c1cdc37d5851649424f57125bbdad8a8140d873d584d03821d48f28fa75"
+      },
+      "error": "ValueError: encoded image identity differs; decoder forbidden",
+      "excluded_before_decode": true
+    },
+    {
+      "id": "de-degraded-freiligrath-46",
+      "manifest_dimensions": [
+        1600,
+        2262
+      ],
+      "expected_encoded": {
+        "bytes": 154017,
+        "sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 154017,
+        "sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          960,
+          1358
+        ],
+        "bytes": 3911040,
+        "sha256": "54c927cd6809be1f5df071a222ffc6b9fafc4c57428226ec06d84b0bc6c2b341",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 960,
+        "height": 1358,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 3911040,
+        "dimensions": [
+          960,
+          1358
+        ],
+        "sha256": "26dfb70577455a18402bff10fa60635cea5256115cc600c8a657b0dcc3d9eefd"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 3,
+        "mean_absolute": 0.016666922353133693,
+        "rms": 0.15782496612155975,
+        "per_channel": {
+          "R": {
+            "max_absolute": 3,
+            "mean_absolute": 0.016560812469317624,
+            "rms": 0.15983161856644315
+          },
+          "G": {
+            "max_absolute": 2,
+            "mean_absolute": 0.01406710235640648,
+            "rms": 0.11951965205066992
+          },
+          "B": {
+            "max_absolute": 3,
+            "mean_absolute": 0.019372852233676977,
+            "rms": 0.18680221164090177
+          }
+        },
+        "first_difference": {
+          "byte_offset": 678,
+          "pixel_index": 226,
+          "x": 226,
+          "y": 0,
+          "channel": "R",
+          "pillow_pixel": [
+            62,
+            57,
+            53
+          ],
+          "stb_pixel": [
+            63,
+            58,
+            54
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 49116,
+        "changed_pixels": 28248,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "receipt-cord-test-29",
+      "manifest_dimensions": [
+        864,
+        1296
+      ],
+      "expected_encoded": {
+        "bytes": 1390407,
+        "sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen CORD parquet image.bytes",
+        "parquet": {
+          "bytes": 234202795,
+          "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7"
+        },
+        "row": 29,
+        "bytes": 1390407,
+        "sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610"
+      },
+      "pillow_source": {
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "bytes": 3359232,
+        "sha256": "401f2f61617ebe180457154af07c6c87c01cef02256de734c8221a11a06b3a18",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 864,
+        "height": 1296,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 3359232,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "sha256": "401f2f61617ebe180457154af07c6c87c01cef02256de734c8221a11a06b3a18"
+      },
+      "manifest_dimensions_match": {
+        "pillow": true,
+        "stb": true
+      },
+      "metrics": {
+        "max_absolute": 0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "per_channel": {
+          "R": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "G": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "B": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          }
+        },
+        "first_difference": null,
+        "changed_values": 0,
+        "changed_pixels": 0,
+        "rgb_exact": true,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "de-2col-meyers-b13-103",
+      "manifest_dimensions": [
+        1600,
+        2550
+      ],
+      "expected_encoded": {
+        "bytes": 389497,
+        "sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 389497,
+        "sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          800,
+          1275
+        ],
+        "bytes": 3060000,
+        "sha256": "4414ebd10e96ad278674a324e5a25476620e685a79e6116c4c1ecbfbfcbe1944",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 800,
+        "height": 1275,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 3060000,
+        "dimensions": [
+          800,
+          1275
+        ],
+        "sha256": "5b3982d25951ade242a88f8d3b643f92a14f5e6d54118b9b9170d4fd96540406"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.011223529411764705,
+        "rms": 0.10594116013979035,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.011223529411764705,
+            "rms": 0.10594116013979035
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.011223529411764705,
+            "rms": 0.10594116013979035
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.011223529411764705,
+            "rms": 0.10594116013979035
+          }
+        },
+        "first_difference": {
+          "byte_offset": 58482,
+          "pixel_index": 19494,
+          "x": 294,
+          "y": 24,
+          "channel": "R",
+          "pillow_pixel": [
+            248,
+            248,
+            248
+          ],
+          "stb_pixel": [
+            249,
+            249,
+            249
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 34344,
+        "changed_pixels": 11448,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-2col-eb1911-v04-246",
+      "manifest_dimensions": [
+        1600,
+        2219
+      ],
+      "expected_encoded": {
+        "bytes": 1499108,
+        "sha256": "0a45ad3aa1b3585c70acb42f17b3c51bd3f507858936da5ece15e2ab06295ef3"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 1499108,
+        "sha256": "0a45ad3aa1b3585c70acb42f17b3c51bd3f507858936da5ece15e2ab06295ef3"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1920,
+          2662
+        ],
+        "bytes": 15333120,
+        "sha256": "98f1b98fef0344dec2de64e3f9a2eebfb466e732ab1804d74081ceb88bc56be4",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1920,
+        "height": 2662,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 15333120,
+        "dimensions": [
+          1920,
+          2662
+        ],
+        "sha256": "75047e0f48be15838b5c180ee6246b9c0b9ce649c0f4caddfcb2f2180dc5532d"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.007441538317054846,
+        "rms": 0.08626435136865544,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.007441538317054846,
+            "rms": 0.08626435136865544
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.007441538317054846,
+            "rms": 0.08626435136865544
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.007441538317054846,
+            "rms": 0.08626435136865544
+          }
+        },
+        "first_difference": {
+          "byte_offset": 463152,
+          "pixel_index": 154384,
+          "x": 784,
+          "y": 80,
+          "channel": "R",
+          "pillow_pixel": [
+            252,
+            252,
+            252
+          ],
+          "stb_pixel": [
+            253,
+            253,
+            253
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 114102,
+        "changed_pixels": 38034,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-report-amtrak-23",
+      "manifest_dimensions": [
+        1600,
+        2071
+      ],
+      "expected_encoded": {
+        "bytes": 683690,
+        "sha256": "0cdddf9600147df5ec88840dc9d8a33a2e470f27b69ae03727cfbe189ad38c13"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 683690,
+        "sha256": "0cdddf9600147df5ec88840dc9d8a33a2e470f27b69ae03727cfbe189ad38c13"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1920,
+          2484
+        ],
+        "bytes": 14307840,
+        "sha256": "e4921e5f3b40f0a4b5620e6c269c556ac81a5739b194e957dfdf7e04360f6a87",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1920,
+        "height": 2484,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 14307840,
+        "dimensions": [
+          1920,
+          2484
+        ],
+        "sha256": "8d4e89af9549942f377b00133660be2e5eea0697767ec822a62f1e0e29619f52"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.004136054079441761,
+        "rms": 0.06431216120953921,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004136054079441761,
+            "rms": 0.06431216120953921
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004136054079441761,
+            "rms": 0.06431216120953921
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004136054079441761,
+            "rms": 0.06431216120953921
+          }
+        },
+        "first_difference": {
+          "byte_offset": 557436,
+          "pixel_index": 185812,
+          "x": 1492,
+          "y": 96,
+          "channel": "R",
+          "pillow_pixel": [
+            250,
+            250,
+            250
+          ],
+          "stb_pixel": [
+            251,
+            251,
+            251
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 59178,
+        "changed_pixels": 19726,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "de-table-rgbl-1867-403",
+      "manifest_dimensions": [
+        1600,
+        2212
+      ],
+      "expected_encoded": {
+        "bytes": 870591,
+        "sha256": "ecf3f575a3589ae62e28aadd2dd5d7914e40a5c3c8e1c2287e3240918da60f42"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 870591,
+        "sha256": "ecf3f575a3589ae62e28aadd2dd5d7914e40a5c3c8e1c2287e3240918da60f42"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1920,
+          2654
+        ],
+        "bytes": 15287040,
+        "sha256": "2dd1196ae6206269408472872a186c38798465dd2dc99246165db1a3e22399d1",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1920,
+        "height": 2654,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 15287040,
+        "dimensions": [
+          1920,
+          2654
+        ],
+        "sha256": "4e15d07ff5ad164407a1adfb432f374fb6229623b61179c5d654d9de39b4987b"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.003660944172318513,
+        "rms": 0.06050573668932982,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.003660944172318513,
+            "rms": 0.06050573668932982
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.003660944172318513,
+            "rms": 0.06050573668932982
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.003660944172318513,
+            "rms": 0.06050573668932982
+          }
+        },
+        "first_difference": {
+          "byte_offset": 21,
+          "pixel_index": 7,
+          "x": 7,
+          "y": 0,
+          "channel": "R",
+          "pillow_pixel": [
+            253,
+            253,
+            253
+          ],
+          "stb_pixel": [
+            252,
+            252,
+            252
+          ],
+          "signed_difference": -1
+        },
+        "changed_values": 55965,
+        "changed_pixels": 18655,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "de-antiqua-kafka-betrachtung-94",
+      "manifest_dimensions": [
+        1600,
+        2168
+      ],
+      "expected_encoded": {
+        "bytes": 103026,
+        "sha256": "e736273f999f2c402e74dab2d07afd271b1cb3373f018b5a3c08350129a9b2c0"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 103026,
+        "sha256": "e736273f999f2c402e74dab2d07afd271b1cb3373f018b5a3c08350129a9b2c0"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          580,
+          786
+        ],
+        "bytes": 1367640,
+        "sha256": "15f762df42218f30d4ada6f7e612bfedab0b8ebd1cf6797a71091c82430a53d5",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 580,
+        "height": 786,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 1367640,
+        "dimensions": [
+          580,
+          786
+        ],
+        "sha256": "1c9a69f1c5262178508e0c66af77c8d5b96cc473cad6e8ec41f7c02f878fdd47"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.005962095288233746,
+        "rms": 0.07721460540748587,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.005962095288233746,
+            "rms": 0.07721460540748587
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.005962095288233746,
+            "rms": 0.07721460540748587
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.005962095288233746,
+            "rms": 0.07721460540748587
+          }
+        },
+        "first_difference": {
+          "byte_offset": 29388,
+          "pixel_index": 9796,
+          "x": 516,
+          "y": 16,
+          "channel": "R",
+          "pillow_pixel": [
+            252,
+            252,
+            252
+          ],
+          "stb_pixel": [
+            253,
+            253,
+            253
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 8154,
+        "changed_pixels": 2718,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "receipt-cord-test-4",
+      "manifest_dimensions": [
+        864,
+        1296
+      ],
+      "expected_encoded": {
+        "bytes": 1643699,
+        "sha256": "8f3eee7068c96e86cdb2e4b5c53085cb5e1439462edd55c373548cb1962801ad"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen CORD parquet image.bytes",
+        "parquet": {
+          "bytes": 234202795,
+          "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7"
+        },
+        "row": 4,
+        "bytes": 1643699,
+        "sha256": "8f3eee7068c96e86cdb2e4b5c53085cb5e1439462edd55c373548cb1962801ad"
+      },
+      "pillow_source": {
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "bytes": 3359232,
+        "sha256": "040a757e9074b9e380cf0c5d8284f1b24cc106d856670066d90715ebd42fdab6",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 864,
+        "height": 1296,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 3359232,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "sha256": "040a757e9074b9e380cf0c5d8284f1b24cc106d856670066d90715ebd42fdab6"
+      },
+      "manifest_dimensions_match": {
+        "pillow": true,
+        "stb": true
+      },
+      "metrics": {
+        "max_absolute": 0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "per_channel": {
+          "R": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "G": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "B": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          }
+        },
+        "first_difference": null,
+        "changed_values": 0,
+        "changed_pixels": 0,
+        "rgb_exact": true,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "receipt-cord-test-16",
+      "manifest_dimensions": [
+        864,
+        1296
+      ],
+      "expected_encoded": {
+        "bytes": 1732233,
+        "sha256": "eef326565b3945217a69afd84c893afdffd03a2f487943661c2423e6d6ec0d7d"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen CORD parquet image.bytes",
+        "parquet": {
+          "bytes": 234202795,
+          "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7"
+        },
+        "row": 16,
+        "bytes": 1732233,
+        "sha256": "eef326565b3945217a69afd84c893afdffd03a2f487943661c2423e6d6ec0d7d"
+      },
+      "pillow_source": {
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "bytes": 3359232,
+        "sha256": "eb3b53c58450ee3cfc77d3b0f487ea40d5e41e6dcb55ec524c6f6b20b1714be2",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 864,
+        "height": 1296,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 3359232,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "sha256": "eb3b53c58450ee3cfc77d3b0f487ea40d5e41e6dcb55ec524c6f6b20b1714be2"
+      },
+      "manifest_dimensions_match": {
+        "pillow": true,
+        "stb": true
+      },
+      "metrics": {
+        "max_absolute": 0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "per_channel": {
+          "R": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "G": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "B": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          }
+        },
+        "first_difference": null,
+        "changed_values": 0,
+        "changed_pixels": 0,
+        "rgb_exact": true,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "de-mixed-welzheim-188",
+      "manifest_dimensions": [
+        1600,
+        2213
+      ],
+      "expected_encoded": {
+        "bytes": 367928,
+        "sha256": "8ef162bd88af7389353e9d9ba96a01f66454ea5145e63cb491e3b3e46f31477f"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 367928,
+        "sha256": "8ef162bd88af7389353e9d9ba96a01f66454ea5145e63cb491e3b3e46f31477f"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1805,
+          2496
+        ],
+        "bytes": 13515840,
+        "sha256": "7eead109137e8088736a070fb501546ec2b82777c3f1e7e80176d17f6d5ee9fa",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1805,
+        "height": 2496,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 13515840,
+        "dimensions": [
+          1805,
+          2496
+        ],
+        "sha256": "6614b8daaa0e5426ff87393540d181901cd10e3d9bc8df544f8f22772009f55e"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.0038576958590809006,
+        "rms": 0.06211035226981812,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.0038576958590809006,
+            "rms": 0.06211035226981812
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.0038576958590809006,
+            "rms": 0.06211035226981812
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.0038576958590809006,
+            "rms": 0.06211035226981812
+          }
+        },
+        "first_difference": {
+          "byte_offset": 23778,
+          "pixel_index": 7926,
+          "x": 706,
+          "y": 4,
+          "channel": "R",
+          "pillow_pixel": [
+            5,
+            5,
+            5
+          ],
+          "stb_pixel": [
+            4,
+            4,
+            4
+          ],
+          "signed_difference": -1
+        },
+        "changed_values": 52140,
+        "changed_pixels": 17380,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-old-statutes-v1-772",
+      "manifest_dimensions": [
+        1600,
+        2637
+      ],
+      "expected_encoded": {
+        "bytes": 552901,
+        "sha256": "163231969e7ac786adbe01f4c98703007061b30ce047c47957833b987b026796"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 552901,
+        "sha256": "163231969e7ac786adbe01f4c98703007061b30ce047c47957833b987b026796"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1280,
+          2110
+        ],
+        "bytes": 8102400,
+        "sha256": "ba41a81a573a57dc3db126d80ff7c5842c8f01f3cb02d05edf26fc8ce396e9ed",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1280,
+        "height": 2110,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 8102400,
+        "dimensions": [
+          1280,
+          2110
+        ],
+        "sha256": "6bc75e9d90ca8b62f6c8ed0817209ee1fbd0cba006276133eaf825360b9cf341"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.004743409360189573,
+        "rms": 0.06887241363702577,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004743409360189573,
+            "rms": 0.06887241363702577
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004743409360189573,
+            "rms": 0.06887241363702577
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004743409360189573,
+            "rms": 0.06887241363702577
+          }
+        },
+        "first_difference": {
+          "byte_offset": 493341,
+          "pixel_index": 164447,
+          "x": 607,
+          "y": 128,
+          "channel": "R",
+          "pillow_pixel": [
+            247,
+            247,
+            247
+          ],
+          "stb_pixel": [
+            248,
+            248,
+            248
+          ],
+          "signed_difference": 1
+        },
+        "changed_values": 38433,
+        "changed_pixels": 12811,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-prose-constitution-81",
+      "manifest_dimensions": [
+        1600,
+        2596
+      ],
+      "expected_encoded": {
+        "bytes": 351691,
+        "sha256": "56a70bc88b80113340f92598329a816a46f584a627cc9e1343c9858de09e9a6d"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 351691,
+        "sha256": "56a70bc88b80113340f92598329a816a46f584a627cc9e1343c9858de09e9a6d"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1280,
+          2077
+        ],
+        "bytes": 7975680,
+        "sha256": "e6fd44077d8c21f24269c41b482408adcbea0d9d732a1801add7e60b769b6f6d",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1280,
+        "height": 2077,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 7975680,
+        "dimensions": [
+          1280,
+          2077
+        ],
+        "sha256": "a5f0ae933799f1e406eb458daa4196743f45402bebca4a5542cef35a8860616b"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 3,
+        "mean_absolute": 0.014464346613705666,
+        "rms": 0.14643449698824704,
+        "per_channel": {
+          "R": {
+            "max_absolute": 3,
+            "mean_absolute": 0.00545182354357246,
+            "rms": 0.08371112805954442
+          },
+          "G": {
+            "max_absolute": 2,
+            "mean_absolute": 0.012303276961964371,
+            "rms": 0.1114073888173519
+          },
+          "B": {
+            "max_absolute": 3,
+            "mean_absolute": 0.025637939335580163,
+            "rms": 0.2119198586270308
+          }
+        },
+        "first_difference": {
+          "byte_offset": 96141,
+          "pixel_index": 32047,
+          "x": 47,
+          "y": 25,
+          "channel": "R",
+          "pillow_pixel": [
+            252,
+            233,
+            193
+          ],
+          "stb_pixel": [
+            254,
+            232,
+            193
+          ],
+          "signed_difference": 2
+        },
+        "changed_values": 87718,
+        "changed_pixels": 56861,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "en-2col-eb1911-v25-5",
+      "manifest_dimensions": [
+        1600,
+        1733
+      ],
+      "expected_encoded": {
+        "bytes": 654435,
+        "sha256": "de1bf2bbd75acc6f9b452c8968b9333012ec28e64400ac0656efeb471dc0c9ac"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen public image URL",
+        "bytes": 654435,
+        "sha256": "de1bf2bbd75acc6f9b452c8968b9333012ec28e64400ac0656efeb471dc0c9ac"
+      },
+      "pillow_source": {
+        "format": "JPEG",
+        "mode": "L"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1920,
+          2079
+        ],
+        "bytes": 11975040,
+        "sha256": "6eb14b798e3fbd4c66bde3ffa93a24dd0e6bf637b71b3c2c0e71960e352ce629",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1920,
+        "height": 2079,
+        "file_channels": 1,
+        "channels": 3,
+        "bytes": 11975040,
+        "dimensions": [
+          1920,
+          2079
+        ],
+        "sha256": "48f3263b0bac5d4dca5a52b797f0f869a2a897784f836495ae504fc6249a8464"
+      },
+      "manifest_dimensions_match": {
+        "pillow": false,
+        "stb": false
+      },
+      "metrics": {
+        "max_absolute": 1,
+        "mean_absolute": 0.004163159371492705,
+        "rms": 0.0645225493257412,
+        "per_channel": {
+          "R": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004163159371492705,
+            "rms": 0.0645225493257412
+          },
+          "G": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004163159371492705,
+            "rms": 0.0645225493257412
+          },
+          "B": {
+            "max_absolute": 1,
+            "mean_absolute": 0.004163159371492705,
+            "rms": 0.0645225493257412
+          }
+        },
+        "first_difference": {
+          "byte_offset": 588,
+          "pixel_index": 196,
+          "x": 196,
+          "y": 0,
+          "channel": "R",
+          "pillow_pixel": [
+            253,
+            253,
+            253
+          ],
+          "stb_pixel": [
+            252,
+            252,
+            252
+          ],
+          "signed_difference": -1
+        },
+        "changed_values": 49854,
+        "changed_pixels": 16618,
+        "rgb_exact": false,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "receipt-cord-test-20",
+      "manifest_dimensions": [
+        864,
+        1296
+      ],
+      "expected_encoded": {
+        "bytes": 1638174,
+        "sha256": "6213439292eb4c2ad7e04afab6bb5bc7d1d5925d18dc392c36f233d394ca7c19"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen CORD parquet image.bytes",
+        "parquet": {
+          "bytes": 234202795,
+          "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7"
+        },
+        "row": 20,
+        "bytes": 1638174,
+        "sha256": "6213439292eb4c2ad7e04afab6bb5bc7d1d5925d18dc392c36f233d394ca7c19"
+      },
+      "pillow_source": {
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "bytes": 3359232,
+        "sha256": "05a7797e54a37d7b178f1be8dd1bd084d973cfef88fa0a8cc1e9f72274127514",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 864,
+        "height": 1296,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 3359232,
+        "dimensions": [
+          864,
+          1296
+        ],
+        "sha256": "05a7797e54a37d7b178f1be8dd1bd084d973cfef88fa0a8cc1e9f72274127514"
+      },
+      "manifest_dimensions_match": {
+        "pillow": true,
+        "stb": true
+      },
+      "metrics": {
+        "max_absolute": 0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "per_channel": {
+          "R": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "G": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "B": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          }
+        },
+        "first_difference": null,
+        "changed_values": 0,
+        "changed_pixels": 0,
+        "rgb_exact": true,
+        "signed_difference": "STB minus Pillow"
+      }
+    },
+    {
+      "id": "receipt-cord-test-14",
+      "manifest_dimensions": [
+        1836,
+        3264
+      ],
+      "expected_encoded": {
+        "bytes": 3670113,
+        "sha256": "9dcf1f9f86c909b762767cb07d1cc0db30773d556154ce42e0210f65270ee39d"
+      },
+      "input_admitted": true,
+      "pillow_decode_attempted": true,
+      "stb_decode_attempted": true,
+      "eligible_for_decode_comparison": true,
+      "encoded": {
+        "provider": "frozen CORD parquet image.bytes",
+        "parquet": {
+          "bytes": 234202795,
+          "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7"
+        },
+        "row": 14,
+        "bytes": 3670113,
+        "sha256": "9dcf1f9f86c909b762767cb07d1cc0db30773d556154ce42e0210f65270ee39d"
+      },
+      "pillow_source": {
+        "format": "PNG",
+        "mode": "RGB"
+      },
+      "pillow": {
+        "completed": true,
+        "dimensions": [
+          1836,
+          3264
+        ],
+        "bytes": 17978112,
+        "sha256": "4ef340a4c23ceed5c3c16aec777e3de805554f754b29ab58fd146d003389ffff",
+        "channels": 3
+      },
+      "stb": {
+        "completed": true,
+        "width": 1836,
+        "height": 3264,
+        "file_channels": 3,
+        "channels": 3,
+        "bytes": 17978112,
+        "dimensions": [
+          1836,
+          3264
+        ],
+        "sha256": "4ef340a4c23ceed5c3c16aec777e3de805554f754b29ab58fd146d003389ffff"
+      },
+      "manifest_dimensions_match": {
+        "pillow": true,
+        "stb": true
+      },
+      "metrics": {
+        "max_absolute": 0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "per_channel": {
+          "R": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "G": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          },
+          "B": {
+            "max_absolute": 0,
+            "mean_absolute": 0.0,
+            "rms": 0.0
+          }
+        },
+        "first_difference": null,
+        "changed_values": 0,
+        "changed_pixels": 0,
+        "rgb_exact": true,
+        "signed_difference": "STB minus Pillow"
+      }
+    }
+  ],
+  "codec": {
+    "pillow": "11.3.0",
+    "jpeg": "6.2",
+    "libjpeg_turbo": "3.1.1",
+    "zlib": "1.3",
+    "policy": "Image.open(path).convert('RGB'); no EXIF transpose, ICC transform, resize or normalization",
+    "historical_binary_identity": "Pillow11.3 version matches reference setup; historical wheel/libjpeg build was not pinned, so binary identity is not asserted.",
+    "imaging_extension_sha256": "227d6ee05532c6461b5d6de055b8feeeaae2716a805bf83ea5ca1e1cec1cc3a7"
+  },
+  "source_files_verified": 24,
+  "source_sha256": {
+    ".github/workflows/ocr-rgb-input-audit-v1.yml": "534dcd6c652ac55db47b077e8861ab897813465539eeeed064e2d913be2ca7de",
+    ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",
+    "CMakeLists.txt": "15c9e7b3c9e7b0871c0f731a3b1957f92dd5c11350d915aab8ab35eba02dd296",
+    "docs/ocr-real-scans-v1.json": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+    "docs/ocr-rgb-input-v1.md": "73f8ea4be417539eeb6af748982ed78aea98e740c56db086f38dba10f59cb600",
+    "docs/unlimited-ocr2-source.json": "73b311d5e834a789190e0c5426a2f4431f028cdf8650b9debde0cf8705a0ae59",
+    "examples/cli/main.cpp": "6d4e9ab857f038651e1355cb8c6aa507f4e33f8664ffe1e6cf95c20b251484d4",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/image_preprocess.cpp": "ee570badb7c3fff550dcc113a3efb4aeb8555acf297ffad80c072aaa8fa1ee38",
+    "src/image_preprocess.h": "2739104748629e824b0dcbdf1fc60eb7d185e7d2b7153f61ae8a7832e3382e61",
+    "src/minicpm_ocr.cpp": "ae0f08f314e245edbf1186a2443b657d59a385ee26a254fe3b4c6622e13067b6",
+    "src/scan_cleanup.h": "f783fa4ad588c1f84495d64ec6336922827b47ab2cc6814ab3c3bac2e9422a1d",
+    "src/unlimited_ocr.cpp": "57df29c381a9438667c9dae87b61ece42e5c4be29001966db6608de7434cdac5",
+    "tests/ocr-rgb-input/CMakeLists.txt": "0adb5b7eaf1bb15be3e20f21c1cd711db29359fabc068161aa5fd01df1a438be",
+    "tests/ocr-rgb-input/probe.cpp": "2f45e5a050e3d5ef19bd9d49c2dcd317f6fa7bc90433339a40cdf156b8070e32",
+    "tests/test_ocr_rgb_input.py": "954d44674999b2abbccf016b1cd25cda70fb8e60d2041183ef1ecec86ed5990a",
+    "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
+    "tools/kaggle/ocr-real-scans/kernel.py": "69490dd1ff7b0c35b3dd08a34096d2e426e0c1b84ce89bcf6799730aa27e582f",
+    "tools/kaggle/ocr-real-scans/ref_worker.py": "dc6bdf811ab03935dcacbea7a5bb817574760cdfc4ddc5953a6ab6331225f390",
+    "tools/ocr-rgb-input/audit.py": "8ce37ab914e6672c5ca4cf378329d3463d1c75f3494f77d1db80aa5b4b59acd7",
+    "tools/ocr-rgb-input/contract.py": "c10f63467b0dbdf69c6357234fc64e80e3d0b3a631896b6379f1e9edc2bd456c",
+    "tools/ocr-rgb-input/metrics.py": "32ef47d4b351406f9be1b81e0f120bb75b7d44eee67dfef8745b09289c767510",
+    "tools/ocr-rgb-input/requirements.lock": "03af756700d200aca6023e38dc86393b15fb19726bd50d76be46b6924e9d79a4"
+  },
+  "production_prefix_sha256": "55c7878f690fe51fb544bddd76110c90cdb8ea49f8fa8593ff7813ce208d47e7",
+  "production_macro_states_equal": true,
+  "baseline_flags": [
+    "-O3",
+    "-DNDEBUG",
+    "-fPIC",
+    "-mavx2",
+    "-mfma",
+    "-mf16c",
+    "-std=gnu++17"
+  ],
+  "metric_formula_consistency_checked": true,
+  "raw_metric_recompute_for_independent_review": false,
+  "compiler_record_semantics_checked": true,
+  "compiler_original_byte_identity_rechecked": false,
+  "model_execution": false,
+  "cause_established": false,
+  "model_qualified": false,
+  "limits": "One input identity rejected before both decoders;19paired RGB results are valid observations from813. FivePNG receipts exact;14JPEGs differ by at most3 channel values. No model cause inference. Original compilecommands was hashed before JSON reserialization in smallartifact, so independent review checked parsed records/flags/macros rather than its unretained original formatting.",
+  "credits_manifest": "docs/ocr-real-scans-v1.json",
+  "credits_sha256": "cf6abc348b052566361283cbd87568a523f77a9c9c2251aa667d0ca101bb05e8"
+}

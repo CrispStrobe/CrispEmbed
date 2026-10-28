@@ -54,13 +54,18 @@ def fetch(url):
     raise err
 os.makedirs(TMP + '/img', exist_ok=True)
 from receipt import admit_image
+sys.path.insert(0,'tools/ocr-real-scans')
+from retained_inputs import mounted_image
 parquets = {}
 pages = []
 os.makedirs(OUT + '/input-images', exist_ok=True)
 for p in selected_pages:
     im = p['image']; rec = dict(id=p['id'], expected_sha256=im['sha256'])
     try:
-        if 'hf_parquet' in im:
+        retained=mounted_image(p,os.environ.get('CRISPEMBED_RETAINED_IMAGE_ROOT','/kaggle/input'))
+        if retained is not None:
+            data,rec['retained_input']=retained
+        elif 'hf_parquet' in im:
             hp = im['hf_parquet']
             if hp['url'] not in parquets:
                 path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url']))
