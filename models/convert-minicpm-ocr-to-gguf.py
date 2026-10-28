@@ -20,6 +20,7 @@ import hashlib
 import importlib.util
 import json
 import re
+import struct
 from pathlib import Path
 
 ARCH = "minicpm_ocr"
@@ -137,10 +138,40 @@ def target_type(name, src_name, ndim, dtype):
     return "f16"
 
 
+
+class SafetensorsReader:
+    """Torch-free safetensors reader; BF16/F16 widen exactly to float32 (same values as torch .float())."""
+
+    def __init__(self, fh):
+        n = struct.unpack("<Q", fh.read(8))[0]
+        self.header = {k: v for k, v in json.loads(fh.read(n)).items() if k != "__metadata__"}
+        self.base, self.fh = 8 + n, fh
+
+    def keys(self):
+        return self.header.keys()
+
+    def get_f32(self, name):
+        import numpy as np
+
+        info = self.header[name]
+        lo, hi = info["data_offsets"]
+        self.fh.seek(self.base + lo)
+        raw = self.fh.read(hi - lo)
+        dt = info["dtype"]
+        if dt == "BF16":
+            a = (np.frombuffer(raw, dtype=np.uint16).astype(np.uint32) << 16).view(np.float32)
+        elif dt == "F16":
+            a = np.frombuffer(raw, dtype=np.float16).astype(np.float32)
+        elif dt == "F32":
+            a = np.frombuffer(raw, dtype=np.float32).copy()
+        else:
+            raise ValueError(f"unsupported safetensors dtype {dt}: {name}")
+        return a.reshape(info["shape"])
+
+
 def convert(root, output, dtype):
     import gguf
     import numpy as np
-    from safetensors import safe_open
     contract = json.loads(CONTRACT.read_text())
     cfg, pre = validate(root, contract)
     t, v = cfg["text_config"], cfg["vision_config"]
@@ -192,13 +223,13 @@ def convert(root, output, dtype):
     write_tokenizer(w, tok)
 
     records = []
-    with safe_open(root / "model.safetensors", framework="pt") as f:
+    with open(root / "model.safetensors", "rb") as fh:
+        f = SafetensorsReader(fh)
         for src in sorted(f.keys()):
-            ten = f.get_tensor(src)
-            if src in EXPECTED_SHAPES and list(ten.shape) != EXPECTED_SHAPES[src]:
-                raise ValueError(f"shape differs: {src} {list(ten.shape)}")
+            a = f.get_f32(src)
+            if src in EXPECTED_SHAPES and list(a.shape) != EXPECTED_SHAPES[src]:
+                raise ValueError(f"shape differs: {src} {list(a.shape)}")
             name = tensor_name(src)
-            a = ten.float().numpy()
             if not np.isfinite(a).all():
                 raise ValueError(f"non-finite source tensor: {src}")
             kind = target_type(name, src, a.ndim, dtype)
