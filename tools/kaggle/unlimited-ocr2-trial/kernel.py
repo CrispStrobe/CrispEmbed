@@ -93,7 +93,9 @@ for alias, fname in (('unlimited-ocr2-q8', 'unlimited-ocr-2-q8_0.gguf'), ('unlim
 
 
 def norm(s):
-    s = re.sub(r'<BLOCK>\w*\[[^\]]*\]<FORK>', '\n', s)
+    # Reference text keeps <BLOCK>label[box]<FORK>; the native CLI drops the special tokens
+    # but prints `label[x0, y0, x1, y1]` (optionally `title<LEVEL1>[...]`) inline. Strip both.
+    s = re.sub(r'(?:<BLOCK>)?[a-z_]*(?:<LEVEL\d>)?\[\d+, \d+, \d+, \d+\](?:<FORK>)?', '\n', s)
     s = re.sub(r'<[^>]{1,40}>', ' ', s)                   # layout / html tags
     s = s.replace('|', ' ').replace('&amp;', '&').replace('&quot;', '"')
     return ' '.join(s.split())
