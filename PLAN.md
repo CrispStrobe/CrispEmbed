@@ -877,3 +877,13 @@ The standard runner must pass the unchanged14GiB available RAM and24GiB disk
 preflight; otherwise retain an admission rejection and use another authorized
 resource. Healthy1.5M Kaggle work is not repeated by this workflow.
 Registration is metadata only and establishes no new runtime/model result.
+
+### Frozen real-scan encoded-image audit
+
+A model-free hosted audit at source813e1ec9b813ebf0dc72c8faf5841659a024fbce
+authenticates all20 unchanged encoded inputs before comparing the exact production
+STB prefix with the original Pillow RGB decode policy. It retains pixel hashes,
+geometry, per-channel errors and codec/compiler identities. The standalone
+`ocr-rgb-input-audit-v1.yml` registration is metadata only; no pixel difference
+establishes model-error causality or quality qualification. No original model
+is rerun. Numerical attribution follows the earliest measured input boundary.
