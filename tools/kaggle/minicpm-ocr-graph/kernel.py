@@ -75,7 +75,13 @@ try:
     run(['/kaggle/temp/g/minicpm-graph-controls'])
     run([py,'tools/minicpm-ocr/graph_panel.py','--ref-controls','/kaggle/temp/g/minicpm-graph-diff',OUT/'ref-controls'])
     run(['cmake','-S','.','-B','/kaggle/temp/b','-DCMAKE_BUILD_TYPE=Release','-DCMAKE_EXPORT_COMPILE_COMMANDS=ON','-DCRISPEMBED_NATIVE=OFF','-DGGML_NATIVE=OFF','-DGGML_LLAMAFILE=ON','-DGGML_CUDA=OFF'])
-    run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','--parallel','2'],5400)
+    run(['cmake','--build','/kaggle/temp/b','--target','crispembed-cli','crispembed-quantize','test-ultrabert-profile','--parallel','2'],5400)
+    run(['/kaggle/temp/b/test-ultrabert-profile'])
+    # Model-free precision marker/load guards: same combined source, no extra
+    # kernel session or original/model payload, before any bulk conversion.
+    run(['cmake','-S','tests/josev-quant','-B','/kaggle/temp/jq','-DCMAKE_BUILD_TYPE=Release'])
+    run(['cmake','--build','/kaggle/temp/jq','--target','josev-quant-controls','--parallel','2'],1800)
+    run(['/kaggle/temp/jq/josev-quant-controls'])
     cli='/kaggle/temp/b/crispembed'
     symbols=subprocess.check_output(['nm','-C',cli],text=True)
     assert 'qwen35_ocr::graph_decoder::observe(' not in symbols,'production observer symbol leaked'

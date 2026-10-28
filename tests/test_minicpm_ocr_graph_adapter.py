@@ -93,6 +93,8 @@ class BuildProfile(unittest.TestCase):
         kernel=(ROOT/'tools/kaggle/minicpm-ocr-graph/kernel.py').read_text()
         self.assertLess(kernel.index("profile=verify("),kernel.index("checkpoint=reference.parent.parent"))
         self.assertIn("'-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'",kernel)
+        for step in ("run(['/kaggle/temp/b/test-ultrabert-profile'])", "run(['/kaggle/temp/jq/josev-quant-controls'])"):
+            self.assertLess(kernel.index(step),kernel.index('checkpoint=reference.parent.parent'))
 
 
 class FailureEvidence(unittest.TestCase):
