@@ -1,3 +1,16 @@
+## 28 October: real-data decoder and form-reference completion
+
+The [retained Unlimited decoder replay](tests/results/unlimited-ocr2/real-decoder-replay-review.json)
+passes all20 original raw strings, all40 independent cleanup comparisons and
+all831 added tokens without another original forward. All11 eligible
+ID-identical pairs have identical repaired raw strings;14 of19 have identical
+clean strings. Eight raw-ID differences still require model attribution.
+
+The targeted [MiniCPM form original](tests/results/ocr-real-scans/minicpm-form-original-review.json)
+uses the exact recovered image and unchanged prompt/cap/ground truth:627 IDs,
+EOS/no cap, CER0.0174 and word recall1.0. Other original pages were reused.
+Native and quantized form parity remain separate.
+
 ## 28 October: MiniCPM pinned Python source audit
 
 The [bounded source audit](docs/minicpm-ocr-graph-source-audit.md) checks the
