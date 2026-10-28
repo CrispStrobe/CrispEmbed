@@ -15,6 +15,15 @@ class Controls(unittest.TestCase):
         p=self.payload();self.assertEqual(len(m.parse_outputs(p,['one'],['pair'])),2)
         for bad in [p+'\n'+p,p.splitlines()[0],p.replace('"one"','"other"'),p.replace('1.0','NaN'),p.replace('1.0','1e999')]:
             with self.assertRaises(ValueError):m.parse_outputs(bad,['one'],['pair'])
+    def test_signed_zero_and_cli_borrowed_scope(self):
+        a=m.parse_outputs(self.payload(),['one'],['pair']);b=m.parse_outputs(self.payload().replace('0.0','-0'),['one'],['pair'])
+        self.assertEqual(a[0]['all_vectors'],b[0]['all_vectors'])
+        self.assertNotEqual(m.canonical_bits(a),m.canonical_bits(b))
+        # CLI has no actual all-vector stream; its borrowed field is excluded.
+        b=m.parse_outputs(self.payload(),['one'],['pair']);b[0]['all_vectors']=[99.,0.]
+        self.assertEqual(m.canonical_bits(a,include_all=False),m.canonical_bits(b,include_all=False))
+        b[0]['selected_vectors']=[-0.,1.]
+        self.assertNotEqual(m.canonical_bits(a,include_all=False),m.canonical_bits(b,include_all=False))
     def test_all_models_and_exact_dart_identity(self):
         self.assertEqual(set(m.PROFILES),{'1.5M','27M','115M'})
         self.assertEqual(m.DART_SHA,'ea864bc64df30a6b8bdf30b2e32550f7717d9a890de8f40293aeabb924fe232b')
