@@ -1068,3 +1068,45 @@ rerun is needed for this first pixel-boundary intervention. Historical original
 Pillow binary identity was not frozen, so contemporary Pillow pixel equality
 is a bounded policy test rather than proof of the old binary's bytes. A smaller
 CER is not reference parity, and a pixel delta alone is not model-error causality.
+### Josev role-based development recipes and held-out owner
+
+Source54c2b5767ae82c853d8649870abd234a2fbe7ee5 freezes A/B/C before any
+NEW20 native outputs. Protocolf6f7b694f5080e1cf59fefc84400abe93b76b92664187f7b251ed0b354075e12
+keeps all292 critical F32 tensors. A stores78 attention matrices F16 and72FFN
+Q4_K; B additionally protects24down matrices F32; C protects first20 gate/up
+matrices F16 and leaves onlylast4layers' eight gate/up Q4_K. Actual Cquantizer,
+independent IEEE F16 verification and full shape/hash/type readback are required.
+Run strict oldfour F32227-stage control before all three development candidates,
+retaining every old budget/negative and selecting no publication automatically.
+
+Owner `audit/josev-new20-native-owner-20261028` prepares a separately versioned
+held-out runner. Preserve original110 files byte-for-byte. Authenticate all1480
+original NPYs before NumPy/models; freeze exact runtime9c Gitobjects and a later
+reviewed development-selected model/service/report. Keep candidate pins closed
+until actual A/B/C review; do not run NEW20 for known-negative full150Q4 merely
+to fill coverage. New owner corrects only nonexistent build-support path to
+actual `cmake`, and predeclares14,400-second child/6hworkflow resource bounds.
+The unchanged old worker remains historical. No new gold/cap/quality tolerance,
+original-model forward, alias or publication follows from source preparation.
+
+### GGUF standard file-type metadata — claimed correctness repair
+
+Owner `audit/gguf-standard-file-type-20261028`. The current shared writer uses
+GGML's internal file-type enum in `general.file_type`; the GGUF standard assigns
+different values for Q4_K/Q5_K/Q6_K and IQ4_NL/XS. Tensor Q4_K storage code12
+is correct and remains unchanged; standard Q4_K_S header code is14.
+Implement explicit mappings for all exposed CLI methods, retain explicit legacy
+header output only for reproduction, and admit canonical14 alongside legacy12
+only within the existing strict gated Q4 profiles. No inference arithmetic,
+weights, internal GGML enum, historical producer or default model changes.
+
+Before publication, authenticate a selected legacy model and create a fresh
+canonical copy with only the verified four-byte header change. Prove identical
+size/offsets/prefix/suffix/tensor payloads and exact old/canonical decoded/stage
+continuity on the explicitly reviewed metadata-aware runtime. Retain both whole
+SHAs and source/report lineage; never relabel an existing public immutable file.
+NEW20 activation keeps runtime/canonical model/repack proof pins closed until
+this bridge and development selection are reviewed. Actual runtime release
+versioning remains a final integration task; app0.17.12 stays pinned.
+
+[Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
