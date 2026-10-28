@@ -2,7 +2,7 @@
   "schema": "crispembed-successor-assets-v2",
   "protocol_version": 2,
   "supersedes_nothing": "v1 successor-asset files, guards and receipts stay unchanged and authoritative for their runs",
-  "final_base": "0fb4939054c88bd276a1ef65d2c0afc3825a40b7",
+  "final_base": "7bfa060df57f29692c972b84acf7b73abeaa80e7",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "final_declaration": "docs/ovisocr2-final-integrated-v2.json",
   "final_source_validation": {

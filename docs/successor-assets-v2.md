@@ -11,7 +11,7 @@ stays unchanged; v2 pins their Git blob identities and rejects any change.
 
 ## Pins and status
 
-- Final base `0fb4939054c88bd276a1ef65d2c0afc3825a40b7`, ggml
+- Final base `7bfa060df57f29692c972b84acf7b73abeaa80e7`, ggml
   `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`, both required to equal
   `docs/ovisocr2-final-integrated-v2.json`.
 - The final-integrated-v2 validation run is **pending**. v2 producers may run,
@@ -33,7 +33,7 @@ would require editing v1 files. The v2 workflow is standalone and can be
 dispatched only after it is merged to `main`:
 
 ```
-gh workflow run successor-assets-v2.yml --ref <branch whose runtime closure equals 0fb4939054c88bd276a1ef65d2c0afc3825a40b7>
+gh workflow run successor-assets-v2.yml --ref <branch whose runtime closure equals 7bfa060df57f29692c972b84acf7b73abeaa80e7>
 ```
 
 One dispatch runs the stdlib controls, dispatches both producers (or adopts
