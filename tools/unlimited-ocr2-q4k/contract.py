@@ -15,7 +15,7 @@ F16_URL = ('https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/'
            'e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-f16.gguf')
 SELECTED = re.compile(r'l\.blk\.(\d+)\.ffn_(gate|up)_exps\.weight')
 RECIPES = {'last1': [11], 'last4': list(range(8, 12)), 'all11': list(range(1, 12))}
-PREFIXES = ['src', 'ggml', 'CMakeLists.txt', 'cmake', 'examples/cli',
+PREFIXES = ['src', 'ggml', '.gitmodules', 'VERSION', 'CMakeLists.txt', 'cmake', 'examples/cli',
             'models/convert-unlimited-ocr-to-gguf.py', 'tools/quantize.cpp',
             'tools/minicpm-ocr/graph_adapter.py', 'tools/josev2b_composed_panel.py',
             'tools/josev2b_composed_diff.py',
