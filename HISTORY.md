@@ -16949,3 +16949,25 @@ It validates and preserves the complete lock before installation, checks isolate
 prefixes, then verifies exact installed metadata and actual loaded module versions
 before the unchanged CUDA/source barriers and original worker. This is prepared
 source only; no fourth GPU attempt is submitted by this change.
+
+### 28 October: hosted precision controls and initial real-scan receipts
+
+Model-free [40722418008](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40722418008)
+at `4b095f0f9` passes the actual UltraBERT legacy/mixed metadata controls and
+production quantizer authored fixtures; the [receipt](tests/results/ultrabert/q4k-model-free-controls.json)
+claims no model inference. Initial UltraBERT Q4 run40724453759 builds and passes
+controls, then stops before conversion/inference because its parent-workflow
+lineage check rejects historical cancellation after the eight original shards
+and freeze job succeeded. The [unchanged failure](tests/results/ultrabert/q4k-initial-lineage-failure.json)
+and [review](tests/results/ultrabert/q4k-initial-lineage-review.json) remain.
+The correction authenticates all nine exact successful original jobs and keeps
+all source/attempt/archive/member hashes; its actual replay remains pending.
+
+The [initial real-scan review](docs/ocr-real-scans-v1.md) preserves twenty-case
+original reports for Unlimited and MiniCPM, plus the initial Unlimited native
+report. One encoded-image hash failure remains ineligible. Unlimited has eleven
+exact ID sequences among nineteen eligible pairs and zero exact raw texts on
+this source before the independently verified decoder repair. Eight first-token
+differences, both fixed-cap receipt completions and all original failures remain;
+no new full-panel parity or quantized qualification follows. Admission now
+rejects changed inputs before future inference and retains encoded images remotely.

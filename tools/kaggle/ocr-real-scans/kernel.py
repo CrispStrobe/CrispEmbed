@@ -48,16 +48,20 @@ def fetch(url):
         except Exception as e: err = e; time.sleep(10 * (i + 1))
     raise err
 os.makedirs(TMP + '/img', exist_ok=True)
+from receipt import admit_image
 parquets = {}
 pages = []
+os.makedirs(OUT + '/input-images', exist_ok=True)
 for p in manifest['pages']:
     im = p['image']; rec = dict(id=p['id'], expected_sha256=im['sha256'])
     try:
         if 'hf_parquet' in im:
             hp = im['hf_parquet']
             if hp['url'] not in parquets:
-                path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url'])); parquets[hp['url']] = path
+                path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url']))
                 rec['parquet_sha256_ok'] = hashlib.sha256(open(path, 'rb').read()).hexdigest() == hp['sha256']
+                if not rec['parquet_sha256_ok']: raise ValueError('frozen parquet SHA256 differs')
+                parquets[hp['url']] = path
             out = subprocess.run([PY, '-c', 'import sys,pyarrow.parquet as pq;sys.stdout.buffer.write('
                                   'pq.read_table(sys.argv[1],columns=["image"]).slice(int(sys.argv[2]),1).to_pylist()[0]["image"]["bytes"])',
                                   parquets[hp['url']], str(hp['row'])], capture_output=True, check=True).stdout
@@ -65,7 +69,8 @@ for p in manifest['pages']:
         else:
             data = fetch(im['url'])
         rec['sha256'] = hashlib.sha256(data).hexdigest(); rec['sha256_ok'] = rec['sha256'] == im['sha256']
-        path = f"{TMP}/img/{p['id']}.jpg"; open(path, 'wb').write(data)
+        admit_image(data, im)  # Reject before admitting a page to either inference arm.
+        path = f"{OUT}/input-images/{p['id']}.jpg"; open(path, 'wb').write(data)
         pages.append(dict(id=p['id'], path=path, max_tokens=p['max_tokens'], gt=p['ground_truth'], priority=p['priority']))
     except Exception as e:
         rec['error'] = repr(e)[:500]

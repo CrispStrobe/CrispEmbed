@@ -874,3 +874,16 @@ then implement native and padded-Q4_K full retrieval replay against that freeze.
 Acceptance: all original IDs/masks; unchanged F32 0.002/0.99999; each retrieval
 metric drop at most 0.001 and top-one agreement at least 0.99. Quantized component
 failures remain explicit; no publication before full retrieval and consumers.
+
+### Real scans: initial evidence reviewed, continuation remains open
+
+Use [the exact initial receipts and next steps](docs/ocr-real-scans-v1.md).
+Collect the executing MiniCPM native shard without repeating original inference;
+exclude the retained failed image proof from eligible denominators while keeping
+all twenty cases visible. Prove repaired Unlimited raw decoding on retained IDs,
+then audit the earliest meaningful remaining native/original divergence with
+actual intermediate dumps and crispembed-diff. One changed encoded form image
+needs exact-byte recovery or a distinct versioned original capture. Never promote
+the nineteen valid pairs, normalized metrics or four synthetic decoder cases to
+full real-scan qualification. Keep upstream dataset/transcription terms and
+attribution distinct from Apache/MIT model support.
