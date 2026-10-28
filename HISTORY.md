@@ -16985,3 +16985,16 @@ aggregates. This is new original coverage, not a replacement for the frozen
 small-panel references. Large vectors and the row journal remain remote; their
 hashes must be authenticated before a corresponding native/Q4 retrieval replay.
 No full integrated-source vector/ranking or quantized qualification is claimed.
+
+### 28 October: Unlimited raw-text card refresh completed
+
+The [card-only upload/readback](tests/results/unlimited-ocr2/card-refresh-raw-text.json)
+is complete at [Hub e3941225](https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/tree/e39412255db0fc67952c8614cd03438822cf0957).
+Only README/manifest changed. F16/Q8 weight sizes/LFS hashes, upstream notices
+and the original weight-producing source remain unchanged. The card documents
+the independently verified four synthetic tiled F16 raw-ID/text cases and the
+831-token runtime fallback required by the published base-vocabulary GGUFs.
+The queued hosted publisher was cancelled before execution; the same reviewed
+publisher ran through the installed metadata client with immutable readback and
+no model download/build/inference. Preserve the previous card receipt. This
+changes no real-scan, Q4, release or app qualification.

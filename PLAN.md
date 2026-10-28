@@ -888,3 +888,8 @@ needs exact-byte recovery or a distinct versioned original capture. Never promot
 the nineteen valid pairs, normalized metrics or four synthetic decoder cases to
 full real-scan qualification. Keep upstream dataset/transcription terms and
 attribution distinct from Apache/MIT model support.
+
+Unlimited card-only refresh is completed at Hub `e3941225` (receipt in HISTORY).
+Remaining Unlimited work is runtime/main integration, repaired real-scan decoder
+replay, meaningful remaining ID divergence attribution, and the separately
+predeclared mixed Q4_K experiment. The card update does not close those gates.
