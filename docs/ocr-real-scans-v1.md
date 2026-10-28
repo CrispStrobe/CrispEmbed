@@ -52,3 +52,18 @@ crispembed-diff. Keep coordinates, source-model completion limits and body-text
 regressions separate. Reconstruct the missing image input as a separately
 versioned capture if exact frozen bytes cannot be recovered. These results do
 not qualify the full real-scan panel, any Q4 model, a release or a default change.
+
+## Targeted repair of the frozen form input
+
+The [recovery receipt](../tests/results/ocr-real-scans/form-input-recovery.json)
+confirms that the unchanged manifest URL once again supplies the exact frozen
+709,225 encoded bytes. Keep the earlier mismatched-image results ineligible.
+The hosted kernel's `PAGE_IDS` tuple can select
+`('en-form-economic-journal-67',)` before downloads, without changing any image,
+ground truth, prompt or token cap. Reports record the full manifest SHA and
+selected scope. A targeted report cannot replace a full-panel report.
+
+Pending execution: capture the missing original MiniCPM form output and the
+corresponding native outputs from admitted bytes. Reuse Unlimited's already
+valid original form capture. Retain these follow-ups separately and review
+coverage explicitly before combining any quality denominator.

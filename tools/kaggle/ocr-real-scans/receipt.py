@@ -3,6 +3,20 @@ import hashlib
 import json
 from pathlib import Path
 
+def select_pages(manifest, requested=()):
+    """Choose a declared input-only subset without editing its gold or caps.
+
+    Empty selection preserves full coverage. A targeted report must retain its
+    explicit scope; it cannot be substituted for a full-manifest receipt.
+    """
+    pages=manifest['pages'];ids=[p['id']for p in pages]
+    if len(set(ids))!=len(ids):raise ValueError('duplicate manifest page')
+    if not isinstance(requested,(list,tuple))or any(not isinstance(x,str)for x in requested):
+        raise ValueError('explicit page ID sequence required')
+    if len(set(requested))!=len(requested)or set(requested)-set(ids):
+        raise ValueError('unknown/duplicate requested page')
+    return [p for p in pages if not requested or p['id']in requested]
+
 def admit_image(data,pin):
     actual=hashlib.sha256(data).hexdigest()
     if len(data)!=pin['bytes'] or actual!=pin['sha256']:

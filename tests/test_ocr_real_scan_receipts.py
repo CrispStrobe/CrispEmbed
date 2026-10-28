@@ -4,6 +4,14 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('scan_receipt',ROOT/'tools/kaggle/ocr-real-scans/receipt.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class Controls(unittest.TestCase):
+    def test_targeted_scope_preserves_exact_frozen_rows(self):
+        pages=[dict(id='a',max_tokens=768,ground_truth='fixed'),dict(id='b',max_tokens=1024,ground_truth='other')]
+        manifest=dict(pages=pages)
+        self.assertEqual(m.select_pages(manifest),pages)
+        chosen=m.select_pages(manifest,('b',));self.assertEqual(chosen,[pages[1]]);self.assertIs(chosen[0],pages[1])
+        self.assertEqual(m.select_pages(manifest,('b','a')),pages)
+        for bad in [('missing',),('a','a'),'a',(1,)]:
+            with self.assertRaises(ValueError):m.select_pages(manifest,bad)
     def setup_receipts(self):
         checksum=hashlib.sha256(b'image').hexdigest();manifest=dict(pages=[dict(id='page',image=dict(sha256=checksum),max_tokens=10)])
         image=dict(id='page',expected_sha256=checksum,sha256=checksum,sha256_ok=True)

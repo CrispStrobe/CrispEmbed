@@ -15,6 +15,7 @@ import hashlib, json, os, re, subprocess, sys, time, urllib.request
 T_START = time.time()
 COMMIT = '@COMMIT@'
 MODE = '@MODE@'
+PAGE_IDS = ()                 # render an explicit input-only subset for targeted follow-ups
 BUDGET = 10.9 * 3600            # stop starting pages after this
 OUT = '/kaggle/working/ocr-real-scans'; os.makedirs(OUT, exist_ok=True)
 TMP = '/kaggle/temp'
@@ -30,7 +31,11 @@ sh(sys.executable, '-m', 'pip', 'install', '-q', 'rapidfuzz==3.9.7')
 sys.path.insert(0, 'tools/kaggle/ocr-real-scans')
 NT = str(os.cpu_count())
 manifest = json.load(open('docs/ocr-real-scans-v1.json'))
+from receipt import select_pages
+selected_pages = select_pages(manifest, PAGE_IDS)
 report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, cpu_count=os.cpu_count(), images=[], runs=[],
+              scope=dict(full_manifest=not PAGE_IDS, selected_page_ids=[p['id']for p in selected_pages],
+                         manifest_sha256=hashlib.sha256(open('docs/ocr-real-scans-v1.json','rb').read()).hexdigest()),
               pages_meta={p['id']: dict(priority=p['priority'], tags=p['tags'], max_tokens=p['max_tokens']) for p in manifest['pages']})
 try:
     report['cpu_model'] = next(l.split(':', 1)[1].strip() for l in open('/proc/cpuinfo') if l.startswith('model name'))
@@ -52,7 +57,7 @@ from receipt import admit_image
 parquets = {}
 pages = []
 os.makedirs(OUT + '/input-images', exist_ok=True)
-for p in manifest['pages']:
+for p in selected_pages:
     im = p['image']; rec = dict(id=p['id'], expected_sha256=im['sha256'])
     try:
         if 'hf_parquet' in im:
