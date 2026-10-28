@@ -102,15 +102,33 @@ def precision(cfg, variant, root=ROOT):
     path = root / rec["precision_receipt"]
     require(path.is_file(), f"{variant} has no precision receipt yet ({rec['precision_receipt']}); publish F16 only")
     r = json.loads(path.read_text())
+    require(r.get("completed") is True and r.get("schema") == "crispembed-minicpm-ocr-bench-v1",
+            f"{variant} benchmark is not a completed declared producer; publish F16 only")
+    require(r.get("reference_revision") == cfg["upstream"]["revision"] and
+            re.fullmatch("[0-9a-f]{40}", r.get("commit", "")), "benchmark source/original revision differs")
+    frozen = json.loads((root / cfg["receipts"]["parity"]).read_text())
+    require(r.get("max_new_tokens") == frozen["max_new_tokens"], "benchmark output cap differs from frozen parity")
+    require([c["id"] for c in frozen["cases"]] == cfg["parity_cases"], "frozen original case coverage differs")
+    counts = {c["id"]: len(c["reference_ids"]) for c in frozen["cases"]}
     arms = [a for a in r.get("arms", []) if a.get("dtype") == rec["precision_dtype"]]
-    require(arms, f"{variant} precision receipt has no {rec['precision_dtype']} arm")
+    names = [a.get("name") for a in arms]
+    required = rec.get("precision_required_arms", [])
+    require(required and len(required) == len(set(required)) and len(names) == len(set(names)) and
+            set(names) == set(required), f"{variant} precision selected arm coverage differs: {names}")
     for a in arms:
         ids = sorted(c["id"] for c in a.get("cases", []))
         require(ids == sorted(cfg["parity_cases"]), f"{variant} precision arm {a.get('name')} misses cases")
-        require(all(c.get("ids_exact") is True for c in a["cases"]),
-                f"{variant} is not token-ID exact in {rec['precision_receipt']} ({a.get('name')}); publish F16 only")
+        require(all(c.get("exit") == 0 and c.get("ids_exact") is True and c.get("text_exact") is True and
+                    c.get("cer") == 0 and c.get("first_id_difference") is None and
+                    c.get("n_ref_tokens") == counts[c["id"]] and c.get("n_tokens") == counts[c["id"]]
+                    for c in a["cases"]),
+                f"{variant} is not a successful token-ID/text-exact panel in {rec['precision_receipt']} "
+                f"({a.get('name')}); publish F16 only")
     return {"receipt": rec["precision_receipt"], "receipt_sha256": digest(path), "commit": r.get("commit"),
-            "arms": [a.get("name") for a in arms], "ids_exact": True}
+            "arms": [a.get("name") for a in arms], "ids_exact": True,
+            "completed_benchmark": True, "text_exact": True,
+            "exactness_evidence": "Legacy producer compared actual generated IDs but retained only predicates/counts; "
+                                  "this publication guard does not rederive missing ID vectors."}
 
 
 def plan(cfg, variants):
