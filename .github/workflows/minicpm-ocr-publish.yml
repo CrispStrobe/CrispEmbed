@@ -1,0 +1,114 @@
+name: MiniCPM-OCR-1.0 GGUF publication (owner-approved only)
+# Converts openbmb/MiniCPM-OCR-1.0 (Apache-2.0) at the revision pinned in docs/minicpm-ocr-source.json,
+# optionally quantizes with crispembed-quantize (only variants with a token-ID-exact precision receipt),
+# and uploads to the destination in docs/minicpm-ocr-publication-v1.json with the verbatim upstream
+# Apache-2.0 LICENSE, the upstream card, a statement of changes and a manifest.
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Exact commit containing the converter, quantizer, protocol and receipts'
+        required: true
+        type: string
+      variants:
+        description: 'Comma-separated precisions from the protocol recipes (F32,F16,Q8_0; Q8_0 needs its precision receipt)'
+        required: true
+        default: 'F16'
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: minicpm-ocr-publish
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publish-script controls (no network)
+        run: python tests/test_minicpm_ocr_publish.py -v
+      - name: Protocol, receipts and build plan before any download or credential
+        env:
+          VARIANTS: ${{ inputs.variants }}
+        run: |
+          set -euo pipefail
+          python tools/ci-heavy/minicpm_ocr_publish.py plan "$VARIANTS" | tee "$RUNNER_TEMP/plan.txt"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Pinned conversion and publication clients
+        # Everything models/convert-minicpm-ocr-to-gguf.py imports (and the qwen35 tokenizer helper it loads).
+        run: python -m pip install -q numpy==2.2.6 gguf==0.17.1 safetensors==0.6.2 huggingface-hub==1.33.0 tokenizers==0.23.3
+      - name: Work area on the large runner disk
+        run: |
+          sudo mkdir -p /mnt/mcpm && sudo chown "$USER" /mnt/mcpm
+          mkdir -p /mnt/mcpm/src /mnt/mcpm/gguf /mnt/mcpm/notices /mnt/mcpm/scratch "$RUNNER_TEMP/out"
+          df -h / /mnt
+      - name: Upstream LICENSE and model card (pinned, hash-checked)
+        run: python tools/ci-heavy/minicpm_ocr_publish.py notices /mnt/mcpm/notices
+      - name: Pinned upstream checkpoint (size/sha256-checked)
+        env:
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from huggingface_hub import hf_hub_download
+          c = json.load(open('docs/minicpm-ocr-source.json'))
+          for n, p in c['files'].items():
+              if n in ('.gitattributes', 'README.md'):
+                  continue
+              f = hf_hub_download(c['repository'], n, revision=c['revision'], local_dir='/mnt/mcpm/src', token=False)
+              assert os.path.getsize(f) == p['bytes'], n
+              if 'sha256' in p:
+                  h = hashlib.sha256()
+                  with open(f, 'rb') as s:
+                      for b in iter(lambda: s.read(1 << 23), b''):
+                          h.update(b)
+                  assert h.hexdigest() == p['sha256'], n
+          PY
+      - name: Build crispembed-quantize
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DGGML_CUDA=OFF
+          cmake --build build --target crispembed-quantize --parallel 4
+      - name: Convert and quantize per plan
+        env:
+          OMP_NUM_THREADS: '1'
+          OPENBLAS_NUM_THREADS: '1'
+          TMPDIR: /mnt/mcpm/scratch
+        run: |
+          set -euo pipefail
+          q=$(find build -type f -name crispembed-quantize -perm -u+x | head -1)
+          f32=/mnt/mcpm/gguf/$(python -c "import json;print(json.load(open('docs/minicpm-ocr-publication-v1.json'))['recipes']['F32']['filename'])")
+          while read -r kind variant name rest; do
+            case "$kind" in
+              convert)
+                python models/convert-minicpm-ocr-to-gguf.py /mnt/mcpm/src "/mnt/mcpm/gguf/$name" $rest
+                rm -f "/mnt/mcpm/gguf/$name.manifest.json" ;;
+              quantize)
+                rm -rf /mnt/mcpm/src
+                "$q" "$f32" "/mnt/mcpm/gguf/$name" $rest ;;
+              drop-f32) rm -f "$f32" ;;
+            esac
+          done < "$RUNNER_TEMP/plan.txt"
+          rm -rf /mnt/mcpm/src
+          ls -l /mnt/mcpm/gguf; df -h /mnt
+      - name: Upload, immutable LFS identity, empty-cache readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          HEAVY_SCRATCH: /mnt/mcpm/scratch
+          VARIANTS: ${{ inputs.variants }}
+        run: |
+          python tools/ci-heavy/minicpm_ocr_publish.py publish "$VARIANTS" /mnt/mcpm/gguf /mnt/mcpm/notices "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minicpm-ocr-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90

@@ -1,0 +1,51 @@
+{
+  "schema": "crispembed-minicpm-ocr-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner approved HF uploads for experimentally working models with licenses preserved (2026-10-27). The precision is chosen per dispatch from the recipes below; a recipe with a precision_receipt is refused unless that receipt shows every case token-ID exact.",
+  "destination": "cstr/MiniCPM-OCR-1.0-GGUF",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "source_contract": "docs/minicpm-ocr-source.json",
+  "spec": "docs/minicpm-ocr-inference-spec.md",
+  "converter": "models/convert-minicpm-ocr-to-gguf.py",
+  "quantizer": "tools/quantize.cpp (crispembed-quantize)",
+  "upstream": {
+    "repo": "openbmb/MiniCPM-OCR-1.0",
+    "revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+    "license": "apache-2.0",
+    "copyright": "Copyright OpenBMB",
+    "readme": {
+      "bytes": 12641,
+      "sha256": "a62051d6a7c4cf3bcf6576a6028a12030c9c601f569d9d09ab7bb49502c5294a"
+    },
+    "license_file": {
+      "note": "The model repository declares license: apache-2.0 but ships no LICENSE file (tree at the pinned revision checked 2026-10-28); the verbatim Apache-2.0 text is taken from the upstream code repository at its MiniCPM-OCR 1.0 release commit, the last commit touching LICENSE (byte-identical on main 50b74eba on 2026-10-28).",
+      "code_repo": "https://github.com/OpenBMB/MiniCPM-OCR",
+      "commit": "8a16a6ad007b1105ac7811ab238808587615e4c7",
+      "url": "https://raw.githubusercontent.com/OpenBMB/MiniCPM-OCR/8a16a6ad007b1105ac7811ab238808587615e4c7/LICENSE",
+      "bytes": 11332,
+      "sha256": "186c8635e1f88660ec113f4935867a612e35b3124aca5c712d97e2e33d7eb677"
+    },
+    "notice_file": {
+      "present": false,
+      "note": "Neither the Hub repository nor the code repository at the pinned commit has a NOTICE file (HTTP 404, 2026-10-28), so none is redistributed; the card carries the attribution and statement of changes required by Apache-2.0 section 4."
+    }
+  },
+  "default_variants": ["F16"],
+  "recipes": {
+    "F32": {"filename": "minicpm-ocr-1.0-f32.gguf", "from": "convert", "convert_args": ["--dtype", "f32"]},
+    "F16": {"filename": "minicpm-ocr-1.0-f16.gguf", "from": "convert", "convert_args": ["--dtype", "f16"]},
+    "Q8_0": {"filename": "minicpm-ocr-1.0-q8_0.gguf", "from": "F32", "type": "q8_0", "tensor_type": [],
+             "precision_receipt": "tests/results/minicpm-ocr/bench.json", "precision_dtype": "q8_0"}
+  },
+  "receipts": {
+    "parity": "tests/results/minicpm-ocr/native-parity.json"
+  },
+  "parity_arms": ["f32", "f16"],
+  "parity_cases": ["line", "para-en", "table", "tall", "tiny"],
+  "qualification": {
+    "default_enabled": false,
+    "receipts_precision": "F32 and F16 conversions, 5 cases, token-ID exact vs Transformers 5.21.0 (CPU, greedy)",
+    "q8_0": "publishable only when the precision receipt shows every q8_0 case token-ID exact; otherwise F16 only",
+    "registry_alias": "TODO(follow-up after upload): add a registry alias with the real published SHA256; none is added here"
+  }
+}
