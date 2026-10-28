@@ -130,12 +130,12 @@ static void print_usage(const char * prog) {
             "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
             "tromr(music)/flova(music)/transcoda(music)/"
             "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/ovisocr2/ovisocr3/lfm2-vl/"
-            "unlimited-ocr)\n");
+            "unlimited-ocr/minicpm-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
     fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --ocr-prompt TEXT   custom instruction for prompt-following VLM OCR engines\n");
-    fprintf(stderr,
-            "                      (qwen2vl/qwen3vl/paddleocr-vl/olmocr, internvl2, lfm2-vl, granite-vision),\n");
+    fprintf(stderr, "                      (qwen2vl/qwen3vl/paddleocr-vl/olmocr, internvl2, lfm2-vl, granite-vision,\n"
+                    "                      minicpm-ocr task prompt e.g. \"Table Recognition:\"),\n");
     fprintf(stderr,
             "                      --ocr and --ocr-pipeline alike. Other engines ignore it (with a warning).\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
@@ -174,7 +174,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
-                    "ovisocr2|ovisocr3|qwen3vl|"
+                    "ovisocr2|ovisocr3|minicpm-ocr|qwen3vl|"
                     "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
@@ -1322,6 +1322,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "qwen35-ocr" || n == "qwen35_ocr") return 20;
             if (n == "ovisocr2") return 21;
             if (n == "ovisocr3") return 22;
+            if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
             if (n == "unified") return 14;
@@ -1358,17 +1359,25 @@ static int cli_main(int argc, char ** argv) {
             // no tokenizer, null patch embedding) and failed inside the vision
             // graph rather than at load.
             const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 ||
-                                eid == 19 || eid == 20 || eid == 21 || eid == 22;
+                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23;
             // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
             // internvl2, granite-vision, qwen3vl, unified (model-dependent),
             // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
-            const bool takes_prompt =
-                eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 || eid == 19 || eid == 20;
+            const bool takes_prompt = eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 ||
+                                      eid == 19 || eid == 20 || eid == 23;
             if (!ocr_prompt.empty() && !takes_prompt && eid != 21 && eid != 22) {
                 fprintf(stderr,
                         "warning: --ocr-prompt ignored: --ocr-engine %s runs a fixed task prompt "
                         "(custom prompts: qwen2vl, qwen3vl, olmocr, internvl2, lfm2-vl, granite-vision)\n",
                         pipeline_engine.c_str());
+            }
+            // Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses
+            // the qwen35 kernels, so both gates are required.
+            if (eid == 23 && (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_MINICPM_OCR") ||
+                              !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
+                fprintf(stderr, "error: experimental minicpm-ocr needs --ocr-rec FILE, CRISPEMBED_MINICPM_OCR=1 "
+                                "and CRISPEMBED_QWEN35_OCR=1\n");
+                return 1;
             }
             if (eid == 20 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: experimental qwen35-ocr requires --ocr-rec FILE\n");

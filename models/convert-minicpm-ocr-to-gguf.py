@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""Export openbmb/MiniCPM-OCR-1.0 for the pending native `minicpm_ocr` backend.
+"""Export openbmb/MiniCPM-OCR-1.0 for the experimental native `minicpm_ocr` backend.
 
-SKELETON (2026-10-28): experimental weight format; no native runtime consumes it
-yet. See docs/minicpm-ocr-inference-spec.md. Every tensor in the pinned
-checkpoint is mapped or the export fails; nothing is dropped or defaulted.
-`vit_merger` (16x mode only) is kept although the 4x default does not use it.
+Consumer: src/minicpm_ocr.cpp (default-off, CRISPEMBED_MINICPM_OCR=1 plus the
+reused qwen35 decoder gate CRISPEMBED_QWEN35_OCR=1). Not parity-qualified; see
+docs/minicpm-ocr-inference-spec.md. Every tensor in the pinned checkpoint is
+mapped or the export fails; nothing is dropped or defaulted. `vit_merger`
+(16x mode only) is kept although the 4x default does not use it.
+
+dtype policy:
+  f32   every tensor F32 (parity reference export)
+  f16   matrices F16; norms, biases, 1-D vectors, conv1d, A_log, dt_bias F32
+  bf16  vision/merger matrices BF16 (lossless vs. the BF16 checkpoint); text
+        matrices F16 because the reused qwen35 CPU kernels accept F32/F16 only
 Run on a hosted runner, never on a constrained host.
 """
 
@@ -16,9 +23,11 @@ import re
 from pathlib import Path
 
 ARCH = "minicpm_ocr"
+FORMAT_VERSION = 1
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "docs/minicpm-ocr-source.json"
 N_TEXT_LAYERS, N_VISION_LAYERS = 24, 27
+EOS_IDS = [248044, 248046]
 
 # Audited tensor families (safetensors header at the pinned revision, 779 tensors).
 PATTERNS = [
@@ -40,7 +49,8 @@ EXPECTED_SHAPES = {
 
 def _qwen35():
     spec = importlib.util.spec_from_file_location("q35conv", ROOT / "models/convert-qwen35-ocr-to-gguf.py")
-    mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
     return mod
 
 
@@ -58,26 +68,71 @@ def tensor_name(name):
 def sha256(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
-        while b := f.read(8 << 20): h.update(b)
+        while b := f.read(8 << 20):
+            h.update(b)
     return h.hexdigest()
 
 
 def validate(root, contract):
     for name, pin in contract["files"].items():
         p = root / name
-        if name == ".gitattributes" and not p.exists(): continue
+        if name in (".gitattributes", "README.md") and not p.exists():
+            continue
         if p.stat().st_size != pin["bytes"] or ("sha256" in pin and sha256(p) != pin["sha256"]):
             raise ValueError(f"pinned source file differs: {name}")
     cfg = json.loads((root / "config.json").read_text())
     pre = json.loads((root / "preprocessor_config.json").read_text())
     t, v = cfg["text_config"], cfg["vision_config"]
-    checks = [cfg["model_type"] == "minicpm_ocr", cfg["downsample_mode"] == "4x", cfg["tie_word_embeddings"],
-              t["model_type"] == "qwen3_5_text", t["num_hidden_layers"] == N_TEXT_LAYERS,
-              v["num_hidden_layers"] == N_VISION_LAYERS, v["hidden_size"] == 1152, v["patch_size"] == 14,
-              "mrope_section" not in json.dumps(t), pre["scale_resolution"] == 448, pre["max_slice_nums"] == 9]
-    if not all(checks):
-        raise ValueError(f"config differs from the audited layout: {checks}")
+    checks = {
+        "model_type": cfg["model_type"] == "minicpm_ocr",
+        "downsample_mode": cfg.get("downsample_mode") == "4x",
+        "tied": bool(cfg.get("tie_word_embeddings", t.get("tie_word_embeddings"))),
+        "text_type": t["model_type"] == "qwen3_5_text",
+        "text_layers": t["num_hidden_layers"] == N_TEXT_LAYERS,
+        "text_width": t["hidden_size"] == 1024,
+        "vocab": t["vocab_size"] == 248100,
+        "vision_layers": v["num_hidden_layers"] == N_VISION_LAYERS,
+        "vision_width": v["hidden_size"] == 1152,
+        "patch": v["patch_size"] == 14,
+        "no_mrope": "mrope_section" not in json.dumps(t),
+        "scale_resolution": pre["scale_resolution"] == 448,
+        "max_slice_nums": pre["max_slice_nums"] == 9,
+        "patch_size": pre.get("patch_size", 14) == 14,
+        "mean": list(pre.get("image_mean", [0.5] * 3)) == [0.5] * 3,
+        "std": list(pre.get("image_std", [0.5] * 3)) == [0.5] * 3,
+    }
+    if not all(checks.values()):
+        raise ValueError(f"config differs from the audited layout: {[k for k, ok in checks.items() if not ok]}")
     return cfg, pre
+
+
+def rope_theta(text):
+    rope = text.get("rope_parameters") or {}
+    return float(rope.get("rope_theta", text.get("rope_theta", 1e7)))
+
+
+def write_tokenizer(w, tok):
+    import gguf
+    w.add_string("tokenizer.ggml.model", "gpt2")
+    w.add_string("tokenizer.ggml.pre", "qwen35")
+    w.add_string(f"{ARCH}.normalizer", tok["normalizer"])
+    w.add_string(f"{ARCH}.pretokenizer_pattern", tok["pattern"])
+    w.add_array("tokenizer.ggml.tokens", tok["tokens"])
+    w.add_array("tokenizer.ggml.merges", tok["merges"])
+    for key in ("added", "special"):
+        w.add_key_value(f"{ARCH}.{key}_token_ids", tok[key], gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    w.add_uint32("tokenizer.ggml.eos_token_id", tok["tokenizer_eos"])
+    w.add_uint32("tokenizer.ggml.padding_token_id", tok["pad"])
+
+
+def target_type(name, src_name, ndim, dtype):
+    small = (ndim < 2 or "norm" in name or "A_log" in name or "dt_bias" in name or "conv1d" in name
+             or name.endswith(".bias"))
+    if dtype == "f32" or small:
+        return "f32"
+    if dtype == "bf16" and not src_name.startswith("model.language_model."):
+        return "bf16"
+    return "f16"
 
 
 def convert(root, output, dtype):
@@ -86,52 +141,109 @@ def convert(root, output, dtype):
     from safetensors import safe_open
     contract = json.loads(CONTRACT.read_text())
     cfg, pre = validate(root, contract)
+    t, v = cfg["text_config"], cfg["vision_config"]
     q35 = _qwen35()
-    tok = q35.read_tokenizer_metadata(root, cfg["text_config"]["vocab_size"], allow_generation_eos_list=True)
+    tok = q35.read_tokenizer_metadata(root, t["vocab_size"], allow_generation_eos_list=True)
+    gen = json.loads((root / "generation_config.json").read_text())
+    if gen.get("eos_token_id") != EOS_IDS:
+        raise ValueError(f"generation EOS differs: {gen.get('eos_token_id')}")
 
-    w = gguf.GGUFWriter(str(output), ARCH)
+    output = Path(output)
+    pending = output.with_suffix(output.suffix + ".partial")
+    w = gguf.GGUFWriter(str(pending), ARCH)
     w.add_string("general.name", contract["repository"])
     w.add_string("general.license", "apache-2.0")
     w.add_string("general.source.huggingface.repository", contract["repository"])
     w.add_string("general.source.huggingface.revision", contract["revision"])
-    w.add_string(f"{ARCH}.status", "experimental-export-native-backend-pending")
-    w.add_uint32(f"{ARCH}.format_version", 1)
+    w.add_string(f"{ARCH}.status", "experimental-native-unqualified")
+    w.add_uint32(f"{ARCH}.format_version", FORMAT_VERSION)
+    w.add_string(f"{ARCH}.export_dtype", dtype)
+    w.add_string(f"{ARCH}.text_matrix_dtype", "f32" if dtype == "f32" else "f16")
     w.add_string(f"{ARCH}.checkpoint_sha256", contract["files"]["model.safetensors"]["sha256"])
     w.add_string(f"{ARCH}.config", (root / "config.json").read_text())
     w.add_string(f"{ARCH}.preprocessor_config", (root / "preprocessor_config.json").read_text())
+    if (root / "processor_config.json").exists():
+        w.add_string(f"{ARCH}.processor_config", (root / "processor_config.json").read_text())
     w.add_string(f"{ARCH}.downsample_mode", cfg["downsample_mode"])
     w.add_uint32(f"{ARCH}.insert_layer_id", cfg["insert_layer_id"])
     w.add_uint32(f"{ARCH}.image_token_id", cfg["image_token_id"])
     w.add_bool(f"{ARCH}.tie_word_embeddings", True)
     w.add_bool(f"{ARCH}.zero_centered_text_norm", True)
-    w.add_key_value(f"{ARCH}.source_eos_token_ids", [248044, 248046],
-                    gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    w.add_key_value(f"{ARCH}.source_eos_token_ids", EOS_IDS, gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    # Slicing / preprocessing (minicpm_ocr_tiles.h validates these).
+    w.add_uint32(f"{ARCH}.scale_resolution", pre["scale_resolution"])
+    w.add_uint32(f"{ARCH}.max_slice_nums", pre["max_slice_nums"])
+    w.add_uint32(f"{ARCH}.patch_size", pre.get("patch_size", 14))
+    w.add_bool(f"{ARCH}.slice_mode", bool(pre.get("slice_mode", True)))
+    w.add_bool(f"{ARCH}.use_image_id", bool(pre.get("use_image_id", True)))
+    w.add_string(f"{ARCH}.small_image_upsize", str(pre.get("small_image_upsize", "always")))
+    w.add_uint32(f"{ARCH}.merge_factor", 2)
+    w.add_uint32(f"{ARCH}.position_grid", 70)
+    # Model hyperparameters consumed by the runtime.
+    w.add_float32(f"{ARCH}.rope_theta", rope_theta(t))
+    w.add_float32(f"{ARCH}.text_rms_eps", float(t.get("rms_norm_eps", 1e-6)))
+    w.add_float32(f"{ARCH}.vision_ln_eps", float(v.get("layer_norm_eps", 1e-6)))
+    # TODO(verify): the merger LayerNorm eps is not in config.json; 1e-6 assumed.
+    w.add_float32(f"{ARCH}.merger_ln_eps", float(cfg.get("merger_layer_norm_eps", 1e-6)))
     w.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
-    q35.write_tokenizer_metadata(w, tok)  # TODO: emits qwen35_ocr.* keys; re-key under ARCH when the runtime lands
+    write_tokenizer(w, tok)
 
-    seen = 0
+    records = []
     with safe_open(root / "model.safetensors", framework="pt") as f:
-        for name in sorted(f.keys()):
-            t = f.get_tensor(name).float()
-            if name in EXPECTED_SHAPES and list(t.shape) != EXPECTED_SHAPES[name]:
-                raise ValueError(f"shape differs: {name} {list(t.shape)}")
-            a = t.numpy()
-            # norms, biases, small vectors and delta-net scalars stay F32
-            keep32 = dtype == "f32" or a.ndim < 2 or "A_log" in name or "dt_bias" in name or "conv1d" in name
-            w.add_tensor(tensor_name(name), a.astype(np.float32 if keep32 else np.float16))
-            seen += 1
-    if seen != contract["parameters"]["tensors"]:
-        raise ValueError(f"tensor count {seen} != pinned {contract['parameters']['tensors']}")
-    w.write_header_to_file(); w.write_kv_data_to_file(); w.write_tensors_to_file(); w.close()
+        for src in sorted(f.keys()):
+            ten = f.get_tensor(src)
+            if src in EXPECTED_SHAPES and list(ten.shape) != EXPECTED_SHAPES[src]:
+                raise ValueError(f"shape differs: {src} {list(ten.shape)}")
+            name = tensor_name(src)
+            a = ten.float().numpy()
+            if not np.isfinite(a).all():
+                raise ValueError(f"non-finite source tensor: {src}")
+            kind = target_type(name, src, a.ndim, dtype)
+            if kind == "bf16":
+                w.add_tensor(name, gguf.quants.quantize(a, gguf.GGMLQuantizationType.BF16),
+                             raw_dtype=gguf.GGMLQuantizationType.BF16)
+            else:
+                arr = np.ascontiguousarray(a, dtype=np.float32 if kind == "f32" else np.float16)
+                if not np.isfinite(arr).all():
+                    raise ValueError(f"overflowing {kind} export: {src}")
+                w.add_tensor(name, arr)
+            records.append({"source": src, "name": name, "shape": list(a.shape), "dtype": kind})
+    if len(records) != contract["parameters"]["tensors"]:
+        raise ValueError(f"tensor count {len(records)} != pinned {contract['parameters']['tensors']}")
+    try:
+        w.write_header_to_file()
+        w.write_kv_data_to_file()
+        w.write_tensors_to_file()
+    finally:
+        w.close()
+    pending.replace(output)
+    manifest = {"architecture": ARCH, "format_version": FORMAT_VERSION, "dtype": dtype,
+                "source": contract["repository"], "revision": contract["revision"],
+                "tensors": len(records), "bytes": output.stat().st_size, "records": records}
+    output.with_suffix(output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=1) + "\n")
+    return manifest
+
+
+def fetch(directory):
+    from huggingface_hub import hf_hub_download
+    contract = json.loads(CONTRACT.read_text())
+    for name in contract["files"]:
+        if name in (".gitattributes", "README.md"):
+            continue
+        hf_hub_download(contract["repository"], name, revision=contract["revision"], local_dir=directory)
+    return Path(directory)
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("model_dir", type=Path)
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("model_dir", type=Path, help="local snapshot of the pinned revision (see --download)")
     p.add_argument("output", type=Path)
-    p.add_argument("--dtype", choices=["f16", "f32"], default="f16")
+    p.add_argument("--dtype", choices=["f32", "f16", "bf16"], default="f16")
+    p.add_argument("--download", action="store_true", help="fetch the pinned files into model_dir first")
     a = p.parse_args()
-    convert(a.model_dir, a.output, a.dtype)
+    root = fetch(a.model_dir) if a.download else a.model_dir
+    m = convert(root, a.output, a.dtype)
+    print(json.dumps({k: val for k, val in m.items() if k != "records"}, indent=1))
 
 
 if __name__ == "__main__":

@@ -62,6 +62,7 @@ enum class engine {
     qwen35_ocr,        // experimental LightOnOCR-3-0.8B, native Qwen3.5 CPU
     ovisocr2,          // explicit gated format2 OvisOCR2; no registry default
     ovisocr3,          // explicit gated format3 OvisOCR3 plain OCR; no registry default
+    minicpm_ocr,       // experimental MiniCPM-OCR-1.0 (CRISPEMBED_MINICPM_OCR); no registry default
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.

@@ -1,8 +1,12 @@
 # MiniCPM-OCR 1.0: inference spec and native port plan
 
-Status (2026-10-28): **source audited, no native code yet.** Nothing here is
-qualified; every "verify" item must be confirmed by the hosted original reference
-capture (`tools/minicpm-ocr/reference.py`) before native work relies on it.
+Status (2026-10-28): **native runtime written, not run, not qualified.** The
+default-off runtime (`CRISPEMBED_MINICPM_OCR=1`, plus `CRISPEMBED_QWEN35_OCR=1`
+for the reused decoder kernels) is in `src/minicpm_ocr*.{h,cpp}`. It has only
+been syntax-checked. Every "verify" item below is still open and is marked
+`TODO(verify)` in the code. They are resolved by the hosted reference capture
+(`tools/minicpm-ocr/reference.py`) together with the native parity kernel
+(`tools/kaggle/minicpm-ocr-native`).
 
 ## Identity and pins
 
@@ -172,6 +176,21 @@ record whether the cap was hit.
    5. Exact greedy ID equality and EOS on all cases, F32 then F16.
 3. **Quant (Q8/Q4) only afterwards**, under the same eleven-case style quality
    gates as OvisOCR2. Publication follows only after F16 qualification.
+
+## Native runtime (2026-10-28, unqualified)
+
+| Piece | File | Notes |
+| --- | --- | --- |
+| Slicing, grid, token count, bucketed positions | `src/minicpm_ocr_tiles.h`, `tests/test_minicpm_ocr_tiles.cpp` | Header-only. Expected values come from the Python algorithm, not from the reference capture. |
+| Preprocessing, SigLIP tower, 4x projector | `src/minicpm_ocr_vision.cpp` | Each image runs as its own sequence. Resampling is PIL-exact bicubic; `CRISPEMBED_MINICPM_OCR_RESAMPLE=torch` switches to torchvision antialias. |
+| Prompt, injection, qwen35 decoder, greedy decode | `src/minicpm_ocr.cpp` | Positions are 1-D, written as equal axes. Stops are 248044/248046. `CRISPEMBED_MINICPM_OCR_SLICE_NEWLINE=1` inserts `\n` before the first `<slice>`. |
+| Unified OCR C API and CLI | `src/crispembed.cpp`, `src/ocr_orchestrator.cpp`, `examples/cli/main.cpp` | `--ocr` dispatches on arch `minicpm_ocr`. `--ocr-pipeline` uses `--ocr-engine minicpm-ocr` (id 23), which needs `--ocr-rec`. |
+| Debug dump | `CRISPEMBED_MINICPM_OCR_DUMP=<dir>` | Writes `.npy` files named like the reference arrays, plus `native_pixels_<i>.npy` and `native_meta.json`. |
+
+Open `TODO(verify)` items: 28-px snapping, the slice tie order, the bucketing and
+arange rounding, the resample filter, the newline before `<slice>`, the 2x2
+concat order, the projector GELU (the code uses erf), the merger LayerNorm name
+and eps, and the 1-D RoPE.
 
 ## Next concrete steps
 

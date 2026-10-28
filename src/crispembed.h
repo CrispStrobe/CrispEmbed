@@ -1279,6 +1279,7 @@ typedef struct crispembed_ocr_stage {
                           // 18=olmocr      19=lfm2_vl   20=qwen35_ocr (experimental)
                           // 21=ovisocr2 (explicit gated format2; no registry default)
                           // 22=ovisocr3 (explicit gated format3 plain OCR)
+                          // 23=minicpm_ocr (experimental, CRISPEMBED_MINICPM_OCR)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)

@@ -24,6 +24,7 @@
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
 #include "qwen35_ocr.h"
+#include "minicpm_ocr.h"
 #include "lfm2_vl_ocr.h"
 #include "unlimited_ocr.h"
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
@@ -348,6 +349,8 @@ struct context {
     std::string ovis_model_path;
     qwen35_ocr_context * ovis3 = nullptr;
     std::string ovis3_model_path;
+    minicpm_ocr_context * minicpm = nullptr; // experimental MiniCPM-OCR-1.0
+    std::string minicpm_model_path;
     lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
     lfm2_vl_ocr_context * lfm2vl = nullptr;      // LFM2.5-VL (SigLIP2 NaFlex multi-tile)
     unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
@@ -1572,6 +1575,49 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
+    case engine::minicpm_ocr: {
+        if (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR")) return {};
+        if (st.model_a != ctx->minicpm_model_path) {
+            if (ctx->minicpm) minicpm_ocr_free(ctx->minicpm);
+            ctx->minicpm = nullptr;
+            ctx->minicpm_model_path.clear();
+        }
+        if (!ctx->minicpm) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: minicpm-ocr stage missing model_a\n");
+                return {};
+            }
+            ctx->minicpm = minicpm_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->minicpm) {
+                fprintf(stderr, "ocr_orchestrator: minicpm-ocr load failed\n");
+                return {};
+            }
+            ctx->minicpm_model_path = st.model_a;
+        }
+        if (!minicpm_ocr_set_max_tokens(ctx->minicpm, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 1024) ||
+            !minicpm_ocr_set_prompt(ctx->minicpm,
+                                    st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str()))
+            return {};
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int c = 0;
+            loaded = stbi_load(path, &w, &h, &c, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int len = 0;
+        const char * t = minicpm_ocr_recognize_raw(ctx->minicpm, img, w, h, 3, &len);
+        if (!t) fprintf(stderr, "ocr_orchestrator: minicpm-ocr: %s\n", minicpm_ocr_last_error(ctx->minicpm));
+        int nconf = 0;
+        const float * conf = minicpm_ocr_confidences(ctx->minicpm, &nconf);
+        double mean = 0;
+        for (int i = 0; i < nconf; ++i) mean += conf[i];
+        auto out = wrap_fulltext(t, w, h, conf, nconf, nconf ? float(mean / nconf) : 0.0f);
+        if (loaded) stbi_image_free(loaded);
+        return out;
+    }
     case engine::ovisocr3: {
         if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") ||
             !core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") || !st.params.vlm_prompt.empty())
@@ -2178,6 +2224,8 @@ static const char * engine_name(engine e) {
         return "ovisocr2";
     case engine::ovisocr3:
         return "ovisocr3";
+    case engine::minicpm_ocr:
+        return "minicpm_ocr";
     case engine::lightonocr:
         return "lightonocr";
     case engine::lfm2_vl:
@@ -2224,6 +2272,7 @@ static bool is_vlm_engine(engine e) {
     case engine::qwen35_ocr:
     case engine::ovisocr2:
     case engine::ovisocr3:
+    case engine::minicpm_ocr:
     case engine::lightonocr:
     case engine::unlimited_ocr:
     case engine::lfm2_vl:
@@ -2505,6 +2554,7 @@ void free(context * ctx) {
     if (ctx->qwen35) qwen35_ocr_free(ctx->qwen35);
     if (ctx->ovis) qwen35_ocr_free(ctx->ovis);
     if (ctx->ovis3) qwen35_ocr_free(ctx->ovis3);
+    if (ctx->minicpm) minicpm_ocr_free(ctx->minicpm);
     if (ctx->locr) lightonocr_free(ctx->locr);
     if (ctx->lfm2vl) lfm2_vl_ocr_free(ctx->lfm2vl);
     if (ctx->uocr) unlimited_ocr_free(ctx->uocr);
