@@ -1,0 +1,94 @@
+{
+  "schema": "crispembed-minicpm-benchmark-v3-review-v1",
+  "status": "completed-with-q8-load-rejection",
+  "service": {
+    "kernel_slug": "crispembed-minicpm-ocr-bench",
+    "version_label": "v3",
+    "status": "COMPLETE"
+  },
+  "producer": {
+    "file": "tests/results/minicpm-ocr/bench.json",
+    "bytes": 32777,
+    "sha256": "366779105c95af852f42775c0d9fc3c4121bd59de42ff4fa59a22b25ad8f7b8c",
+    "unchanged": true,
+    "source": "c9718788bda1bbdc862dd7c86f16fb6caae8cbee"
+  },
+  "source_review": {
+    "uploaded_script_matches_git_after_declared_commit_and_arm_substitution": true,
+    "uploaded_script_sha256": "52f08e3efba272862f8a193d70d26e29809385749e0b2efc71e83a082bb91696",
+    "original_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+    "original_frozen_parity_sha256": "c31b93596c6b292d4f120338123695e838718219c321cf8673619ebd7d28a64c",
+    "all_requested_arms_and_five_case_ids_complete": true
+  },
+  "counts": {
+    "native_f32_and_f16_timed_rows": 10,
+    "producer_asserted_id_and_text_exact_rows": 10,
+    "timing_off_f16_text_exact_rows": 5,
+    "timing_off_ids_observed": false,
+    "q8_load_failures": 10,
+    "q8_inference_rows": 0,
+    "q8_publication_eligible": false
+  },
+  "attribution": {
+    "q8": "Both thread4/thread2 arms rejected at patch shape before inference; actual graphv2 metadata independently proves F32 patch flattened to[588,1152]. Literal F16 override was ignored before source quantizer fix. This is a format/load failure, not a quantized numerical verdict."
+  },
+  "stage_pairs": [
+    {
+      "id": "line",
+      "f16_vision_seconds": 27.699959,
+      "f32_vision_seconds": 14.051440000000001,
+      "vision_ratio_f16_over_f32": 1.9713252876573504,
+      "f16_prefill_seconds": 14.585471,
+      "f32_prefill_seconds": 10.924838,
+      "f16_whole_cli": 120.155,
+      "f32_whole_cli": 113.711
+    },
+    {
+      "id": "para-en",
+      "f16_vision_seconds": 137.85433799999998,
+      "f32_vision_seconds": 65.875296,
+      "vision_ratio_f16_over_f32": 2.092656069431551,
+      "f16_prefill_seconds": 70.63699199999999,
+      "f32_prefill_seconds": 73.03956600000001,
+      "f16_whole_cli": 468.883,
+      "f32_whole_cli": 376.74
+    },
+    {
+      "id": "table",
+      "f16_vision_seconds": 140.18633799999998,
+      "f32_vision_seconds": 66.849922,
+      "vision_ratio_f16_over_f32": 2.097030689130796,
+      "f16_prefill_seconds": 72.376283,
+      "f32_prefill_seconds": 70.279935,
+      "f16_whole_cli": 443.471,
+      "f32_whole_cli": 335.089
+    },
+    {
+      "id": "tall",
+      "f16_vision_seconds": 260.324786,
+      "f32_vision_seconds": 130.493159,
+      "vision_ratio_f16_over_f32": 1.9949305235226928,
+      "f16_prefill_seconds": 217.497166,
+      "f32_prefill_seconds": 220.11802799999998,
+      "f16_whole_cli": 1690.778,
+      "f32_whole_cli": 1428.334
+    },
+    {
+      "id": "tiny",
+      "f16_vision_seconds": 29.149421999999998,
+      "f32_vision_seconds": 14.100856,
+      "vision_ratio_f16_over_f32": 2.0672093949473704,
+      "f16_prefill_seconds": 11.436667,
+      "f32_prefill_seconds": 11.960601,
+      "f16_whole_cli": 58.091,
+      "f32_whole_cli": 55.807
+    }
+  ],
+  "limits": [
+    "The old producer deliberately discards actual generated ID vectors after computing exactness predicates/counts; this review verifies uploaded source/predicates/coverage, not missing native vector bytes.",
+    "Timing-off output has text identity only; no hidden ID exactness is inferred.",
+    "F32/F16 timing is one sequential same-job panel with matching inputs/threads, not an alternating repeated causal speed study.",
+    "Roughly2x F32 vision throughput supports a bounded future cache experiment; no mixed-precision runtime change or adoption is justified without its own decoded/Ref A/B.",
+    "Default graph path, model publication, release and app qualification remain separate pending gates."
+  ]
+}
