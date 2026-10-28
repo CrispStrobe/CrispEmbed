@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-moedern-scifact-gha-adapter-v1",
-  "base": "1543475b80622daf057ecf198136579cc1f7c051",
+  "base": "93d27614caba00a1b4d7aece6c78968f5cd9bb7f",
   "enabled_variants": [
     "27M"
   ],
@@ -51,8 +51,8 @@
     "docs/moedern-colbert-native-contract-v2.json": "d41df599683ace31187e6710bdc93e20e1576ed21823918d5e2cd37d88af1bad",
     "docs/moedern-colbert-source-contract.json": "9717685ed64ef0f9915204602c2721b0b10ad8284419f162f6bf25edf4644b8d",
     "docs/moedern-q4k-padded.json": "9ef21ccbf8006e99db220cf0d106140600ed3fb8a5562936cc415a0753bc04e4",
-    "docs/moedern-scifact-native-q4k-v1.json": "b4980f02d1a0b5d7ca7c88092d03576cf6120c6e54d6158951d98105900fddcb",
-    "docs/moedern-scifact-native-q4k-v1.md": "5db4af45a2d32498bc1028190f616beb4cb6cdc2bda5bd99e3ace5ab02cc20d2",
+    "docs/moedern-scifact-native-q4k-v1.json": "d4342ed39796e14046c6c756934f33f4cda4746e1dd5089c012487aef1e8f2f9",
+    "docs/moedern-scifact-native-q4k-v1.md": "7ef8700e2fcf372d041c47395bf6e121d5b63b1771cd760f0543b5aff747b6c6",
     "docs/moedern-scifact-parity-v1.json": "fa01bfea0af8cebf5ed28b32f1d51a27e66f3798c3b2488bab86e8c04c0ebdae",
     "docs/moedern-text-composed.json": "ad75f783cf2cbd2002f3337a5832bdc50685856f54ffd8a5aba95360f959725a",
     "examples/cli/main.cpp": "6d4e9ab857f038651e1355cb8c6aa507f4e33f8664ffe1e6cf95c20b251484d4",
@@ -427,7 +427,7 @@
     "tests/results/moedern-colbert/scifact-original-27m.json": "297d8ddc6f436ee35f1fcd6665d7e9d1b2135467765ac09012542c766e9bd166",
     "tests/test_ci_process.py": "d167f12c25fcc3c244a309b5ad13299213e97881ee00bd3592f06af6e5157fb2",
     "tests/test_moedern_all_size_clients.py": "881d053373a14699520df4ca7a6acc7c6852a459dc2fdc3d0a66db03fb7f3160",
-    "tests/test_moedern_scifact_native_q4k.py": "2660b620d18853c8b90b0880c1e9612e30eca5b2c2475609652c056c444986fe",
+    "tests/test_moedern_scifact_native_q4k.py": "8039553c587add563e71f6508bd0e4f129d0cf9fce26e5da033d0cd640b47fe1",
     "tools/ci-heavy/moedern_public_consumers.py": "1b39bdfffc478bff94400cf02bba568c83cf36691f6c28a77b5f2fc8ec7e735c",
     "tools/ci-heavy/moedern_q4k_padded.py": "0ec02f239f596bc676c27a897ab3ebfd56d8c02d53796e64e05d982cec6f99ec",
     "tools/ci-heavy/moedern_scifact.py": "db932e55333863d1737144968b26632673ce2d67e50fc034a07bcc17b1ed4697",
@@ -451,7 +451,7 @@
     "tools/moedern-public/family_contract.py": "3590f0e705907a28e54cd4f87bee3ba0309efcad1826b68df1e63b57e8eb4c27",
     "tools/moedern-public/public_contract.py": "148170ead5f1d393ff596d7e9bba59e1b3a6aba3ea15f6aa5c5851c2ba016b98",
     "tools/moedern-public/root_contract.py": "b447ea75faae7d59c4fe48c2d1e689afdf80506635b53b6210f9a75489784b80",
-    "tools/moedern-scifact/authored_v1.py": "a1b364f2efd967367085b38208dcb42163ead8c53815e88cf22f4df907e80033",
+    "tools/moedern-scifact/authored_v1.py": "d345d01822f4bde11fd78e0dd2591d38ab50fc4e34f1b50824e43fb564731d75",
     "tools/moedern-scifact/capture_v1.py": "3bc6159efd7889ea8f41554c58a26be43a0005e9d9ffbefcbbd9fe68c89522f6",
     "tools/moedern-scifact/compare_v1.py": "6c523c2f34490cedc28d13df0f60bf5814cdcb0843eec62154e0d6157ef983e4",
     "tools/moedern-scifact/contract_native_v1.py": "8afceb908a310b00caaa329f01604b03c42894cad99b50532ed01ccad26368cc",
@@ -467,13 +467,16 @@
     "tools/quantize.cpp": "f31d1cee819d7dbfada8179b346a5912ce842dfaa14f21cfb0e5e91f77864756"
   },
   "owned_sha256": {
-    ".github/workflows/moedern-scifact-gha-adapter-v1.yml": "c9e363e69aaf7b6fca46db0e2b93871ef7788c8e2cc0532bee6684796e63eef0",
-    "docs/moedern-scifact-gha-adapter-v1.md": "d826e2ff831a469d14e2a1a751e0a87e5e10a7ac4094d74744b33a81a06eb0f0",
+    ".github/workflows/moedern-scifact-gha-adapter-v1.yml": "8da4c55eca127b97d3db243664e0ab411f557e9a3d0ca484032794845e151bc1",
+    "docs/moedern-scifact-gha-adapter-v1.md": "a25b6bca1075e0a6989cad79306b8c3a2453cf87198a06e6cffd274b8cce81ab",
     "tests/results/moedern-colbert/scifact-gha-initial-queued-cancellation.json": "2fa7e6746cbe196720d334f2604aeda932fb4a4d007b693c28b4d98b53990ea7",
-    "tests/test_moedern_scifact_gha_adapter.py": "77986d87e5549e935f4c6ee6f84f4e1130e7e5e396bf49a6441996f8c19c4acb",
+    "tests/results/moedern-colbert/scifact-native-27m-gha-initial-native.json": "bb3cd253431e5e4431ec0484b68f75ab9069bcad85b60ad79449716642fdc763",
+    "tests/results/moedern-colbert/scifact-native-27m-gha-initial-review.json": "75fb4b75d1d9b4a1425a51555278dff8ec09865a5eafdf551894a472c98a2450",
+    "tests/results/moedern-colbert/scifact-native-27m-gha-initial-worker.log": "5437b68ad2882eb2a1225a03f38633b9d4c0ac52ada5c960049a2508e50ab89c",
+    "tests/test_moedern_scifact_gha_adapter.py": "69220f820745ca0eb66a0f3fb18a0eadd83cbbe1b61c13afafd82bdd8fdbe2a3",
     "tools/ci-heavy/moedern_scifact_gha_v1.py": "2f9f330847339a41041d199b06892d25af6697bfba2eeb9a2649ebd642b522d4",
-    "tools/moedern-scifact/contract_gha_v1.py": "5e5838b7d75f2360588919f4d5f04bcd81f1a6389f1154143d24a301919c1808",
-    "tools/moedern-scifact/worker_gha_v1.py": "cd8d66079ae1be5ab32c6b091f9d5d3e58e4212f9fea196e17af9b8804667db7"
+    "tools/moedern-scifact/contract_gha_v1.py": "3ce3951fcdcf8fab8fad2e0fc0638c574ff0f189269f62e834a407e847205078",
+    "tools/moedern-scifact/worker_gha_v1.py": "625f170bea62b5350f510694a850820bb8b4f453bcc8b0c5459c3f966b73f65e"
   },
   "kaggle_sdk_wheel": {
     "version": "2.2.2",

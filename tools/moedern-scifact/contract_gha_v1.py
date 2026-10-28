@@ -1,4 +1,4 @@
-"""Separately versioned provider adapter; corrected154 inference stays frozen."""
+"""Separately versioned provider adapter; corrected93 inference stays frozen."""
 import json
 from pathlib import Path
 import re
@@ -6,7 +6,7 @@ import subprocess
 import contract_native_v1 as old
 ROOT=old.ROOT
 PATH=ROOT/'docs/moedern-scifact-gha-adapter-v1.json'
-BASE='1543475b80622daf057ecf198136579cc1f7c051'
+BASE='93d27614caba00a1b4d7aece6c78968f5cd9bb7f'
 require=old.require
 sha=old.sha
 git=old.git
@@ -14,7 +14,10 @@ OWNED={'PLAN.md','docs/moedern-scifact-gha-adapter-v1.md','docs/moedern-scifact-
        'tools/moedern-scifact/contract_gha_v1.py','tools/moedern-scifact/worker_gha_v1.py',
        'tools/ci-heavy/moedern_scifact_gha_v1.py','tests/test_moedern_scifact_gha_adapter.py',
        '.github/workflows/moedern-scifact-gha-adapter-v1.yml',
-       'tests/results/moedern-colbert/scifact-gha-initial-queued-cancellation.json'}
+       'tests/results/moedern-colbert/scifact-gha-initial-queued-cancellation.json',
+       'tests/results/moedern-colbert/scifact-native-27m-gha-initial-native.json',
+       'tests/results/moedern-colbert/scifact-native-27m-gha-initial-worker.log',
+       'tests/results/moedern-colbert/scifact-native-27m-gha-initial-review.json'}
 
 
 def declaration():
@@ -36,7 +39,7 @@ def source(variant=None):
             path=ROOT/name
             require(path.is_file()and not path.is_symlink()and sha(path)==expected and
                     git('show','HEAD:'+name)==path.read_bytes(),'Provider/dependency source differs: '+name)
-            if group=='protected_sha256':require(git('show',BASE+':'+name)==path.read_bytes(),'Corrected154 source changed: '+name)
+            if group=='protected_sha256':require(git('show',BASE+':'+name)==path.read_bytes(),'Corrected93 source changed: '+name)
     require(git('rev-parse','HEAD:src')==git('rev-parse',BASE+':src')and
             git('rev-parse','HEAD:ggml')==git('rev-parse',BASE+':ggml'),'Runtime/backend changed in provider adapter')
     require(not git('status','--porcelain','--untracked-files=no','--','src','ggml','CMakeLists.txt'),'Dirty production/backend')

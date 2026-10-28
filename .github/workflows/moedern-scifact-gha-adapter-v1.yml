@@ -7,7 +7,7 @@ on:
         required: true
         type: string
       variant:
-        description: 'Bounded27M activation; healthy1.5M remains on Kaggle'
+        description: 'Bounded27M activation; other variants are separately submitted'
         type: choice
         options: ['27M']
         default: '27M'
@@ -58,7 +58,7 @@ jobs:
       - name: Exact original version and all six full raw member hashes before native models
         run: |
           "$RUNNER_TEMP/moedern-fetch/bin/python" tools/ci-heavy/moedern_scifact_gha_v1.py fetch --variant "$VARIANT" --reviewed-source "$REVIEWED_SOURCE" --scratch "$RUNNER_TEMP/moedern-scratch" --mount "$RUNNER_TEMP/moedern-input" --out "$RUNNER_TEMP/moedern-out"
-      - name: Unchanged corrected3c F32 control then actual Q4 full SciFact and clients
+      - name: Corrected receipt-only source, strict F32 then Q4 full SciFact and clients
         run: |
           python tools/ci-heavy/moedern_scifact_gha_v1.py run --variant "$VARIANT" --reviewed-source "$REVIEWED_SOURCE" --scratch "$RUNNER_TEMP/moedern-scratch" --mount "$RUNNER_TEMP/moedern-input" --out "$RUNNER_TEMP/moedern-out" --worker-python "$RUNNER_TEMP/moedern-worker/bin/python"
       - uses: actions/upload-artifact@v4
