@@ -43,6 +43,22 @@ static int crispembed_test_main() {
         CHECK(clean(raw).rfind("<table><tr><td>Product</td>", 0) == 0);
     }
 
+    // 1b. The published GGUFs store only the 128000 BPE pieces: added tokens (<PAGE>, <td>, ...)
+    //     must come from added_token(), which must equal the original table for all 831 ids.
+    for (const auto & a : kAdded) {
+        if (added_token(a.id) != a.text) fprintf(stderr, "added_token(%d) mismatch\n", (int)a.id);
+        CHECK(added_token(a.id) == a.text);
+    }
+    CHECK(added_token(kBpeVocab - 1).empty());
+    CHECK(added_token(128831).empty());
+    {
+        std::vector<std::string> gguf_like(vocab.begin(), vocab.begin() + kBpeVocab);
+        for (const auto & c : kCases) CHECK(decode_raw(gguf_like, c.ids, c.n, kEos) == c.text);
+        std::vector<std::string> padded(gguf_like);
+        padded.resize(128831); // a vocab padded with empty strings behaves the same
+        for (const auto & c : kCases) CHECK(decode_raw(padded, c.ids, c.n, kEos) == c.text);
+    }
+
     // 2. EOS is never part of the text; out-of-vocab ids are skipped.
     {
         const int32_t ids[] = { 30, kEos, 32, 999999, -5 };

@@ -92,6 +92,13 @@ def main():
         L.append('      %s,' % c_str(text))
         L.append('      %s },' % c_str(cl))
     L.append('};')
+    L.append('// Every added token above the BPE vocab (the GGUF tokenizer.ggml.tokens stops at %d).' % len(tj['model']['vocab']))
+    L.append('static const piece kAdded[] = {')
+    for a in sorted(tj['added_tokens'], key=lambda a: a['id']):
+        if a['id'] >= len(tj['model']['vocab']):
+            L.append('    { %d, %s },' % (a['id'], c_str(a['content'])))
+    L.append('};')
+    L.append('static constexpr int kBpeVocab = %d;' % len(tj['model']['vocab']))
     L.append('} // namespace uocr2_text_fixture')
     open(out_path, 'w', encoding='utf-8', newline='\n').write('\n'.join(L) + '\n')
     print('wrote', out_path, len(used), 'pieces', len(cases), 'cases')

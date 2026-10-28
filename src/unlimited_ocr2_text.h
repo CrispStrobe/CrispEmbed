@@ -109,14 +109,82 @@ inline void append_token_bytes(const std::string & piece, std::string & out) {
     out += mapped;
 }
 
+// The original tokenizer's added tokens above the 128000-entry BPE vocab (tokenizer.json
+// added_tokens, ids 128000..128830). The published GGUFs (cstr/Unlimited-OCR-2-GGUF) carry only
+// model.vocab in tokenizer.ggml.tokens, so these ids have no piece there; returns "" outside.
+inline std::string added_token(int id) {
+    static constexpr int kFirstNamed = 128800;
+    static const char * const kNamed[] = {
+        "<\xEF\xBD\x9C"
+        "fim\xE2\x96\x81hole\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9C"
+        "fim\xE2\x96\x81"
+        "begin\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9C"
+        "fim\xE2\x96\x81"
+        "end\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9CUser\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9C"
+        "Assistant\xEF\xBD\x9C>",
+        "<|EOT|>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81"
+        "calls\xE2\x96\x81"
+        "begin\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81"
+        "calls\xE2\x96\x81"
+        "end\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81"
+        "call\xE2\x96\x81"
+        "begin\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81"
+        "call\xE2\x96\x81"
+        "end\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81outputs\xE2\x96\x81"
+        "begin\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81outputs\xE2\x96\x81"
+        "end\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81output\xE2\x96\x81"
+        "begin\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81output\xE2\x96\x81"
+        "end\xEF\xBD\x9C>",
+        "<\xEF\xBD\x9Ctool\xE2\x96\x81sep\xEF\xBD\x9C>",
+        "<image>",
+        "<|ref|>",
+        "<|/ref|>",
+        "<|det|>",
+        "<|/det|>",
+        "<|grounding|>",
+        "<td>",
+        "</td>",
+        "<tr>",
+        "</tr>",
+        "<|User|>",
+        "<|Assistant|>",
+        "<PAGE>",
+        "<BLOCK>",
+        "<FORK>",
+        "<CHILD>",
+    };
+    static constexpr int kNumNamed = (int)(sizeof(kNamed) / sizeof(kNamed[0]));
+    if (id >= 128000 && id < kFirstNamed) // "<｜place▁holder▁no▁N｜>", N = id - 128000
+        return "<\xEF\xBD\x9Cplace\xE2\x96\x81holder\xE2\x96\x81no\xE2\x96\x81" + std::to_string(id - 128000) +
+               "\xEF\xBD\x9C>";
+    if (id >= kFirstNamed && id < kFirstNamed + kNumNamed) return kNamed[id - kFirstNamed];
+    return std::string();
+}
+
 // tokenizer.decode(ids, skip_special_tokens=False) for generated ids. `eos` (never part of the
-// original's `gen`) and out-of-vocabulary ids are skipped.
+// original's `gen`) and ids with no piece are skipped; an id the GGUF vocab lacks (or stores
+// empty) takes the original added-token content.
 inline std::string decode_raw(const std::vector<std::string> & pieces, const int32_t * ids, int n, int eos) {
     std::string bytes;
     for (int i = 0; i < n; i++) {
         const int id = ids[i];
-        if (id == eos || id < 0 || id >= (int)pieces.size()) continue;
-        append_token_bytes(pieces[(size_t)id], bytes);
+        if (id == eos || id < 0) continue;
+        const bool have = id < (int)pieces.size() && !pieces[(size_t)id].empty();
+        const std::string piece = have ? pieces[(size_t)id] : added_token(id);
+        if (piece.empty()) continue;
+        append_token_bytes(piece, bytes);
     }
     return utf8_lossy(bytes);
 }

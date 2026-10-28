@@ -16,6 +16,8 @@ Output: /kaggle/working/verify/{verify.json,summary.md}.
 import hashlib, json, os, re, subprocess, sys, time
 T_START = time.time()
 COMMIT = '@COMMIT@'
+# @SCOPE@: 'full' = everything below; 'text' = unit tests + default text/ids (F16+Q8) + renderings.
+FULL = '@SCOPE@' != 'text'
 BUDGET = 10.5 * 3600
 OUT = '/kaggle/working/verify'; os.makedirs(OUT, exist_ok=True)
 def el(): return time.time() - T_START
@@ -27,7 +29,7 @@ sh(sys.executable, '-m', 'pip', 'install', '-q', 'uv==0.8.17')
 sh(sys.executable, '-m', 'uv', 'venv', '-q', '--python', '3.12', '--seed', '/kaggle/temp/venv'); PY = '/kaggle/temp/venv/bin/python'
 sh(PY, '-m', 'pip', 'install', '-q', 'pillow==11.3.0', 'numpy==2.2.6')
 NT = str(os.cpu_count())
-report = dict(schema='crispembed-unlimited-ocr2-verify-v1', commit=COMMIT, cpu_count=os.cpu_count(), tests={}, runs=[],
+report = dict(schema='crispembed-unlimited-ocr2-verify-v1', commit=COMMIT, scope='@SCOPE@', cpu_count=os.cpu_count(), tests={}, runs=[],
               vision_bytes=[], checks={})
 try:
     report['cpu_model'] = next(l.split(':', 1)[1].strip() for l in open('/proc/cpuinfo') if l.startswith('model name'))
@@ -133,42 +135,44 @@ for pid in P4:
     ocr('after', 'unlimited-ocr2', pid, CRISPEMBED_UNLIMITED_OCR2_FAST='1')
 for pid in P4:
     ocr('after', 'unlimited-ocr2-q8', pid, CRISPEMBED_UNLIMITED_OCR2_FAST='1')
-# 3: before (old code paths, tiled), F16
-for pid in P4:
-    ocr('before', 'unlimited-ocr2', pid, CRISPEMBED_UNLIMITED_OCR2_FAST='1', **OLD)
+if FULL:
+    # 3: before (old code paths, tiled), F16
+    for pid in P4:
+        ocr('before', 'unlimited-ocr2', pid, CRISPEMBED_UNLIMITED_OCR2_FAST='1', **OLD)
 # renderings
 ocr('clean', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_OUTPUT='clean')
 ocr('legacy-text', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_OUTPUT='legacy')
-# forced untiled (speed opt-out)
-ocr('untiled', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_TILES='0')
-# ablations (F16 table): each change alone
-ocr('ablate-cache-only', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', UOCR2_FAST_CHUNK='256')
-ocr('ablate-chunk-only', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE='0')
+if FULL:
+    # forced untiled (speed opt-out)
+    ocr('untiled', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_TILES='0')
+    # ablations (F16 table): each change alone
+    ocr('ablate-cache-only', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', UOCR2_FAST_CHUNK='256')
+    ocr('ablate-chunk-only', 'unlimited-ocr2', 'table', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE='0')
 
-# vision features byte-equal with the cache on/off (shared by both decoders)
-for alias in ('unlimited-ocr2', 'unlimited-ocr2-q8'):
-    hs = {}
-    for vc in ('1', '0'):
-        dump = f'/kaggle/temp/vis_{alias}_{vc}.f32'
-        r = ocr(f'vision-dump-cache{vc}', alias, 'table', max_tokens='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
-                CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE=vc, UOCR2_DUMP_VISION=dump)
-        hs[vc] = hashlib.sha256(open(dump, 'rb').read()).hexdigest() if os.path.exists(dump) else None
-    report['vision_bytes'].append(dict(alias=alias, sha_cache_on=hs['1'], sha_cache_off=hs['0'],
-                                       equal=hs['1'] is not None and hs['1'] == hs['0']))
-    save()
+    # vision features byte-equal with the cache on/off (shared by both decoders)
+    for alias in ('unlimited-ocr2', 'unlimited-ocr2-q8'):
+        hs = {}
+        for vc in ('1', '0'):
+            dump = f'/kaggle/temp/vis_{alias}_{vc}.f32'
+            r = ocr(f'vision-dump-cache{vc}', alias, 'table', max_tokens='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
+                    CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE=vc, UOCR2_DUMP_VISION=dump)
+            hs[vc] = hashlib.sha256(open(dump, 'rb').read()).hexdigest() if os.path.exists(dump) else None
+        report['vision_bytes'].append(dict(alias=alias, sha_cache_on=hs['1'], sha_cache_off=hs['0'],
+                                           equal=hs['1'] is not None and hs['1'] == hs['0']))
+        save()
 
-# engine-default (exact) decoder with default tiling, one page
-ocr('after-exact-decoder', 'unlimited-ocr2', 'paragraphs')
+    # engine-default (exact) decoder with default tiling, one page
+    ocr('after-exact-decoder', 'unlimited-ocr2', 'paragraphs')
 
-# GGML_NATIVE=ON build (what a local source build gets by default)
-if el() < BUDGET - 3600:
-    try:
-        report['build_native_seconds'] = build('/kaggle/temp/bn', True)
-        for pid in ('table', 'receipt'):
-            ocr('after-native-build', 'unlimited-ocr2', pid, cli='/kaggle/temp/bn/crispembed', CRISPEMBED_UNLIMITED_OCR2_FAST='1')
-        ocr('after-native-build', 'unlimited-ocr2-q8', 'table', cli='/kaggle/temp/bn/crispembed', CRISPEMBED_UNLIMITED_OCR2_FAST='1')
-    except Exception as e:
-        report['build_native_error'] = repr(e)[:2000]
+    # GGML_NATIVE=ON build (what a local source build gets by default)
+    if el() < BUDGET - 3600:
+        try:
+            report['build_native_seconds'] = build('/kaggle/temp/bn', True)
+            for pid in ('table', 'receipt'):
+                ocr('after-native-build', 'unlimited-ocr2', pid, cli='/kaggle/temp/bn/crispembed', CRISPEMBED_UNLIMITED_OCR2_FAST='1')
+            ocr('after-native-build', 'unlimited-ocr2-q8', 'table', cli='/kaggle/temp/bn/crispembed', CRISPEMBED_UNLIMITED_OCR2_FAST='1')
+        except Exception as e:
+            report['build_native_error'] = repr(e)[:2000]
 report['elapsed_seconds'] = round(el(), 1); save()
 
 # ---- checks + summary ----
