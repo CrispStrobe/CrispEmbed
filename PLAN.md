@@ -909,7 +909,7 @@ The standalone `wasm-q8k-cross-v1.yml` registration is source preparation only.
 Protocol SHA649eaad8e6b3d0e20f03ad43a9a6c51051bb5728b37aae3d86367fdc7b4443d1;
 15 small controls and34 protected/eight owned source checks pass independently.
 
-### Frozen form input continuation — claimed
+### Frozen form input continuation — source prepared, hosted result pending
 
 Owner `audit/ocr-form-retained-input-20261028`: preserve initial RGB source813
 and its20 visible rows/19 admitted comparisons. The live form URL again serves
@@ -921,3 +921,5 @@ Add a reusable mounted-input admission helper for native form follow-ups: reject
 wrong/ambiguous candidates before decoding/inference and preserve the default
 URL path when no explicit retained input is supplied. Keep prior invalid rows,
 source-qualified partial scopes and all manifest/gold/prompt/cap bytes unchanged.
+
+The separately versioned form protocol is prepared in [ocr-rgb-form-v1.json](docs/ocr-rgb-form-v1.json). Its14 source/stdlib controls preserve the original decoder/build/metric functions and pin the19 carried comparisons; no new decode or model outcome is claimed before hosted execution.
