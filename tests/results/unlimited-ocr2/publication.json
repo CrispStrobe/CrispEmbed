@@ -1,0 +1,42 @@
+{
+  "schema": "crispembed-unlimited-ocr2-publication-report-v1",
+  "status": "published and re-verified",
+  "variants": [
+    "F16",
+    "Q8_0"
+  ],
+  "remote": {
+    "repo": "cstr/Unlimited-OCR-2-GGUF",
+    "commit": "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378",
+    "files": [
+      {
+        "variant": "F16",
+        "filename": "unlimited-ocr-2-f16.gguf",
+        "bytes": 6692677696,
+        "sha256": "487b887eddaf73e070cd98c3e10d112d21749036ca06b5e7fc103c3fb4def517"
+      },
+      {
+        "variant": "Q8_0",
+        "filename": "unlimited-ocr-2-q8_0.gguf",
+        "bytes": 3571872960,
+        "sha256": "2fc126fc4508f57d409a1689e38a0506df1932d45daffaec00d6d7e0234526d7"
+      }
+    ],
+    "small_files_sha256": {
+      "README.md": "34bbaa6762588a34e56e6c45dee38ab86b6761d5b049563725bc610cd884e12a",
+      "manifest.json": "0662483ef8d2038f6b2713a50e100c86e7a87c64b27c2774c24504376e3e7e6a",
+      "LICENSE": "d985048c6d69429d685fdbe7557340aa0897c0fd8dc038299b148b9c75dc3383",
+      "UPSTREAM_README.md": "3276903e26b37f30d2443ed767a86bc422bebba74fe4c64394b6d6255bd01676"
+    },
+    "urls": {
+      "unlimited-ocr-2-f16.gguf": "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-f16.gguf",
+      "unlimited-ocr-2-q8_0.gguf": "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-q8_0.gguf"
+    }
+  },
+  "card_update": {
+    "hub_commit": "44540403eb112d2349f47bb13933ce96f808cae1",
+    "reason": "tiled pages token-ID exact after tile-token fix 595156ea; weights unchanged (aliases pin e3af0c0c)",
+    "README.md": "1ebf03926c28bd234410c03f3606e88b254d936145530c2d3968b16002cca68a",
+    "manifest.json": "4dfcddcb9cb601194fa851bf499eea6093bf795d6a2db6560dc36b78f5374a34"
+  }
+}
