@@ -1,6 +1,7 @@
 """New protected Q4_K experiment closure; historical guards remain immutable."""
 import hashlib
 import json
+import math
 from pathlib import Path
 import subprocess
 ROOT=Path(__file__).resolve().parents[1]
@@ -20,6 +21,22 @@ REQUIRED={'tools/quantize.cpp','tools/josev2b_composed_panel.py','tools/josev2b_
 
 def require(ok,why):
     if not ok:raise ValueError(why)
+
+
+def reference_extents(report):
+    """Frozen NPY file extents include headers; tensor payload totals do not."""
+    rows=report['arrays'];require(len(rows)==251,'exact original array count required')
+    payload=files=0
+    for row in rows:
+        require(row['dtype']in('float32','int64')and isinstance(row['shape'],list)and row['shape']and
+                all(type(n)is int and n>0 for n in row['shape'])and type(row['bytes'])is int,
+                'original array shape/dtype/extent differs')
+        size=math.prod(row['shape'])*(4 if row['dtype']=='float32'else 8)
+        require(row['bytes']-size==128,'frozen NPY header extent differs')
+        payload+=size;files+=row['bytes']
+    require(payload==report['array_payload_bytes']==279087860 and files==279119988,
+            'frozen original tensor/file extent differs')
+    return dict(file_bytes=files,tensor_payload_bytes=payload,npy_header_bytes=files-payload)
 
 
 def sha(path):

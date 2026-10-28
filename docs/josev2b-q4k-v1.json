@@ -29,15 +29,15 @@
   },
   "owned_sha256": {
     "PLAN.md": "1dc3721bc0b372a1b6a610e462d0f9d108f5c73a344e19dfac04751de520e5b1",
-    "docs/josev2b-q4k-v1.md": "78d4bd860bef0ae372f88adf20af3fcec75ac480ed126a5618956b3b60091aa1",
+    "docs/josev2b-q4k-v1.md": "0a7476e71ced348185746e5a4ec11c66ac92a7dda64fb791ccf2c8554fb7ac69",
     "tests/josev-q4k/CMakeLists.txt": "e84957233668fb506f38e7d53b0cff6e22d81b10530fafbe81b5a8149040fe93",
     "tests/josev-q4k/recovery.cpp": "1afa5611fa020d3ce7446b33e4c96bf7a5d0d82eeeea6fe128e58159c83eb871",
-    "tests/test_josev_q4k_packer.py": "829a2af9485fa3c4fe8ad530e02dc8f7e8026c9aa33575b088a9ba19becc3056",
-    "tools/josev2b_q4k_contract.py": "26299bc2cab47436de10bf284fdfc06a6637334c21e30b616eff5dfcfd80c72c",
+    "tests/test_josev_q4k_packer.py": "de4d4447e3e7434bdb2f84e5590ea47375e8eb47ad00b3d8b138b6162ab32601",
+    "tools/josev2b_q4k_contract.py": "abb45b860075b07f728160c83c46ddad63d452d7e50c1d8f1fcfce6661cb9672",
     "tools/kaggle/josev-q4k/kernel-metadata.json": "a9d36bc3dc32f5c6a1b3ac7cce8c99e7bf3e3295dfef941806f50021b620170b",
     "tools/kaggle/josev-q4k/kernel.py": "c606b2677b0bd1159ae97b3f141454f585ec400378580d01d573b5473cda0757",
     "tools/kaggle/josev-q4k/requirements.lock": "e1f086b64b454999f187e5d5a45de9f00f0fd6109be87b0f72d64f25e10b2813",
-    "tools/kaggle/josev-q4k/worker.py": "fb8480b884eb4f9fd7173f50f9587b9c77f664208b75b4af591a68329e30eada",
+    "tools/kaggle/josev-q4k/worker.py": "21ef898c838b0e7e552423ece9dfe2c537228fb89ef8788bbd903d94d4525e95",
     "tools/quantize_josev2b_q4k.py": "498e88957dca6139bfcf10b5ed0457b1a38f70e8c7d567425843bc4002d8df70",
     "tests/results/josev2b/q4k-initial-setup-rejection.json": "977c3e2c9e30bc1c51e3aed2b87523d676311885b4ae4dae8c1df29fe562ef68",
     "tests/results/josev2b/q4k-initial-bootstrap.json": "41261638bd02c1b85532ba7434a5f79c668ddd096c8268a0abe35f5129f9f31b",
@@ -46,7 +46,11 @@
     "tests/results/josev2b/q4k-initial-native.json": "5e9184fbdd1f0fb6fb8a0c46b3ae924732ab38a6328cc21c9b8737520b85a8b7",
     "tests/results/josev2b/q4k-child-controls-initial-review.json": "0aaa57b6c7129760d4af9ae5318bc71fb62afdecbbd52b55e1d8fd8ced90df91",
     "tests/results/josev2b/q4k-child-controls-initial.log": "37251dead7b5c781c83e264d1d177a7f0b2638f4babf0960c2afc5711e6f2108",
-    "tests/results/josev2b/q4k-child-controls-initial-bootstrap.json": "01e7239b1b5313a0d50cb5776acb57ae5432bb93a771440cabe23a3b38caf653"
+    "tests/results/josev2b/q4k-child-controls-initial-bootstrap.json": "01e7239b1b5313a0d50cb5776acb57ae5432bb93a771440cabe23a3b38caf653",
+    "tests/results/josev2b/q4k-array-extent-initial-review.json": "8bfd0648018d4209bacbb49083cc0fb35eb680905984c9d188fa02a720266505",
+    "tests/results/josev2b/q4k-array-extent-initial-bootstrap.json": "aa354c52401931126011c6aaa48bfaea25674b359dfa59809b19457232c6fff2",
+    "tests/results/josev2b/q4k-array-extent-initial.log": "d58d9016b6b97f8c5b6080862e74b832337df32a6114a2b8464cbceced555aa9",
+    "tests/results/josev2b/q4k-array-extent-initial-native.json": "a63682693b81dbd459204ac4c33c7d592944b4724cd1e76f7d082ab3a6fb115d"
   },
   "protected_sha256": {
     ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",
