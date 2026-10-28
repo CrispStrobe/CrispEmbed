@@ -7035,3 +7035,21 @@ this does not establish all-vector/token/ranking parity on the integrated source
 The115M original and full native/Q4 comparisons remain separate pending work.
 Six author-score checks per completed model differ from the ranking reduction
 by at most4.918e-7. No quantized or cross-client retrieval verdict follows yet.
+
+### Bounded28 October portfolio measurements
+
+WASM F32 same-input operator replay40771950208 passes48/48 comparisons at
+0.002 maximum absolute/0.99999 minimum row cosine, after64 exact own-output
+byte checks.38/48 comparisons are bit exact; worst absolute error1.9073486e-6
+and minimum row cosine0.9999999999999738. Natural layer3 down-projection
+still reaches0.003311038 and the old whole-model candidate remains rejected.
+Do not turn local positive controls into a composed parity or speed claim;
+see [the complete bounded receipt](tests/results/packaging/wasm-f32-operators-v1.json).
+
+Josev's original new20 authored panel scores56/60 fields (English29/30,
+German27/30, NOUL20/20, choice18/20, score18/20), request accuracy0.85.
+All four misses belong to the ordering stratum. These20 correlated requests
+represent10 translated scenario pairs, not60 independent benchmark samples.
+Native/Q4 task parity and broad quality remain pending. Independent scalar
+softmax reconstruction of retained logits differs by at most1.1437108e-7.
+See [the original review](tests/results/josev2b/task-quality-original-review.json).

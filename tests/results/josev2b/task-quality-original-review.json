@@ -43,7 +43,10 @@
     "declared_npy128_byte_headers": true,
     "declared_negative_infinity_counts_all_zero": true,
     "independent_softmax_max_absolute": 1.1437107860778895e-07,
-    "independent_public_fields_and_accuracy": true
+    "independent_public_fields_and_accuracy": true,
+    "complete14_file_snapshot_matches_publisher": true,
+    "exact_head_identity_and_122_tensors": true,
+    "actual_cuda_t4_capability_verified": true
   },
   "array_payload_bytes": 1750416320,
   "array_npy_bytes": 1750605760,
