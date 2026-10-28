@@ -1,0 +1,82 @@
+name: Frozen WASM Q8_K workspace cross-admission v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-q8k-cross-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  cross:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bounded source, workspace integrity and causal-arm controls
+        run: python tests/test_wasm_q8k_cross_v1.py -v
+      - name: Authenticate all old dependencies before any new build
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py prepare --output "$RUNNER_TEMP/q8k-cross"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Exact frozen CPU/WASM compiler profile and test-only barrier capture
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py build --output "$RUNNER_TEMP/q8k-cross"
+      - name: Native1/2 six normal and saved-workspace baselines
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py native --output "$RUNNER_TEMP/q8k-cross"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned actual browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/q8k-browser" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/q8k-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Rehash inputs and modules before browser execution
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py verify --output "$RUNNER_TEMP/q8k-cross"
+      - name: Isolated SIMD128 pthread browser cross-admission
+        run: NODE_PATH="$RUNNER_TEMP/q8k-browser/node_modules" node tests/wasm-q8k-cross/browser.cjs "$RUNNER_TEMP/q8k-cross" baseline
+      - name: Eighteen exact baseline anchors before any hybrid intervention
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py anchors --output "$RUNNER_TEMP/q8k-cross"
+      - name: Native1/2 scale and consistent-integer hybrids
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py native-interventions --output "$RUNNER_TEMP/q8k-cross"
+      - name: Browser scale and consistent-integer hybrids
+        run: NODE_PATH="$RUNNER_TEMP/q8k-browser/node_modules" node tests/wasm-q8k-cross/browser.cjs "$RUNNER_TEMP/q8k-cross" interventions
+      - name: Independent metrics package
+        run: python -m pip install numpy==2.2.6
+      - name: Eighteen old anchors before intervention comparisons
+        run: python tools/ci-heavy/wasm_q8k_cross_v1.py compare --output "$RUNNER_TEMP/q8k-cross"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-q8k-cross-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/q8k-cross/review/
+            ${{ runner.temp }}/q8k-cross/*.log
+            ${{ runner.temp }}/q8k-cross/browser/q8k-report.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-q8k-cross-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/q8k-cross/raw/
+            ${{ runner.temp }}/q8k-cross/browser/q8k-inputs/
+            ${{ runner.temp }}/q8k-cross/browser/q8k-targets/
+            ${{ runner.temp }}/q8k-cross/browser/module/
+            ${{ runner.temp }}/q8k-cross/native-build/**/*.so*
+            ${{ runner.temp }}/q8k-cross/control.gguf
+            ${{ runner.temp }}/q8k-cross/replay.gguf
+          retention-days: 90
+          if-no-files-found: warn
