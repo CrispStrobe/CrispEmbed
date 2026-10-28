@@ -63,6 +63,7 @@ def original(mount,destination):
     require(closure.sha(freeze)==closure.FREEZE_SHA and len(report['arrays'])==251,'frozen input/251-array scope differs')
     require(hits[0].read_bytes()==(ROOT/'tests/results/josev2b/original-reference.json').read_bytes()and
             freeze.read_bytes()==(ROOT/'tests/results/josev2b/original-input-freeze.json').read_bytes(),'public frozen reference differs')
+    extents=closure.reference_extents(report)
     for name,pin in report['source'].items():
         require(hashlib.sha256(closure.git('show',closure.ORIGINAL_SOURCE+':'+name)).hexdigest()==pin,'original worker code identity differs: '+name)
     destination.mkdir(parents=True,exist_ok=False)
@@ -75,9 +76,10 @@ def original(mount,destination):
         require(path.is_file()and not path.is_symlink()and path.resolve().is_relative_to(source.resolve())and
                 path.stat().st_size==row['bytes']and closure.sha(path)==row['sha256'],'frozen v5 array bytes differ')
         target=destination/rel;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(path,target);total+=row['bytes']
-    require(total==279087860,'original array payload bytes differ')
+    require(total==extents['file_bytes'],'original NPY file bytes differ')
     return json.loads(freeze.read_text()),report,dict(version_label='v5',reference_sha256=closure.REFERENCE_SHA,
                freeze_sha256=closure.FREEZE_SHA,source=closure.ORIGINAL_SOURCE,arrays=251,array_bytes=total,
+               tensor_payload_bytes=extents['tensor_payload_bytes'],npy_header_bytes=extents['npy_header_bytes'],
                original_rerun=False,original_payload_identity_verified=True)
 
 

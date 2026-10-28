@@ -41,6 +41,17 @@ def fixture(path,expected,quantized=False):
 
 
 class Controls(unittest.TestCase):
+    def test_original_numpy_file_and_tensor_extents_are_distinct(self):
+        report=json.loads((ROOT/'tests/results/josev2b/original-reference.json').read_text())
+        result=contract.reference_extents(report)
+        self.assertEqual(result,dict(file_bytes=279119988,tensor_payload_bytes=279087860,npy_header_bytes=251*128))
+        for change in ('file','shape','payload'):
+            bad=copy.deepcopy(report)
+            if change=='file':bad['arrays'][0]['bytes']-=128
+            elif change=='shape':bad['arrays'][0]['shape'][-1]+=1
+            else:bad['array_payload_bytes']+=128
+            with self.assertRaises(ValueError):contract.reference_extents(bad)
+
     def test_frozen_real_inventory_and_protection(self):
         rows=q.schema();plan=q.recipe(rows)
         self.assertEqual(len(rows),442);self.assertEqual(sum(k==12 for k in plan.values()),150)

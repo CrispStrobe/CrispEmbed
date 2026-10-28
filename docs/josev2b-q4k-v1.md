@@ -117,3 +117,14 @@ a PID; provider startup diagnostics could follow the actual PID. The corrected
 test uses one explicit PID marker and exercises noisy child stderr. It still
 checks that timeout kills the process group and reaps the measured child. No
 package is added and no model, recipe, original output or budget changes.
+
+### Original array extent accounting
+
+The [third hosted preflight](../tests/results/josev2b/q4k-array-extent-initial-review.json)
+verified every one of the 251 original file hashes, then rejected an accounting
+error before model access or compilation. The frozen tensor payload is
+279,087,860 bytes; the NPY files total 279,119,988 bytes, including 251 unchanged
+128-byte headers. The worker now requires both independently derived extents.
+All original file hashes, shapes, dtypes, inputs and outputs remain unchanged.
+A new control exercises this exact frozen metadata and rejects altered file,
+shape and payload counts without loading any arrays.

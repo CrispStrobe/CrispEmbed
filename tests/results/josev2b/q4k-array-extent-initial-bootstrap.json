@@ -1,0 +1,87 @@
+{
+  "schema": "crispembed-josev-q4k-bootstrap-v1",
+  "source": "765c758fee1fad529530ca3bc6fd0424a9c7aed3",
+  "completed": false,
+  "commands": [
+    {
+      "name": "clone",
+      "exit": 0,
+      "seconds": 2.076518378000003,
+      "log": "clone.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "checkout",
+      "exit": 0,
+      "seconds": 5.6374421570000095,
+      "log": "checkout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "fetch-original-source",
+      "exit": 0,
+      "seconds": 0.5687203769999769,
+      "log": "fetch-original-source.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "source-closure",
+      "exit": 0,
+      "seconds": 2.623368456000037,
+      "log": "source-closure.log",
+      "sha256": "ffa0fd99f661970d28ccb8461bcd0900de5b264cdfee657485e981b276f79fd5"
+    },
+    {
+      "name": "submodule",
+      "exit": 0,
+      "seconds": 5.486675817999981,
+      "log": "submodule.log",
+      "sha256": "3061e1e0952c06e3eef2ba9c2ce2a55164679ab4a327cc8de47cb2be32a81f29"
+    },
+    {
+      "name": "install-locked-tools",
+      "exit": 0,
+      "seconds": 7.746197393999978,
+      "log": "install-locked-tools.log",
+      "sha256": "d1cc046e46b7c456bfbba78db59e91bbe7008f2e7e6820f1326dbccd87c33fdc"
+    },
+    {
+      "name": "pip-check",
+      "exit": 0,
+      "seconds": 0.4164902559999746,
+      "log": "pip-check.log",
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    {
+      "name": "stdlib-controls",
+      "exit": 0,
+      "seconds": 0.6681336340000144,
+      "log": "stdlib-controls.log",
+      "sha256": "95ef599ddaa224424ffb313b090f152ea060efb14f32740533b1d81fb0f9b582"
+    },
+    {
+      "name": "child-accounting-controls",
+      "exit": 0,
+      "seconds": 1.4204143919999979,
+      "log": "child-accounting-controls.log",
+      "sha256": "12aa107a674a5cb0e3490bd095894dd5be59bdfb36affbb8c56c9d39048a68e0"
+    },
+    {
+      "name": "actual-model-panel",
+      "exit": 1,
+      "seconds": 7.742818080999996,
+      "log": "actual-model-panel.log",
+      "sha256": "d58d9016b6b97f8c5b6080862e74b832337df32a6114a2b8464cbceced555aa9"
+    }
+  ],
+  "execution": "CPU2 actual F32/Q4_K model comparison",
+  "gpu_execution": false,
+  "publication_qualified": false,
+  "executed_script_sha256": "f7451442f1a8439fe3cb0d2635ab49466c0d237961d015257893692ee94ce3a0",
+  "resources": {
+    "available_ram_bytes": 32700772352,
+    "free_disk_bytes": 1126151974912,
+    "cpu_count": 4
+  },
+  "error": "RuntimeError: setup/model task rejected in actual-model-panel"
+}
