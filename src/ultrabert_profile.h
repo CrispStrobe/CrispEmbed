@@ -32,7 +32,7 @@ inline std::map<std::string, std::pair<int64_t, int64_t>> schema() {
     }
     return result;
 }
-inline void validate(gguf_context * g) {
+inline void validate(gguf_context * g, bool quantized = false) {
     require(g != nullptr, "missing metadata");
     auto str = [&](const char * key) { return core_gguf::kv_str(g, key, ""); };
     auto u = [&](const char * key, uint32_t value) {
@@ -43,7 +43,7 @@ inline void validate(gguf_context * g) {
                 str("ultrabert.source.weight_sha256") ==
                     "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
             "unsupported source profile");
-    u("general.file_type", 0);
+    u("general.file_type", quantized ? GGML_FTYPE_MOSTLY_Q4_K : GGML_FTYPE_ALL_F32);
     u("ultrabert.context_length", 32768);
     u("ultrabert.embedding_length", 768);
     u("ultrabert.block_count", 24);
@@ -83,9 +83,19 @@ inline void validate(gguf_context * g) {
         const auto index = gguf_find_tensor(g, item.first.c_str());
         require(index >= 0, "missing tensor: " + item.first);
         const auto * ne = gguf_get_tensor_ne(g, index);
-        require(gguf_get_tensor_type(g, index) == GGML_TYPE_F32 && ne[0] == item.second.first &&
-                    ne[1] == item.second.second && ne[2] == 1 && ne[3] == 1,
+        const auto type = gguf_get_tensor_type(g, index);
+        const bool critical = item.first == "token_embd.weight" || item.first.find("norm.weight") != std::string::npos;
+        const bool allowed =
+            type == GGML_TYPE_F32 ||
+            (quantized && !critical && (type == GGML_TYPE_F16 || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_K));
+        require(allowed && ne[0] == item.second.first && ne[1] == item.second.second && ne[2] == 1 && ne[3] == 1,
                 "unsupported tensor shape/precision: " + item.first);
+    }
+    if (quantized) {
+        bool actual_q4_k = false;
+        for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i)
+            actual_q4_k = actual_q4_k || gguf_get_tensor_type(g, i) == GGML_TYPE_Q4_K;
+        require(actual_q4_k, "Q4_K profile requires actual Q4_K tensors");
     }
 }
 inline bool load_tokenizer(gguf_context * g, BPETokenizer & raw, std::vector<std::string> & vocab) {
