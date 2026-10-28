@@ -145,7 +145,22 @@ void unit(int logical, bool routed) {
     }
     require(rejected, "excess padding accepted");
 }
+void metadata_types() {
+    std::unique_ptr<gguf_context, decltype(&gguf_free)> g(gguf_init_empty(), gguf_free);
+    require(!moedern_q4k::storage_metadata(g.get()), "missing precision metadata accepted");
+    gguf_set_val_u32(g.get(), "general.file_type", GGML_FTYPE_MOSTLY_Q4_K);
+    gguf_set_val_u32(g.get(), "general.quantization_version", GGML_QNT_VERSION);
+    require(moedern_q4k::storage_metadata(g.get()), "actual Q4_K metadata rejected");
+    gguf_set_val_u32(g.get(), "general.file_type", GGML_FTYPE_MOSTLY_Q4_0);
+    require(!moedern_q4k::storage_metadata(g.get()), "Q4_0 mislabeled as Q4_K");
+    gguf_set_val_u32(g.get(), "general.file_type", GGML_FTYPE_MOSTLY_Q4_K);
+    gguf_set_val_u32(g.get(), "general.quantization_version", GGML_QNT_VERSION + 1);
+    require(!moedern_q4k::storage_metadata(g.get()), "unknown block version accepted");
+    gguf_set_val_str(g.get(), "general.quantization_version", "2");
+    require(!moedern_q4k::storage_metadata(g.get()), "string quantization version accepted");
+}
 int run() {
+    metadata_types();
     require(GGML_FTYPE_MOSTLY_Q4_K == 12, "pinned actual Q4_K file-type ABI");
     require(ggml_blck_size(GGML_TYPE_Q4_K) == 256 && ggml_type_size(GGML_TYPE_Q4_K) == 144, "pinned actual Q4_K ABI");
     require(!moedern_q4k::compresses(16) && moedern_q4k::compresses(128), "narrow precision policy");

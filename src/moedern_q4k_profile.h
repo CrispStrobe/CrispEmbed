@@ -49,9 +49,16 @@ inline bool text(const gguf_context * g, const char * key, const char * expected
     const auto k = gguf_find_key(g, key);
     return k >= 0 && gguf_get_kv_type(g, k) == GGUF_TYPE_STRING && std::strcmp(gguf_get_val_str(g, k), expected) == 0;
 }
+inline bool storage_metadata(const gguf_context * g) {
+    if (!g) return false;
+    const auto type = gguf_find_key(g, "general.file_type"), version = gguf_find_key(g, "general.quantization_version");
+    return type >= 0 && version >= 0 && gguf_get_kv_type(g, type) == GGUF_TYPE_UINT32 &&
+           gguf_get_kv_type(g, version) == GGUF_TYPE_UINT32 && gguf_get_val_u32(g, type) == GGML_FTYPE_MOSTLY_Q4_K &&
+           gguf_get_val_u32(g, version) == GGML_QNT_VERSION;
+}
 inline const pin * metadata(const gguf_context * g, std::string & error) {
     for (const auto & p : pins())
-        if (g && gguf_get_n_tensors(g) == int64_t(p.tensors) &&
+        if (storage_metadata(g) && gguf_get_n_tensors(g) == int64_t(p.tensors) &&
             text(g, "general.architecture", "modernbert_hash_moe_v10") && text(g, "general.license", "apache-2.0") &&
             text(g, "modernbert_hash_moe_v10.source_revision", p.revision) &&
             text(g, "moedern.packed.format", "crispembed-moedern-q4k-padded-v1") &&

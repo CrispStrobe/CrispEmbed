@@ -862,3 +862,15 @@ identical to the exact decoder. Remaining (see [handoff](docs/handoff-2026-10-28
 - [ ] MoEdern 27M/115M: Rust/Dart/HTTP consumers and retrieval quality.
 - [ ] Run Ovis final-integrated v2 and successor-assets v2 on hosted CI at the
   re-declared base (6a61759d) and review before any closure claim.
+
+### MoEdern full retrieval baseline — delegated portfolio continuation, 28 October
+
+The root portfolio owner adds the predeclared [original-first full SciFact
+protocol](docs/moedern-scifact-parity-v1.md) for all three MoEdern sizes. Existing
+1.5M SciFact remains quality-only; the frozen ten-case original captures remain
+unchanged. Execute each original variant separately on admitted hosted CPU,
+review small reports and freeze all 5,483 vector/ID/mask identities remotely,
+then implement native and padded-Q4_K full retrieval replay against that freeze.
+Acceptance: all original IDs/masks; unchanged F32 0.002/0.99999; each retrieval
+metric drop at most 0.001 and top-one agreement at least 0.99. Quantized component
+failures remain explicit; no publication before full retrieval and consumers.
