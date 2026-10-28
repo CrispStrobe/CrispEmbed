@@ -46,11 +46,12 @@ class Protocol(unittest.TestCase):
     def test_receipts_summary(self):
         r = p.receipts(self.cfg)
         self.assertTrue(r["untiled"]["ids_exact"])
-        self.assertEqual(r["tiled"]["status"], "experimental")
-        self.assertLessEqual(r["tiled"]["max_box_coordinate_difference"], 3)
+        self.assertEqual(r["tiled"]["status"], "token-id-exact")
+        self.assertTrue(r["tiled"]["ids_exact"])
 
     def test_receipts_refuse_regression(self):
-        bad = dict(self.cfg, parity_limits={"tiled_max_box_coordinate_difference": 2, "box_scale": 999})
+        # the superseded text-only tiled receipt must not pass the token-ID gate
+        bad = dict(self.cfg, receipts=dict(self.cfg["receipts"], tiled="tests/results/unlimited-ocr2/native-tiled.json"))
         with self.assertRaises(ValueError):
             p.receipts(bad)
 
@@ -61,7 +62,7 @@ class Protocol(unittest.TestCase):
         self.assertIn("base_model: baidu/Unlimited-OCR-2\n", text)
         self.assertIn(self.cfg["upstream"]["revision"], text)
         self.assertIn("a" * 64, text)
-        self.assertIn("not validated", text)
+        self.assertIn("Tiled pages", text)
         self.assertIn("Copyright (c) 2026 Baidu", text)
         self.assertNotIn("/home/", text)
         self.assertNotIn("/mnt/", text)

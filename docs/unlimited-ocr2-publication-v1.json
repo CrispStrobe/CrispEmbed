@@ -36,7 +36,7 @@
   "receipts": {
     "original": "tests/results/unlimited-ocr2/original-reference.json",
     "untiled": "tests/results/unlimited-ocr2/native-untiled.json",
-    "tiled": "tests/results/unlimited-ocr2/native-tiled.json",
+    "tiled": "tests/results/unlimited-ocr2/native-tile-tokens.json",
     "fast_decoder": "tests/results/unlimited-ocr2/fast-decoder.json"
   },
   "parity_limits": {

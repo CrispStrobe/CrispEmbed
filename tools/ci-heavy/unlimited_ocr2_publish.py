@@ -77,15 +77,13 @@ def receipts(cfg, root=ROOT):
     tiled = [c for c in r["tiled"]["cases"] if c["tiled"]]
     untiled = [c for c in r["tiled"]["cases"] if not c["tiled"]]
     require(tiled and all(c["ids_exact"] for c in untiled), "tiling receipt untiled case not exact")
-    require(all(c["text_without_boxes_equal"] and c["max_box_coordinate_difference"] <= lim for c in tiled),
-            "tiled receipt exceeds text/box limits")
+    require(all(c["ids_exact"] for c in tiled), "tiled receipt is not token-ID exact")
     require(all(c["fast_ids_equal_exact"] for c in r["fast_decoder"]["cases"]), "fast decoder differs from exact")
     return {
         "untiled": {"case": r["untiled"]["case"], "ids_exact": True, "tokens": r["untiled"]["tokens"],
                     "commit": r["untiled"]["commit"]},
-        "tiled": {"status": "experimental", "cases": [c["id"] for c in tiled], "text_exact": True,
-                  "max_box_coordinate_difference": max(c["max_box_coordinate_difference"] for c in tiled),
-                  "box_scale": cfg["parity_limits"]["box_scale"], "commit": r["tiled"]["commit"]},
+        "tiled": {"status": "token-id-exact", "cases": [c["id"] for c in tiled], "ids_exact": True,
+                  "commit": r["tiled"]["commit"]},
         "fast_decoder": {"ids_equal_exact": True, "cases": len(r["fast_decoder"]["cases"]),
                          "commit": r["fast_decoder"]["commit"]},
         "reference": {"revision": r["original"]["revision"], "versions": r["original"]["versions"]},
@@ -185,10 +183,9 @@ conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants 
 
 - **Untiled pages:** generated token IDs are exactly identical to the original
   ({parity['untiled']['tokens']} tokens on `{parity['untiled']['case']}`).
-- **Tiled pages (not validated):** the CrispEmbed runtime tiling path had a vision-token-count bug
-  (256 instead of 100 tokens per 640px tile). Earlier tiled runs matched the recognized text only, not
-  token IDs. A runtime fix is under verification; until it lands, do not rely on tiled output. This is a
-  runtime issue: the weights in this repository are unaffected.
+- **Tiled pages:** generated token IDs are exactly identical to the original on {len(t['cases'])} tiled
+  pages (4x3 tiles, 1503 vision tokens), from CrispEmbed commit `{t['commit'][:8]}` on. Earlier runtimes
+  emitted 256 instead of 100 vision tokens per 640px tile and matched the text only; the weights were never affected.
 - The opt-in fast decoder reproduces the exact decoder token-for-token on all {parity['fast_decoder']['cases']} pages.
 - Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
 
@@ -198,7 +195,7 @@ Unlimited-OCR-2 support is default-off in CrispEmbed and is enabled with an envi
 
 ```bash
 CRISPEMBED_UNLIMITED_OCR2=1 crispembed -m unlimited-ocr-2-f16.gguf --ocr page.png
-# tiling of large pages (CRISPEMBED_UNLIMITED_OCR2_TILES=1) is not validated yet
+# tiling of large pages: CRISPEMBED_UNLIMITED_OCR2_TILES=1
 ```
 """
 
