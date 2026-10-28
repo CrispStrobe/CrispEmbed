@@ -77,3 +77,24 @@ Expected small result: `moedern-scifact-native-q4k/result/review/native.json`.
 Detailed Ref/per-row journals, client outputs, ranking matrices and candidate
 GGUF are under the same result's `raw/`; original payloads remain in their
 separately frozen producer outputs. No original recapture is authorized here.
+
+## Initial 27M setup rejection
+
+The first submitted source `8d9beb29317cb946202b4e9044e0cdb3fb27d298`
+reached its actual isolated entry point after source, submodule, locked-package,
+pip-check and 21 small controls passed. It then rejected during a stdlib import:
+`authored_v1.py` loaded the frozen replay helper by filename without declaring
+its sibling-import directory, so `contract_v2` could not be resolved. The worker
+never entered `main`, created no native report, read no original arrays and ran
+no compilation or model inference. This is a setup negative, not numerical
+parity evidence. The unrelated `sitecustomize` warning about `wrapt` is retained
+and no unlocked package was added.
+
+[The exact bootstrap receipt](../tests/results/moedern-colbert/scifact-native-27m-initial-bootstrap.json)
+and [version-bound small-file hashes and limits](../tests/results/moedern-colbert/scifact-native-27m-initial-setup-rejection.json)
+preserve that outcome. The bounded correction declares only the already pinned
+helper directory and exercises the actual `python -I worker_v1.py --help` path
+before any wheel installation. A fresh-process stdlib regression explicitly
+rejects framework/array/model package imports during that smoke check. Original
+bytes, runtime, math, panels and gates remain unchanged. No replacement is
+authorized until source review and a fresh capacity check.

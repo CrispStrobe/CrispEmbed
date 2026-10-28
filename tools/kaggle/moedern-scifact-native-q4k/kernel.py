@@ -71,6 +71,9 @@ def main():
         if subprocess.check_output(['git','-C',checkout,'rev-parse','HEAD'],text=True).strip()!=COMMIT:raise ValueError('checkout differs')
         run('fetch-original-source',['git','-C',checkout,'fetch','--quiet','origin','2a872f9fe7ac5637286ff7bda2b5c19afee23cd7'],env=env)
         run('source-closure',[sys.executable,checkout/'tools/moedern-scifact/contract_native_v1.py','--variant',VARIANT],env=env)
+        # Import the real entry point before any wheel/model access. This
+        # exercises pinned helper sibling imports without array frameworks.
+        run('stdlib-entrypoint',[sys.executable,'-I',checkout/'tools/moedern-scifact/worker_v1.py','--help'],env=env)
         run('submodule',['git','-C',checkout,'submodule','update','--init','--recursive','--depth','1'],env=env)
         prefix=SCRATCH/'venv';venv.EnvBuilder(with_pip=False,system_site_packages=False).create(prefix)
         py=prefix/'bin/python'

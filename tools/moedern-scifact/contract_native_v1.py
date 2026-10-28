@@ -19,7 +19,9 @@ REQUIRED={'CMakeLists.txt','.gitmodules','tools/quantize.cpp','tools/ci_process.
  'tests/moedern-q4k/controls.cpp','tests/moedern-q4k/recovery.cpp','tests/moedern-public/consumer.c',
  'tests/moedern-public/python_consumer.py','tests/moedern-public/rust_consumer.rs','tests/moedern-public/dart_consumer.dart',
  'tests/fixtures/moedern-colbert/panel-v1.json','tests/test_moedern_all_size_clients.py'}
-OWNED={'PLAN.md','tests/test_ci_process.py','docs/moedern-scifact-native-q4k-v1.md','tools/moedern-scifact/contract_native_v1.py',
+OWNED={'PLAN.md','tests/test_ci_process.py',
+ 'tests/results/moedern-colbert/scifact-native-27m-initial-bootstrap.json',
+ 'tests/results/moedern-colbert/scifact-native-27m-initial-setup-rejection.json','docs/moedern-scifact-native-q4k-v1.md','tools/moedern-scifact/contract_native_v1.py',
  'tools/moedern-scifact/original_inputs_v1.py','tools/moedern-scifact/providers_v1.py',
  'tools/moedern-scifact/capture_v1.py','tools/moedern-scifact/compare_v1.py',
  'tools/moedern-scifact/authored_v1.py','tools/moedern-scifact/worker_v1.py','tools/moedern-scifact/diff_adapter_v1.py',
