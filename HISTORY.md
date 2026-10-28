@@ -1,3 +1,47 @@
+## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
+
+**Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of
+100 vision tokens per 640px tile (bilinear 16x16 upsample). Fixed at 595156ea; the
+3-page panel is now token-ID exact including both tiled pages (1503 vision tokens,
+cosine 0.9999994) — [native](tests/results/unlimited-ocr2/native-tile-tokens.json),
+[vision](tests/results/unlimited-ocr2/vision-diff-tile-tokens.json); the earlier
+text-only tiled receipt is marked superseded. Precision sweep: F32/F16/Q8_0 untiled
+exact, Q4_K/mixed not ([sweep](tests/results/unlimited-ocr2/precision-sweep.md)).
+Published F16 + Q8_0 to `cstr/Unlimited-OCR-2-GGUF@e3af0c0c` (MIT; LICENSE from Baidu's
+code repo pinned by sha256; card refreshed @44540403); aliases `unlimited-ocr2`,
+`unlimited-ocr2-q8` ([publication](tests/results/unlimited-ocr2/publication.json)).
+Initial publish failed on a missing `tokenizers` pin (kept in the run history).
+Published-model trial on Kaggle ([trial](tests/results/unlimited-ocr2/trial.json)):
+aliases verify; text CER 0 on 5 synthetic pages; F16 tiled exact vs original on 4/4;
+Q8_0 tiled diverges on 2/4; CLI output issues (table tags dropped, inline box markup)
+and ~2.7x slower tiled path — fixes on branch `fix/unlimited-ocr2-trial-findings-20261028`.
+
+**MiniCPM-OCR-1.0** (`openbmb/MiniCPM-OCR-1.0@6796197b`, Apache-2.0, 1.3B: SigLIP
+vision + 2x2 projector + Qwen3.5 decoder). Native runtime in `src/minicpm_ocr*`
+reusing the qwen35 decoder (vocab-size overload) and the shared torch uint8 bicubic
+resizer (`src/core/torch_bicubic_u8.h`). An initial draft contained guessed
+preprocessing details; all were replaced by decisions cited from transformers 5.21.0
+(three guesses had been wrong: resize kernel, pretokenizer regex, position bucketing).
+First Kaggle parity run: 5 cases x F32/F16 input IDs, generated IDs and text exact,
+all stages ~1e-5 ([parity](tests/results/minicpm-ocr/native-parity.json)). Published F16
+to `cstr/MiniCPM-OCR-1.0-GGUF@6705b065` ([publication](tests/results/minicpm-ocr/publication.json));
+initial publish failed on a torch-only safetensors read (fixed with a torch-free
+reader). Alias `minicpm-ocr`; CLI and server engine `minicpm-ocr`. llama.cpp
+(MIT, tag b11951) has its own MiniCPM-OCR support; it was read for cross-checking only.
+
+**MoEdern.** 115M author-runtime rerun with the fast path: ours-fast 3.3/3.6-3.8 docs/s
+vs author F32 2.7/3.1 (2/4 threads), ours exact 10/10
+([115M](tests/results/moedern-colbert/vago-runtime-compare-115m.md); pre-fast receipt
+kept). Q8_0/Q4_0 opt-in measured and not adopted
+([quant](tests/results/moedern-colbert/quant-q8-q4.json)).
+
+**CI/audit.** Build fixes: `test-ovisocr2-ffn` link and forward-declaration, MSVC
+lambda capture (`static constexpr`), MSVC C1061 (CLI option chain split), test
+`clean_exit`. Ovis final-integrated v2 passed (40617454521). Successor assets v2: all
+consumers pass except the expected wasm rounding failure; bindings scratch crate and
+fixture allowlist fixed (`v1_amendments`), corpus re-proved (40629090339).
+`tools/redeclare_final_v2.py` automates the v2 re-pins.
+
 ## 27 October 2026 (late) — MoEdern 27M/115M public and published, fast path; Unlimited-OCR-2 native untiled exact
 
 **MoEdern 27M/115M public consumers** (Kaggle CPU kernels, source 0b7f7095): C, C

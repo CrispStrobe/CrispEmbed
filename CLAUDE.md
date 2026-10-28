@@ -1,6 +1,6 @@
 # Agent handoff notes
 
-Start with [the current wrap-up handoff](docs/handoff-2026-10-27.md). It lists
+Start with [the current wrap-up handoff](docs/handoff-2026-10-28.md). It lists
 exact active jobs/branches, completed evidence and remaining acceptance gates.
 This main update documents experimental branches; it does not merge their runtime.
 

@@ -12,6 +12,14 @@ and [the consumer handoff](docs/current-state-and-next-steps.md) before claiming
 Start with the [executable next-agent handoff](docs/next-agent-handoff.md), which
 records exact sources, remaining work, acceptance checks and artifact expiry.
 
+## 28 October wrap-up — open lanes
+
+The scoped, ordered task list is in [the 28 October handoff](docs/handoff-2026-10-28.md#open-tasks-in-priority-order):
+(1) main CI green at head; (2) merge Unlimited-OCR-2 trial fixes after Kaggle verify +
+card refresh; (3) MiniCPM-OCR stage benchmark → optimize, Q8_0 verdict; (4) real-scan
+OCR evaluation; (5) successor-assets v2 wasm parity; (6) MoEdern consumers/quality;
+(7) OCR coverage beyond panels.
+
 ## Execution order
 
 ### Next bounded lanes after the completed Ovis audits
