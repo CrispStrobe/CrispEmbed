@@ -1,0 +1,81 @@
+name: MoEdern frozen SciFact GHA provider adapter v1
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Reviewed exact forty-hex adapter source'
+        required: true
+        type: string
+      variant:
+        description: 'Bounded27M activation; healthy1.5M remains on Kaggle'
+        type: choice
+        options: ['27M']
+        default: '27M'
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-scifact-gha-adapter-${{ inputs.variant }}
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      REVIEWED_SOURCE: ${{ inputs.source_ref }}
+      VARIANT: ${{ inputs.variant }}
+      GH_TOKEN: ${{ github.token }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OMP_NUM_THREADS: '2'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Source and genuine service/resource/secret admission before tools or payloads
+        run: |
+          python tools/ci-heavy/moedern_scifact_gha_v1.py admit --variant "$VARIANT" --reviewed-source "$REVIEWED_SOURCE" --scratch "$RUNNER_TEMP/moedern-scratch" --mount "$RUNNER_TEMP/moedern-input" --out "$RUNNER_TEMP/moedern-out"
+          python tests/test_moedern_scifact_gha_adapter.py -v
+          python tests/test_moedern_scifact_native_q4k.py -v
+          python tests/test_ci_process.py -v
+      - name: Frozen source submodule and isolated numerical tooling
+        run: |
+          git submodule update --init --recursive --depth 1
+          git fetch --quiet origin 2a872f9fe7ac5637286ff7bda2b5c19afee23cd7
+          python -m venv "$RUNNER_TEMP/moedern-worker"
+          "$RUNNER_TEMP/moedern-worker/bin/python" -m pip install --no-deps --only-binary=:all: --require-hashes -r tools/kaggle/moedern-scifact-native-q4k/requirements.lock
+          "$RUNNER_TEMP/moedern-worker/bin/python" -I -m pip check
+          python -m venv "$RUNNER_TEMP/moedern-fetch"
+          "$RUNNER_TEMP/moedern-fetch/bin/python" -m pip install --only-binary=:all: https://files.pythonhosted.org/packages/13/d7/ef195107ced87945b98104e783147ec17096f65ef913bff24dbaab08498a/kaggle-2.2.2-py3-none-any.whl#sha256=ebb70a5338cf8d75998668f4415da753065d8996ff315d78342091f44d2d2e71
+      - name: Exact original version and all six full raw member hashes before native models
+        run: |
+          "$RUNNER_TEMP/moedern-fetch/bin/python" tools/ci-heavy/moedern_scifact_gha_v1.py fetch --variant "$VARIANT" --reviewed-source "$REVIEWED_SOURCE" --scratch "$RUNNER_TEMP/moedern-scratch" --mount "$RUNNER_TEMP/moedern-input" --out "$RUNNER_TEMP/moedern-out"
+      - name: Unchanged corrected3c F32 control then actual Q4 full SciFact and clients
+        run: |
+          python tools/ci-heavy/moedern_scifact_gha_v1.py run --variant "$VARIANT" --reviewed-source "$REVIEWED_SOURCE" --scratch "$RUNNER_TEMP/moedern-scratch" --mount "$RUNNER_TEMP/moedern-input" --out "$RUNNER_TEMP/moedern-out" --worker-python "$RUNNER_TEMP/moedern-worker/bin/python"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-scifact-gha-review-${{ inputs.variant }}-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/moedern-out/*.json
+            ${{ runner.temp }}/moedern-out/*.log
+            ${{ runner.temp }}/moedern-out/result/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moedern-scifact-gha-raw-${{ inputs.variant }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-out/result/raw/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn
