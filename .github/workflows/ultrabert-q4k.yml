@@ -1,5 +1,6 @@
 name: UltraBERT protected Q4_K frozen-original retrieval
 on:
+  workflow_dispatch:
   workflow_call:
 permissions:
   contents: read

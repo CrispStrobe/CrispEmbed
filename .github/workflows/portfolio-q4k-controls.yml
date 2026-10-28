@@ -1,5 +1,6 @@
 name: Portfolio Q4_K model-free precision controls
 on:
+  workflow_dispatch:
   workflow_call:
 permissions:
   contents: read
