@@ -1,3 +1,15 @@
+## 28 October: MiniCPM pinned Python source audit
+
+The [bounded source audit](docs/minicpm-ocr-graph-source-audit.md) checks the
+unchanged `83eac856` Mini-only stored graph against exact Transformers5.21.0
+publisher-wheel source entries: Qwen87,748B/SHA`af05d0ac…` and
+Mini37,602B/SHA`45d60914…`. Strict range extraction retained source identities
+without a whole-wheel download, package installation or import. Nine checks
+cover layouts, norms, RoPE, state/cache ownership, stored-type projections and
+the tied head; no concrete source blocker was found. The chunk64-versus-retained
+recurrent floating-order limitation is explicit. This is source evidence only:
+actual numerical, projection, decoded and performance gates remain pending.
+
 ## 28 October: portfolio preflight corrections
 
 Josev's protected Q4K replay stopped before model access in two corrected
