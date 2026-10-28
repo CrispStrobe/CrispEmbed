@@ -160,6 +160,14 @@ class Recipe(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Q4_K'):p.protected_q4(ref,native)
         ref,native=self.fixture();native.pop(name)
         with self.assertRaisesRegex(ValueError,'names'):p.protected_q4(ref,native)
+    def test_q8_patch_requires_f16_four_axes_and_exact_source_bits(self):
+        name='v.emb.patch_embedding.weight'
+        ref={name:dict(type=1,shape=[14,14,3,1152],bytes=1354752,sha256='a'*64)}
+        self.assertTrue(p.protected_q8_patch(ref,copy.deepcopy(ref))['exact_f16_source'])
+        for field,value in [('type',0),('shape',[588,1152]),('sha256','b'*64),('bytes',2709504)]:
+            bad=copy.deepcopy(ref);bad[name][field]=value
+            with self.assertRaises(ValueError):p.protected_q8_patch(ref,bad)
+
     def test_actual_ref_api_schema_fixed_budgets_and_no_model_import(self):
         self.assertNotIn('numpy',sys.modules);self.assertNotIn('torch',sys.modules)
         s=(ROOT/'tools/minicpm-ocr/graph_panel.py').read_text()
