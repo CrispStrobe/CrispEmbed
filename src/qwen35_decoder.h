@@ -35,6 +35,9 @@ struct decoder_outputs {
 };
 // Explicit small-model schedule; no automatic support for unknown checkpoints.
 bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights);
+// Same schedule with an explicit vocabulary size (248320 above; MiniCPM-OCR-1.0
+// ships 248100 rows with a tied head).
+bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights, int vocab);
 bool embed_cpu(ggml_tensor * embedding, const std::vector<int> & ids, std::vector<float> & hidden);
 // Consumes merged vision/text embeddings. Frontend/tokenizer are separate.
 bool decoder_cpu(const decoder_weights & weights, const attention_config & config, const float * hidden,

@@ -30,6 +30,11 @@ class frontend_tokenizer {
 
 public:
     bool load(gguf_context * metadata);
+    // MiniCPM-OCR-1.0 GGUF (arch minicpm_ocr): same Qwen3.5 byte-level BPE,
+    // 248100-entry vocabulary, stops [248044, 248046]. Fills the same state as
+    // load(), so encode()/decode()/is_stop() are shared; image_prompt() is not
+    // used for this profile (the MiniCPM slice layout lives in minicpm_ocr.cpp).
+    bool load_minicpm_ocr(gguf_context * metadata);
     bool encode(const std::string & text, std::vector<int> & ids) const;
     bool decode(const std::vector<int> & ids, std::string & text) const;
     // LightOn custom text, or the pinned original Ovis prompt (empty argument).

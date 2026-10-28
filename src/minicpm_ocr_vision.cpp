@@ -11,10 +11,10 @@
 
 #include "core/env_gate.h"
 #include "core/gelu_tanh_f32.h"
+#include "core/torch_bicubic_u8.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
-#include "image_preprocess.h"
 
 #include <algorithm>
 #include <cmath>
@@ -108,9 +108,8 @@ bool map_vision(const core_gguf::tensor_map & tensors, vision_weights & w, std::
     w.post_b = get("v.post_ln.bias");
     ok &= need(w.post_w, "v.post_ln.weight", has_shape(w.post_w, D));
     ok &= need(w.post_b, "v.post_ln.bias", has_shape(w.post_b, D));
-    // merger (model.merger.mlp.0): linear_1/linear_2 are audited names; the
-    // LayerNorm's name is not in the spec, so take the unique 1-D [4608]
-    // weight under m.0. that is not a linear bias. TODO(verify) name + eps.
+    // merger (model.merger.mlp.0 = MiniCPMOcrDownsampleMLP, modeling_minicpm_ocr.py:494-510):
+    // pre_norm = LayerNorm(4608, eps=1e-6) -> linear_1 -> nn.GELU() (erf) -> linear_2.
     const int M = D * w.merge * w.merge;
     w.m1_w = get("m.0.linear_1.weight");
     w.m1_b = get("m.0.linear_1.bias");
@@ -120,18 +119,10 @@ bool map_vision(const core_gguf::tensor_map & tensors, vision_weights & w, std::
     ok &= need(w.m2_w, "m.0.linear_2.weight", has_shape(w.m2_w, M, w.out_width));
     if (w.m1_b && !has_shape(w.m1_b, M)) ok &= need(nullptr, "m.0.linear_1.bias", false);
     if (w.m2_b && !has_shape(w.m2_b, w.out_width)) ok &= need(nullptr, "m.0.linear_2.bias", false);
-    int norms = 0;
-    for (const auto & kv : tensors) {
-        const std::string & n = kv.first;
-        if (n.rfind("m.0.", 0) != 0 || n.find("linear_") != std::string::npos) continue;
-        if (n.size() > 7 && n.compare(n.size() - 7, 7, ".weight") == 0 && has_shape(kv.second, M)) {
-            w.mln_w = kv.second;
-            w.mln_b = get(n.substr(0, n.size() - 7) + ".bias");
-            ++norms;
-        }
-    }
-    ok &= need(norms == 1 ? w.mln_w : nullptr, "m.0.<layernorm>.weight [4608] (unique)", true);
-    if (w.mln_b && !has_shape(w.mln_b, M)) ok &= need(nullptr, "m.0.<layernorm>.bias", false);
+    w.mln_w = get("m.0.pre_norm.weight");
+    w.mln_b = get("m.0.pre_norm.bias");
+    ok &= need(w.mln_w, "m.0.pre_norm.weight", has_shape(w.mln_w, M));
+    ok &= need(w.mln_b, "m.0.pre_norm.bias", has_shape(w.mln_b, M));
     return ok;
 }
 
@@ -139,30 +130,25 @@ bool preprocess(const uint8_t * rgb, int width, int height, const minicpm_ocr_ti
                 minicpm_ocr_tiles::plan & plan, std::vector<image_part> & parts) {
     parts.clear();
     if (!rgb || !minicpm_ocr_tiles::make_plan(width, height, cfg, plan)) return false;
-    const bool torch_resample = [] {
-        const char * e = std::getenv("CRISPEMBED_MINICPM_OCR_RESAMPLE");
-        return e && std::strcmp(e, "torch") == 0;
-    }();
-    auto resize = [&](int ow, int oh, std::vector<float> & hwc) {
-        hwc.assign(size_t(ow) * oh * 3, 0.0f);
-        if (torch_resample)
-            image_preproc::resize_bicubic_u8_hwc(rgb, height, width, hwc.data(), oh, ow, 3);
-        else
-            image_preproc::resize_bicubic_pil_u8_hwc(rgb, height, width, hwc.data(), oh, ow, 3);
+    // MiniCPMOcrImageProcessor is a TorchvisionBackend (image_processing_minicpm_ocr.py:139-140):
+    // uint8 CHW tensor -> tvF.resize(BICUBIC, antialias=True) (image_processing_backends.py:230-283)
+    // = torch CPU uint8 AA bicubic, shared with the qwen35 frontend.
+    auto resize = [&](int ow, int oh, std::vector<uint8_t> & hwc) {
+        core_torch_resize::resize_rgb(rgb, height, width, oh, ow, hwc);
     };
-    // mean = std = 0.5 on [0,1] pixels -> [-1, 1]. TODO(verify): rescale order
-    // (x/255 - .5)/.5 vs x/127.5 - 1 differs in the last float bit only.
-    auto to_chw = [](const std::vector<float> & hwc, int full_w, int x0, int y0, int w, int h,
+    // Fused rescale+normalize (image_processing_backends.py:325-360): mean/std are
+    // scaled by 1/rescale_factor = 255 -> (float32(v) - 127.5f) / 127.5f in float32.
+    auto to_chw = [](const std::vector<uint8_t> & hwc, int full_w, int x0, int y0, int w, int h,
                      std::vector<float> & chw) {
         chw.resize(size_t(3) * w * h);
         for (int c = 0; c < 3; ++c)
             for (int y = 0; y < h; ++y)
                 for (int x = 0; x < w; ++x) {
-                    const float v = hwc[(size_t(y0 + y) * full_w + (x0 + x)) * 3 + c];
-                    chw[(size_t(c) * h + y) * w + x] = (v / 255.0f - 0.5f) / 0.5f;
+                    const float v = float(hwc[(size_t(y0 + y) * full_w + (x0 + x)) * 3 + c]);
+                    chw[(size_t(c) * h + y) * w + x] = (v - 127.5f) / 127.5f;
                 }
     };
-    std::vector<float> hwc;
+    std::vector<uint8_t> hwc;
     for (const auto & p : plan.parts) {
         image_part out;
         out.width = p.size.w;
@@ -231,17 +217,29 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     };
     tap(x);
     const float scale = 1.0f / std::sqrt(float(hd));
+    // Default-off performance gate (not a semantics switch): fused flash attention
+    // instead of the explicit softmax(QK^T)V. Promote only after A/B on the capture.
+    const bool flash = core_env::on("CRISPEMBED_MINICPM_OCR_VISION_FLASH");
     for (size_t li = 0; li < w.layers.size(); ++li) {
         const auto & l = w.layers[li];
         ggml_tensor * h = layer_norm(g, x, l.ln1_w, l.ln1_b, w.eps);
         ggml_tensor * q = ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.q_w, l.q_b), hd, H, T), 0, 2, 1, 3);
         ggml_tensor * k = ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.k_w, l.k_b), hd, H, T), 0, 2, 1, 3);
-        ggml_tensor * v = ggml_cont(
-            g, ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.v_w, l.v_b), hd, H, T), 1, 2, 0, 3)); // [T, hd, H]
-        ggml_tensor * kq = ggml_mul_mat(g, k, q);                                                      // [T, T, H]
-        kq = ggml_soft_max_ext(g, kq, nullptr, scale, 0.0f);
-        ggml_tensor * att = ggml_mul_mat(g, v, kq); // [hd, T, H]
-        att = ggml_cont(g, ggml_permute(g, att, 0, 2, 1, 3));
+        ggml_tensor * att;
+        if (flash) {
+            // Same fused bidirectional path as lfm2_vl_ocr.cpp (LFM2_VL_FLASH_ATTN): output
+            // is already [hd, H, T], so no trailing permute.
+            ggml_tensor * v = ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.v_w, l.v_b), hd, H, T), 0, 2, 1, 3);
+            att = ggml_flash_attn_ext(g, q, k, v, nullptr, scale, 0.0f, 0.0f);
+            ggml_flash_attn_ext_set_prec(att, GGML_PREC_F32);
+        } else {
+            ggml_tensor * v = ggml_cont(
+                g, ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.v_w, l.v_b), hd, H, T), 1, 2, 0, 3)); // [T, hd, H]
+            ggml_tensor * kq = ggml_mul_mat(g, k, q);                                                      // [T, T, H]
+            kq = ggml_soft_max_ext(g, kq, nullptr, scale, 0.0f);
+            att = ggml_mul_mat(g, v, kq); // [hd, T, H]
+            att = ggml_cont(g, ggml_permute(g, att, 0, 2, 1, 3));
+        }
         att = linear(g, ggml_reshape_2d(g, att, D, T), l.o_w, l.o_b);
         x = ggml_add(g, x, att);
         h = layer_norm(g, x, l.ln2_w, l.ln2_b, w.eps);
@@ -253,14 +251,15 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     }
     x = layer_norm(g, x, w.post_w, w.post_b, w.eps);
     tap(x);
-    // 2x2 merge, row-major inside the window: [(0,0),(0,1),(1,0),(1,1)] x D.
-    // TODO(verify): concat order against the reference merger output.
+    // 2x2 merge (MiniCPMOcrMerger, modeling_minicpm_ocr.py:540-546):
+    // view(mh, 2, mw, 2, D).permute(0, 2, 1, 3, 4) -> per merged cell the
+    // order is (dy, dx) row-major: [(0,0),(0,1),(1,0),(1,1)] x D; cells row-major.
     ggml_tensor * m = ggml_reshape_4d(g, x, D * S, pw / S, S, ph / S);
     m = ggml_cont(g, ggml_permute(g, m, 0, 2, 1, 3)); // [2D, 2(dy), pw/2, ph/2]
     m = ggml_reshape_2d(g, m, D * S * S, (pw / S) * (ph / S));
     m = layer_norm(g, m, w.mln_w, w.mln_b, w.merger_eps);
     m = linear(g, m, w.m1_w, w.m1_b);
-    m = ggml_gelu_erf(g, m); // TODO(verify): nn.GELU (erf) vs tanh in the projector
+    m = ggml_gelu_erf(g, m); // nn.GELU() default approximate="none" (erf), modeling_minicpm_ocr.py:502
     m = linear(g, m, w.m2_w, w.m2_b);
     ggml_set_name(m, "merged");
     ggml_set_output(m);

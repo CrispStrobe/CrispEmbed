@@ -23,6 +23,9 @@ static bool rms(const std::vector<float> & x, ggml_tensor * norm, int width, flo
     return true;
 }
 bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights) {
+    return map_small_decoder(tensors, weights, 248320);
+}
+bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & weights, int vocab) {
     weights = {};
     if (!core_env::on("CRISPEMBED_QWEN35_OCR")) return false;
     auto get = [&](const std::string & name) { return core_gguf::try_get(tensors, name.c_str()); };
@@ -30,7 +33,7 @@ bool map_small_decoder(const core_gguf::tensor_map & tensors, decoder_weights & 
     weights.embedding = get("l.embed_tokens.weight");
     weights.head = get("lm_head.weight");
     if (!weights.head) weights.head = weights.embedding;
-    if (!shape(weights.embedding, 1024, 248320) || !shape(weights.head, 1024, 248320) || !shape(weights.norm, 1024, 1))
+    if (!shape(weights.embedding, 1024, vocab) || !shape(weights.head, 1024, vocab) || !shape(weights.norm, 1024, 1))
         return false;
     for (int i = 0; i < 24; ++i) {
         const auto prefix = "l.layers." + std::to_string(i) + ".";

@@ -5,9 +5,9 @@
 // "Preprocessing" steps 1-5 and "Token layout".
 //
 // Pure integer/float math, no ggml: guarded by tests/test_minicpm_ocr_tiles.cpp.
-// Items marked TODO(verify) are on the spec's "verify" list and must be
-// confirmed against the hosted reference capture (input_ids, pixel_values,
-// target sizes) before the native path is called parity.
+// Every rule below is transcribed from transformers v5.21.0
+// models/minicpm_ocr/image_processing_minicpm_ocr.py (cited per function) and
+// vision_utils.py; see the decision table in docs/minicpm-ocr-inference-spec.md.
 #pragma once
 
 #include <cmath>
@@ -42,14 +42,13 @@ inline int ensure_divide(double length, int unit) {
     return r < unit ? unit : r;
 }
 
-// Sizes snap to patch_size * merge (28) so every image splits into whole 2x2
-// patch blocks. TODO(verify): spec says "multiple of 28"; the MiniCPM-V 2.6
-// processor used patch_size (14). Confirm with reference target sizes.
+// Sizes snap to patch_size * merge_factor (28 in "4x" mode): find_best_resize,
+// image_processing_minicpm_ocr.py:179-181.
 inline int snap_unit(const config & c) {
     return c.patch_size * c.merge;
 }
 
-// `find_best_resize`: area-preserving rescale to scale_resolution^2 (only when
+// `find_best_resize` (image_processing_minicpm_ocr.py:165-182): area-preserving rescale to scale_resolution^2 (only when
 // larger, unless allow_upscale), then snap each side.
 inline size2 find_best_resize(double w, double h, const config & c, bool allow_upscale) {
     const double s = c.scale_resolution;
@@ -61,35 +60,41 @@ inline size2 find_best_resize(double w, double h, const config & c, bool allow_u
     return { ensure_divide(w, snap_unit(c)), ensure_divide(h, snap_unit(c)) };
 }
 
-// `get_sliced_grid`: returns {cols, rows} or {0, 0} when the image is not sliced.
-// Candidate counts multiple-1, multiple, multiple+1 (skipping 1 and > max);
-// factorizations enumerated with ascending cols; strict '<' keeps the first
-// minimum, so ties go to fewer columns (more rows). TODO(verify): tie order.
+// `get_sliced_grid` (image_processing_minicpm_ocr.py:207-234): returns
+// {cols, rows} or {0, 0} when the image is not sliced. Candidate counts
+// multiple-1, multiple, multiple+1 (skipping 1 and > max); rows ascend; a
+// strictly smaller error wins, and an exactly equal error is taken when it has
+// more rows than the current best (so ties go to the most rows, across counts).
 inline size2 sliced_grid(int w, int h, const config & c) {
     if (!c.slice_mode || w < 1 || h < 1) return {};
     const double s = c.scale_resolution;
-    const double ratio = double(w) * h / (s * s);
+    const double log_ratio = std::log(double(w) / double(h));
+    const double ratio = double(w) * double(h) / (s * s);
     int multiple = int(std::ceil(ratio));
     if (multiple > c.max_slice_nums) multiple = c.max_slice_nums;
     if (multiple <= 1) return {};
-    const double log_ratio = std::log(double(w) / h);
-    size2 best{ 1, 1 };
-    double best_error = INFINITY;
+    int best_rows = 1, best_cols = 1;
+    double min_error = INFINITY;
     for (int n = multiple - 1; n <= multiple + 1; ++n) {
-        if (n == 1 || n > c.max_slice_nums || n < 1) continue;
-        for (int m = 1; m <= n; ++m) {
-            if (n % m) continue;
-            const double error = std::fabs(log_ratio - std::log(double(m) / (n / m)));
-            if (error < best_error) {
-                best_error = error;
-                best = { m, n / m };
+        if (n == 1 || n > c.max_slice_nums) continue;
+        for (int rows = 1; rows <= n; ++rows) {
+            if (n % rows) continue;
+            const int cols = n / rows;
+            const double error = std::fabs(log_ratio - std::log(double(cols) / double(rows)));
+            if (error < min_error) {
+                best_rows = rows;
+                best_cols = cols;
+                min_error = error;
+            } else if (error == min_error && rows > best_rows) {
+                best_rows = rows;
+                best_cols = cols;
             }
         }
     }
-    return best;
+    return { best_cols, best_rows };
 }
 
-// `get_refine_size`: per-cell best resize (upscale allowed) times the grid.
+// `get_refine_size` (image_processing_minicpm_ocr.py:184-205): per-cell best resize (upscale allowed) times the grid.
 inline size2 refine_size(int w, int h, size2 grid, const config & c) {
     const int rw = ensure_divide(w, grid.w), rh = ensure_divide(h, grid.h);
     const size2 cell = find_best_resize(double(rw) / grid.w, double(rh) / grid.h, c, true);
@@ -125,7 +130,9 @@ inline bool make_plan(int w, int h, const config & c, plan & out) {
     out.source = { w, h };
     out.grid = sliced_grid(w, h, c);
     const bool sliced = out.grid.w > 0;
-    // Unsliced images are upscaled ("always"); the overview of a sliced image is not.
+    // Unsliced images are upscaled ("always"); the overview of a sliced image is
+    // not (image_processing_minicpm_ocr.py:289). Tiles are cut row-major from
+    // the refine image (divide_to_patches, image_transforms.py:894-897).
     out.overview = find_best_resize(w, h, c, !sliced);
     image_part ov;
     ov.overview = true;
@@ -154,25 +161,28 @@ inline bool make_plan(int w, int h, const config & c, plan & out) {
     return true;
 }
 
-// MiniCPM-V NaViT position ids: torch.bucketize(frac, boundaries, right=True)
-// with boundaries = torch.arange(1/G, 1.0, 1/G) (python-double start/step) and
-// frac = torch.arange(0, 1 - 1e-6, 1/n) where 1/n is a float32 tensor value.
-// torch's CPU arange evaluates start + step*i in double and casts to float32;
-// bucketize(right=True) = number of boundaries <= x.
-// TODO(verify): boundary rule and arange rounding against the reference vision
-// embeddings (exact-boundary cases such as n=10, i=7 flip with float32 math).
-inline std::vector<int> bucket_coords(int n, int grid) {
+// NaViT position ids, transformers v5.21.0 vision_utils.py:346-356
+// (get_vision_nearest_position_ids):
+//   boundaries = torch.arange(1/G, 1.0, 1/G)            # float32 (default dtype)
+//   coords     = torch.arange(n) / n                     # int64 / int -> float32
+//   bucket     = torch.bucketize(coords, boundaries, right=True)
+// torch's CPU float arange has length ceil((end - start) / step) computed in
+// double and values float(start + i * step) accumulated in double;
+// true_divide promotes both operands to float32 and divides in float32;
+// bucketize(right=True) counts the boundaries <= x.
+inline std::vector<float> bucket_boundaries(int grid) {
+    const double step = 1.0 / double(grid);
+    const int64_t count = int64_t(std::ceil((1.0 - step) / step));
     std::vector<float> bounds;
-    const double bstep = 1.0 / double(grid);
-    for (int i = 0;; ++i) {
-        const double v = bstep + bstep * i;
-        if (!(v < 1.0)) break;
-        bounds.push_back(float(v));
-    }
+    for (int64_t i = 0; i < count; ++i) bounds.push_back(float(step + step * double(i)));
+    return bounds;
+}
+
+inline std::vector<int> bucket_coords(int n, int grid) {
+    const auto bounds = bucket_boundaries(grid);
     std::vector<int> out(n);
-    const double step = double(1.0f / float(n));
     for (int i = 0; i < n; ++i) {
-        const float x = float(step * i);
+        const float x = float(i) / float(n);
         int k = 0;
         while (k < int(bounds.size()) && bounds[k] <= x) ++k;
         out[i] = k;

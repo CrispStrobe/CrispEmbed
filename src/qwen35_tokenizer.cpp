@@ -194,6 +194,64 @@ bool frontend_tokenizer::load(gguf_context * meta) {
     *this = std::move(result);
     return true;
 }
+bool frontend_tokenizer::load_minicpm_ocr(gguf_context * meta) {
+    *this = {};
+    // Pretokenizer: tokenizer.json pre_tokenizer.Split regex of
+    // openbmb/MiniCPM-OCR-1.0@6796197b (plain \p{L}+ pattern, no \p{M}). The
+    // "pretokenize_regex" key in tokenizer_config.json is not read by
+    // transformers 5.21.0: AutoTokenizer resolves model_type minicpm_ocr to
+    // TokenizersBackend (models/auto/tokenization_auto.py:205), which loads
+    // tokenizer.json unchanged. encode() therefore runs without \p{M}.
+    const char * plain_pattern =
+        R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)";
+    if (!meta || core_gguf::kv_str(meta, "general.architecture", "") != "minicpm_ocr" ||
+        core_gguf::kv_str(meta, "tokenizer.ggml.pre", "") != "qwen35" ||
+        core_gguf::kv_str(meta, "minicpm_ocr.normalizer", "") != "NFC" ||
+        core_gguf::kv_str(meta, "minicpm_ocr.pretokenizer_pattern", "") != plain_pattern)
+        return false;
+    frontend_tokenizer result;
+    result.vocab_ = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
+    result.added_ = core_gguf::kv_i32_array(meta, "minicpm_ocr.added_token_ids");
+    result.special_ = core_gguf::kv_i32_array(meta, "minicpm_ocr.special_token_ids");
+    result.eos_ = 248046;
+    result.stops_ = { 248044, 248046 }; // generation_config.json eos_token_id
+    const auto merges = core_gguf::kv_str_array(meta, "tokenizer.ggml.merges");
+    if (result.vocab_.size() != 248100 || merges.empty() || result.added_.empty() || result.added_.size() > 256 ||
+        result.special_.size() > result.added_.size())
+        return false;
+    for (size_t i = 0; i < result.vocab_.size(); ++i)
+        if (!result.vocab_[i].empty() && !result.tokens_.emplace(result.vocab_[i], int32_t(i)).second) return false;
+    for (size_t i = 0; i < merges.size(); ++i)
+        if (merges[i].find(' ') == std::string::npos || !result.merges_.emplace(merges[i], int32_t(i)).second)
+            return false;
+    std::vector<int> seen;
+    for (int id : result.added_) {
+        if (id < 0 || size_t(id) >= result.vocab_.size() || result.vocab_[id].empty() ||
+            std::find(seen.begin(), seen.end(), id) != seen.end())
+            return false;
+        seen.push_back(id);
+    }
+    for (int id : result.special_)
+        if (std::find(result.added_.begin(), result.added_.end(), id) == result.added_.end()) return false;
+    for (int stop : result.stops_)
+        if (std::find(result.special_.begin(), result.special_.end(), stop) == result.special_.end()) return false;
+    for (const auto & pair : std::vector<std::pair<std::string, int>>{ { "<|endoftext|>", 248044 },
+                                                                       { "<|im_end|>", 248046 },
+                                                                       { "<|image_pad|>", 248056 },
+                                                                       { "<image>", 248078 },
+                                                                       { "</image>", 248079 },
+                                                                       { "<slice>", 248088 },
+                                                                       { "</slice>", 248089 },
+                                                                       { "<image_id>", 248090 },
+                                                                       { "</image_id>", 248091 } })
+        if (result.vocab_[pair.second] != pair.first) return false;
+    for (int byte = 0; byte < 256; ++byte) {
+        const char raw = char(byte);
+        if (!result.tokens_.count(core_bpe::bytes_to_unicode(&raw, 1))) return false;
+    }
+    *this = std::move(result);
+    return true;
+}
 bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids) const {
     ids.clear();
     if (!enabled() || vocab_.empty() || text.size() > 65536) return false;

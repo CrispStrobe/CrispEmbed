@@ -44,6 +44,8 @@ EXPECTED_SHAPES = {
     "model.vision_tower.embeddings.patch_embedding.weight": [1152, 3, 14, 14],
     "model.merger.mlp.0.linear_1.weight": [4608, 4608],
     "model.merger.mlp.0.linear_2.weight": [1024, 4608],
+    "model.merger.mlp.0.pre_norm.weight": [4608],
+    "model.merger.mlp.0.pre_norm.bias": [4608],
 }
 
 
@@ -183,8 +185,9 @@ def convert(root, output, dtype):
     w.add_float32(f"{ARCH}.rope_theta", rope_theta(t))
     w.add_float32(f"{ARCH}.text_rms_eps", float(t.get("rms_norm_eps", 1e-6)))
     w.add_float32(f"{ARCH}.vision_ln_eps", float(v.get("layer_norm_eps", 1e-6)))
-    # TODO(verify): the merger LayerNorm eps is not in config.json; 1e-6 assumed.
-    w.add_float32(f"{ARCH}.merger_ln_eps", float(cfg.get("merger_layer_norm_eps", 1e-6)))
+    # MiniCPMOcrDownsampleMLP.pre_norm = nn.LayerNorm(4608, eps=1e-6): a literal in
+    # transformers 5.21.0 modeling_minicpm_ocr.py:500, not a config field.
+    w.add_float32(f"{ARCH}.merger_ln_eps", 1e-6)
     w.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
     write_tokenizer(w, tok)
 

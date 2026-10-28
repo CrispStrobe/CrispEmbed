@@ -1,8 +1,9 @@
 // MiniCPM-OCR-1.0 slicing/grid/token arithmetic (src/minicpm_ocr_tiles.h).
-// Expected values are the MiniCPM-V processor algorithm evaluated in Python
-// (find_best_resize / get_sliced_grid / get_refine_size with 28-px snapping) on
-// the five frozen reference-case sizes. They pin the C++ port to that algorithm;
-// they are NOT yet confirmed by the hosted reference capture (spec "verify" list).
+// Expected values come from a line-by-line Python transcription of transformers
+// v5.21.0 MiniCPMOcrImageProcessor (find_best_resize / get_sliced_grid /
+// get_refine_size) and vision_utils.get_vision_nearest_position_ids, with numpy
+// float32 standing in for torch float32 (script quoted in
+// docs/minicpm-ocr-inference-spec.md, "Decision table").
 #include "core/clean_exit.h"
 #include "minicpm_ocr_tiles.h"
 
@@ -52,8 +53,23 @@ static int crispembed_test_main() {
     CHECK(make_plan(4000, 4000, off, p) && p.parts.size() == 1);
     CHECK(sliced_grid(4000, 4000, c).w * sliced_grid(4000, 4000, c).h <= 9);
     CHECK(!make_plan(0, 10, c, p));
+    // 4000x4000: multiple capped at 9 -> 3x3, overview 448x448, refine 1344x1344.
+    CHECK(make_plan(4000, 4000, c, p));
+    CHECK(p.grid.w == 3 && p.grid.h == 3 && p.refine.w == 1344 && p.total_tokens == 10 * 256);
+    // 1100x1100: multiple 7, counts 6/7/8. rows2xcols3 and rows3xcols2 differ by
+    // one ulp in log error; Python keeps rows=2, cols=3; refine 1092x1120 (WxH).
+    CHECK(make_plan(1100, 1100, c, p));
+    CHECK(p.grid.w == 3 && p.grid.h == 2 && p.refine.w == 1092 && p.refine.h == 1120);
+    CHECK(p.parts[1].size.w == 364 && p.parts[1].size.h == 560 && p.total_tokens == 256 + 6 * 260);
+    // 2000x500: 1 row x 4 cols, overview 896x224, refine 1792x448.
+    CHECK(make_plan(2000, 500, c, p));
+    CHECK(p.grid.w == 4 && p.grid.h == 1 && p.overview.w == 896 && p.overview.h == 224 && p.refine.w == 1792);
+    // 640x640: multiple 3 -> 2x2.
+    CHECK(make_plan(640, 640, c, p));
+    CHECK(p.grid.w == 2 && p.grid.h == 2 && p.total_tokens == 5 * 256);
 
-    // Bucketed 70x70 positions (torch double-arange semantics).
+    // Bucketed 70x70 positions: 69 float32 boundaries, float32 i/n coordinates.
+    CHECK(bucket_boundaries(70).size() == 69);
     const int b10[] = { 0, 7, 14, 21, 28, 35, 42, 49, 56, 63 };
     const auto k10 = bucket_coords(10, 70);
     for (int i = 0; i < 10; ++i) CHECK(k10[i] == b10[i]);
@@ -64,6 +80,13 @@ static int crispembed_test_main() {
     CHECK(ids.size() == 6 && ids[0] == 0 && ids[3] == 35 * 70);
     const auto full = bucket_coords(70, 70);
     for (int i = 0; i < 70; ++i) CHECK(full[i] == i);
+    const int b7[] = { 0, 10, 20, 30, 40, 50, 60 };
+    const auto k7 = bucket_coords(7, 70);
+    for (int i = 0; i < 7; ++i) CHECK(k7[i] == b7[i]);
+    const int b98[] = { 0, 0, 1, 2, 2, 3, 4, 5, 5, 6 };
+    const auto k98 = bucket_coords(98, 70);
+    for (int i = 0; i < 10; ++i) CHECK(k98[i] == b98[i]);
+    CHECK(k98[97] == 69);
 
     if (!fails) printf("test-minicpm-ocr-tiles: OK\n");
     return fails ? 1 : 0;

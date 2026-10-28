@@ -44,8 +44,8 @@ struct image_part {
 };
 
 // Resize/slice/normalize per minicpm_ocr_tiles::plan. `rgb` is HWC uint8.
-// Resample: PIL-exact bicubic (TODO(verify) spec item "resample filter"; set
-// CRISPEMBED_MINICPM_OCR_RESAMPLE=torch for the torchvision antialias bicubic).
+// Resample: torch CPU uint8 antialiased bicubic (core/torch_bicubic_u8.h), as
+// tvF.resize runs for the TorchvisionBackend processor in transformers 5.21.0.
 bool preprocess(const uint8_t * rgb, int width, int height, const minicpm_ocr_tiles::config & cfg,
                 minicpm_ocr_tiles::plan & plan, std::vector<image_part> & parts);
 
