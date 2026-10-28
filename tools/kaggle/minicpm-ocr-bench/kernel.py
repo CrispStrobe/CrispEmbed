@@ -36,8 +36,9 @@ os.chdir('/kaggle/temp/ce'); sh('git', 'checkout', '-q', COMMIT); sh('git', 'sub
 sh(sys.executable, '-m', 'pip', 'install', '-q', 'uv==0.8.17')
 sh(sys.executable, '-m', 'uv', 'venv', '-q', '--python', '3.12', '--seed', '/kaggle/temp/venv'); PY = '/kaggle/temp/venv/bin/python'
 sh(PY, '-m', 'pip', 'install', '-q', 'torch==2.13.0', 'torchvision', '--index-url', 'https://download.pytorch.org/whl/cpu')
-sh(PY, '-m', 'pip', 'install', '-q', 'transformers==5.21.0', 'pillow==11.3.0', 'numpy==2.2.6', 'gguf==0.17.1',
-   'safetensors==0.6.2')
+# safetensors is left to transformers 5.21.0's resolver (0.6.2 conflicts with it).
+sh(PY, '-m', 'pip', 'install', '-q', 'transformers==5.21.0', 'pillow==11.3.0', 'numpy==2.2.6', 'gguf==0.17.1', 'safetensors')
+sh(PY, '-m', 'pip', 'freeze')
 
 ref_json = glob.glob('/kaggle/input/**/minicpm-ocr/reference.json', recursive=True)[0]
 ref = json.load(open(ref_json)); base = os.path.dirname(ref_json)
