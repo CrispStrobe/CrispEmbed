@@ -24,7 +24,8 @@ TEXTS = [assets.TEXT, 'A second packaged binding check.', 'Unicode café Ελλ�
 BATCH_ORDER = [2, 0, 1, 0]
 CONTRACTS = {'dimensions', 'repeat_exact', 'offline_cached_path', 'missing_offline_rejected', 'actual_prebuilt_mapped'}
 FFI_SHA = '289279317b4b16eb2bb7e271abccd4bf84ec9bdcbe999e278a94b804f5630418'
-RUST_FILES = ('crispembed/Cargo.toml', 'crispembed/src/lib.rs', 'crispembed-sys/Cargo.toml',
+RUST_FILES = ('crispembed/Cargo.toml', 'crispembed/src/lib.rs', 'crispembed/src/systemone.rs',
+              'crispembed/src/moedern_text.rs', 'crispembed-sys/Cargo.toml',
               'crispembed-sys/build.rs', 'crispembed-sys/src/lib.rs', 'README.md', 'LICENSE')
 DART_FILES = ('flutter/crispembed/lib/src/crispembed.dart', 'flutter/crispembed/lib/src/crispembed_bindings.dart')
 AUDIT_FILES = ('tests/successor_bindings.rs', 'tests/successor_bindings.dart',
