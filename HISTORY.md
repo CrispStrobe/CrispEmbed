@@ -17092,3 +17092,16 @@ choice18/20 and score18/20, passing the predeclared floors. All four misses
 are in the ordering stratum and remain unchanged. These are20 correlated
 requests/10 translated scenario pairs, not60 independent benchmark samples.
 No native20, current Q4 qualification, publication or runtime release follows.
+
+### Initial final-source Ovis resource outcome — 28 October 2026
+
+Run40710484861 at8856191b completed both frozen14-arm jobs and gate0's full
+11-case quality panel. Independent first-F16 comparison confirms all1,841 IDs,
+raw/processed text, inputs, stops, quality scores and selected confidences.
+Gate1's eight completed short cases retain exact inputs/IDs/text/stops; maximum
+selected-confidence difference is2.98e-7. Historical-receipt then timed out at
+1,800.14 seconds with no result line; three documents remain incomplete.
+[The resource review](tests/results/qwen35-ocr/ovisocr2-final-v2-initial-resource-review.json)
+retains the negative and exact report identities. A document-only3600-second
+F16 audit budget is prepared; fresh source declaration and actual full replay
+remain required. No new portfolio/runtime qualification follows.

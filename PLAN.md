@@ -953,3 +953,20 @@ new-task gates. Keep old four-case and strict Q4 numeric flags separate.
 The source-only real-scan RGB audit at813e1ec9 is now submitted as
 [40776499260](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40776499260).
 It is pending execution, not input parity or model-causality evidence.
+
+### Final Ovis source replay: preserve initial timeout; resource correction ready
+
+[Initial40710484861 review](tests/results/qwen35-ocr/ovisocr2-final-v2-initial-resource-review.json)
+qualifies gate0's old-source eleven cases/1,841 tokens against exact first F16
+inputs, IDs, text, stops, scores and confidences. Gate1 completed eight short
+cases exactly, then historical-receipt exceeded1,800 seconds with an empty log.
+That is incomplete resource evidence, not a demonstrated numerical rejection.
+The new audit-only `--native-document-timeout 3600` option applies only to the
+three F16 documents, preserves1,800-second default/short cases, and rejects
+undeclared quant phases.31 small controls pass (one existing optional skip).
+
+Do not rerun the old source. After final runtime decisions, explicitly redeclare
+the new protected source objects and auditor SHA pins, then run all14 frozen
+arms and all11 first-F16 cases on both gates, followed by actual assets and
+consumers. The current old declaration intentionally does not qualify edited
+auditors. No token/numerical/quality budget or app pin changes.
