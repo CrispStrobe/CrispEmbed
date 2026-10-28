@@ -316,6 +316,7 @@ def main():
     args.output.mkdir(parents=True,exist_ok=False)
     config=json.loads(PROTOCOL.read_text())
     require(config['cases']==CASES and config['arms']==[['f32',0],['f32',1],['f16',0],['f16',1],['q8_0',1],['q4_k',1]],'fixed protocol cases/arms differ')
+    require(config['execution_order']=='case-major-with-declared-six-arm-order','declared case-major execution order required')
     require(config['comparison']['max_absolute']==.002 and config['comparison']['minimum_row_cosine']==.99999 and config['max_new_tokens']==MAXIMUM,'fixed protocol gates differ')
     report=dict(schema='crispembed-minicpm-stored-graph-v1',completed=False,qualified=False,cases=[],source=source_guard(args.source),protocol_sha256=digest(PROTOCOL))
     save=lambda:write(args.output/'panel.json',report)
@@ -330,8 +331,8 @@ def main():
         report['q4_protection']=protected_q4(report['models']['f16']['tensors'],report['models']['q4_k']['tensors'])
         require(report['models']['q8_0']['tensors']['v.emb.patch_embedding.weight']['type']==1,'Q8 patch must be actual F16')
         report['binary_sha256']={key:digest(getattr(args,key)) for key in ('cli','probe','diff')};save()
-        for dtype,graph in [('f32',0),('f32',1),('f16',0),('f16',1),('q8_0',1),('q4_k',1)]:
-            for case in ref['cases']:
+        for case in ref['cases']:
+            for dtype,graph in [('f32',0),('f32',1),('f16',0),('f16',1),('q8_0',1),('q4_k',1)]:
                 try:row=run_case(args,args.reference,case,dtype,graph,models[dtype],args.output)
                 except Exception as error:
                     row=recover_case(args.output/f'{dtype}-graph{graph}'/case['id'],case['id'],dtype,graph,error)

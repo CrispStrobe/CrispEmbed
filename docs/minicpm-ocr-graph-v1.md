@@ -168,3 +168,11 @@ The corrected shared-source worker also compiles and executes root
 checkpoint conversion. They are model-free precision-marker/negative-loader
 controls, not inference or qualification of those families. Their exact source
 and command logs are retained in the same run; no extra CPU session is created.
+
+
+Before the first actual inference, execution order is explicitly frozen as
+**case-major**: line, paragraph, table, tall, tiny; within each, F32 off/on,
+F16 off/on, Q8 on, protected Q4_K on. This exposes the first quantized-case
+diagnostics early while retaining exactly the same30 case-arms, inputs,
+metrics and final all-case qualification. Numerical rejection never drops
+later rows. The initial v1 scratch failure produced no model outputs.

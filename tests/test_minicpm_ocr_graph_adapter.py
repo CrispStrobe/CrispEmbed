@@ -167,6 +167,8 @@ class Recipe(unittest.TestCase):
         self.assertIn('aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32',s)
         self.assertIn("all_protected_byte_exact=True",s)
         self.assertIn("len(report['cases'])==30",s)
+        self.assertIn("for case in ref['cases']:\n            for dtype,graph in",s)
+        self.assertEqual(json.loads((ROOT/'docs/minicpm-ocr-graph-v1.json').read_text())['execution_order'],'case-major-with-declared-six-arm-order')
         probe=(ROOT/'tests/minicpm-graph/probe.cpp').read_text()
         self.assertIn('journal.calls == 187',probe)
         self.assertIn('cache value neutrality',probe)
