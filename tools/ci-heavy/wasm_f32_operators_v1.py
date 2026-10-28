@@ -41,7 +41,8 @@ def hosted():
     require(spec['base'] == BASE and spec['ggml'] == GGML and spec['trace_report_sha256'] == TRACE_REPORT and
             spec['gates'] == {'max_absolute': .002, 'minimum_row_cosine': .99999} and
             spec['operators'] == {k: list(v) for k, v in OPERATORS.items()}, 'Declared F32 protocol differs')
-    require(not git(ROOT, 'status', '--porcelain', '--', *spec['source_sha256']), 'Dirty diagnostic source')
+    require(not git(ROOT, 'status', '--porcelain', '--', str(SPEC.relative_to(ROOT)), *spec['source_sha256']),
+            'Dirty diagnostic source/protocol')
     for name, expected in spec['source_sha256'].items():
         require(digest(ROOT / name) == expected, 'Diagnostic dependency SHA differs: ' + name)
     return spec

@@ -136,6 +136,13 @@ class OperatorContract(unittest.TestCase):
                 driver.hosted()
             api.assert_not_called()
 
+    def test_dirty_protocol_is_part_of_source_guard(self):
+        with patch.dict(os.environ, {'GITHUB_ACTIONS': 'true', 'GITHUB_SHA': 'a' * 40}), \
+             patch.object(driver, 'git', side_effect=lambda root, *args:
+                          'a' * 40 if args == ('rev-parse', 'HEAD') else ' M docs/wasm-f32-operators-v1.json'):
+            with self.assertRaisesRegex(ValueError, 'Dirty'):
+                driver.hosted()
+
     def test_sixteen_boundaries_exclude_all_old_quantized_projections(self):
         self.assertEqual(len(contract.OPERATORS), 16)
         self.assertEqual({row[0] for row in contract.OPERATORS.values()}, {0, 1, 2, 3, 4})
