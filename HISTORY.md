@@ -17115,3 +17115,20 @@ records30 authenticated small members, compiler/source proofs and repeat control
 Ten small differences can contribute to later composed drift; earlier
 whole-model failures/default-off disposition remain. Next is natural-input
 Q8_K workspace cross-admission, not a repeat of12 same-input quant projections.
+
+### Josev first actual Q4_K storage replay — 28 October 2026
+
+[Version4 at9c475d0da](tests/results/josev2b/q4k-v4-review.json) completes
+strict F32 control:227 stages and all four typed responses pass, worst absolute
+0.00095558. The2,944,520,672-byte candidate contains150 actual Q4_K and292
+byte-exact protected F32 tensors. All442 semantic shapes survive; one unchanged
+head payload's physical singleton storage rank is canonicalized2→1 and remains
+explicitly recorded. Ordinary/observer/repeat raw outputs agree.
+
+The candidate is rejected:203/227 strict stage flags fail, starting at layer0
+(max0.11353–0.16508); final norm max reaches30.49212. Global final-norm cosine
+derived from authenticated reported moments is0.93673–0.96059, separate from
+minimum row cosine and all original gates. All five discrete decisions agree,
+but both ordinal errors0.04725674/0.01106670 exceed0.001. No publication follows.
+Source54c2b5767 freezes A/B/C role-based higher-precision development recipes
+before any NEW20 native output; original references and every negative remain.

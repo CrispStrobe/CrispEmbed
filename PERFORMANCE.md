@@ -7053,3 +7053,13 @@ represent10 translated scenario pairs, not60 independent benchmark samples.
 Native/Q4 task parity and broad quality remain pending. Independent scalar
 softmax reconstruction of retained logits differs by at most1.1437108e-7.
 See [the original review](tests/results/josev2b/task-quality-original-review.json).
+
+Josev's first Q4_K four-request replay uses2.94452GB against published F32's
+7.65918GB. Plain child wall113.662s/F32 versus95.741s/Q4 and peak RSS6.09090GB
+versus1.53205GB include fresh context/model load and the same four requests;
+these are bounded diagnostics, not a warm-service benchmark. Quality rejects
+the candidate: five discrete decisions match but ordinal errors0.0472567 and
+0.0110667 exceed0.001, with203 strict stage negatives. See
+[the complete result](tests/results/josev2b/q4k-v4-review.json) before using size
+or latency as a reason to promote it. A/B/C sizes remain predictions until
+actual quantizer readback and task review.

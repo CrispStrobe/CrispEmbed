@@ -989,3 +989,15 @@ active corrected jobs, partial MiniCPM disk-failure scope, successful bounded
 WASM operators and remaining whole-model/quantized/final-source gates. See
 `docs/handoff-2026-10-28.md`. This main change contains documentation only;
 candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
+
+### Josev first actual candidate: negative retained; precision experiment next
+
+[Actual Q4_Kv4](tests/results/josev2b/q4k-v4-review.json) completes with
+positive strict F32 control/structure/critical bytes but rejects203 strict stages
+and both old ordinal fields. All five discrete decisions alone do not qualify
+task quality. Preserve this2.94452GB candidate/whole SHA and references remotely.
+Next: actual fixed A/B/C development experiment; choose the smallest candidate
+passing the separately declared structural/discrete/probability/old-ordinal
+development screen, then fill exact selected-model/source/report pins in the
+new held-out owner and run NEW20 once. Leave pins closed if no candidate passes;
+never tune a new precision policy after reading NEW20 native outputs.
