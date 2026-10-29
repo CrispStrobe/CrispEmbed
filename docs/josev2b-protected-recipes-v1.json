@@ -436,7 +436,7 @@
     "tests/results/josev2b/mixed-recipes-v1-review.json": "3e0c70b7c231f4f945928549f9f236dfe7f1b409291bbd001862ac6dbfe5b7f8",
     "tests/results/quantization/portfolio-q8-profile-controls-review.json": "73bde129458329e37a15e1a4c1482af3ce4b022f5614cfa2ac9486b98cb0de43",
     "tests/test_josev_protected_recipes.py": "acb47b9eb666461c42a40aa9d0948b22289b6a23742a55bee3650476e891c2f3",
-    "tools/ci-heavy/josev2b_protected_recipes.py": "0d0e08c02053449f388ce52f94e59ce3ac5fdf3bea108ccc892300990f26a7b9",
+    "tools/ci-heavy/josev2b_protected_recipes.py": "35c266fc727991987de29c941801014914058c445821174a1cb48d241f8902cc",
     "tools/josev2b_protected_contract.py": "23ad162b177c7401259f8e6ac200f9034541910f27e946cb1a5a7aca168ab67f",
     "tools/quantize_josev2b_protected.py": "92cd5cd0034f7a4237faa46dc21cc46b66c1380d91228430a6627403faddc34a"
   }
