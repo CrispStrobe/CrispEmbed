@@ -17048,3 +17048,15 @@ six authored direct/expert graphs and actual C two-Q8/seven-critical-F32 fixture
 [Independent review](docs/moedern-q8-component-controls-result.md) authenticates
 all11 small members and fixture identities. No real model/corpus/quality forward,
 publication or default change; strict F32 blockers remain.
+
+### 29 October — MiniCPM seven-only fetch fails at optional SHA field
+
+[Actual40838280839](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40838280839)
+at`db4c1bb25` authenticates all134 prior-proof members and builds model-free
+tools, then frozen fetch.py96/26 raises`KeyError: sha256` for the checkpoint's
+2213-byte`.gitattributes`, which has only a Git blob identity. The
+[initial review](tests/results/minicpm-ocr/seven-checkpoint-identity-initial-review.json)
+preserves exact source/artifact and failure. No model conversion, native/original
+model forward or new precision evidence. New closed v3 adapter2fde0c64b preserves
+all old files, authenticates exact SHA/size or the single pinned Git blob entry,
+and retains the same seven-only body and fixed quality budgets; execution pending.

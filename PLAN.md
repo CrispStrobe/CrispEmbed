@@ -1132,3 +1132,9 @@ Norm source64eef684 full A/B actual40852835039 is dispatched and pending review.
 Josev final-projection source3cc96dbab independently reviewed GO; actual
 [40853720400](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40853720400)
 is queued for all three old-four recipes. No numerical outcome yet.
+
+Mini checkpoint repair source`2fde0c64b` on`fix/minicpm-checkpoint-blob-fetch-20261029`
+passes16 stdlib controls including actual pinned public2213-byte Git blob and
+corruption/unsupported-identity rejection. Historical db4 failure is preserved
+in HISTORY. New `minicpm-graph-seven-arm-v3.yml` registered; peer review and exact
+source-bound hosted execution remain pending. No model/quality result yet.
