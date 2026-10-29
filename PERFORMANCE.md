@@ -7087,3 +7087,9 @@ Unlimited mixed-Q4 v3 completes four F16 original ID/full-text controls
 and vision identity. First conversion protection rejects before Q4 inference;
 there is no Q4 quality or speed result. The retained first candidate is
 6,481,651,840 bytes. [Exact source and rejection](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
+
+The targeted Unlimited form has934 exact original IDs/full text, CER0.0202,
+WER0.0025 and word recall1.0. Fresh native CLI wall307.91s/RSS12821MiB is a
+single hosted measurement with different original/native hardware and residency;
+no controlled speed or memory comparison is claimed.
+[Source and scope](tests/results/ocr-real-scans/unlimited-form-native-review.json).

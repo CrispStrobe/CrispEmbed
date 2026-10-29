@@ -17113,3 +17113,12 @@ published source stores its position embedding as `[3145728,1]`; a trailing-unit
 rank hypothesis still requires full retained-candidate type/shape/payload proof.
 The original rejection and all540 retained files remain immutable. See the
 [independent receipt](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
+
+### Correct-input Unlimited native form completed (29 October 2026)
+
+Targeted source dbca8cb6d12fbba7e6edb412a0611f28ed6c8e95 admits the frozen
+709,225-byte form image and matches all934 original IDs and complete text.
+Native exits0 without reaching its1,562-token cap; CER0.0202, WER0.0025 and word
+recall1.0 match the original. This closes the missing native form without
+repeating original inference or the initial19 pages. Their older ID differences
+remain separate. [Receipt](tests/results/ocr-real-scans/unlimited-form-native-review.json).

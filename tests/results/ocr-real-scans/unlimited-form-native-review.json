@@ -1,0 +1,59 @@
+{
+  "schema": "crispembed-unlimited-real-form-native-v1-review",
+  "source": "dbca8cb6d12fbba7e6edb412a0611f28ed6c8e95",
+  "provider": "Kaggle CPU",
+  "version_label": "v1",
+  "submitted_script_sha256": "11f4523ecae2d8b32449081c9baab1634a5b31800dbf828321faafe4ee0c5ece",
+  "completed": true,
+  "original_rerun": false,
+  "scope": {
+    "full_manifest": false,
+    "selected_page_ids": [
+      "en-form-economic-journal-67"
+    ],
+    "manifest_sha256": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700"
+  },
+  "input": {
+    "id": "en-form-economic-journal-67",
+    "expected_sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+    "retained_input": {
+      "provider": "authenticated retained mounted image",
+      "bytes": 709225,
+      "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+      "member_suffix": "input-images/en-form-economic-journal-67.jpg"
+    },
+    "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+    "sha256_ok": true
+  },
+  "native": {
+    "ids": 934,
+    "ids_exact": true,
+    "full_text_exact": true,
+    "exit": 0,
+    "cap_hit": false,
+    "max_tokens": 1562,
+    "cer": 0.0202,
+    "wer": 0.0025,
+    "word_recall": 1.0,
+    "wall_seconds": 307.91,
+    "peak_rss_mb": 12821.0
+  },
+  "model_alias": {
+    "alias": "unlimited-ocr2",
+    "exit": 0,
+    "wall_seconds": 250.51,
+    "verified": true,
+    "stderr_tail": "12544\n  [dbg] sam li=2 is_global=1 aH=40 nW=1 T=1600 rp_h.sz=262144\n  [dbg] sam li=3 is_global=0 aH=14 nW=9 T=1764 rp_h.sz=12544\n  [dbg] sam li=4 is_global=0 aH=14 nW=9 T=1764 rp_h.sz=12544\n  [dbg] sam li=5 is_global=1 aH=40 nW=1 T=1600 rp_h.sz=262144\n  [dbg] sam li=6 is_global=0 aH=14 nW=9 T=1764 rp_h.sz=12544\n  [dbg] sam li=7 is_global=0 aH=14 nW=9 T=1764 rp_h.sz=12544\n  [dbg] sam li=8 is_global=1 aH=40 nW=1 T=1600 rp_h.sz=262144\n  [dbg] sam li=9 is_global=0 aH=14 nW=9 T=1764 rp_h.sz=12544\n  [dbg] sam li=10 is_global=0 aH=14 nW=9 T=1764 rp_h.sz=12544\n  [dbg] sam li=11 is_global=1 aH=40 nW=1 T=1600 rp_h.sz=262144\n  [time] sam.layers 9667ms\n  [time] sam.neck_downsample 68ms\n  [time] tile 1,2 sam 9763ms clip 1680ms proj 98ms\n  [time] gundam_tiles 71078ms\nunlimited_ocr: gundam tiles 2x3 (w_t x h_t) local=630 total_vis=903\n  [dbg] prompt: 2 prefix + 903 vis + 4 instr = 909 tokens; instr_ids: 37460 4366 76466 16\n  [uocr2-fast] prefill layer 0 done\n  [uocr2-fast] prefill layer 1 done\n  [uocr2-fast] prefill layer 2 done\n  [uocr2-fast] prefill layer 3 done\n  [uocr2-fast] prefill layer 4 done\n  [uocr2-fast] prefill layer 5 done\n  [uocr2-fast] prefill layer 6 done\n  [uocr2-fast] prefill layer 7 done\n  [uocr2-fast] prefill layer 8 done\n  [uocr2-fast] prefill layer 9 done\n  [uocr2-fast] prefill layer 10 done\n  [uocr2-fast] prefill layer 11 done\n  [uocr2-fast] prefill done S=909 21908.1 ms\n  [uocr2-fast] decode done: 4 tokens, 22451.4 ms total\n  [dbg] gen_ids (4): 128827 128828 16771 61\n"
+  },
+  "small_producer": {
+    "bytes": 19161,
+    "sha256": "311de429070b42a87860526e65dc038ef1843dd582903584abd83d5509422c2f",
+    "file": "ocr-real-scans__result.json"
+  },
+  "limits": [
+    "Targeted correct-input form only; initial19 native pages remain a separate source and preserve eight ID mismatches.",
+    "No original model replay, intermediate capture or explicit observed EOS ID was added.",
+    "Different original/native CPU and model/context residency do not constitute a controlled speed comparison.",
+    "A Pillow/STB RGB difference is present in the separate decode audit, but this form remains decoded-ID/text exact."
+  ]
+}
