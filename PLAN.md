@@ -1178,6 +1178,16 @@ on NEW20 or silently relax frozen gates. Architecture-dependent CNN/restoration
 quantization must have genuine supported stored tensor types; retaining every
 weight floating point cannot be advertised as a Q8/Q4 model.
 
+Q8 admission source is being prepared on `feat/portfolio-q8-profiles-20261029`:
+Josev gets an explicitly named `crispembed-josev-packed-mixed-v2` profile;
+header7 requires actual Q8_0 and no Q4_K, while legacy Q4 requires real Q4_K.
+UltraBERT uses the same storage/header consistency. The existing quantization
+gates remain mandatory. A bounded `--metadata-string KEY=VALUE` C-quantizer
+option replaces existing STRING keys before header layout, enabling genuine
+profile stamps without ad hoc byte-length patches. Numeric or unknown metadata
+keys reject before output creation. Actual compiler/metadata fixtures and the
+original-bound Q8 tensor/intermediate/decoded panels still gate qualification.
+
 ### MoEdern all-size genuine Q8 packed profile — claimed29 October
 
 Owner `feat/moedern-q8-packed-20261029`: add a separate default-off named

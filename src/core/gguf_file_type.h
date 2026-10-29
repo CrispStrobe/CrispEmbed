@@ -10,11 +10,18 @@ constexpr uint32_t q4_k_s = 14;
 constexpr uint32_t q5_k_s = 16;
 constexpr uint32_t q6_k = 18;
 constexpr uint32_t legacy_q4_k = 12;
+constexpr uint32_t q8_0 = 7;
 constexpr uint32_t unknown = UINT32_MAX;
 inline constexpr bool known_q4_k(uint32_t value) {
     // Caller must also authenticate the exact Q4 profile, actual tensor types
     // and existing quantization gates. A file-level label proves no payload.
     return value == q4_k_s || value == legacy_q4_k;
+}
+inline constexpr bool matches_quantized_payload(uint32_t value, uint64_t actual_q8, uint64_t actual_q4,
+                                                bool allow_q8 = false) {
+    // Header7 is Q8_0 only when a real Q8 tensor exists and no Q4 tensor does.
+    // Historical mixed Q4 profiles may also contain protected Q8/F16 matrices.
+    return (known_q4_k(value) && actual_q4 > 0) || (allow_q8 && value == q8_0 && actual_q8 > 0 && actual_q4 == 0);
 }
 inline constexpr uint32_t standard(ggml_ftype value) {
     switch (value) {
