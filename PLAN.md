@@ -431,6 +431,9 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-29 | `audit/ultrabert-reviewed-q4-shard0-20261029` | Independently review converted conservative model, activate only shard0 | Actual40843704011 conversion-only candidate576997440B/SHA087c9be0...,12 last-four FFN Q4 plus206 F32. Recheck all218 roles and protected payload records/build/source; bind immutable model artifact/report and activate only686 strided rows. Reuse authenticated F32/original freeze; no original or F32 forwards, no other shard/Q8/full qualification. Preserve legacy header/publication-disabled status. |
+| 2026-10-29 | `audit/josev-last-projection-precision-20261029` | Isolate final gate/up precision after four completed protected recipes | Actual40838785499: Q8 all/down-protected still fail; final-pair Q4 with F32/F16 down passes both ordinal gates but fails two probability gates (~0.000145/0.000179 vs0.0001). F16-down changes probabilities only~1e-7. Predeclare only finalgate Q4, only finalup Q4 and finalpair Q8, all other projections F16/292 critical F32, same oldfour227/typed/Ref controls. Preserve all negatives/no NEW20 access or threshold change. Native activation/imatrix capture remains a separate later calibration lane if needed. New closed source `3cc96dbab` on this branch passes370 protected/6 owned closure, seven storage controls, five process controls and actionlint; actual hosted execution pending peer review. |
+| 2026-10-29 | `audit/moedern-first-row-stages-20261029` | Actual one-document intermediate attribution after retained18 diagnosis | Source24726600 alone is stable against frozen original but differs at input58/token29084 (selectedrow57); two other fresh originals drift and are not replacement gold. New closed caller must pass original ordinary old-strict and native ordinary exact93 all/selected anchors BEFORE observations, capture actual aten softmax/topk/div under FFN context and byte-exact observer/repeat neutrality, masks/IDs/SDPA. No derived-router expected tensors, oldguard bypass, full-corpus/full-original recapture, production change or budget waiver. Explicitly count the new targeted one-case original/native forwards; frozen references stay unchanged. Hosted-only1.5M case. |
 | 2026-10-29 | `audit/ultrabert-first-q4-shard-20261029` | Review completed retained F32 freeze; activate only first conservative Q4 model/shard | Actual40834743025 at08b0 succeeds with zero original/F32 forwards. Authenticate its13 small members, durable132MB payload and all old vectors/eight Ref/full300 rankings before source activation. Preserve018 runtime/old37/08 guards and declare only existing last-four-FFN recipe, model conversion then shard0 with per-row checkpoints; no unreviewed multi-shard/recipe batch, repeated original/fullF32 control or Q8 mislabel. |
 | 2026-10-29 | `fix/wasm-native-order-norm-candidate-20261029` | Default-off live-input native-order MiniLM norm candidate after independently positive operator risk | Actual40834745535 passes30 anchors/12 byte recoveries/56 Ref comparisons; natural-input FC1 error0.000573, same-input1.43e-6. Base integration8da6636b3; add only a per-context value-parsed WASM384/six-layer/post-LN/epsilon1e-12 candidate, keep native/off/unsupported old ggml_norm path exact. Connected live-input custom norm only, existing affine/quantizers unchanged, no oracle injection. Model-free controls then separately closed full10 oldnative/eightstage A/B with unset/empty/0 and0/1/0 controls; no default flip or original recapture. |
 | 2026-10-29 | `fix/josev-protected-source-header-20261029` | Correct actual published F32 source metadata assumption | Actual40834737477 passes strict F32, builds and the C Q8 conversion, then rejects a nonexistent source general.file_type before Q8/native comparisons. The source intentionally omits file_type/quantization_version; immutable quantized outputs still require typed7/14. Retain the initial raw model/reports, fix authored source fixture to match real header, preserve all four recipes/gates and original reference arrays. |
@@ -1098,3 +1101,33 @@ Postanalysis carries138 records unchanged and adds42 six-stage comparisons
 from the new saved traces, for180 vision records; no second forward. All strict
 failures and original budgets remain; coverage never sets qualification true.
 13 new/11 inherited stdlib controls and actionlint pass.
+
+### Ultra freeze completed; first Q4 conversion source reviewed
+
+Actual40834743025 independently passes its retained freeze without original or
+F32 forwards: all5483 vectors/eight16-stage Ref/full300 rankings remain positive.
+Worst raw error0.00109804/cosine0.999999996825; reported ranking metrics exact.
+Source`c3d2fc051f6632e06d5e7ba69ac700a03a703e22` is reviewed for model conversion
+only: reproduce exact609437696-byte F32 hash, create existing last-four-FFN
+12 Q4_K/206 F32 model with the unchanged018 quantizer/body and record its SHA.
+The model descriptor remains null and shard0 activation false until actual
+conversion/artifact/report review. No forward, Q8 route, automatic shard batch
+or publication claim is part of this first phase.
+
+Norm candidate source checkpoint29 October: `fix/wasm-native-order-norm-candidate-20261029@64eef68493deb240e81287e249f55def08d5753c`
+retains the live-input default-off norm math from812c4e4d and fixes the byte
+audit to preserve actual returned WASM bytes before free, including signed zero.
+Fourteen bounded controls pass. The registered `wasm-native-order-norm-candidate-v1.yml`
+requires component recoveries, native anchors and old OFF byte controls before
+ON ten-case/eight-stage actual Ref comparisons. Heavy execution remains hosted;
+no default or whole-model parity claim follows from source review.
+
+MoEdern Q8[component40837105606](docs/moedern-q8-component-controls-result.md)
+is independently reviewed positive for authored graphs/storage only. Next real
+Q8/Q4 model qualification still requires resolving frozen F32 corpus/router
+failures; no model/corpus forward was performed by this fixture job.
+Norm source64eef684 full A/B actual40852835039 is dispatched and pending review.
+
+Josev final-projection source3cc96dbab independently reviewed GO; actual
+[40853720400](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40853720400)
+is queued for all three old-four recipes. No numerical outcome yet.

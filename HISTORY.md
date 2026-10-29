@@ -16960,3 +16960,92 @@ records30 authenticated small members, compiler/source proofs and repeat control
 Ten small differences can contribute to later composed drift; earlier
 whole-model failures/default-off disposition remain. Next is natural-input
 Q8_K workspace cross-admission, not a repeat of12 same-input quant projections.
+
+
+## 29 October: reviewed Josev A/B/C and actual Q8 profile controls
+
+[Josev40787077302](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40787077302)
+completes all three development recipes and strict F32 control. Independent
+[review](tests/results/josev2b/mixed-recipes-v1-review.json) retains203/201/118
+failed intermediate stages for A/B/C respectively. C moves the first strict
+failure to layer20 and passes one ordinal, but the other error0.001585498
+exceeds0.001. No candidate qualifies and NEW20 remains closed.
+
+[Actual Q8 controls40829558531](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40829558531)
+pass at6781befb: Josev/Ultra profile admission and corruption controls,13 actual
+C quantizer standard/legacy pairs, variable-length existing-STRING stamping
+with preserved payloads, and invalid overrides leaving no output. Independent
+[review](tests/results/quantization/portfolio-q8-profile-controls-review.json)
+parses all13 pairs. This model-free fixture does not qualify weights.
+
+## 29 October: retained F32 risk and corrected real-form results
+
+[Compare-only40831082898](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831082898)
+atbf4e237e independently consolidates the retained F32 weightcast rejection:
+25 actual Ref comparisons,7 pass/18 fail; maximum old-target error0.07845640.
+No operator/model forward or optional F64 coercion occurs.
+[Report and review](docs/wasm-layer3-f32-reanalysis-result.md) preserve the initial
+optional-F64 reporting failure and immutable native targets.
+
+[Form RGB40783738840](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40783738840)
+authenticates the corrected709225-byte input, actual1920x2985 geometry, maximum
+channel error1 and RMS0.054378 between production STB and original Pillow.
+[Receipt](docs/ocr-rgb-form-result-v1.md) completes input decoding coverage across
+two runs; the manifest geometry was wrong, and pixel differences alone prove no
+model cause. Unlimited native form atdbca8cb6 separately completes all934 IDs
+and full text exactly against the corrected original, reaching EOS below the
+frozen cap. [Review](tests/results/ocr-real-scans/unlimited-form-native-review.json)
+keeps earlier real19 mismatches separate; it does not qualify every current-source
+real20 case. MiniCPM form was already exact and was not repeated.
+
+## 29 October: MiniCPM retained138 comparison review
+
+[Actual40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
+atcec1faeb completes138 six-stage comparisons for all23 retained arms without
+model/original/native forwards. Independent [review](docs/minicpm-retained-analysis-v2-result.md)
+rehashes all134 small members and confirms99 pass/39 strict failures,36 old
+comparisons carried unchanged and102 newly measured. Packed pixels are exact;
+original merger LIST[0] maps overview only and88 later spans remain unmapped.
+No numerical/model qualification follows; only seven missing arms remain.
+
+## 29 October: Ultra retained full-corpus F32 freeze
+
+[Actual40834743025](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834743025)
+at08b0a572 completes a zero-forward retained freeze after repairing the scoped
+production-object audit. The [independent review](docs/ultrabert-retained-freeze-result.md)
+authenticates all13 small members and77-member remote payload manifest,48
+streams/adapters, all5483 rows/eight16-stage Ref records and reported exact300
+rankings. Raw maximum error0.00109804/minimum cosine0.999999996825 remain
+within the unchanged F32 budgets. No Q4 recipe has qualified and earlier
+full-stage/M1 strict failures remain separate.
+
+## 29 October: MoEdern retained18 matrix diagnosis completed
+
+[Actual40834748271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834748271)
+completes all18 comparisons with6 pass/12 numerical rejections and correct
+nonzero status. [Independent review](docs/moedern-three-doc-compare-v2-result.md)
+confirms frozen-versus-fresh-original2/6, frozen-versus-native93 0/6 and fresh-
+original-versus-native93 4/6 pass. Only document24726600 remains fresh-original
+versus-native negative, at inputposition58/token29084 (selectedmatrixrow57),
+max0.02282939624/cosine0.9957477159. Other fresh-original drift is diagnostic,
+not replacement gold or native causality. No model/original/native forward
+occurs during this retained comparison.
+
+### 29 October — Josev protected precision experiment completes, still rejected
+
+[Run40838785499](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40838785499)
+at`bf00e452` completes four recipes after the preserved source-header failure.
+Independent [review](docs/josev2b-protected-recipes-v1-result.md) confirms strict
+F32 control,227 comparisons/recipe, protected292 F32 tensors and actual Ref
+agreement. Q8 recipes retain200 strict failures; final-pair Q4 retains106.
+Both final-pair recipes pass ordinal but fail two probability gates; none qualifies.
+No original rerun, NEW20 access, runtime/default change or publication.
+
+### 29 October — MoEdern hosted Q8 component storage/graph controls pass
+
+[Actual40837105606](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40837105606)
+at`dd592b15` passes three profiles, nine storage mutations, off/concurrent gates,
+six authored direct/expert graphs and actual C two-Q8/seven-critical-F32 fixture.
+[Independent review](docs/moedern-q8-component-controls-result.md) authenticates
+all11 small members and fixture identities. No real model/corpus/quality forward,
+publication or default change; strict F32 blockers remain.
