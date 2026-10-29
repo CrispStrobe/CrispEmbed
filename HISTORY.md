@@ -17137,3 +17137,14 @@ before inference, with no Q8 quality/publication claim. Same-job vision is about
 twice as fast in F32, without a general prefill gain. PERFORMANCE records the
 scopes, retained missing-ID limitation and cache hypothesis; the corrected graph
 experiment must establish its own output/numerical/performance result.
+
+
+## 29 October: MiniCPM retained138 comparison review
+
+[Actual40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
+atcec1faeb completes138 six-stage comparisons for all23 retained arms without
+model/original/native forwards. Independent [review](docs/minicpm-retained-analysis-v2-result.md)
+rehashes all134 small members and confirms99 pass/39 strict failures,36 old
+comparisons carried unchanged and102 newly measured. Packed pixels are exact;
+original merger LIST[0] maps overview only and88 later spans remain unmapped.
+No numerical/model qualification follows; only seven missing arms remain.
