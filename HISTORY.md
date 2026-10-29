@@ -1,3 +1,29 @@
+## 29 October 2026 — MoEdern full SciFact27M/115M retained structural rejections
+
+The [27M hosted replay40784484013](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40784484013)
+ran checkout `41c2f8060bafa7c8cba1aac8d65e90b2e67c5441` under workflow source
+`1c8df48082d561b2f2c1698d64cdca47b9486594`. The
+[unchanged producer](tests/results/moedern-colbert/scifact-native-27m-40784484013-native.json)
+and [independent review](tests/results/moedern-colbert/scifact-native-27m-40784484013-review.json)
+retain the first actual full-panel failure. All5,483 original token rows match;
+authored/family F32 controls pass, but document `2931832` is rejected by the exact
+router top-k boundary-tie policy. The walk visits all rows but produces only5,482
+successful vector rows. Build, model-free quantizer and comparator controls pass.
+The small26-member artifact is rehashed locally; raw artifact12862409175 remains
+remote until26 January2027.
+
+The [115M v1 producer](tests/results/moedern-colbert/scifact-native-115m-v1-93d27614-native.json)
+at `93d27614caba00a1b4d7aece6c78968f5cd9bb7f` likewise matches all5,483 token rows
+and passes authored/family F32 controls, then rejects documents `14530534` and
+`16058322` at the same guard:5,481 successful vector rows. The
+[independent review](tests/results/moedern-colbert/scifact-native-115m-v1-93d27614-review.json)
+authenticates explicitv1 Get/Status/List requests, submitted script SHA and all102
+output member names; only small reports/logs were fetched. Both producers retain
+their original full SciFact inputs and published F32 models. Neither reaches full
+corpus Ref comparisons,300-query rankings, Q4 conversion or the full consumer
+panel. These failures supplement the separate1.5M full-F32 numerical rejection;
+no row is dropped and no tie jitter, tolerance change or promotion is authorized.
+
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of

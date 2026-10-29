@@ -869,15 +869,30 @@ identical to the exact decoder. Remaining (see [handoff](docs/handoff-2026-10-28
 
 ### Frozen full-SciFact hosted provider continuation
 
-The standalone `moedern-scifact-gha-adapter-v1.yml` workflow accepts the exact
-reviewed source and27M only. The current source is
-`fc4d84293fb0ee4115636d4f241d02854b41405d`. It authenticates the full original v1
-and older authored v3 before model access; every request/page binds its version.
-Inference, numerical and retrieval gates remain the corrected3c worker's.
-The standard runner must pass the unchanged14GiB available RAM and24GiB disk
-preflight; otherwise retain an admission rejection and use another authorized
-resource. Healthy1.5M Kaggle work is not repeated by this workflow.
-Registration is metadata only and establishes no new runtime/model result.
+The actual [27M replay40784484013](tests/results/moedern-colbert/scifact-native-27m-40784484013-review.json)
+and [115M v1 replay](tests/results/moedern-colbert/scifact-native-115m-v1-93d27614-review.json)
+are reviewed structural rejections, after all5,483 token rows and authored/family
+F32 controls pass. Exact router top-k cutoff ties reject document `2931832` for
+27M and `14530534`/`16058322` for115M. Capture-walk completion does not qualify the
+missing vector rows. Preserve both unchanged producers and remote partial streams,
+together with the separate1.5M three-document/six-matrix F32 numerical rejection.
+
+- [ ] Attribute the three family-router rejections using authenticated same-input
+  original/native router logits, probabilities, top-k indices and boundary margins
+  before selecting any deterministic original-matching correction. No row drop,
+  jitter or relaxed numerical/ranking gate follows from these errors.
+- [ ] After a source-reviewed correction, finish all5,483 vector rows, eight actual
+  Ref/independent comparisons, all300 frozen query rankings, actual Q4 and the
+  complete public consumer panel for each variant. Reuse frozen originals;
+  authored controls and six public score smokes do not replace those gates.
+
+The27M run used checkout `41c2f8060bafa7c8cba1aac8d65e90b2e67c5441` and workflow
+source `1c8df48082d561b2f2c1698d64cdca47b9486594`;115M used source
+`93d27614caba00a1b4d7aece6c78968f5cd9bb7f`. Both preserve runtime/ggml closure,
+CPU2, original v1 and authored v3 authentication. Future provider attempts retain
+the unchanged14GiB available RAM/24GiB disk admission and exact-version service
+checks. Preserve earlier build/import/packaging failures; no duplicate healthy
+job, default change, release/app upgrade or publication is implied.
 
 ### Frozen real-scan encoded-image audit
 

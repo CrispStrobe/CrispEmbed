@@ -1,3 +1,21 @@
+## 29 October 2026 — MoEdern full SciFact capture limits
+
+| Variant | Exact token rows | Successful vector rows | Rejected documents | Capture walk seconds |
+| --- | --- | --- | --- | --- |
+| [27M](tests/results/moedern-colbert/scifact-native-27m-40784484013-review.json) | 5,483/5,483 | 5,482 | `2931832` | 422.794 |
+| [115M](tests/results/moedern-colbert/scifact-native-115m-v1-93d27614-review.json) | 5,483/5,483 | 5,481 | `14530534`, `16058322` | 3,696.102 |
+
+Both CPU2 walks stop qualification at an exact router top-k cutoff tie. The
+27M/115M ten-case authored F32 controls have worst absolute errors
+3.89293e-7/4.02331e-7 and minimum row cosines
+0.9999999999984303/0.9999999999991138 under unchanged0.002/0.99999 gates.
+These small controls do not establish full-corpus numerical parity. Full vector
+magnitudes, eight full-corpus Ref comparisons and300-query ranking differences
+were not computed after the structural rejection; six retained public MaxSim
+smoke scores do not replace those rankings. Walk timings describe incomplete
+captures on different hosted machines, not qualified model throughput or a speed
+comparison. Q4 and all-client gates remain unreached; retained streams stay remote.
+
 ## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
 
 | engine | page | variant | seconds | note |

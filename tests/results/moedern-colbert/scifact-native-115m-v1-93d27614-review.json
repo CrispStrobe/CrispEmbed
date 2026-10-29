@@ -1,0 +1,292 @@
+{
+  "schema": "crispembed-moedern-full-scifact-rejection-review-v1",
+  "variant": "115M",
+  "review_date": "2026-10-29",
+  "review_status": "confirmed-structural-rejection",
+  "producer": {
+    "path": "scifact-native-115m-v1-93d27614-native.json",
+    "bytes": 154182,
+    "sha256": "3f4145e4675404d760f078812ec5a2ccbb39f5bceaf744c8a5c6896420f93af2",
+    "unchanged": true
+  },
+  "service": {
+    "provider": "Kaggle hosted CPU",
+    "kernel_slug": "crispembed-moedern-scifact-native-115m",
+    "version_label": "v1",
+    "source": "93d27614caba00a1b4d7aece6c78968f5cd9bb7f",
+    "status": "ERROR",
+    "submitted_script_sha256": "2de662189a39d069fe1f7b97859c58cddaa7571229562fab7306e07556b1ff46",
+    "submitted_script_bytes": 7056,
+    "checked_at": "2026-10-29T05:37:33.888066+00:00",
+    "exact_Get_Status_version": true,
+    "actual_sdk": "kaggle 2.2.2 / kagglesdk 0.1.38",
+    "all_output_pages_explicit_v1": true,
+    "output_pages": 1,
+    "indexed_members": 102,
+    "small_fetched_members": {
+      "moedern-scifact-native-q4k/actual-model-panel.log": {
+        "bytes": 1150,
+        "sha256": "d86134abbe4410610d527fa98a9c05eae1829beb337e83ecca040f854e87e6f7"
+      },
+      "moedern-scifact-native-q4k/result/review/f32-capture.log": {
+        "bytes": 102,
+        "sha256": "50e31b712644548df2ea205f2e49aed62d938a59070d48f36338db20c2753895"
+      },
+      "moedern-scifact-native-q4k/result/review/f32-capture.log.process.json": {
+        "bytes": 370,
+        "sha256": "cbd052a144e33cdc1540c4e1bc3ac8687d9d9cae77813840049270f873ee4f13"
+      },
+      "moedern-scifact-native-q4k/result/review/native.json": {
+        "bytes": 154182,
+        "sha256": "3f4145e4675404d760f078812ec5a2ccbb39f5bceaf744c8a5c6896420f93af2"
+      },
+      "moedern-scifact-native-q4k/setup.json": {
+        "bytes": 3224,
+        "sha256": "5b9e1ef18357b0e64ec828f2d0e0dacfa9b2666749a7c6ce5ba12decb48f8f86"
+      },
+      "service-log-0.json": {
+        "bytes": 15853,
+        "sha256": "c08d92225a2813c7e8577338256ba0d63d0210814c3ef4a25b14a983120fb652",
+        "source": "Unchanged serialized service log"
+      },
+      "moedern-scifact-native-q4k/result/review/build/q4k-controls.log": {
+        "bytes": 185,
+        "sha256": "20e230e466d54096fff6d840aeb92a7f2a1e53d672c960bd033831b57e12d1cb"
+      },
+      "moedern-scifact-native-q4k/result/review/build/q4k-controls.log.process.json": {
+        "bytes": 371,
+        "sha256": "fdce635ecf47df75e202ec9566e4909d0be581d1e424d6167540796126593a8a"
+      },
+      "moedern-scifact-native-q4k/result/review/build/root-build.log": {
+        "bytes": 539969,
+        "sha256": "6b0240d3c28e51bc2d1ef56b026804a231f14d9f06fec5ae6675d51dfb9f8993"
+      },
+      "moedern-scifact-native-q4k/result/review/build/root-build.log.process.json": {
+        "bytes": 366,
+        "sha256": "cce73e2c698be2963b2bcfae01f0b26270ead291412933f0f77daa5d6dd1db50"
+      },
+      "moedern-scifact-native-q4k/result/review/build/root-configure.log": {
+        "bytes": 1958,
+        "sha256": "46d1db12082a5e468dea1376ad2fe92f96d71fff26c05d3420547973c2574f6d"
+      },
+      "moedern-scifact-native-q4k/result/review/build/root-configure.log.process.json": {
+        "bytes": 371,
+        "sha256": "23dae8db40e9bb111517f42b1ec7f76f35de44bb3aa7e24254e3971af87ebb3c"
+      },
+      "moedern-scifact-native-q4k/result/review/build/root-symbols.txt": {
+        "bytes": 1285718,
+        "sha256": "9aa72054d4c6553bcfc8c3a07e80e3e027315d9138d69e857e649e7fcd094fbd"
+      },
+      "moedern-scifact-native-q4k/result/review/build/strings.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "moedern-scifact-native-q4k/result/review/build/strings.log.process.json": {
+        "bytes": 364,
+        "sha256": "e6bb5a45fbdc174169caf13330d89a93e91e6bc684e7529d383b2032f3a7ea23"
+      },
+      "moedern-scifact-native-q4k/result/review/build/symbols.log": {
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "moedern-scifact-native-q4k/result/review/build/symbols.log.process.json": {
+        "bytes": 362,
+        "sha256": "8d37b92ebbc7e8949f6573773dc53891de12a71ce2d4f8414851ada1bcae68d0"
+      },
+      "moedern-scifact-native-q4k/result/review/build/tests-build.log": {
+        "bytes": 24179,
+        "sha256": "45b1a131eb750faf8e60d2fbedd5c5e76bac0ac2468f92e89613c0d5cb22765c"
+      },
+      "moedern-scifact-native-q4k/result/review/build/tests-build.log.process.json": {
+        "bytes": 368,
+        "sha256": "99b4210e39cc477b4fb89fe4604a04d41590b7faa53de7cc1f72efa1b0f2780f"
+      },
+      "moedern-scifact-native-q4k/result/review/build/tests-configure.log": {
+        "bytes": 804,
+        "sha256": "3cb5f3195ff62c7e494ad431e2def39039b38856ae680546fec24db3b1ee3428"
+      },
+      "moedern-scifact-native-q4k/result/review/build/tests-configure.log.process.json": {
+        "bytes": 372,
+        "sha256": "fe63c2265a94f6e8a2d3d1097cecb492934c7a0faf881f1a9bbcb6ed6ac0307a"
+      }
+    },
+    "raw_models_and_arrays_retained_remote": true
+  },
+  "source": {
+    "checkout": "93d27614caba00a1b4d7aece6c78968f5cd9bb7f",
+    "reported_closure": {
+      "base": "4ad95dbc4a2f643c1af4dd0733151686042d0c99",
+      "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "contract_sha256": "d4342ed39796e14046c6c756934f33f4cda4746e1dd5089c012487aef1e8f2f9",
+      "protected_files": 413,
+      "owned_files": 20,
+      "linked_src_tree": "0c4341808c7136b84f0085da85e8c22b951c27a1"
+    },
+    "src_git_object_verified": true,
+    "family_engine_sha256": "e75379793c4614d174ae3cf8ddb6ae70e230876b8ae4805e73752e11ee02fca9",
+    "router_guard_public_source": "https://github.com/CrispStrobe/CrispEmbed/blob/93d27614caba00a1b4d7aece6c78968f5cd9bb7f/src/moedern_family_engine.cpp#L477",
+    "boundary": "strict top-k cutoff inequality; two source guard sites at lines477/609",
+    "operator_location_or_input_cause_proven": false
+  },
+  "independent_review": {
+    "all5483_original_token_rows_exact": true,
+    "authored_controls": {
+      "authored_f32": {
+        "passed": true,
+        "vector_matrices": 20,
+        "worst_max_absolute": 4.023313522338867e-07,
+        "minimum_row_cosine": 0.9999999999991138,
+        "actual_ref_and_independent_numpy_reported": true,
+        "arrays_recomputed_locally": false
+      },
+      "family_f32": {
+        "passed": true,
+        "vector_matrices": 10,
+        "worst_max_absolute": 4.023313522338867e-07,
+        "minimum_row_cosine": 0.9999999999991138,
+        "actual_ref_and_independent_numpy_reported": true,
+        "arrays_recomputed_locally": false
+      }
+    },
+    "original_baseline_authenticated_by_hosted_producer": {
+      "reviewed": true,
+      "version_label": "v1",
+      "source": "2a872f9fe7ac5637286ff7bda2b5c19afee23cd7",
+      "report_bytes": 39687,
+      "report_sha256": "a70757a72fae99d546dc792dd870110f0db3e8d3f74865f37ea2b003f3c49030",
+      "public_report": "tests/results/moedern-colbert/scifact-original-115m.json",
+      "metrics": {
+        "ndcg_at_10": 0.7313081462888926,
+        "mrr_at_10": 0.7039431216931217,
+        "recall_at_100": 0.9393333333333334
+      },
+      "arrays": {
+        "rankings.json": {
+          "bytes": 2425583,
+          "sha256": "4d6c1a03cb3bc8ca62ba16c6fd85273511b1a569571de778acca7e34791268ff"
+        },
+        "rows.json": {
+          "bytes": 93165305,
+          "sha256": "a1dc5bd34ba5e363ef42dc4d2b1508c7fe0ba5b031e510efc6b196eac2092256"
+        },
+        "all.f32": {
+          "bytes": 883461632,
+          "sha256": "088f665c39e2d167d59fa200bfd2aa55fd6f12e92de3db01be1bd6fa753a11b2"
+        },
+        "scores.npy": {
+          "bytes": 12439328,
+          "sha256": "856e3f635fa118f69e5e86fa32a55837d42decab15ede83d511f8e82319589a6"
+        },
+        "data.json": {
+          "bytes": 8114088,
+          "sha256": "e707f8b657e858415ba6093abcc96a40ea867c8ff5e9d8c5359f9bc5eadfe522"
+        },
+        "selected.f32": {
+          "bytes": 779530240,
+          "sha256": "f8aa9f9b30db9e56a46666228f357b6203748843cb9bdcd62b5162c99f8db173"
+        }
+      },
+      "rows": 5483,
+      "all_raw_sha256_verified": true,
+      "data_sha256": "9c6cfb6d8f0c41eea1473b163981bffb27cc6c0b53ba7daf6b9152f3b7ef62d6",
+      "old_authored_report_sha256": "01c8a0e4886eae107103845847cb5d4675752b91a987e23ad26e7a1e98e44af6",
+      "old_query_expansion_tensors": 4
+    },
+    "original_or_model_forward_repeated_by_review": false,
+    "reported_capture_completed_is_walk_completion_only": true,
+    "attempted_rows": 5483,
+    "successful_vector_rows": 5481,
+    "failures": [
+      {
+        "key": "d:14530534",
+        "stage": "native_capture",
+        "error": "actual C-ABI encode rejected: Exact router tie is unqualified"
+      },
+      {
+        "key": "d:16058322",
+        "stage": "native_capture",
+        "error": "actual C-ABI encode rejected: Exact router tie is unqualified"
+      }
+    ],
+    "capture_elapsed_seconds": 3696.101566,
+    "public_raw_text_only": true,
+    "original_vectors_injected": false,
+    "negative_controls": {
+      "null_text": true,
+      "invalid_role": true,
+      "invalid_utf8": true,
+      "null_score_cleared": true
+    },
+    "available_command_log_hashes_recomputed": [
+      {
+        "member": "result/review/build/root-configure.log",
+        "bytes": 1958,
+        "sha256": "46d1db12082a5e468dea1376ad2fe92f96d71fff26c05d3420547973c2574f6d",
+        "exit": 0
+      },
+      {
+        "member": "result/review/build/root-build.log",
+        "bytes": 539969,
+        "sha256": "6b0240d3c28e51bc2d1ef56b026804a231f14d9f06fec5ae6675d51dfb9f8993",
+        "exit": 0
+      },
+      {
+        "member": "result/review/build/tests-configure.log",
+        "bytes": 804,
+        "sha256": "3cb5f3195ff62c7e494ad431e2def39039b38856ae680546fec24db3b1ee3428",
+        "exit": 0
+      },
+      {
+        "member": "result/review/build/tests-build.log",
+        "bytes": 24179,
+        "sha256": "45b1a131eb750faf8e60d2fbedd5c5e76bac0ac2468f92e89613c0d5cb22765c",
+        "exit": 0
+      },
+      {
+        "member": "result/review/build/q4k-controls.log",
+        "bytes": 185,
+        "sha256": "20e230e466d54096fff6d840aeb92a7f2a1e53d672c960bd033831b57e12d1cb",
+        "exit": 0
+      },
+      {
+        "member": "result/review/f32-capture.log",
+        "bytes": 102,
+        "sha256": "50e31b712644548df2ea205f2e49aed62d938a59070d48f36338db20c2753895",
+        "exit": 1
+      }
+    ],
+    "ref_fixture_exit_codes": [
+      0,
+      1
+    ],
+    "full_corpus_ref_comparisons_reached": false,
+    "full300_query_rankings_reached": false,
+    "actual_q4_reached": false,
+    "all_public_consumers_reached": false,
+    "raw_arrays_or_models_downloaded": false,
+    "partial_vector_streams_retained_remote": {
+      "all.f32": {
+        "bytes": 883052032,
+        "sha256": "0ab73015262bc3845969317915c6e29ed56a06079c86071fb3afaa1f105e2400"
+      },
+      "selected.f32": {
+        "bytes": 779170816,
+        "sha256": "d67d8e6c49a175acab7534e73149b696e9fbd71f0a6becb59a2e313ad25357d1"
+      },
+      "rows.jsonl": {
+        "bytes": 26745319,
+        "sha256": "f6d1cc4428df717885df2087aa0d0445485fad01074d1cbcd07bc6552049a3b0"
+      }
+    },
+    "unmeasured_corpus_vector_magnitudes": true
+  },
+  "limits": [
+    "No corpus numerical or ranking pass is inferred from the5483-row token preflight or authored controls.",
+    "Router tie details require separately authenticated same-input logits/probabilities/top-k attribution; no tie policy change is established.",
+    "Capture elapsed time includes an incomplete vector panel and is not qualified throughput.",
+    "No Q4, default, runtime release, app upgrade or publication qualification."
+  ],
+  "publication_qualified": false,
+  "full_f32_qualified": false,
+  "default_enabled": false
+}
