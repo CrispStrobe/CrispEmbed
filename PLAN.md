@@ -431,6 +431,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-29 | `audit/moedern-router-topk-operator-20261029` | Source-faithful model-free router selection audit before any tie behavior change | Original27M/115M use Torch2.8.0+cpu softmax→topk(2)→renorm on eight experts; official CPU implementation uses value-only nth_element, with no stable-index guarantee. Predeclare finite tie/ULP/stride/thread controls and a newly hash-locked Torch binary; compare same probabilities and same logits against source-derived C++ and actual a06 ggml. No model/original/full-corpus forwards, replacement gold, production guard change or old-wheel identity claim; later exact three-row capture remains separate. |
 | 2026-10-29 | `fix/minicpm-seven-retained-v2-20261029` | Review actual138 retained comparisons; bind only seven missing MiniCPM arms | Actual40831080193 reports completed138=36 carried+102 new, pixels exact, numeric negatives preserved. Independently authenticate/review small proof before a separately versioned seven-only continuation; preserve frozen19c/cec guards and all23 prior arms, no original/native recapture or gate widening. |
 | 2026-10-29 | `ci/moedern-q8-controls-20261029` | Hosted model-free compile/quantizer proof for protected all-size MoEdern Q8 profile | Preserve source1f3573137 and actual full-F32 corpus blockers. Build its existing tiny Q8 controls and C quantizer on hosted CPU only; verify actual20/20/52 selected types, critical-role payloads, gates and authored graphs. No model/corpus run or publication claim. |
 | 2026-10-29 | `audit/unlimited-retained-gha-fetch-20261029` | Exact-version retained Unlimited v3 delivery and read-only structural audit | Preserve failed v1 bootstrap/v2 missing-mount attempts. Direct exact-v3 GET is accessible (HEAD is unsupported); authenticate Get/Status/every List page, original script and all540 panel files on hosted CPU before array imports. Reuse the retained6.481GB candidate, no original/native forwards or quantizer run; numerical/decoded continuation remains separate. |
@@ -1052,3 +1053,33 @@ registration here does not merge that runtime or qualify a model.
   safe adapter names to finish18 saved comparisons. A structurally completed run
   must still exit nonzero when numerical failures remain; fresh Python drift
   cannot replace frozen gold or prove native causality.
+
+### Actual hosted submissions,29 October07:20 UTC
+
+All five are newly declared bounded continuations; check actual service state
+before acting and never duplicate a running job. At submission they are queued:
+
+| Job | Exact source | Gate |
+|---|---|---|
+| [Josev40834737477](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834737477) |`d339be99cfce99c1801fa3d1268deec122ae63e0` |Strict original F32, then four protected Q8/Q4 development recipes only. |
+| [Unlimited40834740153](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834740153) |`fbd8f68f6753a64751a02f42771fc475670f64e4` |Exact-v3 GET/540-file authentication, then read-only structure; zero forwards. |
+| [Ultra freeze40834743025](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834743025) |`08b0a5727aa25412a1181db4695efb01be578b24` |Actual Ultra-object symbol proof, retained F32 adapters/eight Ref/full rankings; no new F32/Q4 forward. |
+| [Norm risk40834745535](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834745535) |`e7f3ab64dda2fdb42c8305637a258ce4b10bdef4` |30 byte anchors,12 native norm recoveries before56 actual Ref comparisons. |
+| [MoEdern40834748271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834748271) |`92f75550a0ce0f1486f6d7603164a6628aeb24a0` |18 retained three-document comparisons; numerical negatives must remain nonzero. |
+
+Mini-v2 [40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
+atcec1faeb completes structurally:138 comparisons,36 carried+102 newly measured,
+all23 input pixels exact and all historical numerical negatives preserved. It
+remains unqualified. Independent small-proof review and the separately claimed
+seven-only continuation follow; no23-arm/original rerun.
+
+### Protected MoEdern Q8 component execution
+
+Source`dd592b15f8191be0b441eda3932c98364324e776` is independently reviewed for
+hosted model-free execution. It preserves all1f runtime/CMake/fixture/converter
+objects, uses two build workers and distinguishes20/20/52 typed profile
+declarations from the tiny C fixture's two actual Q8 tensors/seven F32 roles.
+Four new/eight existing stdlib controls, actionlint and both source guards pass;
+actual compiler/graph/C-quantizer execution remains pending. The standalone
+workflow registration does not qualify model weights or remove full-F32 corpus
+blockers.

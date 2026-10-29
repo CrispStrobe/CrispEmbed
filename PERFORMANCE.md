@@ -6998,3 +6998,13 @@ errors0.001585498/0.000765428 retain the fixed0.001 threshold, leaving the
 first negative. All five discrete choices alone do not qualify probability or
 ordinal behavior. See the [review](tests/results/josev2b/mixed-recipes-v1-review.json).
 No speed claim or published precision follows from these role ablations.
+
+## MiniCPM retained vision limits (29 October)
+
+The [complete138-comparison review](docs/minicpm-retained-analysis-v2-result.md)
+retains99 pass/39 strict failures at0.002/0.99999. F32/F16/Q4 first fail at
+vision layer26; F32 maxima there are0.01654–0.03345. Q8 first fails at layer0,
+max0.09980–0.12817; its worst layer26 error639.711914/cosine0.93838806 is
+reported against original magnitude2037.914429. Structural completion and all23
+prior decoded-exact arms remain distinct from these failures. No speed or
+production-quality improvement follows from this compare-only analysis.
