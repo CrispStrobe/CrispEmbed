@@ -7037,3 +7037,41 @@ across cases0.99848469. Both ordinal errors pass0.001, but probabilities
 0.000145704/0.000179201 fail0.0001. Keeping24 down projections F32 changes
 these probability errors only~1e-7 on the oldfour. No qualified quantized model
 or whole-task/held-out quality improvement is established.
+
+### 29 October — connected norm component recovery does not close full WASM parity
+
+[Actual full norm A/B](docs/wasm-native-order-norm-full-result.md) recovers12
+component norms byte-exact and preserves20 native/16 stage anchors and old OFF
+bytes, yet16/20 finals and6/16 stages fail. Earliest budget failure layer3:
+max0.00291892886/RMS0.00023248944/cos0.999999184331/original magnitude10.50798.
+Encoder max0.02850568295/RMS0.00623421436/cos0.999848220828/magnitude5.83756.
+First normalized final max0.00156465905/cos0.999954849513 fails cosine. All ten
+cases and both native thread targets retain their fixed budgets; no whole-model
+accuracy or performance improvement is established by the component recovery.
+
+### 29 October — Josev final-projection storage/quality ablation
+
+[Three actual recipes](docs/josev2b-last-projection-v1-result.md) occupy
+4,898,017,760 bytes for either single-Q4/F16-rest model and4,892,512,736 for the
+two-Q8/F16-rest model; all292 critical tensors stay F32. Q4 probability maxima
+0.000347853/0.000383541 fail the fixed0.0001 screen. Q8-pair worst0.0000433922
+passes that limited screen, but75 strict stages and complete JSON/logits remain
+negative. First Q8 failure layer23 max0.05596924/RMS0.00155646/cos0.99999103278
+against original magnitude16.73357. Only four development cases; no task holdout,
+precision selection or publication qualification follows.
+
+### 29 October — Ultra conservative Q4 shard0 numerical boundary
+
+[First686-row result](docs/ultrabert-first-q4-shard0-result.md): raw CLS max2.76205,
+RMS0.62445053/cos0.98075227 against maximum magnitude22.56587; normalized
+max0.02581254/RMS0.00612673/cos0.98075227 against magnitude0.228689. Both strict
+F32 budgets fail.905.04 seconds covers1,372 public calls in one process only;
+no paired performance claim. All5483 rows/300 task rankings remain required.
+
+##29 October: MiniCPM completed numerical coverage
+
+[Seven-arm completion](docs/minicpm-seven-arm-v3-result.md) retains exact30-case
+decoded outputs. F32/F16 each50/60, Q4_K25/30 and Q8_0 5/30 vision checks pass
+unchanged gates; combined130/180. Tiny F32 layer26 max0.0137939453 versus original
+absolute magnitude1629.5715 despite cosine0.999999999982 is still negative.
+These are quality/error measurements, not a paired speed or RSS improvement.
