@@ -17122,3 +17122,13 @@ Native exits0 without reaching its1,562-token cap; CER0.0202, WER0.0025 and word
 recall1.0 match the original. This closes the missing native form without
 repeating original inference or the initial19 pages. Their older ID differences
 remain separate. [Receipt](tests/results/ocr-real-scans/unlimited-form-native-review.json).
+
+### Standard GGUF file-type writer verified with actual C quantizer
+
+[40791557274](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40791557274)
+at56ccd91673a7989e13ef409c4874fac47c185b51 passes all13 exposed precision
+methods with both standard and explicit legacy headers. Independent stdlib
+readback confirms every actual tensor type, protected F32 norm, layout and byte
+outside the four-byte header is identical. This uses tiny authored matrices;
+no model or runtime release is qualified. The selected-model same-payload/public
+C ABI bridge remains pending. [Receipt](tests/results/quantization/gguf-standard-file-type-review.json).
