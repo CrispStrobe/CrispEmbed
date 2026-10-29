@@ -1177,3 +1177,16 @@ selected precision recipe. Calibration uses development cases only; never tune
 on NEW20 or silently relax frozen gates. Architecture-dependent CNN/restoration
 quantization must have genuine supported stored tensor types; retaining every
 weight floating point cannot be advertised as a Q8/Q4 model.
+
+### MoEdern all-size genuine Q8 packed profile — claimed29 October
+
+Owner `feat/moedern-q8-packed-20261029`: add a separate default-off named
+Q8_0/F32-critical packed profile for1.5M/27M/115M. Preserve old F32/scalar and
+Q4 padded admission and math; route only an explicit new1.5M Q8 profile through
+the existing family fast graph. Actual C quantizer, standard file-type7, exact
+20/20/52 Q8 tensors and critical hash/projection/router/head/norm/bias/depthwise
+F32 payload retention are required. Keep public tokenizer/roles/masks unchanged,
+strict source/model inventories and hosted model-free controls before models.
+Full SciFact F32 vector/router blockers still prevent Q8 qualification; no local
+build/model work, dispatch, default change or publication. Shared metadata helpers,
+generic quantizer and Josev/Ultra Q8 changes belong to the coordinator.
