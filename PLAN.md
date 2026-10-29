@@ -879,3 +879,5 @@ All candidate provider/model/report pins begin pending and block execution.
 No original forward, NEW20 fitting, score/gold/cap change or dispatch is authorized
 by this source preparation. Freeze a14,400-second child/six-hour hosted job, actual
 C/Python calls,1,360 compared/120 unmapped original arrays and all existing gates.
+
+- `audit/josev-new20-canonical-owner-20261029`: source-only closed canonical descriptor/provider follow-up; activation remains pending.
