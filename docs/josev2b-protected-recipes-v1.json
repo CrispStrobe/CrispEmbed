@@ -73,7 +73,7 @@
     ".github/workflows/josev-mixed-recipes-v1.yml": "bc45355f6a5c40a84023a475ca81a88864c40977ad3a6a090553dfd533baf961",
     ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",
     "CMakeLists.txt": "15c9e7b3c9e7b0871c0f731a3b1957f92dd5c11350d915aab8ab35eba02dd296",
-    "PLAN.md": "5c436d0e752007e0a57ce89b151a25f7e116643d72bee33d430ff3ed09fc8521",
+    "PLAN.md": "af1f77c8ea4f5e738a2e6a43c60ff5aeef319e201e1a4d546155b6480c59c143",
     "docs/josev2b-composed-dependencies.json": "a84cc629d6ce8e5ecfa9b9825324bcda958a2630a02fbb2ade1f5ba408bc0760",
     "docs/josev2b-environment-lock.json": "7d16c6560da3a9bf24f1c19f3581f1a5911b87360c0cef6484b92f8810aa8be8",
     "docs/josev2b-mixed-recipes-v1.json": "1ed4ba89615a926f5bedbb2a4d41cc40cec5537b2b12f69d7878c14eed2655da",
