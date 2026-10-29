@@ -1,0 +1,898 @@
+{
+  "schema": "crispembed-wasm-layer3-f32-reanalysis-independent-review-v1",
+  "run": {
+    "id": 40831082898,
+    "source": "bf4e237e0bfb6ed84192fe9d9bd768b782d1050a",
+    "path": ".github/workflows/wasm-layer3-f32-reanalysis-v1.yml",
+    "event": "workflow_dispatch",
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "review_artifact": {
+    "id": 12879245409,
+    "bytes": 8324,
+    "sha256": "e4a97d7234c31f2730f2ec0b0d65b0b7614d8b215d5d7c45fdee4f5150c7feee"
+  },
+  "members": {
+    "producer-ref.json": {
+      "bytes": 15999,
+      "sha256": "2cb80ac417d02fc855bb60b279da5942d213f19968e4321bfd5c18512a5cc168"
+    },
+    "reanalysis.json": {
+      "bytes": 123274,
+      "sha256": "c5ee912ed220422284fb0d735ea0b7488cc0ede95fe37d562665a45df3396490"
+    }
+  },
+  "initial_operator_run": {
+    "id": 40791643276,
+    "head_sha": "e3df7cfd2e38f6f1bd20d68f1eb05dce11f7cd9d",
+    "path": ".github/workflows/wasm-layer3-f32-v1.yml",
+    "conclusion": "failure",
+    "run_attempt": 1
+  },
+  "initial_numeric_rejection_ref_sha256": "2cb80ac417d02fc855bb60b279da5942d213f19968e4321bfd5c18512a5cc168",
+  "initial_ref_bytes_unchanged": true,
+  "six_original_anchors": {
+    "passed": true,
+    "anchors": {
+      "native1/native": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+      "native1/candidate": "ea974ffde173640b888e500729edc9ede4e869eb55974b9651354c6d2132eed3",
+      "native2/native": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+      "native2/candidate": "ea974ffde173640b888e500729edc9ede4e869eb55974b9651354c6d2132eed3",
+      "wasm/native": "296d8f42ed5775324fdf6a93aa7ea60b6b0a5ebfe3f106fcdbe48b0d8d04ff22",
+      "wasm/candidate": "7f70ffcc6dee2194907f897935d72b3fe0757b05cad6fe892abad52e44be486b"
+    },
+    "qualification": false
+  },
+  "all_actual_coefficient_sha256": "f85e1f1a4a06267c41760e982ad4981c7adf282acb0a048aaed62e69a4a44ef3",
+  "actual_ref": {
+    "exit_code": 1,
+    "status": "numeric_rejection",
+    "stages": 25,
+    "all_metrics_agree": true
+  },
+  "independent_scalar_review": {
+    "comparisons": 25,
+    "pass_count": 7,
+    "fail_count": 18,
+    "reported_independent_and_cpp_metrics_agree": true,
+    "raw_arrays_downloaded": false,
+    "raw_arrays_recomputed_locally": false,
+    "first_failed_comparator_row": {
+      "name": "native1.old_native1.candidate",
+      "passed": false,
+      "max_absolute": 0.07845640182495117,
+      "mean_absolute": 0.005459225955443496,
+      "rms": 0.008432731541593425,
+      "min_row_cosine": 0.9997049885682548,
+      "original_l2": 55.304512435139934,
+      "native_l2": 55.30173707865752,
+      "original_abs_max": 47.73543930053711,
+      "native_abs_max": 47.74108123779297,
+      "bit_exact": false
+    },
+    "worst_absolute_row": {
+      "name": "native1.old_native1.candidate",
+      "passed": false,
+      "max_absolute": 0.07845640182495117,
+      "mean_absolute": 0.005459225955443496,
+      "rms": 0.008432731541593425,
+      "min_row_cosine": 0.9997049885682548,
+      "original_l2": 55.304512435139934,
+      "native_l2": 55.30173707865752,
+      "original_abs_max": 47.73543930053711,
+      "native_abs_max": 47.74108123779297,
+      "bit_exact": false
+    },
+    "comparisons_summary": [
+      {
+        "name": "backend.candidate",
+        "passed": true,
+        "max_absolute": 1.430511474609375e-06,
+        "mean_absolute": 8.006261648713715e-08,
+        "rms": 1.1383375865171219e-07,
+        "min_row_cosine": 0.999999999999924,
+        "original_l2": 55.30173707865752,
+        "native_l2": 55.301737301139056,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "backend.native",
+        "passed": true,
+        "max_absolute": 1.9073486328125e-06,
+        "mean_absolute": 7.933481861578508e-08,
+        "rms": 1.147069707886609e-07,
+        "min_row_cosine": 0.9999999999999227,
+        "original_l2": 55.30165469468969,
+        "native_l2": 55.30165518446944,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.natural_input_sensitivity",
+        "passed": true,
+        "max_absolute": 0.0003650188446044922,
+        "mean_absolute": 5.665217233601854e-06,
+        "rms": 2.473006998170709e-05,
+        "min_row_cosine": 0.9999999721184653,
+        "original_l2": 55.30165469468969,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.old_native1.candidate",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225955443496,
+        "rms": 0.008432731541593425,
+        "min_row_cosine": 0.9997049885682548,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.old_native1.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255174274504,
+        "rms": 0.008433282975868803,
+        "min_row_cosine": 0.999704988126828,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.old_native2.candidate",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225955443496,
+        "rms": 0.008432731541593425,
+        "min_row_cosine": 0.9997049885682548,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.old_native2.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255174274504,
+        "rms": 0.008433282975868803,
+        "min_row_cosine": 0.999704988126828,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.same_input.candidate",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005458803857335524,
+        "rms": 0.008432003264185218,
+        "min_row_cosine": 0.9997049880721723,
+        "original_l2": 55.304512231239755,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native1.same_input.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255174274504,
+        "rms": 0.008433282975868803,
+        "min_row_cosine": 0.999704988126828,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.natural_input_sensitivity",
+        "passed": true,
+        "max_absolute": 0.0003650188446044922,
+        "mean_absolute": 5.665217233601854e-06,
+        "rms": 2.473006998170709e-05,
+        "min_row_cosine": 0.9999999721184653,
+        "original_l2": 55.30165469468969,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.old_native1.candidate",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225955443496,
+        "rms": 0.008432731541593425,
+        "min_row_cosine": 0.9997049885682548,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.old_native1.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255174274504,
+        "rms": 0.008433282975868803,
+        "min_row_cosine": 0.999704988126828,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.old_native2.candidate",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225955443496,
+        "rms": 0.008432731541593425,
+        "min_row_cosine": 0.9997049885682548,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.old_native2.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255174274504,
+        "rms": 0.008433282975868803,
+        "min_row_cosine": 0.999704988126828,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.same_input.candidate",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005458803857335524,
+        "rms": 0.008432003264185218,
+        "min_row_cosine": 0.9997049880721723,
+        "original_l2": 55.304512231239755,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "native2.same_input.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255174274504,
+        "rms": 0.008433282975868803,
+        "min_row_cosine": 0.999704988126828,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "threads.candidate",
+        "passed": true,
+        "max_absolute": 0.0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "min_row_cosine": 0.9999999999999999,
+        "original_l2": 55.30173707865752,
+        "native_l2": 55.30173707865752,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": true
+      },
+      {
+        "name": "threads.native",
+        "passed": true,
+        "max_absolute": 0.0,
+        "mean_absolute": 0.0,
+        "rms": 0.0,
+        "min_row_cosine": 0.9999999999999998,
+        "original_l2": 55.30165469468969,
+        "native_l2": 55.30165469468969,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": true
+      },
+      {
+        "name": "wasm.natural_input_sensitivity",
+        "passed": true,
+        "max_absolute": 0.0003650188446044922,
+        "mean_absolute": 5.662748864981242e-06,
+        "rms": 2.4730025813616007e-05,
+        "min_row_cosine": 0.9999999721213975,
+        "original_l2": 55.30165518446944,
+        "native_l2": 55.301737301139056,
+        "original_abs_max": 47.74108123779297,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "wasm.old_native1.candidate",
+        "passed": false,
+        "max_absolute": 0.07845497131347656,
+        "mean_absolute": 0.005459227332620584,
+        "rms": 0.008432729435266165,
+        "min_row_cosine": 0.9997049889801444,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.301737301139056,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "wasm.old_native1.native",
+        "passed": false,
+        "max_absolute": 0.07845544815063477,
+        "mean_absolute": 0.005459254940029091,
+        "rms": 0.008433279470080442,
+        "min_row_cosine": 0.9997049889130933,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165518446944,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "wasm.old_native2.candidate",
+        "passed": false,
+        "max_absolute": 0.07845497131347656,
+        "mean_absolute": 0.005459227332620584,
+        "rms": 0.008432729435266165,
+        "min_row_cosine": 0.9997049889801444,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.301737301139056,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "wasm.old_native2.native",
+        "passed": false,
+        "max_absolute": 0.07845544815063477,
+        "mean_absolute": 0.005459254940029091,
+        "rms": 0.008433279470080442,
+        "min_row_cosine": 0.9997049889130933,
+        "original_l2": 55.304512435139934,
+        "native_l2": 55.30165518446944,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "wasm.same_input.candidate",
+        "passed": false,
+        "max_absolute": 0.07845592498779297,
+        "mean_absolute": 0.005458805394583679,
+        "rms": 0.008432002541942735,
+        "min_row_cosine": 0.9997049884130419,
+        "original_l2": 55.30451214743674,
+        "native_l2": 55.301737301139056,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      },
+      {
+        "name": "wasm.same_input.native",
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255381538242,
+        "rms": 0.008433281728338298,
+        "min_row_cosine": 0.9997049889072557,
+        "original_l2": 55.30451210376362,
+        "native_l2": 55.30165518446944,
+        "original_abs_max": 47.73543930053711,
+        "native_abs_max": 47.74108123779297,
+        "bit_exact": false
+      }
+    ]
+  },
+  "adapters": {
+    "original": {
+      "bytes": 462464,
+      "sha256": "bac48fafcbf68ed883fbe9ff6e46484be3ce4fe3896c7527b7de98efdc6cf7f9",
+      "tensors": {
+        "backend.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "threads.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "backend.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "threads.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native1.same_input.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "quant_native.f32"
+        },
+        "native1.old_native1.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native1-native.f32"
+        },
+        "native1.old_native2.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native2-native.f32"
+        },
+        "native1.same_input.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "ea974ffde173640b888e500729edc9ede4e869eb55974b9651354c6d2132eed3",
+          "source": "quant_candidate.f32"
+        },
+        "native1.old_native1.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native1-native.f32"
+        },
+        "native1.old_native2.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native2-native.f32"
+        },
+        "native1.natural_input_sensitivity": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native2.same_input.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "quant_native.f32"
+        },
+        "native2.old_native1.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native1-native.f32"
+        },
+        "native2.old_native2.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native2-native.f32"
+        },
+        "native2.same_input.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "ea974ffde173640b888e500729edc9ede4e869eb55974b9651354c6d2132eed3",
+          "source": "quant_candidate.f32"
+        },
+        "native2.old_native1.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native1-native.f32"
+        },
+        "native2.old_native2.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native2-native.f32"
+        },
+        "native2.natural_input_sensitivity": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "wasm.same_input.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "296d8f42ed5775324fdf6a93aa7ea60b6b0a5ebfe3f106fcdbe48b0d8d04ff22",
+          "source": "quant_native.f32"
+        },
+        "wasm.old_native1.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native1-native.f32"
+        },
+        "wasm.old_native2.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native2-native.f32"
+        },
+        "wasm.same_input.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "7f70ffcc6dee2194907f897935d72b3fe0757b05cad6fe892abad52e44be486b",
+          "source": "quant_candidate.f32"
+        },
+        "wasm.old_native1.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native1-native.f32"
+        },
+        "wasm.old_native2.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+          "source": "native2-native.f32"
+        },
+        "wasm.natural_input_sensitivity": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "320eebd1c16b9befb94c845ec5f1ebfd6493d114961ff45b5cc84e091eadb597",
+          "source": "cast_native.f32"
+        }
+      }
+    },
+    "native": {
+      "bytes": 462464,
+      "sha256": "6bfd9b70cddd554d34ab3c4dad5370984841ab78558885df6759373e168618d0",
+      "tensors": {
+        "backend.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "320eebd1c16b9befb94c845ec5f1ebfd6493d114961ff45b5cc84e091eadb597",
+          "source": "cast_native.f32"
+        },
+        "threads.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "backend.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "6d5ba87b3b5b1b077f7ee5610fbc2d5bc4976affe0bc7333e93b726d17e9bf8c",
+          "source": "cast_candidate.f32"
+        },
+        "threads.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native1.same_input.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native1.old_native1.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native1.old_native2.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native1.same_input.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native1.old_native1.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native1.old_native2.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native1.natural_input_sensitivity": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native2.same_input.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native2.old_native1.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native2.old_native2.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "190bfb875bdf541908f8db5e99ff28046afacd37e9b19f9f62338ce6557ba0cf",
+          "source": "cast_native.f32"
+        },
+        "native2.same_input.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native2.old_native1.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native2.old_native2.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "native2.natural_input_sensitivity": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "13ec1f6793af73e1ff1fb834490fa87dcb2be7d73496e2fb7060a50a509828e2",
+          "source": "cast_candidate.f32"
+        },
+        "wasm.same_input.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "320eebd1c16b9befb94c845ec5f1ebfd6493d114961ff45b5cc84e091eadb597",
+          "source": "cast_native.f32"
+        },
+        "wasm.old_native1.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "320eebd1c16b9befb94c845ec5f1ebfd6493d114961ff45b5cc84e091eadb597",
+          "source": "cast_native.f32"
+        },
+        "wasm.old_native2.native": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "320eebd1c16b9befb94c845ec5f1ebfd6493d114961ff45b5cc84e091eadb597",
+          "source": "cast_native.f32"
+        },
+        "wasm.same_input.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "6d5ba87b3b5b1b077f7ee5610fbc2d5bc4976affe0bc7333e93b726d17e9bf8c",
+          "source": "cast_candidate.f32"
+        },
+        "wasm.old_native1.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "6d5ba87b3b5b1b077f7ee5610fbc2d5bc4976affe0bc7333e93b726d17e9bf8c",
+          "source": "cast_candidate.f32"
+        },
+        "wasm.old_native2.candidate": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "6d5ba87b3b5b1b077f7ee5610fbc2d5bc4976affe0bc7333e93b726d17e9bf8c",
+          "source": "cast_candidate.f32"
+        },
+        "wasm.natural_input_sensitivity": {
+          "shape": [
+            12,
+            384
+          ],
+          "bytes": 18432,
+          "sha256": "6d5ba87b3b5b1b077f7ee5610fbc2d5bc4976affe0bc7333e93b726d17e9bf8c",
+          "source": "cast_candidate.f32"
+        }
+      }
+    }
+  },
+  "remote_authentication_reported": {
+    "all_raw_members_authenticated_count": 39,
+    "raw_artifact": {
+      "id": 12865511872,
+      "bytes": 8648225,
+      "sha256": "58f82e19b7dac340c33d1961f8547d11cc2efe848b48412e77cf4a67e18ff392"
+    },
+    "reviewer_downloaded_raw": false
+  },
+  "optional_f64_dot": {
+    "computed": false,
+    "scope": "Omitted; no F64 value is cast/retyped as an F32 reference"
+  },
+  "whole_model_negative_preserved": true,
+  "operator_supported": false,
+  "production_changed": false,
+  "qualification": false,
+  "limits": "The successful compare-only job verifies the retained negative and existing Ref/independent metric agreement. Reviewer checked only immutable small reports, service metadata and scalar gates. No raw arrays, binary, model, package, build or forward was accessed locally; no new numerical experiment or F64 reference coercion."
+}
