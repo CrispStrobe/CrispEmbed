@@ -93,6 +93,43 @@ class Controls(unittest.TestCase):
             a=original.fingerprint(Tensor(struct.pack('<f',0.)),fake);b=original.fingerprint(Tensor(struct.pack('<f',-0.)),fake)
         self.assertNotEqual(a['sha256'],b['sha256']);self.assertEqual(a['stride'],[1])
 
+    def test_sdpa_dispatch_metadata_scope_order_and_passthrough(self):
+        tree=ast.parse((ROOT/'tools/moedern-first-row/original.py').read_text())
+        node=next(n for n in ast.walk(tree)if isinstance(n,ast.ClassDef)and n.name=='ActualOperations')
+        context=[];records=[];ns=dict(TorchDispatchMode=object,require=common.require,sdpa_active=context,sdpa_dispatches=records,stack=[])
+        exec(compile(ast.Module(body=[node],type_ignores=[]),'owned-actual-operation-mode','exec'),ns)
+        class Operator:
+            def __init__(self,name):self.name=name;self._schema=name+'(Tensor input) -> Tensor';self.calls=[]
+            def __str__(self):return self.name
+            def __call__(self,*args,**kwargs):self.calls.append((args,kwargs));return args[0]
+        mode=ns['ActualOperations']();payload=object()
+        a=Operator('aten.transpose.int');b=Operator('aten._scaled_dot_product_flash_attention_for_cpu.default')
+        # Outside the wrapper no unrelated operations enter the metadata.
+        self.assertIs(mode.__torch_dispatch__(a,(),(payload,),{}),payload);self.assertEqual(records,[])
+        context.append('actual.sdpa.0')
+        for op in (a,b):self.assertIs(mode.__torch_dispatch__(op,(),(payload,),{}),payload)
+        context.pop()
+        self.assertEqual([r['operator']for r in records],[str(a),str(b)])
+        self.assertEqual([r['sequence']for r in records],[0,1]);self.assertEqual([r['sdpa']for r in records],['actual.sdpa.0']*2)
+        self.assertEqual([r['schema']for r in records],[str(a._schema),str(b._schema)])
+        self.assertEqual(len(a.calls),2);self.assertEqual(len(b.calls),1)
+        self.assertIs(b.calls[0][0][0],payload)
+        source=(ROOT/'tools/moedern-first-row/original.py').read_text()
+        self.assertIn('dispatches==repeated_dispatches',source)
+        self.assertIn("sdpa_dispatch_metadata_repeat_exact=True",source)
+        self.assertIn('len(operators)==8',source)
+
+    def test_pinned_out_of_place_publisher_router_proof(self):
+        c=common.declaration();p=c['publisher_router_source']
+        self.assertEqual(p['sha256'],'528afffbd33210845ed521b12af5569f9b6d0b0eb3f176beebb3efd83cee6668')
+        self.assertEqual((p['first_line'],p['last_line']),(235,248))
+        self.assertEqual(p['snippet_sha256'],'c0860b582652a7d084acc5dea84a94173efaa433b71fab9b19666acd48e1c0d8')
+        assignment=ast.parse(p['normalization_source']).body[0]
+        self.assertIsInstance(assignment,ast.Assign);self.assertIsInstance(assignment.value,ast.BinOp);self.assertIsInstance(assignment.value.op,ast.Div)
+        self.assertTrue(p['out_of_place']);self.assertEqual(p['augmented_assignments'],0)
+        self.assertEqual(p['exact_softmax_calls'],1);self.assertEqual(p['exact_topk_calls'],1);self.assertEqual(p['exact_division_expressions'],1)
+        self.assertEqual(p['dense_work'],307*128*16);self.assertLess(p['dense_work'],p['dense_threshold']);self.assertLess(307,p['chunk_tokens'])
+
     def test_actual_map_excludes_derived_reference(self):
         path=ROOT/'tools/moedern-native-v2/replay.py'
         tree=ast.parse(path.read_text());function=next(n for n in tree.body if isinstance(n,ast.FunctionDef)and n.name=='stage_map')

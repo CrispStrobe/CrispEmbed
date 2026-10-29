@@ -56,6 +56,32 @@ operator arguments and returns, and repeated captures. Unexpected operation
 counts, missing stages, nonfinite tensors or changed observation outputs reject
 the diagnostic.
 
+The pinned publisher file is32641 bytes with SHA256
+`528afffbd33210845ed521b12af5569f9b6d0b0eb3f176beebb3efd83cee6668` at
+[revision9d360b8b, lines235–248](https://huggingface.co/VAGOsolutions/SauerkrautLM-MoEdernColBERT-1.5M/blob/9d360b8b88ae11bea5784bf9012ff509fdd5c2da/modeling_modernbert_hash_moe_v10.py#L235).
+Its assignment `tw = tw / (tw.sum(dim=-1, keepdim=True) + 1e-9)` is an
+out-of-place tensor/tensor division, matching the expected `aten.div.Tensor`;
+it is not augmented assignment or `div_`. The exact function text SHA256 is
+`c0860b582652a7d084acc5dea84a94173efaa433b71fab9b19666acd48e1c0d8`.
+Source AST inspection finds one softmax, one top-k and one division expression.
+For this document307×128×16=628736 is below the publisher's500000000 dense-path
+threshold, and307 tokens fit a single8192-token chunk. The eval FFN delegates
+to that path, optional shared linear/GELU projections and dropout identity;
+its earlier FFN normalization lies outside the FFN observer context. No other
+source-level softmax or division is present in this active route. These are
+source facts; the hosted dispatcher must still observe exactly the declared
+operations and reject unexpected counts.
+
+A separate ordered `sdpa_dispatches` list records ATen operator names and schemas
+exposed to `TorchDispatchMode` only during the real functional SDPA call.
+Input/output snapshots remain outside that active interval and disable dispatch
+modes, so bookkeeping operations are excluded. Both observed calls must produce
+identical lists. This identifies the observed ATen flash/math route when exposed;
+it neither forces a backend nor establishes ordinary or historical-binary
+backend identity, and does not claim to enumerate operations hidden inside a
+single native kernel. The eight primary router/SDPA captures and all mapped
+comparison counts remain unchanged.
+
 The mapping has44 actual F32 stage comparisons, two exact integer top-k
 comparisons, three exact integer input observations and six native-only
 magnitude diagnostics. Native attention probabilities and routed sums lack a

@@ -58,7 +58,7 @@ def run(args):
     args.out.mkdir(parents=True,exist_ok=False)
     report=dict(schema='crispembed-moedern-first-row-original-v1',source=args.reviewed_source,phase=args.phase,completed=False,
         original_forward_attempts=0,original_forward_completed=0,original_rerun=False,original_full_corpus_recaptured=False,
-        publication_qualified=False,new_gold=False,arrays=[],calls=[],operators=[])
+        publication_qualified=False,new_gold=False,arrays=[],calls=[],operators=[],sdpa_dispatches=[],publisher_router_source=c['publisher_router_source'],sdpa_dispatch_metadata_scope=c['sdpa_dispatch_metadata'])
     save=lambda:atomic(args.out/'original.json',report);save()
     def call(label,**kwargs):
         require(report['original_forward_attempts']<(1 if args.phase=='ordinary'else 4),'targeted original forward budget exceeded')
@@ -86,7 +86,10 @@ def run(args):
         backbone=model[0].model;expected=baseline['feature_fingerprint'];total=0
         def traced(label):
             nonlocal total
-            counts={};operators=[];rows=[];handles=[];stack=[];sdpa_count=0;seen={};raw= args.out/label;raw.mkdir()
+            counts={};operators=[];sdpa_dispatches=[];sdpa_active=[];rows=[];handles=[];stack=[];sdpa_count=0;seen={};raw= args.out/label;raw.mkdir()
+            # Mutable trace inventories survive an early structural/operation failure.
+            prefix=''if label=='observed'else'observed_repeat_'
+            report[prefix+'arrays']=rows;report[prefix+'operators']=operators;report[prefix+'sdpa_dispatches']=sdpa_dispatches
             def capture(stage,tree):
                 nonlocal total
                 with _disable_current_modes():
@@ -123,6 +126,9 @@ def run(args):
             class ActualOperations(TorchDispatchMode):
                 def __torch_dispatch__(self,func,types,args=(),kwargs=None):
                     kwargs={}if kwargs is None else kwargs
+                    if sdpa_active:
+                        require(len(sdpa_dispatches)<256,'bounded SDPA dispatch metadata exceeded')
+                        sdpa_dispatches.append(dict(sequence=len(sdpa_dispatches),sdpa=sdpa_active[-1],operator=str(func),schema=str(func._schema)))
                     selected=str(func)in('aten._softmax.default','aten.topk.default','aten.div.Tensor')and bool(stack)
                     if selected:
                         context=stack[-1];kind={'aten._softmax.default':'softmax','aten.topk.default':'topk','aten.div.Tensor':'div'}[str(func)]
@@ -139,7 +145,11 @@ def run(args):
                 nonlocal sdpa_count
                 name='actual.sdpa.'+str(sdpa_count);sdpa_count+=1
                 before=fingerprint(dict(args=a,kwargs=k),torch);capture(name+'.input',dict(args=a,kwargs=k))
-                value=original_sdpa(*a,**k);capture(name+'.output',value)
+                # Record only dispatches made by the real SDPA call, excluding snapshot bookkeeping.
+                sdpa_active.append(name)
+                try:value=original_sdpa(*a,**k)
+                finally:require(sdpa_active.pop()==name,'SDPA context nesting differs')
+                capture(name+'.output',value)
                 operators.append(dict(stage=name,operator='torch.nn.functional.scaled_dot_product_attention',input=before,output=fingerprint(value,torch)));return value
             try:
                 functional.scaled_dot_product_attention=sdpa
@@ -149,21 +159,22 @@ def run(args):
             finally:
                 functional.scaled_dot_product_attention=original_sdpa
                 for h in handles:h.remove()
-            require(not stack and sdpa_count==2 and len(operators)==8,'actual two-layer softmax/topk/div/SDPA coverage differs')
+            require(not stack and not sdpa_active and sdpa_count==2 and len(operators)==8,'actual two-layer softmax/topk/div/SDPA coverage differs')
+            require({r['sdpa']for r in sdpa_dispatches}=={'actual.sdpa.0','actual.sdpa.1'},'actual ATen SDPA dispatch metadata missing')
             for field in ('supplied_ids','supplied_mask','effective_mask'):
                 require(list(map(int,seen[field]))==case['ids'if field=='supplied_ids'else field],'actual original IDs/masks differ')
             names={r['stage']for r in rows};require(set(actual_mapping(ref).values())<=names,'actual mandatory stages missing')
-            return rows,operators
-        first,ops=traced('observed');report['arrays']=first;report['operators']=ops;save()
-        repeated,repeated_ops=traced('observed-repeat')
+            return rows,operators,sdpa_dispatches
+        first,ops,dispatches=traced('observed');report['arrays']=first;report['operators']=ops;report['sdpa_dispatches']=dispatches;save()
+        repeated,repeated_ops,repeated_dispatches=traced('observed-repeat')
         def identity(rows):return [{k:v for k,v in r.items()if k!='path'}for r in rows]
-        require(identity(first)==identity(repeated)and ops==repeated_ops,'captured module/actual ATen/SDPA args/returns are not raw-bit repeat neutral')
+        require(identity(first)==identity(repeated)and ops==repeated_ops and dispatches==repeated_dispatches,'captured module/actual ATen/SDPA args/returns or dispatch metadata are not repeat neutral')
         repeated_features=call('unhooked-repeat',output_value=None)
         require(fingerprint(repeated_features,torch)==expected,'unhooked repeat feature bits differ')
         public=call('ordinary-public-selected')
         require(fingerprint(public,torch)==fingerprint(repeated_features['token_embeddings'][repeated_features['attention_mask'].bool()],torch),'public selected slice differs')
         report.update(completed=True,raw_bytes=total,observer_feature_raw_bits_neutral=True,repeat_feature_raw_bits_exact=True,
-            actual_operator_inputs_outputs_repeat_raw_bits_exact=True,public_slice_raw_bits_exact=True,observed_repeat_arrays=repeated,
+            actual_operator_inputs_outputs_repeat_raw_bits_exact=True,sdpa_dispatch_metadata_repeat_exact=True,observed_repeat_sdpa_dispatches=repeated_dispatches,public_slice_raw_bits_exact=True,observed_repeat_arrays=repeated,
             original_forward_total_including_barrier=5,derived_router_gold_used=False);save();return report
     except Exception as error:report['error']=type(error).__name__+': '+str(error);save();raise
 

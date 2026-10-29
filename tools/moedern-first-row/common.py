@@ -38,6 +38,17 @@ def declaration():
     require(c['limits']==dict(original_targeted_forward_max=5,native_full_computations=14,native_plain_full=6,native_observed_full=8,
         native_encode_attempts=21,native_pre_math_observer_abort=1,native_frontend_rejections=6,native_init_rejections=6),'forward budgets differ')
     require(c['original_full_corpus_recaptured']is False and c['new_gold']is False and c['publication_qualified']is False,'diagnostic scope differs')
+    publisher=c['publisher_router_source']
+    original=json.loads((ROOT/'docs/moedern-colbert-source-contract.json').read_text())['variants']['1.5M']['original']
+    pin=original['files'][publisher['path']]
+    require(publisher['revision']==original['revision']and publisher['repository']==original['repository']and
+        publisher['sha256']==pin['sha256']and publisher['bytes']==pin['bytes']and publisher['out_of_place']is True and
+        publisher['normalization_source']=='tw = tw / (tw.sum(dim=-1, keepdim=True) + 1e-9)'and
+        publisher['expected_dispatch']=='aten.div.Tensor'and publisher['dense_work']==628736 and publisher['dense_work']<publisher['dense_threshold']and
+        publisher['input_tokens']<publisher['chunk_tokens'],'pinned publisher router source facts differ')
+    require(c['sdpa_dispatch_metadata']['maximum_entries']==256 and c['sdpa_dispatch_metadata']['repeat_exact_required']is True and
+        c['sdpa_dispatch_metadata']['ordinary_backend_identity_claimed']is False and c['sdpa_dispatch_metadata']['historical_binary_backend_identity_claimed']is False and
+        c['sdpa_dispatch_metadata']['backend_forced']is False,'SDPA dispatch metadata scope differs')
     protected=set(git('ls-tree','-r','--name-only',c['base'],'src','tools/moedern-colbert','tools/moedern-native-v2','tools/moedern-three-doc',
                      'tools/moedern-scifact','tests/moedern-text','tests/moedern-three-doc').decode().splitlines())
     protected|={'CMakeLists.txt','.gitmodules','VERSION','tools/ci_process.py','docs/moedern-colbert-source-contract.json',
