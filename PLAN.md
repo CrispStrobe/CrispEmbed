@@ -1,10 +1,10 @@
-> Current execution: [27 October wrap-up handoff](docs/handoff-2026-10-27.md).
+> Current execution: [29 October portfolio handoff](docs/handoff-2026-10-29.md).
 > Reviewed results are in HISTORY. Experimental runtime branches and running
 > workflows are not promoted by this documentation-only main update.
 
 # CrispEmbed — Active roadmap
 
-Updated 27 October 2026. Completed work, measurements and dated handoffs belong in
+Updated29 October2026. Completed work, measurements and dated handoffs belong in
 [HISTORY.md](HISTORY.md). Detailed current model contracts remain in their model
 documents; this file contains pending work, acceptance conditions and ownership.
 Read [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md), [contributing](docs/contributing.md)
@@ -1235,3 +1235,80 @@ all44 floating/two integer stages and all ordinary/observer/repeat checks.
 Previous targeted original calls are now3 acrossv2/v3; a separately reviewed
 retry admits at most5, aggregate8; native previous6, next maximum14. No full
 original recapture, new gold, production math change or threshold waiver.
+
+### Same-candidate Ultra completion — source preparation claimed
+
+`audit/ultrabert-q4-remaining-shards-20261029` owns a new standalone six-hour
+hosted controller: build exact018/a06 once, authenticate immutable freeze/model
+and actual40855927708 shard0 service/whole ZIP/report/controller/journals, then
+run shards1–7 sequentially with unchanged forward and actual Ref bodies and
+durable row commits. New9594 public raw/normalized calls plus imported1372
+means10966 total over5483 rows. Aggregate all eight shards/300 queries through
+frozen ranking code and unchanged0.001 degradation/0.99 top-one gates. Preserve
+strict vector negatives separately, keep publication false. No conversion,
+original/F32 replay, new recipe, silent historical source retarget or incomplete
+shard substitution. Source/protocol/closure review before any hosted dispatch.
+
+### Josev final-pair activation calibration — source preparation claimed
+
+`audit/josev-final-pair-imatrix-20261029` owns a development-only calibrated
+Q4 experiment after actual single-projection ablations. First trace the real
+CPU route: `josev2b_backbone::run_impl` calls `decoder_hidden_cpu`, whose
+`qwen35_decoder.cpp` post-attention RMS output feeds both final-layer gate/up
+projections. The generic scheduler imatrix collector must not be assumed
+connected. Existing251 original arrays contain layer23 output, no pre-FFN input.
+A test-only disposable overlay may capture actual native F32 normalized input
+for the four old requests, after unchanged strict227-stage/four-typed F32 and
+ordinary/observer/repeat controls. Label native activation calibration honestly;
+no original tensor invention or production callback. Predeclare uncalibrated
+versus calibrated final-pair Q4:292 critical F32,148 F16,2 actual Q4_K. Write
+exact per-column sum-of-squares/count for both2048-wide names, validate finite
+nonzero coverage and actual C quantizer use of both vectors; the loader's silent
+fallback must reject at this caller. Keep original budgets/all outcomes and
+all earlier recipes. No Q8 imatrix, NEW20/holdout access, recipe selection or
+publication. Explicit source/forward/quantizer counts and review precede runs.
+
+### Typed Gemma first Q4 source reviewed and registered
+
+`audit/gemma-decision-first-q4k-20261029` at
+`6e327e902ebdd0feb531c3beae4b52902b7e781b` adds eleven test/driver/protocol files
+only. Parent source review and11 stdlib controls pass; two NumPy controls stay
+explicitly hosted. Minimal engine/core linking uses unchanged source and root
+ISA helper/a06/LLAMAFILE, actual C quantizer and original Ref. Registered
+`gemma-decision-first-q4-v1.yml` must execute this exact branch, with strict
+F32145 stages/eight typed/30 bank gates before either predeclared recipe.
+Maximum264 encoder forwards/zero original. No public CAPI or publication claim.
+
+### Critical-tensor precision decisions and MiniCPM Q8 follow-up
+
+Use [the measured per-model precision audit](docs/critical-tensor-precision-20261029.md).
+MiniCPM's positive vision similarity for Q4 comes from retaining vision source
+precision:186 decoder matrices selected,593 excluded, while Q8 quantizes vision
+linears. The next separately closed Q8 recipe should use the SAME186 decoder
+names as the frozen Q4 selection and actual Q8 storage, preserving all593
+source-F16-model payloads/types/shapes (including F32 norms) byte-exact. No new
+generic quantizer default. Verify full779-role census/header and actual C
+quantizer use before all five decoded/intermediate cases with a same-source
+F32/F16 control. Reuse immutable original/frozen inputs; no23-case original
+recapture. Report unchanged F32 layer26 failures and96 unmapped crop parts
+separately; this ablation cannot waive either. Source/model/forward counts,
+reference receipts and review precede hosted execution/publication.
+
+### MoEdern actual router-input replay — parent source preparation claimed
+
+`audit/moedern-router-real-input-replay-20261029` owns a component-only
+continuation of [completed actual CPUv4/f336](docs/moedern-first-row-actual-v4-result.md).
+Freeze the exact-v4 mounted kernel outputs (explicit version4, never latest),
+producer script/source, original/native normalized router inputs and captured
+logits/probabilities/IDs/weights; full307-row shapes for both layers. Authenticate
+selected payloads/actual published F32 weight bytes before framework imports.
+Replay both original/native inputs through actual native linear/softmax and
+original Torch linear/softmax/top-k, with own-byte anchors and interleaved
+repeat/thread controls. Record all near-boundary expert identities; selected
+weights alone hide this case. First strict failure is layer1 row58 [2,4] versus
+[2,6], unequal probability margins1.3411e-7 versus1.0431e-7. Source/numeric
+protocol, exact component call counts and peer review precede hosted execution.
+No original/full-model forward, new gold, production arithmetic/tie rule,
+quantizer run or budget waiver. CPU-only Kaggle may use exact-version attached
+real capture inputs while GHA has no running jobs; fresh whole-account capacity
+is required. Ordinary whole-model8 aggregate original calls stay frozen.
