@@ -1,3 +1,22 @@
+## 29 October 2026 — MoEdern three-document initial anchor and adapter rejection
+
+[40825166813](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40825166813)
+at frozenb86 completes three ordinary original documents/six final matrices.
+The [unchanged original report](tests/results/moedern-colbert/three-doc-initial-40825166813-original.json)
+retains four fresh-original numerical negatives: documents24928817/5849439 have
+maximum0.0355934128/0.0557457618 and minimum cosine0.9907455389/0.9740250689.
+Document24726600 passes both matrices (maximum4.24683e-7). Exact checkpoint,
+runtime dictionary and all32 loaded weight hashes equal the frozen full original.
+
+The run then rejects the hyphenated test-adapter name before model-vector actual
+Ref, observers or native execution. The [initial review](tests/results/moedern-colbert/three-doc-initial-40825166813-review.json)
+rehashes all17 small ZIP members and five command logs; authored Ref controls
+pass separately. Original instability and the harness defect remain distinct;
+CPU/operator causality and native stage attribution are unproven. Raw artifact
+12876890015 remains remote until27 January2027. A separately versioned
+[compare-only recovery](docs/moedern-three-doc-compare-v2.md) is source preparation,
+with no original/native replay, budget change or replacement gold.
+
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of

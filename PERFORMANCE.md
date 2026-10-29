@@ -1,3 +1,23 @@
+## 29 October 2026 — MoEdern retained fresh-original final-vector instability
+
+The [initial three-document report](tests/results/moedern-colbert/three-doc-initial-40825166813-review.json)
+compares freshly computed ordinary original outputs with frozen full-original
+vectors, using independent NumPy before the adapter failure:
+
+| Document | All/selected max absolute | Minimum row cosine | Fixed gate |
+| --- | --- | --- | --- |
+| `24726600` | 4.24683094e-7 | 0.9999999999989746 | both pass |
+| `24928817` | 0.0355934128 | 0.9907455389 | both fail |
+| `5849439` | 0.0557457618 | 0.9740250689 | both fail |
+
+All six matrices differ in bytes; checkpoint, runtime dictionary and32 loaded
+weight hashes match. The fresh CPU reports AMD EPYC7763; the frozen full-original
+CPU model is unrecorded. There is no controlled speed comparison or proven
+hardware/operator cause. Model-vector actual Ref and native intermediate
+attribution were not reached because of the independent adapter-name defect.
+Recover retained comparisons without any new original/native forward before
+considering precision or new intermediate protocols. All old gates remain.
+
 ## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
 
 | engine | page | variant | seconds | note |

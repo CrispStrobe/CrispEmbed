@@ -1,0 +1,154 @@
+{
+  "schema": "crispembed-moedern-three-doc-initial-rejection-v1",
+  "completed": false,
+  "review_date": "2026-10-29",
+  "run": 40825166813,
+  "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40825166813",
+  "source": "b86e8130947b59e09dfe4dde0e2dae01957c443d",
+  "attempt": 1,
+  "service_conclusion": "failure",
+  "job": {
+    "id": 123286439520,
+    "name": "diagnostic",
+    "conclusion": "failure"
+  },
+  "artifacts": [
+    {
+      "id": 12876890015,
+      "name": "moedern-three-doc-raw-40825166813",
+      "size_in_bytes": 2701071,
+      "digest": "sha256:8603bcaf7374a1877ce6f24452f51aa9038c7f741c4b7acb62f1c7d7fdadfa34",
+      "expires_at": "2027-01-27T05:44:58Z"
+    },
+    {
+      "id": 12875424745,
+      "name": "moedern-three-doc-review-40825166813",
+      "size_in_bytes": 23632,
+      "digest": "sha256:d29592b0182d9e18a42a580c8d1e370539bc3f121731abae95a7060302d4ff06",
+      "expires_at": "2027-01-27T05:44:58Z"
+    }
+  ],
+  "unchanged_producers": {
+    "original": {
+      "path": "three-doc-initial-40825166813-original.json",
+      "bytes": 20590,
+      "sha256": "1a449910e6f1873538570c0358cca878da5245cb5ef4b6432b0bd6612c1b389d",
+      "unchanged": true
+    },
+    "hosted": {
+      "path": "three-doc-initial-40825166813-hosted.json",
+      "bytes": 12643,
+      "sha256": "aebd7db4ed0f01c89c5406fbcc68a8d982d04fea7dee7f4cd6959993c3439816",
+      "unchanged": true
+    },
+    "log": {
+      "path": "three-doc-initial-40825166813-log.log",
+      "bytes": 1446,
+      "sha256": "e86a79239c0175108feccc82a88ebbca812a140aa014a5fe871df9a114ab0327",
+      "unchanged": true
+    }
+  },
+  "small_zip_members_rehashed": {
+    "three-doc-input/prepare.json": {
+      "bytes": 1175,
+      "sha256": "e3a33783a5c91ebf23d9f01085973f5150aa32878dc02bbfe4948cd856862e66"
+    },
+    "three-doc-input/input-packet.json": {
+      "bytes": 57647,
+      "sha256": "f36490aa6309cded6f704ca9edf3b4fd67a4e13288bdb2db1452b4bd74f7ccb3"
+    },
+    "three-doc-out/review/build-profile.json": {
+      "bytes": 3602,
+      "sha256": "44f82be3dbb1c48671b1b1d74af1c540d14ea8bf3f07721047a1b247d8289d35"
+    },
+    "three-doc-out/review/evidence/ref-controls/changed_row/diff.json": {
+      "bytes": 555,
+      "sha256": "1528df63929d069c683b37c4e3c62765d233e85fec4fef150e3bfbe8ddf199ac"
+    },
+    "three-doc-out/review/evidence/ref-controls/changed_row/diff.log": {
+      "bytes": 347,
+      "sha256": "0f2ddb72068b138a7cc8f2a005601b479b6e003b0b257d774103cd7eca5b2015"
+    },
+    "three-doc-out/review/evidence/ref-controls/controls.json": {
+      "bytes": 9193,
+      "sha256": "a86c3107bbdd05952b941ca75a4cbf0bd3e6ff6cd9d80e89277ffee4f3011c3d"
+    },
+    "three-doc-out/review/evidence/ref-controls/same/diff.json": {
+      "bytes": 508,
+      "sha256": "5d9ba7c272b1b83e165b3eb11fe0e3b6f80d979430096016c9857d8b06900fae"
+    },
+    "three-doc-out/review/evidence/ref-controls/same/diff.log": {
+      "bytes": 313,
+      "sha256": "642e3aad2a60dcc9367553b7f1b3e954ac25a0c649c2b9f200df2eaa6ebdb76a"
+    },
+    "three-doc-out/review/evidence-files.json": {
+      "bytes": 755,
+      "sha256": "00234f1665f56718e95253a6c417476e0745dd50eecc8b9b445265724c02f3c1"
+    },
+    "three-doc-out/review/hosted.json": {
+      "bytes": 12643,
+      "sha256": "aebd7db4ed0f01c89c5406fbcc68a8d982d04fea7dee7f4cd6959993c3439816"
+    },
+    "three-doc-out/review/original-three-doc.log": {
+      "bytes": 1446,
+      "sha256": "e86a79239c0175108feccc82a88ebbca812a140aa014a5fe871df9a114ab0327"
+    },
+    "three-doc-out/review/probe-build.log": {
+      "bytes": 12462,
+      "sha256": "26d639d865e2d3b70a734d21cac52d2c2b2eee38b2ec58b5339687b14e58561d"
+    },
+    "three-doc-out/review/probe-configure.log": {
+      "bytes": 787,
+      "sha256": "6cafafb3388ab22b8dbdb7289f0a697c745138e41824e004b04cd063147be2cf"
+    },
+    "three-doc-out/review/root-configure.log": {
+      "bytes": 1870,
+      "sha256": "f493db03a024f5a77baeeddf1809cfd01a395b41dde40e2fa202380067be1a5e"
+    },
+    "three-doc-out/review/root-ggml-build.log": {
+      "bytes": 2374,
+      "sha256": "2b76ef77577811a9d70cdb1bfd6f68742f9cf5d5cd0a883516ae0a6689ac9c2b"
+    },
+    "three-doc-out/raw/original/original.json": {
+      "bytes": 20590,
+      "sha256": "1a449910e6f1873538570c0358cca878da5245cb5ef4b6432b0bd6612c1b389d"
+    },
+    "three-doc-requirements.txt": {
+      "bytes": 1301,
+      "sha256": "83a35a80228d606577983cf4d3dd8be0cef9c9b11c2e0ddbfbfe0417284b5b3e"
+    }
+  },
+  "independent_review": {
+    "all17_small_zip_members_and_five_command_log_hashes_verified": true,
+    "checkpoint_runtime_and_all32_loaded_weight_hashes_equal_frozen_original": true,
+    "original_ordinary_documents": 3,
+    "original_final_matrices_saved": 6,
+    "reported_numpy_numeric_passed_matrices": 2,
+    "reported_numpy_numeric_rejected_matrices": 4,
+    "fresh_original_all_six_byte_exact": false,
+    "fresh_original_hardware": {
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "threads": 2,
+      "interop_threads": 1,
+      "mkldnn_enabled": true
+    },
+    "frozen_original_hardware_recorded": false,
+    "harness_error": "ValueError: Unsafe/duplicate adapter tensor name",
+    "harness_source": "https://github.com/CrispStrobe/CrispEmbed/blob/b86e8130947b59e09dfe4dde0e2dae01957c443d/tools/moedern-three-doc/original.py#L65",
+    "cause": "Adapter name doc-24726600.all contains a hyphen; unchanged test adapter admits only ASCII letters/digits/underscore/dot.",
+    "actual_ref_model_matrices_reached": false,
+    "original_observer_or_repeat_reached": false,
+    "native_forward_reached": false,
+    "native_stage_attribution_reached": false,
+    "authored_ref_controls_passed": true,
+    "arrays_downloaded_locally": false
+  },
+  "limits": [
+    "Fresh-original final-output instability is a separate measured negative; the adapter defect does not explain the numerical error.",
+    "Similar old-native/fresh-original magnitudes are not causal proof or replacement gold.",
+    "Compare-only recovery must authenticate retained18 matrices and actual Ref before considering any new stage protocol.",
+    "No automatic original/native replay, numerical budget change, quantized/default/release/app/publication qualification."
+  ],
+  "publication_qualified": false,
+  "new_gold": false
+}

@@ -1,0 +1,14 @@
+Loading weights:   0%|          | 0/31 [00:00<?, ?it/s]Loading weights: 100%|██████████| 31/31 [00:00<00:00, 5858.49it/s]
+Skiplist words ['<', '>', '@', '\\', '^', '_', '`', '{', '|', '}', '~'] are not single vocab tokens for this tokenizer (``convert_tokens_to_ids`` returned ``unk_token_id=1``). Dropping them from the skiplist to avoid excluding real [UNK] document tokens from MaxSim scoring.
+Traceback (most recent call last):
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-three-doc/original.py", line 146, in <module>
+    run(p.parse_args())
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-three-doc/original.py", line 65, in run
+    adapters=reference.write_pair(args.out/'anchor-original.gguf',args.out/'anchor-current.gguf',anchor_pairs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-native-v2/diff_adapter.py", line 126, in write_pair
+    return {'original': write_gguf(original, [{'name':p['name'], **p['original']} for p in pairs]),
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-native-v2/diff_adapter.py", line 58, in write_gguf
+    raise ValueError('Unsafe/duplicate adapter tensor name')
+ValueError: Unsafe/duplicate adapter tensor name
