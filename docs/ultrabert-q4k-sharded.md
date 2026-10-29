@@ -18,7 +18,9 @@ CPU2,14GiB available RAM/24GiB free disk, root LLAMAFILE ON and native/BLAS/devi
 backends OFF. Build/cache/compile commands, binary hashes, package versions,
 model/stream identities and both original and audit source closures are retained.
 A fresh Python proves C-ABI load and exact mapped-library ownership before models.
-No reference observer is linked into the production library.
+The actual Ultra production object is checked for observer/comparator symbols
+and strings. Existing comparator code in other frozen families is inventoried
+separately; this does not claim the whole historical library is observer-free.
 
 1. **Freeze, no forwards.** Authenticate exactv2 typed Get/Status/List on every
    page, submitted script SHA, all72 member names and the old report bytes.
@@ -67,3 +69,22 @@ separately reviewed metadata-aware runtime/converter successor and exact source
 closure must precede an independently declared Q8 recipe with genuine Q8 storage,
 critical F32 retention, intermediate/vector errors and all unchanged retrieval
 gates. The zero-forward freeze and approved Q4 scope do not depend on that change.
+
+
+The first freeze attempt [40831085595](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831085595)
+completed the frozen root build, Ultra profile controls and comparator build, then
+failed an overly broad whole-library `crispembed_diff::` symbol grep. The
+[initial receipt](../tests/results/ultrabert/q4k-sharded-initial-freeze-rejection.json)
+binds its small artifact and every retained member. It produced no freeze,
+original, F32 or quantized model result. The source37/runtime018 remain immutable.
+
+The successor inspects the actual shared-target `ultrabert_embed.cpp.o` selected
+from the generated compile commands, with source/object hashes, symbols, strings,
+six expected production exports and test-macro rejection. Any Ultra observer or
+comparator symbol/string rejects. The complete shared-library inventory remains
+retained and its27 existing comparator symbol names must match the authenticated
+initial inventory; exact frozen unrelated source hashes explain this bounded
+exception. No new comparator symbol or Ultra observer is permitted. The main
+controller requires this successful object audit and unchanged library/object
+identities before retained payload access. No runtime, profile, recipe, numerical
+gate, reference or default changes accompany the correction.

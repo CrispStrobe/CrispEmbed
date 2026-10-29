@@ -108,6 +108,60 @@ class CheckpointTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'metric disagreement'):m.metric_agreement(wrong,metrics)
 
 
+class SymbolAuditTests(unittest.TestCase):
+    def fixtures(self):
+        pin=m.read(m.PROTOCOL)['symbol_audit']
+        exports=['ultrabert_init(char const*, int)', 'ultrabert_free(ultrabert_context*)',
+                 'ultrabert_encode(ultrabert_context*)', 'ultrabert_hparams(crispembed_hparams*)',
+                 'ultrabert_token(ultrabert_context const*, int)', 'ultrabert_query_prefix()']
+        ultra=''.join('00000000 T '+x+'\n' for x in exports)
+        whole=ultra+''.join('00000001 W '+x+'\n' for x in pin['known_unrelated_diff_symbols'])
+        return pin,whole,ultra,'normal Ultra production text\n'
+    def test_known_unrelated_references_do_not_waive_ultra_object(self):
+        pin,whole,ultra,strings=self.fixtures()
+        row=m.symbol_text_controls(whole,ultra,strings,pin)
+        self.assertEqual(row['known_unrelated_diff_symbols'],27)
+        self.assertEqual(len(row['ultra_exports']),6)
+        for symbols in [ultra+'00000002 T ultrabert_probe()\n',ultra+'00000002 U crispembed_diff::Ref::compare()\n']:
+            with self.assertRaisesRegex(ValueError,'Ultra object'):m.symbol_text_controls(whole,symbols,strings,pin)
+    def test_added_removed_or_unparsed_whole_symbols_reject(self):
+        pin,whole,ultra,strings=self.fixtures()
+        for bad in [whole+'00000001 W crispembed_diff::unexpected()\n',ultra,whole+'not an nm row\n']:
+            with self.assertRaises(ValueError):m.symbol_text_controls(bad,ultra,strings,pin)
+        with self.assertRaisesRegex(ValueError,'whole-library'):m.symbol_text_controls(whole+'00000002 T ultrabert_observer()\n',ultra,strings,pin)
+    def test_missing_production_export_or_reference_strings_reject(self):
+        pin,whole,ultra,strings=self.fixtures()
+        with self.assertRaisesRegex(ValueError,'incomplete'):m.symbol_text_controls(whole,ultra.replace('ultrabert_encode','other_encode'),strings,pin)
+        for value in ['_ZN15crispembed_diff3Ref\n','ULTRABERT_TESTING\n','emb_out\n','post_attn_residual\n','final_hidden\n']:
+            with self.assertRaises(ValueError):m.symbol_text_controls(whole,ultra,value,pin)
+    def test_actual_shared_object_selected_before_audit(self):
+        pin,whole,ultra,strings=self.fixtures()
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);runtime=root/'runtime';build=root/'build';out=root/'out'
+            (runtime/'src').mkdir(parents=True);(runtime/'src/ultrabert_embed.cpp').write_bytes(b'authored source')
+            object_path=build/'CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o';object_path.parent.mkdir(parents=True);object_path.write_bytes(b'authored object');(build/'libcrispembed.so').write_bytes(b'authored library')
+            rows=[]
+            for target in ['CMakeFiles/crispembed.dir/src/ultrabert_embed.cpp.o',str(object_path.relative_to(build))]:
+                rows.append(dict(file=str(runtime/'src/ultrabert_embed.cpp'),directory=str(build),arguments=['c++','-O3','-o',target,'-c',str(runtime/'src/ultrabert_embed.cpp')]))
+            m.write(build/'compile_commands.json',rows)
+            configured=dict(pin,ultra_source=m.identity(runtime/'src/ultrabert_embed.cpp'),known_unrelated_source_sha256={})
+            saved_read=m.read;calls=[]
+            def read(path):return {'symbol_audit':configured} if path==m.PROTOCOL else saved_read(path)
+            def command(argv,stdout,**kw):
+                calls.append(argv);text=strings if argv[0]=='strings' else whole if argv[-1].endswith('.so') else ultra
+                stdout.write(text.encode());return types.SimpleNamespace(returncode=0)
+            with mock.patch.object(m,'read',side_effect=read),mock.patch.object(m.subprocess,'run',side_effect=command):
+                report=m.symbol_audit(runtime,build,out)
+            self.assertTrue(report['completed']);self.assertEqual(report['object'],m.identity(object_path));self.assertEqual([x[-1] for x in calls],[str(build/'libcrispembed.so'),str(object_path),str(object_path)])
+            self.assertEqual(m.read(out/'symbol-audit.json')['object'],report['object'])
+    def test_frozen_runtime_and_scoped_workflow_audit(self):
+        workflow=(ROOT/'.github/workflows/ultrabert-q4k-sharded-v1.yml').read_text()
+        self.assertIn('m.symbol_audit(runtime',workflow);self.assertNotIn("grep -E 'ultrabert",workflow)
+        self.assertIn("CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o",(ROOT/'tools/portfolio/ultrabert_q4k_sharded.py').read_text())
+        pin=m.read(m.PROTOCOL)['symbol_audit'];self.assertFalse(pin['ultra_object_reference_symbols_permitted'])
+        self.assertEqual(pin['ultra_source'],m.identity(ROOT/'src/ultrabert_embed.cpp'))
+
+
 class ExactServiceTests(unittest.TestCase):
     def test_versioned_get_status_and_every_page(self):
         calls=[]

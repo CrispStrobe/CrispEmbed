@@ -15,6 +15,7 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
+import shlex
 import subprocess
 import sys
 import time
@@ -89,7 +90,9 @@ def source(runtime, reviewed):
             'reviewed exact audit source differs')
     require(os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_SHA') == reviewed
             and os.environ.get('RUNNER_ENVIRONMENT') == 'github-hosted', 'genuine hosted GitHub source required')
-    require(not git('status', '--porcelain', '--', *protocol['owned_sha256']), 'dirty audit source')
+    expected_owned={'tools/portfolio/ultrabert_q4k_sharded.py','tests/test_ultrabert_q4k_sharded.py','.github/workflows/ultrabert-q4k-sharded-v1.yml','docs/ultrabert-q4k-sharded.md','tests/results/ultrabert/q4k-sharded-initial-freeze-rejection.json'}
+    require(set(protocol['owned_sha256'])==expected_owned,'exact audit source closure required')
+    require(not git('status', '--porcelain', '--', str(PROTOCOL.relative_to(ROOT)), *protocol['owned_sha256']), 'dirty audit source')
     for name, digest in protocol['owned_sha256'].items():
         require(sha(ROOT / name) == digest, 'owned source differs: ' + name)
     require(git('rev-parse', 'HEAD', cwd=runtime) == RUNTIME
@@ -103,6 +106,77 @@ def source(runtime, reviewed):
                 controller_sha256=sha(Path(__file__)))
 
 
+def symbol_names(text):
+    names = []
+    for line in text.splitlines():
+        if not line.strip(): continue
+        row = re.fullmatch(r'\s*(?:[0-9a-fA-F]+\s+)?[A-Za-z?]\s+(.+)', line)
+        require(row is not None, 'unparsed nm symbol inventory')
+        names.append(row[1])
+    return names
+
+
+def symbol_text_controls(whole, object_symbols, object_strings, pinned):
+    names = symbol_names(whole)
+    actual = sorted(name for name in names if 'crispembed_diff::' in name)
+    require(actual == pinned['known_unrelated_diff_symbols'], 'whole-library pre-existing comparator symbol inventory changed')
+    leak = lambda value: re.search(r'ultrabert[^\n]*(?:observ|probe|dump|testing)', value, re.I) is not None
+    require(not any(leak(name) for name in names), 'Ultra observer/probe in whole-library symbols')
+    object_names = symbol_names(object_symbols)
+    require(not any('crispembed_diff' in name or leak(name) for name in object_names), 'Ultra object contains observer/comparator symbol')
+    require('crispembed_diff' not in object_strings and not leak(object_strings), 'Ultra object contains observer/comparator string')
+    require(not any(line.strip() in {'emb_out', 'post_attn_residual', 'final_hidden'} for line in object_strings.splitlines()), 'Ultra object contains reference-only stage label')
+    required = {'ultrabert_init', 'ultrabert_free', 'ultrabert_encode', 'ultrabert_hparams', 'ultrabert_token', 'ultrabert_query_prefix'}
+    found = {name.split('(', 1)[0] for name in object_names if name.startswith('ultrabert_')}
+    require(required <= found, 'actual Ultra production object exports incomplete')
+    return dict(known_unrelated_diff_symbols=len(actual), ultra_exports=sorted(required),
+                object_symbols_no_observers=True, object_strings_no_observers=True,
+                whole_library_ultra_symbols_no_observers=True)
+
+
+def symbol_audit(runtime, build, out):
+    """Inspect the actual shared-target object; no surrogate test archive/build."""
+    out.mkdir(parents=True, exist_ok=True)
+    report = dict(schema='crispembed-ultrabert-production-symbol-audit-v1', completed=False,
+                  runtime_source=RUNTIME, original_forwards=0, model_access=False)
+    receipt = out / 'symbol-audit.json'
+    try:
+        pin = read(PROTOCOL)['symbol_audit']
+        rows = read(build / 'compile_commands.json')
+        object_path = build / 'CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o'
+        candidates = []
+        for row in rows:
+            if Path(row['file']).resolve() != (runtime / 'src/ultrabert_embed.cpp').resolve(): continue
+            argv = row.get('arguments') or shlex.split(row['command'])
+            require(argv.count('-o') == 1, 'unambiguous actual Ultra object output required')
+            target = Path(argv[argv.index('-o') + 1])
+            if not target.is_absolute(): target = Path(row['directory']) / target
+            if target.resolve() == object_path.resolve(): candidates.append((row, argv))
+        require(len(candidates) == 1 and object_path.is_file() and not object_path.is_symlink(), 'exact shared-target Ultra object missing/ambiguous')
+        row, argv = candidates[0]
+        require(not any(re.search(r'^-D.*(?:ULTRABERT.*(?:TEST|OBSERV|PROBE)|CRISPEMBED_TEST)', a, re.I) for a in argv), 'test observer macro in production object command')
+        checked_file(runtime / 'src/ultrabert_embed.cpp', pin['ultra_source'])
+        for name, digest in pin['known_unrelated_source_sha256'].items():
+            require(sha(runtime / name) == digest, 'known unrelated comparator source changed: ' + name)
+        whole_path = out / 'symbols.txt'
+        for tool, target, destination in [('nm', build / 'libcrispembed.so', whole_path),
+                                         ('nm', object_path, out / 'ultrabert-object-symbols.txt'),
+                                         ('strings', object_path, out / 'ultrabert-object-strings.txt')]:
+            with destination.open('wb') as stream:
+                subprocess.run([tool, '-C' if tool == 'nm' else '-a', str(target)], stdout=stream, stderr=subprocess.STDOUT, check=True)
+        report['controls'] = symbol_text_controls(whole_path.read_text(), (out / 'ultrabert-object-symbols.txt').read_text(),
+                                                  (out / 'ultrabert-object-strings.txt').read_text(), pin)
+        report.update(completed=True, production_object='CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o',
+                      object=identity(object_path), library=identity(build / 'libcrispembed.so'),
+                      compile_command=row, source=identity(runtime / 'src/ultrabert_embed.cpp'),
+                      inventories={name: identity(out / name) for name in ['symbols.txt', 'ultrabert-object-symbols.txt', 'ultrabert-object-strings.txt']},
+                      initial_failure_run=pin['initial_failure_run'], initial_source_unchanged=True)
+        write(receipt, report)
+        return report
+    except Exception as error:
+        report['error'] = type(error).__name__ + ': ' + str(error); write(receipt, report); raise
+
+
 def build_proof(args):
     build = args.library.parent
     cache = (build / 'CMakeCache.txt').read_text(encoding='utf-8')
@@ -114,7 +188,9 @@ def build_proof(args):
     versions = {name: importlib.metadata.version(name) for name in ['numpy', 'gguf', 'huggingface-hub', 'safetensors']}
     require(versions == {'numpy': '2.2.6', 'gguf': '0.17.1', 'huggingface-hub': '0.36.0', 'safetensors': '0.6.2'},
             'frozen numerical/conversion tooling versions differ')
-    return dict(profile=expected, packages=versions, library=identity(args.library), quantizer=identity(args.quantizer),
+    audit=read(build.parent/'ultra-output/symbol-audit.json')
+    require(audit['completed'] is True and audit['runtime_source']==RUNTIME and audit['library']==identity(args.library) and audit['object']==identity(build/'CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o'), 'actual Ultra object symbol audit missing/changed')
+    return dict(symbol_audit=audit, profile=expected, packages=versions, library=identity(args.library), quantizer=identity(args.quantizer),
                 comparator=identity(args.diff), cache=identity(build / 'CMakeCache.txt'),
                 compile_commands=identity(build / 'compile_commands.json'),
                 actual_root_runtime=True, original_or_f32_forward=False)

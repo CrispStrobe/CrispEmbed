@@ -1,0 +1,62 @@
+{
+  "schema": "crispembed-ultrabert-sharded-initial-freeze-rejection-v1",
+  "run": 40831085595,
+  "source": "37a65615eb525b57d9ced076235466a865f855da",
+  "runtime_source": "018cf85b7bb6ee2ac98011738aaa289d63b896ac",
+  "job": 123305222925,
+  "conclusion": "failure",
+  "review_artifact": {
+    "id": 12879196598,
+    "bytes": 133949,
+    "sha256": "b56d55fd371d6081e2d85f0ac9cf4f0c9835aa3d65cdc969f43d98ec9f2b193a"
+  },
+  "small_members": {
+    "CMakeCache.txt": {
+      "bytes": 28953,
+      "sha256": "a10631b26735a3dcc0e8bc524e057f2715f7754eab4d82523a5f54b744902134"
+    },
+    "build.log": {
+      "bytes": 255778,
+      "sha256": "8ad9e5af8aebab6090cf337669defa907ab15a2d37f796f3cc7838494c7c7b1c"
+    },
+    "comparator-build.log": {
+      "bytes": 10379,
+      "sha256": "dcd1e83abb1380c7cedf71ddc428cf8a854a4af12b7b4e6f4e762625aa07743d"
+    },
+    "compile_commands.json": {
+      "bytes": 331392,
+      "sha256": "13782e74e8aceb4c2e428a1991f01c015768d5e5c18fc309ce881866de43d37a"
+    },
+    "configure.log": {
+      "bytes": 1852,
+      "sha256": "51fdc8bac37ebf44f87c2cf8d89e5a2ef4de359c0707407c9c4c0f68d840cb33"
+    },
+    "profile-controls.log": {
+      "bytes": 91,
+      "sha256": "134346fec644a79fdeb3bcadce3b26f91869c6459b0124f8caf29ac5f0c43cd1"
+    },
+    "symbols.txt": {
+      "bytes": 1285718,
+      "sha256": "5f4bd0eb5541bffb5e2f06e9ffb56db96b1b926b083b5707fbcb860ebc3e88e1"
+    }
+  },
+  "failed_log": {
+    "bytes": 16331,
+    "sha256": "f39c81d0733c47f76ef05965f64e95524c14e705d582b0996b493e2b54ba5b96"
+  },
+  "completed_before_rejection": [
+    "root shared-library build",
+    "quantizer build",
+    "Ultra profile16 malformed-schema controls/two preflights",
+    "actual Ref comparator build"
+  ],
+  "earliest_failure": "Whole-library grep for crispembed_diff:: rejected existing Flova and generic comparator symbols; no Ultra observer match was shown.",
+  "freeze_completed": false,
+  "model_access": false,
+  "original_forwards": 0,
+  "f32_forwards": 0,
+  "quantized_forwards": 0,
+  "production_changed": false,
+  "qualification": false,
+  "correction": "Audit actual shared-target Ultra object symbols/strings and six production exports; preserve full shared-library inventory and exact27 known comparator names; no global Ultra observer exception."
+}

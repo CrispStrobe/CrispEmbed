@@ -155,9 +155,80 @@
     "requires": "separately reviewed metadata-aware loader/converter/source closure; no header relabel or old guard bypass"
   },
   "owned_sha256": {
-    "tools/portfolio/ultrabert_q4k_sharded.py": "b69c34e9a62dd50e401aa34f40dcbcd4cc0c5f17ebb4bf6650efc8545453fb39",
-    "tests/test_ultrabert_q4k_sharded.py": "f0d304e175bd1fe2b3dd963f4c50577aae0b9cabcd4a1b4df3f4e35d34dce9fc",
-    ".github/workflows/ultrabert-q4k-sharded-v1.yml": "0ba14ac204bea2d9077c559657a542cae1392df143d508f0c0580d08007b00bc",
-    "docs/ultrabert-q4k-sharded.md": "b6ede3acc722fcc44c9ca58fb59eac332250dfdd2fba6648e9e9ea2d24bd621e"
+    "tools/portfolio/ultrabert_q4k_sharded.py": "0500b4f332bb71aa8720692128c96b24a2bd1041314f1652eb453518bdf22ad6",
+    "tests/test_ultrabert_q4k_sharded.py": "3c63fe8797a3e22a31086a0412b329d97fcb2ed867ebea12c9360779d0b5069e",
+    ".github/workflows/ultrabert-q4k-sharded-v1.yml": "5a6f8cbf29825b0c520356c23780aecc4da7c3705a82e595af5379a055c1c9fd",
+    "docs/ultrabert-q4k-sharded.md": "89d167eff5d7690d171db4f829a7bb6ed3aa17a08318f8831bf6b252c5bd37df",
+    "tests/results/ultrabert/q4k-sharded-initial-freeze-rejection.json": "50a689c7f95ec72e26db210886d1be237bb777066c5a8ef5e84743ac1bea398b"
+  },
+  "symbol_audit": {
+    "initial_failure_run": 40831085595,
+    "initial_source": "37a65615eb525b57d9ced076235466a865f855da",
+    "initial_review_artifact": {
+      "id": 12879196598,
+      "bytes": 133949,
+      "sha256": "b56d55fd371d6081e2d85f0ac9cf4f0c9835aa3d65cdc969f43d98ec9f2b193a"
+    },
+    "initial_whole_library_inventory": {
+      "bytes": 1285718,
+      "sha256": "5f4bd0eb5541bffb5e2f06e9ffb56db96b1b926b083b5707fbcb860ebc3e88e1"
+    },
+    "known_unrelated_diff_symbols": [
+      "crispembed_diff::Ref::compare(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, float const*, unsigned long, int) const",
+      "crispembed_diff::Ref::compare(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, float const*, unsigned long, int) const [clone .constprop.0]",
+      "crispembed_diff::Ref::compare(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, float const*, unsigned long, int) const [clone .constprop.0] [clone .cold]",
+      "crispembed_diff::Ref::get_f32(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const",
+      "crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)",
+      "crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::{lambda()#1}::operator()[abi:cxx11]() const",
+      "crispembed_diff::Ref::~Ref()",
+      "crispembed_diff::Ref::~Ref()",
+      "crispembed_diff::Report::env_threshold(float)",
+      "crispembed_diff::Report::env_threshold(float) [clone .constprop.0]",
+      "forward_decoder(flova_ocr_context*, std::vector<int, std::allocator<int> > const&, float const*, int, std::vector<CrossKV, std::allocator<CrossKV> > const&, std::vector<DecW, std::allocator<DecW> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> >&, crispembed_diff::Ref*, int*) [clone .isra.0]",
+      "forward_decoder(flova_ocr_context*, std::vector<int, std::allocator<int> > const&, float const*, int, std::vector<CrossKV, std::allocator<CrossKV> > const&, std::vector<DecW, std::allocator<DecW> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> > const&, std::vector<float, std::allocator<float> >&, crispembed_diff::Ref*, int*) [clone .isra.0] [clone .cold]",
+      "run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)",
+      "run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*) [clone .cold]",
+      "std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, crispembed_diff::Ref::TensorData>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, crispembed_diff::Ref::TensorData> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::_M_rehash(unsigned long, unsigned long const&)",
+      "std::_Hashtable<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, crispembed_diff::Ref::TensorData>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, crispembed_diff::Ref::TensorData> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true> >::find(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&) const",
+      "std::__detail::_Map_base<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, crispembed_diff::Ref::TensorData>, std::allocator<std::pair<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const, crispembed_diff::Ref::TensorData> >, std::__detail::_Select1st, std::equal_to<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::hash<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > >, std::__detail::_Mod_range_hashing, std::__detail::_Default_ranged_hash, std::__detail::_Prime_rehash_policy, std::__detail::_Hashtable_traits<true, false, true>, true>::operator[](std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)",
+      "std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >::_M_run()",
+      "std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >::~_State_impl()",
+      "std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >::~_State_impl()",
+      "std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >::~_State_impl()",
+      "std::vector<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo, std::allocator<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo> >::~vector()",
+      "std::vector<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo, std::allocator<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo> >::~vector()",
+      "typeinfo for std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >",
+      "typeinfo name for std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >",
+      "void std::vector<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo, std::allocator<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo> >::_M_realloc_insert<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo>(__gnu_cxx::__normal_iterator<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo*, std::vector<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo, std::allocator<crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo> > >, crispembed_diff::Ref::load(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)::TensorInfo&&)",
+      "vtable for std::thread::_State_impl<std::thread::_Invoker<std::tuple<run_swin_encoder(flova_ocr_context*, float const*, int, int, crispembed_diff::Ref*, int*)::{lambda()#1}> > >"
+    ],
+    "known_unrelated_source_sha256": {
+      "src/crispembed_diff.h": "6bef0b4e32b52af7fe6cd6702bfc937845dde85762477b08a82ff2a68388df94",
+      "src/deepseek_ocr2.cpp": "43ca3730d47a3a0743ffe48394f98d01e1a075ea257b8598349d143a2f159285",
+      "src/easyocr_craft.cpp": "df48a9d8e57e2662aae67a37ab6c39ba09bdb1fb39a244f69c42087dbaa565e5",
+      "src/easyocr_ocr.cpp": "54c405a8dfe48f6f1bb3cde4a9c5b4ec747d7727750f892ee78299528b0e220d",
+      "src/flova_ocr.cpp": "2a68c1b632f0d1d4c202e63b0ef200910c79b6ed024d5399b896c3d67ce275f5",
+      "src/gliner_ner.cpp": "eb9a9e6fa0b8b31d4c4aad2c8f84a52eb33e72d269be090ffe9f833c3c0dfcb6",
+      "src/glm_ocr.cpp": "fa076d49aee811f691de5156b7ef7911c569fc0f0a24f185648169ba565b1e7b",
+      "src/got_ocr.cpp": "0017c75ca5b68b89b94870e8655bc2de7a5682a498dc6e2dde9af2e147ad37ff",
+      "src/internvl2_ocr.cpp": "1a82f6e85898c156923d69dbd8880a7a18bdc6cd786772c1440b00da9c1d040a",
+      "src/lfm2_embed.cpp": "3403d8e490f953f45cd9cbbe9fe089ac07f3407c8cde613f58f7f28a65972ffe",
+      "src/lfm2_vl_ocr.cpp": "9bfb445383eb4a6dc65707fc9d93fad3282d1346dca48a3d5cc2f9cd26029eb1",
+      "src/math_ocr.cpp": "e6c2a5a134c9b4fdd76bce5545669b4223b77f23c368d623ccd3bbf6fc2891b4",
+      "src/mixtex_ocr.cpp": "f54e0d282f2aefb44faa76fe12301ffa68571b9f67fa52ce50b6365cd24da432",
+      "src/ppocrv6_ocr.cpp": "2d7fdd1ec0f638fcc6b1d6675a67e7f05050f8190eaa271c1b1971698a9485ae",
+      "src/qwen2vl_ocr.cpp": "a8ea67e0f11bc771660446cd4ba80b3c567bc11bdfc8ae68f2f4fb4e1fae306f",
+      "src/smt_ocr.cpp": "89d40d82ae580831727017d36c06e058203f82c59363b53e0c2b4108ecda09ff",
+      "src/transcoda_ocr.cpp": "c803131d986e289d03c512028bf77ba31a3d2effb7557ea9e0164b00aaabd340",
+      "src/tromr_ocr.cpp": "ac3bf5fcf334f1e54bcf1f72ce7f4727c988c399bbf676b5cd9b15710b8c9c1e",
+      "src/unlimited_ocr.cpp": "57df29c381a9438667c9dae87b61ece42e5c4be29001966db6608de7434cdac5"
+    },
+    "ultra_source": {
+      "bytes": 8330,
+      "sha256": "1df6b3d781ae190747e0b5dc64add15169ab10715df20c01f23c2bb525b0cc8c"
+    },
+    "actual_shared_object": "CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o",
+    "whole_library_reference_symbols_must_match_initial": true,
+    "ultra_object_reference_symbols_permitted": false
   }
 }
