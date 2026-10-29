@@ -1,0 +1,36 @@
+'use strict';
+const fs=require('fs'),path=require('path'),http=require('http'),crypto=require('crypto');const{chromium}=require('playwright');
+if(process.env.GITHUB_ACTIONS!=='true'||process.env.RUNNER_ENVIRONMENT!=='github-hosted')throw Error('Hosted browser required');
+const root=path.resolve(process.argv[2]),base=path.join(root,'browser'),phase=process.argv[3];
+if(!['baseline','norm','chain'].includes(phase))throw Error('Explicit phase required');
+const barrier=phase==='chain'?'norm-recovery.json':'norm-baseline.json';if(phase!=='baseline'&&JSON.parse(fs.readFileSync(path.join(root,'review',barrier))).passed!==true)throw Error('Previous byte barrier required');
+const packets=JSON.parse(fs.readFileSync(path.join(base,'norm-packets.json'))),report=phase==='baseline'?{outputs:{},page_errors:[]}:JSON.parse(fs.readFileSync(path.join(base,'norm-report.json')));
+const save=()=>fs.writeFileSync(path.join(base,'norm-report.json'),JSON.stringify(report,null,2)+'\n'),sha=b=>crypto.createHash('sha256').update(b).digest('hex');
+const server=http.createServer((req,res)=>{res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname),target=path.resolve(base,'.'+name);if(target!==base&&!target.startsWith(base+path.sep)){res.writeHead(403).end();return;}if(name==='/'){res.setHeader('Content-Type','text/html');res.end('<!doctype html><title>Native-order norm risk</title>');return;}res.setHeader('Content-Type',name.endsWith('.wasm')?'application/wasm':name.endsWith('.js')?'application/javascript':'application/octet-stream');const stream=fs.createReadStream(target);stream.on('error',()=>res.writeHead(404).end());stream.pipe(res);});
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const browser=await chromium.launch({headless:true});try{
+ const page=await browser.newPage();page.on('pageerror',e=>report.page_errors.push(String(e)));
+ await page.exposeFunction('retainNorm',(key,row)=>{if(!/^(baseline|norm|chain)\.[a-z_]+$/.test(key))throw Error('Unsafe packet');const dir=path.join(root,'raw/wasm',key);fs.mkdirSync(dir,{recursive:true});const stages={};for(const[name,values]of Object.entries(row.stages)){if(!['norm','scaled','affine','fc1'].includes(name))throw Error('Unknown stage');const bytes=Buffer.from(values),file='raw/wasm/'+key+'/'+name+'.f32';fs.writeFileSync(path.join(root,file),bytes);stages[name]={file,bytes:bytes.length,sha256:sha(bytes)};}let workspace=null;if(row.workspace){const bytes=Buffer.from(row.workspace);if(bytes.length!==4896)throw Error('Q8_0 workspace extent');const file='raw/wasm/'+key+'/workspace.bin';fs.writeFileSync(path.join(root,file),bytes);workspace={file,bytes:bytes.length,sha256:sha(bytes)};}report.outputs[key]={stages,workspace,kernel:row.kernel,input_sha256:row.input_sha256,repeat_bit_exact:true,ordinary_dump_bit_exact:true,inputs_unchanged:true};save();});
+ await page.goto('http://127.0.0.1:'+server.address().port+'/');await page.addScriptTag({url:'/module/wasm-norm-order.js'});
+ Object.assign(report,await page.evaluate(async({packets,phase})=>{
+  if(!crossOriginIsolated||typeof SharedArrayBuffer!=='function')throw Error('Isolated SAB required');const m=await window.CrispNormOrder({locateFile:n=>'/module/'+n});if(!(m.HEAPU8.buffer instanceof SharedArrayBuffer))throw Error('Actual pthread module required');
+  const hash=async b=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',b))).map(v=>v.toString(16).padStart(2,'0')).join('');
+  const load=async r=>{const b=new Uint8Array(await(await fetch('/'+r.file)).arrayBuffer());if(b.length!==r.bytes||await hash(b)!==r.sha256)throw Error('Packet changed');return b;};
+  const directory=dir=>{if(m.ccall('crispembed_norm_setenv','number',[dir?'string':'number'],[dir||0]))throw Error('Capture directory failed');};
+  for(const[key,p]of Object.entries(packets)){
+   if(phase==='norm'&&p.kind!==0||phase==='chain'&&p.kind!==1)continue;const pointers={},inputs={};let output=0;
+   try{
+    for(const name of ['input','gamma','beta','weight'])if(p[name]){inputs[name]=await load(p[name]);pointers[name]=m._malloc(inputs[name].length);m.HEAPU8.set(inputs[name],pointers[name]);}
+    const mode=phase==='baseline'?0:1,count=p.kind?32256:4608;output=m._malloc(count*4);
+    const call=()=>m.ccall('crispembed_norm_order','number',Array(11).fill('number'),[mode,p.kind,pointers.input,4608,pointers.gamma||0,pointers.beta||0,pointers.weight||0,p.kind?331776:0,output,count,1]);
+    directory(null);if(call()!==count)throw Error('Ordinary replay failed');const bytes=m.HEAPU8.slice(output,output+count*4);if(!Array.from(new Float32Array(bytes.buffer)).every(Number.isFinite))throw Error('Nonfinite result');
+    let workspace=null,kernel=null;if(p.kind){const dir='/norm-'+phase+'-'+key;m.FS.mkdir(dir);directory(dir);if(call()!==count||await hash(m.HEAPU8.slice(output,output+count*4))!==await hash(bytes))throw Error('Kernel observer changed output');workspace=m.FS.readFile(dir+'/blk.3.ffn_up.weight.converted.bin');kernel=JSON.parse(new TextDecoder().decode(m.FS.readFile(dir+'/blk.3.ffn_up.weight.json')));const actual=m.FS.readFile(dir+'/blk.3.ffn_up.weight.input.f32');if(await hash(actual)!==await hash(bytes.slice(2*18432,3*18432)))throw Error('Actual projection did not consume computed affine');}
+    directory(null);if(call()!==count||await hash(m.HEAPU8.slice(output,output+count*4))!==await hash(bytes))throw Error('Repeat changed');for(const[n,b]of Object.entries(inputs))if(await hash(m.HEAPU8.slice(pointers[n],pointers[n]+b.length))!==await hash(b))throw Error('Read-only input mutated');
+    const stages={norm:Array.from(bytes.slice(0,18432))};if(p.kind){stages.scaled=Array.from(bytes.slice(18432,36864));stages.affine=Array.from(bytes.slice(36864,55296));stages.fc1=Array.from(bytes.slice(55296));}
+    await window.retainNorm(phase+'.'+key,{stages,workspace:workspace?Array.from(workspace):null,kernel,input_sha256:p.input.sha256});
+   }finally{directory(null);if(output)m._free(output);for(const p of Object.values(pointers))m._free(p);}
+  }
+  // Weight-free local invalid mode/count/nonfinite and zero-input recovery.
+  const x=m._malloc(18432),y=m._malloc(18432);try{m.HEAPU8.fill(0,x,x+18432);m.HEAPF32.fill(17,y/4,y/4+4608);const call=(mode,n=4608)=>m.ccall('crispembed_norm_order','number',Array(11).fill('number'),[mode,0,x,n,0,0,0,0,y,4608,1]),stable=()=>Array.from(m.HEAPF32.subarray(y/4,y/4+4608)).every(v=>v===17);if(call(9)>=0||!stable()||call(1,4607)>=0||!stable())throw Error('Mode/extent rejection');m.HEAPF32[x/4]=NaN;if(call(1)>=0||!stable())throw Error('Nonfinite rejection');m.HEAPF32[x/4]=0;if(call(1)!==4608||!Array.from(m.HEAPF32.subarray(y/4,y/4+4608)).every(v=>v===0))throw Error('Recovery failed');}finally{m._free(x);m._free(y);}
+  return {isolated:true,pthreads:true,controls:{wrong_mode:true,wrong_extent:true,nonfinite:true,output_preserved:true,recovery:true}};
+ },{packets,phase}));if(report.page_errors.length)throw Error('Browser errors');report[phase+'_completed']=true;save();
+ }catch(e){report.error=String(e);save();throw e;}finally{await browser.close();server.close();}})().catch(e=>{console.error(e);process.exitCode=1;});

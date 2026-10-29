@@ -1,0 +1,48 @@
+cmake_minimum_required(VERSION 3.18)
+project(crispembed_wasm_norm_order_probe LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# Match frozen580 root CMake, including its static Emscripten libraries.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+if(NOT IS_DIRECTORY "${FROZEN_GGML}/include")
+    message(FATAL_ERROR "Exact authenticated frozen ggml checkout required")
+endif()
+set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+set(GGML_BLAS OFF CACHE BOOL "" FORCE)
+set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
+set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+set(GGML_METAL OFF CACHE BOOL "" FORCE)
+set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
+set(GGML_AVX512 OFF CACHE BOOL "" FORCE)
+set(GGML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GGML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+if(EMSCRIPTEN)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
+    add_compile_options(-pthread)
+    add_link_options(-pthread)
+else()
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    set(GGML_LLAMAFILE ON CACHE BOOL "" FORCE)
+endif()
+add_subdirectory("${FROZEN_GGML}" ggml)
+if(EMSCRIPTEN)
+    add_executable(wasm-norm-order operator.cpp)
+    target_link_options(wasm-norm-order PRIVATE
+        --no-entry -sMODULARIZE=1 -sEXPORT_NAME=CrispNormOrder
+        -sENVIRONMENT=web,worker -sALLOW_MEMORY_GROWTH=1 -sINITIAL_MEMORY=33554432
+        -sMAXIMUM_MEMORY=2147483648 -sPTHREAD_POOL_SIZE=2
+        "-sEXPORTED_FUNCTIONS=['_crispembed_norm_order','_crispembed_norm_setenv','_malloc','_free']"
+        "-sEXPORTED_RUNTIME_METHODS=['ccall','HEAPU8','HEAPF32','FS']")
+    set_target_properties(wasm-norm-order PROPERTIES SUFFIX ".js")
+else()
+    add_library(wasm-norm-order SHARED operator.cpp)
+    add_executable(wasm-f32-diff ../wasm-f32-operators/diff.cpp)
+    get_filename_component(CRISPEMBED_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+    target_include_directories(wasm-f32-diff PRIVATE "${CRISPEMBED_ROOT}/src")
+endif()
+target_link_libraries(wasm-norm-order PRIVATE ggml ggml-cpu ggml-base)
+
+# Only the portable test emulator needs explicit scalar rounding/contraction.
+target_compile_options(wasm-norm-order PRIVATE -ffp-contract=off)
