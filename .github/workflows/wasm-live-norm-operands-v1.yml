@@ -1,0 +1,93 @@
+name: One-sentence live WASM norm operands v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-live-norm-operands-v1
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bounded source, overlay, capture and numerical controls
+        run: python tests/test_wasm_live_norm_v1.py -v
+      - name: Exact source and genuine hosted admission
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py preflight --output "$RUNNER_TEMP/live-norm"
+      - name: Authenticate retained negative and computed component buffers
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py prepare --output "$RUNNER_TEMP/live-norm"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Exact original browser profile
+        run: |
+          npm install --prefix "$RUNNER_TEMP/live-norm-browser" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/live-norm-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Actual native and pthread WASM components and connected-counter controls
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py component-build --output "$RUNNER_TEMP/live-norm"
+      - name: Twelve original byte recoveries on new component build
+        run: NODE_PATH="$RUNNER_TEMP/live-norm-browser/node_modules" node tests/wasm-native-order-norm/component.cjs "$RUNNER_TEMP/live-norm/browser"
+      - name: Require all recoveries before model access
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py component-check --output "$RUNNER_TEMP/live-norm"
+      - name: Actual Ref positive and rejecting controls
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py ref-controls --output "$RUNNER_TEMP/live-norm"
+      - name: Authenticate exact frozen model without original recapture
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py model --output "$RUNNER_TEMP/live-norm"
+      - name: Disposable observer overlay and plain production exclusion
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py build-full --output "$RUNNER_TEMP/live-norm"
+      - name: First-sentence native1 and native2 ordinary-observer-repeat byte anchors
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py native --output "$RUNNER_TEMP/live-norm"
+      - name: Actual OFF and ON connected live inputs and layer3 nodes; one frozen sentence
+        run: NODE_PATH="$RUNNER_TEMP/live-norm-browser/node_modules" node tests/wasm-live-norm/browser.cjs "$RUNNER_TEMP/live-norm/browser" capture
+      - name: Admit only complete geometry, connection, activation and byte-neutral captures
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py prepare-replay --output "$RUNNER_TEMP/live-norm"
+      - name: Actual same-input WASM native-op and candidate replays
+        run: NODE_PATH="$RUNNER_TEMP/live-norm-browser/node_modules" node tests/wasm-live-norm/browser.cjs "$RUNNER_TEMP/live-norm/browser" replay
+      - name: Actual native-op/candidate replays, Ref and independent complete metrics
+        run: python -I tools/ci-heavy/wasm_live_norm_v1.py replay --output "$RUNNER_TEMP/live-norm"
+      - name: Preserve complete numerical negatives, identities and command logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-live-norm-operands-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/live-norm/review/
+            ${{ runner.temp }}/live-norm/browser/*-browser.json
+            ${{ runner.temp }}/live-norm/browser/*-proof.json
+            ${{ runner.temp }}/live-norm/browser/frozen.json
+            ${{ runner.temp }}/live-norm/browser/replay-inputs.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain all live buffers, lossless adapters and exact diagnostic modules remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-live-norm-operands-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/live-norm/raw/
+            ${{ runner.temp }}/live-norm/browser/arrays/
+            ${{ runner.temp }}/live-norm/browser/replay-inputs/
+            ${{ runner.temp }}/live-norm/browser/component-inputs/
+            ${{ runner.temp }}/live-norm/browser/component/
+            ${{ runner.temp }}/live-norm/browser/candidate/
+          if-no-files-found: warn
+          retention-days: 90

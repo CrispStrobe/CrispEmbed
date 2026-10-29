@@ -17218,3 +17218,23 @@ by9/10 ON/OFF byte changes; no eligibility widening is justified. Layer3 still
 fails max0.00291893 and encoder max0.02850568. Full live norm operands were not
 captured; a new test-only one-sentence attribution lane is claimed before another
 arithmetic change/full retry. Defaults/budgets and all old negatives stay fixed.
+
+### 29 October — Josev single-Q4 and final-pair Q8 ablation completes
+
+[Actual40853720400](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40853720400)
+at`3cc96dbab` completes three recipes after strict F32 control. [Independent review](docs/josev2b-last-projection-v1-result.md)
+retains106/105/75 strict stage failures and all serialized-response/logit errors.
+One-Q4 probability maxima0.000347853/0.000383541 fail0.0001; final-pair Q8 worst
+0.0000433922 passes only the limited discrete/probability/ordinal screen. All five
+discrete decisions/two ordinal gates pass for each. No original rerun, NEW20
+access, selected recipe or publication. Further protection is not monotonic final
+improvement; source-bound Q4 activation calibration remains separately scoped.
+
+### 29 October — Ultra first conservative Q4 shard completes686 rows
+
+[Actual40855927708](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40855927708)
+at`a5feac83e` completes686 raw/normalized row pairs with exact IDs and durable
+streams. [Independent review](docs/ultrabert-first-q4-shard0-result.md) retains
+both strict Ref failures: raw max2.76205, normalized0.02581254, cosine0.98075227.
+Only12 FFN matrices are Q4/206 F32; no original/F32 forward or additional shard.
+Full5483/300 retrieval, Q8, standard headers/consumers/publication remain pending.
