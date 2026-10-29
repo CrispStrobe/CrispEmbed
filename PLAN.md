@@ -1080,3 +1080,14 @@ atcec1faeb completes structurally:138 comparisons,36 carried+102 newly measured,
 all23 input pixels exact and all historical numerical negatives preserved. It
 remains unqualified. Independent small-proof review and the separately claimed
 seven-only continuation follow; no23-arm/original rerun.
+
+### Integration source qualification boundary
+
+The default-off MoEdern Q8 runtime and source-bound component caller are now
+integrated in the portfolio feature branch. All eight MoEdern runtime/profile
+stdlib controls pass there. The caller's separate frozen whole-SRC assertion
+correctly rejects this combined tree: its immutable1f source differs only in
+UltraBERT's later UINT32 file-type admission check. The reviewed actual fixture
+runs on exactdd592, not the integrated tree; no assertion or source gate was
+weakened to claim combined-source qualification. Final source declarations and
+actual composite/runtime/platform gates remain required.
