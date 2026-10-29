@@ -17196,3 +17196,25 @@ with32,672,014,336 bytes available RAM/four CPUs. No package install, reference
 transfer or model/original/native forward occurred. Numerical outcome remains
 unknown. A separately scoped one-case resource profile is required before retry;
 original budgets, input/ordinary barriers and actual-operation capture stay fixed.
+
+### 29 October — MoEdern authored top-k component reviewed with actual Ref
+
+Kaggle CPUv1 source`c95f45e3` completes48 original controls and144 actual Ref
+stages:126 pass/18 fail, retained terminal ERROR. [Independent review](docs/moedern-router-topk-component-result.md)
+authenticates operator report and39 Ref JSONs. Source-derived selector matches198
+ordered index rows, with all same-probability value/weight bits exact. Existing
+ggml differs on authored ties; scattered routes fail even when value/weight
+cosines conceal changed expert choice. No real model/failed document replay,
+historical-wheel identity, causal model conclusion or runtime/default change.
+
+### 29 October — live-input WASM norm full A/B completes, remains rejected
+
+[Actual40852835039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40852835039)
+at`64eef684` completes all component/native/OFF/observer/context barriers, but
+passes only4/20 final and10/16 stage checks. The
+[review](docs/wasm-native-order-norm-full-result.md) authenticates119 small members,
+36 actual Ref records and204 returned-byte reports. Gate activation is supported
+by9/10 ON/OFF byte changes; no eligibility widening is justified. Layer3 still
+fails max0.00291893 and encoder max0.02850568. Full live norm operands were not
+captured; a new test-only one-sentence attribution lane is claimed before another
+arithmetic change/full retry. Defaults/budgets and all old negatives stay fixed.

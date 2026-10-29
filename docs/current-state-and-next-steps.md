@@ -1,7 +1,7 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
 <!-- BEGIN CURRENT VENDOR EXECUTION -->
-## Vendor execution —29 October2026,09:55 UTC
+## Vendor execution —29 October2026,10:32 UTC
 
 Read the [current portfolio execution handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-29.md)
 and [precision/task matrix](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md).
@@ -12,30 +12,39 @@ checks do not establish a release or model qualification.
   completes with strict F32 controls; allfour candidates rejected. Final-pair Q4
   passes ordinal but misses two probability gates; extra F32 down projections
   have negligible effect on these four cases. New source3cc96dbab isolates
-  final gate Q4/up Q4/pair Q8; actual execution pending. NEW20 remains closed.
+  final gate Q4/up Q4/pair Q8 in queued40853720400. NEW20 remains closed.
 - **MoEdern:** [retained18](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-three-doc-compare-v2-result.md)
   yields6 pass/12 failures without forwards, with one fresh-original/native
-  document mismatch and separate frozen-original drift. New one-document actual
-  stage capture sourcee7ff72f1 is prepared, not executed. The
+  document mismatch and separate frozen-original drift. One-document actual
+  capture CPUv1/e7ff stops at disk admission before any command/reference/model;
+  a separately declared one-case resource profile is in progress. The
   [Q8 authored component40837105606](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-q8-component-controls-result.md)
   passes; no real-model Q8 qualification.27M/115M router failures remain;
-  authored top-k operator evidence is distinct from real-model causality.
+  [authored top-k operator](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-router-topk-component-result.md)
+  retains126 pass/18 routed failures across144 Ref stages, with source selector
+  matching198 ordered index rows. No real-model causal conclusion follows.
 - **UltraBERT:** [retained freeze](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-retained-freeze-result.md)
   passes all5483 F32 rows/eight Ref/300 rankings without repeated forwards.
   First conservative Q4 model40843704011 completes conversion only:
-  576,997,440 bytes,12 Q4 plus206 F32 tensors. Independently review inventory
-  before binding only shard0; no Q4 forward or qualification yet.
+  576,997,440 bytes,12 Q4 plus206 F32 tensors. [Inventory review](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-first-conservative-q4-model-result.md)
+  is positive for storage only. Queued40855927708 at a5feac83e permits only
+  shard0/686 rows, no original/F32 rerun, other shard or Q8 qualification.
 - **Unlimited:** exact retained-v3 GET40840732942 completes authentication of
   all540 files/7,901,314,457 bytes before array imports; no forwards or quantizer.
-  Review structural proof before reusing the first Q4 candidate in a separately
-  closed continuation. The initial zero-byte-member failure remains preserved.
+  [Structural proof](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/unlimited-retained-v3-structural-result.md)
+  is reviewed. A separately closed first-candidate reuse caller is in progress;
+  same-host F16 gates precede Q4. Initial zero-byte failure remains preserved.
 - **MiniCPM:** [retained138](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/minicpm-retained-analysis-v2-result.md)
   completes99 pass/39 strict failures,23 exact input pixels, without forwards.
   Seven-only40838280839 fails before model execution with missing`sha256` key;
-  diagnose the fetch/schema boundary before retry, never recapture23 originals.
+  the
+  first checkpoint attributes entry has only a Git blob identity. Reviewed v3
+  source2fde0c64b/queued40855153707 repairs that verification, preserving all
+  earlier sources and the seven-only body. Never recapture23 originals.
 - **WASM:** stored-weight-F32 remains rejected7/25 pass. Norm-risk component
-  recovery is positive; full live-input norm A/B40852835039 is queued at64eef684,
-  with actual returned-byte anchors (including signed zero), old OFF controls
+  recovery is positive; full live-input norm A/B40852835039 is running at64eef684,
+  with12 actual component byte recoveries/Ref controls passed and full model
+  A/B pending. Actual returned-byte anchors include signed zero; old OFF controls
   before ON, and unchanged ten-case/eight-stage budgets. No default flip.
 - **Remaining closure:** both Q8/Q4_K require actual original intermediates,
   errors/magnitudes and final task outputs; component cosine alone is insufficient.
