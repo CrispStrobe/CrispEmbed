@@ -431,6 +431,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-29 | `audit/unlimited-reused-q4-first-panel-20261029` | Reuse authenticated first Q4 candidate for a bounded numerical/decoded panel | Reviewed40840732942 confirms exact540 files and first model6,481,651,840B/SHA8b9d8f28...,2 Q4/737 F16. New closed caller must preserve old sources, authenticate retained payloads before arrays, match current-host F16 to frozen controls before first Q4 last1 case panel with actual Ref/intermediates and IDs/text/EOS. No original/first-quantizer repeat; last4/all11 and Q8 remain subsequent declared work, not silently omitted or qualified. Prepare/review before dispatch. |
 | 2026-10-29 | `fix/minicpm-checkpoint-blob-fetch-20261029` | Repair exact checkpoint manifest identity at seven-only fetch boundary | Actual40838280839 traceback locates frozen fetch.py96/26: checkpoint `.gitattributes` has bytes+Git blob OID, no SHA256. Prior134-member authentication/build passed; no model forward. New closed caller preserves frozen fetch/guards, authenticates retained arrays then checkpoint SHA256/Git blob identities explicitly, checks tiny corruption/unsupported schema before transfer, retains initial failure. Same seven absent arms/four model hashes/42 added stages; no original recapture or threshold/runtime change. |
 | 2026-10-29 | `audit/ultrabert-reviewed-q4-shard0-20261029` | Independently review converted conservative model, activate only shard0 | Actual40843704011 conversion-only candidate576997440B/SHA087c9be0...,12 last-four FFN Q4 plus206 F32. Recheck all218 roles and protected payload records/build/source; bind immutable model artifact/report and activate only686 strided rows. Reuse authenticated F32/original freeze; no original or F32 forwards, no other shard/Q8/full qualification. Preserve legacy header/publication-disabled status. |
 | 2026-10-29 | `audit/josev-last-projection-precision-20261029` | Isolate final gate/up precision after four completed protected recipes | Actual40838785499: Q8 all/down-protected still fail; final-pair Q4 with F32/F16 down passes both ordinal gates but fails two probability gates (~0.000145/0.000179 vs0.0001). F16-down changes probabilities only~1e-7. Predeclare only finalgate Q4, only finalup Q4 and finalpair Q8, all other projections F16/292 critical F32, same oldfour227/typed/Ref controls. Preserve all negatives/no NEW20 access or threshold change. Native activation/imatrix capture remains a separate later calibration lane if needed. New closed source `3cc96dbab` on this branch passes370 protected/6 owned closure, seven storage controls, five process controls and actionlint; actual hosted execution pending peer review. |
@@ -1145,3 +1146,9 @@ exact-v3 producer and first6,481,651,840-byte model, perform same-host F16 contr
 against carried traces, then first Q4 stage/decoded panel. Preserve last1/last4/all11
 roles and all previous negatives; no original or first-quantizer repeat. Full Q8,
 remaining Q4 recipes and publication/consumer qualification remain separate.
+
+Mini v3source2fde0c64b independently reviewed GO; exact-source
+[40855153707](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40855153707)
+is queued for unchanged seven-only continuation. Kaggle first-row bootstrap
+is prepared privately; fresh whole-account status visibility is rate-limited
+(HTTP429), so no new submission was made without capacity admission.
