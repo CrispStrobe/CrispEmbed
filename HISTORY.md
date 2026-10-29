@@ -17102,3 +17102,14 @@ with independent metrics. All300 retrieval rankings retain top-one agreement1.0
 and unchanged NDCG/MRR/recall, which does not waive numerical rejection. The
 worker correctly stopped before Q4 conversion. See the [independent receipt](tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json)
 and complete small producer report; large arrays remain remotely retained.
+### Unlimited mixed Q4 v3: F16 control complete, conversion protection rejects
+
+Source410541f9c2587d345fb0d575a3315ce3c032a02a completes all16 F16 native
+plain/ordinary/observed/repeat forwards: four original ID/full-text pairs match,
+754 tokens total,58 first-prefill stages per observed arm and vision repeats
+are byte exact. The first C quantizer exits0 and retains a6,481,651,840-byte
+candidate, but protection rejects `v.pos_embed` before any Q4 forward. The
+published source stores its position embedding as `[3145728,1]`; a trailing-unit
+rank hypothesis still requires full retained-candidate type/shape/payload proof.
+The original rejection and all540 retained files remain immutable. See the
+[independent receipt](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).

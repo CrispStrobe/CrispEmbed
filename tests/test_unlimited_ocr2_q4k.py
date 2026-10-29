@@ -46,6 +46,31 @@ def candidate(source, recipe):
 
 
 class Q4Contract(unittest.TestCase):
+    def test_trailing_unit_rank_change_preserves_semantics_and_all_payload_bytes(self):
+        source = inventory()
+        source['v.pos_embed'] = dict(type=1, shape=[3145728, 1], bytes=6291456, sha256='5' * 64)
+        target = candidate(source, 'last1')
+        target['v.pos_embed']['shape'] = [3145728]
+        proof = contract.protected(source, target, 'last1')
+        self.assertTrue(proof['all_protected_byte_exact'])
+        self.assertEqual(proof['physical_rank_canonicalizations'][0]['semantic_shape'], [3145728, 1, 1, 1])
+        for key, value in [('shape', [1, 3145728]), ('shape', [1572864, 2]),
+                           ('type', 0), ('bytes', 3145728), ('sha256', '6' * 64)]:
+            bad = copy.deepcopy(target)
+            bad['v.pos_embed'][key] = value
+            with self.assertRaises(ValueError):
+                contract.protected(source, bad, 'last1')
+
+    def test_rank_expansion_and_invalid_axes_are_not_canonicalization(self):
+        source = inventory()
+        target = candidate(source, 'last1')
+        target['l.output_norm.weight']['shape'] = [1280, 1]
+        with self.assertRaisesRegex(ValueError, 'canonicalization'):
+            contract.protected(source, target, 'last1')
+        for shape in ([], [True], [0], [-1], [1, 1, 1, 1, 1]):
+            with self.assertRaises(ValueError):
+                contract.semantic_shape(shape)
+
     def test_actual_vocabulary_width_is_not_tokenizer_size_or_rounded_bound(self):
         self.assertEqual(panel.stage_axes('logits',[1,1,129280]),[1,1,129280])
         self.assertEqual(panel.stage_axes('layer_0_chunk_0',[2048,1,1280]),[2048,1,1280])

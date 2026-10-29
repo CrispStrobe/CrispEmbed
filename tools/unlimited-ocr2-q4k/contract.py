@@ -124,9 +124,24 @@ def overrides(records, recipe):
             for name, row in sorted(records.items()) if name not in targets]
 
 
+def semantic_shape(shape):
+    require(isinstance(shape, list) and 1 <= len(shape) <= 4 and
+            all(type(n) is int and n > 0 for n in shape), 'Explicit positive stored axes required')
+    return shape + [1] * (4 - len(shape))
+
+
+def canonical_shape(shape):
+    semantic_shape(shape)
+    result = list(shape)
+    while len(result) > 1 and result[-1] == 1:
+        result.pop()
+    return result
+
+
 def protected(control, candidate, recipe):
     targets = selected(control, recipe)
     require(set(control) == set(candidate), 'Candidate tensor names differ')
+    rank_changes = []
     for name, row in control.items():
         other = candidate[name]
         if name in targets:
@@ -134,9 +149,20 @@ def protected(control, candidate, recipe):
             require(other['type'] == 12 and other['shape'] == row['shape'], 'Selected tensor must be actual Q4_K')
             require(other['bytes'] == 1280 * 896 * 64 // 256 * 144, 'Q4_K packed extent differs')
         else:
-            require(row == other, 'Protected source type/shape/payload differs: ' + name)
+            require(all(row[key] == other[key] for key in ('type', 'bytes', 'sha256')) and
+                    semantic_shape(row['shape']) == semantic_shape(other['shape']),
+                    'Protected source type/semantic shape/payload differs: ' + name)
+            if row['shape'] != other['shape']:
+                require(other['shape'] == canonical_shape(row['shape']),
+                        'Only trailing-unit physical rank canonicalization allowed: ' + name)
+                rank_changes.append(dict(name=name, source_stored_shape=row['shape'],
+                                         candidate_stored_shape=other['shape'],
+                                         semantic_shape=semantic_shape(row['shape']),
+                                         type=row['type'], bytes=row['bytes'],
+                                         source_sha256=row['sha256'], candidate_sha256=other['sha256']))
     require(sum(row['type'] == 12 for row in candidate.values()) == len(targets), 'Unexpected Q4_K coverage')
     require(not any(row['type'] == 2 for row in candidate.values()), 'Q4_0 fallback forbidden')
     return dict(actual_q4_k_stacked_tensors=len(targets), selected=sorted(targets),
                 protected_tensors=len(control) - len(targets), all_protected_byte_exact=True,
+                semantic_shapes_unchanged=True, physical_rank_canonicalizations=rank_changes,
                 critical_precision='exact published floating source types, including F16 norms and vision')

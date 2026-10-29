@@ -7082,3 +7082,8 @@ minimum row cosine0.974025100). NDCG@10=0.697348892463,
 MRR@10=0.666363756614, recall@100=0.911 and top-one agreement1.0 match the frozen
 original. No Q4 execution or publication qualification follows from that quality
 agreement. See [the authenticated rejection](tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json).
+Unlimited mixed-Q4 v3 completes four F16 original ID/full-text controls
+(146/138/306/164 IDs;754 total) and16 native forwards with observed/repeat stage
+and vision identity. First conversion protection rejects before Q4 inference;
+there is no Q4 quality or speed result. The retained first candidate is
+6,481,651,840 bytes. [Exact source and rejection](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
