@@ -1173,3 +1173,20 @@ authenticated with explicit versionLabel on Get/Status/all List pages. Terminal
 ERROR occurred at bootstrap disk admission before any command/package/reference
 transfer/model access, not a numerical failure. Source resource-profile repair
 is separately claimed above; initial24GiB rejection remains preserved.
+
+Unlimited candidate-reuse source`299eedb67ecdfda337d7b37e360c599dcd30ead7` on
+`audit/unlimited-reused-q4-first-panel-20261029` passes17 stdlib controls,353
+protected/8 owned closure and parent review. Workflow registered. All544 inputs
+(540 panel+4 exact frozen PNGs) authenticate before imports;16 F16 controls
+compare47 retained float stages plus one separately labeled assembled-vision
+stage per case under unchanged0.002/0.99999,11 exact integer stages and current
+repeat-byte neutrality before12 Q4 calls/16 local probes. Cross-host float SHA
+is diagnostic, not an invented stricter gate. Initial unexecuted d716 checkpoint
+is retained. Actual numerical/decoded execution pending.
+
+MoE resource-v2 source`024f3e7a58cc4ed8e219689d1bea387342dd9556` is independently
+reviewed with23 controls. An explicit10GiB disk/14GiB RAM/twoCPU profile with2GiB
+output cap/live reserve replaces only the overbroad one-case disk requirement;
+all numerical code, maps, references and forward limits remain unchanged. Kaggle
+CPUv2 submission accepted after fresh whole-account CPU2/GPU0 admission; external
+exact-version proof and actual results remain pending. Initial v1 stays negative.
