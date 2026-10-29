@@ -1120,3 +1120,9 @@ Fourteen bounded controls pass. The registered `wasm-native-order-norm-candidate
 requires component recoveries, native anchors and old OFF byte controls before
 ON ten-case/eight-stage actual Ref comparisons. Heavy execution remains hosted;
 no default or whole-model parity claim follows from source review.
+
+MoEdern Q8[component40837105606](docs/moedern-q8-component-controls-result.md)
+is independently reviewed positive for authored graphs/storage only. Next real
+Q8/Q4 model qualification still requires resolving frozen F32 corpus/router
+failures; no model/corpus forward was performed by this fixture job.
+Norm source64eef684 full A/B actual40852835039 is dispatched and pending review.

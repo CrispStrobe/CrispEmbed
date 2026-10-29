@@ -17039,3 +17039,12 @@ F32 control,227 comparisons/recipe, protected292 F32 tensors and actual Ref
 agreement. Q8 recipes retain200 strict failures; final-pair Q4 retains106.
 Both final-pair recipes pass ordinal but fail two probability gates; none qualifies.
 No original rerun, NEW20 access, runtime/default change or publication.
+
+### 29 October — MoEdern hosted Q8 component storage/graph controls pass
+
+[Actual40837105606](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40837105606)
+at`dd592b15` passes three profiles, nine storage mutations, off/concurrent gates,
+six authored direct/expert graphs and actual C two-Q8/seven-critical-F32 fixture.
+[Independent review](docs/moedern-q8-component-controls-result.md) authenticates
+all11 small members and fixture identities. No real model/corpus/quality forward,
+publication or default change; strict F32 blockers remain.
