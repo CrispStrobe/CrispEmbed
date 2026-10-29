@@ -431,6 +431,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-29 | `audit/moedern-first-row-cpu-disk-profile-20261029` | Declare one-case disk admission from actual Kaggle20GiB boundary | Actual honest Kagglev1/e7ff first-row bootstrap rejects before any command/model at24GiB disk gate:32.67GB RAM,20.94GB disk,4CPUs. Preserve initial failure. Predeclare a defensible smaller disk requirement for one1.5M/307-token diagnostic with explicit source/retained/model/package/build extents and output/reserve caps; retain RAM14GiB/twoCPUs and every numerical/reference/call-count gate. No bootstrap-only bypass, fake provider, original corpus recap or automatic resubmission. New source/profile needs review and fresh whole-account capacity. |
 | 2026-10-29 | `audit/unlimited-reused-q4-first-panel-20261029` | Reuse authenticated first Q4 candidate for a bounded numerical/decoded panel | Reviewed40840732942 confirms exact540 files and first model6,481,651,840B/SHA8b9d8f28...,2 Q4/737 F16. New closed caller must preserve old sources, authenticate retained payloads before arrays, match current-host F16 to frozen controls before first Q4 last1 case panel with actual Ref/intermediates and IDs/text/EOS. No original/first-quantizer repeat; last4/all11 and Q8 remain subsequent declared work, not silently omitted or qualified. Prepare/review before dispatch. |
 | 2026-10-29 | `fix/minicpm-checkpoint-blob-fetch-20261029` | Repair exact checkpoint manifest identity at seven-only fetch boundary | Actual40838280839 traceback locates frozen fetch.py96/26: checkpoint `.gitattributes` has bytes+Git blob OID, no SHA256. Prior134-member authentication/build passed; no model forward. New closed caller preserves frozen fetch/guards, authenticates retained arrays then checkpoint SHA256/Git blob identities explicitly, checks tiny corruption/unsupported schema before transfer, retains initial failure. Same seven absent arms/four model hashes/42 added stages; no original recapture or threshold/runtime change. |
 | 2026-10-29 | `audit/ultrabert-reviewed-q4-shard0-20261029` | Independently review converted conservative model, activate only shard0 | Actual40843704011 conversion-only candidate576997440B/SHA087c9be0...,12 last-four FFN Q4 plus206 F32. Recheck all218 roles and protected payload records/build/source; bind immutable model artifact/report and activate only686 strided rows. Reuse authenticated F32/original freeze; no original or F32 forwards, no other shard/Q8/full qualification. Preserve legacy header/publication-disabled status. |
@@ -1166,3 +1167,9 @@ Mini40855153707@2fde0c64b, Ultraonlyshard040855927708@a5feac83e.
 MoE one-document actual-stage job submitted on Kaggle CPUv1 at e7ff72f1 after
 fresh whole-account CPU2/GPU0 admission; external exact-version proof pending.
 Service acceptance does not establish completed numerical or final task quality.
+
+MoE first-row Kagglev1 exact sourcee7ff/submitted8835-byte script was externally
+authenticated with explicit versionLabel on Get/Status/all List pages. Terminal
+ERROR occurred at bootstrap disk admission before any command/package/reference
+transfer/model access, not a numerical failure. Source resource-profile repair
+is separately claimed above; initial24GiB rejection remains preserved.
