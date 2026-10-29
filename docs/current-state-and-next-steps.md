@@ -25,7 +25,7 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   completes686 rows/1372 public raw-normalized calls. Minimum cosine0.98075227;
   raw max2.76205, normalized max0.0258125; strict vector checks negative.
   Same576,997,440-byte/12-Q4/206-F32 candidate remains unqualified. Remaining
-  seven shards/full300-query ranking source is being prepared; no new
+  seven shards/full300-query ranking40871150002 is queued atef7153156; no new
   quantizer/original/F32 forwards. Q8 remains open.
 - **Unlimited:** [retained structural proof](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/unlimited-retained-v3-structural-result.md)
   passes all540 files; actual40859258832 authenticates544 including PNGs,
@@ -49,7 +49,10 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   distinguishes existing masked230M LFM Q8/Q4 failures from other models;
   mixed330 precision improves but one masked prediction remains wrong.
   Typed Gemma has published Q8 approximation evidence; current-source Q4
-  encoder-only40868968991 is queued at6e327e902 with strict original F32 barriers.
+  [genuine CPUv1/92ee](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/gemma-first-q4-cpu-v1-initial-result.md)
+  rejects before Q4: all five pooled embeddings pass, but125 saved-stage
+  failures and a768-wide bank-adapter error block the F32 barrier. Only an
+  independently reviewed one-probe live-capture repair may activate next.
   Rust/Dart Q8 and broader current-source consumer gaps remain explicit.
 
 Both Q8/Q4_K require actual original intermediates, errors/magnitudes and final

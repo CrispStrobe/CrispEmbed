@@ -17302,3 +17302,23 @@ near-boundary probability reordering. Actual softmax is aten.softmax.int.
 The downstream normalized max0.02282943/cosine0.99574771 remains negative.
 All75 small files and400-output service identity are retained; no production
 math change, new gold or task/quantized qualification follows.
+
+##29 October: typed Gemma CPU provider transition, no duplicate model run
+
+[Transition receipt](tests/results/gemma-decision/first-q4-cpu-transition-review.json)
+preserves queued-never-started40868968991/6e and terminal cancellation. Honest
+CPU successor92ee94a77 retains all original numerical/build/probe/recipe bytes
+and unchanged gates; nine bounded provider/source/barrier controls pass.
+Exact Kaggle CPUv1 submitted script/Get/Status/every List proof is running.
+This is provider/source evidence only, no new numerical/model qualification.
+
+##29 October: Gemma F32 barrier protects Q4 from unreliable intermediate evidence
+
+[Actual CPUv1/92ee](docs/gemma-first-q4-cpu-v1-initial-result.md) performs88
+native F32 encodes, zero originals or Q4 conversions. All five pooled outputs
+and ordinary/observed/repeat bytes pass; saved145 stages retain20 pass/125 fail.
+The completed native typed process then encounters Python bank-adapter512-axis
+limit on768-wide embeddings, so no typed parity verdict exists.90 selected
+small files and exact459-output service/source proof are preserved. Live
+snapshots and the lossless adapter require separate repair/activation; no
+precision, arithmetic, default or qualification change follows.

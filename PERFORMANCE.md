@@ -7189,3 +7189,12 @@ expert identity at row58. Layer1 FFN max0.57834816/RMS0.01056687/cosine0.9966047
 versus original magnitude141.67180; final normalized max0.02282943/cosine0.99574771.
 Selected top-k weights remain bit-identical despite a different second expert.
 No performance improvement or higher-precision correction is established.
+
+##29 October: typed Gemma CPU baseline capture discrepancy
+
+[Initial CPUv1 evidence](docs/gemma-first-q4-cpu-v1-initial-result.md) retains
+case0 pooled max2.55182385e-7/cosine0.999999999997759 while its saved post_embed
+max1929.546924/cosine-0.074559955 versus original magnitude11.844038 fails.
+All145 saved-stage flags remain20 pass/125 fail. This is a capture-attribution
+problem to investigate, not a model speed/precision improvement or a confirmed
+buffer-lifetime diagnosis.

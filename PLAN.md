@@ -1355,3 +1355,42 @@ capacity before submission. Avoid duplicate model runs: if moving to Kaggle,
 cancel only our still-queued/never-started Gemma40868968991 after checking
 service/job steps and preserve its cancellation/source receipt. Do not cancel
 other work. New protocol/source review is required before hosted execution.
+
+### Exact Gemma CPU successor executing; Ultra remaining source queued
+
+[Transition review](tests/results/gemma-decision/first-q4-cpu-transition-review.json)
+confirms old Gemma40868968991/6e never started (queued/no steps), then terminal
+cancelled before submitting the successor. Source
+`92ee94a77c95df33b272abfcbf4f365550c20a47` on
+`audit/gemma-q4-kaggle-cpu-20261029` passes37-object/5-owned closure, nine new
+stdlib controls, old11 controls/two hosted-only NumPy skips and peer review.
+Kaggle CPUv1 exact Get/Status/every List page/script SHA is verified running,
+with no GPU or credential dataset. Worker runs both original NumPy controls
+before build/model access, strict F32145/eight-typed/30-bank before actual
+two Q4 recipes. No outcome or qualification is inferred from running status.
+
+Ultra exact`ef7153156aba352bffdef60bd44d4155a51f2ddc` remaining-seven producer
+[40871150002](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40871150002)
+is queued. Do not rerun shard0 or duplicate this panel. Actual source/runtime/
+model/5483 rows/300-query verdict remains required.
+
+### Typed Gemma live-snapshot and bank-adapter repair — source preparation claimed
+
+`audit/gemma-live-snapshot-repair-20261029` owns a test-only continuation of
+[actual CPUv1/92ee initial rejection](docs/gemma-first-q4-cpu-v1-initial-result.md).
+All five pooled embeddings pass,20/145 captured stages pass and125 fail;
+ordinary/observed/repeat pooled bytes and IDs match. Native C++ typed scope
+completes, then old MoE adapter rejects768-wide banks at its512-axis cap. Prior
+88 native F32 calls/zero originals/zero Q4 conversions remain frozen.
+
+Declare disposable observer-only actual28-node live snapshots with no numeric
+node/production SRC/default/weight change. Retain existing end-of-graph reads
+and source-derived pointer/opcode/shape metadata; establish a live-versus-saved
+contrast before asserting buffer-reuse cause. Use the existing MiniCPM lossless
+graph adapter under a closed source pin, preserving the old MoE helper; actual
+768-wide stdlib write/readback and rejecting-shape/finite controls precede models.
+First activation is ONLY one18-ID probe/three ordinary-observed-repeat encodes,
+with actual retained ID/pooled hash anchors and unchanged29 original stage
+gates. No original capture, recipe quantization or full-panel retry until that
+small result is independently reviewed and a separate full-source activation
+is declared. Keep92ee/6e, all125 strict negatives and typed structural failure.
