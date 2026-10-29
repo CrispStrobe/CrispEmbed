@@ -17073,3 +17073,67 @@ and full text exactly against the corrected original, reaching EOS below the
 frozen cap. [Review](tests/results/ocr-real-scans/unlimited-form-native-review.json)
 keeps earlier real19 mismatches separate; it does not qualify every current-source
 real20 case. MiniCPM form was already exact and was not repeated.
+### 28 October: hosted precision controls and initial real-scan receipts
+
+Model-free [40722418008](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40722418008)
+at `4b095f0f9` passes the actual UltraBERT legacy/mixed metadata controls and
+production quantizer authored fixtures; the [receipt](tests/results/ultrabert/q4k-model-free-controls.json)
+claims no model inference. Initial UltraBERT Q4 run40724453759 builds and passes
+controls, then stops before conversion/inference because its parent-workflow
+lineage check rejects historical cancellation after the eight original shards
+and freeze job succeeded. The [unchanged failure](tests/results/ultrabert/q4k-initial-lineage-failure.json)
+and [review](tests/results/ultrabert/q4k-initial-lineage-review.json) remain.
+The correction authenticates all nine exact successful original jobs and keeps
+all source/attempt/archive/member hashes; its actual replay remains pending.
+
+The [initial real-scan review](docs/ocr-real-scans-v1.md) preserves twenty-case
+original reports for Unlimited and MiniCPM, plus the initial Unlimited native
+report. One encoded-image hash failure remains ineligible. Unlimited has eleven
+exact ID sequences among nineteen eligible pairs and zero exact raw texts on
+this source before the independently verified decoder repair. Eight first-token
+differences, both fixed-cap receipt completions and all original failures remain;
+no new full-panel parity or quantized qualification follows. Admission now
+rejects changed inputs before future inference and retains encoded images remotely.
+
+### 28 October: original-first full MoEdern 1.5M retrieval capture
+
+The new [unchanged original report](tests/results/moedern-colbert/scifact-original-1p5m.json)
+and [source/coverage review](tests/results/moedern-colbert/scifact-original-1p5m-review.json)
+complete all 300 canonical queries and 5,183 documents at `2a872f9fe`, using the
+exact original CPU F32 role pipeline. Thirteen ordinary/observer/public-slice
+controls pass; six actual author-score checks differ from the full ranking
+protocol by at most 4.7684e-7. NDCG@10 is0.6973488924629391, MRR@10 is
+0.6663637566137566 and Recall@100 is0.911, exactly the earlier native quality-only
+aggregates. This is new original coverage, not a replacement for the frozen
+small-panel references. Large vectors and the row journal remain remote; their
+hashes must be authenticated before a corresponding native/Q4 retrieval replay.
+No full integrated-source vector/ranking or quantized qualification is claimed.
+
+### 28 October: Unlimited raw-text card refresh completed
+
+The [card-only upload/readback](tests/results/unlimited-ocr2/card-refresh-raw-text.json)
+is complete at [Hub e3941225](https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/tree/e39412255db0fc67952c8614cd03438822cf0957).
+Only README/manifest changed. F16/Q8 weight sizes/LFS hashes, upstream notices
+and the original weight-producing source remain unchanged. The card documents
+the independently verified four synthetic tiled F16 raw-ID/text cases and the
+831-token runtime fallback required by the published base-vocabulary GGUFs.
+The queued hosted publisher was cancelled before execution; the same reviewed
+publisher ran through the installed metadata client with immutable readback and
+no model download/build/inference. Preserve the previous card receipt. This
+changes no real-scan, Q4, release or app qualification.
+
+### 28 October: larger original retrieval and completed MiniCPM benchmark
+
+The [27M full original SciFact capture](tests/results/moedern-colbert/scifact-original-27m-review.json)
+completes all5,483 rows with the same canonical data/gold hashes as1.5M,13
+neutral/public-slice controls and six actual author-score checks (max4.918e-7).
+Its original NDCG@10/MRR@10/Recall@100 are0.7273556949/0.6967632275/0.9353333333.
+These are original baselines; native and Q4 full retrieval remain pending.
+
+The completed [MiniCPM benchmark v3](tests/results/minicpm-ocr/bench-review.json)
+retains all25 requested rows. Ten F16/F32 timed rows have producer-asserted exact
+IDs/text; timing-off has text-only proof. Both Q8 thread arms fail patch loading
+before inference, with no Q8 quality/publication claim. Same-job vision is about
+twice as fast in F32, without a general prefill gain. PERFORMANCE records the
+scopes, retained missing-ID limitation and cache hypothesis; the corrected graph
+experiment must establish its own output/numerical/performance result.
