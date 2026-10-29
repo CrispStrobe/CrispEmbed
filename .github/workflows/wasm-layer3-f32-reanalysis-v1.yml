@@ -1,0 +1,40 @@
+name: Retained F32 weightcast compare-only negative v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-layer3-f32-reanalysis-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Small source and immutable-negative protocol controls
+        run: python tests/test_wasm_layer3_f32_reanalysis_v1.py -v
+      - name: Isolated metric package only; no compiler or framework
+        run: |
+          python -m venv "$RUNNER_TEMP/f32-review-env"
+          "$RUNNER_TEMP/f32-review-env/bin/python" -m pip install numpy==2.2.6
+      - name: Authenticate every retained member then consolidate unchanged negative
+        run: '"$RUNNER_TEMP/f32-review-env/bin/python" -I tools/wasm-layer3-f32-reanalysis/replay.py --output "$RUNNER_TEMP/f32-review"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-layer3-f32-reanalysis-v1-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/f32-review/review/
+          retention-days: 90
+          if-no-files-found: warn
