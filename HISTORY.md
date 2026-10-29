@@ -17148,3 +17148,15 @@ softmax; [receipt](tests/results/moedern-colbert/first-row-softmax-initial-revie
 preserves all59 small files and exact-version service proof. Initialv2 packed
 constructor failure is also retained; none of these scope repairs qualifies a
 model, release or precision recipe.
+
+##29 October: actual MoEdern document capture localizes routing instability
+
+[Exact CPUv4/f336 capture](docs/moedern-first-row-actual-v4-result.md) completes
+five targeted original/fourteen native computations after both ordinary barriers.
+All actual operation/feature/observer/repeat/public-slice checks pass;44 Ref
+floating stages independently yield39 positive/five negative. First strict
+difference is layer1 top-k row58: original[2,4], native[2,6] after roughly1e-7
+near-boundary probability reordering. Actual softmax is aten.softmax.int.
+The downstream normalized max0.02282943/cosine0.99574771 remains negative.
+All75 small files and400-output service identity are retained; no production
+math change, new gold or task/quantized qualification follows.

@@ -1293,3 +1293,22 @@ F32/F16 control. Reuse immutable original/frozen inputs; no23-case original
 recapture. Report unchanged F32 layer26 failures and96 unmapped crop parts
 separately; this ablation cannot waive either. Source/model/forward counts,
 reference receipts and review precede hosted execution/publication.
+
+### MoEdern actual router-input replay — parent source preparation claimed
+
+`audit/moedern-router-real-input-replay-20261029` owns a component-only
+continuation of [completed actual CPUv4/f336](docs/moedern-first-row-actual-v4-result.md).
+Freeze the exact-v4 mounted kernel outputs (explicit version4, never latest),
+producer script/source, original/native normalized router inputs and captured
+logits/probabilities/IDs/weights; full307-row shapes for both layers. Authenticate
+selected payloads/actual published F32 weight bytes before framework imports.
+Replay both original/native inputs through actual native linear/softmax and
+original Torch linear/softmax/top-k, with own-byte anchors and interleaved
+repeat/thread controls. Record all near-boundary expert identities; selected
+weights alone hide this case. First strict failure is layer1 row58 [2,4] versus
+[2,6], unequal probability margins1.3411e-7 versus1.0431e-7. Source/numeric
+protocol, exact component call counts and peer review precede hosted execution.
+No original/full-model forward, new gold, production arithmetic/tie rule,
+quantizer run or budget waiver. CPU-only Kaggle may use exact-version attached
+real capture inputs while GHA has no running jobs; fresh whole-account capacity
+is required. Ordinary whole-model8 aggregate original calls stay frozen.

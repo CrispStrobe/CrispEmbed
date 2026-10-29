@@ -7074,3 +7074,12 @@ decoded outputs. F32/F16 each50/60, Q4_K25/30 and Q8_0 5/30 vision checks pass
 unchanged gates; combined130/180. Tiny F32 layer26 max0.0137939453 versus original
 absolute magnitude1629.5715 despite cosine0.999999999982 is still negative.
 These are quality/error measurements, not a paired speed or RSS improvement.
+
+##29 October: MoEdern real-input stage magnitudes
+
+[Actual one-document capture](docs/moedern-first-row-actual-v4-result.md): first
+bit difference embedding projection8.9406967e-8; first strict difference integer
+expert identity at row58. Layer1 FFN max0.57834816/RMS0.01056687/cosine0.99660470
+versus original magnitude141.67180; final normalized max0.02282943/cosine0.99574771.
+Selected top-k weights remain bit-identical despite a different second expert.
+No performance improvement or higher-precision correction is established.

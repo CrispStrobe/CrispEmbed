@@ -13,14 +13,14 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   stages and complete serialization remain negative. Single Q4 gate/up recipes
   fail106/105 strict stages and probability gates. All292 critical tensors stay
   F32; other projections F16. No recipe selected; NEW20 remains closed.
-- **MoEdern:** exact Kagglev3/46bac passes both ordinary barriers: original
-  strict Ref and all93 native byte anchors/six full computations. One observed
-  original forward is feature-byte-neutral, then strict operation completeness
-  rejects missing softmax (six of eight operations). [Initial receipt](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/moedern-colbert/first-row-softmax-initial-review.json)
-  is preserved. Dumper-only sourcef3364a57e records real softmax spellings and
-  bounded FFN dispatch metadata; actual corrected capture is pending. Prior
-  targeted original calls3, next maximum5; no full recapture. Larger-model
-  router failures and real Q8/Q4 retrieval qualification remain open.
+- **MoEdern:** [exact CPUv4/f336 actual capture](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-first-row-actual-v4-result.md)
+  completes after both ordinary barriers/93 native anchors. All real operator/
+  observer/repeat/public-slice controls pass;44 floating Ref stages give39 pass,
+  five fail. First strict difference is layer1 row58 top-k: original[2,4],
+  native[2,6] after roughly1e-7 unequal probability reordering; final normalized
+  max0.02282943/cosine0.99574771 remains negative. Router weights already F32.
+  Next is same-input/same-weight router replay using exact retained inputs,
+  no new original/full-model forward. Aggregate original calls8 stay frozen.
 - **UltraBERT:** [first Q4 shard40855927708](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-first-q4-shard0-result.md)
   completes686 rows/1372 public raw-normalized calls. Minimum cosine0.98075227;
   raw max2.76205, normalized max0.0258125; strict vector checks negative.
@@ -31,7 +31,7 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   passes all540 files; actual40859258832 authenticates544 including PNGs,
   builds/profiles pass, then isolated Ref-helper import fails before any model
   forward. Source388c510a0 adds only the exact frozen-helper wrapper;18 bounded
-  controls pass. Actual corrected F16-before-Q4 panel is pending. Reuse first
+  controls pass. Corrected F16-before-Q4 panel40868634374 is queued at388c510a0. Reuse first
   candidate; last4/all11 and Q8 remain later declared work.
 - **MiniCPM:** [seven missing arms40855153707](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/minicpm-seven-arm-v3-result.md)
   complete: all30 decoded cases exact/zero CER/WER. Combined vision130/180 pass,
@@ -49,7 +49,7 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   distinguishes existing masked230M LFM Q8/Q4 failures from other models;
   mixed330 precision improves but one masked prediction remains wrong.
   Typed Gemma has published Q8 approximation evidence; current-source Q4
-  encoder-only recipes and strict original F32 barriers are being prepared.
+  encoder-only40868968991 is queued at6e327e902 with strict original F32 barriers.
   Rust/Dart Q8 and broader current-source consumer gaps remain explicit.
 
 Both Q8/Q4_K require actual original intermediates, errors/magnitudes and final
