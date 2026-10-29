@@ -1012,3 +1012,16 @@ selected precision recipe. Calibration uses development cases only; never tune
 on NEW20 or silently relax frozen gates. Architecture-dependent CNN/restoration
 quantization must have genuine supported stored tensor types; retaining every
 weight floating point cannot be advertised as a Q8/Q4 model.
+
+### Protected tensor experiment checkpoint (29 October)
+
+Actual A/B/C40787077302 is reviewed and all candidates remain rejected;
+completed evidence is in HISTORY/PERFORMANCE. Actual Q8 profile fixture
+40829558531 passes; its13 quantizer/header pairs are independently parsed.
+The [new protected recipe protocol](docs/josev2b-protected-recipes-v1.md) at
+`feat/josev-protected-precision-20261029@acb248451` predeclares two Q8 arms and
+two last-layer-only Q4 arms from unchanged four-case development references.
+Source peer review and hosted execution remain pending; no candidate selection
+or NEW20 native access is authorized by the model-free controls.
+The executable feature source owns its contract and callers; the workflow
+registration here does not merge that runtime or qualify a model.

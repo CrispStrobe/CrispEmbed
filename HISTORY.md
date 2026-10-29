@@ -16960,3 +16960,19 @@ records30 authenticated small members, compiler/source proofs and repeat control
 Ten small differences can contribute to later composed drift; earlier
 whole-model failures/default-off disposition remain. Next is natural-input
 Q8_K workspace cross-admission, not a repeat of12 same-input quant projections.
+
+## 29 October: reviewed Josev A/B/C and actual Q8 profile controls
+
+[Josev40787077302](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40787077302)
+completes all three development recipes and strict F32 control. Independent
+[review](tests/results/josev2b/mixed-recipes-v1-review.json) retains203/201/118
+failed intermediate stages for A/B/C respectively. C moves the first strict
+failure to layer20 and passes one ordinal, but the other error0.001585498
+exceeds0.001. No candidate qualifies and NEW20 remains closed.
+
+[Actual Q8 controls40829558531](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40829558531)
+pass at6781befb: Josev/Ultra profile admission and corruption controls,13 actual
+C quantizer standard/legacy pairs, variable-length existing-STRING stamping
+with preserved payloads, and invalid overrides leaving no output. Independent
+[review](tests/results/quantization/portfolio-q8-profile-controls-review.json)
+parses all13 pairs. This model-free fixture does not qualify weights.

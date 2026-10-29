@@ -6986,3 +6986,15 @@ gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
 119.078125MiB literal1 and117.296875MiB legacy0. These include each full50-case
 process. No paired timing/memory improvement, portfolio, mobile-device, final
 integrated-source or successor-release qualification follows from this diagnostic.
+
+## Josev protected-precision development result (29 October)
+
+Actual40787077302 preserves a passing227-stage F32 control. A/B/C sizes are
+3.613774304 /4.651864544 /5.375381984 GB, with203/201/118 strict stage
+failures. C retains316 F32 +118 F16 +8 Q4 tensors; all292 critical tensors
+are byte-exact F32. Its first case first fails at layer20: cosine0.99826210,
+max error0.110197, RMS0.010144 and original magnitude17.50167. Its ordinal
+errors0.001585498/0.000765428 retain the fixed0.001 threshold, leaving the
+first negative. All five discrete choices alone do not qualify probability or
+ordinal behavior. See the [review](tests/results/josev2b/mixed-recipes-v1-review.json).
+No speed claim or published precision follows from these role ablations.
