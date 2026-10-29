@@ -17200,3 +17200,122 @@ versus-native negative, at inputposition58/token29084 (selectedmatrixrow57),
 max0.02282939624/cosine0.9957477159. Other fresh-original drift is diagnostic,
 not replacement gold or native causality. No model/original/native forward
 occurs during this retained comparison.
+
+### 29 October — Josev protected precision experiment completes, still rejected
+
+[Run40838785499](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40838785499)
+at`bf00e452` completes four recipes after the preserved source-header failure.
+Independent [review](docs/josev2b-protected-recipes-v1-result.md) confirms strict
+F32 control,227 comparisons/recipe, protected292 F32 tensors and actual Ref
+agreement. Q8 recipes retain200 strict failures; final-pair Q4 retains106.
+Both final-pair recipes pass ordinal but fail two probability gates; none qualifies.
+No original rerun, NEW20 access, runtime/default change or publication.
+
+### 29 October — MoEdern hosted Q8 component storage/graph controls pass
+
+[Actual40837105606](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40837105606)
+at`dd592b15` passes three profiles, nine storage mutations, off/concurrent gates,
+six authored direct/expert graphs and actual C two-Q8/seven-critical-F32 fixture.
+[Independent review](docs/moedern-q8-component-controls-result.md) authenticates
+all11 small members and fixture identities. No real model/corpus/quality forward,
+publication or default change; strict F32 blockers remain.
+
+### 29 October — MiniCPM seven-only fetch fails at optional SHA field
+
+[Actual40838280839](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40838280839)
+at`db4c1bb25` authenticates all134 prior-proof members and builds model-free
+tools, then frozen fetch.py96/26 raises`KeyError: sha256` for the checkpoint's
+2213-byte`.gitattributes`, which has only a Git blob identity. The
+[initial review](tests/results/minicpm-ocr/seven-checkpoint-identity-initial-review.json)
+preserves exact source/artifact and failure. No model conversion, native/original
+model forward or new precision evidence. New closed v3 adapter2fde0c64b preserves
+all old files, authenticates exact SHA/size or the single pinned Git blob entry,
+and retains the same seven-only body and fixed quality budgets; execution pending.
+
+### 29 October — Unlimited retained540 structural audit completes
+
+[Actual40840732942](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40840732942)
+at`1aaee225` authenticates all540 retained files/7,901,314,457 bytes before
+arrays, with zero native/original forwards or quantizer runs. The
+[review](docs/unlimited-retained-v3-structural-result.md) confirms739 tensor roles,
+2 Q4 stacked matrices/737 protected F16, and exact semantic/payload preservation
+for the trailing-unit position-embedding rank change. Initial zero-byte transfer
+failure remains recorded. Numerical/decoded Q4 inference is still unexecuted.
+
+### 29 October — Ultra conservative model converted; first shard source bound
+
+[Actual40843704011](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40843704011)
+at`c3d2fc051` produces576,997,440-byte mixed model with12 late FFN Q4_K and206
+byte-exact F32 tensors. [Review](docs/ultrabert-first-conservative-q4-model-result.md)
+authenticates all13 small members and verifies218 semantic roles/build provenance;
+large model remains remote. Zero original/F32/Q4 model forwards. New separately
+closed sourcea5feac83e binds only shard0/686 rows and reviewed freeze/model; nine
+controls pass. This is storage/source evidence only; legacy header/unqualified
+status and all remaining full-task/publication gates are preserved.
+
+### 29 October — one-document MoE diagnostic stops at Kaggle disk admission
+
+The honest CPUv1 submission at`e7ff72f1` is externally bound to its exact8835-byte
+script, SHA54e440d6..., via explicit-version Get/Status/all output pages. Actual
+bootstrap[receipt](tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json)
+stops before its first command: available disk20,940,525,568 bytes is below24GiB,
+with32,672,014,336 bytes available RAM/four CPUs. No package install, reference
+transfer or model/original/native forward occurred. Numerical outcome remains
+unknown. A separately scoped one-case resource profile is required before retry;
+original budgets, input/ordinary barriers and actual-operation capture stay fixed.
+
+### 29 October — MoEdern authored top-k component reviewed with actual Ref
+
+Kaggle CPUv1 source`c95f45e3` completes48 original controls and144 actual Ref
+stages:126 pass/18 fail, retained terminal ERROR. [Independent review](docs/moedern-router-topk-component-result.md)
+authenticates operator report and39 Ref JSONs. Source-derived selector matches198
+ordered index rows, with all same-probability value/weight bits exact. Existing
+ggml differs on authored ties; scattered routes fail even when value/weight
+cosines conceal changed expert choice. No real model/failed document replay,
+historical-wheel identity, causal model conclusion or runtime/default change.
+
+### 29 October — live-input WASM norm full A/B completes, remains rejected
+
+[Actual40852835039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40852835039)
+at`64eef684` completes all component/native/OFF/observer/context barriers, but
+passes only4/20 final and10/16 stage checks. The
+[review](docs/wasm-native-order-norm-full-result.md) authenticates119 small members,
+36 actual Ref records and204 returned-byte reports. Gate activation is supported
+by9/10 ON/OFF byte changes; no eligibility widening is justified. Layer3 still
+fails max0.00291893 and encoder max0.02850568. Full live norm operands were not
+captured; a new test-only one-sentence attribution lane is claimed before another
+arithmetic change/full retry. Defaults/budgets and all old negatives stay fixed.
+
+### 29 October — Josev single-Q4 and final-pair Q8 ablation completes
+
+[Actual40853720400](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40853720400)
+at`3cc96dbab` completes three recipes after strict F32 control. [Independent review](docs/josev2b-last-projection-v1-result.md)
+retains106/105/75 strict stage failures and all serialized-response/logit errors.
+One-Q4 probability maxima0.000347853/0.000383541 fail0.0001; final-pair Q8 worst
+0.0000433922 passes only the limited discrete/probability/ordinal screen. All five
+discrete decisions/two ordinal gates pass for each. No original rerun, NEW20
+access, selected recipe or publication. Further protection is not monotonic final
+improvement; source-bound Q4 activation calibration remains separately scoped.
+
+### 29 October — Ultra first conservative Q4 shard completes686 rows
+
+[Actual40855927708](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40855927708)
+at`a5feac83e` completes686 raw/normalized row pairs with exact IDs and durable
+streams. [Independent review](docs/ultrabert-first-q4-shard0-result.md) retains
+both strict Ref failures: raw max2.76205, normalized0.02581254, cosine0.98075227.
+Only12 FFN matrices are Q4/206 F32; no original/F32 forward or additional shard.
+Full5483/300 retrieval, Q8, standard headers/consumers/publication remain pending.
+
+##29 October: MiniCPM missing seven complete; initial precision harness stops retained
+
+[MiniCPM40855153707](docs/minicpm-seven-arm-v3-result.md) at2fde completes all
+seven absent forwards/two projection probes with0 original recaptures. All30
+decoded cases exact;180 vision comparisons retain130 positive/50 negative.
+Unlimited40859258832 stops on isolated Ref-helper import before any forward;
+its [receipt](tests/results/unlimited-ocr2/ref-control-import-initial-review.json)
+is retained. MoEdern Kagglev3@46bac passes both ordinary controls and one neutral
+observed original forward, then strict operation completeness rejects missing
+softmax; [receipt](tests/results/moedern-colbert/first-row-softmax-initial-review.json)
+preserves all59 small files and exact-version service proof. Initialv2 packed
+constructor failure is also retained; none of these scope repairs qualifies a
+model, release or precision recipe.
