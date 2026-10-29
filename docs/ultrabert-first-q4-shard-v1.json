@@ -1,0 +1,83 @@
+{
+  "schema": "crispembed-ultrabert-first-q4-shard-v1",
+  "base": "e36597379aa5c8a43426309a4ebc7faf429686ea",
+  "runtime_source": "018cf85b7bb6ee2ac98011738aaa289d63b896ac",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "recipe": "q4k-last-four-ffn",
+  "actual_stored_types": {
+    "F32": 206,
+    "Q4_K": 12
+  },
+  "rows_in_shard0": 686,
+  "allowed_shards": [
+    0
+  ],
+  "gates": {
+    "f32_max_absolute": 0.002,
+    "f32_minimum_row_cosine": 0.99999,
+    "quantized_strict_f32_flags_reported_separately": true,
+    "ndcg_mrr_recall_maximum_degradation": 0.001,
+    "top1_minimum_agreement": 0.99,
+    "all_rows_required": 5483,
+    "all_queries_required": 300
+  },
+  "original_forwards": 0,
+  "f32_forwards": 0,
+  "default_enabled": false,
+  "publication_qualified": false,
+  "release_qualified": false,
+  "q8_activation_authorized": false,
+  "freeze_review_sha256": "756d28d461930460d38f5cfffb3a3bde6017fb2a210e43a3c0181f395a0cb2a4",
+  "freeze_manifest_sha256": "1fabf4f7f8474a343d50e220d9e023eacb8edbdc28f3279be95615bbe0f122b9",
+  "reviewed_dependencies": {
+    "freeze": {
+      "reviewed": true,
+      "artifact_id": 12880973405,
+      "source": "08b0a5727aa25412a1181db4695efb01be578b24",
+      "sha256": "3c44a63667dfa7cfc5a801032fedc5e3e75429a20ba1cebdd252a77e99454901",
+      "bytes": 132645918,
+      "name": "ultrabert-q4k-sharded-freeze-0-payload-40834743025",
+      "receipt_sha256": "e70d3bc120a89854d569e748319f85467a587e0140db76e7db78a91c9f903b1a",
+      "receipt_bytes": 49048
+    },
+    "model": null,
+    "resume": null
+  },
+  "activation": {
+    "reviewed": false,
+    "recipe": "q4k-last-four-ffn",
+    "shards": [
+      0
+    ]
+  },
+  "protected_git_objects": {
+    "src": "0c4341808c7136b84f0085da85e8c22b951c27a1",
+    "CMakeLists.txt": "1da19a8737ca79f8bd99e2844a4bea5d160a0b6c",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "models": "c44229e28b28d5541a961ca5ee6682e2a20983ad",
+    "python/crispembed": "dc85f77f1472f560220dd766431ceb64389f4b07",
+    "crispembed-sys": "982b4229a8222678860f821a86be783bc9c8d310",
+    "crispembed": "ab740c359c66927579737e3f986f4785d28d711f",
+    "flutter": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
+    "Cargo.toml": "d02a242b7a014e8e39d77511f7a78cc18f3725cc",
+    "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b"
+  },
+  "protected_sha256": {
+    ".github/workflows/ultrabert-q4k-sharded-v1.yml": "5a6f8cbf29825b0c520356c23780aecc4da7c3705a82e595af5379a055c1c9fd",
+    "docs/ultrabert-q4k-sharded-v1.json": "124cc517fca5ebef3fe4f4d6f45119b69e5f6d148cc80192afaf0986b1928564",
+    "docs/ultrabert-q4k-sharded.md": "89d167eff5d7690d171db4f829a7bb6ed3aa17a08318f8831bf6b252c5bd37df",
+    "docs/ultrabert-retained-freeze-result.md": "3095b6391f26877379fbaaaaf10df53e0c1690fa33077a8c11db5242a114f0e5",
+    "tests/results/ultrabert/q4k-sharded-initial-freeze-rejection.json": "50a689c7f95ec72e26db210886d1be237bb777066c5a8ef5e84743ac1bea398b",
+    "tests/results/ultrabert/retained-freeze-review.json": "756d28d461930460d38f5cfffb3a3bde6017fb2a210e43a3c0181f395a0cb2a4",
+    "tests/test_ultrabert_q4k_sharded.py": "3c63fe8797a3e22a31086a0412b329d97fcb2ed867ebea12c9360779d0b5069e",
+    "tools/portfolio/ultrabert_q4k_sharded.py": "0500b4f332bb71aa8720692128c96b24a2bd1041314f1652eb453518bdf22ad6"
+  },
+  "owned_sha256": {
+    ".github/workflows/ultrabert-first-q4-shard-v1.yml": "560c747a0f62e70722480b7bd2a60a4e69e2fad93503f13647ff5eb5fe4793b6",
+    "docs/ultrabert-first-q4-shard-v1.md": "32fd34bb08385171d94ebfc63f3da2ad4734e14e1adaf52c986b6e9b2bce8733",
+    "tests/test_ultrabert_first_q4_shard.py": "c3bf2949a41444e0732fb9d074d241fc497c362012bc1729e1e19651b055bbb1",
+    "tools/portfolio/ultrabert_first_q4_contract.py": "74622ccb2546e182ec424d58fc44a4c214f0afb42f3872aeaf3decdad2c0ce93",
+    "tools/portfolio/ultrabert_first_q4_shard.py": "cf8be37e3ed5a42a9075363b8cb701a6b0f86df5d0e3110ea27f540aef7f8c51"
+  }
+}
