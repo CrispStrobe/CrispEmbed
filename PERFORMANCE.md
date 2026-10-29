@@ -7025,3 +7025,14 @@ documents;24726600 differs in one eligible token, input58/token29084, selected
 row57/component19: original0.02338916995 versus native0.00055977370, absolute
 0.02282939624/cosine0.9957477159. Capture actual intermediate/selection values
 under ordinary-anchor and byte-neutral observation gates before inferring cause.
+
+### 29 October — Josev protected storage versus final task error
+
+[Actual protected recipes](docs/josev2b-protected-recipes-v1-result.md) occupy
+3,630,289,376 /4,517,384,672 /5,483,909,600 /4,879,929,824 bytes. Last-pair Q4
+with F16 down first fails at layer23 (first-case max0.820132, RMS0.0195813,
+cosine0.99865779, original magnitude16.7336); minimum first-failure cosine
+across cases0.99848469. Both ordinal errors pass0.001, but probabilities
+0.000145704/0.000179201 fail0.0001. Keeping24 down projections F32 changes
+these probability errors only~1e-7 on the oldfour. No qualified quantized model
+or whole-task/held-out quality improvement is established.

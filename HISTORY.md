@@ -17029,3 +17029,13 @@ versus-native negative, at inputposition58/token29084 (selectedmatrixrow57),
 max0.02282939624/cosine0.9957477159. Other fresh-original drift is diagnostic,
 not replacement gold or native causality. No model/original/native forward
 occurs during this retained comparison.
+
+### 29 October — Josev protected precision experiment completes, still rejected
+
+[Run40838785499](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40838785499)
+at`bf00e452` completes four recipes after the preserved source-header failure.
+Independent [review](docs/josev2b-protected-recipes-v1-result.md) confirms strict
+F32 control,227 comparisons/recipe, protected292 F32 tensors and actual Ref
+agreement. Q8 recipes retain200 strict failures; final-pair Q4 retains106.
+Both final-pair recipes pass ordinal but fail two probability gates; none qualifies.
+No original rerun, NEW20 access, runtime/default change or publication.
