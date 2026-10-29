@@ -1312,3 +1312,26 @@ No original/full-model forward, new gold, production arithmetic/tie rule,
 quantizer run or budget waiver. CPU-only Kaggle may use exact-version attached
 real capture inputs while GHA has no running jobs; fresh whole-account capacity
 is required. Ordinary whole-model8 aggregate original calls stay frozen.
+
+### Ultra seven-shard source reviewed; honest Gemma CPU fallback claimed
+
+Ultra source`ef7153156aba352bffdef60bd44d4155a51f2ddc` on
+`audit/ultrabert-q4-remaining-shards-20261029` passes parent source review,
+12 new plus nine frozen shard controls and24-file/11-Git-object source closure.
+Register `ultrabert-remaining-q4-v1.yml`, execute exact ref/source_ref together.
+Import old shard0 only; strict negatives retained separately from full task
+gates. No original/F32/quantizer repeats or publication/header qualification.
+
+`audit/gemma-q4-kaggle-cpu-20261029` is claimed as an honest provider successor
+while GHA has queued jobs and no in-progress workers. Preserve6e327e902's
+original driver/recipe/protocol/build/probe bytes. A new closed caller may
+reuse unchanged low-level numerical/typed/quantization functions in a separately
+named implementation, with AST/source equivalence for the numerical body and
+genuine Kaggle/source identity, never fake GHA variables or historical-guard
+mutation. Retain8GiB RAM/16GiB disk/two CPUs and original264 maximum native
+encoder calls/zero original; no new numeric/typed budget. Parent must verify
+exact source/script plus Get/Status/every List page, and fresh whole-account
+capacity before submission. Avoid duplicate model runs: if moving to Kaggle,
+cancel only our still-queued/never-started Gemma40868968991 after checking
+service/job steps and preserve its cancellation/source receipt. Do not cancel
+other work. New protocol/source review is required before hosted execution.
