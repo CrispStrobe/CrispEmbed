@@ -3,6 +3,7 @@
 #include "moedern_text_frontend.h"
 #include "moedern_packed_profile.h"
 #include "moedern_q4k_profile.h"
+#include "moedern_q8_profile.h"
 #include "core/env_gate.h"
 #include "core/unicode_categ.h"
 #include "gguf.h"
@@ -80,7 +81,10 @@ bool text_frontend::load_packed(const char * path, std::string & error) {
 bool text_frontend::load_packed_q4k(const char * path, std::string & error) {
     return load_file(path, true, error, true);
 }
-bool text_frontend::load_file(const char * path, bool packed, std::string & error, bool padded_q4k) {
+bool text_frontend::load_packed_q8(const char * path, std::string & error) {
+    return load_file(path, true, error, false, true);
+}
+bool text_frontend::load_file(const char * path, bool packed, std::string & error, bool padded_q4k, bool named_q8) {
     *this = {};
     error.clear();
     try {
@@ -93,30 +97,40 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
                     (core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
                      core_env::on("CRISPEMBED_MOEDERN_FAST") && core_env::on("CRISPEMBED_MOEDERN_FAMILY")),
                 "Padded Q4_K requires explicit Q4_K/QUANT/FAST/FAMILY gates");
+        require(!named_q8 || (core_env::on("CRISPEMBED_MOEDERN_Q8_0") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
+                              core_env::on("CRISPEMBED_MOEDERN_FAST") && core_env::on("CRISPEMBED_MOEDERN_FAMILY") &&
+                              !core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED")),
+                "Named Q8_0 requires Q8_0/QUANT/FAST/FAMILY gates and Q4_K_PADDED OFF");
         require(path && *path, "empty tokenizer component path");
         // Family profiles (27M/115M) are considered only behind the default-off
         // CRISPEMBED_MOEDERN_FAMILY gate; otherwise the 1.5M rules are unchanged.
         const moedern_packed::family_pin * family = nullptr;
-        if (packed && !padded_q4k && core_env::on("CRISPEMBED_MOEDERN_FAMILY")) {
+        if (packed && !padded_q4k && !named_q8 && core_env::on("CRISPEMBED_MOEDERN_FAMILY")) {
             std::string ignored;
             for (const auto & pin : moedern_packed::family_pins())
                 if (moedern_packed::file_bounds(path, ignored, pin.bounds)) family = &pin;
         }
-        if (padded_q4k) {
+        if (named_q8) {
+            if (!moedern_q8::file_bounds(path, error)) return false;
+        } else if (padded_q4k) {
             if (!moedern_q4k::file_bounds(path, error)) return false;
         } else if (packed && !family && !moedern_packed::file_bounds(path, error))
             return false;
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         require(file && file.tellg() > 0 &&
-                    uint64_t(file.tellg()) <= (padded_q4k ? uint64_t(512) * 1024 * 1024
-                                               : family   ? family->bounds.max_file_bytes
-                                                          : uint64_t(16) * 1024 * 1024),
+                    uint64_t(file.tellg()) <= ((padded_q4k || named_q8) ? uint64_t(512) * 1024 * 1024
+                                               : family                 ? family->bounds.max_file_bytes
+                                                                        : uint64_t(16) * 1024 * 1024),
                 "bounded tokenizer component required");
         const gguf_init_params params = { true, nullptr };
         std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(gguf_init_from_file(path, params), gguf_free);
         require(bool(meta), "tokenizer metadata unavailable");
         const moedern_q4k::pin * quantized_pin = nullptr;
-        if (padded_q4k) {
+        const moedern_q8::pin * q8_pin = nullptr;
+        if (named_q8) {
+            q8_pin = moedern_q8::metadata(meta.get(), error);
+            if (!q8_pin) return false;
+        } else if (padded_q4k) {
             quantized_pin = moedern_q4k::metadata(meta.get(), error);
             if (!quantized_pin) return false;
             (void)moedern_q4k::declarations(meta.get());
@@ -140,6 +154,7 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
                     string(g, "moedern.tokenizer.model") == "Unigram-f64-unk1-fuse-unknown-no-byte-fallback",
                 "tokenizer source/profile differs");
         text_frontend result;
+        if (q8_pin) result.family_revision_ = q8_pin->revision;
         if (quantized_pin) result.family_revision_ = quantized_pin->revision;
         result.vocab_ = strings(g, "tokenizer.ggml.tokens", 30002);
         const int scores = array_key(g, "moedern.tokenizer.scores_f64", GGUF_TYPE_FLOAT64, 30000);

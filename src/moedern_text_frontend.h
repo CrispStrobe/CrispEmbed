@@ -17,10 +17,11 @@ public:
     bool load(const char * tokenizer_component, std::string & error);
     bool load_packed(const char * packed_gguf, std::string & error);
     bool load_packed_q4k(const char * packed_gguf, std::string & error);
+    bool load_packed_q8(const char * packed_gguf, std::string & error);
     bool encode(const std::string & text, role task, text_tokens & output, std::string & error) const;
     bool enabled() const { return enabled_; }
-    // Source revision of a packed family (27M/115M) model; empty for 1.5M and
-    // for every load made while CRISPEMBED_MOEDERN_FAMILY is off.
+    // Revision for family models or explicitly named quantized 1.5M profiles;
+    // ordinary F32 1.5M and every load with FAMILY off keep this empty.
     const std::string & family_revision() const { return family_revision_; }
 #ifdef CRISPEMBED_MOEDERN_TEXT_TESTING
     std::string test_normalize(const std::string & text) const;
@@ -28,7 +29,7 @@ public:
     std::vector<int32_t> test_unigram(const std::string & segment) const;
 #endif
 private:
-    bool load_file(const char *, bool packed, std::string & error, bool padded_q4k = false);
+    bool load_file(const char *, bool packed, std::string & error, bool padded_q4k = false, bool named_q8 = false);
     struct node {
         std::map<unsigned char, int> next;
         int id = -1;

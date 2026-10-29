@@ -25,7 +25,7 @@ void gates() {
 struct context {
     moedern_colbert::text_frontend tokenizer;
     std::unique_ptr<detail::context, decltype(&detail::free)> engine{ nullptr, detail::free };
-    // 27M/115M packed models only, behind CRISPEMBED_MOEDERN_FAMILY; 1.5M keeps `engine`.
+    // Family models and explicit Q4/Q8 profiles; ordinary F32 1.5M keeps `engine`.
 #ifdef CRISPEMBED_MOEDERN_FAMILY_ENGINE
     std::unique_ptr<moedern_family::context, decltype(&moedern_family::free)> family{ nullptr, moedern_family::free };
 #endif
@@ -59,8 +59,11 @@ context * init_packed(const char * path, int threads, std::string & error) {
         require(threads >= 1 && threads <= (fast ? 64 : 2), "bounded CPU one/two threads required");
         auto pending = std::make_unique<context>();
         const bool padded_q4k = core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED");
-        const bool tokenizer_loaded =
-            padded_q4k ? pending->tokenizer.load_packed_q4k(path, error) : pending->tokenizer.load_packed(path, error);
+        const bool named_q8 = core_env::on("CRISPEMBED_MOEDERN_Q8_0");
+        require(!(padded_q4k && named_q8), "Q8_0 and Q4_K_PADDED profiles are mutually exclusive");
+        const bool tokenizer_loaded = named_q8     ? pending->tokenizer.load_packed_q8(path, error)
+                                      : padded_q4k ? pending->tokenizer.load_packed_q4k(path, error)
+                                                   : pending->tokenizer.load_packed(path, error);
         require(tokenizer_loaded, error.c_str());
         const std::string & revision = pending->tokenizer.family_revision();
         if (!revision.empty()) {
@@ -68,13 +71,14 @@ context * init_packed(const char * path, int threads, std::string & error) {
             require(false, "MoEdern family engine not compiled in");
 #else
             require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") &&
-                        ((padded_q4k && revision == "9d360b8b88ae11bea5784bf9012ff509fdd5c2da") ||
+                        (((padded_q4k || named_q8) && revision == "9d360b8b88ae11bea5784bf9012ff509fdd5c2da") ||
                          revision == "d2b7b1feaaac1bf87510ca9525208c3daeabcc5a" ||
                          revision == "66380d2ade3b5027bba83bdcdba052d0bb86dcdb"),
                     "MoEdern family gate is OFF or revision unqualified");
             require(threads <= 2 || core_env::on("CRISPEMBED_MOEDERN_FAST"), "bounded CPU one/two threads required");
-            pending->family.reset(padded_q4k ? moedern_family::init_q4k(path, threads, error)
-                                             : moedern_family::init(path, threads, error));
+            pending->family.reset(named_q8     ? moedern_family::init_q8(path, threads, error)
+                                  : padded_q4k ? moedern_family::init_q4k(path, threads, error)
+                                               : moedern_family::init(path, threads, error));
             require(bool(pending->family), error.c_str());
 #endif
         } else {
