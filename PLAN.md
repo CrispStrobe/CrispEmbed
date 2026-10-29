@@ -921,16 +921,18 @@ Preserve earlier bad-image rows outside eligible denominators. Reuse the valid
 Unlimited original output; capture only the missing MiniCPM original and
 corresponding native form cases, rather than repeating all original pages.
 ### Frozen full-SciFact hosted provider continuation
+### NEW20 retained-original native owner — source claim
 
-The standalone `moedern-scifact-gha-adapter-v1.yml` workflow accepts the exact
-reviewed source and27M only. The current source is
-`fc4d84293fb0ee4115636d4f241d02854b41405d`. It authenticates the full original v1
-and older authored v3 before model access; every request/page binds its version.
-Inference, numerical and retrieval gates remain the corrected3c worker's.
-The standard runner must pass the unchanged14GiB available RAM and24GiB disk
-preflight; otherwise retain an admission rejection and use another authorized
-resource. Healthy1.5M Kaggle work is not repeated by this workflow.
-Registration is metadata only and establishes no new runtime/model result.
+Owner `audit/josev-new20-native-owner-20261028`: prepare a separate GitHub-hosted
+caller for frozen110 NEW20 originals and exact runtime9c. Authenticate all1,480
+NPYs and the original input/source/head proofs before native numerical imports
+or models. Preserve the old all150 Q4 four-case negative as a reviewed dependency;
+only a development-selected A/B/C candidate may enter held-out NEW20, after its
+source/protocol and old-four service/report/model have been independently reviewed.
+All candidate provider/model/report pins begin pending and block execution.
+No original forward, NEW20 fitting, score/gold/cap change or dispatch is authorized
+by this source preparation. Freeze a14,400-second child/six-hour hosted job, actual
+C/Python calls,1,360 compared/120 unmapped original arrays and all existing gates.
 
 ### MoEdern full retrieval: initial 1.5M build correction
 
@@ -1144,3 +1146,4 @@ budgets unchanged. Avoid duplicate F16/original captures and known adapter disk
 inflation; authenticate retained bytes before compacting task-owned duplicates.
 Q4 decoded output and actual Ref/operator metrics remain necessary for selection;
 metadata-only canonicalization and final runtime/consumer qualification follow.
+- `audit/josev-new20-canonical-owner-20261029`: source-only closed canonical descriptor/provider follow-up; activation remains pending.
