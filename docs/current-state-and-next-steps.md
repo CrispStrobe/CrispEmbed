@@ -1,44 +1,53 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
 <!-- BEGIN CURRENT VENDOR EXECUTION -->
-## Vendor execution — 29 October 2026
+## Vendor execution —29 October2026,09:55 UTC
 
-Use the [current portfolio handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md)
-and candidate branch `work/portfolio-closure-q4k-20261028`; experimental runtimes
-remain separate from main. Five quantized fronts and final integration are open.
+Read the [current portfolio execution handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-29.md)
+and [precision/task matrix](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md).
+The app stays pinned to immutable0.17.12. Experimental runtime and component
+checks do not establish a release or model qualification.
 
-- Josev Q4 v4 completed: strict F32 passes227 stages/four typed cases; Q4 retains
-  203 stage negatives and two ordinal failures. A/B/C development40787077302 is
-  queued before candidate selection and NEW20 native admission. Original56/60
-  decisions and all four original mistakes remain frozen.
-- MoEdern1.5M source93 reaches all5,483 rows with exact tokens and retrieval
-  metrics, but three documents/six matrices fail strict F32; Q4 correctly stops.
-  Diagnose only those documents with intermediate observers and frozen anchors.
- 115M remains running; corrected27M40784484013 is queued. Preserve initial
- build/import/receipt-packaging failures and all-size consumer requirements.
-- UltraBERT full F32/three Q4 recipes and Unlimited mixed-Q4 v3 remain running.
-- MiniCPM graph v3 retains23/30 decoded-exact arms and15 numerical negatives.
- Retained analysis40783734766 precedes only seven missing arms. Native real20
- matches19/20 eligible original ID/text pairs; one842-token page differs at
- token124. Different hardware/residency prevents a controlled speed claim.
-- WASM workspace intervention40780061239 reproduces activation-quantization
- amplification inside either runtime; identical workspaces agree within9.54e-7.
- Earlier whole-model failures remain. Test a stored-weight F32 operator arm
- against unchanged native targets before any production correction.
-- Real RGB audit completed19 valid inputs and rejected drifted form bytes before
- decode. Exact form-only40783738840 is queued. MiniCPM native form already
- matches627 original IDs; only Unlimited native form remains to run.
-- Standard GGUF header repair is prepared with same-payload canonicalization;
- current converter compatibility and actual hosted C-quantizer controls remain.
-- Ovis gate0 eleven F16 cases pass; gate1 completed eight before a document
- timeout. Final source declaration, both14/11 replays, fresh artifacts,
- consumers/platforms/main CI and qualified-only publication remain open.
+- **Josev:** [protected40838785499](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/josev2b-protected-recipes-v1-result.md)
+  completes with strict F32 controls; allfour candidates rejected. Final-pair Q4
+  passes ordinal but misses two probability gates; extra F32 down projections
+  have negligible effect on these four cases. New source3cc96dbab isolates
+  final gate Q4/up Q4/pair Q8; actual execution pending. NEW20 remains closed.
+- **MoEdern:** [retained18](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-three-doc-compare-v2-result.md)
+  yields6 pass/12 failures without forwards, with one fresh-original/native
+  document mismatch and separate frozen-original drift. New one-document actual
+  stage capture sourcee7ff72f1 is prepared, not executed. The
+  [Q8 authored component40837105606](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-q8-component-controls-result.md)
+  passes; no real-model Q8 qualification.27M/115M router failures remain;
+  authored top-k operator evidence is distinct from real-model causality.
+- **UltraBERT:** [retained freeze](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-retained-freeze-result.md)
+  passes all5483 F32 rows/eight Ref/300 rankings without repeated forwards.
+  First conservative Q4 model40843704011 completes conversion only:
+  576,997,440 bytes,12 Q4 plus206 F32 tensors. Independently review inventory
+  before binding only shard0; no Q4 forward or qualification yet.
+- **Unlimited:** exact retained-v3 GET40840732942 completes authentication of
+  all540 files/7,901,314,457 bytes before array imports; no forwards or quantizer.
+  Review structural proof before reusing the first Q4 candidate in a separately
+  closed continuation. The initial zero-byte-member failure remains preserved.
+- **MiniCPM:** [retained138](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/minicpm-retained-analysis-v2-result.md)
+  completes99 pass/39 strict failures,23 exact input pixels, without forwards.
+  Seven-only40838280839 fails before model execution with missing`sha256` key;
+  diagnose the fetch/schema boundary before retry, never recapture23 originals.
+- **WASM:** stored-weight-F32 remains rejected7/25 pass. Norm-risk component
+  recovery is positive; full live-input norm A/B40852835039 is queued at64eef684,
+  with actual returned-byte anchors (including signed zero), old OFF controls
+  before ON, and unchanged ten-case/eight-stage budgets. No default flip.
+- **Remaining closure:** both Q8/Q4_K require actual original intermediates,
+  errors/magnitudes and final task outputs; component cosine alone is insufficient.
+  Final integrated-source Ovis14/11 on both gates, public consumers, portable
+  assets/platforms and immutable HF readback remain required before publication.
 
-Large work stays hosted. Queued/running work is not qualification. Preserve all
-initial negatives and quality gates. The app remains on immutable0.17.12.
+Check actual service outcomes before reuse; source preparation or a service-level
+success is not numerical qualification. Use isolated bounded lanes and hosted
+heavy work. Keep large artifacts remote and private continuity outside Git.
 <!-- END CURRENT VENDOR EXECUTION -->
 
-Current vendor execution: [28 October portfolio continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md).
+Current vendor execution: [29 October portfolio continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-29.md).
 Main documentation records verified branch results; experimental runtimes remain
 on their stated branches, with no new release or application pin.
 
