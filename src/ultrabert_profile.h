@@ -46,10 +46,12 @@ inline void validate(gguf_context * g, bool quantized = false) {
                     "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
             "unsupported source profile");
     const auto file_type = core_gguf::kv_u32(g, "general.file_type", UINT32_MAX);
-    if (quantized)
+    if (quantized) {
+        const auto key = gguf_find_key(g, "general.file_type");
+        require(key >= 0 && gguf_get_kv_type(g, key) == GGUF_TYPE_UINT32, "quantized general.file_type must be UINT32");
         require(core_gguf_file_type::known_q4_k(file_type) || file_type == core_gguf_file_type::q8_0,
                 "unsupported quantized general.file_type");
-    else
+    } else
         u("general.file_type", GGML_FTYPE_ALL_F32);
     u("ultrabert.context_length", 32768);
     u("ultrabert.embedding_length", 768);
