@@ -1,0 +1,45 @@
+name: MoEdern authored router topk operator v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-router-topk-operator-v1
+  cancel-in-progress: false
+jobs:
+  operator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.11'
+      - name: Source-only protocol and corruption controls
+        run: python tests/test_moedern_router_topk_v1.py -v
+      - name: Authenticated CPU operators; no models or corpus
+        run: |
+          python -I tools/ci-heavy/moedern_router_topk_v1.py --provider github-actions --reviewed-source "$GITHUB_SHA" --scratch "$RUNNER_TEMP/router-topk-scratch" --out "$RUNNER_TEMP/router-topk-output"
+      - name: Preserve all small observations, source and process logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-router-topk-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/router-topk-output/review/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain authored input/output arrays, lossless adapters and binaries remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-router-topk-authored-${{ github.run_id }}
+          path: ${{ runner.temp }}/router-topk-output/raw/
+          if-no-files-found: warn
+          retention-days: 90

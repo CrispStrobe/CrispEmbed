@@ -1,0 +1,359 @@
+{
+  "schema": "crispembed-moedern-router-topk-operator-v1",
+  "base": "2f3cd74e035a27d46582e153f07f764ccacd2d66",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "model_access": false,
+  "production_qualified": false,
+  "dispatch_authorized_by_source_preparation": false,
+  "old_wheel_identity_established": false,
+  "actual_failed_document_capture": "separate pending protocol",
+  "torch_source": {
+    "revision": "ba56102387ef21a3b04b357e5b183d48f0afefc7",
+    "TopKImpl.h": {
+      "bytes": 3459,
+      "sha256": "dddf5fc982e7d25f9ba38fe1ebd6645fb8851485f25fd5e975822ae90828635a"
+    },
+    "cpu/SortingKernel.cpp": {
+      "bytes": 9296,
+      "sha256": "75d2bd98662aadaf4a6629d810e1c026f70714b5895a3131ffffa676234083c5"
+    }
+  },
+  "python": "3.12.11",
+  "threads": [
+    1,
+    2
+  ],
+  "repeats": 3,
+  "layouts": [
+    "contiguous",
+    "column_stride2",
+    "row_stride2",
+    "transpose"
+  ],
+  "experts": 8,
+  "top_k": 2,
+  "largest": true,
+  "sorted": true,
+  "denominator_epsilon": 1e-09,
+  "absolute_budget": 0.002,
+  "row_cosine_budget": 0.99999,
+  "inputs": {
+    "probabilities": [
+      {
+        "name": "strict_gap",
+        "bits": [
+          1056964608,
+          1048576000,
+          1040187392,
+          1031798784,
+          1023410176,
+          1015021568,
+          1006632960,
+          1006632960
+        ]
+      },
+      {
+        "name": "selected_pair_tie",
+        "bits": [
+          1052770304,
+          1052770304,
+          1040187392,
+          1031798784,
+          1023410176,
+          1015021568,
+          1006632960,
+          1006632960
+        ]
+      },
+      {
+        "name": "cutoff_three_tie",
+        "bits": [
+          1048576000,
+          1048576000,
+          1048576000,
+          1040187392,
+          1031798784,
+          1023410176,
+          1015021568,
+          1015021568
+        ]
+      },
+      {
+        "name": "cutoff_high_first",
+        "bits": [
+          1056964608,
+          1040187392,
+          1040187392,
+          1040187392,
+          1031798784,
+          1023410176,
+          1015021568,
+          1015021568
+        ]
+      },
+      {
+        "name": "cutoff_high_last",
+        "bits": [
+          1040187392,
+          1040187392,
+          1040187392,
+          1031798784,
+          1023410176,
+          1015021568,
+          1015021568,
+          1056964608
+        ]
+      },
+      {
+        "name": "all_equal",
+        "bits": [
+          1040187392,
+          1040187392,
+          1040187392,
+          1040187392,
+          1040187392,
+          1040187392,
+          1040187392,
+          1040187392
+        ]
+      },
+      {
+        "name": "signed_zero_tail",
+        "bits": [
+          1056964608,
+          1048576000,
+          1040187392,
+          1040187392,
+          0,
+          2147483648,
+          0,
+          2147483648
+        ]
+      },
+      {
+        "name": "permuted_tie",
+        "bits": [
+          1031798784,
+          1040187392,
+          1048576000,
+          1040187392,
+          1023410176,
+          1040187392,
+          1048576000,
+          1023410176
+        ]
+      },
+      {
+        "name": "plus_ulp",
+        "bits": [
+          1056964608,
+          1040187393,
+          1040187392,
+          1031798784,
+          1023410176,
+          1015021568,
+          1006632960,
+          1006632960
+        ]
+      },
+      {
+        "name": "minus_ulp",
+        "bits": [
+          1056964608,
+          1040187392,
+          1040187391,
+          1031798784,
+          1023410176,
+          1015021568,
+          1006632960,
+          1006632960
+        ]
+      },
+      {
+        "name": "two_ulp",
+        "bits": [
+          1056964608,
+          1040187393,
+          1040187391,
+          1031798784,
+          1023410176,
+          1015021568,
+          1006632960,
+          1006632960
+        ]
+      }
+    ],
+    "logits": [
+      {
+        "name": "strict_gap",
+        "bits": [
+          3229614080,
+          3225419776,
+          3221225472,
+          3212836864,
+          0,
+          1065353216,
+          1073741824,
+          1077936128
+        ]
+      },
+      {
+        "name": "all_equal",
+        "bits": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "name": "selected_pair_tie",
+        "bits": [
+          1073741824,
+          1073741824,
+          1065353216,
+          0,
+          3212836864,
+          3221225472,
+          3225419776,
+          3229614080
+        ]
+      },
+      {
+        "name": "cutoff_three_tie",
+        "bits": [
+          1073741824,
+          1065353216,
+          1065353216,
+          1065353216,
+          0,
+          3212836864,
+          3221225472,
+          3225419776
+        ]
+      },
+      {
+        "name": "signed_zero_cutoff",
+        "bits": [
+          1065353216,
+          0,
+          2147483648,
+          0,
+          2147483648,
+          3212836864,
+          3221225472,
+          3225419776
+        ]
+      },
+      {
+        "name": "negative_tie",
+        "bits": [
+          3221225472,
+          3221225472,
+          3221225472,
+          3225419776,
+          3229614080,
+          3231711232,
+          3233808384,
+          3235905536
+        ]
+      },
+      {
+        "name": "all_equal_negative",
+        "bits": [
+          3238002688,
+          3238002688,
+          3238002688,
+          3238002688,
+          3238002688,
+          3238002688,
+          3238002688,
+          3238002688
+        ]
+      },
+      {
+        "name": "permuted_tie",
+        "bits": [
+          0,
+          1065353216,
+          1073741824,
+          1065353216,
+          3212836864,
+          1065353216,
+          1073741824,
+          3221225472
+        ]
+      },
+      {
+        "name": "plus_ulp",
+        "bits": [
+          1073741824,
+          1065353217,
+          1065353216,
+          0,
+          3212836864,
+          3221225472,
+          3225419776,
+          3229614080
+        ]
+      },
+      {
+        "name": "minus_ulp",
+        "bits": [
+          1073741824,
+          1065353216,
+          1065353215,
+          0,
+          3212836864,
+          3221225472,
+          3225419776,
+          3229614080
+        ]
+      },
+      {
+        "name": "two_ulp",
+        "bits": [
+          1073741824,
+          1065353217,
+          1065353215,
+          0,
+          3212836864,
+          3221225472,
+          3225419776,
+          3229614080
+        ]
+      }
+    ]
+  },
+  "protected_git_objects": {
+    "src": "ad58b0cfe46b14f65f663790b6eb0882fa19932a",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "tests/moedern-native-v2/diff.cpp": "7d01f2b79cfe72bbb1745930f136cc95470ed219",
+    "tools/moedern-native-v2/diff_adapter.py": "64fd36e5ea8cb6ce0d58d2b91315bbe290f0d9c7",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "tools/moedern-colbert/scifact_original.py": "9edff2bf1ef920e5efeb51c1b1756a76bb583338",
+    "docs/moedern-colbert-source-contract.json": "b3800de4a0b774ff3d02c3488e9f95e113c4215a",
+    "tests/results/moedern-colbert/scifact-original-27m.json": "51fcfca37775f4193ea664f99854052a481d84dd",
+    "tests/results/moedern-colbert/scifact-original-115m.json": "1150ba05ddc46df0aad5266a48128ff9aef2e090"
+  },
+  "owned_sha256": {
+    ".github/workflows/moedern-router-topk-operator-v1.yml": "850e9f12cb5d47b9729b85ecc63ecfa3686fba37da50757a51285be7a4e65bc1",
+    "docs/moedern-router-topk-operator-v1.md": "ee9fcd13ddb58926aa261e5dc6a8750aed8491ca38620dbd6bd39ecc0d2c2d9a",
+    "tests/moedern-router-topk-v1/CMakeLists.txt": "a2e7963106eb9e0e9f81305545d87c0add1bf05ca92b3b59743d2eee3ecfae80",
+    "tests/moedern-router-topk-v1/NOTICE.pytorch": "a8a2c6b67cf8a597ffaa5c82380a6bd1b82629c0417e00673d8013d662eb500a",
+    "tests/moedern-router-topk-v1/probe.cpp": "f39b1b1ca5ed5bb2b6f6e0795c5b52da7cbf5fbaab0605773d596f0aa7832e3c",
+    "tests/test_moedern_router_topk_v1.py": "1993a38bd498fe6abdf549a23087164f6dbcf3ef92eb61782df2431dc104ea0c",
+    "tools/ci-heavy/moedern_router_topk_v1.py": "8682409d4618e3894718413491cc835828f1216698412798755ecc02d8818730",
+    "tools/kaggle/moedern-router-topk-v1/kernel-metadata.json": "7776bd657d6df42efc62bb34b19f5332d6c095ddc52c3faee2f6e53d58d0dc49",
+    "tools/kaggle/moedern-router-topk-v1/kernel.py": "79fdf881035cca08d166e41e652e6ee851825401db8a0c51d2a8d0851738229d",
+    "tools/moedern-router-topk-v1/common.py": "2d7486e2466af3ed22977a28ce4bedea460e473ed63c783580870002b7cb5fef",
+    "tools/moedern-router-topk-v1/requirements.txt": "578aedc00e44274e5d9746e1f9bbf6f070207c1982656fdd939f67e4907020d6",
+    "tools/moedern-router-topk-v1/wheels.json": "8feee61b848a3d54f3bb243e01dd694382efcba6e967465f58f5cc24a904ecab",
+    "tools/moedern-router-topk-v1/worker.py": "72251f7cafe9a5bf3827d91a6fd83f442f345df2a80a4cbca2724ec0f08f7831"
+  }
+}
