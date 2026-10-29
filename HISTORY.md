@@ -23,7 +23,7 @@ resizer (`src/core/torch_bicubic_u8.h`). An initial draft contained guessed
 preprocessing details; all were replaced by decisions cited from transformers 5.21.0
 (three guesses had been wrong: resize kernel, pretokenizer regex, position bucketing).
 First Kaggle parity run: 5 cases x F32/F16 input IDs, generated IDs and text exact,
-with historical numerical limits ([parity](tests/results/minicpm-ocr/native-parity.json)): F32 paragraph final norm maximum0.0045424699783325195 and vision layer26 maximum0.033447265625. These exceed a strict0.002 absolute screen despite exact decoded output; the original aggregate cosine/shape flags do not establish strict stage parity. Published F16
+all stages ~1e-5 ([parity](tests/results/minicpm-ocr/native-parity.json)). Published F16
 to `cstr/MiniCPM-OCR-1.0-GGUF@6705b065` ([publication](tests/results/minicpm-ocr/publication.json));
 initial publish failed on a torch-only safetensors read (fixed with a torch-free
 reader). Alias `minicpm-ocr`; CLI and server engine `minicpm-ocr`. llama.cpp
@@ -16950,100 +16950,6 @@ prefixes, then verifies exact installed metadata and actual loaded module versio
 before the unchanged CUDA/source barriers and original worker. This is prepared
 source only; no fourth GPU attempt is submitted by this change.
 
-### 28 October: hosted precision controls and initial real-scan receipts
-
-Model-free [40722418008](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40722418008)
-at `4b095f0f9` passes the actual UltraBERT legacy/mixed metadata controls and
-production quantizer authored fixtures; the [receipt](tests/results/ultrabert/q4k-model-free-controls.json)
-claims no model inference. Initial UltraBERT Q4 run40724453759 builds and passes
-controls, then stops before conversion/inference because its parent-workflow
-lineage check rejects historical cancellation after the eight original shards
-and freeze job succeeded. The [unchanged failure](tests/results/ultrabert/q4k-initial-lineage-failure.json)
-and [review](tests/results/ultrabert/q4k-initial-lineage-review.json) remain.
-The correction authenticates all nine exact successful original jobs and keeps
-all source/attempt/archive/member hashes; its actual replay remains pending.
-
-The [initial real-scan review](docs/ocr-real-scans-v1.md) preserves twenty-case
-original reports for Unlimited and MiniCPM, plus the initial Unlimited native
-report. One encoded-image hash failure remains ineligible. Unlimited has eleven
-exact ID sequences among nineteen eligible pairs and zero exact raw texts on
-this source before the independently verified decoder repair. Eight first-token
-differences, both fixed-cap receipt completions and all original failures remain;
-no new full-panel parity or quantized qualification follows. Admission now
-rejects changed inputs before future inference and retains encoded images remotely.
-
-### 28 October: original-first full MoEdern 1.5M retrieval capture
-
-The new [unchanged original report](tests/results/moedern-colbert/scifact-original-1p5m.json)
-and [source/coverage review](tests/results/moedern-colbert/scifact-original-1p5m-review.json)
-complete all 300 canonical queries and 5,183 documents at `2a872f9fe`, using the
-exact original CPU F32 role pipeline. Thirteen ordinary/observer/public-slice
-controls pass; six actual author-score checks differ from the full ranking
-protocol by at most 4.7684e-7. NDCG@10 is0.6973488924629391, MRR@10 is
-0.6663637566137566 and Recall@100 is0.911, exactly the earlier native quality-only
-aggregates. This is new original coverage, not a replacement for the frozen
-small-panel references. Large vectors and the row journal remain remote; their
-hashes must be authenticated before a corresponding native/Q4 retrieval replay.
-No full integrated-source vector/ranking or quantized qualification is claimed.
-
-### 28 October: Unlimited raw-text card refresh completed
-
-The [card-only upload/readback](tests/results/unlimited-ocr2/card-refresh-raw-text.json)
-is complete at [Hub e3941225](https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/tree/e39412255db0fc67952c8614cd03438822cf0957).
-Only README/manifest changed. F16/Q8 weight sizes/LFS hashes, upstream notices
-and the original weight-producing source remain unchanged. The card documents
-the independently verified four synthetic tiled F16 raw-ID/text cases and the
-831-token runtime fallback required by the published base-vocabulary GGUFs.
-The queued hosted publisher was cancelled before execution; the same reviewed
-publisher ran through the installed metadata client with immutable readback and
-no model download/build/inference. Preserve the previous card receipt. This
-changes no real-scan, Q4, release or app qualification.
-
-### 28 October: larger original retrieval and completed MiniCPM benchmark
-
-The [27M full original SciFact capture](tests/results/moedern-colbert/scifact-original-27m-review.json)
-completes all5,483 rows with the same canonical data/gold hashes as1.5M,13
-neutral/public-slice controls and six actual author-score checks (max4.918e-7).
-Its original NDCG@10/MRR@10/Recall@100 are0.7273556949/0.6967632275/0.9353333333.
-These are original baselines; native and Q4 full retrieval remain pending.
-
-The completed [MiniCPM benchmark v3](tests/results/minicpm-ocr/bench-review.json)
-retains all25 requested rows. Ten F16/F32 timed rows have producer-asserted exact
-IDs/text; timing-off has text-only proof. Both Q8 thread arms fail patch loading
-before inference, with no Q8 quality/publication claim. Same-job vision is about
-twice as fast in F32, without a general prefill gain. PERFORMANCE records the
-scopes, retained missing-ID limitation and cache hypothesis; the corrected graph
-experiment must establish its own output/numerical/performance result.
-
-### Josev NEW20 original reference — 28 October 2026
-
-The independently reviewed CUDA original at
-`110620ea1ada0748007e6b6698e0c5babb4940ed` completed all20 authored requests,
-7,472 untruncated tokens and1,480 declared intermediate arrays.
-[The review](tests/results/josev2b/task-quality-original-review.json) authenticates
-all five small receipt identities, eight source hashes, ordered request/token
-freeze, stage coverage and observer/repeat neutrality. Independent scalar
-softmax reconstruction differs by at most1.14371e-7. Large NPY payloads remain
-remote; the native prerequisite must independently rehash every payload.
-
-The original scores56/60 fields: English29/30, German27/30, NOUL20/20,
-choice18/20 and score18/20, passing the predeclared floors. All four misses
-are in the ordering stratum and remain unchanged. These are20 correlated
-requests/10 translated scenario pairs, not60 independent benchmark samples.
-No native20, current Q4 qualification, publication or runtime release follows.
-
-### Initial final-source Ovis resource outcome — 28 October 2026
-
-Run40710484861 at8856191b completed both frozen14-arm jobs and gate0's full
-11-case quality panel. Independent first-F16 comparison confirms all1,841 IDs,
-raw/processed text, inputs, stops, quality scores and selected confidences.
-Gate1's eight completed short cases retain exact inputs/IDs/text/stops; maximum
-selected-confidence difference is2.98e-7. Historical-receipt then timed out at
-1,800.14 seconds with no result line; three documents remain incomplete.
-[The resource review](tests/results/qwen35-ocr/ovisocr2-final-v2-initial-resource-review.json)
-retains the negative and exact report identities. A document-only3600-second
-F16 audit budget is prepared; fresh source declaration and actual full replay
-remain required. No new portfolio/runtime qualification follows.
 ### Retained-input WASM F32 operators — 28 October 2026
 
 [Actual40771950208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40771950208)

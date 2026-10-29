@@ -20,6 +20,7 @@
 // diagnostic speed arm and are not held to the F32 parity gate.
 #include "moedern_family_engine.h"
 #include "moedern_q4k_profile.h"
+#include "moedern_q8_profile.h"
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "ggml-alloc.h"
@@ -121,7 +122,7 @@ uint32_t u32(gguf_context * g, const std::string & key) {
     require(at >= 0 && gguf_get_kv_type(g, at) == GGUF_TYPE_UINT32, "Missing metadata: " + key);
     return gguf_get_val_u32(g, at);
 }
-profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false) {
+profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false, bool named_q8 = false) {
     const int arch = gguf_find_key(g, "general.architecture");
     require(arch >= 0 && std::string(gguf_get_val_str(g, arch)) == ARCH, "Only explicit MoEdern architecture accepted");
     const int rev = gguf_find_key(g, (std::string(ARCH) + ".source_revision").c_str());
@@ -154,7 +155,7 @@ profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false
     }
     const auto expected = schema(p);
     const auto declarations = padded_q4k ? moedern_q4k::declarations(g) : std::map<std::string, moedern_q4k::columns>{};
-    size_t actual_q4k = 0;
+    size_t actual_q4k = 0, actual_q8 = 0;
     require(gguf_get_n_tensors(g) == int64_t(expected.size()), "Exact tensor inventory required");
     for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
         const std::string name = gguf_get_tensor_name(g, i);
@@ -162,7 +163,12 @@ profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false
         require(row != expected.end(), "Unknown or non-F32 tensor");
         auto storage = row->second;
         const auto type = gguf_get_tensor_type(g, i);
-        if (padded_q4k) {
+        if (named_q8) {
+            const bool selected = quantizable(name);
+            require(type == (selected ? GGML_TYPE_Q8_0 : GGML_TYPE_F32) && (!selected || storage[0] % 32 == 0),
+                    "Named Q8_0/F32 critical role differs: " + name);
+            actual_q8 += selected;
+        } else if (padded_q4k) {
             const bool selected = quantizable(name) && moedern_q4k::compresses(storage[0]);
             if (selected) {
                 const auto declared = declarations.find(name);
@@ -179,6 +185,7 @@ profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false
         require(std::equal(storage.begin(), storage.end(), gguf_get_tensor_ne(g, i)),
                 padded_q4k ? "Tensor storage shape differs" : "Tensor shape differs");
     }
+    require(!named_q8 || actual_q8 == (p.layers == 10 ? 52 : 20), "Named Q8_0 coverage differs");
     require(!padded_q4k || (actual_q4k > 0 && actual_q4k == declarations.size()), "Q4_K declaration coverage differs");
     return p;
 }
@@ -238,7 +245,7 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_gallocr_t galloc = nullptr; // fast path only: persistent graph allocator
     std::vector<uint8_t> meta;       // fast path only: graph/tensor metadata arena
-    bool fast = false, padded_q4k = false;
+    bool fast = false, padded_q4k = false, named_q8 = false;
     std::map<std::string, moedern_q4k::columns> columns;
     core_gguf::WeightLoad weights;
     profile p;
@@ -253,7 +260,8 @@ struct context {
     ggml_tensor * get(const std::string & n) const { return weights.tensors.at(n); }
 };
 
-static context * init_impl(const char * path, int threads, std::string & failure, bool padded_q4k) {
+static context * init_impl(const char * path, int threads, std::string & failure, bool padded_q4k,
+                           bool named_q8 = false) {
     failure.clear();
     try {
         require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") && core_env::on("CRISPEMBED_MOEDERN_COLBERT"),
@@ -262,7 +270,14 @@ static context * init_impl(const char * path, int threads, std::string & failure
         require(!padded_q4k || (core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED") &&
                                 core_env::on("CRISPEMBED_MOEDERN_QUANT") && core_env::on("CRISPEMBED_MOEDERN_FAST")),
                 "Padded Q4_K requires explicit Q4_K/QUANT/FAST gates");
-        if (padded_q4k) {
+        require(!named_q8 ||
+                    (core_env::on("CRISPEMBED_MOEDERN_Q8_0") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
+                     core_env::on("CRISPEMBED_MOEDERN_FAST") && !core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED")),
+                "Named Q8_0 requires Q8_0/QUANT/FAST gates and Q4_K_PADDED OFF");
+        if (named_q8) {
+            const bool bounded = moedern_q8::file_bounds(path, failure);
+            require(bounded, failure);
+        } else if (padded_q4k) {
             const bool bounded = moedern_q4k::file_bounds(path, failure);
             require(bounded, failure);
         }
@@ -275,13 +290,18 @@ static context * init_impl(const char * path, int threads, std::string & failure
         const bool quant = core_env::on("CRISPEMBED_MOEDERN_QUANT");
         require(!quant || core_env::on("CRISPEMBED_MOEDERN_FAST"),
                 "CRISPEMBED_MOEDERN_QUANT requires CRISPEMBED_MOEDERN_FAST");
-        if (padded_q4k) {
+        require(named_q8 || !moedern_q8::text(meta.get(), "moedern.packed.format", moedern_q8::FORMAT),
+                "Named Q8_0 profile requires explicit Q8_0 initializer");
+        if (named_q8) {
+            require(moedern_q8::metadata(meta.get(), failure), failure);
+        } else if (padded_q4k) {
             const auto * pin = moedern_q4k::metadata(meta.get(), failure);
             require(pin, failure);
             c->columns = moedern_q4k::declarations(meta.get());
         }
-        c->p = read_profile(meta.get(), quant, padded_q4k);
+        c->p = read_profile(meta.get(), quant, padded_q4k, named_q8);
         c->padded_q4k = padded_q4k;
+        c->named_q8 = named_q8;
         c->threads = threads;
         c->backend = ggml_backend_cpu_init();
         require(c->backend && core_gguf::load_weights(path, c->backend, "moedernfamily", c->weights),
@@ -290,11 +310,14 @@ static context * init_impl(const char * path, int threads, std::string & failure
             auto * t = c->get(row.first);
             auto storage = row.second;
             if (padded_q4k && c->columns.count(row.first)) storage[0] = c->columns.at(row.first).stored;
-            const auto expected_type = padded_q4k && c->columns.count(row.first) ? GGML_TYPE_Q4_K : GGML_TYPE_F32;
-            require((padded_q4k ? t->type == expected_type : weight_type_ok(row.first, t->type, t->ne[0], quant)) &&
+            const auto expected_type = padded_q4k && c->columns.count(row.first) ? GGML_TYPE_Q4_K
+                                       : named_q8 && quantizable(row.first)      ? GGML_TYPE_Q8_0
+                                                                                 : GGML_TYPE_F32;
+            require(((padded_q4k || named_q8) ? t->type == expected_type
+                                              : weight_type_ok(row.first, t->type, t->ne[0], quant)) &&
                         ggml_is_contiguous(t) && std::equal(storage.begin(), storage.end(), t->ne),
                     "Loaded tensor layout differs");
-            if (padded_q4k) {
+            if (padded_q4k || named_q8) {
                 // Bound validation scratch to one physical row, including all
                 // F32 exclusions. Reject nonfinite scales/weights before a graph.
                 const size_t row_bytes = ggml_row_size(t->type, t->ne[0]);
@@ -306,7 +329,9 @@ static context * init_impl(const char * path, int threads, std::string & failure
                         std::memcpy(decoded.data(), encoded.data(), row_bytes);
                     else
                         ggml_get_type_traits(t->type)->to_float(encoded.data(), decoded.data(), t->ne[0]);
-                    require(finite(decoded), "Nonfinite padded Q4_K/F32 weight: " + row.first);
+                    require(finite(decoded),
+                            (named_q8 ? "Nonfinite Q8_0/F32 weight: " : "Nonfinite padded Q4_K/F32 weight: ") +
+                                row.first);
                 }
             }
         }
@@ -326,6 +351,9 @@ context * init(const char * path, int threads, std::string & failure) {
 }
 context * init_q4k(const char * path, int threads, std::string & failure) {
     return init_impl(path, threads, failure, true);
+}
+context * init_q8(const char * path, int threads, std::string & failure) {
+    return init_impl(path, threads, failure, false, true);
 }
 void free(context * ctx) {
     delete ctx;
@@ -497,6 +525,10 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
                     (core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
                      core_env::on("CRISPEMBED_MOEDERN_FAST")),
                 "Padded Q4_K gates are OFF");
+        require(!ctx->named_q8 ||
+                    (core_env::on("CRISPEMBED_MOEDERN_Q8_0") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
+                     core_env::on("CRISPEMBED_MOEDERN_FAST") && !core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED")),
+                "Named Q8_0 gates are OFF");
         require(ids && supplied && count >= 3 && count <= 512 && (!query || count == 32), "Invalid input shape");
         for (size_t i = 0; i < count; ++i)
             require(ids[i] >= 0 && ids[i] < VOCAB && supplied[i] <= 1, "Invalid input id/mask");
