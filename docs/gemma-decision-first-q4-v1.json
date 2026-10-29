@@ -1,0 +1,197 @@
+{
+  "schema": "crispembed-gemma-decision-first-q4-v1",
+  "base": "d7cc37792f345e8dd7eda8c34295cf52ec8bc1dc",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "recipes": [
+    "broad-mixed",
+    "protected-input"
+  ],
+  "probe_ids": [
+    18,
+    20,
+    25,
+    19,
+    549
+  ],
+  "stages_per_probe": 29,
+  "stage_min_cosine": 0.99999,
+  "stage_max_relative_l2": 0.003,
+  "absolute_stage_budget": null,
+  "bank_sizes": [
+    13,
+    11,
+    6
+  ],
+  "typed_questions": 8,
+  "encoder_forwards_per_model": 88,
+  "head_on_original_calls_per_model": 16,
+  "public_capi_qualified": false,
+  "publication_qualified": false,
+  "original_forwards": 0,
+  "inputs": {
+    "model": {
+      "repo": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "file": {
+        "path": "embeddinggemma-2-ft-typed-decision-f32.gguf",
+        "bytes": 1102182464,
+        "git_blob_oid": "d441ac00ed8fae9e0782a7fe576812f58f100bcb",
+        "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe"
+      }
+    },
+    "fixtures": {
+      "repo": "cstr/crispembed-regression-fixtures",
+      "revision": "508188c36d0550b12a6a467f5d394c10aa33e04c",
+      "files": [
+        {
+          "path": "gemma-decision/original-fp32/000.gguf",
+          "bytes": 1903264,
+          "git_blob_oid": "4cf4d0a50219c9a039cfa3f635f7e21685c77481",
+          "sha256": "5b5a60553656f614e98d62bf7ff7d9b2aa3283a10a1d2837ced5f0ae4e4bf916",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/001.gguf",
+          "bytes": 2114240,
+          "git_blob_oid": "41f4764348fff18a102ef08798276bfc81afec30",
+          "sha256": "2f1386e4f505bafb15ff459d34599a4b6aadc8a0981789d718c2aa50a33e687e",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/002.gguf",
+          "bytes": 2641632,
+          "git_blob_oid": "9e8d47732313d659a5ac25b0e5a13fc44320e733",
+          "sha256": "7d7e0f98e5d08624c01261b92f0cdbd78061bcac6944592783b184f49d32a378",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/003.gguf",
+          "bytes": 2008768,
+          "git_blob_oid": "a74edd45f5eba39cd02444711053390e1c78d08e",
+          "sha256": "95aa2a11a40511c59991e61ed0da2b02319f10d1a3ee5c57798a32404dfaf72f",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/004.gguf",
+          "bytes": 57914400,
+          "git_blob_oid": "9385bd529f7da6b56cc55460dd333e65616c2f2a",
+          "sha256": "2938d8f90c9ed23e24189378e897bdfcde0e03a6524acfab8061a8d0f6cc5ecf",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/LICENSE",
+          "bytes": 11358,
+          "git_blob_oid": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/README.md",
+          "bytes": 374,
+          "git_blob_oid": "c529e1d8c8c0622cc6a3263a349331fc17e3d1d3",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/decisions.json",
+          "bytes": 707368,
+          "git_blob_oid": "d6630c0c8c42df5f50e70ce19cb0aee864b69997",
+          "dataset": true
+        },
+        {
+          "path": "gemma-decision/original-fp32/versions.json",
+          "bytes": 101,
+          "git_blob_oid": "fe9239d3b105017eda302683e62ce6d437dd601b",
+          "dataset": true
+        }
+      ]
+    },
+    "notices": {
+      "repo": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "files": [
+        {
+          "path": "LICENSE",
+          "bytes": 11358,
+          "git_blob_oid": "d645695673349e3947e8e5ae42332d0ac3164cd7"
+        },
+        {
+          "path": "README.md",
+          "bytes": 3198,
+          "git_blob_oid": "ab63d22a4a7cddd32fb7c5ed0a37c2b5fbdb67a3"
+        },
+        {
+          "path": "UPSTREAM_README.md",
+          "bytes": 9354,
+          "git_blob_oid": "cdc74aa06e7e2922ae00e04dc79807295554d77d"
+        }
+      ]
+    }
+  },
+  "protected_git_objects": {
+    "src": "6f198b453a77c35fe7a3eafdf57ce49cafecc882",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "CMakeLists.txt": "1da19a8737ca79f8bd99e2844a4bea5d160a0b6c",
+    "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+    "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+    "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+    "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+    "python": "78daaa7413490beb089ce8800dad0257749a1d58",
+    "crispembed": "ab740c359c66927579737e3f986f4785d28d711f",
+    "crispembed-sys": "982b4229a8222678860f821a86be783bc9c8d310",
+    "flutter": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
+    "examples": "70360aea19f707ef83f416176eb886ac1fe2e741",
+    "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+    "tools/quantize.cpp": "b9c94cc06760408f2acc4240f9732f492bc3484b",
+    "tools/gguf_file_type_canonicalize.py": "57f0220f1139de6d63799664ca2efb7e428b17f4",
+    "tools/gguf_file_type_values.py": "36f11fb35406fef421514bd950d1f13e78a3b379",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "tools/successor_asset_manifest.py": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+    "tools/moedern-native-v2/diff_adapter.py": "64fd36e5ea8cb6ce0d58d2b91315bbe290f0d9c7",
+    "tools/dump_gemma_decision_reference.py": "f4fcd5c63ea96593d98f60e9ba3705072b9a48b5",
+    "models/convert-gemma-decision-to-gguf.py": "63ec91d76b7481ed464e07e17178d8036f98fc87",
+    "tests/test_gemma_decision_diff.cpp": "fbc359fba5e98e012a33848d96b0aa883f49a1ea",
+    "tests/test_gemma_decision_activation.cpp": "4bafcbb61b8c8e1aea8aa42068b762a05f1dc177",
+    "tests/test_gemma_decision_schema.cpp": "d12a76996fee99fb3d0a6c5e1b23076acfa344fa",
+    "tests/gemma_decision_rendering.py": "dd7ad4a1d7a2d1f71e65bbdb94527b60f290cc9d",
+    "tests/gemma_decision_parity.py": "db0727464a0c75a21f9132bb7b28beeb7e8482f1",
+    "docs/encoder-precision-evidence-20261029.md": "01b7b4ef239fcde08502c7d711a51d1ef7493599",
+    "tests/results/encoder-precision/evidence-audit-20261029.json": "dff3feb42e4c6da79648a2f49075cecf5906de5c",
+    "tests/results/gemma-decision": "2613d9816c7ce0ee18db604019dfba760883e54c"
+  },
+  "owned_sha256": {
+    ".github/workflows/gemma-decision-first-q4-v1.yml": "e31857c672928693636ee4d493bc394e9faec14f70c3d43a00ad370cd3bfbad7",
+    "docs/gemma-decision-first-q4-v1.md": "86667b4271678f08720b65e5049f251d5e508449849f04505863becbb04bc92e",
+    "tests/gemma-decision-q4/CMakeLists.txt": "793113c1d7e64d44ec7b9306243a7a997a835a86913784ea44cffd93e38117bb",
+    "tests/gemma-decision-q4/probe.cpp": "f22ba1d2e3dd785772f8fe492685bf1ea759eeeabb4f57360a274e112354ce70",
+    "tests/test_gemma_decision_first_q4.py": "440d65b1e5eb6c75f8d23aa6930c062d7c00f102d1bef76a80757394be2903e1",
+    "tools/gemma-decision-q4-v1/gemma_contract.py": "dd17dbc7714934405521562721405da4383eebc376db88ca87690adf1e3bc2f0",
+    "tools/gemma-decision-q4-v1/gemma_q4_recipe.py": "81bf8e69cea844ea2e7f78e068610417a10f557db0bbc508e325330f6d4ea659",
+    "tools/gemma-decision-q4-v1/gemma_q4_quantizer_fixture.py": "11283656f1564b4e25e899ffe6392162786e6b6fbbd410adf1654f344ec9ac03",
+    "tools/gemma-decision-q4-v1/requirements.lock": "66c2db9f70f73055b742cb4f2911c53858531cfd9108c7c21c1b4d11330486e6",
+    "tools/ci-heavy/gemma_decision_first_q4.py": "65ada1b6e236e53f8ffd4db368cc270e105551704d6d3df980bb8438fa217f25"
+  },
+  "typed_probability_limits": {
+    "atol": 0.0003,
+    "rtol": 0.0003,
+    "ordinal_atol": 0.003,
+    "ordinal_rtol": 1e-07,
+    "head_logit_atol": 3e-05,
+    "head_logit_rtol": 3e-05,
+    "head_probability_atol": 3e-06,
+    "head_probability_rtol": 3e-05
+  },
+  "expected_storage_counts": {
+    "broad-mixed": {
+      "F32": 218,
+      "Q8_0": 1,
+      "Q4_K": 217
+    },
+    "protected-input": {
+      "F32": 268,
+      "Q4_K": 168
+    }
+  },
+  "census_actual_verified": false,
+  "runtime_change": false,
+  "source_preparation_only": true
+}
