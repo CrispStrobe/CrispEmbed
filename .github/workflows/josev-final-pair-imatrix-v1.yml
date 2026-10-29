@@ -1,0 +1,64 @@
+name: Josev native-F32 final-pair Q4 imatrix v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  development:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Closed source and model-free controls
+        run: |
+          git fetch origin 0d56cebf6394ff45c71e482e44deabcb74e1227b
+          python tools/josev2b_final_pair_imatrix_contract.py > "$RUNNER_TEMP/source-closure.json"
+          python tests/test_josev_final_pair_imatrix.py -v
+          python tests/test_ci_process.py -v
+      - name: Isolated locked metric environment
+        run: |
+          python -m venv --without-pip "$RUNNER_TEMP/mixed-venv"
+          python -m pip --python "$RUNNER_TEMP/mixed-venv/bin/python" install --no-deps --only-binary=:all: --require-hashes -r tools/kaggle/josev-q4k/requirements.lock
+          "$RUNNER_TEMP/mixed-venv/bin/python" -I -m pip check
+      - name: Actual bounded integer-vector oracle controls
+        run: '"$RUNNER_TEMP/mixed-venv/bin/python" -I tests/test_josev_mixed_recipes.py --vector-controls -v'
+      - name: Authenticate retained original arrays without original forwards
+        run: |
+          "$RUNNER_TEMP/mixed-venv/bin/python" -I tools/ci-heavy/josev2b_final_pair_imatrix.py --fetch-reference "$RUNNER_TEMP/mixed-reference"
+      - name: Strict F32 admission then uncalibrated/calibrated paired-Q4 development controls
+        run: |
+          "$RUNNER_TEMP/mixed-venv/bin/python" -I tools/ci-heavy/josev2b_final_pair_imatrix.py --reviewed-source "$GITHUB_SHA" --mount "$RUNNER_TEMP/mixed-reference" --scratch "$RUNNER_TEMP/mixed-scratch" --out "$RUNNER_TEMP/mixed-out"
+      - name: Preserve small reports and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-final-pair-imatrix-development-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/mixed-out/review/
+            ${{ runner.temp }}/mixed-reference/service-proof.json
+            ${{ runner.temp }}/source-closure.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Preserve canonical models, arrays, Ref adapters and traces remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: josev-final-pair-imatrix-development-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/mixed-out/
+          if-no-files-found: warn
+          retention-days: 90
