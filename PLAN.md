@@ -1194,3 +1194,17 @@ output cap/live reserve replaces only the overbroad one-case disk requirement;
 all numerical code, maps, references and forward limits remain unchanged. Kaggle
 CPUv2 submission accepted after fresh whole-account CPU2/GPU0 admission; external
 exact-version proof and actual results remain pending. Initial v1 stays negative.
+
+### One-sentence connected norm attribution — source frozen 29 October
+
+Register `wasm-live-norm-operands-v1.yml` and dispatch exact
+`fix/wasm-live-norm-result-scope-20261029` at
+`ff3b8a0171d2cdb5cfcdd65701fadaa49a99d265`. The sixteen bounded source tests
+pass. This diagnostic captures thirteen actual live norm input/output pairs and
+layer-three boundaries for one unchanged twelve-token sentence. Preserve all old
+native and WASM stage hashes before replay. Report 208 same-input and 196
+natural comparisons separately; natural numerical failures make the completed
+report negative and exit nonzero only after preserving every outcome. No
+production arithmetic, precision, default, original recapture or full ten-case
+rerun is authorized by this source registration. Review earliest differing
+operator, absolute/RMS errors and magnitudes before proposing a correction.
