@@ -927,3 +927,5 @@ The standard runner must pass the unchanged14GiB available RAM and24GiB disk
 preflight; otherwise retain an admission rejection and use another authorized
 resource. Healthy1.5M Kaggle work is not repeated by this workflow.
 Registration is metadata only and establishes no new runtime/model result.
+
+- `fix/minicpm-retained-merger-scope-20261029`: analysis-only original LIST-first merger mapping; carry6/36 priorline proofs, compute17/102 missing retained comparisons, native suffix parts unmapped; original/runtime83/19c immutable, no forwards or models.
