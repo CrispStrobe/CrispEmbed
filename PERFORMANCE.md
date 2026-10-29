@@ -7142,3 +7142,14 @@ across cases0.99848469. Both ordinal errors pass0.001, but probabilities
 0.000145704/0.000179201 fail0.0001. Keeping24 down projections F32 changes
 these probability errors only~1e-7 on the oldfour. No qualified quantized model
 or whole-task/held-out quality improvement is established.
+
+### 29 October — connected norm component recovery does not close full WASM parity
+
+[Actual full norm A/B](docs/wasm-native-order-norm-full-result.md) recovers12
+component norms byte-exact and preserves20 native/16 stage anchors and old OFF
+bytes, yet16/20 finals and6/16 stages fail. Earliest budget failure layer3:
+max0.00291892886/RMS0.00023248944/cos0.999999184331/original magnitude10.50798.
+Encoder max0.02850568295/RMS0.00623421436/cos0.999848220828/magnitude5.83756.
+First normalized final max0.00156465905/cos0.999954849513 fails cosine. All ten
+cases and both native thread targets retain their fixed budgets; no whole-model
+accuracy or performance improvement is established by the component recovery.

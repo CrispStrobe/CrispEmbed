@@ -17244,3 +17244,15 @@ ordered index rows, with all same-probability value/weight bits exact. Existing
 ggml differs on authored ties; scattered routes fail even when value/weight
 cosines conceal changed expert choice. No real model/failed document replay,
 historical-wheel identity, causal model conclusion or runtime/default change.
+
+### 29 October — live-input WASM norm full A/B completes, remains rejected
+
+[Actual40852835039](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40852835039)
+at`64eef684` completes all component/native/OFF/observer/context barriers, but
+passes only4/20 final and10/16 stage checks. The
+[review](docs/wasm-native-order-norm-full-result.md) authenticates119 small members,
+36 actual Ref records and204 returned-byte reports. Gate activation is supported
+by9/10 ON/OFF byte changes; no eligibility widening is justified. Layer3 still
+fails max0.00291893 and encoder max0.02850568. Full live norm operands were not
+captured; a new test-only one-sentence attribution lane is claimed before another
+arithmetic change/full retry. Defaults/budgets and all old negatives stay fixed.
