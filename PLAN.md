@@ -1152,3 +1152,11 @@ Mini v3source2fde0c64b independently reviewed GO; exact-source
 is queued for unchanged seven-only continuation. Kaggle first-row bootstrap
 is prepared privately; fresh whole-account status visibility is rate-limited
 (HTTP429), so no new submission was made without capacity admission.
+
+Ultra conversion40843704011[small review](docs/ultrabert-first-conservative-q4-model-result.md)
+is positive for storage/source only, with12 Q4_K/206 F32 and no model forward.
+New closed shard0 source`a5feac83e177d7e08cfa23384089f7584f0736a9` on
+`audit/ultrabert-reviewed-q4-shard0-20261029` passes nine controls,14 protected/7
+owned plus11 runtime Git objects; parent source review GO. Workflow registered,
+actual only686-row execution pending. Legacy header and unqualified status stay
+explicit; all other shards/Q8 require later independent activation.

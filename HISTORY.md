@@ -17070,3 +17070,14 @@ arrays, with zero native/original forwards or quantizer runs. The
 2 Q4 stacked matrices/737 protected F16, and exact semantic/payload preservation
 for the trailing-unit position-embedding rank change. Initial zero-byte transfer
 failure remains recorded. Numerical/decoded Q4 inference is still unexecuted.
+
+### 29 October — Ultra conservative model converted; first shard source bound
+
+[Actual40843704011](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40843704011)
+at`c3d2fc051` produces576,997,440-byte mixed model with12 late FFN Q4_K and206
+byte-exact F32 tensors. [Review](docs/ultrabert-first-conservative-q4-model-result.md)
+authenticates all13 small members and verifies218 semantic roles/build provenance;
+large model remains remote. Zero original/F32/Q4 model forwards. New separately
+closed sourcea5feac83e binds only shard0/686 rows and reviewed freeze/model; nine
+controls pass. This is storage/source evidence only; legacy header/unqualified
+status and all remaining full-task/publication gates are preserved.
