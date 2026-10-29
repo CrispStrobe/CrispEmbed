@@ -7016,3 +7016,12 @@ production-quality improvement follows from this compare-only analysis.
 normalized max1.09114e-5 and reported300 ranking metrics exact/top1=1. No new
 F32 timing, Q4 quality or speed claim follows; the first conservative Q4 model
 conversion and686-row shard0 require separate immutable source/model pins.
+
+## MoEdern first strict mismatch after retained comparison (29 October)
+
+The [18-matrix diagnostic](docs/moedern-three-doc-compare-v2-result.md) leaves
+12 strict negatives. Fresh original versus retained native agrees for two
+documents;24726600 differs in one eligible token, input58/token29084, selected
+row57/component19: original0.02338916995 versus native0.00055977370, absolute
+0.02282939624/cosine0.9957477159. Capture actual intermediate/selection values
+under ordinary-anchor and byte-neutral observation gates before inferring cause.

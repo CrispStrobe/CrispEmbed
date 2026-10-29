@@ -17017,3 +17017,15 @@ streams/adapters, all5483 rows/eight16-stage Ref records and reported exact300
 rankings. Raw maximum error0.00109804/minimum cosine0.999999996825 remain
 within the unchanged F32 budgets. No Q4 recipe has qualified and earlier
 full-stage/M1 strict failures remain separate.
+
+## 29 October: MoEdern retained18 matrix diagnosis completed
+
+[Actual40834748271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834748271)
+completes all18 comparisons with6 pass/12 numerical rejections and correct
+nonzero status. [Independent review](docs/moedern-three-doc-compare-v2-result.md)
+confirms frozen-versus-fresh-original2/6, frozen-versus-native93 0/6 and fresh-
+original-versus-native93 4/6 pass. Only document24726600 remains fresh-original
+versus-native negative, at inputposition58/token29084 (selectedmatrixrow57),
+max0.02282939624/cosine0.9957477159. Other fresh-original drift is diagnostic,
+not replacement gold or native causality. No model/original/native forward
+occurs during this retained comparison.
