@@ -534,7 +534,7 @@
   "owned_sha256": {
     ".github/workflows/minicpm-graph-seven-arm-v2.yml": "daf0f6963e6fbe5ad70afb911e2e3a992ae8a163c05277d95e2e637ae220771d",
     "docs/minicpm-graph-seven-arm-v2.md": "ea2f1da68ad2174284e18bd23d77bd87b9b39f83984257f41be503604b1b767d",
-    "tests/test_minicpm_seven_v2.py": "e3f59a6b516b4e29bb3f64f682d0c64c15a7033f35ceb81c5285ec010d67db91",
+    "tests/test_minicpm_seven_v2.py": "0448b6684907c6ddf7f70ed152c51cd1fe3a6494bb7436f519e3c7486b8e72f7",
     "tools/minicpm-seven-v2/run.py": "32561254b6093c0996e6aa17fcdf39682d5a3790f947a4b34cfdc6199f5deda7",
     "tools/minicpm-seven-v2/seven_contract.py": "cf806d9e0b09ee24a03b5ef3bb578aed27180962522e7bbd2bed5d938dfb00bc",
     "tools/minicpm-seven-v2/vision.py": "33f459c7a2db16bebb80c29fa16f0c9348604e4f28b5fed202d605a866eaab97"

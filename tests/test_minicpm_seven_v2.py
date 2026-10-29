@@ -64,6 +64,12 @@ class Controls(unittest.TestCase):
  def test_closed_source_and_exact_actual_dependency(self):
   value=c.source_guard(subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip());self.assertFalse(value['runtime_math_changes'])
   cfg=c.declaration();self.assertEqual(cfg['completed_analysis_service']['id'],40831080193);self.assertEqual(cfg['completed_analysis_report']['sha256'],'9f84356c5c31b0aec4f3182b1b84acb780ef5a9ddfaabffcd233917b97df3442')
+ def test_real_isolated_help_and_frozen_view_import_need_no_packages(self):
+  result=subprocess.run([sys.executable,'-I',str(ROOT/'tools/minicpm-seven-v2/run.py'),'--help'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+  self.assertEqual(result.returncode,0,result.stderr);self.assertIn('finalize',result.stdout)
+  import vision
+  value=vision.frozen.view_plan([252,1024],[1260,1024],[1008]*5,[252]*5,1024,True)
+  self.assertEqual(value['native_rows'],[0,252]);self.assertEqual(len(value['unmapped']),4)
  def test_optional_packages_never_imported_by_source_controls(self):
   for name in ['numpy','gguf','torch','transformers']:self.assertNotIn(name,sys.modules)
  def test_python_ast_only(self):
