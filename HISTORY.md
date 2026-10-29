@@ -17160,3 +17160,12 @@ near-boundary probability reordering. Actual softmax is aten.softmax.int.
 The downstream normalized max0.02282943/cosine0.99574771 remains negative.
 All75 small files and400-output service identity are retained; no production
 math change, new gold or task/quantized qualification follows.
+
+##29 October: typed Gemma CPU provider transition, no duplicate model run
+
+[Transition receipt](tests/results/gemma-decision/first-q4-cpu-transition-review.json)
+preserves queued-never-started40868968991/6e and terminal cancellation. Honest
+CPU successor92ee94a77 retains all original numerical/build/probe/recipe bytes
+and unchanged gates; nine bounded provider/source/barrier controls pass.
+Exact Kaggle CPUv1 submitted script/Get/Status/every List proof is running.
+This is provider/source evidence only, no new numerical/model qualification.

@@ -1335,3 +1335,21 @@ capacity before submission. Avoid duplicate model runs: if moving to Kaggle,
 cancel only our still-queued/never-started Gemma40868968991 after checking
 service/job steps and preserve its cancellation/source receipt. Do not cancel
 other work. New protocol/source review is required before hosted execution.
+
+### Exact Gemma CPU successor executing; Ultra remaining source queued
+
+[Transition review](tests/results/gemma-decision/first-q4-cpu-transition-review.json)
+confirms old Gemma40868968991/6e never started (queued/no steps), then terminal
+cancelled before submitting the successor. Source
+`92ee94a77c95df33b272abfcbf4f365550c20a47` on
+`audit/gemma-q4-kaggle-cpu-20261029` passes37-object/5-owned closure, nine new
+stdlib controls, old11 controls/two hosted-only NumPy skips and peer review.
+Kaggle CPUv1 exact Get/Status/every List page/script SHA is verified running,
+with no GPU or credential dataset. Worker runs both original NumPy controls
+before build/model access, strict F32145/eight-typed/30-bank before actual
+two Q4 recipes. No outcome or qualification is inferred from running status.
+
+Ultra exact`ef7153156aba352bffdef60bd44d4155a51f2ddc` remaining-seven producer
+[40871150002](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40871150002)
+is queued. Do not rerun shard0 or duplicate this panel. Actual source/runtime/
+model/5483 rows/300-query verdict remains required.
