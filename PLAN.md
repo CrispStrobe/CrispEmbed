@@ -1260,3 +1260,30 @@ report negative and exit nonzero only after preserving every outcome. No
 production arithmetic, precision, default, original recapture or full ten-case
 rerun is authorized by this source registration. Review earliest differing
 operator, absolute/RMS errors and magnitudes before proposing a correction.
+
+### Actual seven-arm completion and two pre-precision harness repairs
+
+MiniCPM40855153707 completes seven missing forwards: all30 decoded cases exact,
+130/180 vision stages pass,50 fail;96 later merger crop parts remain unmapped.
+Use [the result and bounded attribution scope](docs/minicpm-seven-arm-v3-result.md).
+
+`fix/unlimited-ref-control-import-20261029` owns only a test-wrapper repair after
+40859258832@299eedb fails isolated Python import `adapter` during Ref controls,
+before F16/model access/any forward. Preserve frozen controls/runtime/candidate;
+new wrapper must bootstrap exact frozen helper imports under `-I`, test actual
+subprocess imports, preserve16 F16/12 Q4/16 projection counts and initial receipt.
+Declare new source closure and review before hosted retry; never rerun quantizer.
+
+`fix/moedern-actual-softmax-dispatch-20261029` owns a dumper-only repair after
+exact Kagglev3@46bac passes both ordinary barriers (six native full computations,
+byte-exact93 anchors; one original strict Ref control), then observed original
+forward remains feature-byte-neutral but only six of eight required operations
+are recorded: two SDPA, two topk and two div, no softmax. Preserve
+[initial capture failure](tests/results/moedern-colbert/first-row-softmax-initial-review.json).
+Capture real `aten.softmax.int` or `aten._softmax.default` inputs/outputs using
+their actual names/schemas, with bounded FFN dispatch metadata to identify actual
+behavior rather than reconstructing probabilities. Keep exact eight operations,
+all44 floating/two integer stages and all ordinary/observer/repeat checks.
+Previous targeted original calls are now3 acrossv2/v3; a separately reviewed
+retry admits at most5, aggregate8; native previous6, next maximum14. No full
+original recapture, new gold, production math change or threshold waiver.

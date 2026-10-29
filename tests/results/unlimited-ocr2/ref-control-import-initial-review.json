@@ -1,0 +1,123 @@
+{
+  "schema": "crispembed-unlimited-ref-control-import-initial-review-v1",
+  "run": 40859258832,
+  "source": "299eedb67ecdfda337d7b37e360c599dcd30ead7",
+  "small_artifact": {
+    "id": 12893332007,
+    "name": "unlimited-last1-replay-v1-review-40859258832",
+    "size_in_bytes": 84662,
+    "digest": "sha256:0b67444cb41fddd1e2be838f4e46beb8d3814086befcca6682d04c5fb215074e",
+    "expires_at": "2027-01-27T10:39:17Z"
+  },
+  "small_members": {
+    "last1-source.json": {
+      "bytes": 118,
+      "sha256": "b27d75e3b012df54d7f161ec8d70fca4dee5d8aa649e311b0920488641bba157"
+    },
+    "last1-requirements.txt": {
+      "bytes": 661,
+      "sha256": "97048cda6733bbb1230914f697a5871e81eeb3d643f2d468b19a07f47536820b"
+    },
+    "last1-auth/structural.json": {
+      "bytes": 191680,
+      "sha256": "a6e4585041e35a7089dc991b7d2482de73e844838d52ecb71c8accaf53ed8f28"
+    },
+    "last1-auth/inputs.json": {
+      "bytes": 109597,
+      "sha256": "e09a3949769baf2ea21de7d3277a4bb4c41759d1a519c551f810483ca83a0c61"
+    },
+    "last1-review/actual-ref-controls.log": {
+      "bytes": 224,
+      "sha256": "3249cf7835c42c68c6c00dee1e9042b61226dbcd80d02140ff606419850ee1ae"
+    },
+    "last1-review/build-profile.json": {
+      "bytes": 9479,
+      "sha256": "ebe9cca86a999eaeb21b89d91609f836fb361141845cdc365f5477673400c048"
+    },
+    "last1-review/compile-observed.log": {
+      "bytes": 265803,
+      "sha256": "54ca8aa84c4036479cdb7305d71c41063f9a915c46e6ab983fd8d8efcedf2f62"
+    },
+    "last1-review/compile-plain.log": {
+      "bytes": 278153,
+      "sha256": "688387083d9283b663cec10b341881f9c66e7c68b702108c2fe0cc6980271494"
+    },
+    "last1-review/configure-observed.log": {
+      "bytes": 1917,
+      "sha256": "8fe0dabb533177cf0027fc3f0f4e35a8055916ed23f07eaef6904a0535d946a9"
+    },
+    "last1-review/configure-plain.log": {
+      "bytes": 1867,
+      "sha256": "62ae2442657f2a88841ff3c27595630ffe5e4a2dd8f05a4a8dc30df18d32f2f8"
+    },
+    "last1-review/evidence-files.json": {
+      "bytes": 3,
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    "last1-review/hosted.json": {
+      "bytes": 4134,
+      "sha256": "c8387e09b105b75493da6f575ecd760a499485c2dfb5bd1b241a5f8d0c2fd2f6"
+    },
+    "last1-review/observer-worktree.log": {
+      "bytes": 136,
+      "sha256": "31ac625b1a3ea12b648111041b0238e1263e90903ed7823a5aa4cab7da359d28"
+    },
+    "last1-review/observer-backend.log": {
+      "bytes": 270,
+      "sha256": "55f659bf0c255553e3bed15277f68323138c0afc82cdbcf65441b5ffc16507f7"
+    }
+  },
+  "completed": false,
+  "commands": {
+    "configure-plain": {
+      "exit": 0,
+      "timed_out": false,
+      "seconds": 4.019219341999985,
+      "sha256": "62ae2442657f2a88841ff3c27595630ffe5e4a2dd8f05a4a8dc30df18d32f2f8"
+    },
+    "compile-plain": {
+      "exit": 0,
+      "timed_out": false,
+      "seconds": 141.04733561799998,
+      "sha256": "688387083d9283b663cec10b341881f9c66e7c68b702108c2fe0cc6980271494"
+    },
+    "observer-worktree": {
+      "exit": 0,
+      "timed_out": false,
+      "seconds": 0.6525643709999258,
+      "sha256": "31ac625b1a3ea12b648111041b0238e1263e90903ed7823a5aa4cab7da359d28"
+    },
+    "observer-backend": {
+      "exit": 0,
+      "timed_out": false,
+      "seconds": 2.658249326000032,
+      "sha256": "55f659bf0c255553e3bed15277f68323138c0afc82cdbcf65441b5ffc16507f7"
+    },
+    "configure-observed": {
+      "exit": 0,
+      "timed_out": false,
+      "seconds": 0.7025025990000131,
+      "sha256": "8fe0dabb533177cf0027fc3f0f4e35a8055916ed23f07eaef6904a0535d946a9"
+    },
+    "compile-observed": {
+      "exit": 0,
+      "timed_out": false,
+      "seconds": 139.828130688,
+      "sha256": "54ca8aa84c4036479cdb7305d71c41063f9a915c46e6ab983fd8d8efcedf2f62"
+    },
+    "actual-ref-controls": {
+      "exit": 1,
+      "timed_out": false,
+      "seconds": 0.05054625900004339,
+      "sha256": "3249cf7835c42c68c6c00dee1e9042b61226dbcd80d02140ff606419850ee1ae"
+    }
+  },
+  "error": "ModuleNotFoundError: No module named adapter during isolated actual-ref-controls invocation",
+  "all_544_inputs_authenticated": true,
+  "production_observer_excluded": true,
+  "original_forwards": 0,
+  "native_forwards": 0,
+  "quantizer_runs": 0,
+  "qualified": false,
+  "limits": "Build/profile/observer-exclusion passed. Ref controls failed before published F16 download and any model forward. No numerical or precision conclusion."
+}
