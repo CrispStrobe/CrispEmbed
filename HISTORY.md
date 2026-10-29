@@ -17256,3 +17256,49 @@ by9/10 ON/OFF byte changes; no eligibility widening is justified. Layer3 still
 fails max0.00291893 and encoder max0.02850568. Full live norm operands were not
 captured; a new test-only one-sentence attribution lane is claimed before another
 arithmetic change/full retry. Defaults/budgets and all old negatives stay fixed.
+
+### 29 October — Josev single-Q4 and final-pair Q8 ablation completes
+
+[Actual40853720400](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40853720400)
+at`3cc96dbab` completes three recipes after strict F32 control. [Independent review](docs/josev2b-last-projection-v1-result.md)
+retains106/105/75 strict stage failures and all serialized-response/logit errors.
+One-Q4 probability maxima0.000347853/0.000383541 fail0.0001; final-pair Q8 worst
+0.0000433922 passes only the limited discrete/probability/ordinal screen. All five
+discrete decisions/two ordinal gates pass for each. No original rerun, NEW20
+access, selected recipe or publication. Further protection is not monotonic final
+improvement; source-bound Q4 activation calibration remains separately scoped.
+
+### 29 October — Ultra first conservative Q4 shard completes686 rows
+
+[Actual40855927708](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40855927708)
+at`a5feac83e` completes686 raw/normalized row pairs with exact IDs and durable
+streams. [Independent review](docs/ultrabert-first-q4-shard0-result.md) retains
+both strict Ref failures: raw max2.76205, normalized0.02581254, cosine0.98075227.
+Only12 FFN matrices are Q4/206 F32; no original/F32 forward or additional shard.
+Full5483/300 retrieval, Q8, standard headers/consumers/publication remain pending.
+
+##29 October: MiniCPM missing seven complete; initial precision harness stops retained
+
+[MiniCPM40855153707](docs/minicpm-seven-arm-v3-result.md) at2fde completes all
+seven absent forwards/two projection probes with0 original recaptures. All30
+decoded cases exact;180 vision comparisons retain130 positive/50 negative.
+Unlimited40859258832 stops on isolated Ref-helper import before any forward;
+its [receipt](tests/results/unlimited-ocr2/ref-control-import-initial-review.json)
+is retained. MoEdern Kagglev3@46bac passes both ordinary controls and one neutral
+observed original forward, then strict operation completeness rejects missing
+softmax; [receipt](tests/results/moedern-colbert/first-row-softmax-initial-review.json)
+preserves all59 small files and exact-version service proof. Initialv2 packed
+constructor failure is also retained; none of these scope repairs qualifies a
+model, release or precision recipe.
+
+##29 October: actual MoEdern document capture localizes routing instability
+
+[Exact CPUv4/f336 capture](docs/moedern-first-row-actual-v4-result.md) completes
+five targeted original/fourteen native computations after both ordinary barriers.
+All actual operation/feature/observer/repeat/public-slice checks pass;44 Ref
+floating stages independently yield39 positive/five negative. First strict
+difference is layer1 top-k row58: original[2,4], native[2,6] after roughly1e-7
+near-boundary probability reordering. Actual softmax is aten.softmax.int.
+The downstream normalized max0.02282943/cosine0.99574771 remains negative.
+All75 small files and400-output service identity are retained; no production
+math change, new gold or task/quantized qualification follows.
