@@ -1,4 +1,5 @@
 #pragma once
+#include "core/gguf_file_type.h"
 // Separate opt-in padded Q4_K profile. Old F32 raw bounds/loaders stay strict.
 #include "gguf.h"
 #include <algorithm>
@@ -53,7 +54,8 @@ inline bool storage_metadata(const gguf_context * g) {
     if (!g) return false;
     const auto type = gguf_find_key(g, "general.file_type"), version = gguf_find_key(g, "general.quantization_version");
     return type >= 0 && version >= 0 && gguf_get_kv_type(g, type) == GGUF_TYPE_UINT32 &&
-           gguf_get_kv_type(g, version) == GGUF_TYPE_UINT32 && gguf_get_val_u32(g, type) == GGML_FTYPE_MOSTLY_Q4_K &&
+           gguf_get_kv_type(g, version) == GGUF_TYPE_UINT32 &&
+           core_gguf_file_type::known_q4_k(gguf_get_val_u32(g, type)) &&
            gguf_get_val_u32(g, version) == GGML_QNT_VERSION;
 }
 inline const pin * metadata(const gguf_context * g, std::string & error) {

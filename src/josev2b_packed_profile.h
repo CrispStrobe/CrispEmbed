@@ -1,4 +1,5 @@
 #pragma once
+#include "core/gguf_file_type.h"
 // Strict new packed profile. Historical component loaders keep their own
 // architecture/tensor-count guards; this is never an alternative for them.
 #include "gguf.h"
@@ -123,7 +124,7 @@ inline bool file_bounds(const char * path, std::string & error, bool allow_quant
             } else
                 r.value(kind);
         }
-        if (mixed && (!allow_quantized || file_type != GGML_FTYPE_MOSTLY_Q4_K))
+        if (mixed && (!allow_quantized || !core_gguf_file_type::known_q4_k(file_type)))
             throw std::runtime_error("Josev mixed Q4_K profile gate/type rejected");
         uint64_t actual_q4 = 0;
         std::set<std::string> names;
@@ -199,7 +200,9 @@ inline bool metadata_valid(const gguf_context * g, std::string & error, bool all
     if (!g || gguf_get_n_tensors(g) != 442 || !text(g, "general.architecture", architecture) ||
         !text(g, "general.license", "apache-2.0") ||
         !(text(g, "josev2b.packed.format", "crispembed-josev-packed-f32-v1") ||
-          (allow_quantized && quantized(g) && number(g, "general.file_type", GGML_FTYPE_MOSTLY_Q4_K))) ||
+          (allow_quantized && quantized(g) &&
+           (number(g, "general.file_type", core_gguf_file_type::q4_k_s) ||
+            number(g, "general.file_type", core_gguf_file_type::legacy_q4_k)))) ||
         !text(g, "josev2b.packed.profile", "official-pytorch-text-batch1-512-no-extra-temperature") ||
         !text(g, "josev2b.packed.backbone_gguf_sha256",
               "8dc144a89e4b2bbf253fe395eeb9bc4d1eb7b3a27474442847535e55c79b361c") ||

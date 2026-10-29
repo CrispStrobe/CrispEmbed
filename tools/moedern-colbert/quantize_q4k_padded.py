@@ -16,6 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from quantize_gguf import quantizable
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'tools'))
+from gguf_file_type_values import q4_k_file_type
 BLOCK, TYPE_BYTES = 256, 144
 PROFILES = {
  '1.5M': {'publication':'publication-1p5m.json','revision':'9d360b8b88ae11bea5784bf9012ff509fdd5c2da','tensors':32,'parameters':1484448,'q4k':20,'format':'crispembed-moedern-text-f32-v1'},
@@ -24,6 +26,10 @@ PROFILES = {
 }
 def require(ok, why):
  if not ok: raise ValueError(why)
+def validate_file_type(field):
+ # General file metadata uses standard14; legacy12 is reproducibility-only.
+ # Actual tensor GGML_TYPE_Q4_K=12 and full storage inventory are verified below.
+ require(list(field.types)==[4]and q4_k_file_type(field.contents()),'unsupported Q4_K file-type metadata')
 def sha_file(path):
  h=hashlib.sha256()
  with Path(path).open('rb')as f:
@@ -95,9 +101,7 @@ def quantize(source, output, variant, quantizer):
  for name in expected_metadata-changed_metadata:
   a,b=padded.fields[name],result.fields[name]
   require(a.types==b.types and np.array_equal(a.contents(),b.contents()),'tokenizer/profile metadata changed: '+name)
- # Pinned ggml.h GGML_FTYPE_MOSTLY_Q4_K=12; this is not llama.cpp's
- # separate mixed-Q4 file-type enum. Hosted C++ controls assert the same ABI.
- require(result.fields['general.file_type'].contents()==12,'actual file type is not Q4_K')
+ validate_file_type(result.fields['general.file_type'])
  actual={t.name:t for t in result.tensors};require(set(actual)=={r['name']for r in rows},'output names differ')
  for row in rows:
   t=actual[row['name']];expected=gguf.GGMLQuantizationType.Q4_K if row['type']=='Q4_K'else gguf.GGMLQuantizationType.F32
@@ -111,7 +115,7 @@ def quantize(source, output, variant, quantizer):
    row['max_absolute_weight_error']=float(np.max(np.abs(decoded[...,:row['logical_shape'][0]]-a)))
    row['padding_columns']=row['storage_shape'][0]-row['logical_shape'][0]
  require(output.stat().st_size<source.stat().st_size,'Q4_K package is not smaller than F32')
- return {'schema':'crispembed-moedern-q4k-padded-v1','variant':variant,'completed':True,'source':pin,'source_sha256':pin['sha256'],'output_sha256':sha_file(output),'output_bytes':output.stat().st_size,'q4k_tensors':len(selected),'f32_tensors':len(rows)-len(selected),'tensors':rows,'quantizer_sha256':sha_file(quantizer),'quantizer_log_sha256':sha_file(log),'temporary_padded_f32_sha256':sha_file(temporary),'semantic_widths_unchanged':True,'quantized_publication_qualified':False}
+ return {'schema':'crispembed-moedern-q4k-padded-v1','variant':variant,'completed':True,'source':pin,'source_sha256':pin['sha256'],'output_sha256':sha_file(output),'output_bytes':output.stat().st_size,'general_file_type':int(result.fields['general.file_type'].contents()),'q4k_tensors':len(selected),'f32_tensors':len(rows)-len(selected),'tensors':rows,'quantizer_sha256':sha_file(quantizer),'quantizer_log_sha256':sha_file(log),'temporary_padded_f32_sha256':sha_file(temporary),'semantic_widths_unchanged':True,'quantized_publication_qualified':False}
 
 if __name__=='__main__':
  import argparse

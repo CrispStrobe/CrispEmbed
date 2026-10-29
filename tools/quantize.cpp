@@ -13,6 +13,7 @@
 #include "gguf.h"
 
 #include "../src/core/imatrix_alias.h"
+#include "../src/core/gguf_file_type.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -35,6 +36,7 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // being quantized. Small decoders (e.g. GOT-OCR2's 0.5B Qwen2) are catastrophically
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
+static bool g_legacy_file_type_header = false; // Explicit frozen-output reproduction only.
 static bool g_decoder_f16 = false;
 static bool g_decoder_attn_q8 = false;
 static bool g_ppocrv6_q8_head = false;
@@ -223,7 +225,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     struct gguf_context * ctx_out = gguf_init_empty();
     gguf_set_kv(ctx_out, ctx_in);
     gguf_set_val_u32(ctx_out, "general.quantization_version", GGML_QNT_VERSION);
-    gguf_set_val_u32(ctx_out, "general.file_type", ftype);
+    const auto file_type = g_legacy_file_type_header ? uint32_t(ftype) : core_gguf_file_type::standard(ftype);
+    gguf_set_val_u32(ctx_out, "general.file_type", file_type);
+    fprintf(stderr, "GGUF general.file_type=%u (%s header); tensor encoding unchanged\n", file_type,
+            g_legacy_file_type_header ? "legacy internal enum: reproduction only" : "standard");
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
     // Reject misspelled patterns before opening/truncating the output file.
@@ -988,7 +993,9 @@ int main(int argc, char ** argv) {
     std::string imatrix_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
-        if (a == "--decoder-f16")
+        if (a == "--legacy-file-type-header")
+            g_legacy_file_type_header = true;
+        else if (a == "--decoder-f16")
             g_decoder_f16 = true;
         else if (a == "--decoder-attn-q8")
             g_decoder_attn_q8 = true;
@@ -1024,8 +1031,9 @@ int main(int argc, char ** argv) {
     if (pos.size() != 3) {
         fprintf(stderr,
                 "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--decoder-attn-q8] "
-                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]...\n\n",
+                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]... [--legacy-file-type-header]\n\n",
                 argv[0]);
+        fprintf(stderr, "  --legacy-file-type-header  reproduce old internal-enum header; not for publication\n");
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");

@@ -1,5 +1,6 @@
 #pragma once
 #include "core/env_gate.h"
+#include "core/gguf_file_type.h"
 #include "core/gguf_loader.h"
 #include "tokenizer.h"
 #include "ultrabert_tokenizer_mode.h"
@@ -44,7 +45,11 @@ inline void validate(gguf_context * g, bool quantized = false) {
                 str("ultrabert.source.weight_sha256") ==
                     "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
             "unsupported source profile");
-    u("general.file_type", quantized ? GGML_FTYPE_MOSTLY_Q4_K : GGML_FTYPE_ALL_F32);
+    if (quantized)
+        require(core_gguf_file_type::known_q4_k(core_gguf::kv_u32(g, "general.file_type", UINT32_MAX)),
+                "unsupported quantized general.file_type");
+    else
+        u("general.file_type", GGML_FTYPE_ALL_F32);
     u("ultrabert.context_length", 32768);
     u("ultrabert.embedding_length", 768);
     u("ultrabert.block_count", 24);
