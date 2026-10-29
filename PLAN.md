@@ -1112,3 +1112,11 @@ only: reproduce exact609437696-byte F32 hash, create existing last-four-FFN
 The model descriptor remains null and shard0 activation false until actual
 conversion/artifact/report review. No forward, Q8 route, automatic shard batch
 or publication claim is part of this first phase.
+
+Norm candidate source checkpoint29 October: `fix/wasm-native-order-norm-candidate-20261029@64eef68493deb240e81287e249f55def08d5753c`
+retains the live-input default-off norm math from812c4e4d and fixes the byte
+audit to preserve actual returned WASM bytes before free, including signed zero.
+Fourteen bounded controls pass. The registered `wasm-native-order-norm-candidate-v1.yml`
+requires component recoveries, native anchors and old OFF byte controls before
+ON ten-case/eight-stage actual Ref comparisons. Heavy execution remains hosted;
+no default or whole-model parity claim follows from source review.
