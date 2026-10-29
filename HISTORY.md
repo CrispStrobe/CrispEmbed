@@ -17060,3 +17060,13 @@ preserves exact source/artifact and failure. No model conversion, native/origina
 model forward or new precision evidence. New closed v3 adapter2fde0c64b preserves
 all old files, authenticates exact SHA/size or the single pinned Git blob entry,
 and retains the same seven-only body and fixed quality budgets; execution pending.
+
+### 29 October — Unlimited retained540 structural audit completes
+
+[Actual40840732942](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40840732942)
+at`1aaee225` authenticates all540 retained files/7,901,314,457 bytes before
+arrays, with zero native/original forwards or quantizer runs. The
+[review](docs/unlimited-retained-v3-structural-result.md) confirms739 tensor roles,
+2 Q4 stacked matrices/737 protected F16, and exact semantic/payload preservation
+for the trailing-unit position-embedding rank change. Initial zero-byte transfer
+failure remains recorded. Numerical/decoded Q4 inference is still unexecuted.

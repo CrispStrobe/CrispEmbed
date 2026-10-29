@@ -1138,3 +1138,10 @@ passes16 stdlib controls including actual pinned public2213-byte Git blob and
 corruption/unsupported-identity rejection. Historical db4 failure is preserved
 in HISTORY. New `minicpm-graph-seven-arm-v3.yml` registered; peer review and exact
 source-bound hosted execution remain pending. No model/quality result yet.
+
+Unlimited[retained540 structural result](docs/unlimited-retained-v3-structural-result.md)
+is reviewed. Next claim a new versioned candidate-reuse inference caller: authenticate
+exact-v3 producer and first6,481,651,840-byte model, perform same-host F16 control
+against carried traces, then first Q4 stage/decoded panel. Preserve last1/last4/all11
+roles and all previous negatives; no original or first-quantizer repeat. Full Q8,
+remaining Q4 recipes and publication/consumer qualification remain separate.
