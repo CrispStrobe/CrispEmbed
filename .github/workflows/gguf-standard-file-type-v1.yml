@@ -1,0 +1,35 @@
+name: Standard GGUF file-type metadata controls v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  actual-quantizer-controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Closed source and tiny authored migration controls
+        run: |
+          python tools/gguf_file_type_contract.py --reviewed-source "$GITHUB_SHA"
+          python tests/test_gguf_file_type.py -v
+      - name: Actual C quantizer standard and legacy output controls
+        run: |
+          python tools/ci-heavy/gguf_file_type_controls.py --reviewed-source "$GITHUB_SHA" --build "$RUNNER_TEMP/gguf-file-type-build" --out "$RUNNER_TEMP/gguf-file-type-controls"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gguf-file-type-controls-${{ github.run_id }}
+          path: ${{ runner.temp }}/gguf-file-type-controls/
+          if-no-files-found: warn
+          retention-days: 90

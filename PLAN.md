@@ -26,7 +26,11 @@ items remain pending; no new release/app pin until actual final consumers qualif
 
 | Owner | Lane | Immediate acceptance gate |
 | --- | --- | --- |
+| `audit/wasm-q8k-cross-admission-20261028` | Test-only retained natural-input IQ4_XS/Q8_K workspace causal A/B | Freeze saved GELU/workspace/scales/output hashes before intervention; same-backend and browser anchors, actual Ref and independent magnitudes precede any production/F32-branch proposal. No model/original rerun or gate widening. |
 | `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
+| `audit/wasm-f32-operator-attribution-20261028` | New same-input norm/flash/GELU/residual/affine replay from retained layer3 arrays | Preserve frozen580/a06, all old failures and unchanged0.002/0.99999; actual native/browser own-input outputs must reproduce captured bytes before operator attribution. No repeated quantized-projection panel or production/default change. |
+| `audit/unlimited-ocr2-mixed-q4k-20261028` | Published-F16 protected2/8/22-matrix Q4_K experiments with isolated intermediate probes | Strict four-page original F16 IDs/raw text first; actual Q4_K types and byte-identical exclusions, no fallback; original four-page gold contains IDs/text only, so paired intermediate attribution is labeled separately. |
+| Delegated MoEdern full retrieval continuation | Freeze all three original SciFact baselines, then original-bound full native/Q4 replay and all public clients | Authenticate all5,483 rows/vectors/masks remotely before models; unchanged F32 numerical gates and predeclared0.001 retrieval drops/0.99 top-one agreement; no original recapture or publication from component-only proof. |
 | Coordinator, `work/portfolio-closure-q4k-20261028` | CI/current-source closure, real-scan review, shared quantizer, Josev/UltraBERT/MoEdern Q4_K, larger MoEdern consumers/retrieval, WASM attribution and final integration | Reuse existing jobs, compare earliest differing stages with actual Ref and final outputs, qualify assets/consumers under the final source; update HISTORY/PERFORMANCE as each lane completes. |
 | `fix/unlimited-ocr2-trial-findings-20261028` continuation | Original added-token output/default tiling, converter correction, verified card refresh | Existing8ca9d3de hosted verification must reproduce all four original full texts and IDs; retain output alternatives and frozen references. |
 | `perf/minicpm-ocr-bench-publish-20261028` continuation | Collected benchmark, stored-type ggml decoder/prefill/KV cache, protected Q8/Q4_K | Preserve old scalar path; actual five-case original IDs/text plus earliest-stage comparisons before performance/publishing claims. |
@@ -863,27 +867,132 @@ identical to the exact decoder. Remaining (see [handoff](docs/handoff-2026-10-28
 - [ ] Run Ovis final-integrated v2 and successor-assets v2 on hosted CI at the
   re-declared base (6a61759d) and review before any closure claim.
 
-### MoEdern full retrieval baseline — delegated portfolio continuation, 28 October
+### Frozen full-SciFact hosted provider continuation
 
-The root portfolio owner adds the predeclared [original-first full SciFact
-protocol](docs/moedern-scifact-parity-v1.md) for all three MoEdern sizes. Existing
-1.5M SciFact remains quality-only; the frozen ten-case original captures remain
-unchanged. Execute each original variant separately on admitted hosted CPU,
-review small reports and freeze all 5,483 vector/ID/mask identities remotely,
-then implement native and padded-Q4_K full retrieval replay against that freeze.
-Acceptance: all original IDs/masks; unchanged F32 0.002/0.99999; each retrieval
-metric drop at most 0.001 and top-one agreement at least 0.99. Quantized component
-failures remain explicit; no publication before full retrieval and consumers.
+The standalone `moedern-scifact-gha-adapter-v1.yml` workflow accepts the exact
+reviewed source and27M only. The current source is
+`fc4d84293fb0ee4115636d4f241d02854b41405d`. It authenticates the full original v1
+and older authored v3 before model access; every request/page binds its version.
+Inference, numerical and retrieval gates remain the corrected3c worker's.
+The standard runner must pass the unchanged14GiB available RAM and24GiB disk
+preflight; otherwise retain an admission rejection and use another authorized
+resource. Healthy1.5M Kaggle work is not repeated by this workflow.
+Registration is metadata only and establishes no new runtime/model result.
 
-### Real scans: initial evidence reviewed, continuation remains open
+### Frozen real-scan encoded-image audit
 
-Use [the exact initial receipts and next steps](docs/ocr-real-scans-v1.md).
-Collect the executing MiniCPM native shard without repeating original inference;
-exclude the retained failed image proof from eligible denominators while keeping
-all twenty cases visible. Prove repaired Unlimited raw decoding on retained IDs,
-then audit the earliest meaningful remaining native/original divergence with
-actual intermediate dumps and crispembed-diff. One changed encoded form image
-needs exact-byte recovery or a distinct versioned original capture. Never promote
-the nineteen valid pairs, normalized metrics or four synthetic decoder cases to
-full real-scan qualification. Keep upstream dataset/transcription terms and
-attribution distinct from Apache/MIT model support.
+A model-free hosted audit at source813e1ec9b813ebf0dc72c8faf5841659a024fbce
+authenticates all20 unchanged encoded inputs before comparing the exact production
+STB prefix with the original Pillow RGB decode policy. It retains pixel hashes,
+geometry, per-channel errors and codec/compiler identities. The standalone
+`ocr-rgb-input-audit-v1.yml` registration is metadata only; no pixel difference
+establishes model-error causality or quality qualification. No original model
+is rerun. Numerical attribution follows the earliest measured input boundary.
+
+### Current portfolio execution snapshot
+
+The refreshed28 October handoff records exact source-qualified original evidence,
+active corrected jobs, partial MiniCPM disk-failure scope, successful bounded
+WASM operators and remaining whole-model/quantized/final-source gates. See
+`docs/handoff-2026-10-28.md`. This main change contains documentation only;
+candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
+
+### WASM natural-input workspace causal audit: source ready
+
+Exact source9991426b9e3296def3457340a989e841a46a6383 freezes two natural
+GELU inputs and their actual IQ4_XS/Q8_K workspaces from the retained trace.
+All18 normal/direct byte anchors must pass across native1/native2/browser
+before two consistent scale/integer hybrids execute.44 actualRef/independent
+comparisons retain numeric rejection separately from structural failure.
+No model/original forward, F32 production branch or new quality budget is used.
+The standalone `wasm-q8k-cross-v1.yml` registration is source preparation only.
+Protocol SHA649eaad8e6b3d0e20f03ad43a9a6c51051bb5728b37aae3d86367fdc7b4443d1;
+15 small controls and34 protected/eight owned source checks pass independently.
+
+### Frozen form input continuation — claimed
+
+Owner `audit/ocr-form-retained-input-20261028`: preserve initial RGB source813
+and its20 visible rows/19 admitted comparisons. The live form URL again serves
+different bytes; the exact709,225-byte frozen form already survives in the
+reviewed original form output. Prepare separately scoped form-only decode using
+that retained input, exact-version service/source/member admission, and the
+unchanged production/Pillow codec policies. No19-image or original-model repeat.
+Add a reusable mounted-input admission helper for native form follow-ups: reject
+wrong/ambiguous candidates before decoding/inference and preserve the default
+URL path when no explicit retained input is supplied. Keep prior invalid rows,
+source-qualified partial scopes and all manifest/gold/prompt/cap bytes unchanged.
+
+### Retained MiniCPM analysis and form continuation registered
+
+Mini source19c3f7bdf6d452614721946adefb95f6d3cf0180 passes11 independent
+small controls and429 protected/11 owned source checks. First dispatch only
+`minicpm-graph-retained-analysis-v1.yml` with that explicitsource: retained
+vision/merger actualRef, zero model weights/forwards. Review completion before
+activating the separately registered seven-arm workflow. No23-arm recapture,
+original forward or numerical waiver. Canonical cap12GiB/reserve4GiB, atomic
+receipts and whole-file reconstruction precede adapter cleanup.
+
+Form source535c10fceac28ec04401b7f6a57a027e1be9bbc9 passes14 controls and
+25 protected/nine owned source checks. `ocr-rgb-form-v1.yml` retrieves the exact
+reviewed original form image by explicit-version service/source/member proofs,
+then decodes only that form. Carry initial19 comparisons separately; no19-image
+or original-model recapture. The native retained-input helper changes delivery
+only, never manifest, pixels, prompt, caps, scorer or inference.
+
+### Josev role-based development recipes and held-out owner
+
+Source54c2b5767ae82c853d8649870abd234a2fbe7ee5 freezes A/B/C before any
+NEW20 native outputs. Protocolf6f7b694f5080e1cf59fefc84400abe93b76b92664187f7b251ed0b354075e12
+keeps all292 critical F32 tensors. A stores78 attention matrices F16 and72FFN
+Q4_K; B additionally protects24down matrices F32; C protects first20 gate/up
+matrices F16 and leaves onlylast4layers' eight gate/up Q4_K. Actual Cquantizer,
+independent IEEE F16 verification and full shape/hash/type readback are required.
+Run strict oldfour F32227-stage control before all three development candidates,
+retaining every old budget/negative and selecting no publication automatically.
+
+Owner `audit/josev-new20-native-owner-20261028` prepares a separately versioned
+held-out runner. Preserve original110 files byte-for-byte. Authenticate all1480
+original NPYs before NumPy/models; freeze exact runtime9c Gitobjects and a later
+reviewed development-selected model/service/report. Keep candidate pins closed
+until actual A/B/C review; do not run NEW20 for known-negative full150Q4 merely
+to fill coverage. New owner corrects only nonexistent build-support path to
+actual `cmake`, and predeclares14,400-second child/6hworkflow resource bounds.
+The unchanged old worker remains historical. No new gold/cap/quality tolerance,
+original-model forward, alias or publication follows from source preparation.
+
+### GGUF standard file-type metadata — claimed correctness repair
+
+Owner `audit/gguf-standard-file-type-20261028`. The current shared writer uses
+GGML's internal file-type enum in `general.file_type`; the GGUF standard assigns
+different values for Q4_K/Q5_K/Q6_K and IQ4_NL/XS. Tensor Q4_K storage code12
+is correct and remains unchanged; standard Q4_K_S header code is14.
+Implement explicit mappings for all exposed CLI methods, retain explicit legacy
+header output only for reproduction, and admit canonical14 alongside legacy12
+only within the existing strict gated Q4 profiles. No inference arithmetic,
+weights, internal GGML enum, historical producer or default model changes.
+
+Before publication, authenticate a selected legacy model and create a fresh
+canonical copy with only the verified four-byte header change. Prove identical
+size/offsets/prefix/suffix/tensor payloads and exact old/canonical decoded/stage
+continuity on the explicitly reviewed metadata-aware runtime. Retain both whole
+SHAs and source/report lineage; never relabel an existing public immutable file.
+NEW20 activation keeps runtime/canonical model/repack proof pins closed until
+this bridge and development selection are reviewed. Actual runtime release
+versioning remains a final integration task; app0.17.12 stays pinned.
+
+[Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
+
+### UltraBERT retained-F32 and sharded Q4 continuation — claimed29 October
+
+Owner `audit/ultrabert-q4k-sharded-20261029`: preserve the frozen018 runtime,
+all5483 original inputs/IDs and unchanged three recipes. First prepare a separately
+versioned zero-forward freeze that authenticates exact Kaggle v2 service/script
+and all retained F32 streams/adapters, rechecks eight Ref/independent comparisons
+and300-query rankings, and declares new per-file SHA identities. Then prepare
+one explicitly selected recipe and one original strided shard per hosted job,
+with output-backed row journals and strict resume authentication. No original or
+successful F32 forward repeats, automatic24-job launch, publication, default
+change or local model/build work. Aggregate only all eight complete5483-row
+shards under unchanged vector/ranking gates; the9-hour initial timeout and lost
+quantized scratch remain negative evidence. Source preparation requires parent
+review before any dispatch.
