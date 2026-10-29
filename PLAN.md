@@ -26,6 +26,7 @@ items remain pending; no new release/app pin until actual final consumers qualif
 
 | Owner | Lane | Immediate acceptance gate |
 | --- | --- | --- |
+| `audit/ultrabert-q4k-sharded-20261029` | Original-bound continuation after complete F32 / timed-out first Q4 arm | Freeze exact v2 service, all eight F32 stream/adapter shards and independent metrics without forwards; preserve5483-row strict F32 positive and nine-hour resource failure. First activation only the existing last-four-FFN recipe/shard0 after review, with per-row durable checkpoints and exact018 runtime. All eight shards/full300 rankings are required; no original/F32 replay or automatic24-job batch. |
 | `audit/wasm-q8k-cross-admission-20261028` | Test-only retained natural-input IQ4_XS/Q8_K workspace causal A/B | Freeze saved GELU/workspace/scales/output hashes before intervention; same-backend and browser anchors, actual Ref and independent magnitudes precede any production/F32-branch proposal. No model/original rerun or gate widening. |
 | `feat/moedern-q4k-padded-20261028` | Explicit padded-Q4_K storage/fast graph for all three MoEdern sizes | Preserve semantic shapes, original F32 loaders/guards and critical tensors; bound physical row padding before allocation, zero-pad only matching graph inputs, require actual Q4_K bytes, original-control/Ref/text/role/score and independent ranking qualification. Source preparation is not model acceptance. |
 | `audit/wasm-f32-operator-attribution-20261028` | New same-input norm/flash/GELU/residual/affine replay from retained layer3 arrays | Preserve frozen580/a06, all old failures and unchanged0.002/0.99999; actual native/browser own-input outputs must reproduce captured bytes before operator attribution. No repeated quantized-projection panel or production/default change. |
@@ -430,6 +431,14 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-29 | `audit/ultrabert-first-q4-shard-20261029` | Review completed retained F32 freeze; activate only first conservative Q4 model/shard | Actual40834743025 at08b0 succeeds with zero original/F32 forwards. Authenticate its13 small members, durable132MB payload and all old vectors/eight Ref/full300 rankings before source activation. Preserve018 runtime/old37/08 guards and declare only existing last-four-FFN recipe, model conversion then shard0 with per-row checkpoints; no unreviewed multi-shard/recipe batch, repeated original/fullF32 control or Q8 mislabel. |
+| 2026-10-29 | `fix/wasm-native-order-norm-candidate-20261029` | Default-off live-input native-order MiniLM norm candidate after independently positive operator risk | Actual40834745535 passes30 anchors/12 byte recoveries/56 Ref comparisons; natural-input FC1 error0.000573, same-input1.43e-6. Base integration8da6636b3; add only a per-context value-parsed WASM384/six-layer/post-LN/epsilon1e-12 candidate, keep native/off/unsupported old ggml_norm path exact. Connected live-input custom norm only, existing affine/quantizers unchanged, no oracle injection. Model-free controls then separately closed full10 oldnative/eightstage A/B with unset/empty/0 and0/1/0 controls; no default flip or original recapture. |
+| 2026-10-29 | `fix/josev-protected-source-header-20261029` | Correct actual published F32 source metadata assumption | Actual40834737477 passes strict F32, builds and the C Q8 conversion, then rejects a nonexistent source general.file_type before Q8/native comparisons. The source intentionally omits file_type/quantization_version; immutable quantized outputs still require typed7/14. Retain the initial raw model/reports, fix authored source fixture to match real header, preserve all four recipes/gates and original reference arrays. |
+| 2026-10-29 | `audit/moedern-router-topk-operator-20261029` | Source-faithful model-free router selection audit before any tie behavior change | Original27M/115M use Torch2.8.0+cpu softmax→topk(2)→renorm on eight experts; official CPU implementation uses value-only nth_element, with no stable-index guarantee. Predeclare finite tie/ULP/stride/thread controls and a newly hash-locked Torch binary; compare same probabilities and same logits against source-derived C++ and actual a06 ggml. No model/original/full-corpus forwards, replacement gold, production guard change or old-wheel identity claim; later exact three-row capture remains separate. |
+| 2026-10-29 | `fix/minicpm-seven-retained-v2-20261029` | Review actual138 retained comparisons; bind only seven missing MiniCPM arms | Actual40831080193 reports completed138=36 carried+102 new, pixels exact, numeric negatives preserved. Independently authenticate/review small proof before a separately versioned seven-only continuation; preserve frozen19c/cec guards and all23 prior arms, no original/native recapture or gate widening. |
+| 2026-10-29 | `ci/moedern-q8-controls-20261029` | Hosted model-free compile/quantizer proof for protected all-size MoEdern Q8 profile | Preserve source1f3573137 and actual full-F32 corpus blockers. Build its existing tiny Q8 controls and C quantizer on hosted CPU only; verify actual20/20/52 selected types, critical-role payloads, gates and authored graphs. No model/corpus run or publication claim. |
+| 2026-10-29 | `audit/unlimited-retained-gha-fetch-20261029` | Exact-version retained Unlimited v3 delivery and read-only structural audit | Preserve failed v1 bootstrap/v2 missing-mount attempts. Direct exact-v3 GET is accessible (HEAD is unsupported); authenticate Get/Status/every List page, original script and all540 panel files on hosted CPU before array imports. Reuse the retained6.481GB candidate, no original/native forwards or quantizer run; numerical/decoded continuation remains separate. |
+| 2026-10-29 | `feat/josev-protected-precision-20261029` | Evidence-led Josev Q8 and two-matrix Q4_K development recipes | Preserve actual A/B/C rejection40787077302, all292 critical F32 tensors and fixed original budgets. Predeclare Q8-all, Q8-with-F32-down, and last-layer-only Q4 gate/up with F32/F16 down alternatives; actual C quantizer/variable-length profile stamp, exact payload inventory and Python intermediate/Ref/final typed comparisons. Old four only, no NEW20 tuning, no local builds/inference or publication before qualification. |
 | 2026-10-27 | `perf/moedern-family-fast-20261027` | Default-off MoEdern family fast path `CRISPEMBED_MOEDERN_FAST` | Default family path is ~4.5x slower than the author engine on 27M (per-op graphs, all8 experts dense, scalar attention/RoPE/conv, 1-2 thread cap). Same math as one ggml graph per encode on a persistent allocator: NEOX RoPE theta160000, GQA masked softmax, top-2-only `ggml_mul_mat_id` with renorm denominator+1e-9 and exact boundary-tie rejection, erf GELU, gated dilated conv, threads up to64. Syntax/format only; no run yet. Summation order differs, so acceptance is the unchanged0.002/0.99999 vector and0.002 MaxSim gates vs frozen originals with identical IDs/masks (probe `compare_paths.py`; vago-compare `ours-fast` arms at2/4 threads). Default path and gates unchanged; the Python `_moedern_text.py` owned-hash pin needs re-declaration if promoted. |
 | 2026-10-27 | `perf/moedern-quant-20261027` | Default-off quantized weights `CRISPEMBED_MOEDERN_QUANT` (requires `CRISPEMBED_MOEDERN_FAST`) | Author's Q4_0 is ~1.5-2.7x faster than F32 on 27M/115M. `tools/moedern-colbert/quantize_gguf.py` writes Q8_0/Q4_0 GGUFs quantizing only blk.* attention q/k/v/output, routed/shared experts and conv in/out (32-aligned rows); hash embedding+projection, router, dense head, norms, biases and depthwise conv stay F32. Without the gate any non-F32 tensor is rejected as before; F32 default/fast paths unchanged. Synthetic quantizer test only; no run yet. Kernel `tools/kaggle/moedern-quant` reports cosine/max-abs vs frozen originals and docs/s at2/4 threads for F32-fast/Q8_0/Q4_0 on27M and115M; F32-fast keeps the0.002/0.99999 gate, quantized arms are diagnostic. |
 | 2026-10-27 | `feat/moedern-public-text-20261027` | MoEdern1.5M public roles and metadata package | Reviewed raw-text1a053116/40455093591 passes ten cases/twenty original vector arrays/three MaxSim pairs. Unfinished draft a925f7e5 prepares role-aware C/Python/Rust/Dart modules and streaming32-tensor/tokenizer repack; seven stdlib/source controls pass, no compile/inference. Shared header/CMake/exports/CLI/server/registry, actual hosted packed byte proof and ten-case/twenty-vector/three-score public recovery/ownership/offline controls remain. Keep generic dense/token interfaces unchanged; default off, no publication before consumer proof; larger variants remain separate. |
@@ -982,17 +991,110 @@ versioning remains a final integration task; app0.17.12 stays pinned.
 
 [Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
 
-### UltraBERT retained-F32 and sharded Q4 continuation — claimed29 October
+### Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 
-Owner `audit/ultrabert-q4k-sharded-20261029`: preserve the frozen018 runtime,
-all5483 original inputs/IDs and unchanged three recipes. First prepare a separately
-versioned zero-forward freeze that authenticates exact Kaggle v2 service/script
-and all retained F32 streams/adapters, rechecks eight Ref/independent comparisons
-and300-query rankings, and declares new per-file SHA identities. Then prepare
-one explicitly selected recipe and one original strided shard per hosted job,
-with output-backed row journals and strict resume authentication. No original or
-successful F32 forward repeats, automatic24-job launch, publication, default
-change or local model/build work. Aggregate only all eight complete5483-row
-shards under unchanged vector/ranking gates; the9-hour initial timeout and lost
-quantized scratch remain negative evidence. Source preparation requires parent
-review before any dispatch.
+The owner explicitly requires both precisions, produced with the actual
+`crispembed-quantize` and tested with `crispembed-diff` plus final decoded/task
+outputs. A stored file is not qualification. Preserve frozen original references,
+existing rejects, per-tensor shapes/types/payload hashes, critical F16/F32 bytes,
+actual compiler/runtime provenance and full input/output gates.
+
+| Model/front | Q8_0 work | Q4_K work |
+| --- | --- | --- |
+| Josev-2B | Add a correctly named packed quantized profile/standard header7 and protected C-quantizer recipe; current admission is Q4-only despite low-level Q8 decoding. Strict old-four F32 control before actual Q8/native interfaces, then independently gated NEW20 only after development selection and same-payload evidence. | Actual full150 and A/B/C results remain immutable; C still misses one0.001 ordinal gate. Predeclare smaller late-layer recipes/calibration on the old four before any new holdout access; retain all292 critical tensors and evidence-driven down/gate/up precision. |
+| UltraBERT | Add explicit Q8 file-type admission with actual Q8 tensor inventory and protected vocabulary/norms; freeze/checkpointed original-bound sharding first. Do not mislabel Q8 as a Q4 header to pass old018 guards. | Reuse completed5483-row F32 control, durable per-row shards, all8 Ref shards and full300 rankings. First conservative existing last-four-FFN recipe/shard0 only; no unreviewed batch activation. |
+| MoEdern1.5M/27M/115M | Reuse the older protected Q8 diagnostic architecture but produce current candidates through the C quantizer. Keep hash embedding/projection, router, dense head, norms, biases and depthwise conv F32. Resolve full-corpus F32 routing/numerical blockers first; old ten-case Q8 cosine alone is insufficient. | Genuine padded Q4_K20/20/52 matrices; preserve critical bytes/semantic widths. Diagnose1.5M three numerical rows and27M/115M exact-router-tie rows before full F32→Q4 retrieval/client qualification. |
+| Unlimited-OCR-2 | Published Q8 exists with retained coordinate/ID differences. Revalidate protected higher-precision alternatives against the same four original pages, actual intermediate dumps and repaired output processing; retain earlier rejects. | Finish retained-v3 structural audit before the unexecuted2/8/22 stacked-expert recipes; same-host F16 controls and stage/operator/decoded metrics remain required. |
+| MiniCPM-OCR | Existing30-arm protocol includes Q8. Finish source-proven merger-span alignment, retained analysis and only seven missing arms; then scope higher-precision repairs from earliest vision/prefill differences. | Same source-bound30-arm protocol includes Q4_K; preserve23 decoded-exact arms/all numerical failures. Do not use tiny component cosines or observed timing as production quality/speed proof. |
+| LFM2.5 Encoder / typed EmbeddingGemma | Audit already published precision evidence before scheduling any missing Q8 work; representative task/GPU gates remain separate. | Preserve existing calibrated/critical-tensor evidence and qualify missing precision/task surfaces without recapturing originals. |
+| OvisOCR2 / OvisOCR3 | Keep Ovis2's measured Q8 rejection; scope targeted protected repairs, not a new default. Ovis3 needs its separate original-first task protocol before qualification. | Keep all Ovis2 plain/calibrated/mixed rejects and existing operator attribution. Ovis3 quantization remains contingent on its task/quality protocol. |
+
+For each repair, align the earliest differing actual intermediate with its tensor
+producers. Record minimum row/global cosine, maximum absolute/RMS errors and
+original/native magnitudes before deciding which precise tensors stay F16/F32.
+Embeddings, normalization, routing, output heads and vision/projector boundaries
+are initial protection candidates, not an excuse to skip measurement. Run the
+same decoded outputs/retrieval/scoring and failure/recovery probes after every
+selected precision recipe. Calibration uses development cases only; never tune
+on NEW20 or silently relax frozen gates. Architecture-dependent CNN/restoration
+quantization must have genuine supported stored tensor types; retaining every
+weight floating point cannot be advertised as a Q8/Q4 model.
+
+### Protected tensor experiment checkpoint (29 October)
+
+Actual A/B/C40787077302 is reviewed and all candidates remain rejected;
+completed evidence is in HISTORY/PERFORMANCE. Actual Q8 profile fixture
+40829558531 passes; its13 quantizer/header pairs are independently parsed.
+The [new protected recipe protocol](docs/josev2b-protected-recipes-v1.md) at
+`feat/josev-protected-precision-20261029@acb248451` predeclares two Q8 arms and
+two last-layer-only Q4 arms from unchanged four-case development references.
+Source peer review and hosted execution remain pending; no candidate selection
+or NEW20 native access is authorized by the model-free controls.
+The executable feature source owns its contract and callers; the workflow
+registration here does not merge that runtime or qualify a model.
+
+### Reviewed hosted continuations (29 October)
+
+- Josev protected precision source`d339be99c` fixes the independently spotted
+  standalone numeric-report flag to require actual Ref success; the unchanged
+  combined F32 barrier was already strict. Six corruption controls/source closure
+  and independent source peer review pass. Run only the fixed four development
+  cases before any selection/NEW20 native access.
+- Unlimited read-only exact-v3 delivery source`fbd8f68f6` uses existing hosted
+  service configuration, blocks all array/framework imports before full540-file
+  authentication and resolves the SDK package shadow explicitly. Seven mocked
+  delivery/import/pagination controls pass; hosted SDK access and structure are
+  pending. No model/quantizer/original rerun.
+- Ultra freeze correction`08b0a5727` preserves initial40831085595: the old
+  global symbol grep rejected27 pre-existing unrelated comparator symbols after
+  compilation, before any payload. Audit the actual compiled Ultra object plus
+  whole-library inventory, retain exact unrelated names, then retry freeze only.
+- Norm-risk format successor`e7f3ab64d` preserves frozenf781 token identity,
+ 30 old byte anchors and12 native norm recoveries before56 candidate comparisons.
+  This is a test-only replay, with no production/model forward/default change.
+- MoEdern compare-only`92f75550a` retains failed40825166813 and uses bijective
+  safe adapter names to finish18 saved comparisons. A structurally completed run
+  must still exit nonzero when numerical failures remain; fresh Python drift
+  cannot replace frozen gold or prove native causality.
+
+### Actual hosted submissions,29 October07:20 UTC
+
+All five are newly declared bounded continuations; check actual service state
+before acting and never duplicate a running job. At submission they are queued:
+
+| Job | Exact source | Gate |
+|---|---|---|
+| [Josev40834737477](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834737477) |`d339be99cfce99c1801fa3d1268deec122ae63e0` |Strict original F32, then four protected Q8/Q4 development recipes only. |
+| [Unlimited40834740153](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834740153) |`fbd8f68f6753a64751a02f42771fc475670f64e4` |Exact-v3 GET/540-file authentication, then read-only structure; zero forwards. |
+| [Ultra freeze40834743025](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834743025) |`08b0a5727aa25412a1181db4695efb01be578b24` |Actual Ultra-object symbol proof, retained F32 adapters/eight Ref/full rankings; no new F32/Q4 forward. |
+| [Norm risk40834745535](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834745535) |`e7f3ab64dda2fdb42c8305637a258ce4b10bdef4` |30 byte anchors,12 native norm recoveries before56 actual Ref comparisons. |
+| [MoEdern40834748271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834748271) |`92f75550a0ce0f1486f6d7603164a6628aeb24a0` |18 retained three-document comparisons; numerical negatives must remain nonzero. |
+
+Mini-v2 [40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
+atcec1faeb completes structurally:138 comparisons,36 carried+102 newly measured,
+all23 input pixels exact and all historical numerical negatives preserved. It
+remains unqualified. Independent small-proof review and the separately claimed
+seven-only continuation follow; no23-arm/original rerun.
+
+### Protected MoEdern Q8 component execution
+
+Source`dd592b15f8191be0b441eda3932c98364324e776` is independently reviewed for
+hosted model-free execution. It preserves all1f runtime/CMake/fixture/converter
+objects, uses two build workers and distinguishes20/20/52 typed profile
+declarations from the tiny C fixture's two actual Q8 tensors/seven F32 roles.
+Four new/eight existing stdlib controls, actionlint and both source guards pass;
+actual compiler/graph/C-quantizer execution remains pending. The standalone
+workflow registration does not qualify model weights or remove full-F32 corpus
+blockers.
+
+### Mini seven-only source review
+
+Source`db4c1bb25a342c3ee70a1610e8c3476600d0bccc` is reviewed for the next
+seven-arm continuation. It authenticates actual completedcec all134 small
+members before optional packages/models, preserves every frozen19c script and
+guard, and requires the same source in workflow input/service checkout. Only
+seven missing ordinary native arms and two existing tiny projection probes run.
+Postanalysis carries138 records unchanged and adds42 six-stage comparisons
+from the new saved traces, for180 vision records; no second forward. All strict
+failures and original budgets remain; coverage never sets qualification true.
+13 new/11 inherited stdlib controls and actionlint pass.
