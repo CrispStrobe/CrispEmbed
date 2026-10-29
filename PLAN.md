@@ -1247,7 +1247,7 @@ means10966 total over5483 rows. Aggregate all eight shards/300 queries through
 frozen ranking code and unchanged0.001 degradation/0.99 top-one gates. Preserve
 strict vector negatives separately, keep publication false. No conversion,
 original/F32 replay, new recipe, silent historical source retarget or incomplete
-shard substitution. Source/protocol/closure review before any hosted dispatch.
+shard substitution. Source/protocol/closure review before any hosted dispatch. New six-file source preparation preserves the a5/c3d controllers byte for byte, adds exact prior service/controller/journal binding and signed-zero/input corruption controls, and never reruns shard0. Hosted execution remains pending review.
 
 ### Josev final-pair activation calibration — source preparation claimed
 
