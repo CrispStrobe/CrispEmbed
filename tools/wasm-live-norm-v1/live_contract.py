@@ -2,7 +2,7 @@
 import hashlib,json,os,re,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
-BASE='945bb4f629b6020304f315e2e5bbd46d687e93fa'
+BASE='74ec9373bd4a44380167b0888ed70f0fb6f6ccc7'
 CANDIDATE='64eef68493deb240e81287e249f55def08d5753c'
 GGML='a06fc0bb46b73cc10011fc90ae4054aee8438aeb'
 PROFILE=ROOT/'docs/wasm-live-norm-operands-v1.json'
@@ -23,6 +23,9 @@ def validate(p):
          and p['held_q8_rounding']=='1'and p['norm_gates']==['0','1']and p['threads']==[1,2]
          and p['max_absolute']==.002 and p['minimum_row_cosine']==.99999
          and p['runtime_change']is False and p['qualification']is False,'One-sentence diagnostic scope differs')
+ names={f'browser/arrays/{gate}-original-observed-{repeat}-stages.gguf'for gate in ['0','1']for repeat in [0,1]}
+ require(set(p['retained_wasm_stage_members'])==names and all(pin['bytes']==148000 and re.fullmatch('[0-9a-f]{64}',pin['sha256'])for pin in p['retained_wasm_stage_members'].values()),'Exact four old WASM stage files required')
+ require(p['numerical_result_scope']==dict(local_attribution_separate=True,overall_requires_natural_strict=True,all_comparisons_before_numeric_exit=True,numeric_exit=1),'Overall numerical rejection scope differs')
  require(set(p['protected_git_objects'])==set(p['protected_paths'])==set(PROTECTED),'Explicit protected closure differs')
  return p
 

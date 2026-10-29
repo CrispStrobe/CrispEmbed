@@ -83,6 +83,10 @@ def prepare(out):
   for n,pin in [(ip,r['input']),(tp,r['target'])]:
    K.require(n in raw and dict(bytes=len(raw[n]),sha256=hashlib.sha256(raw[n]).hexdigest())==pin,'Component raw differs')
   (out/ip).write_bytes(raw[ip]);(out/tp).parent.mkdir(parents=True,exist_ok=True);(out/tp).write_bytes(raw[tp])
+ for member,pin in cfg['retained_wasm_stage_members'].items():
+  K.require(member in raw and dict(bytes=len(raw[member]),sha256=hashlib.sha256(raw[member]).hexdigest())==pin,'Frozen WASM stage member differs')
+  stage_rows(raw[member],12)
+  (out/'raw'/Path(member).name).write_bytes(raw[member])
  K.write(out/'browser/component-inputs.json',rows)
  K.write(out/'browser/frozen.json',dict(source=os.environ['GITHUB_SHA'],case=case,previous_vectors=targets,previous_report_sha256=cfg['previous']['report_sha256']))
  K.write(out/'review/prepared.json',dict(previous_negative_preserved=True,retained_raw_members=len(raw),case='original',tokens=12,original_forward=False,qualification=False))
@@ -229,6 +233,13 @@ def capture_rows(folder,enabled):
   result[name]=dict(path=path,shape=shape,**K.identity(path))
  return result
 
+def wasm_stage_checks(current,retained,gate,repeat):
+ K.require(gate in ['0','1']and repeat in [0,1],'Exact frozen WASM stage arm required')
+ actual=stage_rows(current,12);target=stage_rows(retained,12)
+ return [dict(name='wasm'+gate+'/observed/'+str(repeat)+'/old8/'+name,
+              current_sha256=actual[name]['sha256'],retained_sha256=target[name]['sha256'],
+              passed=actual[name]['sha256']==target[name]['sha256'])for name in STAGES]
+
 def prepare_replay(out):
  source();frozen=K.read(out/'browser/frozen.json');browser=K.read(out/'browser/live-capture-browser.json')
  K.require(browser['completed']and not browser['page_errors']and browser['frozen_sha256']==K.sha(out/'browser/frozen.json'),'Actual browser capture incomplete')
@@ -242,6 +253,8 @@ def prepare_replay(out):
     control(tokens('\n'.join(row['logs']))==frozen['case']['token_ids'],'wasm'+gate+'/'+mode+'/'+str(i)+'/IDs')
     if mode=='observed':
      folder=out/'browser/arrays'/row['capture_path'];rows=capture_rows(folder,gate=='1')
+     retained=out/'raw'/(gate+'-original-observed-'+str(i)+'-stages.gguf')
+     controls.extend(wasm_stage_checks((folder/'stages.gguf').read_bytes(),retained.read_bytes(),gate,i))
      if i==0:captures['wasm'+gate]=rows
      else:control(all(rows[n]['sha256']==captures['wasm'+gate][n]['sha256']for n in rows),'wasm'+gate+'/all49-repeat')
  for t in [1,2]:
@@ -268,6 +281,15 @@ def prepare_replay(out):
    name=label+'_norm'+str(i).zfill(2);r=rows['norm'+str(i).zfill(2)+'_input'];p=folder/(name+'.f32');p.write_bytes(r['path'].read_bytes())
    packets.append(dict(name=name,source_arm=label,norm=i,**K.identity(p)))
  K.write(out/'browser/replay-inputs.json',packets)
+
+def finish_replay(out,report):
+ # A completed attribution can still be a numerical rejection. Save all rows first.
+ report['completed']=True
+ report['local_attribution_passed']=report['own_replays_bit_exact']and report['local_norm_replays_passed']and all(r['passed']for r in report['controls'])
+ report['natural_strict_passed']=all(r['passed']for r in report['natural'])
+ report['passed']=report['local_attribution_passed']and report['natural_strict_passed']
+ K.write(out/'review/live-norm.json',report)
+ return 0 if report['passed']else 1
 
 def replay(out):
  source();proof=K.read(out/'review/capture-proof.json');K.require(proof['passed'],'Capture proof required')
@@ -318,14 +340,13 @@ def replay(out):
     first_budget_failing_layer3_node=next((n for n in NODES if not measured[label+'_layer3_'+n+'_t'+str(t)]['passed']),None))
  worst=max(measured,key=lambda n:measured[n]['max_absolute'])
  report=dict(schema='crispembed-wasm-live-norm-operands-result-v1',source=os.environ['GITHUB_SHA'],completed=True,
-  passed=own_pass and local_pass and all(r['passed']for r in controls),case='original',held_q8_rounding='1',norm_nodes=13,
+  case='original',held_q8_rounding='1',norm_nodes=13,
   captured_tensors_per_arm=49,arms=['native1','native2','wasm0','wasm1'],same_input_comparisons=len(local_pairs),
   same_input=comparisons,natural_comparisons=len(natural_pairs),natural=natural,first_divergences=first,worst_natural_comparison=worst,own_replays=own,controls=controls,
-  own_replays_bit_exact=own_pass,local_norm_replays_passed=local_pass,natural_strict_passed=all(r['passed']for r in natural),
+  own_replays_bit_exact=own_pass,local_norm_replays_passed=local_pass,
   old64_negative_preserved=True,qualification=False,release_qualified=False,production_change=False,original_rerun=False,
   limits='One frozen12-token sentence; natural differences remain negatives. No full10 rerun or precision/math change. No FC1 workspace causality claim without separately captured actual conversion barriers.')
- K.write(out/'review/live-norm.json',report)
- K.require(report['passed'],'Local replay/identity rejection; all numerical outcomes retained')
+ return finish_replay(out,report)
 
 def ref_controls(out):
  source();x=[float(i)/16 for i in range(16)]
@@ -343,7 +364,7 @@ def main():
  p.add_argument('--output',type=Path,required=True);p.add_argument('--threads',type=int,choices=[1,2]);a=p.parse_args();out=a.output.resolve()
  phases={'preflight':preflight,'prepare':prepare,'component-build':component_build,'component-check':component_check,'model':model,'build-full':build_full,'native':native,
  'native-worker':lambda o:native_worker(o,a.threads),'prepare-replay':prepare_replay,'replay':replay,'ref-controls':ref_controls}
- try:phases[a.phase](out)
+ try:return phases[a.phase](out)
  except Exception as e:
   out.joinpath('review').mkdir(parents=True,exist_ok=True)
   K.write(out/'review'/('rejection-'+a.phase+'.json'),dict(source=os.environ.get('GITHUB_SHA'),phase=a.phase,completed=False,error=str(e),qualification=False));raise
@@ -354,4 +375,4 @@ def main():
     for path in (out/folder).rglob('*'):
      if path.is_file()and path.name!='file-manifest.json':files[str(path.relative_to(out))]=K.identity(path)
    K.write(out/'review/file-manifest.json',files)
-if __name__=='__main__':main()
+if __name__=='__main__':raise SystemExit(main())

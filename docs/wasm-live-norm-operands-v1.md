@@ -42,9 +42,11 @@ with one and two threads. The native-own and WASM-own live norm results must be
 bit exact with their matching replay. The208 same-input candidate comparisons
 and196 natural-input/output/layer3 comparisons use actual `crispembed_diff::Ref`
 and independent F32 metrics, including row cosine, absolute/RMS/mean errors and
-magnitudes. All numerical negatives remain visible; the diagnostic's `passed`
-flag covers the local replays and structural/byte controls. Its separately
-reported natural strict flags never qualify the full model.
+magnitudes. All numerical negatives remain visible. `local_attribution_passed` covers the
+local replays and structural/byte controls; `natural_strict_passed` covers all196
+natural comparisons. Overall `passed` requires both. The driver saves the complete
+208+196 comparisons before returning1 for any required numerical rejection. A
+completed diagnostic is not a whole-model qualification.
 
 All live captures, adapters and exact diagnostic modules remain remote for90
 days; small reports contain source/service hashes, activation and all outcomes.
@@ -54,3 +56,14 @@ all local norm replays pass, a separately reviewed same-input FC1 workspace
 capture can use the established selected-plan conversion probe. No blanket
 precision change, tolerance relaxation, runtime default change, model
 publication or release qualification is authorized by this diagnostic.
+
+The separately frozen result-scope successor preserves57745bbd in Git and changes
+only diagnostic admission/reporting. All eight historical WASM stage payload
+hashes must match on each norm0/norm1 observed/repeated arm before replays. Four
+specific148,000-byte retained GGUF members are pinned in the new protocol and
+authenticated with the original whole ZIP and member inventory. Both old and
+current files use the same frozen `stage_rows` parser; no stage is synthesized.
+These32 SHA checks add no forwards, graph nodes or arithmetic changes. Numeric
+rejections retain `completed:true` with all outcomes and a nonzero process status;
+structural failures remain separately reported. Runtime64, all gates, budgets,
+component controls and old producer files remain unchanged.

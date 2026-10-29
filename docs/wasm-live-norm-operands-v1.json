@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-wasm-live-norm-operands-v1",
-  "base": "945bb4f629b6020304f315e2e5bbd46d687e93fa",
+  "base": "74ec9373bd4a44380167b0888ed70f0fb6f6ccc7",
   "candidate": "64eef68493deb240e81287e249f55def08d5753c",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "cases": [
@@ -122,15 +122,15 @@
   },
   "owned_sha256": {
     ".github/workflows/wasm-live-norm-operands-v1.yml": "9c7c5f235216184f585587254a6e483d77c6755054c7433d907a2c44fe06c00b",
-    "docs/wasm-live-norm-operands-v1.md": "8f86724d66104d074306b7e47dbe5c4c6d7dda6b59df679e963cd8ec32d79549",
-    "tools/wasm-live-norm-v1/live_contract.py": "dc726626fde023785177c07c8905ec64a29c711a9a5893a2b94b2d5fcc891933",
+    "docs/wasm-live-norm-operands-v1.md": "74588eb0477d530094fb8c57c1aefbc58d9ecd0a0187aeed4b6a1a79eaeb90b0",
+    "tools/wasm-live-norm-v1/live_contract.py": "fa5fe406e17853f189e804eb8719cc9bed390bff1f45cc6ec0cb7389b5665d1d",
     "tools/wasm-live-norm-v1/overlay.py": "c0e7aa514f67b871baba627e0145475dcf513c41ddca696dffceb37723f715e0",
-    "tools/ci-heavy/wasm_live_norm_v1.py": "c933960fcef00e28871859ed378081a48b1102bca3c4a17add9fd29a1e089d98",
+    "tools/ci-heavy/wasm_live_norm_v1.py": "7dd486e6cf9e77c41306c226bfd94edb01bb0c5183d997acafc7688258e4f25d",
     "tests/wasm-live-norm/observer.h": "35d490c9a5a8755ab881eeaee3b1142fd50f346d95944ca6e1c9ac61c4b0291e",
     "tests/wasm-live-norm/replay.cpp": "0184da14b65bbf8866945826ddb4a05a9913ed8f54e883d3f62730a6c1aa9e54",
     "tests/wasm-live-norm/browser.cjs": "955a1f11e2c6e5998e52281faa3fe46f46b5b9e63e21be61238f940e540983b8",
     "tests/wasm-live-norm/CMakeLists.txt": "d1a6d9ae60a223639a4d73b14e5b2d6b59946db4593e83b15616a2895b6642a7",
-    "tests/test_wasm_live_norm_v1.py": "5da5fd62c2fb0186a139a21cc32b43e045ad9d690b8cded5f218cdaea9bb1be2"
+    "tests/test_wasm_live_norm_v1.py": "2edc8499dbe939066cd9896576e866f5be521e3045639e9cec5a4a96d6f8ed16"
   },
   "previous": {
     "report_sha256": "3a5b087f9e0a0a5453bd42cef6fdead00da86f38a3e46f1f4e7bfce10e18846e",
@@ -164,5 +164,29 @@
     "sha256": "a67abb8439d2af274c175dad9cefb8ba9606bec9c4ba024cf568a7359f41c8bf",
     "conclusion": "failure",
     "workflow": ".github/workflows/ovisocr2-metadata.yml"
+  },
+  "retained_wasm_stage_members": {
+    "browser/arrays/0-original-observed-0-stages.gguf": {
+      "bytes": 148000,
+      "sha256": "3607a1dbbaf1ba88a9ccb96fca6cd43c0d150c40b1686b879934ee7e552e6db4"
+    },
+    "browser/arrays/0-original-observed-1-stages.gguf": {
+      "bytes": 148000,
+      "sha256": "3607a1dbbaf1ba88a9ccb96fca6cd43c0d150c40b1686b879934ee7e552e6db4"
+    },
+    "browser/arrays/1-original-observed-0-stages.gguf": {
+      "bytes": 148000,
+      "sha256": "d74141be92eb96d1caadb2ea84e41340d5f0036aba4d3c88dff18a6115d78950"
+    },
+    "browser/arrays/1-original-observed-1-stages.gguf": {
+      "bytes": 148000,
+      "sha256": "d74141be92eb96d1caadb2ea84e41340d5f0036aba4d3c88dff18a6115d78950"
+    }
+  },
+  "numerical_result_scope": {
+    "local_attribution_separate": true,
+    "overall_requires_natural_strict": true,
+    "all_comparisons_before_numeric_exit": true,
+    "numeric_exit": 1
   }
 }

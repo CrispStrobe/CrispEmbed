@@ -105,6 +105,59 @@ class Controls(unittest.TestCase):
    with self.assertRaises(ValueError):D.zip_files(path,byte_limit=1199)
    with zipfile.ZipFile(path,'w')as z:z.writestr('../outside',b'x')
    with self.assertRaises(ValueError):D.zip_files(path)
+ def test_completed_natural_negative_keeps_all_outcomes_and_exit_one(self):
+  with tempfile.TemporaryDirectory()as tmp:
+   out=pathlib.Path(tmp)
+   local=[dict(passed=True,rows=list(range(104)))for _ in range(2)]
+   natural=[dict(passed=True,rows=list(range(98))),dict(passed=False,rows=list(range(98)))]
+   report=dict(own_replays_bit_exact=True,local_norm_replays_passed=True,controls=[dict(passed=True)],
+               same_input=local,natural=natural,same_input_comparisons=208,natural_comparisons=196)
+   # Run the actual CLI dispatcher too: rc1 must survive main/finally, not become an exception or rc0.
+   with patch.object(sys,'argv',['driver','replay','--output',str(out)]),patch.object(D,'replay',side_effect=lambda path:D.finish_replay(path,report)):
+    self.assertEqual(D.main(),1)
+   saved=K.read(out/'review/live-norm.json')
+   self.assertTrue(saved['completed']);self.assertTrue(saved['local_attribution_passed'])
+   self.assertFalse(saved['natural_strict_passed']);self.assertFalse(saved['passed'])
+   self.assertEqual(sum(len(x['rows'])for x in saved['same_input']),208)
+   self.assertEqual(sum(len(x['rows'])for x in saved['natural']),196)
+   self.assertFalse((out/'review/rejection-replay.json').exists())
+   self.assertIn('review/live-norm.json',K.read(out/'review/file-manifest.json'))
+   report['natural'][1]['passed']=True;self.assertEqual(D.finish_replay(out,report),0)
+   report['controls'][0]['passed']=False;self.assertEqual(D.finish_replay(out,report),1)
+ def stage_fixture(self,change=False,shape=(384,12),names=None):
+  names=list(D.STAGES)if names is None else names
+  string=lambda s:struct.pack('<Q',len(s))+s.encode()
+  metadata=string('general.architecture')+struct.pack('<I',8)+string('crispembed-encoder-dump')
+  for key,value in [('dump.n_layer',6),('dump.n_embd',384)]:metadata+=string(key)+struct.pack('<II',4,value)
+  header=b'GGUF'+struct.pack('<IQQ',3,len(names),3)+metadata
+  extent=shape[0]*shape[1]*4
+  for i,name in enumerate(names):header+=string(name)+struct.pack('<IQQIQ',2,*shape,0,i*extent)
+  header+=b'\0'*((-len(header))%32)
+  payload=bytearray(b'\0'*(len(names)*extent))
+  if change:payload[3]=128 # -0.0 differs in raw bits while its numeric value equals +0.0.
+  return header+payload
+ def test_all_old_wasm_stage_anchors_include_signed_zero_and_exact_shapes(self):
+  old=self.stage_fixture()
+  for gate in ['0','1']:
+   for repeat in [0,1]:
+    rows=D.wasm_stage_checks(old,old,gate,repeat)
+    self.assertEqual(len(rows),8);self.assertTrue(all(x['passed']for x in rows))
+    rows=D.wasm_stage_checks(self.stage_fixture(change=True),old,gate,repeat)
+    self.assertEqual([x['name']for x in rows if not x['passed']],['wasm'+gate+'/observed/'+str(repeat)+'/old8/emb_ln_out'])
+  for wrong in [self.stage_fixture(shape=(12,384)),self.stage_fixture(names=list(D.STAGES)[:-1])]:
+   with self.assertRaises(ValueError):D.wasm_stage_checks(wrong,old,'1',0)
+  with self.assertRaises(ValueError):D.wasm_stage_checks(old,old,'legacy',0)
+ def test_old_stage_member_scope_and_anchor_barrier(self):
+  cfg=K.read(K.PROFILE)
+  self.assertEqual(len(cfg['retained_wasm_stage_members']),4)
+  for member,pin in cfg['retained_wasm_stage_members'].items():self.assertEqual(pin['bytes'],148000)
+  for key,value in [('retained_wasm_stage_members',{}),('numerical_result_scope',{})]:
+   bad=copy.deepcopy(cfg);bad[key]=value
+   with self.assertRaises(ValueError):K.validate(bad)
+  source=(ROOT/'tools/ci-heavy/wasm_live_norm_v1.py').read_text()
+  self.assertLess(source.index('controls.extend(wasm_stage_checks'),source.index("folder=out/'browser/replay-inputs'"))
+  self.assertIn("return finish_replay(out,report)",source)
+  self.assertIn("if __name__=='__main__':raise SystemExit(main())",source)
  def test_python_source_parses(self):
   for p in [ROOT/'tools/ci-heavy/wasm_live_norm_v1.py',ROOT/'tools/wasm-live-norm-v1/live_contract.py',ROOT/'tools/wasm-live-norm-v1/overlay.py']:ast.parse(p.read_text())
 
