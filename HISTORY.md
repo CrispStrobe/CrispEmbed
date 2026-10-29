@@ -17081,3 +17081,14 @@ large model remains remote. Zero original/F32/Q4 model forwards. New separately
 closed sourcea5feac83e binds only shard0/686 rows and reviewed freeze/model; nine
 controls pass. This is storage/source evidence only; legacy header/unqualified
 status and all remaining full-task/publication gates are preserved.
+
+### 29 October — one-document MoE diagnostic stops at Kaggle disk admission
+
+The honest CPUv1 submission at`e7ff72f1` is externally bound to its exact8835-byte
+script, SHA54e440d6..., via explicit-version Get/Status/all output pages. Actual
+bootstrap[receipt](tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json)
+stops before its first command: available disk20,940,525,568 bytes is below24GiB,
+with32,672,014,336 bytes available RAM/four CPUs. No package install, reference
+transfer or model/original/native forward occurred. Numerical outcome remains
+unknown. A separately scoped one-case resource profile is required before retry;
+original budgets, input/ordinary barriers and actual-operation capture stay fixed.
