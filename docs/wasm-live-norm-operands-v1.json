@@ -125,12 +125,12 @@
     "docs/wasm-live-norm-operands-v1.md": "8f86724d66104d074306b7e47dbe5c4c6d7dda6b59df679e963cd8ec32d79549",
     "tools/wasm-live-norm-v1/live_contract.py": "dc726626fde023785177c07c8905ec64a29c711a9a5893a2b94b2d5fcc891933",
     "tools/wasm-live-norm-v1/overlay.py": "c0e7aa514f67b871baba627e0145475dcf513c41ddca696dffceb37723f715e0",
-    "tools/ci-heavy/wasm_live_norm_v1.py": "9c6158d42d294e42e56f1926e7297708e3b483b9f4b1797d39dd245994cc1cd3",
+    "tools/ci-heavy/wasm_live_norm_v1.py": "c933960fcef00e28871859ed378081a48b1102bca3c4a17add9fd29a1e089d98",
     "tests/wasm-live-norm/observer.h": "35d490c9a5a8755ab881eeaee3b1142fd50f346d95944ca6e1c9ac61c4b0291e",
     "tests/wasm-live-norm/replay.cpp": "0184da14b65bbf8866945826ddb4a05a9913ed8f54e883d3f62730a6c1aa9e54",
     "tests/wasm-live-norm/browser.cjs": "955a1f11e2c6e5998e52281faa3fe46f46b5b9e63e21be61238f940e540983b8",
     "tests/wasm-live-norm/CMakeLists.txt": "d1a6d9ae60a223639a4d73b14e5b2d6b59946db4593e83b15616a2895b6642a7",
-    "tests/test_wasm_live_norm_v1.py": "5323b187dbbe3f8d351b163122ad36fc84a05b7da94649ef7a9271e269ec507a"
+    "tests/test_wasm_live_norm_v1.py": "5da5fd62c2fb0186a139a21cc32b43e045ad9d690b8cded5f218cdaea9bb1be2"
   },
   "previous": {
     "report_sha256": "3a5b087f9e0a0a5453bd42cef6fdead00da86f38a3e46f1f4e7bfce10e18846e",

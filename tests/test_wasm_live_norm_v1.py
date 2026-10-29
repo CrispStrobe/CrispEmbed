@@ -3,6 +3,7 @@
 import ast,copy,hashlib,importlib.util,json,os,pathlib,struct,subprocess,sys,tempfile,unittest,zipfile
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT/'tools/wasm-live-norm-v1'),str(ROOT/'tools')]
+from unittest.mock import patch
 import live_contract as K
 import overlay
 spec=importlib.util.spec_from_file_location('live_driver',ROOT/'tools/ci-heavy/wasm_live_norm_v1.py')
@@ -71,6 +72,15 @@ class Controls(unittest.TestCase):
     with self.assertRaises(ValueError):D.capture_rows(folder,True)
    K.write(folder/'capture.json',p);file=folder/(p['files'][0]['name']+'.f32');data=bytearray(file.read_bytes());data[:4]=struct.pack('<f',float('nan'));file.write_bytes(data)
    with self.assertRaises(ValueError):D.capture_rows(folder,True)
+ def test_native_observer_environment_snapshotted_before_init_and_recovers(self):
+  snapshots=[]
+  class FakeLibrary:
+   def crispembed_init(self,path,threads):
+    snapshots.append((os.environ.get('CRISPEMBED_DUMP_LAYERS'),os.environ.get('CRISPEMBED_LIVE_NORM_CAPTURE'),threads))
+    return 123
+  with patch.dict(os.environ,{'CRISPEMBED_DUMP_LAYERS':'stale','CRISPEMBED_LIVE_NORM_CAPTURE':'stale'}):
+   for mode in ['ordinary','observed','ordinary']:self.assertEqual(D.native_context(FakeLibrary(),'synthetic-model-name',2,mode),123)
+  self.assertEqual(snapshots,[(None,None,2),('1',None,2),(None,None,2)])
  def test_native_ids_multiple_public_forwards_exact(self):
   ids=[101,7,102];line='crispembed: token_ids (n=3): 101 7 102\n';log=line*8
   self.assertTrue(D.native_tokens(log,ids,4));self.assertFalse(D.native_tokens(log+line,ids,4))

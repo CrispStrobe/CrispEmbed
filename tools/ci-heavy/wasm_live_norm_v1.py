@@ -156,6 +156,13 @@ def build_full(out):
   K.write(out/'review'/(label+'-binaries.json'),dict(library=K.identity(library),dependencies={str(p.relative_to(build)):K.identity(p)for p in build.rglob('libggml*.so*')if p.is_file()}))
  K.write(out/'review/wasm-binaries.json',{s:K.identity(destination/('crispembed_embed.'+s))for s in ['js','wasm']})
 
+def native_context(lib,model,threads,mode):
+ K.require(mode in ['ordinary','observed'],'Native observer mode')
+ for name in ['CRISPEMBED_LIVE_NORM_CAPTURE','CRISPEMBED_DUMP_LAYERS','CRISPEMBED_DUMP_LAYERS_GGUF']:os.environ.pop(name,None)
+ # ctx->dump_layers is snapshotted by crispembed_init, not by encode.
+ if mode=='observed':os.environ['CRISPEMBED_DUMP_LAYERS']='1'
+ return lib.crispembed_init(os.fsencode(model),threads)
+
 def native_worker(out,threads):
  source();frozen=K.read(out/'browser/frozen.json');case=frozen['case'];K.require(K.sha(out/'browser/model.gguf')==MODEL_SHA,'Frozen model changed')
  results={}
@@ -173,8 +180,7 @@ def native_worker(out,threads):
  for p in mapped:
   if 'libggml'in p:K.require(K.identity(p)==pin['dependencies'].get(str(Path(p).resolve().relative_to(build.resolve()))),'Mapped dependency SHA differs')
  for mode in (['ordinary']if label=='plain'else['ordinary','observed']):
-  os.environ.pop('CRISPEMBED_LIVE_NORM_CAPTURE',None);os.environ.pop('CRISPEMBED_DUMP_LAYERS',None);os.environ.pop('CRISPEMBED_DUMP_LAYERS_GGUF',None)
-  ctx=lib.crispembed_init(os.fsencode(out/'browser/model.gguf'),threads);K.require(ctx,'Native init failed')
+  ctx=native_context(lib,out/'browser/model.gguf',threads,mode);K.require(ctx,'Native init failed')
   rows=[]
   try:
    for repeat in [0,1]:
