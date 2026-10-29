@@ -899,3 +899,5 @@ WASM operators and remaining whole-model/quantized/final-source gates. See
 candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
 
 - `audit/wasm-layer3-f32-reanalysis-20261029`: retained40791643276 report/raw authentication and compare-only consolidation; no build/operator/model forward or F64 reference coercion, all old targets/gates/negatives preserved.
+
+- `audit/wasm-native-order-norm-risk-20261029`: test-only native AVX2 variance-order replay, native own-input norm byte anchors before computed norm/affine/Q8 projection. No oracle workspace, production changes or model forwards; old native targets/budgets unchanged.
