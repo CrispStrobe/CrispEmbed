@@ -40,7 +40,7 @@ def canonical_fixture():
  cases=[dict(id=str(i),modes=[dict(mode=mode,stages=57 if i<3 else 56,all_payload_sha_exact=True,response_bytes_exact=True)for mode in ['plain','observed','repeat']])for i in range(4)]
  response=[json.dumps({'case':i})for i in range(4)];arm=dict(response_texts=response,response_sha256=[canonical.digest(x.encode())for x in response],null_rejected=True,recovery_exact=True,gate_controls=[dict(gate=g,value=v,init_rejected=True,run_rejected=True)for g in ['CRISPEMBED_JOSEV_QUANT','CRISPEMBED_QWEN35_QUANT']for v in [None,'','0']])
  public=dict(completed=True,source=c.METADATA_RUNTIME,library_sha256='9'*64,cases=4,arms={'legacy':copy.deepcopy(arm),'canonical':copy.deepcopy(arm)},all_public_capi_response_bytes_exact=True,production_observers_excluded=True,publication_qualified=False)
- same=dict(schema='crispembed-gguf-file-type-same-payload-v1',completed=True,runtime_source=c.METADATA_RUNTIME,source_profile_sha256=c.METADATA_PROFILE_SHA,canonicalization_report_sha256='5'*64,source_model=m['legacy_model'],canonical_model=m['canonical_model'],four_cases=cases,all_mapped_stage_bytes_exact=True,all_typed_response_bytes_exact=True,all_public_capi_response_bytes_exact=True,public_capi=public,f32={'compared_stages':227,'strict_original_f32_numeric_and_typed_passed':True},old_numeric_results_replaced=False,numerical_qualified=False,publication_qualified=False)
+ same=dict(schema='crispembed-gguf-file-type-same-payload-v1',completed=True,source=c.METADATA_RUNTIME,legacy={'structural_passed':True,'compared_stages':227,'strict_original_numeric_passed':False},canonical={'structural_passed':True,'compared_stages':227,'strict_original_numeric_passed':False},runtime_source=c.METADATA_RUNTIME,source_profile_sha256=c.METADATA_PROFILE_SHA,canonicalization_report_sha256='5'*64,source_model=m['legacy_model'],canonical_model=m['canonical_model'],four_cases=cases,all_mapped_stage_bytes_exact=True,all_typed_response_bytes_exact=True,all_public_capi_response_bytes_exact=True,public_capi=public,f32={'compared_stages':227,'strict_original_f32_numeric_and_typed_passed':True},old_numeric_results_replaced=False,numerical_qualified=False,publication_qualified=False)
  return d,descriptor,proof,same,dev
 
 class Controls(unittest.TestCase):
@@ -177,7 +177,7 @@ class Controls(unittest.TestCase):
    if kind=='qualification':proof['numerical_qualified']=True
    with self.subTest(kind=kind),self.assertRaises(ValueError):canonical.reports(*args)
  def test_same_payload_all_modes_all_four_public_gates_and_f32_control(self):
-  for kind in ['mode','stage','response','public','gate','f32']:
+  for kind in ['mode','stage','response','public','gate','f32','source','numeric_flags']:
    args=canonical_fixture();same=args[3]
    if kind=='mode':same['four_cases'][0]['modes'].pop()
    if kind=='stage':same['four_cases'][0]['modes'][0]['stages']=56
@@ -185,6 +185,8 @@ class Controls(unittest.TestCase):
    if kind=='public':same['public_capi']['arms']['canonical']['response_texts'][0]='changed'
    if kind=='gate':same['public_capi']['arms']['canonical']['gate_controls'][0]['run_rejected']=False
    if kind=='f32':same['f32']['strict_original_f32_numeric_and_typed_passed']=False
+   if kind=='source':same['source']=c.RUNTIME
+   if kind=='numeric_flags':same['canonical']['strict_original_numeric_passed']=True
    with self.subTest(kind=kind),self.assertRaises(ValueError):canonical.reports(*args)
  def test_canonical_provider_checks_reports_before_large_model_and_never_downloads_legacy(self):
   s=(ROOT/'tools/josev-new20-owner/provider.py').read_text();body=ast.get_source_segment(s,next(n for n in ast.parse(s).body if isinstance(n,ast.FunctionDef)and n.name=='candidate'))

@@ -45,9 +45,12 @@ def reports(cfg,descriptor,proof,same,development):
   require(sha(e['sha256'])==sha(t['source_sha256'])==sha(t['canonical_sha256'])==sha(a['stored_sha256']),'Tensor payload differs from authenticated development model: '+name)
   if a['critical_f32']:require(kind==0 and a['stored_sha256']==a['source_f32_sha256'],'Critical F32 source byte identity changed: '+name)
  require(counts==conversion['counts']and sum(a['critical_f32']for a in old)==292,'Frozen recipe/critical tensor counts differ')
- require(same['schema']=='crispembed-gguf-file-type-same-payload-v1'and same['runtime_source']==METADATA_RUNTIME and same['source_profile_sha256']==METADATA_PROFILE_SHA and same['canonicalization_report_sha256']==m['proof']['sha256']and same['source_model']==legacy and same['canonical_model']==canonical,'Same-payload exact source/proof/models differ')
+ require(same['schema']=='crispembed-gguf-file-type-same-payload-v1'and same['source']==METADATA_RUNTIME and same['runtime_source']==METADATA_RUNTIME and same['source_profile_sha256']==METADATA_PROFILE_SHA and same['canonicalization_report_sha256']==m['proof']['sha256']and same['source_model']==legacy and same['canonical_model']==canonical,'Same-payload exact source/proof/models differ')
  flag(same,['completed','all_mapped_stage_bytes_exact','all_typed_response_bytes_exact','all_public_capi_response_bytes_exact']);false(same,['numerical_qualified','publication_qualified','old_numeric_results_replaced'])
  require(same['f32']['compared_stages']==227 and same['f32']['strict_original_f32_numeric_and_typed_passed']is True,'Bridge strict original-four F32 control missing')
+ for label in ['legacy','canonical']:
+  flag(same[label],['structural_passed']);require(same[label]['compared_stages']==227,'Complete strict bridge panels required')
+ require(type(same['legacy']['strict_original_numeric_passed'])is bool and same['legacy']['strict_original_numeric_passed']==same['canonical']['strict_original_numeric_passed'],'Old strict numerical flags changed by metadata')
  old_cases=development['recipes'][s['recipe']]['panel']['quant_task_decisions']['cases'];ids=[r['id']for r in old_cases]
  require(len(ids)==4 and len(set(ids))==4 and [r['id']for r in same['four_cases']]==ids,'Old-four case order/coverage differs')
  totals={mode:0 for mode in ['plain','observed','repeat']}

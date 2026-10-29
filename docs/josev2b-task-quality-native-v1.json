@@ -367,11 +367,11 @@
   "owned_sha256": {
     ".github/workflows/josev-new20-native-v1.yml": "ae909a94931cc7916bbc99426f989eefc2f8f10987a70346cf08ac5c524c8dd4",
     "docs/josev2b-task-quality-native-v1.md": "cb063df4cb624149de481e959f0c1cc8a1c0213bd2ff1d546d2ec4cdc23f9364",
-    "tests/test_josev2b_task_quality_native_v1.py": "bae0c4c27913bed7c77b7e44d1557c03b2083987d8fec90eadbf3f3e00ecd50a",
+    "tests/test_josev2b_task_quality_native_v1.py": "97dcaa0ee71950ef6f91fd286ffff2c6fbda77e501fadc3e33b1aa9a7c5bc814",
     "tools/ci-heavy/josev2b_task_quality_native_v1.py": "6e06d7d77bdda2ebd58de839d5ac4ae2ced65e7c340869e15dc461bf16c16fb2",
     "tools/ci-heavy/josev2b_task_quality_owner_v1.py": "ae8ddbcb509c871bb8c40b59c89700d05d308da05be71e50e9a57ef99225a972",
     "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
-    "tools/josev-new20-owner/canonical.py": "5e67b041f6345c1b1b7f750c32f7539c88c10efae6d17c28ef73a307ad01b3bc",
+    "tools/josev-new20-owner/canonical.py": "a600efb0ba5a5c6e1ec12ceb7c920381c8cb00fa39e73f8c10435427aa297527",
     "tools/josev-new20-owner/provider.py": "f427da77db176b7d62cc4521adaef8044e7db68553d8e851cfdd53f516fb27b9",
     "tools/josev-new20-owner/requirements.lock": "e1f086b64b454999f187e5d5a45de9f00f0fd6109be87b0f72d64f25e10b2813",
     "tools/josev2b_task_quality_native_panel_v1.py": "3430871e719aa526118ef79db53fc5b1811fda45b06c87bddab2f8eb0731d191",
