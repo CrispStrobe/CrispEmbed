@@ -17132,3 +17132,48 @@ readback confirms every actual tensor type, protected F32 norm, layout and byte
 outside the four-byte header is identical. This uses tiny authored matrices;
 no model or runtime release is qualified. The selected-model same-payload/public
 C ABI bridge remains pending. [Receipt](tests/results/quantization/gguf-standard-file-type-review.json).
+## 29 October: reviewed Josev A/B/C and actual Q8 profile controls
+
+[Josev40787077302](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40787077302)
+completes all three development recipes and strict F32 control. Independent
+[review](tests/results/josev2b/mixed-recipes-v1-review.json) retains203/201/118
+failed intermediate stages for A/B/C respectively. C moves the first strict
+failure to layer20 and passes one ordinal, but the other error0.001585498
+exceeds0.001. No candidate qualifies and NEW20 remains closed.
+
+[Actual Q8 controls40829558531](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40829558531)
+pass at6781befb: Josev/Ultra profile admission and corruption controls,13 actual
+C quantizer standard/legacy pairs, variable-length existing-STRING stamping
+with preserved payloads, and invalid overrides leaving no output. Independent
+[review](tests/results/quantization/portfolio-q8-profile-controls-review.json)
+parses all13 pairs. This model-free fixture does not qualify weights.
+
+## 29 October: retained F32 risk and corrected real-form results
+
+[Compare-only40831082898](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831082898)
+atbf4e237e independently consolidates the retained F32 weightcast rejection:
+25 actual Ref comparisons,7 pass/18 fail; maximum old-target error0.07845640.
+No operator/model forward or optional F64 coercion occurs.
+[Report and review](docs/wasm-layer3-f32-reanalysis-result.md) preserve the initial
+optional-F64 reporting failure and immutable native targets.
+
+[Form RGB40783738840](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40783738840)
+authenticates the corrected709225-byte input, actual1920x2985 geometry, maximum
+channel error1 and RMS0.054378 between production STB and original Pillow.
+[Receipt](docs/ocr-rgb-form-result-v1.md) completes input decoding coverage across
+two runs; the manifest geometry was wrong, and pixel differences alone prove no
+model cause. Unlimited native form atdbca8cb6 separately completes all934 IDs
+and full text exactly against the corrected original, reaching EOS below the
+frozen cap. [Review](tests/results/ocr-real-scans/unlimited-form-native-review.json)
+keeps earlier real19 mismatches separate; it does not qualify every current-source
+real20 case. MiniCPM form was already exact and was not repeated.
+
+## 29 October: MiniCPM retained138 comparison review
+
+[Actual40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
+atcec1faeb completes138 six-stage comparisons for all23 retained arms without
+model/original/native forwards. Independent [review](docs/minicpm-retained-analysis-v2-result.md)
+rehashes all134 small members and confirms99 pass/39 strict failures,36 old
+comparisons carried unchanged and102 newly measured. Packed pixels are exact;
+original merger LIST[0] maps overview only and88 later spans remain unmapped.
+No numerical/model qualification follows; only seven missing arms remain.
