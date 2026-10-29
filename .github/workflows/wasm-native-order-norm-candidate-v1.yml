@@ -1,0 +1,89 @@
+name: Live-input WASM native-order norm A/B v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-native-order-norm-candidate-v1
+  cancel-in-progress: false
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source-only gate, geometry, closure and metric controls
+        run: python tests/test_wasm_native_order_norm_v1.py -v
+      - name: Fail closed on exact source and hosted resource admission
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py preflight --output "$RUNNER_TEMP/norm-candidate"
+      - name: Authenticate retained risk arrays; no model load or forward
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py component-prepare --output "$RUNNER_TEMP/norm-candidate"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Pinned browser engine
+        run: |
+          npm install --prefix "$RUNNER_TEMP/norm-browser-tools" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/norm-browser-tools/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Compile actual connected component on native and historical-profile pthread WASM
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py component-build --output "$RUNNER_TEMP/norm-candidate"
+      - name: Actual browser component; directly computed from residual inputs
+        run: NODE_PATH="$RUNNER_TEMP/norm-browser-tools/node_modules" node tests/wasm-native-order-norm/component.cjs "$RUNNER_TEMP/norm-candidate/browser"
+      - name: Require all twelve native norm byte recoveries and Ref controls
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py component-check --output "$RUNNER_TEMP/norm-candidate"
+      - name: Authenticate immutable old ten-case targets and exact model
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py prepare-panel --output "$RUNNER_TEMP/norm-candidate"
+      - name: Actual root native library and historical-profile pthread WASM; retain compile profiles
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py build-full --output "$RUNNER_TEMP/norm-candidate"
+      - name: Native gate ignored; twenty old anchors and ordinary-observer-repeat neutrality
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py native-check --output "$RUNNER_TEMP/norm-candidate"
+      - name: Norm unset-empty-zero plus original legacy rounding controls
+        run: NODE_PATH="$RUNNER_TEMP/norm-browser-tools/node_modules" node tests/wasm-native-order-norm/panel.cjs "$RUNNER_TEMP/norm-candidate/browser" baseline
+      - name: Fail closed before norm ON unless all old WASM bytes and native anchors agree
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py off-check --output "$RUNNER_TEMP/norm-candidate"
+      - name: Actual held-rounding-one norm-ON ten cases and independent contexts
+        run: NODE_PATH="$RUNNER_TEMP/norm-browser-tools/node_modules" node tests/wasm-native-order-norm/panel.cjs "$RUNNER_TEMP/norm-candidate/browser" candidate
+      - name: All unchanged old-native finals and eight stages through Ref and independent metrics
+        run: python -I tools/ci-heavy/wasm_native_order_norm_v1.py compare --output "$RUNNER_TEMP/norm-candidate"
+      - name: Preserve source, controls, complete numerical outcomes and first failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-native-order-norm-candidate-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/norm-candidate/review/
+            ${{ runner.temp }}/norm-candidate/browser/*-browser.json
+            ${{ runner.temp }}/norm-candidate/browser/*-proof.json
+            ${{ runner.temp }}/norm-candidate/browser/frozen-panel.json
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain computed traces, exact modules, target/model provenance remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-native-order-norm-candidate-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/norm-candidate/raw/
+            ${{ runner.temp }}/norm-candidate/browser/arrays/
+            ${{ runner.temp }}/norm-candidate/browser/component-inputs/
+            ${{ runner.temp }}/norm-candidate/browser/component/
+            ${{ runner.temp }}/norm-candidate/browser/candidate/
+          if-no-files-found: warn
+          retention-days: 90

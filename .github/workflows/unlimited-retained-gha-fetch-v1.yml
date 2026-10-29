@@ -1,0 +1,50 @@
+name: Unlimited stopped-v3 exact GET and read-only audit v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Closed source and small corrupt-delivery controls
+        run: |
+          python -c 'import os; assert os.environ.get("KAGGLE_ACCOUNT") and os.environ.get("KAGGLE_API_TOKEN"), "Existing private read-service configuration absent"'
+          python tools/unlimited-ocr2-q4k/retained_fetch_gha.py --source "$GITHUB_SHA" --source-only > "$RUNNER_TEMP/retained-source.json"
+          python tests/test_unlimited_retained_fetch.py -v
+          python tests/test_unlimited_ocr2_q4k.py -v
+      - name: Hosted isolated read-only dependencies
+        run: |
+          python -m venv "$RUNNER_TEMP/retained-venv"
+          "$RUNNER_TEMP/retained-venv/bin/python" -I -m pip install --quiet numpy==2.2.6 gguf==0.17.1 kaggle==2.2.2 kagglesdk==0.1.38
+          "$RUNNER_TEMP/retained-venv/bin/python" -I -m pip check
+      - name: Exact-version GET and retained structural proof without inference
+        run: |
+          "$RUNNER_TEMP/retained-venv/bin/python" -I tools/unlimited-ocr2-q4k/retained_fetch_gha.py --source "$GITHUB_SHA" --scratch "$RUNNER_TEMP/retained-input" --out "$RUNNER_TEMP/retained-review"
+      - name: Preserve small delivery and structural proofs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unlimited-retained-get-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/retained-source.json
+            ${{ runner.temp }}/retained-review/
+          if-no-files-found: error
+          retention-days: 90

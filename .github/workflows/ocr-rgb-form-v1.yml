@@ -1,0 +1,78 @@
+name: Retained form-only RGB continuation v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ocr-rgb-form-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  form:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+      PYTHONNOUSERSITE: 1
+      PIP_CONFIG_FILE: /dev/null
+      PIP_USER: 0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source, no-payload controls and resource admission
+        run: |
+          python tests/test_ocr_rgb_form.py -v
+          python - <<'PY'
+          import os,sys
+          from pathlib import Path
+          sys.path[:0]=['tools/ocr-rgb-input']
+          import form_contract as c
+          c.source(header=True)
+          from form_audit import hosted,resources
+          hosted();resources(Path('.'))
+          assert os.environ.get('GH_TOKEN') and os.environ.get('KAGGLE_API_TOKEN') and os.environ.get('KAGGLE_ACCOUNT'), 'Existing retained-read credentials required before tools'
+          PY
+      - name: Isolated pinned retained-read and codec tools
+        run: |
+          python -m venv "$RUNNER_TEMP/form-fetch"
+          "$RUNNER_TEMP/form-fetch/bin/python" -m pip install --only-binary=:all: https://files.pythonhosted.org/packages/13/d7/ef195107ced87945b98104e783147ec17096f65ef913bff24dbaab08498a/kaggle-2.2.2-py3-none-any.whl#sha256=ebb70a5338cf8d75998668f4415da753065d8996ff315d78342091f44d2d2e71
+          python -m venv "$RUNNER_TEMP/form-codec"
+          "$RUNNER_TEMP/form-codec/bin/python" -m pip install --no-deps --only-binary=:all: --require-hashes -r tools/ocr-rgb-input/requirements.lock
+          "$RUNNER_TEMP/form-codec/bin/python" -m pip check
+      - name: Authenticate exact producer version, report and image before decode
+        run: '"$RUNNER_TEMP/form-fetch/bin/python" -I tools/ocr-rgb-input/form_provider.py --out "$RUNNER_TEMP/retained-form"'
+      - name: Production STB and pinned Pillow decode only the retained form
+        env:
+          SOURCE_REF: ${{ github.sha }}
+        run: '"$RUNNER_TEMP/form-codec/bin/python" -I tools/ocr-rgb-input/form_audit.py --source "$SOURCE_REF" --images-dir "$RUNNER_TEMP/retained-form" --scratch "$RUNNER_TEMP/form-scratch" --out "$RUNNER_TEMP/form-out"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-rgb-form-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/retained-form/provider.json
+            ${{ runner.temp }}/retained-form/original-result.json
+            ${{ runner.temp }}/form-out/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-rgb-form-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/retained-form/en-form-economic-journal-67.jpg
+            ${{ runner.temp }}/retained-form/initial-review.zip
+            ${{ runner.temp }}/form-out/raw/
+          retention-days: 90
+          if-no-files-found: warn
