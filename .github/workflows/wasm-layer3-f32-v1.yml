@@ -1,0 +1,82 @@
+name: Retained layer3 F32 weightcast risk v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-layer3-f32-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  cast:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source closure and literal coefficient format controls
+        run: python tests/test_wasm_layer3_f32_v1.py -v
+      - name: Authenticate old coefficients, natural inputs and target bytes
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py prepare --output "$RUNNER_TEMP/layer3-f32"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Frozen native and SIMD128 pthread compiler profiles
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py build --output "$RUNNER_TEMP/layer3-f32"
+      - name: Native1/2 original quantized anchors
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py native --output "$RUNNER_TEMP/layer3-f32"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned real browser
+        run: |
+          npm install --prefix "$RUNNER_TEMP/cast-browser" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/cast-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Rehash actual native modules and browser inputs
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py verify --output "$RUNNER_TEMP/layer3-f32"
+      - name: Browser original quantized anchors
+        run: NODE_PATH="$RUNNER_TEMP/cast-browser/node_modules" node tests/wasm-layer3-f32/browser.cjs "$RUNNER_TEMP/layer3-f32" baseline
+      - name: Six byte-exact quantized anchors before any cast arm
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py anchors --output "$RUNNER_TEMP/layer3-f32"
+      - name: Native1/2 actual graph F32 cast and failure recovery
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py native-candidate --output "$RUNNER_TEMP/layer3-f32"
+      - name: Browser actual graph F32 cast and observation neutrality
+        run: NODE_PATH="$RUNNER_TEMP/cast-browser/node_modules" node tests/wasm-layer3-f32/browser.cjs "$RUNNER_TEMP/layer3-f32" candidate
+      - name: Independent metrics package
+        run: python -m pip install numpy==2.2.6
+      - name: Actual Ref versus unchanged native targets and crossbackend
+        run: python tools/ci-heavy/wasm_layer3_f32_v1.py compare --output "$RUNNER_TEMP/layer3-f32"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-layer3-f32-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/layer3-f32/review/
+            ${{ runner.temp }}/layer3-f32/*.log
+            ${{ runner.temp }}/layer3-f32/browser/cast-report.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-layer3-f32-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/layer3-f32/raw/
+            ${{ runner.temp }}/layer3-f32/browser/cast-inputs/
+            ${{ runner.temp }}/layer3-f32/browser/cast-targets/
+            ${{ runner.temp }}/layer3-f32/browser/module/
+            ${{ runner.temp }}/layer3-f32/native-build/**/*.so*
+            ${{ runner.temp }}/layer3-f32/control.gguf
+            ${{ runner.temp }}/layer3-f32/replay.gguf
+          retention-days: 90
+          if-no-files-found: warn
