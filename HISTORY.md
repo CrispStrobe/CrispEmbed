@@ -17134,3 +17134,17 @@ streams. [Independent review](docs/ultrabert-first-q4-shard0-result.md) retains
 both strict Ref failures: raw max2.76205, normalized0.02581254, cosine0.98075227.
 Only12 FFN matrices are Q4/206 F32; no original/F32 forward or additional shard.
 Full5483/300 retrieval, Q8, standard headers/consumers/publication remain pending.
+
+##29 October: MiniCPM missing seven complete; initial precision harness stops retained
+
+[MiniCPM40855153707](docs/minicpm-seven-arm-v3-result.md) at2fde completes all
+seven absent forwards/two projection probes with0 original recaptures. All30
+decoded cases exact;180 vision comparisons retain130 positive/50 negative.
+Unlimited40859258832 stops on isolated Ref-helper import before any forward;
+its [receipt](tests/results/unlimited-ocr2/ref-control-import-initial-review.json)
+is retained. MoEdern Kagglev3@46bac passes both ordinary controls and one neutral
+observed original forward, then strict operation completeness rejects missing
+softmax; [receipt](tests/results/moedern-colbert/first-row-softmax-initial-review.json)
+preserves all59 small files and exact-version service proof. Initialv2 packed
+constructor failure is also retained; none of these scope repairs qualifies a
+model, release or precision recipe.
