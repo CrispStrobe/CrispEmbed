@@ -1,0 +1,411 @@
+{
+  "schema": "crispembed-ocr-rgb-form-independent-review-v1",
+  "service": {
+    "run": 40783738840,
+    "source": "535c10fceac28ec04401b7f6a57a027e1be9bbc9",
+    "workflow": ".github/workflows/ocr-rgb-form-v1.yml",
+    "status": "completed",
+    "conclusion": "success",
+    "attempt": 1
+  },
+  "small_artifact": {
+    "id": 12861438420,
+    "bytes": 70595,
+    "sha256": "b3620f75f8587ea383057d0892e56f326d740010a069be56e7460a95710f2d0b",
+    "downloaded_for_review": true
+  },
+  "raw_artifact": {
+    "id": 12861682669,
+    "bytes": 4357147,
+    "sha256": "47a8361d6720e13fe4933f01870eac8e5c48e475d4e81a03ae16185ed56d853b",
+    "expires_at": "2027-01-26T22:56:35Z",
+    "downloaded_for_review": false
+  },
+  "producer_report": {
+    "member": "form-out/review/rgb-input.json",
+    "bytes": 8988,
+    "sha256": "dbdd831985faa66a592d69e4123fde9e9ac7b303e69a01064fcbc0567a8a08e8"
+  },
+  "review_members": {
+    "form-out/review/build.log": {
+      "bytes": 349,
+      "sha256": "8f81cfe1bb3cb9a59beabbd5e06f7e80d3b532148f29fb24f79e38a07e23fe18"
+    },
+    "form-out/review/build.log.process.json": {
+      "bytes": 361,
+      "sha256": "9af48fdc01863163a28c6cb693d475aedf9c34ef1dd2e93471f6faebb76332a0"
+    },
+    "form-out/review/compile-commands.json": {
+      "bytes": 1025,
+      "sha256": "dfec6f095828de443c8f171de3234991b4fa90066241aa55df77aee627982716"
+    },
+    "form-out/review/compiler-version.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "form-out/review/compiler-version.log.process.json": {
+      "bytes": 371,
+      "sha256": "614914e3d3494df6870cc7f8e8a4b56303ffe0df6d94d55878c0261dda20bd61"
+    },
+    "form-out/review/compiler.txt": {
+      "bytes": 246,
+      "sha256": "88b7c4b67564a146863224148116065fee418539f0a408f3636a68f3bde51805"
+    },
+    "form-out/review/configure.log": {
+      "bytes": 392,
+      "sha256": "3161ab81a8bb5cd27e0a4b994f2726a12b8e1d3edd3f95969a5e0ebd9913e926"
+    },
+    "form-out/review/configure.log.process.json": {
+      "bytes": 364,
+      "sha256": "e5c2c45a0445c8e18d2a3df485c9b884718d49387c50dbc2db76860e2b204190"
+    },
+    "form-out/review/en-form-economic-journal-67-stb.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "form-out/review/en-form-economic-journal-67-stb.log.process.json": {
+      "bytes": 389,
+      "sha256": "c1b65d235f7dbfb1dbb5f5c6f4c068673041a7031e8f64e6edca97f51e327f8a"
+    },
+    "form-out/review/nm.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "form-out/review/nm.log.process.json": {
+      "bytes": 360,
+      "sha256": "8df6f92e06ad57ce02ef8d35b258be86275967381474e7057ebcfba1ac98f209"
+    },
+    "form-out/review/prefix-macros.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "form-out/review/prefix-macros.log.process.json": {
+      "bytes": 370,
+      "sha256": "fe6356d64ad3f328f1f25b45ebf81201e19a92c4c77edf5d3e95a65dc735880d"
+    },
+    "form-out/review/prefix-macros.txt": {
+      "bytes": 95875,
+      "sha256": "ee39bc795294ef4826f315778b9d81591d9d149ac4c5f7706f25e6bb269b2aa4"
+    },
+    "form-out/review/production-macros.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "form-out/review/production-macros.log.process.json": {
+      "bytes": 373,
+      "sha256": "498c508153bb14021b951d08b27fafa95353e4c3f25e04552c1a3c714e51283b"
+    },
+    "form-out/review/production-macros.txt": {
+      "bytes": 96305,
+      "sha256": "b51c6de144a0679fde0d6e9d774fcd49281a804fc1bfad6b0158f9490e24bc24"
+    },
+    "form-out/review/raw-manifest.json": {
+      "bytes": 760,
+      "sha256": "fae10ee2beab6ed21ee292ea69eac297b35fe9acb88faa5f52845fd82ab3c89a"
+    },
+    "form-out/review/rgb-input.json": {
+      "bytes": 8988,
+      "sha256": "dbdd831985faa66a592d69e4123fde9e9ac7b303e69a01064fcbc0567a8a08e8"
+    },
+    "form-out/review/symbols.txt": {
+      "bytes": 8712,
+      "sha256": "3bb0d2e32de2ddd270d355e6af478ebdf582ea351979de2fd072824b468d8389"
+    },
+    "retained-form/original-result.json": {
+      "bytes": 14277,
+      "sha256": "09d381d00064fb52f00ffeb4276957076d0233aa8da7157518a207874e08d8e9"
+    },
+    "retained-form/provider.json": {
+      "bytes": 729,
+      "sha256": "a491dc85570d7b51fe228b77145cc547018de4bcbb4c0af1376f110ef9153fa0"
+    }
+  },
+  "manifest_sha256": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+  "retained_original": {
+    "source": "d6f435c78abb650a2b57e9012923940fbb54a0ef",
+    "version_label": "v1",
+    "submitted_script_bytes": 10794,
+    "submitted_script_sha256": "9689edf6a03b99886e73f5e1c2c06ca059ece22bfc32f346e414645198bcc765",
+    "get_status_all_pages_exact_version": true,
+    "original_report_member": "retained-form/original-result.json",
+    "original_report_sha256": "09d381d00064fb52f00ffeb4276957076d0233aa8da7157518a207874e08d8e9",
+    "model_rerun": false
+  },
+  "pages_compared": 1,
+  "rgb_exact": 0,
+  "row": {
+    "id": "en-form-economic-journal-67",
+    "manifest_dimensions": [
+      1600,
+      2487
+    ],
+    "expected_encoded": {
+      "bytes": 709225,
+      "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a"
+    },
+    "input_admitted": true,
+    "pillow_decode_attempted": true,
+    "stb_decode_attempted": true,
+    "eligible_for_decode_comparison": true,
+    "encoded": {
+      "provider": "retained encoded input",
+      "bytes": 709225,
+      "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a"
+    },
+    "pillow_source": {
+      "format": "JPEG",
+      "mode": "L"
+    },
+    "pillow": {
+      "completed": true,
+      "dimensions": [
+        1920,
+        2985
+      ],
+      "bytes": 17193600,
+      "sha256": "b07e7bca0d04f6fcda74b4ee3fbf5527d8ad8032f7da9f1c0195c7755394c7e4",
+      "channels": 3
+    },
+    "stb_process": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 0.05074421799997708,
+      "maximum_rss_kib": 112496,
+      "maximum_rss_bytes": 115195904,
+      "resource_accounting": "linux-wait4-per-child",
+      "reaped": true
+    },
+    "stb": {
+      "completed": true,
+      "width": 1920,
+      "height": 2985,
+      "file_channels": 1,
+      "channels": 3,
+      "bytes": 17193600,
+      "dimensions": [
+        1920,
+        2985
+      ],
+      "sha256": "5370c212cda8e174dfa189820e277e3ebd9260a451a877c9fb38c53b9e80f6b7"
+    },
+    "manifest_dimensions_match": {
+      "pillow": false,
+      "stb": false
+    },
+    "metrics": {
+      "max_absolute": 1,
+      "mean_absolute": 0.0029569723618090454,
+      "rms": 0.054378050367855646,
+      "per_channel": {
+        "R": {
+          "max_absolute": 1,
+          "mean_absolute": 0.0029569723618090454,
+          "rms": 0.054378050367855646
+        },
+        "G": {
+          "max_absolute": 1,
+          "mean_absolute": 0.0029569723618090454,
+          "rms": 0.054378050367855646
+        },
+        "B": {
+          "max_absolute": 1,
+          "mean_absolute": 0.0029569723618090454,
+          "rms": 0.054378050367855646
+        }
+      },
+      "first_difference": {
+        "byte_offset": 1674735,
+        "pixel_index": 558245,
+        "x": 1445,
+        "y": 290,
+        "channel": "R",
+        "pillow_pixel": [
+          178,
+          178,
+          178
+        ],
+        "stb_pixel": [
+          177,
+          177,
+          177
+        ],
+        "signed_difference": -1
+      },
+      "changed_values": 50841,
+      "changed_pixels": 16947,
+      "rgb_exact": false,
+      "signed_difference": "STB minus Pillow"
+    },
+    "raw_rgb": {
+      "pillow": "raw/en-form-economic-journal-67-pillow.rgb",
+      "stb": "raw/en-form-economic-journal-67-stb.rgb"
+    }
+  },
+  "paired_initial_review": {
+    "path": "tests/results/ocr-real-scans/rgb-input-initial.json",
+    "source": "813e1ec9b813ebf0dc72c8faf5841659a024fbce",
+    "run": 40776499260,
+    "report_sha256": "76a168944cf3fe51ffef03c9851e42fc047863b786505380861c13b5dbe837d3",
+    "valid_comparisons": 19,
+    "initial_form_excluded_before_both_decoders": true,
+    "initial_encoded_sha256": "b09f8c1cdc37d5851649424f57125bbdad8a8140d873d584d03821d48f28fa75",
+    "initial_encoded_bytes": 694795,
+    "initial_rejection_preserved": true,
+    "redecoded_here": false
+  },
+  "combined_scope": {
+    "separate_executions": true,
+    "admitted_compared_identities": 20,
+    "rgb_exact_png": 5,
+    "nonidentical_jpeg": 15,
+    "maximum_absolute": 3,
+    "same_decoder_dimensions_each_admitted_page": true,
+    "manifest_dimension_mismatches": 15
+  },
+  "codec": {
+    "pillow": "11.3.0",
+    "jpeg": "6.2",
+    "libjpeg_turbo": "3.1.1",
+    "zlib": "1.3",
+    "policy": "Image.open(path).convert('RGB'); no EXIF transpose, ICC transform, resize or normalization",
+    "historical_binary_identity": "Pillow11.3 version matches reference setup; historical wheel/libjpeg build was not pinned, so binary identity is not asserted.",
+    "imaging_extension_sha256": "227d6ee05532c6461b5d6de055b8feeeaae2716a805bf83ea5ca1e1cec1cc3a7"
+  },
+  "package_owners": {
+    "Pillow": {
+      "version": "11.3.0",
+      "metadata_sha256": "d53d4d78f8a8efe182396711ef76840386d2ba4ccdad421f58cc00c3b3401f73",
+      "inside_venv": true
+    },
+    "numpy": {
+      "version": "2.2.6",
+      "metadata_sha256": "22d648f53848429464ca643b40d73b49a920d47876fc77c395d4dca4e834904a",
+      "inside_venv": true
+    },
+    "pyarrow": {
+      "version": "17.0.0",
+      "metadata_sha256": "e30deaba38ba6c1bef6337f25a8ca7a0ce232b7f689bc4cb81467e2fe44d9989",
+      "inside_venv": true
+    }
+  },
+  "source_closure": {
+    "protected_files": 25,
+    "owned_files": 9,
+    "all_frozen_git_blobs_sha_checked": true,
+    "protected_sha256": {
+      ".github/workflows/ocr-rgb-input-audit-v1.yml": "534dcd6c652ac55db47b077e8861ab897813465539eeeed064e2d913be2ca7de",
+      ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",
+      "CMakeLists.txt": "15c9e7b3c9e7b0871c0f731a3b1957f92dd5c11350d915aab8ab35eba02dd296",
+      "docs/ocr-real-scans-v1.json": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+      "docs/ocr-rgb-input-v1.json": "6f0621caa4c3332937a35dc6fd63ec89ab6c4438a79056bbdac89684d028f320",
+      "docs/ocr-rgb-input-v1.md": "73f8ea4be417539eeb6af748982ed78aea98e740c56db086f38dba10f59cb600",
+      "docs/unlimited-ocr2-source.json": "73b311d5e834a789190e0c5426a2f4431f028cdf8650b9debde0cf8705a0ae59",
+      "examples/cli/main.cpp": "6d4e9ab857f038651e1355cb8c6aa507f4e33f8664ffe1e6cf95c20b251484d4",
+      "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+      "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+      "src/image_preprocess.cpp": "ee570badb7c3fff550dcc113a3efb4aeb8555acf297ffad80c072aaa8fa1ee38",
+      "src/image_preprocess.h": "2739104748629e824b0dcbdf1fc60eb7d185e7d2b7153f61ae8a7832e3382e61",
+      "src/minicpm_ocr.cpp": "ae0f08f314e245edbf1186a2443b657d59a385ee26a254fe3b4c6622e13067b6",
+      "src/scan_cleanup.h": "f783fa4ad588c1f84495d64ec6336922827b47ab2cc6814ab3c3bac2e9422a1d",
+      "src/unlimited_ocr.cpp": "57df29c381a9438667c9dae87b61ece42e5c4be29001966db6608de7434cdac5",
+      "tests/ocr-rgb-input/CMakeLists.txt": "0adb5b7eaf1bb15be3e20f21c1cd711db29359fabc068161aa5fd01df1a438be",
+      "tests/ocr-rgb-input/probe.cpp": "2f45e5a050e3d5ef19bd9d49c2dcd317f6fa7bc90433339a40cdf156b8070e32",
+      "tests/test_ocr_rgb_input.py": "954d44674999b2abbccf016b1cd25cda70fb8e60d2041183ef1ecec86ed5990a",
+      "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
+      "tools/kaggle/ocr-real-scans/receipt.py": "deee808b5b9330231bdd45f552007e03eddb936213b5df9d66283b8945773c0a",
+      "tools/kaggle/ocr-real-scans/ref_worker.py": "dc6bdf811ab03935dcacbea7a5bb817574760cdfc4ddc5953a6ab6331225f390",
+      "tools/ocr-rgb-input/audit.py": "8ce37ab914e6672c5ca4cf378329d3463d1c75f3494f77d1db80aa5b4b59acd7",
+      "tools/ocr-rgb-input/contract.py": "c10f63467b0dbdf69c6357234fc64e80e3d0b3a631896b6379f1e9edc2bd456c",
+      "tools/ocr-rgb-input/metrics.py": "32ef47d4b351406f9be1b81e0f120bb75b7d44eee67dfef8745b09289c767510",
+      "tools/ocr-rgb-input/requirements.lock": "03af756700d200aca6023e38dc86393b15fb19726bd50d76be46b6924e9d79a4"
+    },
+    "owned_sha256": {
+      ".github/workflows/ocr-rgb-form-v1.yml": "4ffd4aa048aadab96c4dd097fc4e41fefcaec37e111097d47e0573a67fa7fdcf",
+      "docs/ocr-rgb-form-v1.md": "69820548fe384a11003e0c4a85175247c71d6a50a825e7ea7eae798789f206fe",
+      "tests/results/ocr-real-scans/rgb-input-initial.json": "60e9ee8588ded0a4ff885c1836c17337573fbfdc271a191108e12cf75d1267f5",
+      "tests/test_ocr_rgb_form.py": "4e726bea924777a58547042069a9450ffbfb931aa38a454d3b7fad0e5d449abc",
+      "tools/kaggle/ocr-real-scans/kernel.py": "387cd4c75d94f41ff172dbaad51bb777fddacd744ed4acc1f9624d06a7b5eaaf",
+      "tools/ocr-real-scans/retained_inputs.py": "6f370dc0d6bf77d53f0bb51aa61700235048217e350f4882f0cf9a077dcdad8c",
+      "tools/ocr-rgb-input/form_audit.py": "3e7812673d660c4e10528d6c00c9d2d37c1cc4bb227debfecbd8883035356609",
+      "tools/ocr-rgb-input/form_contract.py": "a73716e8457bb97014fb838cdfc91dbdb515d8dc30a3c1d2a96532ab9b637aa9",
+      "tools/ocr-rgb-input/form_provider.py": "814c46733da28b2d99869c4f3ea9f8185c73897b473e960eee1e370b2d4c4ee3"
+    }
+  },
+  "production_decoder": {
+    "stb_header": {
+      "path": "ggml/examples/stb_image.h",
+      "version": "2.28",
+      "bytes": 284733,
+      "sha256": "38e08c1c5ab8869ae8d605ddaefa85ad3fea24a2964fd63a099c0c0f79c70bcc",
+      "git_blob": "5e807a0a6e7cdbfbbf48dff5f5d3f3693c2bc851",
+      "url": "https://github.com/CrispStrobe/ggml/blob/a06fc0bb46b73cc10011fc90ae4054aee8438aeb/examples/stb_image.h"
+    },
+    "production_prefix_sha256": "55c7878f690fe51fb544bddd76110c90cdb8ea49f8fa8593ff7813ce208d47e7",
+    "binary_sha256": "02638304cec8e6e898404b69353de23dc6d339b925eeb80379cd00d38f04d081",
+    "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "baseline_flags": [
+      "-O3",
+      "-DNDEBUG",
+      "-fPIC",
+      "-mavx2",
+      "-mfma",
+      "-mf16c",
+      "-std=gnu++17"
+    ],
+    "decoder_macros": {
+      "STB_IMAGE_IMPLEMENTATION": "",
+      "STBI_MAX_DIMENSIONS": "(1 << 24)",
+      "STBI__PNG_TYPE(a,b,c,d)": "(((unsigned) (a) << 24) + ((unsigned) (b) << 16) + ((unsigned) (c) << 8) + (unsigned) (d))",
+      "STBI_FREE(p)": "free(p)",
+      "STBI_INCLUDE_STB_IMAGE_H": "",
+      "__F16C__": "1",
+      "STBI__ZNSYMS": "288",
+      "__FMA__": "1",
+      "STBI__HDR_BUFLEN": "1024",
+      "STBI_ASSERT(x)": "assert(x)",
+      "STBI__BYTECAST(x)": "((stbi_uc) ((x) & 255))",
+      "STBI_THREAD_LOCAL": "thread_local",
+      "__SSE2__": "1",
+      "STBI_EXTERN": "extern \"C\"",
+      "STBI__IDCT_1D(s0,s1,s2,s3,s4,s5,s6,s7)": "int t0,t1,t2,t3,p1,p2,p3,p4,p5,x0,x1,x2,x3; p2 = s2; p3 = s6; p1 = (p2+p3) * stbi__f2f(0.5411961f); t2 = p1 + p3*stbi__f2f(-1.847759065f); t3 = p1 + p2*stbi__f2f( 0.765366865f); p2 = s0; p3 = s4; t0 = stbi__fsh(p2+p3); t1 = stbi__fsh(p2-p3); x0 = t0+t3; x3 = t0-t3; x1 = t1+t2; x2 = t1-t2; t0 = s7; t1 = s5; t2 = s3; t3 = s1; p3 = t0+t2; p4 = t1+t3; p1 = t0+t3; p2 = t1+t2; p5 = (p3+p4)*stbi__f2f( 1.175875602f); t0 = t0*stbi__f2f( 0.298631336f); t1 = t1*stbi__f2f( 2.053119869f); t2 = t2*stbi__f2f( 3.072711026f); t3 = t3*stbi__f2f( 1.501321110f); p1 = p5 + p1*stbi__f2f(-0.899976223f); p2 = p5 + p2*stbi__f2f(-2.562915447f); p3 = p3*stbi__f2f(-1.961570560f); p4 = p4*stbi__f2f(-0.390180644f); t3 += p1+p4; t2 += p2+p3; t1 += p2+p4; t0 += p1+p3;",
+      "STBI_REALLOC(p,newsz)": "realloc(p,newsz)",
+      "STBI__RESTART(x)": "((x) >= 0xd0 && (x) <= 0xd7)",
+      "STBI_SSE2": "",
+      "STBI__MARKER_none": "0xff",
+      "STBI__COMBO(a,b)": "((a)*8+(b))",
+      "STBI__ZFAST_MASK": "((1 << STBI__ZFAST_BITS) - 1)",
+      "STBI_VERSION": "1",
+      "STBI_SIMD_ALIGN(type,name)": "type name __attribute__((aligned(16)))",
+      "STBI__X64_TARGET": "",
+      "STBI_REALLOC_SIZED(p,oldsz,newsz)": "STBI_REALLOC(p,newsz)",
+      "STBI__ZFAST_BITS": "9",
+      "STBI_NOTUSED(v)": "(void)sizeof(v)",
+      "__AVX2__": "1",
+      "STBI_MALLOC(sz)": "malloc(sz)"
+    },
+    "production_and_prefix_macro_maps_exact": true,
+    "compile_record_semantically_rechecked": true,
+    "compile_commands_original_reported_sha256": "bd0d0138af5e312e743f42166b4e1e45f3be3747e01ff406a71c53565005719a",
+    "compile_commands_uploaded_sha256": "dfec6f095828de443c8f171de3234991b4fa90066241aa55df77aee627982716",
+    "original_compile_record_byte_hash_independently_rechecked": false,
+    "nonstatic_stbi_load_export_checked": true
+  },
+  "all_process_logs_exit0_reaped_no_timeout_and_sha_checked": true,
+  "metric_formula_consistency_checked": true,
+  "raw_pixel_metrics_recomputed_for_independent_review": false,
+  "credits_sha256": "5c273c03cc87436ed6f45c52fafd37fe8f7cdba112955b84ffa179987d96ed7d",
+  "credits_manifest": "docs/ocr-real-scans-v1.json",
+  "model_execution": false,
+  "original_rerun": false,
+  "cause_established": false,
+  "model_qualified": false,
+  "limits": [
+    "Only the small review ZIP was downloaded; encoded image/raw RGB/binary stayed remote.",
+    "Independent review verifies source/report/file hashes, byte/shape/count/metric identities, compiler flags/macros and process logs; full raw pixel metric recomputation remains in the hosted producer.",
+    "Both actual decoders agree on1920x2985, while the unmodified manifest says1600x2487. Neither image nor labels/dimensions were corrected.",
+    "Pillow11.3.0 matches the old setup version; historical wheel/libjpeg binary identity is not asserted.",
+    "Five exact PNG and fifteen nonidentical JPEG comparisons span two immutable runs; no19-image recapture and no same-run20 claim.",
+    "An observed input boundary difference does not establish a model-token mismatch cause, model quality parity or a production codec correction."
+  ]
+}
