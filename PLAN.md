@@ -431,6 +431,7 @@ and host locations out of public Markdown. Remove a row when its lane lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-10-29 | `fix/josev-protected-source-header-20261029` | Correct actual published F32 source metadata assumption | Actual40834737477 passes strict F32, builds and the C Q8 conversion, then rejects a nonexistent source general.file_type before Q8/native comparisons. The source intentionally omits file_type/quantization_version; immutable quantized outputs still require typed7/14. Retain the initial raw model/reports, fix authored source fixture to match real header, preserve all four recipes/gates and original reference arrays. |
 | 2026-10-29 | `audit/moedern-router-topk-operator-20261029` | Source-faithful model-free router selection audit before any tie behavior change | Original27M/115M use Torch2.8.0+cpu softmax→topk(2)→renorm on eight experts; official CPU implementation uses value-only nth_element, with no stable-index guarantee. Predeclare finite tie/ULP/stride/thread controls and a newly hash-locked Torch binary; compare same probabilities and same logits against source-derived C++ and actual a06 ggml. No model/original/full-corpus forwards, replacement gold, production guard change or old-wheel identity claim; later exact three-row capture remains separate. |
 | 2026-10-29 | `fix/minicpm-seven-retained-v2-20261029` | Review actual138 retained comparisons; bind only seven missing MiniCPM arms | Actual40831080193 reports completed138=36 carried+102 new, pixels exact, numeric negatives preserved. Independently authenticate/review small proof before a separately versioned seven-only continuation; preserve frozen19c/cec guards and all23 prior arms, no original/native recapture or gate widening. |
 | 2026-10-29 | `ci/moedern-q8-controls-20261029` | Hosted model-free compile/quantizer proof for protected all-size MoEdern Q8 profile | Preserve source1f3573137 and actual full-F32 corpus blockers. Build its existing tiny Q8 controls and C quantizer on hosted CPU only; verify actual20/20/52 selected types, critical-role payloads, gates and authored graphs. No model/corpus run or publication claim. |
@@ -1083,3 +1084,15 @@ Four new/eight existing stdlib controls, actionlint and both source guards pass;
 actual compiler/graph/C-quantizer execution remains pending. The standalone
 workflow registration does not qualify model weights or remove full-F32 corpus
 blockers.
+
+### Mini seven-only source review
+
+Source`db4c1bb25a342c3ee70a1610e8c3476600d0bccc` is reviewed for the next
+seven-arm continuation. It authenticates actual completedcec all134 small
+members before optional packages/models, preserves every frozen19c script and
+guard, and requires the same source in workflow input/service checkout. Only
+seven missing ordinary native arms and two existing tiny projection probes run.
+Postanalysis carries138 records unchanged and adds42 six-stage comparisons
+from the new saved traces, for180 vision records; no second forward. All strict
+failures and original budgets remain; coverage never sets qualification true.
+13 new/11 inherited stdlib controls and actionlint pass.
