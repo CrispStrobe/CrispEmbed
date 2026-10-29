@@ -23,9 +23,10 @@ class Controls(unittest.TestCase):
         self.assertIn('return run_impl(weights, ids, threads, output, false);',s)
         self.assertIn('core_env::on("CRISPEMBED_JOSEV_QUANT")',s)
         self.assertIn('core_env::on("CRISPEMBED_QWEN35_QUANT")',s)
-    def test_metadata_requires_real_q4_and_logical_parameter_inventory(self):
+    def test_metadata_requires_real_quantized_payload_and_logical_parameter_inventory(self):
         s=(ROOT/'src/josev2b_packed_profile.h').read_text()
-        self.assertIn('allow_quantized = false',s);self.assertIn('mixed && !actual_q4',s)
+        self.assertIn('allow_quantized = false',s)
+        self.assertIn('matches_quantized_payload(file_type, actual_q8, actual_q4, mixed_v2)',s)
         self.assertIn('total += elements;',s);self.assertIn('1881825088 + 30472708',s)
         self.assertIn('crispembed-josev-packed-q4k-v1',s)
 if __name__=='__main__':unittest.main()
