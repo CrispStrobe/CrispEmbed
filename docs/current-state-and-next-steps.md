@@ -49,8 +49,10 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   distinguishes existing masked230M LFM Q8/Q4 failures from other models;
   mixed330 precision improves but one masked prediction remains wrong.
   Typed Gemma has published Q8 approximation evidence; current-source Q4
-  encoder-only genuine Kaggle CPUv1 is verified running at92ee94a77, with strict
-  original F32 barriers; old GHA copy cancelled before any job step.
+  [genuine CPUv1/92ee](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/gemma-first-q4-cpu-v1-initial-result.md)
+  rejects before Q4: all five pooled embeddings pass, but125 saved-stage
+  failures and a768-wide bank-adapter error block the F32 barrier. Only an
+  independently reviewed one-probe live-capture repair may activate next.
   Rust/Dart Q8 and broader current-source consumer gaps remain explicit.
 
 Both Q8/Q4_K require actual original intermediates, errors/magnitudes and final
