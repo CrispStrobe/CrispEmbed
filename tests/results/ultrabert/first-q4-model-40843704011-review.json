@@ -1,0 +1,120 @@
+{
+  "schema": "crispembed-ultrabert-first-q4-conversion-independent-review-v1",
+  "service": {
+    "id": 40843704011,
+    "head_sha": "c3d2fc051f6632e06d5e7ba69ac700a03a703e22",
+    "path": ".github/workflows/ultrabert-first-q4-shard-v1.yml",
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "job": 123345991749
+  },
+  "small_artifact": {
+    "id": 12885835301,
+    "name": "ultrabert-first-q4-model-review-40843704011",
+    "size_in_bytes": 153809,
+    "digest": "sha256:958544944c9fa22f9d4852f1751c8a6ff30a89499478d70440b3e67debd51742",
+    "expires_at": "2027-01-27T08:39:25Z"
+  },
+  "small_members": {
+    "CMakeCache.txt": {
+      "bytes": 28953,
+      "sha256": "a10631b26735a3dcc0e8bc524e057f2715f7754eab4d82523a5f54b744902134"
+    },
+    "comparator-build.log": {
+      "bytes": 10379,
+      "sha256": "dcd1e83abb1380c7cedf71ddc428cf8a854a4af12b7b4e6f4e762625aa07743d"
+    },
+    "build.log": {
+      "bytes": 255778,
+      "sha256": "3a8883e183f32fac2fc0d89181ad6aabc911b0a4ccf0c8652646147309437438"
+    },
+    "compile_commands.json": {
+      "bytes": 331392,
+      "sha256": "13782e74e8aceb4c2e428a1991f01c015768d5e5c18fc309ce881866de43d37a"
+    },
+    "configure.log": {
+      "bytes": 1852,
+      "sha256": "ac92a082b0744cfbe75c135ce3a64b952c863ed4ce1850019bf9210f395e2407"
+    },
+    "fresh-load.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "payload/manifest.json": {
+      "bytes": 382,
+      "sha256": "0a02e43f19bea6c785abfa07533519d169450ca6579c439f9c704144f42c3ade"
+    },
+    "payload/model.json": {
+      "bytes": 49715,
+      "sha256": "02578697aa01516825e46bb1153bb55fa2d9604567007dfcdc86daad00445eec"
+    },
+    "profile-controls.log": {
+      "bytes": 91,
+      "sha256": "134346fec644a79fdeb3bcadce3b26f91869c6459b0124f8caf29ac5f0c43cd1"
+    },
+    "symbol-audit.json": {
+      "bytes": 2332,
+      "sha256": "c851e1faf25146874b184eb81babab82ef4e398c0d45e8741cc44ef13656bdf4"
+    },
+    "symbols.txt": {
+      "bytes": 1285718,
+      "sha256": "5f4bd0eb5541bffb5e2f06e9ffb56db96b1b926b083b5707fbcb860ebc3e88e1"
+    },
+    "ultrabert-object-strings.txt": {
+      "bytes": 11593,
+      "sha256": "c136cf59a18d988d53bc0b41d7ffcf868571ff861a2ac6918b719492bbf67bef"
+    },
+    "ultrabert-object-symbols.txt": {
+      "bytes": 14429,
+      "sha256": "c7e35e89e11be25967d5d78fc7928ea6efa41002bd02e5d1b8b44b495cd6c022"
+    }
+  },
+  "payload_artifact": {
+    "id": 12885865196,
+    "name": "ultrabert-first-q4-model-payload-40843704011",
+    "size_in_bytes": 531993310,
+    "digest": "sha256:c2919ce6b58db9083ecbbebf8cffe310e55593200a1569663dfa7bbfe7799405",
+    "source": "c3d2fc051f6632e06d5e7ba69ac700a03a703e22",
+    "expires_at": "2027-01-27T08:39:25Z"
+  },
+  "producer_receipt": {
+    "bytes": 49715,
+    "sha256": "02578697aa01516825e46bb1153bb55fa2d9604567007dfcdc86daad00445eec"
+  },
+  "model": {
+    "bytes": 576997440,
+    "sha256": "087c9be0fa50ba57db74e650889521c985d306863c94aabf731764538eb4533c"
+  },
+  "original_f32": {
+    "bytes": 609437696,
+    "sha256": "89478b9cbbad2fd1121be4031d760f1529c989fedf23b6b19251ba2c87422566"
+  },
+  "recipe": "q4k-last-four-ffn",
+  "actual_stored_types": {
+    "F32": 206,
+    "Q4_K": 12
+  },
+  "review": {
+    "small_zip_and_all_13_members_rehashed": true,
+    "all_218_names_shapes_and_type_roles_checked": true,
+    "selected_q4_k_tensors": 12,
+    "protected_f32_tensors": 206,
+    "stored_payload_hash_declarations_checked": 218,
+    "model_manifest_receipt_join_exact": true,
+    "runtime_build_and_production_object_source_checked": true,
+    "actual_c_quantizer_source_checked": true,
+    "whole_model_or_raw_archive_downloaded_locally": false,
+    "raw_payload_hashes_rederived_locally": false,
+    "model_forward": false,
+    "original_or_f32_forwards": 0
+  },
+  "legacy_header_from_frozen018_quantizer": true,
+  "standard_header_publication_qualified": false,
+  "qualification": false,
+  "publication_qualified": false,
+  "release_qualified": false,
+  "q8_activation_authorized": false,
+  "limits": "Conversion/source evidence only. Raw model/scale payloads remain remote; a hosted consumer must rehash the immutable model before any forward. Only separately declared reviewed shard0 may activate; all8 shards/full5483 vectors and300 rankings remain mandatory for retrieval qualification."
+}
