@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import subprocess
 import zipfile
+import resource_profile as budget
 ROOT=Path(__file__).resolve().parents[2]
 PATH=ROOT/'docs/moedern-first-row-stages-v1.json'
 KEY='d:24726600'
@@ -34,6 +35,7 @@ def git(*args):return subprocess.check_output(['git',*args],cwd=ROOT)
 def declaration():
     c=json.loads(PATH.read_text())
     require(c['schema']=='crispembed-moedern-first-row-stages-v1'and c['key']==KEY and c['gates']==dict(max_absolute=.002,min_row_cosine=.99999),'bounded document/gates differ')
+    require(c['resource_profile']==budget.POLICY and c['resource_predecessor']['source']=='e7ff72f1a2fe1290f5d7b879d41e3fd5b6da26b8'and c['resource_predecessor']['protocol_sha256']=='a4dc0b91b7399003681fefc7113a44d4d298370a938897da8de9bf80625d5a41','explicit resource-v2 profile/predecessor required')
     require(c['runtime_source']=='93d27614caba00a1b4d7aece6c78968f5cd9bb7f'and c['ggml']=='a06fc0bb46b73cc10011fc90ae4054aee8438aeb','runtime/backend differs')
     require(c['limits']==dict(original_targeted_forward_max=5,native_full_computations=14,native_plain_full=6,native_observed_full=8,
         native_encode_attempts=21,native_pre_math_observer_abort=1,native_frontend_rejections=6,native_init_rejections=6),'forward budgets differ')
@@ -55,12 +57,12 @@ def declaration():
         'docs/moedern-colbert-native-contract-v2.json','docs/moedern-three-doc-attribution-v1.json','docs/moedern-scifact-parity-v1.json',
         'tools/moedern_scifact.py','tools/ci-heavy/moedern_scifact.py','tests/results/moedern-colbert/scifact-original-1p5m.json',
         'tests/results/moedern-colbert/scifact-native-1p5m-v3-native.json','tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json',
-        'tests/results/moedern-colbert/publication-1p5m.json'}
+        'tests/results/moedern-colbert/publication-1p5m.json','tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json'}
     require(protected==set(c['protected_sha256']),'complete exact protected closure required')
     owned={'tools/moedern-first-row/'+n+'.py'for n in ('common','prepare','original','compare','kernel')}
     owned|={'tools/ci-heavy/moedern_first_row_v1.py','tests/moedern-first-row/CMakeLists.txt','tests/moedern-first-row/probe.cpp',
-        'tests/test_moedern_first_row_v1.py','.github/workflows/moedern-first-row-stages-v1.yml','docs/moedern-first-row-stages-v1.md'}
-    require(set(c['owned_sha256'])==owned,'exact eleven-file diagnostic closure required')
+        'tests/test_moedern_first_row_v1.py','.github/workflows/moedern-first-row-stages-v1.yml','docs/moedern-first-row-stages-v1.md','tools/moedern-first-row/resource_profile.py','tests/test_moedern_first_row_resources.py'}
+    require(set(c['owned_sha256'])==owned,'exact resource-v2 thirteen-file diagnostic closure required')
     return c
 
 def verify(source):

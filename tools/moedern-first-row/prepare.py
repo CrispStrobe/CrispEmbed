@@ -82,8 +82,8 @@ def run(source,out):
     save=lambda:atomic(out/'prepare.json',report);save()
     try:
         require(not any(n in sys.modules for n in ('numpy','torch','transformers','sentence_transformers')),'framework imported before retained-byte authentication')
-        ram=int(next(l.split()[1]for l in Path('/proc/meminfo').read_text().splitlines()if l.startswith('MemAvailable:')))*1024
-        require(ram>=14*2**30 and shutil.disk_usage(out).free>=24*2**30 and os.cpu_count()>=2,'14GiB RAM/24GiB disk/two CPUs before payload')
+        from common import budget
+        report['resources']=budget.admit(out);budget.single_file_limit();save()
         if os.environ.get('GITHUB_ACTIONS')=='true':
             service=api('actions/runs/'+os.environ['GITHUB_RUN_ID'])
             require(service['head_sha']==source and service['id']==int(os.environ['GITHUB_RUN_ID'])and service['status']=='in_progress'and
@@ -97,7 +97,7 @@ def run(source,out):
             pin=producer[name];actual=api('actions/artifacts/'+str(pin['id']))
             require(actual['id']==pin['id']and actual['workflow_run']['id']==producer['run']and actual['workflow_run']['head_sha']==producer['source']and
                 actual['name']==pin['name']and actual['size_in_bytes']==pin['bytes']and actual['digest']=='sha256:'+pin['sha256']and not actual['expired'],'retained service artifact identity differs')
-            report['artifacts'][name]={k:actual[k]for k in ('id','name','size_in_bytes','digest','expires_at')};save();download(pin,out/(name+'.zip'))
+            report['artifacts'][name]={k:actual[k]for k in ('id','name','size_in_bytes','digest','expires_at')};save();budget.live(out);download(pin,out/(name+'.zip'));budget.live(out)
         with zipfile.ZipFile(out/'small.zip')as z:
             report['small_members_authenticated']=inventory(z,producer['small_members'])
             manifest=json.loads(z.read('manifest.json'));compare=json.loads(z.read('compare.json'))
@@ -123,7 +123,7 @@ def run(source,out):
         packet=dict(schema='crispembed-moedern-first-row-input-v1',key=KEY,case=case,completed=True,
             source_protocol_sha256=sha(PATH),retained_three_case_packet_sha256=manifest[oldpath]['sha256'],new_gold=False)
         atomic(out/'input-packet.json',packet)
-        report.update(completed=True,input_packet_sha256=sha(out/'input-packet.json'));save();return report
+        report.update(completed=True,input_packet_sha256=sha(out/'input-packet.json'),resource_final=budget.live(out));save();return report
     except Exception as error:report['error']=type(error).__name__+': '+str(error);save();raise
 
 if __name__=='__main__':

@@ -97,9 +97,10 @@ the observed archive supplies the positive control. The probe copy changes case
 cardinality and adds test-executable call accounting; production source is
 unchanged.
 
-The [GHA workflow](../.github/workflows/moedern-first-row-stages-v1.yml) uses two
-workers with14GiB available RAM/24GiB free disk before payload and a60-minute job
-limit. The [Kaggle CPU adapter](../tools/moedern-first-row/kernel.py) requires an
+The initial [GHA workflow](../.github/workflows/moedern-first-row-stages-v1.yml)
+used two workers with14GiB available RAM/24GiB free disk before payload and a
+60-minute job limit. Resource profile v2 below supersedes only the disk policy;
+the RAM, worker, numerical and timing requirements remain unchanged. The [Kaggle CPU adapter](../tools/moedern-first-row/kernel.py) requires an
 isolated CPython3.12 environment, a reviewed exact checkout with its pinned
 submodule, and the genuine provider environment. The operator supplies an
 approved credential-only input through `CRISPEMBED_ARTIFACT_TOKEN_FILE` or
@@ -117,3 +118,46 @@ All models, arrays and builds stay hosted; small reports and exact source pins
 are sufficient for independent review. No production policy, quantization,
 retrieval qualification, publication or default changes follow from this source
 preparation or from a local operator sensitivity result.
+
+## Resource profile v2: one retained 307-token case
+
+The [initial Kaggle v1 failure](../tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json)
+at `e7ff72f1a2fe1290f5d7b879d41e3fd5b6da26b8` occurs before the first command:
+32,672,014,336 bytes of available RAM, 20,940,525,568 bytes of free output disk
+and four CPUs satisfy memory/CPU requirements, but the inherited 24 GiB disk
+requirement exceeds this provider's output volume. No retained data, packages,
+weights or inference were accessed; the original failure stays unchanged.
+
+This separately declared resource-v2 successor requires **10 GiB free disk** at
+bootstrap, retained-input preparation and before build/model work. Available
+RAM remains **14 GiB**, with at least two CPUs and the same two-worker/thread
+policy. It is not a bootstrap-only bypass. All five original and 14 native full
+computations, ordinary barriers, actual operations, masks, 44 F32/two integer
+maps, all frozen targets and 0.002/0.99999 gates remain byte-exact in source.
+The original observation, native probe, CMake and comparator files are unchanged.
+
+The new conservative disk allowance is 4 GiB packages/caches, 2 GiB source/build,
+2 GiB retained output, and 2 GiB free reserve. Known extents are small: retained
+ZIPs total 10,760,103 bytes, the native model is 7,037,952 bytes, the original
+checkpoint and Dense weights total about 6 MB, and the frozen tracked checkout
+is 164,459,632 bytes before Git metadata/submodule/build files. The allowance is
+an estimate with enforced admission/reserve checks, not measured peak usage.
+No original corpus or other model size is admitted by this profile.
+
+Retained output has a 2 GiB aggregate ceiling, checked before/after commands and
+at phase boundaries, with a 2 GiB live free-space reserve. A 2 GiB inherited
+single-file limit applies to child processes. Existing original trace limits
+(512 MiB across the two traces), native per-case limits (128 MiB), fixed case and
+call counts, and the bounded Ref adapters constrain each indivisible capture.
+The aggregate check is not a claim of continuous filesystem monitoring. Exceeding
+a cap stops subsequent work and preserves evidence; no canonical files are
+removed to manufacture admission. Private bootstrap checks cover its whole
+output root, including input/build descendants. Only known task-created scratch
+and build trees may be cleaned after their logs and results have been retained.
+
+The resource profile and new merged source base are explicit in the protocol;
+old e7 source remains available by immutable Git identity. The successor private
+kernel is prepared for the same existing service kernel's next version, with
+an unchanged approved credential-only input. Submission still requires source
+review and a fresh whole-account capacity check by the coordinator. No GPU,
+provider spoofing, numerical waiver or automatic retry is authorized here.

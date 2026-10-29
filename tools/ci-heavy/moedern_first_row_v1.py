@@ -8,7 +8,7 @@ import shutil
 import sys
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT/'tools/moedern-first-row'),str(ROOT/'tools')]
-from common import PATH,CID,atomic,module,require,sha,verify,hosted,authenticated_input
+from common import PATH,CID,atomic,module,require,sha,verify,hosted,authenticated_input,budget
 from ci_process import run as child
 
 
@@ -17,18 +17,18 @@ def main(args):
     import subprocess
     require(subprocess.check_output(['git','-C',str(ROOT/'ggml'),'rev-parse','HEAD'],text=True).strip()==cfg['ggml']and not subprocess.check_output(['git','-C',str(ROOT/'ggml'),'status','--porcelain','--untracked-files=no']),'actual clean backend checkout required')
     args.scratch.parent.mkdir(parents=True,exist_ok=True)
-    ram=int(next(l.split()[1]for l in Path('/proc/meminfo').read_text().splitlines()if l.startswith('MemAvailable:')))*1024
-    require(ram>=14*2**30 and shutil.disk_usage(args.scratch.parent).free>=24*2**30 and os.cpu_count()>=2,'14GiB available RAM/24GiB disk/two CPU before build/models')
+    resource_admission=budget.admit(args.scratch.parent,args.out);single_file_limit=budget.single_file_limit()
     args.out.mkdir(parents=True,exist_ok=False);args.scratch.mkdir(parents=True,exist_ok=False)
     review=args.out/'review';review.mkdir();raw=args.out/'raw';raw.mkdir()
-    report=dict(source=args.reviewed_source,completed=False,phase='input-authentication',commands={},publication_qualified=False,original_full_corpus_recaptured=False,original_rerun=False,provider=provider)
+    report=dict(source=args.reviewed_source,completed=False,phase='input-authentication',commands={},publication_qualified=False,original_full_corpus_recaptured=False,original_rerun=False,provider=provider,resource_profile=resource_admission,single_file_limit=single_file_limit)
     def save():atomic(review/'hosted.json',report)
     env={k:v for k,v in os.environ.items()if not k.startswith('CRISPEMBED_')}
     env['CRISPEMBED_CAPTURE_SOURCE']=args.reviewed_source
     env.update(OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2',MKL_NUM_THREADS='2',TOKENIZERS_PARALLELISM='false',HF_HUB_DISABLE_TELEMETRY='1')
     def command(name,argv,active=env,timeout=1200,allowed=(0,)):
+        budget.live(args.out)
         log=review/(name+'.log');result=child(argv,log,cwd=ROOT,env=active,timeout=timeout)
-        report['commands'][name]=dict(result,log=log.name,sha256=sha(log));save()
+        report['commands'][name]=dict(result,log=log.name,sha256=sha(log));save();budget.live(args.out)
         require(not result['timed_out']and result['exit']in allowed,'structural/process rejection: '+name)
     save()
     try:
@@ -99,6 +99,7 @@ def main(args):
         command('compare',[sys.executable,'-I',ROOT/'tools/moedern-first-row/compare.py','--reviewed-source',args.reviewed_source,'--input',args.input,
             '--original',raw/'original','--plain',raw/'plain','--observed',raw/'observed','--diff',tests/'first-row-diff','--out',raw/'comparisons'],timeout=1200,allowed=(0,1))
         report['diagnostic']=json.loads((raw/'comparisons/diagnostic.json').read_text());require(report['diagnostic']['completed']is True,'bounded diagnostics incomplete')
+        report['resource_final']=budget.live(args.out)
         report.update(completed=True,phase='diagnostic-complete',diagnostic_report_sha256=sha(raw/'comparisons/diagnostic.json'),numerical_qualified=False);save()
         return 1 if any(r['status']=='numeric_rejection'for r in report['diagnostic']['cases'])else 0
     except Exception as error:report['error']=type(error).__name__+': '+str(error);save();raise

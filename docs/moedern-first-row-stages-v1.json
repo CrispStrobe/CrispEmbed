@@ -235,7 +235,7 @@
     }
   ],
   "schema": "crispembed-moedern-first-row-stages-v1",
-  "base": "271423a13b8190d7c2c139549260a80f6d4b2d8b",
+  "base": "fb678e0c5c3d3918b5ef905df6aef8973c53d2cc",
   "key": "d:24726600",
   "original_full_corpus_recaptured": false,
   "new_gold": false,
@@ -661,20 +661,23 @@
     "tools/moedern-three-doc/compare.py": "06ac98e489765b916e7647ba76a9c81ddcc86868240736395013308e560c9fdb",
     "tools/moedern-three-doc/original.py": "b56bd3e6c94d2147c29186ff5728d98c6d4ce61928cde0c3d6773e15518c4c3a",
     "tools/moedern-three-doc/prepare.py": "c2df5ebd531d6260f5019be41cfddf732d4e04f900e986964d2847a00157cce7",
-    "tools/moedern_scifact.py": "ce5e23583411423628c3b1407b61d6225cec64fe57f1fc8a3ab1ac84aa5080a8"
+    "tools/moedern_scifact.py": "ce5e23583411423628c3b1407b61d6225cec64fe57f1fc8a3ab1ac84aa5080a8",
+    "tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json": "a1a38781b3506dfe67b4f62d007b0d0e889e6a07e848bb5e491f61d0ec6d5b87"
   },
   "owned_sha256": {
     ".github/workflows/moedern-first-row-stages-v1.yml": "c9d7da780971082e6f2b1104b078e32096228b4782f02c86271a01356ab6829d",
-    "docs/moedern-first-row-stages-v1.md": "b4a96661875fb15d845a4472688ecea85896b7fc20d140ec3232ab5acdc6fa42",
+    "docs/moedern-first-row-stages-v1.md": "079416561062e9867e8c49c24b7b1bd16e3946c04528c82359877f2b3a88f764",
     "tests/moedern-first-row/CMakeLists.txt": "e706b4db19c3da0053f4983534a7b34fc92e4654135031fae8b99da003b62d5d",
     "tests/moedern-first-row/probe.cpp": "e0240ef12a358f98938d27d95c01ad8b515c04bf862cb42e0b33c53d09e5e287",
     "tests/test_moedern_first_row_v1.py": "a7d7ba96f4ebc691c1190ab6ed14a2a4d5efb4ee2d0b7dba7f6d1a8b376bd051",
-    "tools/ci-heavy/moedern_first_row_v1.py": "05dd2e0c96fd13423c0f956172c6c000077f1eaad3c3ee3a09ed50ff49241ed4",
-    "tools/moedern-first-row/common.py": "2dd8d55b11107e87d24b73cf34fa2f92f6e22526fe382ce070663877ae2cec45",
+    "tools/ci-heavy/moedern_first_row_v1.py": "ba2c6cb90efe67bfdcf35355137479e16ff5caada41c16162050045173ce210f",
+    "tools/moedern-first-row/common.py": "bfd0e20cbd725028bbb41ff57681a226b99232a63667bf2fdeaff913a4afca1f",
     "tools/moedern-first-row/compare.py": "e1067e2e244843abfb4315e070d851dc01a967c117f93e94045fac6bae138612",
-    "tools/moedern-first-row/kernel.py": "0e47d6ddac7567d70564384fbea2d0afc96ef22887d1ee9269b422da6beceb06",
+    "tools/moedern-first-row/kernel.py": "e5d0d2935de3bcd25c38a58439b1c41f74635cf1c135b9c86915663ca09d0844",
     "tools/moedern-first-row/original.py": "355c2ee8c04e8c419313d499149fa7bf247c8e3fe1feb1c32cdb76b97130b965",
-    "tools/moedern-first-row/prepare.py": "c8b78adc92f688adb2b1f33dcf2771f0aeb8f49e979784b1b7d672fa06292b27"
+    "tools/moedern-first-row/prepare.py": "b75f8c5c12c87bec10e90b1db482e351c3418f30188c840d45363a144e8c3694",
+    "tools/moedern-first-row/resource_profile.py": "e28559e4353ba51dbe0b28778c2c97ebf694384a5fe71fd97795cd238975565b",
+    "tests/test_moedern_first_row_resources.py": "8964cfa4599fac2e4e25af3b68689ef9ae24261c1f2eb4f6562879b9e5eaaea4"
   },
   "publisher_router_source": {
     "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-1.5M",
@@ -709,5 +712,29 @@
     "ordinary_backend_identity_claimed": false,
     "historical_binary_backend_identity_claimed": false,
     "backend_forced": false
+  },
+  "resource_profile": {
+    "schema": "crispembed-moedern-first-row-resources-v2",
+    "minimum_available_ram_bytes": 15032385536,
+    "minimum_free_disk_bytes": 10737418240,
+    "minimum_cpus": 2,
+    "maximum_output_bytes": 2147483648,
+    "minimum_live_disk_reserve_bytes": 2147483648,
+    "maximum_single_file_bytes": 2147483648,
+    "disk_budget_gib": {
+      "packages_and_caches": 4,
+      "source_and_build": 2,
+      "retained_output": 2,
+      "free_reserve": 2
+    }
+  },
+  "resource_predecessor": {
+    "source": "e7ff72f1a2fe1290f5d7b879d41e3fd5b6da26b8",
+    "protocol_sha256": "a4dc0b91b7399003681fefc7113a44d4d298370a938897da8de9bf80625d5a41",
+    "initial_report_bytes": 557,
+    "initial_report_sha256": "b64257f20551f9ac3bf1cae5826ca375e24444b3f8fd92bfbc7032fbf458e83a",
+    "initial_commands": 0,
+    "initial_disk_bytes": 20940525568,
+    "old_minimum_disk_bytes": 25769803776
   }
 }
