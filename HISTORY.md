@@ -17020,3 +17020,9 @@ published source stores its position embedding as `[3145728,1]`; a trailing-unit
 rank hypothesis still requires full retained-candidate type/shape/payload proof.
 The original rejection and all540 retained files remain immutable. See the
 [independent receipt](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
+
+The first read-only retained audit at a7de18f91 stopped after16 successful small
+controls: the hosted system Python's `ensurepip` failed during venv creation.
+No retained tensor was mapped, compiled, quantized or inferred. Its successor
+uses the completed source410 producer's pinned uv0.8.17/CPython3.12 bootstrap;
+all old source410 output and protection failures remain unchanged.

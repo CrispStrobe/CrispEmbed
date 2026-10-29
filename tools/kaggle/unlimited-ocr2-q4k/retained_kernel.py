@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import sys
 import time
-import venv
 
 COMMIT = '@COMMIT@'
 OUT = Path('/kaggle/working/unlimited-retained-v3')
@@ -61,7 +60,11 @@ def main():
         run('checkout', ['git', '-C', root, 'checkout', '--quiet', COMMIT])
         run('backend-source', ['git', '-C', root, 'submodule', 'update', '--quiet', '--init', '--depth', '1', 'ggml'])
         run('small-controls', [sys.executable, root / 'tests/test_unlimited_ocr2_q4k.py'])
-        venv.EnvBuilder(with_pip=True).create(SCRATCH / 'venv')
+        # The hosted system Python lacks a usable ensurepip. Use the same
+        # pinned uv/CPython3.12 bootstrap as the completed source410 producer.
+        run('install-uv', [sys.executable, '-m', 'pip', 'install', '--quiet', 'uv==0.8.17'])
+        run('create-venv', [sys.executable, '-m', 'uv', 'venv', '--quiet',
+                            '--python', '3.12', '--seed', SCRATCH / 'venv'])
         python = SCRATCH / 'venv/bin/python'
         run('locked-reader', [python, '-I', '-m', 'pip', 'install', '--quiet',
                               'numpy==2.2.6', 'gguf==0.17.1'])

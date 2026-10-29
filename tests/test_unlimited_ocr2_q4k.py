@@ -46,6 +46,14 @@ def candidate(source, recipe):
 
 
 class Q4Contract(unittest.TestCase):
+    def test_retained_bootstrap_uses_proven_uv_without_models_or_builds(self):
+        source = (ROOT / 'tools/kaggle/unlimited-ocr2-q4k/retained_kernel.py').read_text()
+        self.assertIn('uv==0.8.17', source)
+        self.assertIn("'--python', '3.12', '--seed'", source)
+        self.assertNotIn('EnvBuilder', source)
+        self.assertNotIn("['cmake'", source)
+        self.assertIn("'native_forwards'", source.replace('native_forwards=0', "'native_forwards'"))
+
     def test_trailing_unit_rank_change_preserves_semantics_and_all_payload_bytes(self):
         source = inventory()
         source['v.pos_embed'] = dict(type=1, shape=[3145728, 1], bytes=6291456, sha256='5' * 64)
